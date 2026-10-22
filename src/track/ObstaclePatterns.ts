@@ -49,7 +49,8 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ],
     collectibles: [
       { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.5 },
-      { type: 'COIN', lane: 1, zOffset: 20.0, count: 8, spacing: 2.5 }
+      { type: 'COIN', lane: 1, zOffset: 20.0, count: 8, spacing: 2.5 },
+      { type: 'JETPACK', lane: 1, zOffset: 46.0 }
     ]
   },
 
@@ -128,7 +129,8 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ],
     collectibles: [
       { type: 'COIN', lane: 1, zOffset: 15.0, count: 8, spacing: 2.2 },
-      { type: 'COIN', lane: 0, zOffset: 48.0, count: 8, spacing: 2.2 }
+      { type: 'COIN', lane: 0, zOffset: 48.0, count: 8, spacing: 2.2 },
+      { type: 'SHIELD', lane: 0, zOffset: 62.0 }
     ]
   },
 

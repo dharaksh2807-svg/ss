@@ -3,6 +3,7 @@ import { EventBus, EVENTS } from '../core/EventBus';
 export class GameOverModal {
   private element: HTMLElement;
   private retryBtn: HTMLButtonElement;
+  private shopBtn: HTMLButtonElement | null = null;
   private menuBtn: HTMLButtonElement;
   private scoreValEl: HTMLElement;
   private highScoreValEl: HTMLElement;
@@ -13,6 +14,7 @@ export class GameOverModal {
   constructor() {
     this.element = document.getElementById('game-over-modal')!;
     this.retryBtn = document.getElementById('game-over-retry-btn') as HTMLButtonElement;
+    this.shopBtn = document.getElementById('game-over-shop-btn') as HTMLButtonElement;
     this.menuBtn = document.getElementById('game-over-menu-btn') as HTMLButtonElement;
     this.scoreValEl = document.getElementById('game-over-score')!;
     this.highScoreValEl = document.getElementById('game-over-high-score')!;
@@ -24,6 +26,13 @@ export class GameOverModal {
       this.hide();
       EventBus.getInstance().emit(EVENTS.GAME_RESTART);
     });
+
+    if (this.shopBtn) {
+      this.shopBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_SHOP', 'GAMEOVER');
+      });
+    }
 
     this.menuBtn.addEventListener('click', () => {
       this.hide();

@@ -3,12 +3,14 @@ import { EventBus, EVENTS } from '../core/EventBus';
 export class StartScreen {
   private element: HTMLElement;
   private playBtn: HTMLButtonElement;
+  private shopBtn: HTMLButtonElement | null = null;
   private settingsBtn: HTMLButtonElement;
   private highScoreEl: HTMLElement;
 
   constructor() {
     this.element = document.getElementById('start-screen')!;
     this.playBtn = document.getElementById('start-play-btn') as HTMLButtonElement;
+    this.shopBtn = document.getElementById('start-shop-btn') as HTMLButtonElement;
     this.settingsBtn = document.getElementById('start-settings-btn') as HTMLButtonElement;
     this.highScoreEl = document.getElementById('start-high-score')!;
 
@@ -16,6 +18,13 @@ export class StartScreen {
       this.hide();
       EventBus.getInstance().emit(EVENTS.GAME_START);
     });
+
+    if (this.shopBtn) {
+      this.shopBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_SHOP', 'START');
+      });
+    }
 
     this.settingsBtn.addEventListener('click', () => {
       EventBus.getInstance().emit('OPEN_SETTINGS');

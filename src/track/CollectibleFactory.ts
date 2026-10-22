@@ -103,8 +103,10 @@ export class CollectibleFactory {
 
     let colorHex = 0x00e676;
     if (type === 'MAGNET') colorHex = 0x2979ff;
+    if (type === 'JETPACK') colorHex = 0xff6d00;
     if (type === 'SNEAKERS') colorHex = 0xff1744;
     if (type === 'MULTIPLIER') colorHex = 0xffd700;
+    if (type === 'SHIELD') colorHex = 0x00e5ff;
     if (type === 'HOVERBOARD') colorHex = 0x00e676;
 
     const auraMat = new THREE.MeshBasicMaterial({ color: colorHex });
@@ -144,6 +146,23 @@ export class CollectibleFactory {
         const tip = new THREE.Mesh(tipGeo, silverMat);
         tip.position.set(tx, 0.1, 0);
         iconGroup.add(tip);
+      });
+    } else if (type === 'JETPACK') {
+      // 3D Rocket Jetpack
+      const frameGeo = new THREE.BoxGeometry(0.18, 0.35, 0.08);
+      const frameMat = new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.8 });
+      iconGroup.add(new THREE.Mesh(frameGeo, frameMat));
+
+      const cylGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.42, 10);
+      const cylMat = new THREE.MeshStandardMaterial({ color: 0xff6d00, metalness: 0.5, roughness: 0.3 });
+      [-0.12, 0.12].forEach((cx) => {
+        const cyl = new THREE.Mesh(cylGeo, cylMat);
+        cyl.position.set(cx, 0.02, 0);
+        iconGroup.add(cyl);
+
+        const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.1, 8), frameMat);
+        nozzle.position.set(cx, -0.22, 0);
+        iconGroup.add(nozzle);
       });
     } else if (type === 'SNEAKERS') {
       // 3D Sneaker with Golden Wings
@@ -188,6 +207,24 @@ export class CollectibleFactory {
       x2.rotation.z = -0.78;
       x2.position.set(0.18, 0, 0);
       iconGroup.add(x2);
+    } else if (type === 'SHIELD') {
+      // 3D Hexagonal Protective Aegis Shield
+      const shieldGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.08, 6);
+      const shieldMat = new THREE.MeshStandardMaterial({
+        color: 0x00e5ff,
+        emissive: 0x0091ea,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
+        metalness: 0.85
+      });
+      const shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+      shieldMesh.rotation.x = Math.PI / 2;
+      iconGroup.add(shieldMesh);
+
+      // Inner emblem
+      const emblem = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      emblem.position.z = 0.05;
+      iconGroup.add(emblem);
     } else {
       // Miniature Glowing Hoverboard
       const deckGeo = new THREE.BoxGeometry(0.28, 0.05, 0.75);

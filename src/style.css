@@ -305,6 +305,42 @@ html, body {
   background: linear-gradient(90deg, #00d2d3, #48dbfb);
 }
 
+.powerup-jetpack {
+  border-color: rgba(255, 109, 0, 0.6);
+}
+.powerup-jetpack .powerup-name, .powerup-jetpack .powerup-timer {
+  color: #ff9100;
+}
+.powerup-jetpack .powerup-bar-fill {
+  background: linear-gradient(90deg, #ff6d00, #ffab00);
+}
+
+.powerup-shield {
+  border-color: rgba(0, 229, 255, 0.6);
+}
+.powerup-shield .powerup-name, .powerup-shield .powerup-timer {
+  color: #00e5ff;
+}
+.powerup-shield .powerup-bar-fill {
+  background: linear-gradient(90deg, #00b0ff, #80d8ff);
+}
+
+.powerup-expiring {
+  animation: pulseExpiring 0.35s infinite alternate ease-in-out;
+}
+
+@keyframes pulseExpiring {
+  from {
+    transform: scale(1.0);
+    box-shadow: 0 0 6px rgba(255, 50, 50, 0.4);
+  }
+  to {
+    transform: scale(1.03);
+    box-shadow: 0 0 14px rgba(255, 50, 50, 0.85);
+    border-color: #ff1744;
+  }
+}
+
 /* Touch Control buttons */
 .touch-controls-bar {
   position: absolute;
@@ -646,3 +682,151 @@ kbd {
   background: rgba(255, 255, 255, 0.15);
   cursor: pointer;
 }
+
+/* Powerup Shop Modal */
+.shop-modal-card {
+  max-width: 580px;
+  width: 92%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--color-accent-gold);
+  margin-bottom: 16px;
+  align-self: center;
+}
+
+.shop-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 18px;
+  max-height: 52vh;
+}
+
+.shop-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 14px;
+  gap: 12px;
+}
+
+.shop-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  text-align: left;
+}
+
+.shop-item-icon {
+  font-size: 1.8rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.shop-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shop-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-item-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.shop-item-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.shop-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.shop-pip.filled {
+  background: var(--color-accent-gold);
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.7);
+}
+
+.shop-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.2;
+}
+
+.shop-item-stat-preview {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-accent-cyan);
+}
+
+.shop-upgrade-btn {
+  background: linear-gradient(135deg, #ffd700, #ff9100);
+  color: #1a1a1a;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 145, 0, 0.35);
+}
+
+.shop-upgrade-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 145, 0, 0.55);
+}
+
+.shop-upgrade-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+.shop-upgrade-btn.max-level {
+  background: rgba(46, 213, 115, 0.2);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.4);
+  cursor: default;
+  box-shadow: none;
+}
+

@@ -29,6 +29,18 @@ export class CharacterModel {
   private capVisor: THREE.Mesh;
   private shadowMesh: THREE.Mesh;
 
+  // Power-up visual attachments
+  private jetpackGroup: THREE.Group;
+  private jetpackFire1: THREE.Mesh | null = null;
+  private jetpackFire2: THREE.Mesh | null = null;
+  private shieldGroup: THREE.Group;
+  private shieldMesh: THREE.Mesh | null = null;
+  private magnetAuraGroup: THREE.Group;
+  private isJetpack: boolean = false;
+  private isShield: boolean = false;
+  private isMagnet: boolean = false;
+  private isInvulnerable: boolean = false;
+
   // Materials
   private skinMat: THREE.MeshStandardMaterial;
   private jacketMat: THREE.MeshStandardMaterial;
@@ -378,7 +390,25 @@ export class CharacterModel {
     this.hoverboardGroup.visible = false;
     this.mesh.add(this.hoverboardGroup);
 
-    // 9. Ground Blob Shadow
+    // 9. Rocket Jetpack (Attached to back of torso)
+    this.jetpackGroup = this.createJetpack();
+    this.jetpackGroup.position.set(0, 0.28, 0.22);
+    this.jetpackGroup.visible = false;
+    this.spineGroup.add(this.jetpackGroup);
+
+    // 10. Protective Shield Forcefield Bubble (Surrounds entire character)
+    this.shieldGroup = this.createShield();
+    this.shieldGroup.position.set(0, 0.95, 0);
+    this.shieldGroup.visible = false;
+    this.mesh.add(this.shieldGroup);
+
+    // 11. Coin Magnet Flux Aura (Orbiting magnetic rings)
+    this.magnetAuraGroup = this.createMagnetAura();
+    this.magnetAuraGroup.position.set(0, 0.85, 0);
+    this.magnetAuraGroup.visible = false;
+    this.mesh.add(this.magnetAuraGroup);
+
+    // 12. Ground Blob Shadow
     const shadowGeo = new THREE.PlaneGeometry(1.4, 2.0);
     let shadowMat: THREE.Material;
     if (typeof document !== 'undefined') {
@@ -549,11 +579,136 @@ export class CharacterModel {
   }
 
   /**
+   * Dual-Thruster Rocket Jetpack with Titanium Casing and Exhaust Flames
+   */
+  private createJetpack(): THREE.Group {
+    const jp = new THREE.Group();
+
+    // Central mounting bracket
+    const mountGeo = new THREE.BoxGeometry(0.32, 0.44, 0.12);
+    const mountMat = new THREE.MeshStandardMaterial({ color: 0x263238, roughness: 0.4, metalness: 0.8 });
+    const mount = new THREE.Mesh(mountGeo, mountMat);
+    mount.castShadow = true;
+    jp.add(mount);
+
+    // Dual Rocket Cylinders (Titanium Silver with Orange Accents)
+    const cylGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.52, 12);
+    const cylMat = new THREE.MeshStandardMaterial({ color: 0xb0bec5, roughness: 0.25, metalness: 0.85 });
+    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xff3d00, roughness: 0.3 });
+
+    // Left Thruster
+    const cylLeft = new THREE.Mesh(cylGeo, cylMat);
+    cylLeft.position.set(-0.19, 0, 0.02);
+    cylLeft.castShadow = true;
+    jp.add(cylLeft);
+
+    const stripeLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.08, 12), stripeMat);
+    stripeLeft.position.set(-0.19, 0.08, 0.02);
+    jp.add(stripeLeft);
+
+    // Right Thruster
+    const cylRight = new THREE.Mesh(cylGeo, cylMat);
+    cylRight.position.set(0.19, 0, 0.02);
+    cylRight.castShadow = true;
+    jp.add(cylRight);
+
+    const stripeRight = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.08, 12), stripeMat);
+    stripeRight.position.set(0.19, 0.08, 0.02);
+    jp.add(stripeRight);
+
+    // Exhaust Nozzle Bells
+    const bellGeo = new THREE.CylinderGeometry(0.11, 0.07, 0.12, 12);
+    const bellMat = new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.5, metalness: 0.9 });
+
+    const bell1 = new THREE.Mesh(bellGeo, bellMat);
+    bell1.position.set(-0.19, -0.3, 0.02);
+    jp.add(bell1);
+
+    const bell2 = new THREE.Mesh(bellGeo, bellMat);
+    bell2.position.set(0.19, -0.3, 0.02);
+    jp.add(bell2);
+
+    // Animated Thruster Exhaust Flames (pointing down)
+    const flameGeo = new THREE.ConeGeometry(0.09, 0.42, 10);
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.85 });
+
+    this.jetpackFire1 = new THREE.Mesh(flameGeo, flameMat);
+    this.jetpackFire1.rotation.x = Math.PI; // point down
+    this.jetpackFire1.position.set(-0.19, -0.54, 0.02);
+    jp.add(this.jetpackFire1);
+
+    this.jetpackFire2 = new THREE.Mesh(flameGeo, flameMat);
+    this.jetpackFire2.rotation.x = Math.PI; // point down
+    this.jetpackFire2.position.set(0.19, -0.54, 0.02);
+    jp.add(this.jetpackFire2);
+
+    return jp;
+  }
+
+  /**
+   * Translucent Iridescent Protective Energy Forcefield Bubble
+   */
+  private createShield(): THREE.Group {
+    const shield = new THREE.Group();
+
+    // Outer plasma sphere
+    const sphereGeo = new THREE.SphereGeometry(1.22, 24, 20);
+    const shieldMat = new THREE.MeshStandardMaterial({
+      color: 0x00e5ff,
+      emissive: 0x0091ea,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.36,
+      roughness: 0.15,
+      metalness: 0.85
+    });
+    this.shieldMesh = new THREE.Mesh(sphereGeo, shieldMat);
+    shield.add(this.shieldMesh);
+
+    // Hexagonal / wireframe energy lattice overlay
+    const gridGeo = new THREE.SphereGeometry(1.24, 14, 10);
+    const gridMat = new THREE.MeshBasicMaterial({
+      color: 0x80d8ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.28
+    });
+    const gridMesh = new THREE.Mesh(gridGeo, gridMat);
+    shield.add(gridMesh);
+
+    return shield;
+  }
+
+  /**
+   * Orbiting Magnetic Flux Rings
+   */
+  private createMagnetAura(): THREE.Group {
+    const aura = new THREE.Group();
+    const ringGeo = new THREE.TorusGeometry(0.72, 0.028, 8, 24);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x2979ff,
+      transparent: true,
+      opacity: 0.75
+    });
+
+    const ring1 = new THREE.Mesh(ringGeo, ringMat);
+    ring1.rotation.x = Math.PI / 2.2;
+    aura.add(ring1);
+
+    const ring2 = new THREE.Mesh(ringGeo, ringMat);
+    ring2.rotation.x = -Math.PI / 2.5;
+    ring2.rotation.y = Math.PI / 3;
+    aura.add(ring2);
+
+    return aura;
+  }
+
+  /**
    * Update Procedural Animation & Articulation
    */
   public update(
     dt: number,
-    state: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'STUMBLING' | 'DEAD',
+    state: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'JETPACK' | 'STUMBLING' | 'DEAD',
     hasHoverboard: boolean,
     hasSneakers: boolean,
     bankAngle: number = 0,
@@ -562,6 +717,33 @@ export class CharacterModel {
   ): void {
     this.animTime += dt * 14.0;
     this.hoverboardGroup.visible = hasHoverboard;
+
+    // Jetpack flames flickering
+    if (this.isJetpack && this.jetpackFire1 && this.jetpackFire2) {
+      const flicker = 0.8 + Math.random() * 0.45;
+      this.jetpackFire1.scale.set(1.0, flicker, 1.0);
+      this.jetpackFire2.scale.set(1.0, flicker * 0.95 + 0.05, 1.0);
+    }
+
+    // Shield bubble pulse & spin
+    if (this.isShield && this.shieldMesh) {
+      this.shieldGroup.rotation.y += dt * 1.8;
+      const s = 1.0 + Math.sin(this.animTime * 0.35) * 0.04;
+      this.shieldMesh.scale.set(s, s, s);
+    }
+
+    // Magnet aura rotation
+    if (this.isMagnet) {
+      this.magnetAuraGroup.rotation.y += dt * 3.5;
+      this.magnetAuraGroup.rotation.z += dt * 1.5;
+    }
+
+    // Invulnerability flashing feedback
+    if (this.isInvulnerable) {
+      this.mesh.visible = Math.floor(this.animTime * 1.8) % 2 === 0;
+    } else {
+      this.mesh.visible = true;
+    }
 
     // Super sneakers glow
     if (this.isSuperSneakers !== hasSneakers) {
@@ -575,11 +757,16 @@ export class CharacterModel {
     this.rootGroup.rotation.y = bankAngle * 0.45;
 
     // Shadow tracking & scaling
-    if (state === 'JUMPING') {
-      const scale = Math.max(0.4, 1.0 - jumpProgress * 0.5);
+    if (state === 'JUMPING' || state === 'JETPACK') {
+      const scale = state === 'JETPACK' ? 0.25 : Math.max(0.4, 1.0 - jumpProgress * 0.5);
       this.shadowMesh.scale.set(scale, scale, 1.0);
     } else {
       this.shadowMesh.scale.set(1.0, 1.0, 1.0);
+    }
+
+    if (state === 'JETPACK') {
+      this.animateJetpack(dt);
+      return;
     }
 
     if (hasHoverboard) {
@@ -610,14 +797,15 @@ export class CharacterModel {
    * Compatibility bridge for Player.ts update call
    */
   public updateAnimation(
-    state: 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'CRASH',
+    state: 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH',
     speed: number,
     bankingAngle: number,
     groundY: number,
     dt: number
   ): void {
-    let animState: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'STUMBLING' | 'DEAD' = 'RUNNING';
-    if (state === 'JUMP') animState = 'JUMPING';
+    let animState: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'JETPACK' | 'STUMBLING' | 'DEAD' = 'RUNNING';
+    if (state === 'JETPACK') animState = 'JETPACK';
+    else if (state === 'JUMP') animState = 'JUMPING';
     else if (state === 'SLIDE') animState = 'SLIDING';
     else if (state === 'CRASH') animState = 'DEAD';
     else if (state === 'IDLE') animState = 'RUNNING';
@@ -637,6 +825,53 @@ export class CharacterModel {
 
   public setSuperSneakersActive(active: boolean): void {
     this.isSuperSneakers = active;
+  }
+
+  public setJetpackVisible(visible: boolean): void {
+    this.isJetpack = visible;
+    this.jetpackGroup.visible = visible;
+    if (this.backpackGroup) {
+      this.backpackGroup.visible = !visible; // Seamlessly swap backpack with jetpack
+    }
+  }
+
+  public setShieldVisible(visible: boolean): void {
+    this.isShield = visible;
+    this.shieldGroup.visible = visible;
+  }
+
+  public setMagnetVisible(visible: boolean): void {
+    this.isMagnet = visible;
+    this.magnetAuraGroup.visible = visible;
+  }
+
+  public setInvulnerable(invulnerable: boolean): void {
+    this.isInvulnerable = invulnerable;
+    if (!invulnerable) {
+      this.mesh.visible = true;
+    }
+  }
+
+  /**
+   * Aerodynamic Rocket Jetpack Flight Posture
+   */
+  private animateJetpack(dt: number): void {
+    const t = this.animTime * 0.45;
+    this.rootGroup.position.y = 0.12 + Math.sin(t) * 0.08;
+    this.spineGroup.rotation.x = -0.3; // Lean forward into flight
+    this.headGroup.rotation.x = 0.25; // Head eyes looking ahead
+
+    // Streamlined legs trailing slightly backwards
+    this.leftLegGroup.rotation.x = -0.42 + Math.sin(t) * 0.04;
+    this.leftCalfGroup.rotation.x = 0.2;
+    this.rightLegGroup.rotation.x = -0.42 - Math.sin(t) * 0.04;
+    this.rightCalfGroup.rotation.x = 0.2;
+
+    // Arms down at sides controlling thrusters
+    this.leftArmGroup.rotation.set(-0.35, 0, -0.25);
+    this.rightArmGroup.rotation.set(-0.35, 0, 0.25);
+    this.leftForearmGroup.rotation.x = -0.25;
+    this.rightForearmGroup.rotation.x = -0.25;
   }
 
   /**

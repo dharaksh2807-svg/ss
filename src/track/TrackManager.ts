@@ -121,6 +121,7 @@ export class TrackManager {
   private checkCollisions(player: Player, dt: number): void {
     const playerBox = player.collider;
     const isMagnet = player.powerups.isMagnetActive();
+    const magnetRadius = isMagnet ? player.powerups.getMagnetRadius() : 0;
 
     for (const chunk of this.chunks) {
       // Obstacle Collisions
@@ -137,6 +138,11 @@ export class TrackManager {
 
         // Direct obstacle collision check
         if (obs.collider.intersectsBox(playerBox)) {
+          // If player is flying with Jetpack, skip ground-level obstacle collision
+          if (player.state === 'JETPACK' || player.position.y > 6.0) {
+            continue;
+          }
+
           // If player is on roof or climbing ramp, ignore the lower train wall!
           if (player.position.y >= CONSTANTS.TRAIN_HEIGHT - 0.2) {
             continue;
@@ -155,7 +161,7 @@ export class TrackManager {
           // Crash occurs!
           const fatal = player.crash();
           if (!fatal) {
-            // Hoverboard absorbed crash: deactivate obstacle so player can pass through
+            // Shield or Hoverboard absorbed crash: deactivate obstacle so player passes safely
             obs.active = false;
             chunk.group.remove(obs.group);
           }
@@ -167,18 +173,20 @@ export class TrackManager {
       for (const col of chunk.collectibles) {
         if (!col.active) continue;
 
-        // Magnet attraction effect
+        // Magnet attraction effect with upgraded radius and acceleration
         if (isMagnet && col.type === 'COIN') {
           const distSq = col.group.position.distanceToSquared(player.position);
-          if (distSq < CONSTANTS.MAGNET_RADIUS * CONSTANTS.MAGNET_RADIUS) {
-            // Magnetically pull coin toward player
+          if (distSq < magnetRadius * magnetRadius) {
+            const dist = Math.sqrt(distSq);
+            // Accelerated pull as coin nears player
+            const speed = Math.min(32.0, CONSTANTS.MAGNET_PULL_SPEED * (1.0 + (1.0 - dist / magnetRadius) * 1.5));
             const dir = player.position.clone().sub(col.group.position).normalize();
-            col.group.position.addScaledVector(dir, CONSTANTS.MAGNET_PULL_SPEED * dt);
-            col.collider.setFromCenterAndSize(col.group.position, new THREE.Vector3(1, 1, 1));
+            col.group.position.addScaledVector(dir, speed * dt);
+            col.collider.setFromCenterAndSize(col.group.position, new THREE.Vector3(1.2, 1.2, 1.2));
           }
         }
 
-        // Collection check
+        // Collection check (Guaranteed single credit via active flag)
         if (col.collider.intersectsBox(playerBox)) {
           col.active = false;
           chunk.group.remove(col.group);

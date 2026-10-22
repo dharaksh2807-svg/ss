@@ -12,6 +12,8 @@ import { StartScreen } from '../ui/StartScreen';
 import { PauseModal } from '../ui/PauseModal';
 import { GameOverModal } from '../ui/GameOverModal';
 import { SettingsModal } from '../ui/SettingsModal';
+import { UpgradeModal } from '../ui/UpgradeModal';
+import { UpgradeManager } from '../player/UpgradeManager';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -29,6 +31,7 @@ export class Game {
   private pauseModal: PauseModal;
   private gameOverModal: GameOverModal;
   private settingsModal: SettingsModal;
+  private upgradeModal: UpgradeModal;
 
   private lifecycleState: GameLifecycleState = 'MENU';
   private lastTime: number = 0;
@@ -52,6 +55,7 @@ export class Game {
     this.pauseModal = new PauseModal();
     this.gameOverModal = new GameOverModal();
     this.settingsModal = new SettingsModal(this.soundManager);
+    this.upgradeModal = new UpgradeModal();
 
     this.setupEvents();
     this.startScreen.show();
@@ -93,6 +97,7 @@ export class Game {
       const bonus = CONSTANTS.COIN_SCORE_VALUE * this.scoreMultiplier;
       this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      UpgradeManager.getInstance().addCoins(1);
     });
 
     bus.on(EVENTS.NEAR_MISS, () => {
@@ -118,6 +123,7 @@ export class Game {
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
+    this.upgradeModal.hide(false);
     this.hud.reset();
     this.hud.show();
     this.inputManager.setEnabled(true);
@@ -143,6 +149,7 @@ export class Game {
     this.hud.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
+    this.upgradeModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();

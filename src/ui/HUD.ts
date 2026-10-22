@@ -63,33 +63,45 @@ export class HUD {
     for (const p of active) {
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
       let icon = '⚡';
-      let name = 'Powerup';
+      let name = 'POWER-UP';
       let colorClass = 'powerup-default';
 
       if (p.type === 'MAGNET') {
         icon = '🧲';
         name = 'MAGNET';
         colorClass = 'powerup-magnet';
+      } else if (p.type === 'JETPACK') {
+        icon = '🚀';
+        name = 'JETPACK';
+        colorClass = 'powerup-jetpack';
       } else if (p.type === 'SNEAKERS') {
         icon = '👟';
         name = 'SNEAKERS';
         colorClass = 'powerup-sneakers';
       } else if (p.type === 'MULTIPLIER') {
-        icon = '2X';
+        icon = '⚡';
         name = 'SCORE 2X';
         colorClass = 'powerup-multiplier';
+      } else if (p.type === 'SHIELD') {
+        icon = '🛡️';
+        name = 'SHIELD';
+        colorClass = 'powerup-shield';
       } else if (p.type === 'HOVERBOARD') {
         icon = '🛹';
         name = 'HOVERBOARD';
         colorClass = 'powerup-hoverboard';
       }
 
+      const isExpiring = p.remaining <= 3.0;
+      const expiringClass = isExpiring ? 'powerup-expiring' : '';
+      const timerDisplay = isExpiring ? `${p.remaining.toFixed(1)}s` : `${Math.ceil(p.remaining)}s`;
+
       html += `
-        <div class="powerup-badge ${colorClass}">
+        <div class="powerup-badge ${colorClass} ${expiringClass}">
           <div class="powerup-header">
             <span class="powerup-icon">${icon}</span>
             <span class="powerup-name">${name}</span>
-            <span class="powerup-timer">${Math.ceil(p.remaining)}s</span>
+            <span class="powerup-timer">${timerDisplay}</span>
           </div>
           <div class="powerup-bar-track">
             <div class="powerup-bar-fill" style="width: ${pct}%"></div>

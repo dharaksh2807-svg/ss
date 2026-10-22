@@ -72,6 +72,9 @@
             <button id="start-play-btn" class="btn btn-primary pulse-anim">
               <span class="btn-icon">▶</span> PLAY NOW
             </button>
+            <button id="start-shop-btn" class="btn btn-secondary" style="border-color: rgba(255,215,0,0.5); color: #ffd700;">
+              <span class="btn-icon">⚡</span> UPGRADES
+            </button>
             <button id="start-settings-btn" class="btn btn-secondary">
               <span class="btn-icon">⚙️</span> SETTINGS
             </button>
@@ -149,8 +152,33 @@
             <button id="game-over-retry-btn" class="btn btn-primary pulse-anim">
               <span class="btn-icon">🔄</span> PLAY AGAIN
             </button>
+            <button id="game-over-shop-btn" class="btn btn-secondary" style="border-color: rgba(255,215,0,0.5); color: #ffd700;">
+              <span class="btn-icon">⚡</span> UPGRADES
+            </button>
             <button id="game-over-menu-btn" class="btn btn-secondary">
               <span class="btn-icon">🏠</span> MAIN MENU
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Powerup Upgrade Shop Modal -->
+      <div id="shop-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic shop-modal-card">
+          <h2 class="modal-title">POWER-UP UPGRADES</h2>
+          
+          <div class="shop-wallet-badge">
+            <span>🪙 TOTAL COINS:</span>
+            <span id="shop-wallet-coins">0</span>
+          </div>
+
+          <div id="shop-items-container" class="shop-items-list">
+            <!-- Dynamically populated rows -->
+          </div>
+
+          <div class="modal-buttons">
+            <button id="shop-close-btn" class="btn btn-primary">
+              DONE
             </button>
           </div>
         </div>

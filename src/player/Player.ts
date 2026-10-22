@@ -5,7 +5,7 @@ import { CharacterModel } from './CharacterModel';
 import { PowerupManager } from './PowerupManager';
 import { InputAction } from '../core/InputManager';
 
-export type PlayerState = 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'CRASH';
+export type PlayerState = 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH';
 
 export class Player {
   public mesh: THREE.Group;
@@ -18,6 +18,7 @@ export class Player {
   public currentLane: LaneIndex = 0; // -1: Left, 0: Center, 1: Right
   public targetLane: LaneIndex = 0;
   public groundY: number = CONSTANTS.PLAYER_BASE_Y;
+  public readonly jetpackAltitude: number = 9.0;
 
   // Lateral lane transition
   private isChangingLane: boolean = false;
@@ -70,11 +71,22 @@ export class Player {
     this.powerups.reset();
     this.model.setHoverboardVisible(false);
     this.model.setSuperSneakersActive(false);
+    this.model.setJetpackVisible(false);
+    this.model.setShieldVisible(false);
+    this.model.setMagnetVisible(false);
+    this.model.setInvulnerable(false);
     this.updateCollider();
   }
 
   public handleInput(action: InputAction): void {
     if (this.state === 'CRASH' || this.state === 'IDLE') return;
+
+    // During jetpack flight, jump and slide are disabled, lateral steering remains active
+    if (this.state === 'JETPACK') {
+      if (action === 'LEFT') this.changeLane(-1);
+      if (action === 'RIGHT') this.changeLane(1);
+      return;
+    }
 
     switch (action) {
       case 'LEFT':
@@ -142,7 +154,7 @@ export class Player {
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {
-      jumpVelocity *= CONSTANTS.SUPER_JUMP_MULTIPLIER;
+      jumpVelocity *= this.powerups.getJumpVelocityMultiplier();
     }
     this.verticalVelocity = jumpVelocity;
 
@@ -166,10 +178,14 @@ export class Player {
   public update(dt: number): void {
     if (this.state === 'IDLE') return;
 
-    // Powerups status
+    // Powerups status & visual accessories
     this.powerups.update(dt);
     this.model.setHoverboardVisible(this.powerups.isHoverboardActive());
     this.model.setSuperSneakersActive(this.powerups.isSuperSneakersActive());
+    this.model.setJetpackVisible(this.powerups.isJetpackActive());
+    this.model.setShieldVisible(this.powerups.hasShieldActive());
+    this.model.setMagnetVisible(this.powerups.isMagnetActive());
+    this.model.setInvulnerable(this.powerups.isInvulnerable());
 
     if (this.state === 'CRASH') {
       this.model.updateAnimation(this.state, this.speed, 0, this.groundY, dt);
@@ -219,29 +235,55 @@ export class Player {
       this.bankingAngle *= Math.exp(-12.0 * dt); // Smooth decay back to upright
     }
 
-    // 3. Vertical Movement (Jump, Gravity, Ground Check)
-    if (this.isJumping) {
-      this.position.y += this.verticalVelocity * dt;
-      this.verticalVelocity -= CONSTANTS.GRAVITY * dt;
-
-      // Landing check on current ground height (supports ground or train roofs!)
-      if (this.position.y <= this.groundY) {
-        this.position.y = this.groundY;
-        this.verticalVelocity = 0;
+    // 3. Vertical Movement & Flight Modes
+    if (this.powerups.isJetpackActive()) {
+      if (this.state !== 'JETPACK') {
+        this.state = 'JETPACK';
         this.isJumping = false;
-        if (!this.isSliding) {
-          this.state = 'RUN';
-        }
-        this.eventBus.emit(EVENTS.LAND);
+        this.isSliding = false;
+      }
+
+      // Smooth ascent to flight altitude or descent when expiring
+      const remaining = this.powerups.getJetpackRemaining();
+      if (remaining > 1.2) {
+        // High-altitude flight
+        this.position.y += (this.jetpackAltitude - this.position.y) * Math.min(1.0, dt * 7.0);
+      } else {
+        // Graceful landing descent
+        this.position.y += (this.groundY - this.position.y) * Math.min(1.0, dt * 5.5);
       }
     } else {
-      // Keep grounded or handle falling off train roofs
-      if (this.position.y > this.groundY + 0.1) {
-        // Fall down
-        this.isJumping = true;
-        this.verticalVelocity = -4.0;
-      } else {
+      // If exiting jetpack state
+      if (this.state === 'JETPACK') {
+        this.state = 'RUN';
         this.position.y = this.groundY;
+        this.powerups.grantInvulnerability(1.5);
+      }
+
+      // Regular Ground & Airborne Jump Physics
+      if (this.isJumping) {
+        this.position.y += this.verticalVelocity * dt;
+        this.verticalVelocity -= CONSTANTS.GRAVITY * dt;
+
+        // Landing check on current ground height (supports ground or train roofs!)
+        if (this.position.y <= this.groundY) {
+          this.position.y = this.groundY;
+          this.verticalVelocity = 0;
+          this.isJumping = false;
+          if (!this.isSliding) {
+            this.state = 'RUN';
+          }
+          this.eventBus.emit(EVENTS.LAND);
+        }
+      } else {
+        // Keep grounded or handle falling off train roofs
+        if (this.position.y > this.groundY + 0.1) {
+          // Fall down
+          this.isJumping = true;
+          this.verticalVelocity = -4.0;
+        } else {
+          this.position.y = this.groundY;
+        }
       }
     }
 
@@ -250,7 +292,7 @@ export class Player {
       this.slideTimer -= dt;
       if (this.slideTimer <= 0) {
         this.isSliding = false;
-        if (!this.isJumping) {
+        if (!this.isJumping && this.state !== 'JETPACK') {
           this.state = 'RUN';
         }
       }
@@ -271,9 +313,19 @@ export class Player {
   }
 
   public crash(): boolean {
-    // If hoverboard is active, shield saves player!
+    // 1. Invulnerability grace window active
+    if (this.powerups.isInvulnerable()) {
+      return false; // Ignored during grace period
+    }
+
+    // 2. Protective Shield absorbs collision
+    if (this.powerups.consumeShield()) {
+      return false; // Absorbed by shield!
+    }
+
+    // 3. Hoverboard absorbs collision
     if (this.powerups.breakHoverboard()) {
-      return false; // Not a fatal crash
+      return false; // Absorbed by hoverboard!
     }
 
     this.state = 'CRASH';
@@ -296,5 +348,9 @@ export class Player {
       this.position.y + height,
       this.position.z + halfD
     );
+  }
+
+  public getCollider(): THREE.Box3 {
+    return this.collider;
   }
 }
