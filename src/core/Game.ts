@@ -101,8 +101,25 @@ export class Game {
     });
 
     bus.on(EVENTS.NEAR_MISS, () => {
-      this.score += CONSTANTS.NEAR_MISS_SCORE * this.scoreMultiplier;
+      const bonus = CONSTANTS.NEAR_MISS_SCORE * this.scoreMultiplier;
+      this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      this.hud.showFeedbackBadge(`NEAR MISS! +${bonus}`, 'nearmiss');
+    });
+
+    bus.on(EVENTS.CLEAN_STREAK, (streakCount: number) => {
+      const bonus = CONSTANTS.CLEAN_STREAK_BONUS * streakCount * this.scoreMultiplier;
+      this.score += bonus;
+      bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      this.hud.showFeedbackBadge(`STREAK x${streakCount} 🔥 +${bonus}`, 'streak');
+    });
+
+    bus.on(EVENTS.PRECISION_ACTION, (action: 'JUMP' | 'SLIDE') => {
+      const bonus = CONSTANTS.PRECISION_ACTION_BONUS * this.scoreMultiplier;
+      this.score += bonus;
+      bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      const label = action === 'JUMP' ? 'PERFECT JUMP 🦘' : 'PERFECT SLIDE ⚡';
+      this.hud.showFeedbackBadge(`${label} +${bonus}`, 'precision');
     });
 
     bus.on(EVENTS.CRASH, () => {

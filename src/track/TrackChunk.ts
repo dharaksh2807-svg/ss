@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { ObstacleFactory, ObstacleInstance } from './ObstacleFactory';
 import { CollectibleFactory, CollectibleInstance } from './CollectibleFactory';
@@ -13,6 +14,7 @@ export class TrackChunk {
 
   public obstacles: ObstacleInstance[] = [];
   public collectibles: CollectibleInstance[] = [];
+  public chunkHadCollision: boolean = false;
 
   private static sharedMaterials: {
     ballastMat: THREE.MeshStandardMaterial;
@@ -654,13 +656,15 @@ export class TrackChunk {
 
     // Clear previous dynamic items
     this.clearDynamicItems();
+    this.chunkHadCollision = false;
 
     // Spawn Obstacles from pattern
     for (const obsData of pattern.obstacles) {
       let group: THREE.Group;
       const laneX = CONSTANTS.LANES[obsData.lane];
       const localZ = -obsData.zOffset;
-      const length = obsData.length || 2.0;
+      const length = obsData.length || (obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
+      let headlights: THREE.Mesh[] | undefined;
 
       if (obsData.type === 'TRAIN') {
         const colors = [
@@ -670,10 +674,20 @@ export class TrackChunk {
         ];
         const color = colors[Math.floor(Math.random() * colors.length)];
         group = this.obstacleFactory.createTrain(length, obsData.hasRamp, color);
+      } else if (obsData.type === 'MOVING_TRAIN') {
+        const movingData = this.obstacleFactory.createMovingTrain(length, CONSTANTS.COLORS.TRAIN_BODY_2);
+        group = movingData.group;
+        headlights = movingData.headlights;
       } else if (obsData.type === 'LOW_BARRIER') {
         group = this.obstacleFactory.createLowBarrier();
-      } else {
+      } else if (obsData.type === 'HIGH_BARRIER') {
         group = this.obstacleFactory.createHighBarrier();
+      } else if (obsData.type === 'SIDE_BARRIER') {
+        group = this.obstacleFactory.createSideBarrier();
+      } else if (obsData.type === 'TUNNEL_ARCH') {
+        group = this.obstacleFactory.createTunnelArch();
+      } else {
+        group = this.obstacleFactory.createLowBarrier();
       }
 
       group.position.set(laneX, 0, localZ);
@@ -685,15 +699,15 @@ export class TrackChunk {
       let roofCollider: THREE.Box3 | undefined;
       let rampCollider: THREE.Box3 | undefined;
 
-      const halfW = (obsData.type === 'TRAIN' ? CONSTANTS.TRAIN_WIDTH : CONSTANTS.LANE_WIDTH * 0.85) * 0.5;
-      const height = obsData.type === 'TRAIN' ? CONSTANTS.TRAIN_HEIGHT : (obsData.type === 'LOW_BARRIER' ? CONSTANTS.LOW_BARRIER_HEIGHT : CONSTANTS.HIGH_BARRIER_HEIGHT);
-      const halfD = length * 0.5;
+      let halfW: number;
+      let height: number;
+      let halfD: number;
 
-      // Note: Coordinates in world space when updating in TrackManager
-      collider.min.set(laneX - halfW, 0, localZ - halfD);
-      collider.max.set(laneX + halfW, height, localZ + halfD);
+      if (obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN') {
+        halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
+        height = CONSTANTS.TRAIN_HEIGHT;
+        halfD = length * 0.5;
 
-      if (obsData.type === 'TRAIN') {
         roofCollider = new THREE.Box3(
           new THREE.Vector3(laneX - halfW * 0.9, height * 0.9, localZ - halfD),
           new THREE.Vector3(laneX + halfW * 0.9, height + 0.6, localZ + halfD)
@@ -706,7 +720,26 @@ export class TrackChunk {
             new THREE.Vector3(laneX + halfW * 0.85, height, localZ + halfD + rampD)
           );
         }
+      } else if (obsData.type === 'LOW_BARRIER') {
+        halfW = CONSTANTS.LANE_WIDTH * 0.42;
+        height = CONSTANTS.LOW_BARRIER_HEIGHT;
+        halfD = 0.35;
+      } else if (obsData.type === 'HIGH_BARRIER') {
+        halfW = CONSTANTS.LANE_WIDTH * 0.42;
+        height = CONSTANTS.HIGH_BARRIER_HEIGHT;
+        halfD = 0.35;
+      } else if (obsData.type === 'SIDE_BARRIER') {
+        halfW = CONSTANTS.SIDE_BARRIER_WIDTH * 0.5;
+        height = CONSTANTS.SIDE_BARRIER_HEIGHT;
+        halfD = 0.45;
+      } else { // TUNNEL_ARCH
+        halfW = CONSTANTS.LANE_WIDTH * 0.48;
+        height = CONSTANTS.TUNNEL_ARCH_HEIGHT;
+        halfD = 0.5;
       }
+
+      collider.min.set(laneX - halfW, 0, localZ - halfD);
+      collider.max.set(laneX + halfW, height, localZ + halfD);
 
       nearMissBox.min.set(laneX - halfW - 0.6, 0, localZ - halfD - 0.6);
       nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, localZ + halfD + 0.6);
@@ -721,44 +754,113 @@ export class TrackChunk {
         nearMissBox,
         nearMissTriggered: false,
         active: true,
-        hasRamp: obsData.hasRamp
+        hasRamp: obsData.hasRamp,
+        length,
+        isMoving: obsData.type === 'MOVING_TRAIN' || obsData.isMoving,
+        velocityZ: obsData.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED,
+        initialLocalZ: localZ,
+        telegraphed: false,
+        headlights
       });
     }
 
     // Spawn Collectibles from pattern
     for (const colData of pattern.collectibles) {
       const laneX = CONSTANTS.LANES[colData.lane];
-      const localZ = -colData.zOffset;
-      const baseY = colData.yOffset || 0.8;
+      const count = colData.count || 1;
+      const spacing = colData.spacing || 2.0;
 
-      let group: THREE.Group;
-      if (colData.type === 'COIN') {
-        group = this.collectibleFactory.createCoin();
-      } else {
-        group = this.collectibleFactory.createPowerup(colData.type);
+      for (let c = 0; c < count; c++) {
+        const offsetZ = colData.zOffset + c * spacing;
+        const localZ = -offsetZ;
+        let baseY = colData.yOffset || 0.8;
+
+        // If parabolic coin arc over hurdle
+        if (colData.isArc && count > 1) {
+          const t = c / (count - 1); // 0 to 1
+          const arcHeight = Math.sin(t * Math.PI) * 1.5;
+          baseY += arcHeight;
+        }
+
+        let group: THREE.Group;
+        if (colData.type === 'COIN') {
+          group = this.collectibleFactory.createCoin();
+        } else {
+          group = this.collectibleFactory.createPowerup(colData.type);
+        }
+
+        group.position.set(laneX, baseY, localZ);
+        this.group.add(group);
+
+        const collider = new THREE.Box3();
+        const radius = CONSTANTS.COIN_RADIUS;
+        collider.min.set(laneX - radius, baseY - radius, localZ - radius);
+        collider.max.set(laneX + radius, baseY + radius, localZ + radius);
+
+        this.collectibles.push({
+          group,
+          type: colData.type,
+          lane: colData.lane,
+          collider,
+          active: true,
+          baseY
+        });
       }
-
-      group.position.set(laneX, baseY, localZ);
-      this.group.add(group);
-
-      const collider = new THREE.Box3();
-      const radius = CONSTANTS.COIN_RADIUS;
-      collider.min.set(laneX - radius, baseY - radius, localZ - radius);
-      collider.max.set(laneX + radius, baseY + radius, localZ + radius);
-
-      this.collectibles.push({
-        group,
-        type: colData.type,
-        lane: colData.lane,
-        collider,
-        active: true,
-        baseY
-      });
     }
   }
 
-  public update(dt: number, time: number): void {
-    // Animate coin rotation and powerup bobbing
+  public update(dt: number, time: number, playerZ: number = 0): void {
+    // 1. Animate and update moving trains
+    for (const obs of this.obstacles) {
+      if (!obs.active) continue;
+
+      if (obs.isMoving) {
+        // Advance moving train along +Z toward oncoming player
+        const speed = obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED;
+        obs.group.position.z += speed * dt;
+
+        // Recalculate collision volumes in local chunk coordinates
+        const currentLocalZ = obs.group.position.z;
+        const laneX = CONSTANTS.LANES[obs.lane];
+        const halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
+        const height = CONSTANTS.TRAIN_HEIGHT;
+        const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+
+        obs.collider.min.set(laneX - halfW, 0, currentLocalZ - halfD);
+        obs.collider.max.set(laneX + halfW, height, currentLocalZ + halfD);
+
+        if (obs.roofCollider) {
+          obs.roofCollider.min.set(laneX - halfW * 0.9, height * 0.9, currentLocalZ - halfD);
+          obs.roofCollider.max.set(laneX + halfW * 0.9, height + 0.6, currentLocalZ + halfD);
+        }
+
+        obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, currentLocalZ - halfD - 0.6);
+        obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, currentLocalZ + halfD + 0.6);
+
+        // Telegraph check: if approaching player within 65m
+        const worldTrainFrontZ = this.chunkZ + currentLocalZ + halfD;
+        const distToPlayer = worldTrainFrontZ - playerZ;
+
+        // When train is approaching ahead of player (worldTrainFrontZ is negative, player is moving negative Z)
+        const separation = Math.abs(playerZ - worldTrainFrontZ);
+        if (separation <= CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST && worldTrainFrontZ < playerZ) {
+          if (!obs.telegraphed) {
+            EventBus.getInstance().emit(EVENTS.TRAIN_HORN);
+            obs.telegraphed = true;
+          }
+
+          // Strobe twin headlights at high frequency (12 Hz)
+          if (obs.headlights && obs.headlights.length > 0) {
+            const strobe = Math.sin(time * 30.0) > 0;
+            obs.headlights.forEach((h) => {
+              h.visible = strobe;
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Animate coin rotation and powerup bobbing
     for (const col of this.collectibles) {
       if (!col.active) continue;
       col.group.rotation.y += CONSTANTS.COIN_ROTATION_SPEED * dt;

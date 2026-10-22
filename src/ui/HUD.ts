@@ -7,6 +7,7 @@ export class HUD {
   private coinEl: HTMLElement;
   private multiplierEl: HTMLElement;
   private powerupContainer: HTMLElement;
+  private feedbackStack: HTMLElement | null;
   private pauseBtn: HTMLButtonElement;
 
   private score: number = 0;
@@ -19,6 +20,7 @@ export class HUD {
     this.coinEl = document.getElementById('hud-coins')!;
     this.multiplierEl = document.getElementById('hud-multiplier')!;
     this.powerupContainer = document.getElementById('hud-powerups')!;
+    this.feedbackStack = document.getElementById('hud-feedback-stack');
     this.pauseBtn = document.getElementById('hud-pause-btn') as HTMLButtonElement;
 
     this.setupEvents();
@@ -112,6 +114,26 @@ export class HUD {
     this.powerupContainer.innerHTML = html;
   }
 
+  public showFeedbackBadge(text: string, type: 'streak' | 'precision' | 'nearmiss' = 'precision'): void {
+    if (!this.feedbackStack) return;
+
+    // Limit active visible badges to at most 3 to never clutter the screen
+    while (this.feedbackStack.children.length >= 3) {
+      this.feedbackStack.removeChild(this.feedbackStack.firstChild!);
+    }
+
+    const badge = document.createElement('div');
+    badge.className = `hud-feedback-pill hud-feedback-${type}`;
+    badge.textContent = text;
+    this.feedbackStack.appendChild(badge);
+
+    setTimeout(() => {
+      if (badge.parentElement) {
+        badge.parentElement.removeChild(badge);
+      }
+    }, 1200);
+  }
+
   public show(): void {
     this.container.classList.remove('hidden');
   }
@@ -128,6 +150,9 @@ export class HUD {
     this.coinEl.textContent = '0';
     this.multiplierEl.textContent = '1X';
     this.powerupContainer.innerHTML = '';
+    if (this.feedbackStack) {
+      this.feedbackStack.innerHTML = '';
+    }
   }
 
   public getScore(): number {

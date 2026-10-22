@@ -61,7 +61,9 @@ export class SoundManager {
     bus.on(EVENTS.HOVERBOARD_ACTIVATED, () => this.playHoverboard());
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.playHoverboardCrash());
     bus.on(EVENTS.CRASH, () => this.playCrash());
+    bus.on(EVENTS.STUMBLE, () => this.playStumble());
     bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss());
+    bus.on(EVENTS.TRAIN_HORN, () => this.playTrainHorn());
     bus.on(EVENTS.GAME_START, () => {
       this.initAudio();
       this.startMusic();
@@ -564,6 +566,52 @@ export class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.16);
+  }
+
+  public playTrainHorn(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    // Classic two-tone brassy locomotive air horn (311Hz + 233Hz)
+    [311.13, 233.08].forEach((freq) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now);
+      // Subtle horn pitch drift
+      osc.frequency.linearRampToValueAtTime(freq * 0.98, now + 0.55);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.28, now + 0.05); // Rapid attack
+      gain.gain.setValueAtTime(0.26, now + 0.35);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6); // Release
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now);
+      osc.stop(now + 0.6);
+    });
+  }
+
+  public playStumble(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.22);
   }
 
   // --- Procedural Synth Background Groove ---

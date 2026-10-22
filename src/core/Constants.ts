@@ -54,9 +54,21 @@ export const CONSTANTS = {
   TRAIN_LENGTH_SHORT: 16.0,
   TRAIN_LENGTH_LONG: 28.0,
   TRAIN_RAMP_LENGTH: 8.0, // Ramp to run up onto train roof!
+  MOVING_TRAIN_SPEED: 11.0, // Velocity of oncoming train relative to track
+  MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Distance to flash headlights & sounding horn
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over
   HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under
   HIGH_BARRIER_HEIGHT: 3.5,
+  SIDE_BARRIER_WIDTH: 1.9,
+  SIDE_BARRIER_HEIGHT: 2.2,
+  TUNNEL_ARCH_HEIGHT: 2.9,
+  TUNNEL_ARCH_CLEARANCE: 1.7,
+
+  // Stumble & Skilled Play Mechanics
+  STUMBLE_SPEED_DROP: 0.22, // Speed drop percentage upon glancing side collision
+  STUMBLE_DURATION: 0.7, // Recovery time in seconds from stumble
+  CLEAN_STREAK_BONUS: 150, // Bonus score per clean obstacle chunk passed
+  PRECISION_ACTION_BONUS: 80, // Bonus score for clutch jump/slide evasion
 
   // Collectibles & Powerups
   COIN_RADIUS: 0.45,

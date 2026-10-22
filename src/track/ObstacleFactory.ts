@@ -3,7 +3,14 @@ import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { TextureGenerator } from '../scene/TextureGenerator';
 
-export type ObstacleType = 'TRAIN' | 'TRAIN_RAMP' | 'LOW_BARRIER' | 'HIGH_BARRIER';
+export type ObstacleType = 
+  | 'TRAIN' 
+  | 'TRAIN_RAMP' 
+  | 'MOVING_TRAIN' 
+  | 'LOW_BARRIER' 
+  | 'HIGH_BARRIER' 
+  | 'SIDE_BARRIER' 
+  | 'TUNNEL_ARCH';
 
 export interface ObstacleInstance {
   group: THREE.Group;
@@ -16,6 +23,13 @@ export interface ObstacleInstance {
   nearMissTriggered: boolean;
   active: boolean;
   hasRamp?: boolean;
+  length?: number;
+  // Dynamic moving train behavior
+  isMoving?: boolean;
+  velocityZ?: number;
+  initialLocalZ?: number;
+  telegraphed?: boolean;
+  headlights?: THREE.Mesh[];
 }
 
 export class ObstacleFactory {
@@ -433,5 +447,123 @@ export class ObstacleFactory {
     });
 
     return bogie;
+  }
+
+  /**
+   * Create Heavy Trackwork Side Barrier (Construction Barricade with Amber Flasher)
+   */
+  public createSideBarrier(): THREE.Group {
+    const group = new THREE.Group();
+    const w = CONSTANTS.SIDE_BARRIER_WIDTH;
+    const h = CONSTANTS.SIDE_BARRIER_HEIGHT;
+
+    // 1. Concrete K-rail base
+    const baseGeo = new THREE.BoxGeometry(w, 0.55, 0.9);
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x607d8b, roughness: 0.85, metalness: 0.1 });
+    this.curvedManager.applyCurvature(concreteMat);
+    const base = new THREE.Mesh(baseGeo, concreteMat);
+    base.position.y = 0.28;
+    base.castShadow = true;
+    group.add(base);
+
+    // 2. Twin steel vertical posts
+    const postGeo = new THREE.BoxGeometry(0.12, h - 0.5, 0.12);
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x263238, roughness: 0.6, metalness: 0.5 });
+    this.curvedManager.applyCurvature(steelMat);
+
+    [-w * 0.42, w * 0.42].forEach((xPos) => {
+      const post = new THREE.Mesh(postGeo, steelMat);
+      post.position.set(xPos, 0.55 + (h - 0.5) * 0.5, 0);
+      post.castShadow = true;
+      group.add(post);
+    });
+
+    // 3. Large reflective hazard chevron panel
+    const panelGeo = new THREE.BoxGeometry(w * 0.95, 0.9, 0.12);
+    const panel = new THREE.Mesh(panelGeo, this.barrierMat);
+    panel.position.set(0, 1.35, 0);
+    panel.castShadow = true;
+    group.add(panel);
+
+    // 4. Flashing amber LED beacon
+    const beaconBaseGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10);
+    const beaconBase = new THREE.Mesh(beaconBaseGeo, steelMat);
+    beaconBase.position.set(0, h + 0.05, 0);
+    group.add(beaconBase);
+
+    const beaconGeo = new THREE.SphereGeometry(0.09, 10, 8);
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff9100 });
+    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+    beacon.position.set(0, h + 0.14, 0);
+    group.add(beacon);
+
+    return group;
+  }
+
+  /**
+   * Create Low Tunnel Clearance Archway (Requires Slide Under)
+   */
+  public createTunnelArch(): THREE.Group {
+    const group = new THREE.Group();
+    const spanW = CONSTANTS.LANE_WIDTH * 0.96;
+    const archH = CONSTANTS.TUNNEL_ARCH_HEIGHT;
+    const clearance = CONSTANTS.TUNNEL_ARCH_CLEARANCE;
+
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.7, metalness: 0.6 });
+    this.curvedManager.applyCurvature(steelMat);
+
+    // 1. Heavy tubular steel support columns on left & right
+    const colGeo = new THREE.CylinderGeometry(0.14, 0.18, archH, 12);
+    [-spanW * 0.48, spanW * 0.48].forEach((xPos) => {
+      const col = new THREE.Mesh(colGeo, steelMat);
+      col.position.set(xPos, archH * 0.5, 0);
+      col.castShadow = true;
+      group.add(col);
+    });
+
+    // 2. Heavy overhead steel truss spanning across
+    const trussH = archH - clearance;
+    const trussGeo = new THREE.BoxGeometry(spanW, trussH, 0.6);
+    const truss = new THREE.Mesh(trussGeo, steelMat);
+    truss.position.set(0, clearance + trussH * 0.5, 0);
+    truss.castShadow = true;
+    group.add(truss);
+
+    // 3. Lower hazard warning strip
+    const stripGeo = new THREE.BoxGeometry(spanW * 0.96, 0.28, 0.64);
+    const strip = new THREE.Mesh(stripGeo, this.barrierMat);
+    strip.position.set(0, clearance + 0.14, 0);
+    group.add(strip);
+
+    // 4. Center flashing red clearance warning lamp
+    const lampGeo = new THREE.SphereGeometry(0.12, 10, 8);
+    const lampMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    const lamp = new THREE.Mesh(lampGeo, lampMat);
+    lamp.position.set(0, clearance + trussH * 0.5, 0.35);
+    group.add(lamp);
+
+    return group;
+  }
+
+  /**
+   * Create High-Speed Moving Metro Train with Dynamic Flashing Headlights
+   */
+  public createMovingTrain(
+    length: number = CONSTANTS.TRAIN_LENGTH_SHORT,
+    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_2
+  ): { group: THREE.Group; headlights: THREE.Mesh[] } {
+    // Start with base train structure
+    const group = this.createTrain(length, false, colorHex);
+    group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
+
+    // Find and reference the twin headlights for flashing telegraph
+    const headlights: THREE.Mesh[] = [];
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material === this.trainHeadlightMat) {
+        headlights.push(child);
+      }
+    });
+
+    return { group, headlights };
   }
 }

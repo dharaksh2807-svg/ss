@@ -38,6 +38,10 @@ export class Player {
   // Gameplay State
   public state: PlayerState = 'IDLE';
   public distanceTraveled: number = 0;
+  public isStumbling: boolean = false;
+  private stumbleTimer: number = 0;
+  public lastJumpDist: number = -999;
+  public lastSlideDist: number = -999;
 
   // Hitbox AABB
   public collider: THREE.Box3 = new THREE.Box3();
@@ -67,6 +71,10 @@ export class Player {
     this.slideTimer = 0;
     this.bankingAngle = 0;
     this.distanceTraveled = 0;
+    this.isStumbling = false;
+    this.stumbleTimer = 0;
+    this.lastJumpDist = -999;
+    this.lastSlideDist = -999;
     this.state = 'RUN';
     this.powerups.reset();
     this.model.setHoverboardVisible(false);
@@ -121,7 +129,7 @@ export class Player {
     const nextLane = THREE.MathUtils.clamp(this.currentLane + direction, -1, 1) as LaneIndex;
     if (nextLane === this.currentLane) {
       // Hit outer side boundary / wall bump feedback
-      this.eventBus.emit(EVENTS.STUMBLE);
+      this.stumble();
       this.bankingAngle = direction * -0.15;
       return;
     }
@@ -150,6 +158,7 @@ export class Player {
     }
 
     this.isJumping = true;
+    this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
@@ -170,8 +179,10 @@ export class Player {
     }
 
     this.isSliding = true;
+    this.lastSlideDist = this.distanceTraveled;
     this.slideTimer = CONSTANTS.SLIDE_DURATION;
     this.state = 'SLIDE';
+    this.updateCollider();
     this.eventBus.emit(EVENTS.SLIDE);
   }
 
@@ -192,8 +203,20 @@ export class Player {
       return;
     }
 
-    // 1. Forward Movement
-    const forwardStep = this.speed * dt;
+    // Handle stumble timer decay
+    if (this.isStumbling) {
+      this.stumbleTimer -= dt;
+      if (this.stumbleTimer <= 0) {
+        this.isStumbling = false;
+        this.stumbleTimer = 0;
+      }
+    }
+
+    // 1. Forward Movement (with smooth stumble speed dip)
+    const effectiveSpeed = this.isStumbling
+      ? this.speed * (1.0 - CONSTANTS.STUMBLE_SPEED_DROP)
+      : this.speed;
+    const forwardStep = effectiveSpeed * dt;
     this.position.z -= forwardStep; // Moving forward along negative Z
     this.distanceTraveled += forwardStep;
 
@@ -352,5 +375,22 @@ export class Player {
 
   public getCollider(): THREE.Box3 {
     return this.collider;
+  }
+
+  public isChangingLaneActive(): boolean {
+    return this.isChangingLane;
+  }
+
+  public stumble(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
+    if (this.powerups.isInvulnerable()) return;
+
+    this.isStumbling = true;
+    this.stumbleTimer = CONSTANTS.STUMBLE_DURATION;
+    this.eventBus.emit(EVENTS.STUMBLE);
+  }
+
+  public getEffectiveSpeed(): number {
+    return this.isStumbling ? this.speed * (1.0 - CONSTANTS.STUMBLE_SPEED_DROP) : this.speed;
   }
 }
