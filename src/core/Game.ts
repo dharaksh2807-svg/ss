@@ -59,6 +59,9 @@ export class Game {
   private timeTrialRemaining: number = 60.0;
   private coinRushElapsed: number = 0.0;
 
+  // Performance telemetry tracker
+  private frameTimes: number[] = [];
+
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     this.worldScene = new WorldScene(this.canvas);
@@ -84,6 +87,10 @@ export class Game {
     this.hoverboardSelectModal = new HoverboardSelectModal();
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
+
+    // Apply saved graphics quality preset
+    const savedQuality = (localStorage.getItem('metro_graphics_preset') || 'HIGH') as 'HIGH' | 'MEDIUM' | 'LOW';
+    this.worldScene.setGraphicsQuality(savedQuality);
 
     // Stage hero character in Lobby pose facing the camera
     this.player.mesh.rotation.y = Math.PI - 0.2;
@@ -111,6 +118,10 @@ export class Game {
       } else if (this.lifecycleState === 'PAUSED' && action === 'PAUSE') {
         this.resume();
       }
+    });
+
+    bus.on('GRAPHICS_QUALITY_CHANGED', (quality: 'HIGH' | 'MEDIUM' | 'LOW') => {
+      this.worldScene.setGraphicsQuality(quality);
     });
 
     bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode()));
@@ -355,6 +366,10 @@ export class Game {
 
     const rawDt = (now - this.lastTime) / 1000;
     this.lastTime = now;
+    if (rawDt > 0 && rawDt < 1.0) {
+      if (this.frameTimes.length >= 60) this.frameTimes.shift();
+      this.frameTimes.push(rawDt * 1000);
+    }
     // Clamp delta-time to avoid simulation instability (e.g. tab switching)
     const dt = Math.min(rawDt, 0.08);
 
@@ -413,5 +428,20 @@ export class Game {
 
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+  }
+
+  public getPerformanceMetrics() {
+    const avgDt = this.frameTimes.length > 0
+      ? this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length
+      : 16.6;
+    return {
+      fps: Math.round(1000 / avgDt),
+      frameTimeMs: Math.round(avgDt * 10) / 10,
+      drawCalls: this.worldScene.renderer.info.render.calls,
+      triangles: this.worldScene.renderer.info.render.triangles,
+      geometries: this.worldScene.renderer.info.memory.geometries,
+      textures: this.worldScene.renderer.info.memory.textures,
+      shaderPrograms: (this.worldScene.renderer.info as any).programs?.length || 0
+    };
   }
 }

@@ -116,6 +116,12 @@ export class HoverboardManager {
     return true;
   }
 
+  public deactivate(): void {
+    this.isActive = false;
+    this.remaining = 0;
+    this.warnedExpiring = false;
+  }
+
   public update(dt: number): void {
     // 1. Post-crash invulnerability recovery timer
     if (this.postCrashGraceTimer > 0) {

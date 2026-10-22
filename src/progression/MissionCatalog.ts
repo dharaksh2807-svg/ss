@@ -211,11 +211,12 @@ export function getMissionsForSet(setNumber: number): Mission[] {
 }
 
 // Generate deterministic daily challenges for a given local date string (e.g. "2026-10-22")
-export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
+export function generateDailyChallenges(dateStr?: string): DailyChallenge[] {
+  const dStr = dateStr || new Date().toISOString().split('T')[0];
   // Simple deterministic hash of dateStr
   let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < dStr.length; i++) {
+    hash = (hash * 31 + dStr.charCodeAt(i)) >>> 0;
   }
 
   const coinTargets = [200, 250, 300, 350, 400];
@@ -241,8 +242,8 @@ export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
 
   return [
     {
-      id: `daily_${dateStr}_coins`,
-      date: dateStr,
+      id: `daily_${dStr}_coins`,
+      date: dStr,
       title: 'Daily Coin Collector',
       description: `Collect ${coinTarget} coins today across any runs.`,
       type: 'DAILY_COIN',
@@ -254,8 +255,8 @@ export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
       badgeIcon: '🪙'
     },
     {
-      id: `daily_${dateStr}_dist`,
-      date: dateStr,
+      id: `daily_${dStr}_dist`,
+      date: dStr,
       title: 'Daily Track Explorer',
       description: `Travel ${distTarget} meters along the subway.`,
       type: 'DAILY_DISTANCE',
@@ -267,8 +268,8 @@ export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
       badgeIcon: '🏃'
     },
     {
-      id: `daily_${dateStr}_score`,
-      date: dateStr,
+      id: `daily_${dStr}_score`,
+      date: dStr,
       title: 'Daily High Roller',
       description: `Accumulate ${scoreTarget.toLocaleString()} points today.`,
       type: 'DAILY_SCORE',
@@ -280,8 +281,8 @@ export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
       badgeIcon: '⭐'
     },
     {
-      id: `daily_${dateStr}_action`,
-      date: dateStr,
+      id: `daily_${dStr}_action`,
+      date: dStr,
       title: action.title,
       description: `Perform ${action.target} ${action.type === 'JUMP' ? 'hurdle jumps' : 'barrier slides'}.`,
       type: 'DAILY_ACTION',
@@ -293,8 +294,8 @@ export function generateDailyChallenges(dateStr: string): DailyChallenge[] {
       badgeIcon: action.type === 'JUMP' ? '🦘' : '⚡'
     },
     {
-      id: `daily_${dateStr}_special`,
-      date: dateStr,
+      id: `daily_${dStr}_special`,
+      date: dStr,
       title: special.title,
       description: special.desc,
       type: 'DAILY_SPECIAL',

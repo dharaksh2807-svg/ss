@@ -138,6 +138,12 @@ export class UpgradeManager {
     return this.totalCoins;
   }
 
+  public setCoins(amount: number): void {
+    this.totalCoins = Math.max(0, amount);
+    this.save();
+    this.eventBus.emit('WALLET_UPDATED', this.totalCoins);
+  }
+
   public addCoins(amount: number): void {
     if (amount <= 0) return;
     this.totalCoins += amount;

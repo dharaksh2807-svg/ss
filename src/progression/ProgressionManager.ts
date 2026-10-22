@@ -151,56 +151,93 @@ export class ProgressionManager {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.version === 1) {
-          // Verify that all achievement keys exist in case new ones were added
-          for (const def of ACHIEVEMENTS) {
-            if (!parsed.achievements[def.id]) {
-              parsed.achievements[def.id] = {
-                id: def.id,
-                currentProgress: 0,
-                completedTiers: [],
-                claimedTiers: []
+        if (parsed && typeof parsed === 'object') {
+          // Version migration: safely migrate unversioned legacy (v0) and v1 schemas
+          const version = typeof parsed.version === 'number' ? parsed.version : 0;
+          if (version <= 1) {
+            parsed.version = 1;
+
+            // Ensure lifetimeStats exists and backfills missing metrics
+            const defStats = this.getDefaultState().lifetimeStats;
+            parsed.lifetimeStats = {
+              ...defStats,
+              ...(parsed.lifetimeStats || {})
+            };
+
+            // Ensure activeMissions exist
+            if (!Array.isArray(parsed.activeMissions) || parsed.activeMissions.length === 0) {
+              parsed.activeMissions = getMissionsForSet(parsed.currentMissionSet || 1);
+            }
+
+            // Ensure dailyChallenges exist
+            if (!Array.isArray(parsed.dailyChallenges) || parsed.dailyChallenges.length === 0) {
+              parsed.dailyChallenges = generateDailyChallenges();
+            }
+
+            // Verify that all achievement keys exist in case new ones were added
+            if (!parsed.achievements || typeof parsed.achievements !== 'object') {
+              parsed.achievements = {};
+            }
+            for (const def of ACHIEVEMENTS) {
+              if (!parsed.achievements[def.id]) {
+                parsed.achievements[def.id] = {
+                  id: def.id,
+                  currentProgress: 0,
+                  completedTiers: [],
+                  claimedTiers: []
+                };
+              }
+            }
+
+            if (!parsed.seasonPass) {
+              parsed.seasonPass = JSON.parse(JSON.stringify(DEFAULT_SEASON_PASS));
+            }
+
+            // Ensure characters and outfits exist
+            if (!parsed.unlockedCharacters || parsed.unlockedCharacters.includes('char_default')) {
+              parsed.unlockedCharacters = Array.from(new Set(['char_jax', ...(parsed.unlockedCharacters || [])]))
+                .filter((id: string) => id !== 'char_default');
+            }
+            if (!parsed.selectedCharacter || parsed.selectedCharacter === 'char_default') {
+              parsed.selectedCharacter = 'char_jax';
+            }
+            if (!parsed.unlockedOutfits) {
+              parsed.unlockedOutfits = {
+                char_jax: ['jax_classic'],
+                char_luna: ['luna_neon'],
+                char_cruz: ['cruz_bboy'],
+                char_nova: ['nova_solar']
               };
             }
+            if (!parsed.selectedOutfits) {
+              parsed.selectedOutfits = {
+                char_jax: 'jax_classic',
+                char_luna: 'luna_neon',
+                char_cruz: 'cruz_bboy',
+                char_nova: 'nova_solar'
+              };
+            }
+            if (!parsed.unlockedBoards || parsed.unlockedBoards.includes('board_default')) {
+              parsed.unlockedBoards = Array.from(new Set(['board_urban_glide', ...(parsed.unlockedBoards || [])]))
+                .filter((id: string) => id !== 'board_default');
+            }
+            if (!parsed.selectedBoard || parsed.selectedBoard === 'board_default') {
+              parsed.selectedBoard = 'board_urban_glide';
+            }
+            if (parsed.hoverboardCharges === undefined) {
+              parsed.hoverboardCharges = 5;
+            }
+            if (parsed.headstartBoosters === undefined) {
+              parsed.headstartBoosters = 2;
+            }
+            if (parsed.scoreBoosters === undefined) {
+              parsed.scoreBoosters = 2;
+            }
+            if (parsed.currentMissionSet === undefined) {
+              parsed.currentMissionSet = 1;
+            }
+            return parsed;
           }
-          if (!parsed.seasonPass) {
-            parsed.seasonPass = JSON.parse(JSON.stringify(DEFAULT_SEASON_PASS));
-          }
-          // Ensure characters and outfits exist
-          if (!parsed.unlockedCharacters || parsed.unlockedCharacters.includes('char_default')) {
-            parsed.unlockedCharacters = Array.from(new Set(['char_jax', ...(parsed.unlockedCharacters || [])]))
-              .filter((id) => id !== 'char_default');
-          }
-          if (!parsed.selectedCharacter || parsed.selectedCharacter === 'char_default') {
-            parsed.selectedCharacter = 'char_jax';
-          }
-          if (!parsed.unlockedOutfits) {
-            parsed.unlockedOutfits = {
-              char_jax: ['jax_classic'],
-              char_luna: ['luna_neon'],
-              char_cruz: ['cruz_bboy'],
-              char_nova: ['nova_solar']
-            };
-          }
-          if (!parsed.selectedOutfits) {
-            parsed.selectedOutfits = {
-              char_jax: 'jax_classic',
-              char_luna: 'luna_neon',
-              char_cruz: 'cruz_bboy',
-              char_nova: 'nova_solar'
-            };
-          }
-          if (!parsed.unlockedBoards || parsed.unlockedBoards.includes('board_default')) {
-            parsed.unlockedBoards = Array.from(new Set(['board_urban_glide', ...(parsed.unlockedBoards || [])]))
-              .filter((id: string) => id !== 'board_default');
-          }
-          if (!parsed.selectedBoard || parsed.selectedBoard === 'board_default') {
-            parsed.selectedBoard = 'board_urban_glide';
-          }
-          if (parsed.hoverboardCharges === undefined) {
-            parsed.hoverboardCharges = 5;
-          }
-          return parsed;
         }
       }
     } catch (e) {
@@ -557,8 +594,7 @@ export class ProgressionManager {
     if (milestone.rewardType === 'COINS') {
       UpgradeManager.getInstance().addCoins(Number(milestone.rewardValue));
     } else if (milestone.rewardType === 'HOVERBOARDS') {
-      // Add hoverboard inventory
-      UpgradeManager.getInstance().addCoins(Number(milestone.rewardValue) * 300); // Converted or granted as store value
+      this.addHoverboardCharges(Number(milestone.rewardValue));
     } else if (milestone.rewardType === 'BOARD_SKIN') {
       if (!this.state.unlockedBoards.includes(String(milestone.rewardValue))) {
         this.state.unlockedBoards.push(String(milestone.rewardValue));
