@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Metro Runner 3D — Subway Endless Runner</title>
+    <meta name="description" content="A high-performance 3D Endless Runner game built with TypeScript, Three.js, and WebGL." />
+    <!-- Google Fonts for arcade typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>" />
+  </head>
+  <body>
+    <!-- 3D WebGL Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-overlay">
+      <!-- In-Game HUD -->
+      <div id="hud" class="hud-container hidden">
+        <!-- Top Left: Coins & Multiplier -->
+        <div class="hud-stats-left">
+          <div class="hud-coin-badge">
+            <span class="hud-coin-icon">🪙</span>
+            <span id="hud-coins" class="hud-stat-value">0</span>
+          </div>
+          <div id="hud-multiplier" class="hud-multiplier-badge">1X</div>
+        </div>
+
+        <!-- Top Right: Score & Pause Button -->
+        <div class="hud-stats-right">
+          <div class="hud-score-badge">
+            <span class="hud-score-label">SCORE</span>
+            <span id="hud-score" class="hud-stat-value">0</span>
+          </div>
+          <button id="hud-pause-btn" class="hud-icon-btn" aria-label="Pause Game" title="Pause Game">
+            <span>⏸</span>
+          </button>
+        </div>
+
+        <!-- Powerup Duration Cards (Top-center stack) -->
+        <div id="hud-powerups" class="hud-powerups-stack"></div>
+
+        <!-- Mobile Touch Controls Bar (visible on touch devices) -->
+        <div id="touch-controls" class="touch-controls-bar">
+          <button id="touch-left-btn" class="touch-btn" aria-label="Move Left">◀</button>
+          <button id="touch-down-btn" class="touch-btn" aria-label="Slide / Fast Drop">▼</button>
+          <button id="touch-up-btn" class="touch-btn" aria-label="Jump">▲</button>
+          <button id="touch-right-btn" class="touch-btn" aria-label="Move Right">▶</button>
+        </div>
+      </div>
+
+      <!-- Start / Menu Screen -->
+      <div id="start-screen" class="screen-overlay">
+        <div class="menu-card glassmorphic">
+          <div class="game-logo">
+            <div class="logo-sub">METRO SURFERS</div>
+            <h1 class="logo-title">SUBWAY 3D</h1>
+            <div class="logo-tagline">HIGH-SPEED ENDLESS RUNNER</div>
+          </div>
+
+          <div class="high-score-display">
+            <span class="trophy-icon">🏆</span>
+            <div class="high-score-text">
+              <span class="high-score-label">ALL-TIME BEST</span>
+              <span id="start-high-score" class="high-score-val">0</span>
+            </div>
+          </div>
+
+          <div class="menu-actions">
+            <button id="start-play-btn" class="btn btn-primary pulse-anim">
+              <span class="btn-icon">▶</span> PLAY NOW
+            </button>
+            <button id="start-settings-btn" class="btn btn-secondary">
+              <span class="btn-icon">⚙️</span> SETTINGS
+            </button>
+          </div>
+
+          <div class="controls-guide">
+            <div class="guide-item">
+              <kbd>A</kbd> <kbd>D</kbd> or <kbd>◀</kbd> <kbd>▶</kbd>
+              <span>Change Lanes</span>
+            </div>
+            <div class="guide-item">
+              <kbd>W</kbd> or <kbd>▲</kbd> or <kbd>Space</kbd>
+              <span>Jump</span>
+            </div>
+            <div class="guide-item">
+              <kbd>S</kbd> or <kbd>▼</kbd>
+              <span>Slide / Fast Drop</span>
+            </div>
+            <div class="guide-item">
+              <kbd>Double Tap</kbd>
+              <span>Hoverboard Shield</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause Modal -->
+      <div id="pause-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic">
+          <h2 class="modal-title">GAME PAUSED</h2>
+
+          <div class="modal-buttons">
+            <button id="pause-resume-btn" class="btn btn-primary">
+              <span class="btn-icon">▶</span> RESUME
+            </button>
+            <button id="pause-restart-btn" class="btn btn-secondary">
+              <span class="btn-icon">🔄</span> RESTART
+            </button>
+            <button id="pause-sound-btn" class="btn btn-secondary">
+              🔊 Sound: ON
+            </button>
+            <button id="pause-settings-btn" class="btn btn-tertiary">
+              <span class="btn-icon">⚙️</span> AUDIO SETTINGS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over Modal -->
+      <div id="game-over-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic game-over-card">
+          <div id="new-record-badge" class="badge-new-record hidden">NEW BEST! 🔥</div>
+          <h2 class="modal-title game-over-title">RUN OVER!</h2>
+
+          <div class="game-over-stats-grid">
+            <div class="stat-box">
+              <span class="stat-label">FINAL SCORE</span>
+              <span id="game-over-score" class="stat-value highlight">0</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">BEST SCORE</span>
+              <span id="game-over-high-score" class="stat-value">0</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">COINS COLLECTED</span>
+              <span id="game-over-coins" class="stat-value coin-val">0</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">DISTANCE</span>
+              <span id="game-over-distance" class="stat-value">0 m</span>
+            </div>
+          </div>
+
+          <div class="modal-buttons">
+            <button id="game-over-retry-btn" class="btn btn-primary pulse-anim">
+              <span class="btn-icon">🔄</span> PLAY AGAIN
+            </button>
+            <button id="game-over-menu-btn" class="btn btn-secondary">
+              <span class="btn-icon">🏠</span> MAIN MENU
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic settings-card">
+          <h2 class="modal-title">SETTINGS</h2>
+
+          <div class="settings-group">
+            <div class="setting-row">
+              <label for="setting-master-vol">Master Volume</label>
+              <input id="setting-master-vol" type="range" min="0" max="1" step="0.05" value="0.8" />
+            </div>
+            <div class="setting-row">
+              <label for="setting-music-vol">Music Volume</label>
+              <input id="setting-music-vol" type="range" min="0" max="1" step="0.05" value="0.4" />
+            </div>
+            <div class="setting-row">
+              <label for="setting-sfx-vol">SFX Volume</label>
+              <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.05" value="0.85" />
+            </div>
+          </div>
+
+          <div class="modal-buttons">
+            <button id="settings-close-btn" class="btn btn-primary">
+              DONE
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script entry point -->
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Wire mobile touch control buttons directly to EventBus
+      window.addEventListener('DOMContentLoaded', () => {
+        const setupBtn = (id, action) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.addEventListener('pointerdown', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (window.__METRO_BUS__) {
+                window.__METRO_BUS__.emit('INPUT_ACTION', action);
+              }
+            }, { passive: false });
+          }
+        };
+
+        setupBtn('touch-left-btn', 'LEFT');
+        setupBtn('touch-right-btn', 'RIGHT');
+        setupBtn('touch-up-btn', 'UP');
+        setupBtn('touch-down-btn', 'DOWN');
+      });
+    </script>
+  </body>
+</html>

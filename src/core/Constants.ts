@@ -1,0 +1,112 @@
+export const CONSTANTS = {
+  // World scale and lanes
+  LANE_WIDTH: 3.6, // Width of each lane in meters/units
+  LANE_INDICES: [-1, 0, 1] as const,
+  LANE_POSITIONS: [-3.6, 0, 3.6] as const,
+  LANES: {
+    [-1]: -3.6,
+    [0]: 0,
+    [1]: 3.6
+  } as Record<LaneIndex, number>,
+  LANE_CHANGE_DURATION: 0.18, // Snappy 180ms lane change
+  LANE_BANK_ANGLE: 0.14, // Lateral banking tilt angle in radians
+
+  // Player Physics & Locomotion
+  PLAYER_BASE_Y: 0.9, // Ground level player pivot
+  PLAYER_WIDTH: 0.9,
+  PLAYER_HEIGHT_RUN: 1.8,
+  PLAYER_HEIGHT_SLIDE: 0.75,
+  PLAYER_DEPTH: 0.8,
+
+  // Jump & Slide Physics
+  JUMP_HEIGHT: 3.8, // Peak jump height
+  JUMP_DURATION: 0.52, // Seconds in air
+  GRAVITY: 32.0, // Downward acceleration
+  JUMP_INITIAL_VELOCITY: 11.0, // Initial upward velocity
+  SUPER_JUMP_MULTIPLIER: 1.7, // Super sneakers jump height multiplier
+  FAST_DROP_SPEED: -22.0, // Downward dive velocity when swiping down in air
+  SLIDE_DURATION: 0.65, // Slide duration in seconds
+
+  // Camera Settings (Derived from REA measurements and normalized)
+  CAMERA_OFFSET_Y: 4.8, // Height above player
+  CAMERA_OFFSET_Z: 6.8, // Distance behind player
+  CAMERA_LOOK_Y: 2.0, // Look target height above player
+  CAMERA_LOOK_AHEAD_Z: -12.0, // Look ahead distance
+  CAMERA_FOV: 65,
+  CAMERA_LERP_X: 10.0, // Snappy camera tracking
+  CAMERA_LERP_Y: 8.0,
+  CAMERA_SHAKE_DECAY: 6.0,
+
+  // Speed and Difficulty Progression
+  INITIAL_SPEED: 18.0, // Starting forward speed (m/s)
+  MAX_SPEED: 38.0, // Top speed at high distance
+  SPEED_ACCELERATION: 0.12, // Speed gain per 100m
+  SPEED_LERP: 2.0,
+
+  // Track Chunks & Procedural Generation
+  CHUNK_LENGTH: 80.0, // Length of each track segment in meters
+  ACTIVE_CHUNKS: 6, // Number of concurrent chunks in scene (~480m view distance)
+  DESPAWN_DISTANCE_BEHIND: 40.0, // Distance behind player before recycling chunk
+
+  // Obstacle Dimensions
+  TRAIN_WIDTH: 3.1,
+  TRAIN_HEIGHT: 4.2,
+  TRAIN_LENGTH_SHORT: 16.0,
+  TRAIN_LENGTH_LONG: 28.0,
+  TRAIN_RAMP_LENGTH: 8.0, // Ramp to run up onto train roof!
+  LOW_BARRIER_HEIGHT: 1.1, // Must jump over
+  HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under
+  HIGH_BARRIER_HEIGHT: 3.5,
+
+  // Collectibles & Powerups
+  COIN_RADIUS: 0.45,
+  COIN_ROTATION_SPEED: 4.0,
+  MAGNET_RADIUS: 12.0,
+  MAGNET_PULL_SPEED: 28.0,
+  POWERUP_DURATION: 12.0, // 12 seconds active duration for magnet/sneakers/2x
+  HOVERBOARD_DURATION: 20.0, // 20 seconds hoverboard duration
+  HOVERBOARD_DOUBLE_TAP_WINDOW: 0.35, // Seconds for double-tap detection
+
+  // World Bending Vertex Shader
+  CURVE_X: 0.00035, // Horizontal curve intensity
+  CURVE_Y: -0.00045, // Vertical horizon dip intensity
+
+  // Scoring
+  SCORE_PER_METER: 1.0,
+  COIN_SCORE_VALUE: 50,
+  NEAR_MISS_SCORE: 100,
+
+  // Colors Palette (Vibrant Stylized Arcade)
+  COLORS: {
+    SKY_TOP: 0x1a2a6c,
+    SKY_BOTTOM: 0xfdbb2d,
+    FOG: 0x221834,
+    BALLAST: 0x3d3545,
+    SLEEPER: 0x5a3d28,
+    RAIL: 0xd0d5dd,
+    RAIL_GLOW: 0x00f0ff,
+    TRAIN_BODY_1: 0xff3366,
+    TRAIN_BODY_2: 0x3388ff,
+    TRAIN_BODY_3: 0xffaa00,
+    TRAIN_ROOF: 0x2a2a38,
+    BARRIER_STRIPE_1: 0xffcc00,
+    BARRIER_STRIPE_2: 0x222222,
+    COIN_GOLD: 0xffd700,
+    COIN_RIM: 0xffaa00,
+    BUILDING_1: 0xc86446, // Vibrant terracotta brick
+    BUILDING_2: 0x3d708f, // Urban slate cyan
+    BUILDING_3: 0xd99b43, // Golden ochre
+    BUILDING_4: 0x5a4a78, // Stylized twilight purple
+    NEON_CYAN: 0x00ffff,
+    NEON_MAGENTA: 0xff007f,
+    HOVERBOARD: 0x00ffcc,
+    SNEAKERS: 0xff0055,
+    MAGNET: 0x3366ff
+  }
+} as const;
+
+export type LaneIndex = -1 | 0 | 1; // -1: Left, 0: Center, 1: Right
+
+export function getLaneX(lane: LaneIndex): number {
+  return lane * CONSTANTS.LANE_WIDTH;
+}
