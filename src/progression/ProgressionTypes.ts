@@ -125,6 +125,8 @@ export interface ProgressionState {
   lifetimeStats: LifetimeStats;
   unlockedCharacters: string[];
   selectedCharacter: string;
+  unlockedOutfits: Record<string, string[]>; // characterId -> list of outfitIds
+  selectedOutfits: Record<string, string>;   // characterId -> active outfitId
   unlockedBoards: string[];
   selectedBoard: string;
 }

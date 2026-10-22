@@ -145,6 +145,15 @@ export class UpgradeManager {
     this.eventBus.emit('WALLET_UPDATED', this.totalCoins);
   }
 
+  public deductCoins(amount: number): boolean {
+    if (amount <= 0) return true;
+    if (this.totalCoins < amount) return false;
+    this.totalCoins -= amount;
+    this.save();
+    this.eventBus.emit('WALLET_UPDATED', this.totalCoins);
+    return true;
+  }
+
   public getLevel(type: UpgradablePowerup): number {
     return this.levels[type] || 1;
   }

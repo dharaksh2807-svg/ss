@@ -75,6 +75,9 @@
             <button id="start-play-btn" class="btn btn-primary pulse-anim">
               <span class="btn-icon">▶</span> PLAY NOW
             </button>
+            <button id="start-characters-btn" class="btn btn-secondary" style="border-color: rgba(0, 229, 255, 0.7); color: #00e5ff; background: rgba(0, 229, 255, 0.1);">
+              <span class="btn-icon">👤</span> CHARACTERS & SKINS
+            </button>
             <button id="start-events-btn" class="btn btn-primary" style="background: linear-gradient(135deg, #7c4dff, #00e5ff); border-color: rgba(0, 229, 255, 0.6); box-shadow: 0 4px 18px rgba(124, 77, 255, 0.4);">
               <span class="btn-icon">🏆</span> EVENT MODES
             </button>
@@ -161,6 +164,9 @@
             <button id="game-over-retry-btn" class="btn btn-primary pulse-anim">
               <span class="btn-icon">🔄</span> PLAY AGAIN
             </button>
+            <button id="game-over-characters-btn" class="btn btn-secondary" style="border-color: rgba(0, 229, 255, 0.6); color: #00e5ff;">
+              <span class="btn-icon">👤</span> CHARACTERS
+            </button>
             <button id="game-over-missions-btn" class="btn btn-secondary" style="border-color: rgba(0,230,118,0.6); color: #00e676;">
               <span class="btn-icon">🎯</span> MISSIONS
             </button>
@@ -192,6 +198,70 @@
             <button id="shop-close-btn" class="btn btn-primary">
               DONE
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character Customization & 3D Showroom Modal -->
+      <div id="character-select-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic character-showroom-card">
+          <div class="showroom-header">
+            <div class="showroom-title-block">
+              <span class="showroom-badge">METRO SURFERS ROSTER</span>
+              <h2 class="showroom-main-title">CHARACTER SHOWROOM</h2>
+            </div>
+            <div class="showroom-wallet">
+              <span id="char-wallet-coins" class="wallet-pill">🪙 0</span>
+              <button id="char-close-btn" class="showroom-close-btn" aria-label="Close">✕</button>
+            </div>
+          </div>
+
+          <!-- Character Quick-Switch Tabs -->
+          <div id="char-tabs" class="character-tabs-row">
+            <!-- Dynamically populated: Jax, Luna, Cruz, Nova -->
+          </div>
+
+          <!-- Main Showroom Stage -->
+          <div class="showroom-stage-layout">
+            <!-- 3D Turntable Preview Stage -->
+            <div class="showroom-viewport-container">
+              <canvas id="char-preview-canvas"></canvas>
+              
+              <!-- Turntable Drag Hint Overlay -->
+              <div class="drag-hint"><span>↔ DRAG TO ROTATE 360°</span></div>
+              
+              <!-- Navigation Arrows -->
+              <button id="char-prev-btn" class="nav-arrow nav-arrow-left" aria-label="Previous Character">◀</button>
+              <button id="char-next-btn" class="nav-arrow nav-arrow-right" aria-label="Next Character">▶</button>
+            </div>
+
+            <!-- Character Identity & Outfit Panel -->
+            <div class="showroom-details-panel">
+              <div class="char-header-row">
+                <div>
+                  <div id="char-title" class="char-subtitle">THE STREET LEGEND</div>
+                  <h3 id="char-name" class="char-heading">JAX</h3>
+                </div>
+                <div id="char-status-badge" class="status-badge active-badge">ACTIVE RUNNER</div>
+              </div>
+
+              <p id="char-bio" class="char-bio-text">
+                Armed with a backpack of spray cans and custom high-tops, Jax has tagged every subway station from Downtown to Central Terminus.
+              </p>
+
+              <div class="outfits-section">
+                <div class="section-label">SELECT OUTFIT & SKIN</div>
+                <div id="char-outfit-list" class="outfits-grid custom-scroll">
+                  <!-- Dynamically populated outfit cards -->
+                </div>
+              </div>
+
+              <div class="showroom-action-footer">
+                <button id="char-action-btn" class="btn btn-action equip">
+                  ⚡ EQUIP RUNNER
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

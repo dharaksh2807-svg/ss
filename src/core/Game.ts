@@ -16,6 +16,7 @@ import { UpgradeModal } from '../ui/UpgradeModal';
 import { UpgradeManager } from '../player/UpgradeManager';
 import { MissionsModal } from '../ui/MissionsModal';
 import { EventSelectModal } from '../ui/EventSelectModal';
+import { CharacterSelectModal } from '../ui/CharacterSelectModal';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
 
@@ -38,6 +39,7 @@ export class Game {
   private upgradeModal: UpgradeModal;
   private missionsModal: MissionsModal;
   private eventSelectModal: EventSelectModal;
+  private characterSelectModal: CharacterSelectModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -72,6 +74,7 @@ export class Game {
     this.upgradeModal = new UpgradeModal();
     this.missionsModal = new MissionsModal();
     this.eventSelectModal = new EventSelectModal();
+    this.characterSelectModal = new CharacterSelectModal();
 
     this.setupEvents();
     this.startScreen.show();

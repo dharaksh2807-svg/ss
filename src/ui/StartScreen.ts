@@ -4,6 +4,7 @@ export class StartScreen {
   private element: HTMLElement;
   private playBtn: HTMLButtonElement;
   private shopBtn: HTMLButtonElement | null = null;
+  private charactersBtn: HTMLButtonElement | null = null;
   private missionsBtn: HTMLButtonElement | null = null;
   private eventsBtn: HTMLButtonElement | null = null;
   private settingsBtn: HTMLButtonElement;
@@ -12,6 +13,7 @@ export class StartScreen {
   constructor() {
     this.element = document.getElementById('start-screen')!;
     this.playBtn = document.getElementById('start-play-btn') as HTMLButtonElement;
+    this.charactersBtn = document.getElementById('start-characters-btn') as HTMLButtonElement;
     this.shopBtn = document.getElementById('start-shop-btn') as HTMLButtonElement;
     this.missionsBtn = document.getElementById('start-missions-btn') as HTMLButtonElement;
     this.eventsBtn = document.getElementById('start-events-btn') as HTMLButtonElement;
@@ -22,6 +24,13 @@ export class StartScreen {
       this.hide();
       EventBus.getInstance().emit(EVENTS.GAME_START);
     });
+
+    if (this.charactersBtn) {
+      this.charactersBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_CHARACTERS', 'START');
+      });
+    }
 
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {

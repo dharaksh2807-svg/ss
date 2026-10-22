@@ -18,6 +18,7 @@ import {
   ACHIEVEMENTS,
   DEFAULT_SEASON_PASS
 } from './MissionCatalog';
+import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
 
 const STORAGE_KEY = 'metro_progression_v1';
 
@@ -117,8 +118,20 @@ export class ProgressionManager {
         coinRushBestTime: 0,
         survivalBestDistance: 0
       },
-      unlockedCharacters: ['char_default'],
-      selectedCharacter: 'char_default',
+      unlockedCharacters: ['char_jax'],
+      selectedCharacter: 'char_jax',
+      unlockedOutfits: {
+        char_jax: ['jax_classic'],
+        char_luna: ['luna_neon'],
+        char_cruz: ['cruz_bboy'],
+        char_nova: ['nova_solar']
+      },
+      selectedOutfits: {
+        char_jax: 'jax_classic',
+        char_luna: 'luna_neon',
+        char_cruz: 'cruz_bboy',
+        char_nova: 'nova_solar'
+      },
       unlockedBoards: ['board_default'],
       selectedBoard: 'board_default'
     };
@@ -143,6 +156,30 @@ export class ProgressionManager {
           }
           if (!parsed.seasonPass) {
             parsed.seasonPass = JSON.parse(JSON.stringify(DEFAULT_SEASON_PASS));
+          }
+          // Ensure characters and outfits exist
+          if (!parsed.unlockedCharacters || parsed.unlockedCharacters.includes('char_default')) {
+            parsed.unlockedCharacters = Array.from(new Set(['char_jax', ...(parsed.unlockedCharacters || [])]))
+              .filter((id) => id !== 'char_default');
+          }
+          if (!parsed.selectedCharacter || parsed.selectedCharacter === 'char_default') {
+            parsed.selectedCharacter = 'char_jax';
+          }
+          if (!parsed.unlockedOutfits) {
+            parsed.unlockedOutfits = {
+              char_jax: ['jax_classic'],
+              char_luna: ['luna_neon'],
+              char_cruz: ['cruz_bboy'],
+              char_nova: ['nova_solar']
+            };
+          }
+          if (!parsed.selectedOutfits) {
+            parsed.selectedOutfits = {
+              char_jax: 'jax_classic',
+              char_luna: 'luna_neon',
+              char_cruz: 'cruz_bboy',
+              char_nova: 'nova_solar'
+            };
           }
           return parsed;
         }
@@ -509,5 +546,177 @@ export class ProgressionManager {
       nearMisses: this.runNearMisses,
       powerups: this.runPowerups
     };
+  }
+
+  // --- Character & Outfit Collection Management ---
+
+  public getUnlockedCharacters(): string[] {
+    return [...this.state.unlockedCharacters];
+  }
+
+  public getSelectedCharacter(): string {
+    return this.state.selectedCharacter || 'char_jax';
+  }
+
+  public isCharacterUnlocked(charId: string): boolean {
+    if (charId === 'char_jax') return true;
+    return this.state.unlockedCharacters.includes(charId);
+  }
+
+  public unlockCharacter(charId: string): boolean {
+    if (!this.state.unlockedCharacters.includes(charId)) {
+      this.state.unlockedCharacters.push(charId);
+      // Auto-unlock default outfit for this character
+      const charDef = getCharacterById(charId);
+      if (charDef) {
+        if (!this.state.unlockedOutfits[charId]) {
+          this.state.unlockedOutfits[charId] = [];
+        }
+        if (!this.state.unlockedOutfits[charId].includes(charDef.defaultOutfitId)) {
+          this.state.unlockedOutfits[charId].push(charDef.defaultOutfitId);
+        }
+        this.state.selectedOutfits[charId] = charDef.defaultOutfitId;
+      }
+      this.saveState();
+      this.eventBus.emit('CHARACTER_UNLOCKED', charId);
+      return true;
+    }
+    return false;
+  }
+
+  public getUnlockedOutfits(charId: string): string[] {
+    const list = this.state.unlockedOutfits[charId];
+    if (!list || list.length === 0) {
+      const charDef = getCharacterById(charId);
+      return charDef ? [charDef.defaultOutfitId] : ['jax_classic'];
+    }
+    return [...list];
+  }
+
+  public getSelectedOutfit(charId: string): string {
+    if (this.state.selectedOutfits[charId]) {
+      return this.state.selectedOutfits[charId];
+    }
+    const charDef = getCharacterById(charId);
+    return charDef ? charDef.defaultOutfitId : 'jax_classic';
+  }
+
+  public isOutfitUnlocked(charId: string, outfitId: string): boolean {
+    const charDef = getCharacterById(charId);
+    if (charDef && charDef.defaultOutfitId === outfitId) {
+      return this.isCharacterUnlocked(charId);
+    }
+    const list = this.state.unlockedOutfits[charId] || [];
+    return list.includes(outfitId);
+  }
+
+  public unlockOutfit(charId: string, outfitId: string): boolean {
+    if (!this.state.unlockedOutfits[charId]) {
+      this.state.unlockedOutfits[charId] = [];
+    }
+    if (!this.state.unlockedOutfits[charId].includes(outfitId)) {
+      this.state.unlockedOutfits[charId].push(outfitId);
+      this.saveState();
+      this.eventBus.emit('OUTFIT_UNLOCKED', { charId, outfitId });
+      return true;
+    }
+    return false;
+  }
+
+  public equipCharacter(charId: string, outfitId?: string): { success: boolean; message: string } {
+    if (!this.isCharacterUnlocked(charId)) {
+      return { success: false, message: 'Character is locked' };
+    }
+
+    const charDef = getCharacterById(charId);
+    if (!charDef) {
+      return { success: false, message: 'Character not found' };
+    }
+
+    const targetOutfit = outfitId || this.getSelectedOutfit(charId) || charDef.defaultOutfitId;
+    if (!this.isOutfitUnlocked(charId, targetOutfit)) {
+      return { success: false, message: 'Outfit is locked' };
+    }
+
+    this.state.selectedCharacter = charId;
+    this.state.selectedOutfits[charId] = targetOutfit;
+    this.saveState();
+
+    this.eventBus.emit('CHARACTER_EQUIPPED', { charId, outfitId: targetOutfit });
+    return { success: true, message: `Equipped ${charDef.name}!` };
+  }
+
+  public purchaseCharacter(charId: string): { success: boolean; message: string } {
+    if (this.isCharacterUnlocked(charId)) {
+      return { success: false, message: 'Character already owned' };
+    }
+
+    const charDef = getCharacterById(charId);
+    if (!charDef) {
+      return { success: false, message: 'Character not found' };
+    }
+
+    if (charDef.unlock.type === 'FREE') {
+      this.unlockCharacter(charId);
+      this.equipCharacter(charId);
+      return { success: true, message: `Unlocked ${charDef.name}!` };
+    }
+
+    if (charDef.unlock.type === 'COINS') {
+      const cost = charDef.unlock.cost || 0;
+      const upgradeMgr = UpgradeManager.getInstance();
+      if (upgradeMgr.getCoins() < cost) {
+        return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+      }
+
+      // Single deduction exactly once
+      const deducted = upgradeMgr.deductCoins(cost);
+      if (!deducted) {
+        return { success: false, message: 'Transaction failed' };
+      }
+
+      this.unlockCharacter(charId);
+      this.equipCharacter(charId);
+      return { success: true, message: `Purchased and equipped ${charDef.name}!` };
+    }
+
+    return { success: false, message: `Cannot purchase: ${charDef.unlock.description}` };
+  }
+
+  public purchaseOutfit(charId: string, outfitId: string): { success: boolean; message: string } {
+    if (this.isOutfitUnlocked(charId, outfitId)) {
+      return { success: false, message: 'Outfit already owned' };
+    }
+
+    const outfit = getOutfitById(charId, outfitId);
+    if (!outfit) {
+      return { success: false, message: 'Outfit not found' };
+    }
+
+    if (outfit.unlock.type === 'FREE') {
+      this.unlockOutfit(charId, outfitId);
+      this.equipCharacter(charId, outfitId);
+      return { success: true, message: `Unlocked ${outfit.name}!` };
+    }
+
+    if (outfit.unlock.type === 'COINS') {
+      const cost = outfit.unlock.cost || 0;
+      const upgradeMgr = UpgradeManager.getInstance();
+      if (upgradeMgr.getCoins() < cost) {
+        return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+      }
+
+      // Single deduction exactly once
+      const deducted = upgradeMgr.deductCoins(cost);
+      if (!deducted) {
+        return { success: false, message: 'Transaction failed' };
+      }
+
+      this.unlockOutfit(charId, outfitId);
+      this.equipCharacter(charId, outfitId);
+      return { success: true, message: `Purchased and equipped ${outfit.name}!` };
+    }
+
+    return { success: false, message: `Cannot purchase: ${outfit.unlock.description}` };
   }
 }

@@ -19,6 +19,7 @@ export class GameOverModal {
     this.retryBtn = document.getElementById('game-over-retry-btn') as HTMLButtonElement;
     this.shopBtn = document.getElementById('game-over-shop-btn') as HTMLButtonElement;
     this.missionsBtn = document.getElementById('game-over-missions-btn') as HTMLButtonElement;
+    const charactersBtn = document.getElementById('game-over-characters-btn') as HTMLButtonElement;
     this.menuBtn = document.getElementById('game-over-menu-btn') as HTMLButtonElement;
     this.scoreValEl = document.getElementById('game-over-score')!;
     this.highScoreValEl = document.getElementById('game-over-high-score')!;
@@ -31,6 +32,13 @@ export class GameOverModal {
       this.hide();
       EventBus.getInstance().emit(EVENTS.GAME_RESTART);
     });
+
+    if (charactersBtn) {
+      charactersBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_CHARACTERS', 'START');
+      });
+    }
 
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {

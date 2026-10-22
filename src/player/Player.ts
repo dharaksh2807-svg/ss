@@ -4,6 +4,8 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { CharacterModel } from './CharacterModel';
 import { PowerupManager } from './PowerupManager';
 import { InputAction } from '../core/InputManager';
+import { ProgressionManager } from '../progression/ProgressionManager';
+import { CharacterId } from '../characters/CharacterCatalog';
 
 export type PlayerState = 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH';
 
@@ -49,10 +51,29 @@ export class Player {
 
   constructor() {
     this.mesh = new THREE.Group();
-    this.model = new CharacterModel();
+
+    const prog = ProgressionManager.getInstance();
+    const selChar = prog.getSelectedCharacter() as CharacterId;
+    const selOutfit = prog.getSelectedOutfit(selChar);
+
+    this.model = new CharacterModel(selChar, selOutfit);
     this.mesh.add(this.model.mesh);
 
     this.powerups = new PowerupManager();
+    this.updateCollider();
+
+    this.eventBus.on('CHARACTER_EQUIPPED', (data: { charId: string; outfitId: string }) => {
+      this.applyCharacter(data.charId, data.outfitId);
+    });
+  }
+
+  public applyCharacter(characterId: string, outfitId?: string): void {
+    const prevMesh = this.model.mesh;
+    this.model.applyCharacter(characterId as CharacterId, outfitId);
+    if (this.model.mesh !== prevMesh) {
+      this.mesh.remove(prevMesh);
+      this.mesh.add(this.model.mesh);
+    }
     this.updateCollider();
   }
 
@@ -77,6 +98,15 @@ export class Player {
     this.lastSlideDist = -999;
     this.state = 'RUN';
     this.powerups.reset();
+
+    // Ensure model reflects current selected character & outfit
+    const prog = ProgressionManager.getInstance();
+    const selChar = prog.getSelectedCharacter() as CharacterId;
+    const selOutfit = prog.getSelectedOutfit(selChar);
+    if (this.model.getCharacterId() !== selChar || this.model.getOutfitId() !== selOutfit) {
+      this.applyCharacter(selChar, selOutfit);
+    }
+
     this.model.setHoverboardVisible(false);
     this.model.setSuperSneakersActive(false);
     this.model.setJetpackVisible(false);
