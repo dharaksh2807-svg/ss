@@ -255,6 +255,14 @@ export class TrackManager {
           }
           return;
         }
+
+        // Clean obstacle dodge check when player safely passes past the obstacle
+        if (!obs.passed && playerBox.max.z < obs.collider.min.z) {
+          obs.passed = true;
+          if (obs.active && !chunk.chunkHadCollision) {
+            this.eventBus.emit(EVENTS.OBSTACLE_DODGED, obs.type);
+          }
+        }
       }
 
       // Collectibles Collisions & Magnet Attraction
@@ -280,6 +288,10 @@ export class TrackManager {
 
           if (col.type === 'COIN') {
             this.eventBus.emit(EVENTS.COIN_COLLECTED);
+          } else if (col.type === 'SEASON_TOKEN') {
+            this.eventBus.emit(EVENTS.SEASON_TOKEN_COLLECTED, 1);
+          } else if (col.type === 'CHRONO_ORB') {
+            this.eventBus.emit('CHRONO_ORB_COLLECTED', 5);
           } else {
             this.eventBus.emit(EVENTS.POWERUP_COLLECTED, col.type);
           }

@@ -3,9 +3,11 @@ import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { PowerupType } from '../player/PowerupManager';
 
+export type CollectibleType = 'COIN' | 'SEASON_TOKEN' | 'CHRONO_ORB' | PowerupType;
+
 export interface CollectibleInstance {
   group: THREE.Group;
-  type: 'COIN' | PowerupType;
+  type: CollectibleType;
   lane: LaneIndex;
   collider: THREE.Box3;
   active: boolean;
@@ -249,4 +251,64 @@ export class CollectibleFactory {
 
     return group;
   }
+
+  /**
+   * Create Glowing Cyber Season Event Token (Diamond Prism)
+   */
+  public createSeasonToken(): THREE.Group {
+    const group = new THREE.Group();
+
+    // Octahedron crystal core
+    const crystalGeo = new THREE.OctahedronGeometry(0.45, 0);
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0x00f0ff,
+      emissive: 0x00e5ff,
+      emissiveIntensity: 0.8,
+      roughness: 0.1,
+      metalness: 0.9
+    });
+    this.curvedManager.applyCurvature(crystalMat);
+    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+    crystal.scale.set(1.0, 1.4, 1.0);
+    group.add(crystal);
+
+    // Orbiting Neon Ring
+    const ringGeo = new THREE.TorusGeometry(0.65, 0.04, 8, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 4;
+    group.add(ring);
+
+    return group;
+  }
+
+  /**
+   * Create Glowing Chrono Orb for Time Trial Mode (+5s)
+   */
+  public createChronoOrb(): THREE.Group {
+    const group = new THREE.Group();
+
+    // Luminous Golden Sphere
+    const orbGeo = new THREE.SphereGeometry(0.42, 16, 16);
+    const orbMat = new THREE.MeshStandardMaterial({
+      color: 0xffea00,
+      emissive: 0xff9100,
+      emissiveIntensity: 0.85,
+      roughness: 0.2,
+      metalness: 0.95
+    });
+    this.curvedManager.applyCurvature(orbMat);
+    const orb = new THREE.Mesh(orbGeo, orbMat);
+    group.add(orb);
+
+    // Clockwise Chrono Ring
+    const ringGeo = new THREE.TorusGeometry(0.62, 0.035, 8, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    return group;
+  }
 }
+

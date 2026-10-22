@@ -785,6 +785,10 @@ export class TrackChunk {
         let group: THREE.Group;
         if (colData.type === 'COIN') {
           group = this.collectibleFactory.createCoin();
+        } else if (colData.type === 'SEASON_TOKEN') {
+          group = this.collectibleFactory.createSeasonToken();
+        } else if (colData.type === 'CHRONO_ORB') {
+          group = this.collectibleFactory.createChronoOrb();
         } else {
           group = this.collectibleFactory.createPowerup(colData.type);
         }
@@ -806,6 +810,33 @@ export class TrackChunk {
           baseY
         });
       }
+    }
+
+    // Occasionally spawn a Seasonal Event Token or Chrono Orb in safe open areas (35% probability)
+    if (Math.random() < 0.35) {
+      // Pick an open lane
+      const safeLanes: LaneIndex[] = [-1, 0, 1];
+      const randomLane = safeLanes[Math.floor(Math.random() * safeLanes.length)];
+      const laneX = CONSTANTS.LANES[randomLane];
+      const localZ = -18 - Math.random() * 20;
+      const baseY = 1.0;
+
+      const group = this.collectibleFactory.createSeasonToken();
+      group.position.set(laneX, baseY, localZ);
+      this.group.add(group);
+
+      const collider = new THREE.Box3();
+      collider.min.set(laneX - 0.5, baseY - 0.5, localZ - 0.5);
+      collider.max.set(laneX + 0.5, baseY + 0.5, localZ + 0.5);
+
+      this.collectibles.push({
+        group,
+        type: 'SEASON_TOKEN',
+        lane: randomLane,
+        collider,
+        active: true,
+        baseY
+      });
     }
   }
 

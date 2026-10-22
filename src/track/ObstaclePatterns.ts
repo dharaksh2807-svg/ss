@@ -15,8 +15,10 @@ export interface PatternObstacle {
   velocityZ?: number;
 }
 
+import { CollectibleType } from './CollectibleFactory';
+
 export interface PatternCollectible {
-  type: 'COIN' | PowerupType;
+  type: CollectibleType;
   lane: LaneIndex;
   zOffset: number;
   yOffset?: number; // Ground level (0.8), hurdle arch (2.4), or train roof (5.2)

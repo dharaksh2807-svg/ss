@@ -14,6 +14,9 @@ export class HUD {
   private coins: number = 0;
   private multiplier: number = 1;
 
+  private modeBadgeEl: HTMLElement | null = null;
+  private toastContainerEl: HTMLElement | null = null;
+
   constructor(private powerupManager: PowerupManager) {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
@@ -22,6 +25,26 @@ export class HUD {
     this.powerupContainer = document.getElementById('hud-powerups')!;
     this.feedbackStack = document.getElementById('hud-feedback-stack');
     this.pauseBtn = document.getElementById('hud-pause-btn') as HTMLButtonElement;
+
+    // Create mode badge container if not present
+    let modeEl = document.getElementById('hud-mode-badge');
+    if (!modeEl) {
+      modeEl = document.createElement('div');
+      modeEl.id = 'hud-mode-badge';
+      modeEl.className = 'hud-mode-badge hidden';
+      this.container.appendChild(modeEl);
+    }
+    this.modeBadgeEl = modeEl;
+
+    // Create toast notification banner container if not present
+    let toastEl = document.getElementById('hud-toast-container');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'hud-toast-container';
+      toastEl.className = 'hud-toast-container';
+      this.container.appendChild(toastEl);
+    }
+    this.toastContainerEl = toastEl;
 
     this.setupEvents();
   }
@@ -40,6 +63,27 @@ export class HUD {
 
     this.pauseBtn.addEventListener('click', () => {
       bus.emit(EVENTS.GAME_PAUSE);
+    });
+
+    // Progression Event Toasts
+    bus.on(EVENTS.MISSION_COMPLETED, (mission: any) => {
+      this.showProgressionToast('MISSION COMPLETED! 🎯', mission.title, `+${mission.rewardCoins} 🪙`);
+    });
+
+    bus.on(EVENTS.DAILY_COMPLETED, (daily: any) => {
+      this.showProgressionToast('DAILY TARGET REACHED! 📅', daily.title, `+${daily.rewardCoins} 🪙`);
+    });
+
+    bus.on(EVENTS.ACHIEVEMENT_UNLOCKED, (data: any) => {
+      this.showProgressionToast(`ACHIEVEMENT ${data.tier}! 🏆`, data.achievement.title, `+${data.rewardCoins} 🪙`);
+    });
+
+    bus.on(EVENTS.SEASON_TOKEN_COLLECTED, () => {
+      this.showFeedbackBadge('+1 EVENT TOKEN 💎', 'streak');
+    });
+
+    bus.on('CHRONO_ORB_COLLECTED', (sec: number = 5) => {
+      this.showFeedbackBadge(`+${sec}s TIME BONUS! ⏱️`, 'precision');
     });
   }
 
@@ -153,6 +197,91 @@ export class HUD {
     if (this.feedbackStack) {
       this.feedbackStack.innerHTML = '';
     }
+    if (this.modeBadgeEl) {
+      this.modeBadgeEl.classList.add('hidden');
+      this.modeBadgeEl.innerHTML = '';
+    }
+  }
+
+  public setMode(mode: 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL'): void {
+    if (!this.modeBadgeEl) return;
+    if (mode === 'NORMAL') {
+      this.modeBadgeEl.classList.add('hidden');
+      return;
+    }
+
+    this.modeBadgeEl.classList.remove('hidden');
+    if (mode === 'TIME_TRIAL') {
+      this.modeBadgeEl.innerHTML = `
+        <span class="mode-badge-icon">⏱️</span>
+        <span class="mode-badge-title">TIME TRIAL</span>
+        <span id="hud-time-trial-clock" class="mode-badge-val">60.0s</span>
+      `;
+    } else if (mode === 'COIN_RUSH') {
+      this.modeBadgeEl.innerHTML = `
+        <span class="mode-badge-icon">🪙</span>
+        <span class="mode-badge-title">COIN RUSH</span>
+        <span id="hud-coin-rush-val" class="mode-badge-val">0 / 150</span>
+      `;
+    } else if (mode === 'SURVIVAL') {
+      this.modeBadgeEl.innerHTML = `
+        <span class="mode-badge-icon">💀</span>
+        <span class="mode-badge-title">SURVIVAL GAUNTLET</span>
+        <span id="hud-survival-val" class="mode-badge-val">0 m</span>
+      `;
+    }
+  }
+
+  public setTimeTrialTime(seconds: number): void {
+    const clockEl = document.getElementById('hud-time-trial-clock');
+    if (clockEl) {
+      clockEl.textContent = `${Math.max(0, seconds).toFixed(1)}s`;
+      if (seconds <= 10.0) {
+        clockEl.classList.add('clock-urgent');
+      } else {
+        clockEl.classList.remove('clock-urgent');
+      }
+    }
+  }
+
+  public setCoinRushProgress(current: number, target: number = 150): void {
+    const rushEl = document.getElementById('hud-coin-rush-val');
+    if (rushEl) {
+      rushEl.textContent = `${current} / ${target}`;
+    }
+  }
+
+  public setSurvivalDistance(distanceMeters: number): void {
+    const distEl = document.getElementById('hud-survival-val');
+    if (distEl) {
+      distEl.textContent = `${Math.floor(distanceMeters)} m`;
+    }
+  }
+
+  public showProgressionToast(header: string, title: string, rewardText: string): void {
+    if (!this.toastContainerEl) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'progression-toast glassmorphic slide-down-anim';
+    toast.innerHTML = `
+      <div class="toast-indicator">🎯</div>
+      <div class="toast-body">
+        <span class="toast-header">${header}</span>
+        <span class="toast-title">${title}</span>
+      </div>
+      <div class="toast-reward">${rewardText}</div>
+    `;
+
+    this.toastContainerEl.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('slide-up-anim');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.parentElement.removeChild(toast);
+        }
+      }, 400);
+    }, 3200);
   }
 
   public getScore(): number {
@@ -163,3 +292,4 @@ export class HUD {
     return this.coins;
   }
 }
+

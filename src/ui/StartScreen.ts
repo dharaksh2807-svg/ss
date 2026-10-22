@@ -4,6 +4,8 @@ export class StartScreen {
   private element: HTMLElement;
   private playBtn: HTMLButtonElement;
   private shopBtn: HTMLButtonElement | null = null;
+  private missionsBtn: HTMLButtonElement | null = null;
+  private eventsBtn: HTMLButtonElement | null = null;
   private settingsBtn: HTMLButtonElement;
   private highScoreEl: HTMLElement;
 
@@ -11,6 +13,8 @@ export class StartScreen {
     this.element = document.getElementById('start-screen')!;
     this.playBtn = document.getElementById('start-play-btn') as HTMLButtonElement;
     this.shopBtn = document.getElementById('start-shop-btn') as HTMLButtonElement;
+    this.missionsBtn = document.getElementById('start-missions-btn') as HTMLButtonElement;
+    this.eventsBtn = document.getElementById('start-events-btn') as HTMLButtonElement;
     this.settingsBtn = document.getElementById('start-settings-btn') as HTMLButtonElement;
     this.highScoreEl = document.getElementById('start-high-score')!;
 
@@ -23,6 +27,20 @@ export class StartScreen {
       this.shopBtn.addEventListener('click', () => {
         this.hide();
         EventBus.getInstance().emit('OPEN_SHOP', 'START');
+      });
+    }
+
+    if (this.missionsBtn) {
+      this.missionsBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_MISSIONS', 'START');
+      });
+    }
+
+    if (this.eventsBtn) {
+      this.eventsBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_EVENTS', 'START');
       });
     }
 

@@ -14,6 +14,10 @@ import { GameOverModal } from '../ui/GameOverModal';
 import { SettingsModal } from '../ui/SettingsModal';
 import { UpgradeModal } from '../ui/UpgradeModal';
 import { UpgradeManager } from '../player/UpgradeManager';
+import { MissionsModal } from '../ui/MissionsModal';
+import { EventSelectModal } from '../ui/EventSelectModal';
+import { ProgressionManager } from '../progression/ProgressionManager';
+import { GameMode } from '../progression/ProgressionTypes';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -32,12 +36,20 @@ export class Game {
   private gameOverModal: GameOverModal;
   private settingsModal: SettingsModal;
   private upgradeModal: UpgradeModal;
+  private missionsModal: MissionsModal;
+  private eventSelectModal: EventSelectModal;
 
+  private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
   private lastTime: number = 0;
   private score: number = 0;
   private coinsCount: number = 0;
   private scoreMultiplier: number = 1;
+
+  // Active Challenge Game Mode State
+  private activeGameMode: GameMode = 'NORMAL';
+  private timeTrialRemaining: number = 60.0;
+  private coinRushElapsed: number = 0.0;
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -50,12 +62,16 @@ export class Game {
     this.soundManager = new SoundManager();
     this.inputManager = new InputManager();
 
+    this.progression = ProgressionManager.getInstance();
+
     this.hud = new HUD(this.player.powerups);
     this.startScreen = new StartScreen();
     this.pauseModal = new PauseModal();
     this.gameOverModal = new GameOverModal();
     this.settingsModal = new SettingsModal(this.soundManager);
     this.upgradeModal = new UpgradeModal();
+    this.missionsModal = new MissionsModal();
+    this.eventSelectModal = new EventSelectModal();
 
     this.setupEvents();
     this.startScreen.show();
@@ -81,10 +97,11 @@ export class Game {
       }
     });
 
-    bus.on(EVENTS.GAME_START, () => this.startRun());
+    bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode()));
+    bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode));
     bus.on(EVENTS.GAME_PAUSE, () => this.pause());
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
-    bus.on(EVENTS.GAME_RESTART, () => this.startRun());
+    bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode));
     bus.on('GO_TO_MENU', () => this.goToMenu());
 
     bus.on('TOGGLE_SOUND', () => {
@@ -98,6 +115,18 @@ export class Game {
       this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
       UpgradeManager.getInstance().addCoins(1);
+
+      // Check Coin Rush Mode victory condition (150 coins target)
+      if (this.activeGameMode === 'COIN_RUSH' && this.coinsCount >= 150) {
+        this.handleGameOver('COIN_RUSH_VICTORY');
+      }
+    });
+
+    bus.on('CHRONO_ORB_COLLECTED', (seconds: number = 5) => {
+      if (this.activeGameMode === 'TIME_TRIAL') {
+        this.timeTrialRemaining += seconds;
+        this.hud.setTimeTrialTime(this.timeTrialRemaining);
+      }
     });
 
     bus.on(EVENTS.NEAR_MISS, () => {
@@ -123,27 +152,51 @@ export class Game {
     });
 
     bus.on(EVENTS.CRASH, () => {
-      this.handleGameOver();
+      this.handleGameOver('CRASH');
     });
   }
 
-  public startRun(): void {
+  public startRun(mode: GameMode = 'NORMAL'): void {
+    this.activeGameMode = mode;
+    this.progression.setActiveGameMode(mode);
+
     this.lifecycleState = 'PLAYING';
     this.score = 0;
     this.coinsCount = 0;
     this.scoreMultiplier = 1;
+    this.timeTrialRemaining = 60.0;
+    this.coinRushElapsed = 0.0;
 
     this.player.reset();
     this.trackManager.reset();
     this.cameraController.reset(this.player.position);
 
+    // Apply Mode-Specific Initial Conditions
+    if (this.activeGameMode === 'SURVIVAL') {
+      // Survival starts fast at 25 m/s immediately!
+      this.player.speed = 25.0;
+    }
+
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
     this.upgradeModal.hide(false);
+    this.missionsModal.hide(false);
+    this.eventSelectModal.hide(false);
+
     this.hud.reset();
+    this.hud.setMode(this.activeGameMode);
+    if (this.activeGameMode === 'TIME_TRIAL') {
+      this.hud.setTimeTrialTime(60.0);
+    } else if (this.activeGameMode === 'COIN_RUSH') {
+      this.hud.setCoinRushProgress(0, 150);
+    } else if (this.activeGameMode === 'SURVIVAL') {
+      this.hud.setSurvivalDistance(0);
+    }
     this.hud.show();
     this.inputManager.setEnabled(true);
+
+    EventBus.getInstance().emit(EVENTS.RUN_STARTED, this.activeGameMode);
   }
 
   public pause(): void {
@@ -167,6 +220,8 @@ export class Game {
     this.pauseModal.hide();
     this.gameOverModal.hide();
     this.upgradeModal.hide();
+    this.missionsModal.hide();
+    this.eventSelectModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
@@ -174,15 +229,95 @@ export class Game {
     this.inputManager.setEnabled(false);
   }
 
-  private handleGameOver(): void {
+  private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' = 'CRASH'): void {
+    if (this.lifecycleState === 'GAMEOVER') return;
     this.lifecycleState = 'GAMEOVER';
     this.inputManager.setEnabled(false);
+
+    EventBus.getInstance().emit(EVENTS.RUN_FINISHED, {
+      score: this.score,
+      coins: this.coinsCount,
+      distance: this.player.distanceTraveled,
+      mode: this.activeGameMode,
+      reason
+    });
     EventBus.getInstance().emit(EVENTS.GAME_OVER);
+
+    // Calculate Mode-Specific Results & Bonus Rewards
+    let resultMeta: { title: string; subtitle?: string; bonusCoins?: number } = {
+      title: 'RUN OVER!'
+    };
+
+    if (this.activeGameMode === 'TIME_TRIAL') {
+      if (reason === 'TIME_TRIAL_COMPLETE') {
+        resultMeta = {
+          title: "TIME'S UP! ⏱️",
+          subtitle: `Time Trial Sprint Score: ${Math.floor(this.score).toLocaleString()}`
+        };
+      } else {
+        resultMeta = {
+          title: 'TIME TRIAL CRASH! 💥',
+          subtitle: `Finished before clock expiration`
+        };
+      }
+    } else if (this.activeGameMode === 'COIN_RUSH') {
+      if (reason === 'COIN_RUSH_VICTORY') {
+        const bonusCoins = 1000;
+        UpgradeManager.getInstance().addCoins(bonusCoins);
+
+        const currentBest = this.progression.getState().lifetimeStats.coinRushBestTime;
+        if (currentBest === 0 || this.coinRushElapsed < currentBest) {
+          this.progression.getState().lifetimeStats.coinRushBestTime = Math.round(this.coinRushElapsed * 10) / 10;
+          this.progression.saveState();
+        }
+
+        resultMeta = {
+          title: 'VAULT CLEARED! 🪙',
+          subtitle: `Target 150 coins reached in ${this.coinRushElapsed.toFixed(1)}s! (+${bonusCoins} Vault Bonus!)`,
+          bonusCoins
+        };
+      } else {
+        resultMeta = {
+          title: 'RUSH FAILED! 💥',
+          subtitle: `Collected ${this.coinsCount} / 150 coins before crashing`
+        };
+      }
+    } else if (this.activeGameMode === 'SURVIVAL') {
+      const dist = Math.floor(this.player.distanceTraveled);
+      let bonusCoins = 0;
+      let rank = 'Bronze Survivor';
+      if (dist >= 2000) {
+        bonusCoins = 1500;
+        rank = 'Apex Gold Survivor 🥇';
+      } else if (dist >= 1000) {
+        bonusCoins = 750;
+        rank = 'Silver Survivor 🥈';
+      } else if (dist >= 500) {
+        bonusCoins = 300;
+        rank = 'Bronze Survivor 🥉';
+      }
+
+      if (bonusCoins > 0) {
+        UpgradeManager.getInstance().addCoins(bonusCoins);
+      }
+
+      resultMeta = {
+        title: 'SURVIVAL ENDED! 💀',
+        subtitle: `${rank} — ${dist}m (+${bonusCoins} Coins)`,
+        bonusCoins
+      };
+    }
 
     // Show Game Over modal after brief collision reaction
     setTimeout(() => {
       this.hud.hide();
-      this.gameOverModal.show(this.score, this.coinsCount, this.player.distanceTraveled);
+      this.gameOverModal.show(
+        this.score,
+        this.coinsCount,
+        this.player.distanceTraveled,
+        this.activeGameMode,
+        resultMeta
+      );
     }, 1100);
   }
 
@@ -195,9 +330,29 @@ export class Game {
     const dt = Math.min(rawDt, 0.08);
 
     if (this.lifecycleState === 'PLAYING') {
-      // 1. Multiplier calculation
-      this.scoreMultiplier = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
+      // 1. Multiplier calculation (Time Trial awards 2X base multiplier)
+      let baseMult = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
+      if (this.activeGameMode === 'TIME_TRIAL') {
+        baseMult *= 2;
+      }
+      this.scoreMultiplier = baseMult;
       this.hud.setMultiplier(this.scoreMultiplier);
+
+      // 2. Mode Timers & Goals Check
+      if (this.activeGameMode === 'TIME_TRIAL') {
+        this.timeTrialRemaining -= dt;
+        this.hud.setTimeTrialTime(this.timeTrialRemaining);
+        if (this.timeTrialRemaining <= 0) {
+          this.timeTrialRemaining = 0;
+          this.handleGameOver('TIME_TRIAL_COMPLETE');
+          return;
+        }
+      } else if (this.activeGameMode === 'COIN_RUSH') {
+        this.coinRushElapsed += dt;
+        this.hud.setCoinRushProgress(this.coinsCount, 150);
+      } else if (this.activeGameMode === 'SURVIVAL') {
+        this.hud.setSurvivalDistance(this.player.distanceTraveled);
+      }
 
       // 3. Update player physics and movement
       this.player.update(dt);

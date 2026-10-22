@@ -42,8 +42,11 @@ export class PowerupManager {
       warnedExpiring: false
     });
 
+    this.eventBus.emit(EVENTS.POWERUP_ACTIVATED, type);
+
     if (type === 'HOVERBOARD') {
       this.eventBus.emit(EVENTS.HOVERBOARD_ACTIVATED);
+      this.eventBus.emit(EVENTS.BOARD_ACTIVATED);
     } else if (type === 'SHIELD') {
       this.eventBus.emit('SHIELD_ACTIVATED');
     } else if (type === 'JETPACK') {

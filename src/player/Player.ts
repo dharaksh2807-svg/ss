@@ -219,6 +219,7 @@ export class Player {
     const forwardStep = effectiveSpeed * dt;
     this.position.z -= forwardStep; // Moving forward along negative Z
     this.distanceTraveled += forwardStep;
+    this.eventBus.emit(EVENTS.DISTANCE_TRAVELED, forwardStep);
 
     // Speed progression
     if (this.speed < CONSTANTS.MAX_SPEED) {
@@ -297,6 +298,7 @@ export class Player {
             this.state = 'RUN';
           }
           this.eventBus.emit(EVENTS.LAND);
+          this.eventBus.emit(EVENTS.JUMP_COMPLETED);
         }
       } else {
         // Keep grounded or handle falling off train roofs
@@ -318,6 +320,7 @@ export class Player {
         if (!this.isJumping && this.state !== 'JETPACK') {
           this.state = 'RUN';
         }
+        this.eventBus.emit(EVENTS.SLIDE_COMPLETED);
       }
     }
 

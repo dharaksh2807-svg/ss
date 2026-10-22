@@ -22,6 +22,7 @@ export interface ObstacleInstance {
   nearMissBox: THREE.Box3;
   nearMissTriggered: boolean;
   active: boolean;
+  passed?: boolean;
   hasRamp?: boolean;
   length?: number;
   // Dynamic moving train behavior
