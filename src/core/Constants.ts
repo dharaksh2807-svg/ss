@@ -30,13 +30,13 @@ export const CONSTANTS = {
   SLIDE_DURATION: 0.65, // Slide duration in seconds
   LANDING_ABSORB_DURATION: 0.12, // Brief knee-flexion landing absorption window (seconds)
 
-  // Camera Settings (Derived from REA measurements and normalized)
-  CAMERA_OFFSET_Y: 4.8, // Height above player
-  CAMERA_OFFSET_Z: 6.8, // Distance behind player
-  CAMERA_LOOK_Y: 2.0, // Look target height above player
-  CAMERA_LOOK_AHEAD_Z: -12.0, // Look ahead distance
-  CAMERA_FOV: 65,
-  CAMERA_LERP_X: 10.0, // Snappy camera tracking
+  // Camera Settings (Derived from REA arcade runner composition)
+  CAMERA_OFFSET_Y: 3.25, // Height above player support surface (lowers pitch angle from ~30° down to natural 14°)
+  CAMERA_OFFSET_Z: 5.60, // Distance behind player (prominent character silhouette without obstructing view)
+  CAMERA_LOOK_Y: 1.65, // Look target height above runner
+  CAMERA_LOOK_AHEAD_Z: -18.0, // Long-range forward horizon visibility (ahead into oncoming track)
+  CAMERA_FOV: 60, // Standard landscape FOV (responsive portrait widens to 68)
+  CAMERA_LERP_X: 10.0, // Snappy camera lateral tracking
   CAMERA_LERP_Y: 8.0,
   CAMERA_SHAKE_DECAY: 6.0,
 

@@ -26,6 +26,10 @@ export class HUD {
   private toastContainerEl: HTMLElement | null = null;
   private missionTickerEl: HTMLElement | null = null;
 
+  private completedCelebrationMissionId: string | null = null;
+  private completedCelebrationTimer: number = 0;
+  private completedMissionInfo: { title: string; rewardCoins: number } | null = null;
+
   constructor(private powerupManager: PowerupManager) {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
@@ -103,8 +107,11 @@ export class HUD {
       bus.emit(EVENTS.GAME_PAUSE);
     });
 
-    // Progression Event Toasts
+    // Progression Event Toasts & HUD Celebration Lifecycle
     bus.on(EVENTS.MISSION_COMPLETED, (mission: any) => {
+      this.completedCelebrationMissionId = mission.id;
+      this.completedMissionInfo = { title: mission.title, rewardCoins: mission.rewardCoins || 100 };
+      this.completedCelebrationTimer = 2.5; // 2.5s celebration in the ticker before advancing
       this.showProgressionToast('MISSION COMPLETED! 🎯', mission.title, `+${mission.rewardCoins} 🪙`);
     });
 
@@ -135,7 +142,7 @@ export class HUD {
     }
   }
 
-  public update(): void {
+  public update(dt: number = 0.016): void {
     // 1. Update on-screen hoverboard deploy button
     if (this.boardBtn && this.boardChargesBadge) {
       const isBoardActive = this.hoverboardManager.isBoardActive();
@@ -160,17 +167,37 @@ export class HUD {
       }
     }
 
-    // 2. Update mini mission ticker
+    // 2. Update mini mission ticker with full completion celebration & graceful overlay retirement
     if (this.missionTickerEl) {
-      const activeMissions = ProgressionManager.getInstance().getActiveMissions();
-      const curr = activeMissions.find(m => !m.completed) || activeMissions[0];
-      if (curr) {
-        const pct = Math.min(100, Math.floor((curr.progress / curr.target) * 100));
+      if (this.completedCelebrationTimer > 0) {
+        this.completedCelebrationTimer -= dt;
+      }
+
+      if (this.completedCelebrationTimer > 0) {
+        this.missionTickerEl.style.display = 'flex';
+        this.missionTickerEl.classList.add('ticker-celebrating');
+        const info = this.completedMissionInfo;
         this.missionTickerEl.innerHTML = `
-          <span class="ticker-dot">🎯</span>
-          <span class="ticker-label">${curr.title}:</span>
-          <span class="ticker-val">${Math.floor(curr.progress)} / ${curr.target} (${pct}%)</span>
+          <span class="ticker-dot">✨</span>
+          <span class="ticker-label">${info ? info.title : 'Mission'}:</span>
+          <span class="ticker-val completed-gold">COMPLETED! +${info ? info.rewardCoins : 100} 🪙</span>
         `;
+      } else {
+        this.missionTickerEl.classList.remove('ticker-celebrating');
+        const activeMissions = ProgressionManager.getInstance().getActiveMissions();
+        const curr = activeMissions.find(m => !m.completed);
+        if (curr) {
+          this.missionTickerEl.style.display = 'flex';
+          const pct = Math.min(100, Math.floor((curr.progress / curr.target) * 100));
+          this.missionTickerEl.innerHTML = `
+            <span class="ticker-dot">🎯</span>
+            <span class="ticker-label">${curr.title}:</span>
+            <span class="ticker-val">${Math.floor(curr.progress)} / ${curr.target} (${pct}%)</span>
+          `;
+        } else {
+          // All active objectives completed: gracefully retire from prominent HUD
+          this.missionTickerEl.style.display = 'none';
+        }
       }
     }
 
@@ -298,6 +325,12 @@ export class HUD {
     if (this.modeBadgeEl) {
       this.modeBadgeEl.classList.add('hidden');
       this.modeBadgeEl.innerHTML = '';
+    }
+    this.completedCelebrationMissionId = null;
+    this.completedCelebrationTimer = 0;
+    this.completedMissionInfo = null;
+    if (this.missionTickerEl) {
+      this.missionTickerEl.classList.remove('ticker-celebrating');
     }
   }
 

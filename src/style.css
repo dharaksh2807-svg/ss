@@ -91,8 +91,8 @@ html, body {
 
 .hud-stats-left {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: max(20px, env(safe-area-inset-top, 20px));
+  left: max(20px, env(safe-area-inset-left, 20px));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -168,8 +168,8 @@ html, body {
 
 .hud-stats-right {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: max(20px, env(safe-area-inset-top, 20px));
+  right: max(20px, env(safe-area-inset-right, 20px));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -200,6 +200,7 @@ html, body {
   font-size: 1.5rem;
   color: #ffffff;
   letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .hud-icon-btn {
@@ -3884,28 +3885,48 @@ kbd {
 /* 7. Mini Mission Ticker in HUD */
 .hud-mission-ticker {
   position: absolute;
-  top: 24px;
+  top: max(20px, env(safe-area-inset-top, 20px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(12, 17, 34, 0.78);
+  background: rgba(12, 17, 34, 0.82);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  padding: 5px 16px;
-  font-size: 0.78rem;
+  padding: 6px 18px;
+  font-size: 0.80rem;
   font-weight: 700;
   color: #fff;
   pointer-events: none;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   z-index: 25;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-mission-ticker.ticker-celebrating {
+  background: rgba(22, 28, 48, 0.94);
+  border-color: rgba(255, 215, 0, 0.75);
+  box-shadow: 0 0 22px rgba(255, 215, 0, 0.45);
+  animation: celebrationPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes celebrationPulse {
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(1.05); }
 }
 
 .hud-mission-ticker .ticker-val {
   color: var(--arcade-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-mission-ticker .completed-gold {
+  color: #ffd700;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.75);
 }
 
 /* 8. Pause & Game Over Enhancements */
@@ -4061,6 +4082,27 @@ kbd {
   }
   .pause-buttons-grid {
     grid-template-columns: 1fr;
+  }
+  /* Mobile HUD layout protection */
+  .hud-stats-left {
+    gap: 6px;
+    left: max(12px, env(safe-area-inset-left, 12px));
+  }
+  .hud-stats-right {
+    gap: 6px;
+    right: max(12px, env(safe-area-inset-right, 12px));
+  }
+  .hud-mission-ticker {
+    top: max(72px, calc(env(safe-area-inset-top, 16px) + 54px));
+    font-size: 0.72rem;
+    padding: 4px 12px;
+    max-width: 90vw;
+  }
+  .hud-board-btn {
+    bottom: max(96px, calc(env(safe-area-inset-bottom, 16px) + 80px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    width: 54px;
+    height: 54px;
   }
 }
 

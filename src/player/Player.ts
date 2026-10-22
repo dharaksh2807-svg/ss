@@ -122,6 +122,7 @@ export class Player {
       this.mesh.remove(prevMesh);
       this.mesh.add(this.model.mesh);
     }
+    this.model.mesh.rotation.set(0, 0, 0);
     this.updateCollider();
   }
 
@@ -130,6 +131,8 @@ export class Player {
     this.targetLane = 0;
     this.position.set(0, CONSTANTS.PLAYER_BASE_Y, 0);
     this.mesh.position.copy(this.position);
+    this.mesh.rotation.set(0, 0, 0);
+    this.model.mesh.rotation.set(0, 0, 0);
     this.speedController.reset();
     this.groundY = CONSTANTS.PLAYER_BASE_Y;
     this.verticalVelocity = 0;

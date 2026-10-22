@@ -6,7 +6,7 @@ export class CameraController {
   public camera: THREE.PerspectiveCamera;
   private targetPosition = new THREE.Vector3();
   private currentPosition = new THREE.Vector3();
-  private lookTarget = new THREE.Vector3();
+  public lookTarget = new THREE.Vector3();
   private shakeTrauma = 0;
   private shakeOffset = new THREE.Vector3();
 
@@ -20,10 +20,11 @@ export class CameraController {
       ? window.innerWidth / window.innerHeight
       : 16 / 9;
 
+    // Near plane lowered from 0.5 to 0.2 to prevent near-clipping on adjacent train carriages
     this.camera = new THREE.PerspectiveCamera(
       CONSTANTS.CAMERA_FOV,
       aspect,
-      0.5,
+      0.2,
       600
     );
 
@@ -56,16 +57,19 @@ export class CameraController {
     dt: number,
     timeSec: number = 0,
     speed: number = CONSTANTS.INITIAL_SPEED,
-    groundY: number = CONSTANTS.PLAYER_BASE_Y
+    groundY: number = CONSTANTS.PLAYER_BASE_Y,
+    isSliding: boolean = false
   ): void {
+    const isPortrait = this.camera.aspect < 1.0;
+
     if (this.isLobbyMode) {
-      if (Math.abs(this.camera.fov - CONSTANTS.CAMERA_FOV) > 0.1) {
-        this.camera.fov = CONSTANTS.CAMERA_FOV;
+      const lobbyBaseFov = isPortrait ? 66.0 : CONSTANTS.CAMERA_FOV;
+      if (Math.abs(this.camera.fov - lobbyBaseFov) > 0.1) {
+        this.camera.fov = lobbyBaseFov;
         this.camera.updateProjectionMatrix();
       }
 
       // Cinematic front-quarter framing in the subway lobby
-      const isPortrait = this.camera.aspect < 1.0;
       const sway = Math.sin(timeSec * 0.45) * 0.12;
       const bob = Math.cos(timeSec * 0.35) * 0.04;
 
@@ -85,22 +89,25 @@ export class CameraController {
       return;
     }
 
-    // Dynamic FOV widening: subtly expands from 65° to 70.5° at high speed to widen peripheral vision
+    // Dynamic FOV widening:
+    // Base FOV: 60° landscape, 68° portrait to frame all 3 track lanes cleanly.
+    // Expands smoothly by +4.5° at high speed to enhance sense of velocity without stretching trains.
+    const baseFov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     const speedRatio = Math.max(0, Math.min(1.0, (speed - CONSTANTS.INITIAL_SPEED) / (CONSTANTS.MAX_SPEED - CONSTANTS.INITIAL_SPEED)));
-    const targetFov = CONSTANTS.CAMERA_FOV + speedRatio * 5.5;
+    const targetFov = baseFov + speedRatio * 4.5;
     if (Math.abs(this.camera.fov - targetFov) > 0.05) {
-      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.0 * dt));
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.5 * dt));
       this.camera.updateProjectionMatrix();
     }
 
     // Coordinated vertical tracking:
-    // Support two regimes:
-    // 1. Jetpack high-altitude flight: tracks flight elevation smoothly, pulls back slightly,
-    //    and extends forward lookahead so oncoming aerial coin ribbons are clearly visible.
-    // 2. Ground & jump running: follows support surface authoritatively while dampening
-    //    airborne jump bobbing (30% apex tracking) so the horizon stays stable.
+    // 1. Jetpack flight: elevates smoothly to cruise altitude, expands lookahead for aerial coins.
+    // 2. Ground & train-roof running: tracks support surface authoritatively while dampening
+    //    airborne jump bobbing (30% apex follow) so track horizon remains clear and stable.
     const airborneDelta = Math.max(0, playerPos.y - groundY);
-    const isJetpackFlight = playerPos.y > CONSTANTS.PLAYER_BASE_Y + 2.2;
+    // Jetpack flight occurs at high altitude (>=7.0m) or high vertical clearance above ground (>3.6m)
+    // Train rooftop running (groundY = 4.35m, playerPos.y = 4.35m) is ground locomotion, not jetpack flight
+    const isJetpackFlight = playerPos.y >= 7.0 || (playerPos.y - groundY > 3.6);
 
     let targetCamY: number;
     let targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z;
@@ -111,11 +118,17 @@ export class CameraController {
       targetCamY = playerPos.y + 2.4;
       targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8; // Step back slightly for wide sky vista
       targetLookY = playerPos.y + 0.6;
-      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 10.0; // Look 22m ahead along flight path
+      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 6.0; // Look 24m ahead along flight path
     } else {
       const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
       targetCamY = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
       targetLookY = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
+
+      // Subtle dynamic camera dip during slide for enhanced tactile action feedback
+      if (isSliding) {
+        targetCamY -= 0.18;
+        targetLookY -= 0.10;
+      }
     }
 
     // Target position behind and above player in gameplay
@@ -131,13 +144,13 @@ export class CameraController {
     this.currentPosition.y += (this.targetPosition.y - this.currentPosition.y) * lerpY;
     this.currentPosition.z = this.targetPosition.z; // Exact forward distance lock
 
-    // Process camera shake with noise
+    // Process camera shake with non-linear decay
     if (this.shakeTrauma > 0.001) {
-      const shakeAmt = this.shakeTrauma * this.shakeTrauma; // Non-linear feel
+      const shakeAmt = this.shakeTrauma * this.shakeTrauma;
       this.shakeOffset.set(
-        (Math.random() * 2 - 1) * shakeAmt * 0.45,
-        (Math.random() * 2 - 1) * shakeAmt * 0.35,
-        (Math.random() * 2 - 1) * shakeAmt * 0.25
+        (Math.random() * 2 - 1) * shakeAmt * 0.40,
+        (Math.random() * 2 - 1) * shakeAmt * 0.30,
+        (Math.random() * 2 - 1) * shakeAmt * 0.22
       );
       this.shakeTrauma = Math.max(0, this.shakeTrauma - CONSTANTS.CAMERA_SHAKE_DECAY * dt);
     } else {
@@ -146,7 +159,7 @@ export class CameraController {
 
     this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
 
-    // Look at point slightly ahead and above the character, with dampened vertical tracking
+    // Look at point slightly ahead and above the character, with centered lateral tracking
     this.lookTarget.x = this.currentPosition.x * 0.5 + playerPos.x * 0.5;
     this.lookTarget.y = targetLookY;
     this.lookTarget.z = playerPos.z + targetLookAheadZ;
@@ -156,7 +169,8 @@ export class CameraController {
 
   public reset(playerPos: THREE.Vector3): void {
     this.shakeTrauma = 0;
-    this.camera.fov = CONSTANTS.CAMERA_FOV;
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();
     if (this.isLobbyMode) {
       this.currentPosition.copy(this.lobbyTargetPos);
@@ -174,6 +188,8 @@ export class CameraController {
 
   public onResize(): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();
   }
 }

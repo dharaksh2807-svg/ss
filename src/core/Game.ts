@@ -415,7 +415,7 @@ export class Game {
       EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
 
       // 6. Update HUD UI
-      this.hud.update();
+      this.hud.update(dt);
 
       // 7. Update lighting target to center around player and update speed lines
       this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
@@ -430,7 +430,14 @@ export class Game {
     }
 
     // Camera follow update with dynamic speed-based FOV and coordinated elevation tracking
-    this.cameraController.update(this.player.position, dt, now / 1000, this.player.speed, this.player.groundY);
+    this.cameraController.update(
+      this.player.position,
+      dt,
+      now / 1000,
+      this.player.speed,
+      this.player.groundY,
+      this.player.isSliding
+    );
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();
