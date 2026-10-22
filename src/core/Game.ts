@@ -17,6 +17,7 @@ import { UpgradeManager } from '../player/UpgradeManager';
 import { MissionsModal } from '../ui/MissionsModal';
 import { EventSelectModal } from '../ui/EventSelectModal';
 import { CharacterSelectModal } from '../ui/CharacterSelectModal';
+import { HoverboardSelectModal } from '../ui/HoverboardSelectModal';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
 
@@ -40,6 +41,7 @@ export class Game {
   private missionsModal: MissionsModal;
   private eventSelectModal: EventSelectModal;
   private characterSelectModal: CharacterSelectModal;
+  private hoverboardSelectModal: HoverboardSelectModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -75,6 +77,7 @@ export class Game {
     this.missionsModal = new MissionsModal();
     this.eventSelectModal = new EventSelectModal();
     this.characterSelectModal = new CharacterSelectModal();
+    this.hoverboardSelectModal = new HoverboardSelectModal();
 
     this.setupEvents();
     this.startScreen.show();
@@ -186,6 +189,8 @@ export class Game {
     this.upgradeModal.hide(false);
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
+    this.characterSelectModal.hide(false);
+    this.hoverboardSelectModal.hide(false);
 
     this.hud.reset();
     this.hud.setMode(this.activeGameMode);
@@ -225,6 +230,8 @@ export class Game {
     this.upgradeModal.hide();
     this.missionsModal.hide();
     this.eventSelectModal.hide();
+    this.characterSelectModal.hide();
+    this.hoverboardSelectModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
@@ -338,7 +345,7 @@ export class Game {
       if (this.activeGameMode === 'TIME_TRIAL') {
         baseMult *= 2;
       }
-      this.scoreMultiplier = baseMult;
+      this.scoreMultiplier = baseMult + this.player.hoverboardManager.getScoreMultiplierBonus();
       this.hud.setMultiplier(this.scoreMultiplier);
 
       // 2. Mode Timers & Goals Check

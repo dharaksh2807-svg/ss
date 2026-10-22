@@ -40,6 +40,14 @@ export class GameOverModal {
       });
     }
 
+    const boardsBtn = document.getElementById('game-over-boards-btn') as HTMLButtonElement;
+    if (boardsBtn) {
+      boardsBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_BOARDS', 'GAMEOVER');
+      });
+    }
+
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {
         this.hide();

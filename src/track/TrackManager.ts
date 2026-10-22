@@ -181,8 +181,9 @@ export class TrackManager {
 
   private checkCollisions(player: Player, dt: number): void {
     const playerBox = player.collider;
-    const isMagnet = player.powerups.isMagnetActive();
-    const magnetRadius = isMagnet ? player.powerups.getMagnetRadius() : 0;
+    const boardMagnetBonus = player.hoverboardManager ? player.hoverboardManager.getMagnetRadiusBonus() : 0;
+    const isMagnet = player.powerups.isMagnetActive() || boardMagnetBonus > 0;
+    const magnetRadius = (player.powerups.isMagnetActive() ? player.powerups.getMagnetRadius() : 0) + boardMagnetBonus;
 
     for (const chunk of this.chunks) {
       // Obstacle Collisions

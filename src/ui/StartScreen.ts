@@ -32,6 +32,14 @@ export class StartScreen {
       });
     }
 
+    const boardsBtn = document.getElementById('start-boards-btn') as HTMLButtonElement;
+    if (boardsBtn) {
+      boardsBtn.addEventListener('click', () => {
+        this.hide();
+        EventBus.getInstance().emit('OPEN_BOARDS', 'START');
+      });
+    }
+
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {
         this.hide();

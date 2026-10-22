@@ -129,4 +129,5 @@ export interface ProgressionState {
   selectedOutfits: Record<string, string>;   // characterId -> active outfitId
   unlockedBoards: string[];
   selectedBoard: string;
+  hoverboardCharges: number;
 }

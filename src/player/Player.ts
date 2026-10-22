@@ -6,6 +6,7 @@ import { PowerupManager } from './PowerupManager';
 import { InputAction } from '../core/InputManager';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
+import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
 export type PlayerState = 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH';
 
@@ -13,6 +14,7 @@ export class Player {
   public mesh: THREE.Group;
   public model: CharacterModel;
   public powerups: PowerupManager;
+  public hoverboardManager: HoverboardManager;
 
   // Position & Kinematics
   public position: THREE.Vector3 = new THREE.Vector3(0, CONSTANTS.PLAYER_BASE_Y, 0);
@@ -60,6 +62,7 @@ export class Player {
     this.mesh.add(this.model.mesh);
 
     this.powerups = new PowerupManager();
+    this.hoverboardManager = HoverboardManager.getInstance();
     this.updateCollider();
 
     this.eventBus.on('CHARACTER_EQUIPPED', (data: { charId: string; outfitId: string }) => {
@@ -98,6 +101,7 @@ export class Player {
     this.lastSlideDist = -999;
     this.state = 'RUN';
     this.powerups.reset();
+    this.hoverboardManager.reset();
 
     // Ensure model reflects current selected character & outfit
     const prog = ProgressionManager.getInstance();
@@ -141,7 +145,7 @@ export class Player {
         break;
       case 'ACTION':
         // Double-tap or spacebar activates hoverboard
-        this.powerups.activate('HOVERBOARD');
+        this.hoverboardManager.activate();
         break;
     }
   }
@@ -171,9 +175,10 @@ export class Player {
     this.isChangingLane = true;
     this.queuedLaneChange = null;
 
-    // Dynamic duration based on current speed
+    // Dynamic duration based on current speed and hoverboard handling ability
     const speedRatio = (this.speed - CONSTANTS.INITIAL_SPEED) / (CONSTANTS.MAX_SPEED - CONSTANTS.INITIAL_SPEED);
-    this.laneChangeDuration = Math.max(0.12, CONSTANTS.LANE_CHANGE_DURATION * (1.0 - speedRatio * 0.25));
+    const baseDuration = Math.max(0.12, CONSTANTS.LANE_CHANGE_DURATION * (1.0 - speedRatio * 0.25));
+    this.laneChangeDuration = baseDuration * this.hoverboardManager.getLaneChangeDurationMultiplier();
 
     this.eventBus.emit(EVENTS.LANE_CHANGE, nextLane);
   }
@@ -194,6 +199,9 @@ export class Player {
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {
       jumpVelocity *= this.powerups.getJumpVelocityMultiplier();
+    }
+    if (this.hoverboardManager.isBoardActive()) {
+      jumpVelocity *= this.hoverboardManager.getJumpVelocityMultiplier();
     }
     this.verticalVelocity = jumpVelocity;
 
@@ -219,14 +227,17 @@ export class Player {
   public update(dt: number): void {
     if (this.state === 'IDLE') return;
 
-    // Powerups status & visual accessories
+    // Powerups & Hoverboard status & visual accessories
     this.powerups.update(dt);
-    this.model.setHoverboardVisible(this.powerups.isHoverboardActive());
+    this.hoverboardManager.update(dt);
+
+    const isBoardActive = this.hoverboardManager.isBoardActive();
+    this.model.setHoverboardVisible(isBoardActive, this.hoverboardManager.getActiveBoard()?.id);
     this.model.setSuperSneakersActive(this.powerups.isSuperSneakersActive());
     this.model.setJetpackVisible(this.powerups.isJetpackActive());
     this.model.setShieldVisible(this.powerups.hasShieldActive());
-    this.model.setMagnetVisible(this.powerups.isMagnetActive());
-    this.model.setInvulnerable(this.powerups.isInvulnerable());
+    this.model.setMagnetVisible(this.powerups.isMagnetActive() || (isBoardActive && this.hoverboardManager.getMagnetRadiusBonus() > 0));
+    this.model.setInvulnerable(this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash());
 
     if (this.state === 'CRASH') {
       this.model.updateAnimation(this.state, this.speed, 0, this.groundY, dt);
@@ -242,10 +253,11 @@ export class Player {
       }
     }
 
-    // 1. Forward Movement (with smooth stumble speed dip)
-    const effectiveSpeed = this.isStumbling
+    // 1. Forward Movement (with smooth stumble speed dip and hoverboard speed boost)
+    let effectiveSpeed = this.isStumbling
       ? this.speed * (1.0 - CONSTANTS.STUMBLE_SPEED_DROP)
       : this.speed;
+    effectiveSpeed *= this.hoverboardManager.getSpeedMultiplier();
     const forwardStep = effectiveSpeed * dt;
     this.position.z -= forwardStep; // Moving forward along negative Z
     this.distanceTraveled += forwardStep;
@@ -317,7 +329,10 @@ export class Player {
       // Regular Ground & Airborne Jump Physics
       if (this.isJumping) {
         this.position.y += this.verticalVelocity * dt;
-        this.verticalVelocity -= CONSTANTS.GRAVITY * dt;
+        const effectiveGravity = this.hoverboardManager.isBoardActive()
+          ? CONSTANTS.GRAVITY * this.hoverboardManager.getGravityMultiplier()
+          : CONSTANTS.GRAVITY;
+        this.verticalVelocity -= effectiveGravity * dt;
 
         // Landing check on current ground height (supports ground or train roofs!)
         if (this.position.y <= this.groundY) {
@@ -370,7 +385,7 @@ export class Player {
 
   public crash(): boolean {
     // 1. Invulnerability grace window active
-    if (this.powerups.isInvulnerable()) {
+    if (this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash()) {
       return false; // Ignored during grace period
     }
 
@@ -380,7 +395,7 @@ export class Player {
     }
 
     // 3. Hoverboard absorbs collision
-    if (this.powerups.breakHoverboard()) {
+    if (this.hoverboardManager.breakBoard()) {
       return false; // Absorbed by hoverboard!
     }
 

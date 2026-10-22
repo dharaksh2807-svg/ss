@@ -1,5 +1,6 @@
 import { EventBus, EVENTS } from '../core/EventBus';
 import { PowerupManager, PowerupType } from '../player/PowerupManager';
+import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
 export class HUD {
   private container: HTMLDivElement;
@@ -9,6 +10,9 @@ export class HUD {
   private powerupContainer: HTMLElement;
   private feedbackStack: HTMLElement | null;
   private pauseBtn: HTMLButtonElement;
+  private boardBtn: HTMLButtonElement | null = null;
+  private boardChargesBadge: HTMLElement | null = null;
+  private hoverboardManager: HoverboardManager;
 
   private score: number = 0;
   private coins: number = 0;
@@ -25,6 +29,23 @@ export class HUD {
     this.powerupContainer = document.getElementById('hud-powerups')!;
     this.feedbackStack = document.getElementById('hud-feedback-stack');
     this.pauseBtn = document.getElementById('hud-pause-btn') as HTMLButtonElement;
+    this.hoverboardManager = HoverboardManager.getInstance();
+
+    this.boardBtn = document.getElementById('hud-board-btn') as HTMLButtonElement;
+    this.boardChargesBadge = document.getElementById('hud-board-charges');
+
+    if (this.boardBtn) {
+      this.boardBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hoverboardManager.activate();
+      });
+      this.boardBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hoverboardManager.activate();
+      });
+    }
 
     // Create mode badge container if not present
     let modeEl = document.getElementById('hud-mode-badge');
@@ -98,14 +119,64 @@ export class HUD {
   }
 
   public update(): void {
-    // Render active powerup duration bars
-    const active = this.powerupManager.getActivePowerups();
-    if (active.length === 0) {
+    // 1. Update on-screen hoverboard deploy button
+    if (this.boardBtn && this.boardChargesBadge) {
+      const isBoardActive = this.hoverboardManager.isBoardActive();
+      const cooldown = this.hoverboardManager.getCooldownRemaining();
+      const charges = this.hoverboardManager.getCharges();
+
+      if (isBoardActive) {
+        this.boardBtn.classList.add('active');
+        this.boardBtn.classList.remove('cooldown', 'empty');
+        this.boardChargesBadge.textContent = `${Math.ceil(this.hoverboardManager.getRemaining())}s`;
+      } else if (cooldown > 0 && charges <= 0) {
+        this.boardBtn.classList.add('cooldown');
+        this.boardBtn.classList.remove('active', 'empty');
+        this.boardChargesBadge.textContent = `${Math.ceil(cooldown)}s`;
+      } else if (charges <= 0) {
+        this.boardBtn.classList.add('empty');
+        this.boardBtn.classList.remove('active', 'cooldown');
+        this.boardChargesBadge.textContent = '0';
+      } else {
+        this.boardBtn.classList.remove('active', 'cooldown', 'empty');
+        this.boardChargesBadge.textContent = charges.toString();
+      }
+    }
+
+    // 2. Render active powerup duration bars & active hoverboard card
+    const active = this.powerupManager.getActivePowerups().filter(p => p.type !== 'HOVERBOARD');
+    const isHoverboardActive = this.hoverboardManager.isBoardActive();
+    const activeBoard = this.hoverboardManager.getActiveBoard();
+
+    if (active.length === 0 && !isHoverboardActive) {
       this.powerupContainer.innerHTML = '';
       return;
     }
 
     let html = '';
+
+    // Active Hoverboard Card at top of stack
+    if (isHoverboardActive && activeBoard) {
+      const remaining = this.hoverboardManager.getRemaining();
+      const pct = Math.max(0, Math.min(100, this.hoverboardManager.getProgress() * 100));
+      const isExpiring = remaining <= 3.0;
+      const expiringClass = isExpiring ? 'powerup-expiring' : '';
+      const timerDisplay = isExpiring ? `${remaining.toFixed(1)}s` : `${Math.ceil(remaining)}s`;
+
+      html += `
+        <div class="powerup-badge powerup-hoverboard powerup-${activeBoard.id} ${expiringClass}">
+          <div class="powerup-header">
+            <span class="powerup-icon">${activeBoard.icon}</span>
+            <span class="powerup-name">${activeBoard.name.toUpperCase()}</span>
+            <span class="powerup-timer">${timerDisplay}</span>
+          </div>
+          <div class="powerup-bar-track">
+            <div class="powerup-bar-fill" style="width: ${pct}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
     for (const p of active) {
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
       let icon = '⚡';
@@ -132,10 +203,6 @@ export class HUD {
         icon = '🛡️';
         name = 'SHIELD';
         colorClass = 'powerup-shield';
-      } else if (p.type === 'HOVERBOARD') {
-        icon = '🛹';
-        name = 'HOVERBOARD';
-        colorClass = 'powerup-hoverboard';
       }
 
       const isExpiring = p.remaining <= 3.0;

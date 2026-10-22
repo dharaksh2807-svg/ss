@@ -19,6 +19,7 @@ import {
   DEFAULT_SEASON_PASS
 } from './MissionCatalog';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
+import { getHoverboardById, HOVERBOARD_CHARGES_PACK } from '../hoverboard/HoverboardCatalog';
 
 const STORAGE_KEY = 'metro_progression_v1';
 
@@ -50,6 +51,11 @@ export class ProgressionManager {
       ProgressionManager.instance = new ProgressionManager();
     }
     return ProgressionManager.instance;
+  }
+
+  public resetAll(): void {
+    this.state = this.getDefaultState();
+    this.saveState();
   }
 
   // --- Date & Daily Reset Helpers ---
@@ -132,8 +138,9 @@ export class ProgressionManager {
         char_cruz: 'cruz_bboy',
         char_nova: 'nova_solar'
       },
-      unlockedBoards: ['board_default'],
-      selectedBoard: 'board_default'
+      unlockedBoards: ['board_urban_glide'],
+      selectedBoard: 'board_urban_glide',
+      hoverboardCharges: 5
     };
   }
 
@@ -180,6 +187,16 @@ export class ProgressionManager {
               char_cruz: 'cruz_bboy',
               char_nova: 'nova_solar'
             };
+          }
+          if (!parsed.unlockedBoards || parsed.unlockedBoards.includes('board_default')) {
+            parsed.unlockedBoards = Array.from(new Set(['board_urban_glide', ...(parsed.unlockedBoards || [])]))
+              .filter((id: string) => id !== 'board_default');
+          }
+          if (!parsed.selectedBoard || parsed.selectedBoard === 'board_default') {
+            parsed.selectedBoard = 'board_urban_glide';
+          }
+          if (parsed.hoverboardCharges === undefined) {
+            parsed.hoverboardCharges = 5;
           }
           return parsed;
         }
@@ -718,5 +735,126 @@ export class ProgressionManager {
     }
 
     return { success: false, message: `Cannot purchase: ${outfit.unlock.description}` };
+  }
+
+  // --- Hoverboard Collection & Charges ---
+
+  public getUnlockedBoards(): string[] {
+    return [...this.state.unlockedBoards];
+  }
+
+  public getSelectedBoard(): string {
+    return this.state.selectedBoard || 'board_urban_glide';
+  }
+
+  public isBoardUnlocked(boardId: string): boolean {
+    return this.state.unlockedBoards.includes(boardId);
+  }
+
+  public unlockBoard(boardId: string): void {
+    if (!this.state.unlockedBoards.includes(boardId)) {
+      this.state.unlockedBoards.push(boardId);
+      this.saveState();
+      this.eventBus.emit('BOARD_UNLOCKED', boardId);
+    }
+  }
+
+  public equipBoard(boardId: string): { success: boolean; message: string } {
+    if (!this.isBoardUnlocked(boardId)) {
+      return { success: false, message: 'Hoverboard not unlocked yet' };
+    }
+
+    const def = getHoverboardById(boardId);
+    if (!def) {
+      return { success: false, message: 'Hoverboard not found' };
+    }
+
+    this.state.selectedBoard = boardId;
+    this.saveState();
+
+    this.eventBus.emit('BOARD_EQUIPPED', boardId);
+    return { success: true, message: `Equipped ${def.name}!` };
+  }
+
+  public purchaseBoard(boardId: string): { success: boolean; message: string } {
+    if (this.isBoardUnlocked(boardId)) {
+      return { success: false, message: 'Hoverboard already owned' };
+    }
+
+    const def = getHoverboardById(boardId);
+    if (!def) {
+      return { success: false, message: 'Hoverboard not found' };
+    }
+
+    if (def.unlock.type === 'FREE') {
+      this.unlockBoard(boardId);
+      this.equipBoard(boardId);
+      return { success: true, message: `Unlocked ${def.name}!` };
+    }
+
+    if (def.unlock.type === 'COINS') {
+      const cost = def.unlock.cost || 0;
+      const upgradeMgr = UpgradeManager.getInstance();
+      if (upgradeMgr.getCoins() < cost) {
+        return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+      }
+
+      // Single deduction exactly once
+      const deducted = upgradeMgr.deductCoins(cost);
+      if (!deducted) {
+        return { success: false, message: 'Transaction failed' };
+      }
+
+      this.unlockBoard(boardId);
+      this.equipBoard(boardId);
+      return { success: true, message: `Purchased and equipped ${def.name}!` };
+    }
+
+    return { success: false, message: `Cannot purchase: ${def.unlock.description}` };
+  }
+
+  public getHoverboardCharges(): number {
+    return this.state.hoverboardCharges ?? 5;
+  }
+
+  public addHoverboardCharges(count: number): void {
+    this.state.hoverboardCharges = (this.state.hoverboardCharges ?? 0) + count;
+    this.saveState();
+    this.eventBus.emit('BOARD_CHARGES_UPDATED', this.state.hoverboardCharges);
+  }
+
+  public consumeHoverboardCharge(): boolean {
+    if ((this.state.hoverboardCharges ?? 0) > 0) {
+      this.state.hoverboardCharges!--;
+      this.saveState();
+      this.eventBus.emit('BOARD_CHARGES_UPDATED', this.state.hoverboardCharges);
+      return true;
+    }
+    return false;
+  }
+
+  public purchaseHoverboardCharges(): { success: boolean; message: string } {
+    const cost = HOVERBOARD_CHARGES_PACK.cost;
+    const upgradeMgr = UpgradeManager.getInstance();
+    if (upgradeMgr.getCoins() < cost) {
+      return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+    }
+
+    const deducted = upgradeMgr.deductCoins(cost);
+    if (!deducted) {
+      return { success: false, message: 'Transaction failed' };
+    }
+
+    this.addHoverboardCharges(HOVERBOARD_CHARGES_PACK.count);
+    return {
+      success: true,
+      message: `Purchased +${HOVERBOARD_CHARGES_PACK.count} Hoverboards!`
+    };
+  }
+
+  public recordHoverboardUsed(): void {
+    this.state.lifetimeStats.totalHoverboardsUsed++;
+    this.saveState();
+    this.updateAchievement('ach_hoverboards', this.state.lifetimeStats.totalHoverboardsUsed);
   }
 }

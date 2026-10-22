@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { CharacterMeshBuilder, BuiltCharacterHierarchy } from '../characters/CharacterMeshBuilder';
+import { HoverboardId } from '../hoverboard/HoverboardCatalog';
+import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/HoverboardMeshBuilder';
 
 export class CharacterModel {
   public mesh: THREE.Group;
@@ -30,6 +32,8 @@ export class CharacterModel {
 
   // Gear & Accessories
   private hoverboardGroup!: THREE.Group;
+  private currentBoardId: HoverboardId = 'board_urban_glide';
+  private activeBoardBuilt: BuiltHoverboard | null = null;
   private backpackGroup!: THREE.Group;
   private shadowMesh!: THREE.Mesh;
 
@@ -124,6 +128,9 @@ export class CharacterModel {
     this.shadowMesh = this.hierarchy.shadowMesh;
 
     this.mesh.add(this.rootGroup);
+
+    // Mount initial hoverboard model
+    this.setHoverboardModel(this.currentBoardId);
   }
 
   private disposeHierarchy(): void {
@@ -274,9 +281,40 @@ export class CharacterModel {
     );
   }
 
-  public setHoverboardVisible(visible: boolean): void {
+  public setHoverboardModel(boardId: HoverboardId): void {
+    if (this.currentBoardId === boardId && this.activeBoardBuilt && this.hoverboardGroup.children.length > 0) {
+      return;
+    }
+    this.currentBoardId = boardId;
+
+    if (!this.hoverboardGroup) return;
+
+    // Dispose old board
+    while (this.hoverboardGroup.children.length > 0) {
+      const child = this.hoverboardGroup.children[0];
+      this.hoverboardGroup.remove(child);
+    }
+    if (this.activeBoardBuilt) {
+      for (const mat of this.activeBoardBuilt.materials) {
+        mat.dispose();
+      }
+    }
+
+    this.activeBoardBuilt = HoverboardMeshBuilder.build(boardId);
+    this.hoverboardGroup.add(this.activeBoardBuilt.group);
+  }
+
+  public setHoverboardVisible(visible: boolean, boardId?: HoverboardId): void {
+    if (visible) {
+      const targetId = boardId || this.currentBoardId;
+      if (this.currentBoardId !== targetId || !this.activeBoardBuilt || this.hoverboardGroup.children.length === 0) {
+        this.setHoverboardModel(targetId);
+      }
+    }
     this.isHoverboard = visible;
-    this.hoverboardGroup.visible = visible;
+    if (this.hoverboardGroup) {
+      this.hoverboardGroup.visible = visible;
+    }
   }
 
   public setSuperSneakersActive(active: boolean): void {
@@ -484,6 +522,11 @@ export class CharacterModel {
 
     this.leftArmGroup.rotation.set(-0.2, 0, -0.5);
     this.rightArmGroup.rotation.set(0.3, 0, 0.6);
+
+    // Animate board thrusters & glow rings
+    if (this.activeBoardBuilt) {
+      this.activeBoardBuilt.updateAnimation(this.animTime, dt);
+    }
   }
 
   private animateStumble(dt: number): void {

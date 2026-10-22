@@ -279,7 +279,7 @@ export class CharacterSelectModal {
     this.startRenderLoop();
   }
 
-  public hide(): void {
+  public hide(reopenPrevious: boolean = true): void {
     this.element.classList.add('hidden');
     this.isRendering = false;
     if (this.animFrameId !== null) {
@@ -287,13 +287,15 @@ export class CharacterSelectModal {
       this.animFrameId = null;
     }
 
-    // Return to previous screen
-    if (this.previousScreen === 'START') {
-      const startScreenEl = document.getElementById('start-screen');
-      if (startScreenEl) startScreenEl.classList.remove('hidden');
-    } else if (this.previousScreen === 'PAUSE') {
-      const pauseModalEl = document.getElementById('pause-modal');
-      if (pauseModalEl) pauseModalEl.classList.remove('hidden');
+    // Return to previous screen if requested
+    if (reopenPrevious) {
+      if (this.previousScreen === 'START') {
+        const startScreenEl = document.getElementById('start-screen');
+        if (startScreenEl) startScreenEl.classList.remove('hidden');
+      } else if (this.previousScreen === 'PAUSE') {
+        const pauseModalEl = document.getElementById('pause-modal');
+        if (pauseModalEl) pauseModalEl.classList.remove('hidden');
+      }
     }
   }
 

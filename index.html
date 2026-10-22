@@ -45,6 +45,12 @@
         <!-- Floating Performance Feedback Badges (Streak, Precision, Near-miss) -->
         <div id="hud-feedback-stack" class="hud-feedback-stack"></div>
 
+        <!-- On-Screen Hoverboard Deploy Button (Touch and Desktop Quick-Trigger) -->
+        <button id="hud-board-btn" class="hud-board-btn" aria-label="Deploy Hoverboard" title="Deploy Hoverboard [SPACE]">
+          <span class="hud-board-icon">🛹</span>
+          <span id="hud-board-charges" class="hud-board-badge">5</span>
+        </button>
+
         <!-- Mobile Touch Controls Bar (visible on touch devices) -->
         <div id="touch-controls" class="touch-controls-bar">
           <button id="touch-left-btn" class="touch-btn" aria-label="Move Left">◀</button>
@@ -77,6 +83,9 @@
             </button>
             <button id="start-characters-btn" class="btn btn-secondary" style="border-color: rgba(0, 229, 255, 0.7); color: #00e5ff; background: rgba(0, 229, 255, 0.1);">
               <span class="btn-icon">👤</span> CHARACTERS & SKINS
+            </button>
+            <button id="start-boards-btn" class="btn btn-secondary" style="border-color: rgba(224, 64, 251, 0.7); color: #e040fb; background: rgba(224, 64, 251, 0.1);">
+              <span class="btn-icon">🛹</span> HOVERBOARDS
             </button>
             <button id="start-events-btn" class="btn btn-primary" style="background: linear-gradient(135deg, #7c4dff, #00e5ff); border-color: rgba(0, 229, 255, 0.6); box-shadow: 0 4px 18px rgba(124, 77, 255, 0.4);">
               <span class="btn-icon">🏆</span> EVENT MODES
@@ -166,6 +175,9 @@
             </button>
             <button id="game-over-characters-btn" class="btn btn-secondary" style="border-color: rgba(0, 229, 255, 0.6); color: #00e5ff;">
               <span class="btn-icon">👤</span> CHARACTERS
+            </button>
+            <button id="game-over-boards-btn" class="btn btn-secondary" style="border-color: rgba(224, 64, 251, 0.6); color: #e040fb;">
+              <span class="btn-icon">🛹</span> BOARDS
             </button>
             <button id="game-over-missions-btn" class="btn btn-secondary" style="border-color: rgba(0,230,118,0.6); color: #00e676;">
               <span class="btn-icon">🎯</span> MISSIONS
@@ -259,6 +271,84 @@
               <div class="showroom-action-footer">
                 <button id="char-action-btn" class="btn btn-action equip">
                   ⚡ EQUIP RUNNER
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hoverboard Showroom Modal (Task 6) -->
+      <div id="hoverboard-select-modal" class="screen-overlay hidden">
+        <div class="modal-card glassmorphic showroom-card">
+          <!-- Showroom Top Navigation Header -->
+          <div class="showroom-header">
+            <div>
+              <span class="showroom-badge" style="background: rgba(224, 64, 251, 0.15); color: #e040fb; border-color: rgba(224, 64, 251, 0.3);">HOVERBOARD HANGAR</span>
+              <h2 class="showroom-main-title">BOARD SHOWROOM</h2>
+            </div>
+            <div class="showroom-wallet">
+              <span id="board-wallet-coins" class="wallet-pill">🪙 0</span>
+              <span id="board-charges-count" class="wallet-pill" style="border-color: rgba(224, 64, 251, 0.4); color: #e040fb;">🛹 5 Charges</span>
+              <button id="board-close-btn" class="showroom-close-btn" aria-label="Close">✕</button>
+            </div>
+          </div>
+
+          <!-- Hoverboard Quick-Switch Tabs -->
+          <div id="board-tabs" class="character-tabs-row">
+            <!-- Dynamically populated: Urban Glide, Pulse Rider, Aero Drift, Street Phantom -->
+          </div>
+
+          <!-- Main Showroom Stage -->
+          <div class="showroom-stage-layout">
+            <!-- 3D Turntable Preview Stage -->
+            <div class="showroom-viewport-container">
+              <canvas id="board-preview-canvas"></canvas>
+              
+              <!-- Turntable Drag Hint Overlay -->
+              <div class="drag-hint"><span>↔ DRAG TO ROTATE 360°</span></div>
+              
+              <!-- Navigation Arrows -->
+              <button id="board-prev-btn" class="nav-arrow nav-arrow-left" aria-label="Previous Hoverboard">◀</button>
+              <button id="board-next-btn" class="nav-arrow nav-arrow-right" aria-label="Next Hoverboard">▶</button>
+            </div>
+
+            <!-- Board Identity & Ability Panel -->
+            <div class="showroom-details-panel">
+              <div class="char-header-row">
+                <div>
+                  <div id="board-archetype" class="char-subtitle" style="color: #e040fb;">THE DOWNTOWN CLASSIC</div>
+                  <h3 id="board-name" class="char-heading">URBAN GLIDE</h3>
+                </div>
+                <div id="board-status-badge" class="status-badge active-badge">EQUIPPED</div>
+              </div>
+
+              <p id="board-bio" class="char-bio-text">
+                The quintessential underground transit board. Crafted with a reinforced composite deck, polished chrome rails, and twin magnetic levitators.
+              </p>
+
+              <!-- Ability Card Container -->
+              <div id="board-ability-details" class="board-ability-section">
+                <!-- Dynamically rendered ability details -->
+              </div>
+
+              <!-- Buy Charges Quick Pack -->
+              <div class="charges-pack-card">
+                <div class="charges-pack-info">
+                  <span class="pack-icon">🛹</span>
+                  <div>
+                    <div class="pack-title">+3 Hoverboard Charges</div>
+                    <div class="pack-sub">Instant deployment during runs</div>
+                  </div>
+                </div>
+                <button id="board-buy-charges-btn" class="btn btn-secondary buy-charges-btn">
+                  300 🪙
+                </button>
+              </div>
+
+              <div class="showroom-action-footer">
+                <button id="board-action-btn" class="btn btn-action equip">
+                  ⚡ EQUIP HOVERBOARD
                 </button>
               </div>
             </div>
