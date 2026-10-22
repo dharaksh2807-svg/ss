@@ -78,30 +78,30 @@ export const CONSTANTS = {
 
   // Colors Palette (Vibrant Stylized Arcade)
   COLORS: {
-    SKY_TOP: 0x1a2a6c,
-    SKY_BOTTOM: 0xfdbb2d,
-    FOG: 0x221834,
-    BALLAST: 0x3d3545,
-    SLEEPER: 0x5a3d28,
+    SKY_TOP: 0x0288d1, // Rich vibrant azure sky blue
+    SKY_BOTTOM: 0xe1f5fe, // Sunny morning horizon cyan
+    FOG: 0xb3e5fc, // Soft atmospheric aerial blue haze
+    BALLAST: 0x2c2738,
+    SLEEPER: 0x42362b,
     RAIL: 0xd0d5dd,
     RAIL_GLOW: 0x00f0ff,
-    TRAIN_BODY_1: 0xff3366,
-    TRAIN_BODY_2: 0x3388ff,
-    TRAIN_BODY_3: 0xffaa00,
-    TRAIN_ROOF: 0x2a2a38,
+    TRAIN_BODY_1: 0xd32f2f, // Cherry Red Express
+    TRAIN_BODY_2: 0x0288d1, // Cyan Metro Line
+    TRAIN_BODY_3: 0xff8f00, // Amber City Transit
+    TRAIN_ROOF: 0x373b44,
     BARRIER_STRIPE_1: 0xffcc00,
-    BARRIER_STRIPE_2: 0x222222,
+    BARRIER_STRIPE_2: 0x1f232b,
     COIN_GOLD: 0xffd700,
     COIN_RIM: 0xffaa00,
-    BUILDING_1: 0xc86446, // Vibrant terracotta brick
-    BUILDING_2: 0x3d708f, // Urban slate cyan
-    BUILDING_3: 0xd99b43, // Golden ochre
-    BUILDING_4: 0x5a4a78, // Stylized twilight purple
+    BUILDING_1: 0xc0392b, // Terracotta red brick
+    BUILDING_2: 0x2c3e50, // Slate navy commercial
+    BUILDING_3: 0xd35400, // Warm amber brick
+    BUILDING_4: 0x7f8c8d, // Concrete industrial
     NEON_CYAN: 0x00ffff,
     NEON_MAGENTA: 0xff007f,
-    HOVERBOARD: 0x00ffcc,
-    SNEAKERS: 0xff0055,
-    MAGNET: 0x3366ff
+    HOVERBOARD: 0x00e676,
+    SNEAKERS: 0xff1744,
+    MAGNET: 0x2979ff
   }
 } as const;
 
