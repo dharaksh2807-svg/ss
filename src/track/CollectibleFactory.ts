@@ -12,6 +12,19 @@ export interface CollectibleInstance {
   collider: THREE.Box3;
   active: boolean;
   baseY: number;
+  initialLocalZ?: number;
+  isMagnetized?: boolean;
+  animOffsetY?: number;
+}
+
+export interface CoinPickupVFXInstance {
+  group: THREE.Group;
+  ring: THREE.Mesh;
+  sparkles: THREE.Mesh[];
+  active: boolean;
+  age: number;
+  maxAge: number;
+  sparkleVelocities: THREE.Vector3[];
 }
 
 export class CollectibleFactory {
@@ -19,30 +32,36 @@ export class CollectibleFactory {
 
   private coinGeo: THREE.CylinderGeometry;
   private coinRimGeo: THREE.TorusGeometry;
-  private coinStarGeo: THREE.ConeGeometry;
+  private coinInnerRimGeo: THREE.TorusGeometry;
+  private coinStarGeo: THREE.BufferGeometry;
 
   private coinGoldMat: THREE.MeshStandardMaterial;
   private coinRimMat: THREE.MeshStandardMaterial;
   private glassMat: THREE.MeshStandardMaterial;
   private metalPodMat: THREE.MeshStandardMaterial;
 
+  private vfxRingGeo: THREE.RingGeometry;
+  private vfxSparkleGeo: THREE.OctahedronGeometry;
+  private vfxRingMat: THREE.MeshBasicMaterial;
+  private vfxSparkleMat: THREE.MeshBasicMaterial;
+
   constructor() {
-    // 1. High-Shine Premium Gold Materials
+    // 1. High-Shine Premium Gold Materials with balanced emissive accents
     this.coinGoldMat = new THREE.MeshStandardMaterial({
-      color: 0xffd700,
-      emissive: 0xff9900,
-      emissiveIntensity: 0.35,
-      roughness: 0.18,
-      metalness: 0.95
+      color: 0xffd000,
+      emissive: 0xff8f00,
+      emissiveIntensity: 0.20,
+      roughness: 0.22,
+      metalness: 0.88
     });
     this.curvedManager.applyCurvature(this.coinGoldMat);
 
     this.coinRimMat = new THREE.MeshStandardMaterial({
-      color: 0xffb300,
-      emissive: 0xff6f00,
-      emissiveIntensity: 0.2,
-      roughness: 0.3,
-      metalness: 0.9
+      color: 0xffea00,
+      emissive: 0xffb300,
+      emissiveIntensity: 0.16,
+      roughness: 0.16,
+      metalness: 0.94
     });
     this.curvedManager.applyCurvature(this.coinRimMat);
 
@@ -62,39 +81,138 @@ export class CollectibleFactory {
     });
     this.curvedManager.applyCurvature(this.metalPodMat);
 
-    // Geometries
+    // 2. High-precision Coin Geometries
     const r = CONSTANTS.COIN_RADIUS;
-    this.coinGeo = new THREE.CylinderGeometry(r, r, 0.14, 18);
-    this.coinRimGeo = new THREE.TorusGeometry(r * 0.92, 0.05, 8, 18);
-    this.coinStarGeo = new THREE.ConeGeometry(r * 0.45, 0.04, 5);
+    // Main disc with 28 radial segments for a smooth circular silhouette
+    this.coinGeo = new THREE.CylinderGeometry(r, r, 0.14, 28);
+    // Rounded outer protective rim
+    this.coinRimGeo = new THREE.TorusGeometry(r * 0.94, 0.048, 12, 28);
+    // Minted inner accent groove
+    this.coinInnerRimGeo = new THREE.TorusGeometry(r * 0.72, 0.02, 8, 28);
+
+    // Embossed 5-pointed arcade star
+    const starShape = new THREE.Shape();
+    const points = 5;
+    const outerR = r * 0.44;
+    const innerR = r * 0.20;
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outerR : innerR;
+      const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (i === 0) starShape.moveTo(x, y);
+      else starShape.lineTo(x, y);
+    }
+    starShape.closePath();
+
+    this.coinStarGeo = new THREE.ExtrudeGeometry(starShape, {
+      depth: 0.018,
+      bevelEnabled: true,
+      bevelThickness: 0.006,
+      bevelSize: 0.006,
+      bevelSegments: 2
+    });
+
+    // 3. Reusable Collection VFX Assets
+    this.vfxRingGeo = new THREE.RingGeometry(0.18, 0.32, 16);
+    this.vfxSparkleGeo = new THREE.OctahedronGeometry(0.065, 0);
+    this.vfxRingMat = new THREE.MeshBasicMaterial({
+      color: 0xffea00,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    this.vfxSparkleMat = new THREE.MeshBasicMaterial({
+      color: 0xfff9c4,
+      transparent: true,
+      opacity: 0.95
+    });
   }
 
   /**
-   * Create High-Polish Stylized Arcade Gold Coin
+   * Create High-Polish Stylized 3D Arcade Gold Coin with Corrected Alignment
    */
   public createCoin(): THREE.Group {
-    const group = new THREE.Group();
+    const rootGroup = new THREE.Group();
+    const coinGroup = new THREE.Group();
 
-    // Main Coin Disk
+    // Main Coin Disk: rotate around X by PI/2 so circular flat faces face +Z and -Z
     const coinMesh = new THREE.Mesh(this.coinGeo, this.coinGoldMat);
-    coinMesh.rotation.z = Math.PI / 2; // Upright
+    coinMesh.rotation.x = Math.PI / 2;
     coinMesh.castShadow = true;
-    group.add(coinMesh);
+    coinGroup.add(coinMesh);
 
-    // Beveled Outer Rim
+    // Beveled Outer Rim: constructed in X-Y plane, normal along Z
     const rimMesh = new THREE.Mesh(this.coinRimGeo, this.coinRimMat);
-    rimMesh.rotation.y = Math.PI / 2;
-    group.add(rimMesh);
+    coinGroup.add(rimMesh);
 
-    // Front & Back Embossed Star Insignia
-    [-0.075, 0.075].forEach((xOffset) => {
-      const star = new THREE.Mesh(this.coinStarGeo, this.coinRimMat);
-      star.rotation.z = xOffset > 0 ? -Math.PI / 2 : Math.PI / 2;
-      star.position.x = xOffset;
-      group.add(star);
-    });
+    // Inner Minted Bezel Ring: constructed in X-Y plane, normal along Z
+    const innerRimMesh = new THREE.Mesh(this.coinInnerRimGeo, this.coinRimMat);
+    coinGroup.add(innerRimMesh);
 
-    return group;
+    // Front Embossed Star: at Z = +0.065, facing +Z directly at approaching runner
+    const frontStar = new THREE.Mesh(this.coinStarGeo, this.coinRimMat);
+    frontStar.position.set(0, 0, 0.065);
+    coinGroup.add(frontStar);
+
+    // Back Embossed Star: at Z = -0.065, facing -Z
+    const backStar = new THREE.Mesh(this.coinStarGeo, this.coinRimMat);
+    backStar.rotation.y = Math.PI;
+    backStar.position.set(0, 0, -0.065);
+    coinGroup.add(backStar);
+
+    // Subtle 12.5 deg pitch presentation tilt toward elevated camera
+    coinGroup.rotation.x = 0.22;
+
+    rootGroup.add(coinGroup);
+    return rootGroup;
+  }
+
+  /**
+   * Create pooled collection particle VFX instances
+   */
+  public createPickupVFXPool(count: number = 20): CoinPickupVFXInstance[] {
+    const pool: CoinPickupVFXInstance[] = [];
+    for (let i = 0; i < count; i++) {
+      const group = new THREE.Group();
+      group.visible = false;
+
+      // Expanding golden ring
+      const ringMat = this.vfxRingMat.clone();
+      const ring = new THREE.Mesh(this.vfxRingGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      group.add(ring);
+
+      // 6 radiating sparkle diamonds
+      const sparkles: THREE.Mesh[] = [];
+      const sparkleVelocities: THREE.Vector3[] = [];
+      const sparkCount = 6;
+      for (let s = 0; s < sparkCount; s++) {
+        const sparkMat = this.vfxSparkleMat.clone();
+        const spark = new THREE.Mesh(this.vfxSparkleGeo, sparkMat);
+        const angle = (s / sparkCount) * Math.PI * 2;
+        sparkles.push(spark);
+        group.add(spark);
+        sparkleVelocities.push(
+          new THREE.Vector3(
+            Math.cos(angle) * (2.2 + (s % 2) * 1.2),
+            2.8 + (s % 3) * 1.0,
+            Math.sin(angle) * (2.2 + (s % 2) * 1.2)
+          )
+        );
+      }
+
+      pool.push({
+        group,
+        ring,
+        sparkles,
+        active: false,
+        age: 0,
+        maxAge: CONSTANTS.COIN_VFX_DURATION,
+        sparkleVelocities
+      });
+    }
+    return pool;
   }
 
   /**

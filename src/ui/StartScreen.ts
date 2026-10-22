@@ -69,7 +69,26 @@ export class StartScreen {
 
           <div class="lobby-resources-group">
             <div class="resource-pill gold-pill" id="lobby-coins-pill" role="button" tabindex="0" title="Open Shop">
-              <span class="resource-icon">🪙</span>
+              <span class="hud-coin-icon lobby-coin-icon" aria-hidden="true">
+                <svg class="hud-coin-svg" viewBox="0 0 24 24" width="20" height="20">
+                  <defs>
+                    <radialGradient id="lobbyCoinGold" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#fff7a1"/>
+                      <stop offset="45%" stop-color="#ffd700"/>
+                      <stop offset="85%" stop-color="#f59e0b"/>
+                      <stop offset="100%" stop-color="#b45309"/>
+                    </radialGradient>
+                    <linearGradient id="lobbyCoinRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#fef08a"/>
+                      <stop offset="50%" stop-color="#d97706"/>
+                      <stop offset="100%" stop-color="#78350f"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="12" cy="12" r="10.5" fill="url(#lobbyCoinRim)" stroke="#451a03" stroke-width="0.8"/>
+                  <circle cx="12" cy="12" r="8.2" fill="url(#lobbyCoinGold)" stroke="#d97706" stroke-width="0.7"/>
+                  <polygon points="12,5.2 14.1,9.5 18.8,10.2 15.4,13.5 16.2,18.2 12,16 7.8,18.2 8.6,13.5 5.2,10.2 9.9,9.5" fill="#fffbeb" stroke="#b45309" stroke-width="0.6"/>
+                </svg>
+              </span>
               <span class="resource-val" id="lobby-coins-val">0</span>
             </div>
             <div class="resource-pill purple-pill" id="lobby-boards-pill" role="button" tabindex="0" title="Open Board Hangar">

@@ -46,7 +46,29 @@ export class GameOverModal {
           </div>
           <div class="stat-box">
             <span class="stat-label">COINS COLLECTED</span>
-            <span id="game-over-coins" class="stat-value coin-val">🪙 0</span>
+            <span id="game-over-coins" class="stat-value coin-val">
+              <span class="hud-coin-icon game-over-coin-icon" aria-hidden="true">
+                <svg class="hud-coin-svg" viewBox="0 0 24 24" width="20" height="20">
+                  <defs>
+                    <radialGradient id="goCoinGold" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#fff7a1"/>
+                      <stop offset="45%" stop-color="#ffd700"/>
+                      <stop offset="85%" stop-color="#f59e0b"/>
+                      <stop offset="100%" stop-color="#b45309"/>
+                    </radialGradient>
+                    <linearGradient id="goCoinRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#fef08a"/>
+                      <stop offset="50%" stop-color="#d97706"/>
+                      <stop offset="100%" stop-color="#78350f"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="12" cy="12" r="10.5" fill="url(#goCoinRim)" stroke="#451a03" stroke-width="0.8"/>
+                  <circle cx="12" cy="12" r="8.2" fill="url(#goCoinGold)" stroke="#d97706" stroke-width="0.7"/>
+                  <polygon points="12,5.2 14.1,9.5 18.8,10.2 15.4,13.5 16.2,18.2 12,16 7.8,18.2 8.6,13.5 5.2,10.2 9.9,9.5" fill="#fffbeb" stroke="#b45309" stroke-width="0.6"/>
+                </svg>
+              </span>
+              <span id="game-over-coins-count">0</span>
+            </span>
           </div>
           <div class="stat-box">
             <span class="stat-label">DISTANCE TRAVELED</span>
@@ -170,8 +192,12 @@ export class GameOverModal {
     const coinsEl = this.element.querySelector('#game-over-coins') as HTMLElement;
     const distEl = this.element.querySelector('#game-over-distance') as HTMLElement;
 
-    if (highEl) highEl.textContent = Math.floor(highScore).toLocaleString();
-    if (coinsEl) coinsEl.textContent = `🪙 ${coins.toLocaleString()}`;
+    const coinsCountEl = this.element.querySelector('#game-over-coins-count') as HTMLElement;
+    if (coinsCountEl) {
+      coinsCountEl.textContent = coins.toLocaleString();
+    } else if (coinsEl) {
+      coinsEl.textContent = coins.toLocaleString();
+    }
     if (distEl) distEl.textContent = `${Math.floor(distanceMeters).toLocaleString()} m`;
 
     // Count-up animation for final score

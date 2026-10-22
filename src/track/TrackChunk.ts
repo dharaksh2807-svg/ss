@@ -806,13 +806,15 @@ export class TrackChunk {
       for (let c = 0; c < count; c++) {
         const offsetZ = colData.zOffset + c * spacing;
         const localZ = -offsetZ;
-        let baseY = colData.yOffset || 0.8;
+        let baseY = colData.yOffset !== undefined ? colData.yOffset : 0.85;
 
-        // If parabolic coin arc over hurdle
+        // If parabolic coin arc over hurdle, follow exact ballistic parabola:
+        // Starts at comfortable ground height (0.85m), vaults to peak (colData.yOffset or 2.45m), lands at 0.85m
         if (colData.isArc && count > 1) {
           const t = c / (count - 1); // 0 to 1
-          const arcHeight = Math.sin(t * Math.PI) * 1.5;
-          baseY += arcHeight;
+          const groundY = 0.85;
+          const peakY = colData.yOffset !== undefined ? colData.yOffset : 2.45;
+          baseY = groundY + (peakY - groundY) * 4.0 * t * (1.0 - t);
         }
 
         let group: THREE.Group;
@@ -831,7 +833,7 @@ export class TrackChunk {
 
         const worldColZ = this.chunkZ + localZ;
         const collider = new THREE.Box3();
-        const radius = CONSTANTS.COIN_RADIUS;
+        const radius = colData.type === 'COIN' ? CONSTANTS.COIN_RADIUS : 0.55;
         collider.min.set(laneX - radius, baseY - radius, worldColZ - radius);
         collider.max.set(laneX + radius, baseY + radius, worldColZ + radius);
 
@@ -841,7 +843,10 @@ export class TrackChunk {
           lane: colData.lane,
           collider,
           active: true,
-          baseY
+          baseY,
+          initialLocalZ: localZ,
+          isMagnetized: false,
+          animOffsetY: 0
         });
       }
     }
@@ -870,7 +875,10 @@ export class TrackChunk {
         lane: randomLane,
         collider,
         active: true,
-        baseY
+        baseY,
+        initialLocalZ: localZ,
+        isMagnetized: false,
+        animOffsetY: 0
       });
     }
   }
@@ -937,11 +945,25 @@ export class TrackChunk {
       }
     }
 
-    // 2. Animate coin rotation and powerup bobbing
+    // 2. Animate coin rotation and powerup bobbing with synchronized collider
     for (const col of this.collectibles) {
       if (!col.active) continue;
-      col.group.rotation.y += CONSTANTS.COIN_ROTATION_SPEED * dt;
-      col.group.position.y = col.baseY + Math.sin(time * 3.5 + col.group.position.z * 0.1) * 0.12;
+
+      // Only apply ambient bobbing if not currently magnetized
+      if (!col.isMagnetized) {
+        const bob = Math.sin(time * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.08;
+        col.animOffsetY = bob;
+        col.group.position.y = col.baseY + bob;
+        col.group.rotation.y += CONSTANTS.COIN_ROTATION_SPEED * dt;
+      }
+
+      // Synchronize world-space collider with authoritative rendering position
+      const worldX = col.group.position.x;
+      const worldY = col.group.position.y;
+      const worldZ = this.chunkZ + col.group.position.z;
+      const r = col.type === 'COIN' ? CONSTANTS.COIN_RADIUS : 0.55;
+      col.collider.min.set(worldX - r, worldY - r, worldZ - r);
+      col.collider.max.set(worldX + r, worldY + r, worldZ + r);
     }
   }
 

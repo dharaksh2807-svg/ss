@@ -3,7 +3,7 @@ import { CONSTANTS } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { Player } from '../player/Player';
 import { ObstacleFactory } from './ObstacleFactory';
-import { CollectibleFactory } from './CollectibleFactory';
+import { CollectibleFactory, CoinPickupVFXInstance } from './CollectibleFactory';
 import { TrackChunk } from './TrackChunk';
 import { OBSTACLE_PATTERNS, TrackPattern } from './ObstaclePatterns';
 import { ReachabilityValidator } from './ReachabilityValidator';
@@ -22,6 +22,11 @@ export class TrackManager {
   private lastSpawnedPattern: TrackPattern | null = null;
   public cleanStreakCount: number = 0;
 
+  // High-speed swept collision tracking to prevent tunneling past collectibles
+  private previousPlayerZ: number | null = null;
+  // Reusable pooled collection particle bursts
+  private pickupVfxPool: CoinPickupVFXInstance[] = [];
+
   // Seedable PRNG (Mulberry32) for reproducible procedural runs and deterministic testing
   private seed: number = 1337;
 
@@ -34,6 +39,12 @@ export class TrackManager {
       const chunk = new TrackChunk(this.obstacleFactory, this.collectibleFactory);
       this.chunks.push(chunk);
       this.scene.add(chunk.group);
+    }
+
+    // Initialize pre-allocated coin collection VFX pool
+    this.pickupVfxPool = this.collectibleFactory.createPickupVFXPool(24);
+    for (const vfx of this.pickupVfxPool) {
+      this.scene.add(vfx.group);
     }
 
     this.reset();
@@ -69,7 +80,13 @@ export class TrackManager {
     this.chunkIndex = 0;
     this.cleanStreakCount = 0;
     this.lastSpawnedPattern = null;
+    this.previousPlayerZ = null;
     this.difficultyController.reset();
+
+    for (const vfx of this.pickupVfxPool) {
+      vfx.active = false;
+      vfx.group.visible = false;
+    }
 
     for (let i = 0; i < this.chunks.length; i++) {
       const chunk = this.chunks[i];
@@ -161,6 +178,9 @@ export class TrackManager {
   public update(player: Player, dt: number, time: number): void {
     // 0. Update difficulty controller pacing
     this.difficultyController.update(dt, player.distanceTraveled, player.speed);
+
+    // 0.1 Update pooled coin collection particle bursts
+    this.updatePickupVFX(dt);
 
     // 1. Recycle trailing chunks ahead of player
     for (const chunk of this.chunks) {
@@ -283,6 +303,14 @@ export class TrackManager {
 
   private checkCollisions(player: Player, dt: number): void {
     const playerBox = player.collider;
+    // High-speed swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
+    const sweptCollectibleBox = playerBox.clone();
+    if (this.previousPlayerZ !== null) {
+      sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
+      sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
+    }
+    this.previousPlayerZ = player.position.z;
+
     const boardMagnetBonus = player.hoverboardManager ? player.hoverboardManager.getMagnetRadiusBonus() : 0;
     const isMagnet = player.powerups.isMagnetActive() || boardMagnetBonus > 0;
     const magnetRadius = (player.powerups.isMagnetActive() ? player.powerups.getMagnetRadius() : 0) + boardMagnetBonus;
@@ -426,27 +454,48 @@ export class TrackManager {
       }
 
       // Collectibles Collisions & Magnet Attraction
+      const playerChestPos = player.position.clone();
+      playerChestPos.y += 0.5; // Aim magnet pull at player chest/magnet aura level
+
       for (const col of chunk.collectibles) {
         if (!col.active) continue;
 
-        // Magnet attraction effect with upgraded radius and acceleration
+        const colWorldPos = new THREE.Vector3(
+          col.group.position.x,
+          col.group.position.y,
+          chunk.chunkZ + col.group.position.z
+        );
+
+        // Magnet attraction effect with upgraded radius and smooth 3D acceleration
         if (isMagnet && col.type === 'COIN') {
-          const colWorldPos = new THREE.Vector3(col.group.position.x, col.group.position.y, chunk.chunkZ + col.group.position.z);
-          const distSq = colWorldPos.distanceToSquared(player.position);
+          const distSq = colWorldPos.distanceToSquared(playerChestPos);
           if (distSq < magnetRadius * magnetRadius) {
+            col.isMagnetized = true;
             const dist = Math.sqrt(distSq);
-            const speed = Math.min(32.0, CONSTANTS.MAGNET_PULL_SPEED * (1.0 + (1.0 - dist / magnetRadius) * 1.5));
-            const dir = player.position.clone().sub(colWorldPos).normalize();
+            // Smooth arcade acceleration: accelerates from 18m/s to 38m/s near player
+            const normDist = Math.max(0, 1.0 - dist / magnetRadius);
+            const speed = 18.0 + normDist * normDist * 22.0;
+            const dir = playerChestPos.clone().sub(colWorldPos).normalize();
+
+            // Move mesh in full 3D toward chest without snapping Y
             col.group.position.addScaledVector(dir, speed * dt);
             colWorldPos.addScaledVector(dir, speed * dt);
-            col.collider.setFromCenterAndSize(colWorldPos, new THREE.Vector3(1.2, 1.2, 1.2));
+
+            // Synchronize collider continuously in world space
+            col.collider.setFromCenterAndSize(colWorldPos, new THREE.Vector3(1.4, 1.4, 1.4));
           }
         }
 
-        // Collection check (Guaranteed single credit via active flag)
-        if (col.collider.intersectsBox(playerBox)) {
+        // Collection check: swept volume ensures zero missed coins at high speeds
+        const isCollected = col.collider.intersectsBox(sweptCollectibleBox) ||
+          (col.isMagnetized && colWorldPos.distanceTo(playerChestPos) <= 1.25);
+
+        if (isCollected) {
           col.active = false;
           chunk.group.remove(col.group);
+
+          // Trigger lightweight pooled golden particle splash
+          this.triggerCoinPickupVFX(colWorldPos);
 
           if (col.type === 'COIN') {
             this.eventBus.emit(EVENTS.COIN_COLLECTED);
@@ -458,6 +507,59 @@ export class TrackManager {
             this.eventBus.emit(EVENTS.POWERUP_COLLECTED, col.type);
           }
         }
+      }
+    }
+  }
+
+  private triggerCoinPickupVFX(pos: THREE.Vector3): void {
+    const vfx = this.pickupVfxPool.find((v) => !v.active);
+    if (!vfx) return;
+
+    vfx.active = true;
+    vfx.age = 0;
+    vfx.group.position.copy(pos);
+    vfx.group.visible = true;
+
+    // Reset expanding halo ring
+    vfx.ring.scale.set(0.4, 0.4, 0.4);
+    (vfx.ring.material as THREE.MeshBasicMaterial).opacity = 0.95;
+
+    // Reset sparkles
+    for (let i = 0; i < vfx.sparkles.length; i++) {
+      const s = vfx.sparkles[i];
+      s.position.set(0, 0, 0);
+      s.scale.setScalar(1.0);
+      (s.material as THREE.MeshBasicMaterial).opacity = 1.0;
+    }
+  }
+
+  private updatePickupVFX(dt: number): void {
+    for (const vfx of this.pickupVfxPool) {
+      if (!vfx.active) continue;
+
+      vfx.age += dt;
+      const progress = Math.min(1.0, vfx.age / vfx.maxAge);
+
+      if (progress >= 1.0) {
+        vfx.active = false;
+        vfx.group.visible = false;
+        continue;
+      }
+
+      // Smooth expansion and fade for ring
+      const ringScale = 0.4 + progress * 2.2;
+      vfx.ring.scale.set(ringScale, ringScale, ringScale);
+      (vfx.ring.material as THREE.MeshBasicMaterial).opacity = (1.0 - progress) * 0.95;
+
+      // Radiate sparkle diamonds outward and upward with subtle gravity
+      for (let i = 0; i < vfx.sparkles.length; i++) {
+        const s = vfx.sparkles[i];
+        const vel = vfx.sparkleVelocities[i];
+        s.position.x += vel.x * dt;
+        s.position.y += vel.y * dt - 9.8 * dt * dt * 0.5;
+        s.position.z += vel.z * dt;
+        s.scale.setScalar(Math.max(0.01, 1.0 - progress * 0.85));
+        (s.material as THREE.MeshBasicMaterial).opacity = 1.0 - progress;
       }
     }
   }

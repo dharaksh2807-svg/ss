@@ -20,6 +20,8 @@ export class HUD {
   private coins: number = 0;
   private multiplier: number = 1;
 
+  private coinBadgeEl: HTMLElement | null = null;
+  private bumpTimeout: number | null = null;
   private modeBadgeEl: HTMLElement | null = null;
   private toastContainerEl: HTMLElement | null = null;
   private missionTickerEl: HTMLElement | null = null;
@@ -28,6 +30,7 @@ export class HUD {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
     this.coinEl = document.getElementById('hud-coins')!;
+    this.coinBadgeEl = document.getElementById('hud-coin-badge');
     this.multiplierEl = document.getElementById('hud-multiplier')!;
     this.powerupContainer = document.getElementById('hud-powerups')!;
     this.feedbackStack = document.getElementById('hud-feedback-stack');
@@ -93,6 +96,7 @@ export class HUD {
     bus.on(EVENTS.COIN_COLLECTED, () => {
       this.coins++;
       this.coinEl.textContent = this.coins.toLocaleString();
+      this.triggerCoinBump();
     });
 
     this.pauseBtn.addEventListener('click', () => {
@@ -376,6 +380,24 @@ export class HUD {
         }
       }, 400);
     }, 3200);
+  }
+
+  public triggerCoinBump(): void {
+    if (!this.coinBadgeEl) return;
+    this.coinBadgeEl.classList.remove('coin-pulse');
+    // Force DOM reflow to re-trigger CSS keyframe pulse
+    void this.coinBadgeEl.offsetWidth;
+    this.coinBadgeEl.classList.add('coin-pulse');
+
+    if (this.bumpTimeout !== null) {
+      clearTimeout(this.bumpTimeout);
+    }
+    this.bumpTimeout = window.setTimeout(() => {
+      if (this.coinBadgeEl) {
+        this.coinBadgeEl.classList.remove('coin-pulse');
+      }
+      this.bumpTimeout = null;
+    }, 220);
   }
 
   public getScore(): number {

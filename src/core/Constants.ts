@@ -123,7 +123,8 @@ export const CONSTANTS = {
 
   // Collectibles & Powerups
   COIN_RADIUS: 0.45,
-  COIN_ROTATION_SPEED: 4.0,
+  COIN_ROTATION_SPEED: 2.2, // Smooth, non-flickering rotation presenting face clearly
+  COIN_VFX_DURATION: 0.25, // Duration of pickup sparkle burst in seconds
   MAGNET_RADIUS: 12.0,
   MAGNET_PULL_SPEED: 28.0,
   POWERUP_DURATION: 12.0, // 12 seconds active duration for magnet/sneakers/2x
