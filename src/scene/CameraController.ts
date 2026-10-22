@@ -45,7 +45,13 @@ export class CameraController {
     this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma);
   }
 
-  public update(playerPos: THREE.Vector3, dt: number, timeSec: number = 0, speed: number = CONSTANTS.INITIAL_SPEED): void {
+  public update(
+    playerPos: THREE.Vector3,
+    dt: number,
+    timeSec: number = 0,
+    speed: number = CONSTANTS.INITIAL_SPEED,
+    groundY: number = CONSTANTS.PLAYER_BASE_Y
+  ): void {
     if (this.isLobbyMode) {
       if (Math.abs(this.camera.fov - CONSTANTS.CAMERA_FOV) > 0.1) {
         this.camera.fov = CONSTANTS.CAMERA_FOV;
@@ -81,9 +87,16 @@ export class CameraController {
       this.camera.updateProjectionMatrix();
     }
 
+    // Coordinated vertical tracking:
+    // Follow the support surface (ground or train roof) authoritatively so elevation changes are smooth,
+    // while dampening airborne jump bobbing (tracking only ~30% of jump apex height) so the horizon and
+    // oncoming obstacles stay stable and readable while the runner visibly vaults hurdles.
+    const airborneDelta = Math.max(0, playerPos.y - groundY);
+    const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
+
     // Target position behind and above player in gameplay
     this.targetPosition.x = playerPos.x;
-    this.targetPosition.y = Math.max(CONSTANTS.PLAYER_BASE_Y, playerPos.y) + CONSTANTS.CAMERA_OFFSET_Y;
+    this.targetPosition.y = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
     this.targetPosition.z = playerPos.z + CONSTANTS.CAMERA_OFFSET_Z;
 
     // Frame-rate independent exponential decay interpolation
@@ -109,9 +122,9 @@ export class CameraController {
 
     this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
 
-    // Look at point slightly ahead and above the character
+    // Look at point slightly ahead and above the character, with dampened vertical tracking
     this.lookTarget.x = this.currentPosition.x * 0.5 + playerPos.x * 0.5;
-    this.lookTarget.y = playerPos.y + CONSTANTS.CAMERA_LOOK_Y;
+    this.lookTarget.y = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
     this.lookTarget.z = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
 
     this.camera.lookAt(this.lookTarget);

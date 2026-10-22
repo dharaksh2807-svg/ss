@@ -429,8 +429,8 @@ export class Game {
       this.player.mesh.rotation.y = Math.PI - 0.2 + Math.sin(now * 0.001) * 0.08;
     }
 
-    // Camera follow update with dynamic speed-based FOV
-    this.cameraController.update(this.player.position, dt, now / 1000, this.player.speed);
+    // Camera follow update with dynamic speed-based FOV and coordinated elevation tracking
+    this.cameraController.update(this.player.position, dt, now / 1000, this.player.speed, this.player.groundY);
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();

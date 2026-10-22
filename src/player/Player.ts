@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
-import { CharacterModel } from './CharacterModel';
+import { CharacterModel, JumpPhase } from './CharacterModel';
 import { PowerupManager } from './PowerupManager';
 import { InputAction } from '../core/InputManager';
 import { ProgressionManager } from '../progression/ProgressionManager';
@@ -61,11 +61,19 @@ export class Player {
   private queuedLaneChange: -1 | 1 | null = null;
   private bankingAngle: number = 0;
 
-  // Vertical Jump & Slide
+  // Authoritative Jump & Slide State
   public verticalVelocity: number = 0;
   public isJumping: boolean = false;
+  public isFastDropping: boolean = false;
+  public jumpTime: number = 0;
+  public jumpProgress: number = 0;
+  public jumpTakeoffVelocity: number = CONSTANTS.JUMP_INITIAL_VELOCITY;
+  public jumpPhase: JumpPhase = 'NONE';
+  public landingTimer: number = 0;
+
   public isSliding: boolean = false;
   private slideTimer: number = 0;
+  public isUnderOverheadObstacle: boolean = false;
 
   // Gameplay State
   public state: PlayerState = 'IDLE';
@@ -117,10 +125,16 @@ export class Player {
     this.groundY = CONSTANTS.PLAYER_BASE_Y;
     this.verticalVelocity = 0;
     this.isJumping = false;
+    this.isFastDropping = false;
+    this.jumpTime = 0;
+    this.jumpProgress = 0;
+    this.jumpPhase = 'NONE';
+    this.landingTimer = 0;
     this.isSliding = false;
+    this.slideTimer = 0;
+    this.isUnderOverheadObstacle = false;
     this.isChangingLane = false;
     this.queuedLaneChange = null;
-    this.slideTimer = 0;
     this.bankingAngle = 0;
     this.distanceTraveled = 0;
     this.isStumbling = false;
@@ -219,8 +233,9 @@ export class Player {
     this.eventBus.emit(EVENTS.LANE_CHANGE, nextLane);
   }
 
-  private jump(): void {
+  public jump(): void {
     if (this.isJumping) return;
+    if (this.isUnderOverheadObstacle) return; // Cannot jump upright into overhead barrier!
 
     // Cancel slide if currently sliding
     if (this.isSliding) {
@@ -229,6 +244,11 @@ export class Player {
     }
 
     this.isJumping = true;
+    this.isFastDropping = false;
+    this.jumpTime = 0;
+    this.jumpProgress = 0;
+    this.jumpPhase = 'TAKEOFF';
+    this.landingTimer = 0;
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
     this.supportSurface = 'GROUND';
@@ -241,15 +261,24 @@ export class Player {
       jumpVelocity *= this.hoverboardManager.getJumpVelocityMultiplier();
     }
     this.verticalVelocity = jumpVelocity;
+    this.jumpTakeoffVelocity = jumpVelocity;
 
     this.eventBus.emit(EVENTS.JUMP);
   }
 
-  private slide(): void {
+  public slide(): void {
     if (this.isJumping) {
       // Fast drop / dive-down mechanic when pressing down while airborne!
       this.verticalVelocity = CONSTANTS.FAST_DROP_SPEED;
+      this.isFastDropping = true;
+      this.jumpPhase = 'FAST_DROP';
       this.eventBus.emit(EVENTS.FAST_DROP);
+      return;
+    }
+
+    if (this.isSliding) {
+      // Seamlessly refresh slide duration if user re-swipes down while sliding
+      this.slideTimer = CONSTANTS.SLIDE_DURATION;
       return;
     }
 
@@ -342,16 +371,15 @@ export class Player {
       if (this.state !== 'JETPACK') {
         this.state = 'JETPACK';
         this.isJumping = false;
+        this.isFastDropping = false;
         this.isSliding = false;
       }
 
       // Smooth ascent to flight altitude or descent when expiring
       const remaining = this.powerups.getJetpackRemaining();
       if (remaining > 1.2) {
-        // High-altitude flight
         this.position.y += (this.jetpackAltitude - this.position.y) * Math.min(1.0, dt * 7.0);
       } else {
-        // Graceful landing descent
         this.position.y += (this.groundY - this.position.y) * Math.min(1.0, dt * 5.5);
       }
     } else {
@@ -362,24 +390,47 @@ export class Player {
         this.powerups.grantInvulnerability(1.5);
       }
 
-      // Regular Ground & Airborne Jump Physics
+      // Regular Ground & Airborne Jump Physics (Authoritative delta-time simulation)
       if (this.isJumping) {
-        this.position.y += this.verticalVelocity * dt;
         const effectiveGravity = this.hoverboardManager.isBoardActive()
           ? CONSTANTS.GRAVITY * this.hoverboardManager.getGravityMultiplier()
           : CONSTANTS.GRAVITY;
+
+        this.jumpTime += dt;
+        // Midpoint / Velocity-Verlet ballistic integration: exactly reproduces continuous ballistic motion at any dt
+        this.position.y += (this.verticalVelocity - 0.5 * effectiveGravity * dt) * dt;
         this.verticalVelocity -= effectiveGravity * dt;
 
-        // Dynamic transition from ascending jump to descending fall
+        // Dynamic jump phase determination
+        if (this.isFastDropping) {
+          this.jumpPhase = 'FAST_DROP';
+        } else if (this.jumpTime < 0.06) {
+          this.jumpPhase = 'TAKEOFF';
+        } else if (this.verticalVelocity > 2.0) {
+          this.jumpPhase = 'ASCENDING';
+        } else if (Math.abs(this.verticalVelocity) <= 2.0) {
+          this.jumpPhase = 'APEX';
+        } else {
+          this.jumpPhase = 'DESCENDING';
+        }
+
         if (this.verticalVelocity < -0.1 && this.state === 'JUMP') {
           this.state = 'FALLING';
         }
+
+        // Normalized progress across jump
+        const totalAirtimeEst = (2.0 * this.jumpTakeoffVelocity) / effectiveGravity;
+        this.jumpProgress = Math.min(1.0, this.jumpTime / Math.max(0.01, totalAirtimeEst));
 
         // Landing check on current ground height (supports track ground or train roofs!)
         if (this.position.y <= this.groundY) {
           this.position.y = this.groundY;
           this.verticalVelocity = 0;
           this.isJumping = false;
+          this.isFastDropping = false;
+          this.jumpPhase = 'LANDING';
+          this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
+
           if (this.groundY > CONSTANTS.PLAYER_BASE_Y + 1.0) {
             this.supportSurface = 'TRAIN_ROOF';
             if (!this.isSliding) {
@@ -395,10 +446,21 @@ export class Player {
           this.eventBus.emit(EVENTS.JUMP_COMPLETED);
         }
       } else {
-        // Keep grounded or handle falling off train roofs
+        // Landing absorption timer decay
+        if (this.landingTimer > 0) {
+          this.landingTimer -= dt;
+          if (this.landingTimer <= 0) {
+            this.landingTimer = 0;
+            this.jumpPhase = 'NONE';
+          }
+        }
+
+        // Keep grounded or handle stepping off elevated train roofs
         if (this.position.y > this.groundY + 0.15) {
-          // Stepped off train roof or elevated platform safely!
           this.isJumping = true;
+          this.isFastDropping = false;
+          this.jumpTime = 0.2;
+          this.jumpPhase = 'DESCENDING';
           this.state = this.supportSurface === 'TRAIN_ROOF' ? 'FALLING_FROM_TRAIN' : 'FALLING';
           this.supportSurface = 'GROUND';
           this.verticalVelocity = Math.min(this.verticalVelocity, -2.0);
@@ -419,23 +481,43 @@ export class Player {
       }
     }
 
-    // 4. Slide Timer
+    // 4. Slide Timer & Obstacle Overhead Protection
     if (this.isSliding) {
       this.slideTimer -= dt;
       if (this.slideTimer <= 0) {
-        this.isSliding = false;
-        if (!this.isJumping && this.state !== 'JETPACK') {
-          this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
+        if (this.isUnderOverheadObstacle) {
+          // Keep sliding safely until completely cleared of overhead obstacle!
+          this.slideTimer = 0.05;
+        } else {
+          this.isSliding = false;
+          this.slideTimer = 0;
+          if (!this.isJumping && this.state !== 'JETPACK') {
+            this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
+          }
+          this.eventBus.emit(EVENTS.SLIDE_COMPLETED);
         }
-        this.eventBus.emit(EVENTS.SLIDE_COMPLETED);
       }
     }
 
     // Update mesh position
     this.mesh.position.copy(this.position);
 
-    // Update model locomotion animation
-    this.model.updateAnimation(this.state, this.speed, this.bankingAngle, this.groundY, dt);
+    // Compute progress values for animation controller
+    const slideProgress = this.isSliding ? 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION) : 0;
+    const landingProgress = this.landingTimer > 0 ? 1.0 - (this.landingTimer / CONSTANTS.LANDING_ABSORB_DURATION) : 0;
+
+    // Update model locomotion animation with full phase and progress context
+    this.model.updateAnimation(
+      this.state,
+      this.speed,
+      this.bankingAngle,
+      this.groundY,
+      dt,
+      this.jumpPhase,
+      this.jumpProgress,
+      slideProgress,
+      landingProgress
+    );
 
     // Update AABB collider
     this.updateCollider();
@@ -458,6 +540,9 @@ export class Player {
     this.groundY = roofY;
     this.verticalVelocity = 0;
     this.isJumping = false;
+    this.isFastDropping = false;
+    this.jumpPhase = 'LANDING';
+    this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
     this.supportSurface = 'TRAIN_ROOF';
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
@@ -537,5 +622,25 @@ export class Player {
 
   public getEffectiveSpeed(): number {
     return this.isStumbling ? this.speed * (1.0 - CONSTANTS.STUMBLE_SPEED_DROP) : this.speed;
+  }
+
+  public setUnderOverheadObstacle(under: boolean): void {
+    this.isUnderOverheadObstacle = under;
+  }
+
+  public isUnderOverhead(): boolean {
+    return this.isUnderOverheadObstacle;
+  }
+
+  public getJumpPhase(): JumpPhase {
+    return this.jumpPhase;
+  }
+
+  public getJumpProgress(): number {
+    return this.jumpProgress;
+  }
+
+  public getSlideProgress(): number {
+    return this.isSliding ? 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION) : 0;
   }
 }

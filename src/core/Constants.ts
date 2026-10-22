@@ -18,14 +18,17 @@ export const CONSTANTS = {
   PLAYER_HEIGHT_SLIDE: 0.75,
   PLAYER_DEPTH: 0.8,
 
-  // Jump & Slide Physics
-  JUMP_HEIGHT: 3.8, // Peak jump height
-  JUMP_DURATION: 0.52, // Seconds in air
-  GRAVITY: 32.0, // Downward acceleration
-  JUMP_INITIAL_VELOCITY: 11.0, // Initial upward velocity
-  SUPER_JUMP_MULTIPLIER: 1.7, // Super sneakers jump height multiplier
-  FAST_DROP_SPEED: -22.0, // Downward dive velocity when swiping down in air
+  // Authoritative Jump & Slide Physics
+  // Ballistic derivation: H = 2.25m, T = 0.60s => g = 8*H/(T^2) = 50.0 m/s^2, v0 = 4*H/T = 15.0 m/s
+  // Verified: v0^2 / (2*g) = 225/100 = 2.25m; 2*v0 / g = 30/50 = 0.60s. Zero contradictions.
+  JUMP_HEIGHT: 2.25, // Authoritative peak jump height above support surface (meters)
+  JUMP_DURATION: 0.60, // Authoritative airtime on flat surface (seconds)
+  GRAVITY: 50.0, // Downward acceleration (m/s^2)
+  JUMP_INITIAL_VELOCITY: 15.0, // Initial upward velocity at takeoff (m/s)
+  SUPER_JUMP_MULTIPLIER: 1.45, // Super sneakers jump height multiplier
+  FAST_DROP_SPEED: -26.0, // Fast descent downward velocity when swiping down in air (m/s)
   SLIDE_DURATION: 0.65, // Slide duration in seconds
+  LANDING_ABSORB_DURATION: 0.12, // Brief knee-flexion landing absorption window (seconds)
 
   // Camera Settings (Derived from REA measurements and normalized)
   CAMERA_OFFSET_Y: 4.8, // Height above player

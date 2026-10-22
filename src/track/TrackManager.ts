@@ -287,6 +287,25 @@ export class TrackManager {
     const isMagnet = player.powerups.isMagnetActive() || boardMagnetBonus > 0;
     const magnetRadius = (player.powerups.isMagnetActive() ? player.powerups.getMagnetRadius() : 0) + boardMagnetBonus;
 
+    // Overhead obstacle check to prevent character snapping upright or jumping under low barriers
+    let isUnderOverhead = false;
+    for (const chunk of this.chunks) {
+      if (Math.abs(chunk.chunkZ - player.position.z) > CONSTANTS.CHUNK_LENGTH * 1.5) continue;
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+        if (obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') {
+          const overlapZ = playerBox.min.z <= obs.collider.max.z + 0.3 && playerBox.max.z >= obs.collider.min.z - 0.3;
+          const overlapX = playerBox.min.x <= obs.collider.max.x && playerBox.max.x >= obs.collider.min.x;
+          if (overlapZ && overlapX) {
+            isUnderOverhead = true;
+            break;
+          }
+        }
+      }
+      if (isUnderOverhead) break;
+    }
+    player.setUnderOverheadObstacle(isUnderOverhead);
+
     for (const chunk of this.chunks) {
       // Obstacle Collisions
       for (const obs of chunk.obstacles) {

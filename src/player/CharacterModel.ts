@@ -3,6 +3,28 @@ import { CharacterId } from '../characters/CharacterCatalog';
 import { CharacterMeshBuilder, BuiltCharacterHierarchy } from '../characters/CharacterMeshBuilder';
 import { HoverboardId } from '../hoverboard/HoverboardCatalog';
 import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/HoverboardMeshBuilder';
+import { CONSTANTS } from '../core/Constants';
+
+export type JumpPhase = 'NONE' | 'TAKEOFF' | 'ASCENDING' | 'APEX' | 'DESCENDING' | 'FAST_DROP' | 'LANDING';
+
+export type LocomotionState = 
+  | 'IDLE'
+  | 'RUN'
+  | 'JUMP_TAKEOFF'
+  | 'JUMP_ASCEND'
+  | 'JUMP_APEX'
+  | 'JUMP_DESCEND'
+  | 'JUMP_LAND'
+  | 'FAST_DROP'
+  | 'SLIDE_ENTRY'
+  | 'SLIDE_HOLD'
+  | 'SLIDE_RECOVER'
+  | 'CLIMB'
+  | 'TRAIN_ROOF_RUN'
+  | 'JETPACK'
+  | 'HOVERBOARD'
+  | 'STUMBLE'
+  | 'CRASH';
 
 export class CharacterModel {
   public mesh: THREE.Group;
@@ -53,6 +75,49 @@ export class CharacterModel {
   // Animation clocks & state
   private animTime: number = 0;
   private isSuperSneakers: boolean = false;
+
+  // Base articulation rest offsets
+  private baseHipsY: number = 0.95;
+  private baseHeadY: number = 0.62;
+
+  // Interpolated bone transforms (current active pose)
+  private rootPos = new THREE.Vector3();
+  private rootRot = new THREE.Euler();
+  private hipsPos = new THREE.Vector3();
+  private hipsRot = new THREE.Euler();
+  private spineRot = new THREE.Euler();
+  private headRot = new THREE.Euler();
+  private leftArmRot = new THREE.Euler();
+  private leftForearmRot = new THREE.Euler();
+  private rightArmRot = new THREE.Euler();
+  private rightForearmRot = new THREE.Euler();
+  private leftLegRot = new THREE.Euler();
+  private leftCalfRot = new THREE.Euler();
+  private rightLegRot = new THREE.Euler();
+  private rightCalfRot = new THREE.Euler();
+  private leftSneakerRot = new THREE.Euler();
+  private rightSneakerRot = new THREE.Euler();
+
+  // Target bone transforms (calculated by current active state)
+  private targetRootPos = new THREE.Vector3();
+  private targetRootRot = new THREE.Euler();
+  private targetHipsPos = new THREE.Vector3();
+  private targetHipsRot = new THREE.Euler();
+  private targetSpineRot = new THREE.Euler();
+  private targetHeadRot = new THREE.Euler();
+  private targetLeftArmRot = new THREE.Euler();
+  private targetLeftForearmRot = new THREE.Euler();
+  private targetRightArmRot = new THREE.Euler();
+  private targetRightForearmRot = new THREE.Euler();
+  private targetLeftLegRot = new THREE.Euler();
+  private targetLeftCalfRot = new THREE.Euler();
+  private targetRightLegRot = new THREE.Euler();
+  private targetRightCalfRot = new THREE.Euler();
+  private targetLeftSneakerRot = new THREE.Euler();
+  private targetRightSneakerRot = new THREE.Euler();
+
+  // Active state machine tracker
+  private activeLocomotionState: LocomotionState = 'RUN';
 
   constructor(characterId: CharacterId = 'char_jax', outfitId?: string) {
     this.mesh = new THREE.Group();
@@ -127,10 +192,51 @@ export class CharacterModel {
     this.magnetAuraGroup = this.hierarchy.magnetAuraGroup;
     this.shadowMesh = this.hierarchy.shadowMesh;
 
+    this.baseHipsY = this.hipsGroup.position.y || 0.95;
+    this.baseHeadY = this.headGroup.position.y || 0.62;
+
+    this.resetPoseBuffers();
+
     this.mesh.add(this.rootGroup);
 
     // Mount initial hoverboard model
     this.setHoverboardModel(this.currentBoardId);
+  }
+
+  private resetPoseBuffers(): void {
+    this.rootPos.set(0, 0, 0);
+    this.rootRot.set(0, 0, 0);
+    this.hipsPos.set(0, this.baseHipsY, 0);
+    this.hipsRot.set(0, 0, 0);
+    this.spineRot.set(0, 0, 0);
+    this.headRot.set(0, 0, 0);
+    this.leftArmRot.set(0, 0, 0);
+    this.leftForearmRot.set(0, 0, 0);
+    this.rightArmRot.set(0, 0, 0);
+    this.rightForearmRot.set(0, 0, 0);
+    this.leftLegRot.set(0, 0, 0);
+    this.leftCalfRot.set(0, 0, 0);
+    this.rightLegRot.set(0, 0, 0);
+    this.rightCalfRot.set(0, 0, 0);
+    this.leftSneakerRot.set(0, 0, 0);
+    this.rightSneakerRot.set(0, 0, 0);
+
+    this.targetRootPos.copy(this.rootPos);
+    this.targetRootRot.copy(this.rootRot);
+    this.targetHipsPos.copy(this.hipsPos);
+    this.targetHipsRot.copy(this.hipsRot);
+    this.targetSpineRot.copy(this.spineRot);
+    this.targetHeadRot.copy(this.headRot);
+    this.targetLeftArmRot.copy(this.leftArmRot);
+    this.targetLeftForearmRot.copy(this.leftForearmRot);
+    this.targetRightArmRot.copy(this.rightArmRot);
+    this.targetRightForearmRot.copy(this.rightForearmRot);
+    this.targetLeftLegRot.copy(this.leftLegRot);
+    this.targetLeftCalfRot.copy(this.leftCalfRot);
+    this.targetRightLegRot.copy(this.rightLegRot);
+    this.targetRightCalfRot.copy(this.rightCalfRot);
+    this.targetLeftSneakerRot.copy(this.leftSneakerRot);
+    this.targetRightSneakerRot.copy(this.rightSneakerRot);
   }
 
   private disposeHierarchy(): void {
@@ -161,8 +267,82 @@ export class CharacterModel {
     return this.currentOutfitId;
   }
 
+  public getActiveLocomotionState(): LocomotionState {
+    return this.activeLocomotionState;
+  }
+
   /**
-   * Update Procedural Animation & Articulation
+   * Compatibility bridge for Player.ts update call
+   */
+  public updateAnimation(
+    state: string,
+    speed: number,
+    bankingAngle: number,
+    groundY: number,
+    dt: number,
+    jumpPhase: JumpPhase = 'NONE',
+    jumpProgress: number = 0,
+    slideProgress: number = 0,
+    landingProgress: number = 0
+  ): void {
+    // Map high-level gameplay state into fine-grained animation state
+    let locState: LocomotionState = 'RUN';
+
+    if (state === 'CRASH') {
+      locState = 'CRASH';
+    } else if (state === 'JETPACK') {
+      locState = 'JETPACK';
+    } else if (this.isHoverboard) {
+      locState = 'HOVERBOARD';
+    } else if (state === 'IDLE') {
+      locState = 'IDLE';
+    } else if (state === 'SLIDE') {
+      if (slideProgress < 0.20) {
+        locState = 'SLIDE_ENTRY';
+      } else if (slideProgress < 0.75) {
+        locState = 'SLIDE_HOLD';
+      } else {
+        locState = 'SLIDE_RECOVER';
+      }
+    } else if (state === 'JUMP' || state === 'FALLING' || state === 'FALLING_FROM_TRAIN') {
+      if (jumpPhase === 'FAST_DROP') {
+        locState = 'FAST_DROP';
+      } else if (jumpPhase === 'TAKEOFF') {
+        locState = 'JUMP_TAKEOFF';
+      } else if (jumpPhase === 'ASCENDING') {
+        locState = 'JUMP_ASCEND';
+      } else if (jumpPhase === 'APEX') {
+        locState = 'JUMP_APEX';
+      } else {
+        locState = 'JUMP_DESCEND';
+      }
+    } else if (jumpPhase === 'LANDING' || landingProgress > 0) {
+      locState = 'JUMP_LAND';
+    } else if (state === 'ON_TRAIN') {
+      locState = 'TRAIN_ROOF_RUN';
+    } else if (state === 'CLIMBING') {
+      locState = 'CLIMB';
+    } else {
+      locState = 'RUN';
+    }
+
+    this.activeLocomotionState = locState;
+
+    this.updateLocomotion(
+      dt,
+      locState,
+      speed,
+      this.isHoverboard,
+      this.isSuperSneakers,
+      bankingAngle,
+      jumpProgress,
+      slideProgress,
+      landingProgress
+    );
+  }
+
+  /**
+   * Primary Procedural Animation & Articulation Update
    */
   public update(
     dt: number,
@@ -173,10 +353,517 @@ export class CharacterModel {
     jumpProgress: number = 0,
     slideProgress: number = 0
   ): void {
-    this.animTime += dt * 14.0;
-    this.isHoverboard = hasHoverboard;
-    this.hoverboardGroup.visible = hasHoverboard;
+    let locState: LocomotionState = 'RUN';
+    if (state === 'DEAD') locState = 'CRASH';
+    else if (state === 'JETPACK') locState = 'JETPACK';
+    else if (hasHoverboard) locState = 'HOVERBOARD';
+    else if (state === 'IDLE') locState = 'IDLE';
+    else if (state === 'STUMBLING') locState = 'STUMBLE';
+    else if (state === 'SLIDING') {
+      locState = slideProgress < 0.20 ? 'SLIDE_ENTRY' : (slideProgress < 0.75 ? 'SLIDE_HOLD' : 'SLIDE_RECOVER');
+    } else if (state === 'JUMPING') {
+      if (jumpProgress < 0.15) locState = 'JUMP_TAKEOFF';
+      else if (jumpProgress < 0.45) locState = 'JUMP_ASCEND';
+      else if (jumpProgress < 0.55) locState = 'JUMP_APEX';
+      else locState = 'JUMP_DESCEND';
+    }
 
+    this.activeLocomotionState = locState;
+    this.updateLocomotion(dt, locState, CONSTANTS.INITIAL_SPEED, hasHoverboard, hasSneakers, bankAngle, jumpProgress, slideProgress, 0);
+  }
+
+  private updateLocomotion(
+    dt: number,
+    state: LocomotionState,
+    speed: number,
+    hasHoverboard: boolean,
+    hasSneakers: boolean,
+    bankAngle: number,
+    jumpProgress: number,
+    slideProgress: number,
+    landingProgress: number
+  ): void {
+    // 1. Advance animation clock with speed-dependent cadence
+    // Stride cadence scales smoothly with forward speed, eliminating foot sliding!
+    const cadence = state === 'RUN' || state === 'TRAIN_ROOF_RUN' || state === 'CLIMB'
+      ? Math.min(32.0, 12.0 + (speed / CONSTANTS.MAX_SPEED) * 16.0)
+      : 14.0;
+    this.animTime += dt * cadence;
+
+    this.isHoverboard = hasHoverboard;
+    if (this.hoverboardGroup) {
+      this.hoverboardGroup.visible = hasHoverboard;
+    }
+
+    // Power-up visual FX updates
+    this.updatePowerupVisuals(dt, hasSneakers);
+
+    // 2. Compute target joint transforms based on current locomotion state
+    this.computeTargetPose(state, speed, dt, bankAngle, jumpProgress, slideProgress, landingProgress);
+
+    // 3. Frame-rate independent exponential pose blending / interpolation
+    // Explosive transitions (takeoff) blend snappily; normal transitions blend smoothly
+    let blendSpeed = 20.0;
+    if (state === 'JUMP_TAKEOFF') blendSpeed = 35.0;
+    else if (state === 'JUMP_LAND') blendSpeed = 24.0;
+    else if (state === 'CRASH') blendSpeed = 16.0;
+
+    const blendWeight = 1.0 - Math.exp(-blendSpeed * dt);
+    this.blendPose(blendWeight);
+
+    // 4. Apply blended transforms to Three.js hierarchy
+    this.applyBlendedPoseToHierarchy();
+
+    // 5. Dynamic shadow tracking & scaling
+    this.updateShadow(state, jumpProgress);
+  }
+
+  private computeTargetPose(
+    state: LocomotionState,
+    speed: number,
+    dt: number,
+    bankAngle: number,
+    jumpProgress: number,
+    slideProgress: number,
+    landingProgress: number
+  ): void {
+    // Reset targets to base neutral
+    this.targetRootPos.set(0, 0, 0);
+    this.targetRootRot.set(0, 0, 0);
+    this.targetHipsPos.set(0, this.baseHipsY, 0);
+    this.targetHipsRot.set(0, 0, 0);
+    this.targetSpineRot.set(0, 0, 0);
+    this.targetHeadRot.set(0, 0, 0);
+    this.targetLeftArmRot.set(0, 0, 0);
+    this.targetLeftForearmRot.set(0, 0, 0);
+    this.targetRightArmRot.set(0, 0, 0);
+    this.targetRightForearmRot.set(0, 0, 0);
+    this.targetLeftLegRot.set(0, 0, 0);
+    this.targetLeftCalfRot.set(0, 0, 0);
+    this.targetRightLegRot.set(0, 0, 0);
+    this.targetRightCalfRot.set(0, 0, 0);
+    this.targetLeftSneakerRot.set(0, 0, 0);
+    this.targetRightSneakerRot.set(0, 0, 0);
+
+    const t = this.animTime;
+
+    switch (state) {
+      case 'IDLE':
+        this.computeIdleTarget(dt);
+        break;
+
+      case 'RUN':
+      case 'TRAIN_ROOF_RUN':
+      case 'CLIMB':
+        this.computeRunTarget(t, speed, state);
+        break;
+
+      case 'JUMP_TAKEOFF':
+        this.computeJumpTakeoffTarget();
+        break;
+
+      case 'JUMP_ASCEND':
+        this.computeJumpAscendTarget(jumpProgress);
+        break;
+
+      case 'JUMP_APEX':
+        this.computeJumpApexTarget();
+        break;
+
+      case 'JUMP_DESCEND':
+        this.computeJumpDescendTarget(jumpProgress);
+        break;
+
+      case 'JUMP_LAND':
+        this.computeJumpLandTarget(landingProgress);
+        break;
+
+      case 'FAST_DROP':
+        this.computeFastDropTarget();
+        break;
+
+      case 'SLIDE_ENTRY':
+      case 'SLIDE_HOLD':
+      case 'SLIDE_RECOVER':
+        this.computeSlideTarget(slideProgress);
+        break;
+
+      case 'JETPACK':
+        this.computeJetpackTarget(t);
+        break;
+
+      case 'HOVERBOARD':
+        this.computeHoverboardTarget(t, dt);
+        break;
+
+      case 'STUMBLE':
+        this.computeStumbleTarget();
+        break;
+
+      case 'CRASH':
+        this.computeCrashTarget();
+        break;
+    }
+
+    // Apply lateral banking and weight transfer additively across any active locomotion state
+    this.targetRootRot.z += -bankAngle * 0.95;
+    this.targetRootRot.y += bankAngle * 0.22;
+    this.targetSpineRot.z += bankAngle * 0.35;
+  }
+
+  private computeRunTarget(t: number, speed: number, variant: 'RUN' | 'TRAIN_ROOF_RUN' | 'CLIMB'): void {
+    const sinT = Math.sin(t);
+    const cosT = Math.cos(t);
+
+    // 1. Pelvis harmonic vertical bob (2 bobs per full 2-step stride cycle)
+    const bob = -Math.cos(2.0 * t) * 0.045;
+    this.targetHipsPos.set(0, this.baseHipsY + bob, 0);
+
+    // 2. Pelvis yaw & roll counter-rotation
+    this.targetHipsRot.set(0, -sinT * 0.08, sinT * 0.035);
+
+    // 3. Spine athletic forward lean & counter-twist
+    let forwardLean = 0.14 + (speed / CONSTANTS.MAX_SPEED) * 0.08;
+    if (variant === 'TRAIN_ROOF_RUN') forwardLean += 0.04;
+    if (variant === 'CLIMB') forwardLean += 0.08;
+
+    this.targetSpineRot.set(forwardLean, sinT * 0.12, 0);
+
+    // 4. Head gaze stabilization (keeps eyes focused level on oncoming track)
+    this.targetHeadRot.set(-forwardLean * 0.65, -sinT * 0.10, -sinT * 0.03);
+
+    // 5. Alternating Legs with Biomechanical Knee Delay
+    const legSwing = sinT * 0.72;
+    this.targetLeftLegRot.set(legSwing, 0, 0);
+    this.targetRightLegRot.set(-legSwing, 0, 0);
+
+    // Delayed knee flexion: Knee bends smoothly during recovery swing, clearing the ground
+    const leftSwing = Math.max(0, Math.sin(t - 0.35));
+    this.targetLeftCalfRot.set(0.06 + leftSwing * 1.15, 0, 0);
+
+    const rightSwing = Math.max(0, Math.sin(t + Math.PI - 0.35));
+    this.targetRightCalfRot.set(0.06 + rightSwing * 1.15, 0, 0);
+
+    // Foot ankle flexion
+    this.targetLeftSneakerRot.set(-sinT * 0.12, 0, 0);
+    this.targetRightSneakerRot.set(sinT * 0.12, 0, 0);
+
+    // 6. Natural Arm Swing with Elbow Flexion
+    const armSwing = sinT * 0.68;
+    this.targetLeftArmRot.set(-armSwing + 0.12, 0, -0.22);
+    this.targetRightArmRot.set(armSwing + 0.12, 0, 0.22);
+
+    this.targetLeftForearmRot.set(-0.45 - Math.max(0, -armSwing) * 0.55, 0, 0);
+    this.targetRightForearmRot.set(-0.45 - Math.max(0, armSwing) * 0.55, 0, 0);
+  }
+
+  private computeJumpTakeoffTarget(): void {
+    // Explosive spring-up compression (micro-crouch without input latency)
+    this.targetRootPos.set(0, -0.06, 0);
+    this.targetHipsPos.set(0, this.baseHipsY - 0.04, 0);
+    this.targetSpineRot.set(0.18, 0, 0);
+    this.targetHeadRot.set(-0.10, 0, 0);
+
+    this.targetLeftLegRot.set(-0.35, 0, 0);
+    this.targetLeftCalfRot.set(0.65, 0, 0);
+    this.targetRightLegRot.set(-0.35, 0, 0);
+    this.targetRightCalfRot.set(0.65, 0, 0);
+
+    this.targetLeftArmRot.set(-0.65, 0, -0.3);
+    this.targetRightArmRot.set(-0.65, 0, 0.3);
+    this.targetLeftForearmRot.set(-0.85, 0, 0);
+    this.targetRightForearmRot.set(-0.85, 0, 0);
+  }
+
+  private computeJumpAscendTarget(jumpProgress: number): void {
+    // Dynamic upward leap, lead leg flexing up, arms driving upward
+    this.targetRootPos.set(0, 0, 0);
+    this.targetHipsPos.set(0, this.baseHipsY, 0);
+    this.targetSpineRot.set(0.08, 0, 0);
+    this.targetHeadRot.set(-0.12, 0, 0);
+
+    this.targetLeftLegRot.set(-0.75, 0, 0);
+    this.targetLeftCalfRot.set(1.15, 0, 0);
+    this.targetRightLegRot.set(0.25, 0, 0);
+    this.targetRightCalfRot.set(0.95, 0, 0);
+
+    this.targetLeftArmRot.set(-0.55, 0.15, -0.45);
+    this.targetRightArmRot.set(-0.55, -0.15, 0.45);
+    this.targetLeftForearmRot.set(-0.75, 0, 0);
+    this.targetRightForearmRot.set(-0.75, 0, 0);
+  }
+
+  private computeJumpApexTarget(): void {
+    // Floating weightlessness at the crest of the jump, knees tucked, arms spread for balance
+    this.targetSpineRot.set(0.04, 0, 0);
+    this.targetHeadRot.set(-0.06, 0, 0);
+
+    this.targetLeftLegRot.set(-0.55, 0, 0);
+    this.targetLeftCalfRot.set(0.95, 0, 0);
+    this.targetRightLegRot.set(0.15, 0, 0);
+    this.targetRightCalfRot.set(0.85, 0, 0);
+
+    this.targetLeftArmRot.set(-0.35, 0.1, -0.6);
+    this.targetRightArmRot.set(-0.35, -0.1, 0.6);
+    this.targetLeftForearmRot.set(-0.55, 0, 0);
+    this.targetRightForearmRot.set(-0.55, 0, 0);
+  }
+
+  private computeJumpDescendTarget(jumpProgress: number): void {
+    // Natural descent, legs extending down to meet the ground, gaze downward
+    this.targetSpineRot.set(0.12, 0, 0);
+    this.targetHeadRot.set(0.06, 0, 0);
+
+    this.targetLeftLegRot.set(-0.25, 0, 0);
+    this.targetLeftCalfRot.set(0.35, 0, 0);
+    this.targetRightLegRot.set(-0.15, 0, 0);
+    this.targetRightCalfRot.set(0.25, 0, 0);
+
+    this.targetLeftArmRot.set(0.15, 0, -0.35);
+    this.targetRightArmRot.set(0.15, 0, 0.35);
+    this.targetLeftForearmRot.set(-0.35, 0, 0);
+    this.targetRightForearmRot.set(-0.35, 0, 0);
+  }
+
+  private computeJumpLandTarget(landingProgress: number): void {
+    // Landing impact absorption (0.12s window): hips sink ~0.08m, knees flex, arms absorb downward momentum
+    const impact = Math.sin(Math.min(1.0, landingProgress) * Math.PI);
+
+    this.targetRootPos.set(0, -0.10 * impact, 0);
+    this.targetHipsPos.set(0, this.baseHipsY - 0.06 * impact, 0);
+    this.targetSpineRot.set(0.18 * impact, 0, 0);
+    this.targetHeadRot.set(-0.10 * impact, 0, 0);
+
+    this.targetLeftLegRot.set(-0.35 * impact, 0, 0);
+    this.targetLeftCalfRot.set(0.75 * impact, 0, 0);
+    this.targetRightLegRot.set(-0.35 * impact, 0, 0);
+    this.targetRightCalfRot.set(0.75 * impact, 0, 0);
+
+    this.targetLeftArmRot.set(0.1, 0, -0.45 * impact);
+    this.targetRightArmRot.set(0.1, 0, 0.45 * impact);
+    this.targetLeftForearmRot.set(-0.5 * impact, 0, 0);
+    this.targetRightForearmRot.set(-0.5 * impact, 0, 0);
+  }
+
+  private computeFastDropTarget(): void {
+    // Aggressive dive posture, streamlined arms back, diving downward
+    this.targetRootPos.set(0, 0, 0);
+    this.targetSpineRot.set(0.38, 0, 0);
+    this.targetHeadRot.set(0.15, 0, 0);
+
+    this.targetLeftLegRot.set(0.40, 0, 0);
+    this.targetLeftCalfRot.set(0.65, 0, 0);
+    this.targetRightLegRot.set(0.40, 0, 0);
+    this.targetRightCalfRot.set(0.65, 0, 0);
+
+    this.targetLeftArmRot.set(0.65, 0, -0.35);
+    this.targetRightArmRot.set(0.65, 0, 0.35);
+    this.targetLeftForearmRot.set(-0.25, 0, 0);
+    this.targetRightForearmRot.set(-0.25, 0, 0);
+  }
+
+  private computeSlideTarget(progress: number): void {
+    // Low baseball slide / ground roll pose, matching 0.75m collider, head and torso aligned
+    // Smooth transition from entry (0 to 0.2), hold (0.2 to 0.75), and recovery (0.75 to 1.0)
+    let depth = 1.0;
+    if (progress < 0.20) {
+      depth = progress / 0.20;
+    } else if (progress > 0.75) {
+      depth = 1.0 - (progress - 0.75) / 0.25;
+    }
+
+    this.targetRootPos.set(0, -0.45 * depth, 0);
+    this.targetRootRot.set(-0.32 * depth, 0, 0);
+    this.targetHipsRot.set(0, 0.45 * depth, 0);
+    this.targetSpineRot.set(-0.15 * depth, -0.20 * depth, 0);
+    this.targetHeadRot.set(0.35 * depth, -0.25 * depth, 0);
+
+    this.targetLeftLegRot.set(-1.18 * depth, 0, 0);
+    this.targetLeftCalfRot.set(0.12 * depth, 0, 0);
+
+    this.targetRightLegRot.set(0.42 * depth, 0, 0);
+    this.targetRightCalfRot.set(1.35 * depth, 0, 0);
+
+    this.targetLeftArmRot.set(-0.25 * depth, 0, -0.55 * depth);
+    this.targetRightArmRot.set(0.48 * depth, 0, 0.35 * depth);
+    this.targetRightForearmRot.set(-1.05 * depth, 0, 0);
+  }
+
+  private computeJetpackTarget(t: number): void {
+    // Aerodynamic Rocket Jetpack Flight Posture
+    const slowT = t * 0.45;
+    this.targetRootPos.set(0, 0.12 + Math.sin(slowT) * 0.08, 0);
+    this.targetSpineRot.set(-0.30, 0, 0);
+    this.targetHeadRot.set(0.25, 0, 0);
+
+    this.targetLeftLegRot.set(-0.42 + Math.sin(slowT) * 0.04, 0, 0);
+    this.targetLeftCalfRot.set(0.20, 0, 0);
+    this.targetRightLegRot.set(-0.42 - Math.sin(slowT) * 0.04, 0, 0);
+    this.targetRightCalfRot.set(0.20, 0, 0);
+
+    this.targetLeftArmRot.set(-0.35, 0, -0.25);
+    this.targetRightArmRot.set(-0.35, 0, 0.25);
+    this.targetLeftForearmRot.set(-0.25, 0, 0);
+    this.targetRightForearmRot.set(-0.25, 0, 0);
+  }
+
+  private computeHoverboardTarget(t: number, dt: number): void {
+    // Surfer Stance on Hoverboard
+    const slowT = t * 0.4;
+    if (this.hoverboardGroup) {
+      this.hoverboardGroup.position.y = 0.08 + Math.sin(slowT) * 0.04;
+      this.hoverboardGroup.rotation.z = Math.sin(slowT * 0.8) * 0.06;
+    }
+
+    this.targetHipsPos.set(0, this.baseHipsY, 0);
+    this.targetHipsRot.set(0, 0.65, 0);
+    this.targetSpineRot.set(0.05, 0, 0);
+
+    this.targetLeftLegRot.set(-0.25, 0, 0);
+    this.targetLeftCalfRot.set(0.40, 0, 0);
+    this.targetRightLegRot.set(0.20, 0, 0);
+    this.targetRightCalfRot.set(0.35, 0, 0);
+
+    this.targetLeftArmRot.set(-0.20, 0, -0.50);
+    this.targetRightArmRot.set(0.30, 0, 0.60);
+
+    if (this.activeBoardBuilt) {
+      this.activeBoardBuilt.updateAnimation(this.animTime, dt);
+    }
+  }
+
+  private computeStumbleTarget(): void {
+    this.targetSpineRot.set(-0.30, 0, 0);
+    this.targetLeftArmRot.set(-1.20, 0, -0.3);
+    this.targetRightArmRot.set(-1.20, 0, 0.3);
+    this.targetLeftLegRot.set(0.3, 0, 0);
+    this.targetRightLegRot.set(-0.3, 0, 0);
+  }
+
+  private computeCrashTarget(): void {
+    this.targetRootRot.set(-Math.PI / 2, 0, 0);
+    this.targetRootPos.set(0, -0.60, 0);
+    this.targetLeftArmRot.set(0.5, 0, -0.8);
+    this.targetRightArmRot.set(0.5, 0, 0.8);
+  }
+
+  private computeIdleTarget(dt: number): void {
+    const t = this.animTime * 0.35;
+    const breath = Math.sin(t) * 0.025;
+    const sway = Math.sin(t * 0.5) * 0.04;
+
+    this.targetHipsPos.set(0, this.baseHipsY + breath, 0);
+    this.targetHipsRot.set(0, 0, sway * 0.5);
+    this.targetSpineRot.set(-0.02 + Math.cos(t) * 0.015, Math.sin(t * 0.4) * 0.06, 0);
+    this.targetHeadRot.set(-Math.cos(t) * 0.02, -Math.sin(t * 0.4) * 0.08, 0);
+
+    this.targetLeftLegRot.set(0.05, 0, -0.05);
+    this.targetLeftCalfRot.set(0.02, 0, 0);
+    this.targetRightLegRot.set(-0.05, 0, 0.05);
+    this.targetRightCalfRot.set(0.02, 0, 0);
+
+    if (this.currentCharacterId === 'char_cruz') {
+      this.targetLeftArmRot.set(-0.2, 0.2, -0.4 + sway * 0.2);
+      this.targetRightArmRot.set(-0.2, -0.2, 0.4 - sway * 0.2);
+      this.targetLeftForearmRot.set(-0.6, 0, 0);
+      this.targetRightForearmRot.set(-0.6, 0, 0);
+    } else if (this.currentCharacterId === 'char_luna') {
+      this.targetLeftArmRot.set(-0.1, 0, -0.25);
+      this.targetLeftForearmRot.set(-0.3, 0, 0);
+      this.targetRightArmRot.set(-0.7, -0.3, 0.2);
+      this.targetRightForearmRot.set(-1.2, 0, 0);
+    } else if (this.currentCharacterId === 'char_nova') {
+      this.targetLeftArmRot.set(0.1, 0, -0.2);
+      this.targetRightArmRot.set(0.1, 0, 0.2);
+      this.targetLeftForearmRot.set(-0.2, 0, 0);
+      this.targetRightForearmRot.set(-0.2, 0, 0);
+    } else {
+      this.targetLeftArmRot.set(0.05, 0, -0.25);
+      this.targetRightArmRot.set(-0.1, 0, 0.3);
+      this.targetLeftForearmRot.set(-0.35, 0, 0);
+      this.targetRightForearmRot.set(-0.45, 0, 0);
+    }
+  }
+
+  private blendPose(blendWeight: number): void {
+    this.blendVector(this.rootPos, this.targetRootPos, blendWeight);
+    this.blendEuler(this.rootRot, this.targetRootRot, blendWeight);
+    this.blendVector(this.hipsPos, this.targetHipsPos, blendWeight);
+    this.blendEuler(this.hipsRot, this.targetHipsRot, blendWeight);
+    this.blendEuler(this.spineRot, this.targetSpineRot, blendWeight);
+    this.blendEuler(this.headRot, this.targetHeadRot, blendWeight);
+    this.blendEuler(this.leftArmRot, this.targetLeftArmRot, blendWeight);
+    this.blendEuler(this.leftForearmRot, this.targetLeftForearmRot, blendWeight);
+    this.blendEuler(this.rightArmRot, this.targetRightArmRot, blendWeight);
+    this.blendEuler(this.rightForearmRot, this.targetRightForearmRot, blendWeight);
+    this.blendEuler(this.leftLegRot, this.targetLeftLegRot, blendWeight);
+    this.blendEuler(this.leftCalfRot, this.targetLeftCalfRot, blendWeight);
+    this.blendEuler(this.rightLegRot, this.targetRightLegRot, blendWeight);
+    this.blendEuler(this.rightCalfRot, this.targetRightCalfRot, blendWeight);
+    this.blendEuler(this.leftSneakerRot, this.targetLeftSneakerRot, blendWeight);
+    this.blendEuler(this.rightSneakerRot, this.targetRightSneakerRot, blendWeight);
+  }
+
+  private blendEuler(current: THREE.Euler, target: THREE.Euler, weight: number): void {
+    current.x += (target.x - current.x) * weight;
+    current.y += (target.y - current.y) * weight;
+    current.z += (target.z - current.z) * weight;
+  }
+
+  private blendVector(current: THREE.Vector3, target: THREE.Vector3, weight: number): void {
+    current.x += (target.x - current.x) * weight;
+    current.y += (target.y - current.y) * weight;
+    current.z += (target.z - current.z) * weight;
+  }
+
+  private applyBlendedPoseToHierarchy(): void {
+    this.rootGroup.position.copy(this.rootPos);
+    this.rootGroup.rotation.copy(this.rootRot);
+
+    this.hipsGroup.position.copy(this.hipsPos);
+    this.hipsGroup.rotation.copy(this.hipsRot);
+
+    this.spineGroup.rotation.copy(this.spineRot);
+    this.headGroup.rotation.copy(this.headRot);
+
+    this.leftArmGroup.rotation.copy(this.leftArmRot);
+    this.leftForearmGroup.rotation.copy(this.leftForearmRot);
+    this.rightArmGroup.rotation.copy(this.rightArmRot);
+    this.rightForearmGroup.rotation.copy(this.rightForearmRot);
+
+    this.leftLegGroup.rotation.copy(this.leftLegRot);
+    this.leftCalfGroup.rotation.copy(this.leftCalfRot);
+    this.rightLegGroup.rotation.copy(this.rightLegRot);
+    this.rightCalfGroup.rotation.copy(this.rightCalfRot);
+
+    if (this.leftSneaker) {
+      this.leftSneaker.rotation.copy(this.leftSneakerRot);
+    }
+    if (this.rightSneaker) {
+      this.rightSneaker.rotation.copy(this.rightSneakerRot);
+    }
+  }
+
+  private updateShadow(state: LocomotionState, jumpProgress: number): void {
+    if (!this.shadowMesh) return;
+
+    if (state === 'JETPACK') {
+      this.shadowMesh.scale.set(0.25, 0.25, 1.0);
+    } else if (
+      state === 'JUMP_TAKEOFF' ||
+      state === 'JUMP_ASCEND' ||
+      state === 'JUMP_APEX' ||
+      state === 'JUMP_DESCEND' ||
+      state === 'FAST_DROP'
+    ) {
+      const scale = Math.max(0.35, 1.0 - jumpProgress * 0.45);
+      this.shadowMesh.scale.set(scale, scale, 1.0);
+    } else {
+      this.shadowMesh.scale.set(1.0, 1.0, 1.0);
+    }
+  }
+
+  private updatePowerupVisuals(dt: number, hasSneakers: boolean): void {
     // Jetpack flames flickering
     if (this.isJetpack && this.jetpackFire1 && this.jetpackFire2) {
       const flicker = 0.8 + Math.random() * 0.45;
@@ -210,76 +897,58 @@ export class CharacterModel {
       this.hierarchy.materials.sneakerMainMat.emissive.setHex(hasSneakers ? 0xffaa00 : 0x000000);
       this.hierarchy.materials.sneakerMainMat.emissiveIntensity = hasSneakers ? 0.6 : 0.0;
     }
-
-    // Dynamic Lateral Banking & Lean
-    this.rootGroup.rotation.z = -bankAngle * 0.9;
-    this.rootGroup.rotation.y = bankAngle * 0.45;
-
-    // Shadow tracking & scaling
-    if (state === 'JUMPING' || state === 'JETPACK') {
-      const scale = state === 'JETPACK' ? 0.25 : Math.max(0.4, 1.0 - jumpProgress * 0.5);
-      this.shadowMesh.scale.set(scale, scale, 1.0);
-    } else {
-      this.shadowMesh.scale.set(1.0, 1.0, 1.0);
-    }
-
-    if (state === 'JETPACK') {
-      this.animateJetpack(dt);
-      return;
-    }
-
-    if (hasHoverboard) {
-      this.animateHoverboard(dt);
-      return;
-    }
-
-    switch (state) {
-      case 'IDLE':
-        this.animateIdle(dt);
-        break;
-      case 'RUNNING':
-        this.animateRunCycle(dt);
-        break;
-      case 'JUMPING':
-        this.animateJump(jumpProgress);
-        break;
-      case 'SLIDING':
-        this.animateSlide(slideProgress);
-        break;
-      case 'STUMBLING':
-        this.animateStumble(dt);
-        break;
-      case 'DEAD':
-        this.animateDead();
-        break;
-    }
   }
 
   /**
-   * Compatibility bridge for Player.ts update call
+   * Showcase Idle Animation for 3D Turntable Preview (direct application for preview modal)
    */
-  public updateAnimation(
-    state: string,
-    speed: number,
-    bankingAngle: number,
-    groundY: number,
-    dt: number
-  ): void {
-    let animState: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'JETPACK' | 'STUMBLING' | 'DEAD' | 'IDLE' = 'RUNNING';
-    if (state === 'JETPACK') animState = 'JETPACK';
-    else if (state === 'JUMP' || state === 'FALLING' || state === 'FALLING_FROM_TRAIN') animState = 'JUMPING';
-    else if (state === 'SLIDE') animState = 'SLIDING';
-    else if (state === 'CRASH') animState = 'DEAD';
-    else if (state === 'IDLE') animState = 'IDLE';
-    else if (state === 'CLIMBING' || state === 'ON_TRAIN' || state === 'RUN') animState = 'RUNNING';
+  public animateTurntableIdle(dt: number): void {
+    this.animTime += dt * 3.5;
+    const t = this.animTime;
 
-    this.update(
-      dt,
-      animState,
-      this.isHoverboard,
-      this.isSuperSneakers,
-      bankingAngle
-    );
+    // Subtle rhythmic weight shift & breathing
+    const breath = Math.sin(t) * 0.025;
+    const sway = Math.sin(t * 0.5) * 0.04;
+
+    this.hipsGroup.position.y = (this.baseHipsY || 0.95) + breath;
+    this.hipsGroup.rotation.z = sway * 0.5;
+    this.spineGroup.rotation.x = -0.02 + Math.cos(t) * 0.015;
+    this.spineGroup.rotation.y = Math.sin(t * 0.4) * 0.06;
+
+    this.headGroup.rotation.x = -Math.cos(t) * 0.02;
+    this.headGroup.rotation.y = -Math.sin(t * 0.4) * 0.08;
+
+    // Relaxed arms at sides with personality
+    if (this.currentCharacterId === 'char_cruz') {
+      this.leftArmGroup.rotation.set(-0.2, 0.2, -0.4 + sway * 0.2);
+      this.rightArmGroup.rotation.set(-0.2, -0.2, 0.4 - sway * 0.2);
+      this.leftForearmGroup.rotation.x = -0.6;
+      this.rightForearmGroup.rotation.x = -0.6;
+    } else if (this.currentCharacterId === 'char_luna') {
+      this.leftArmGroup.rotation.set(-0.1, 0, -0.25);
+      this.leftForearmGroup.rotation.x = -0.3;
+      this.rightArmGroup.rotation.set(-0.7, -0.3, 0.2);
+      this.rightForearmGroup.rotation.x = -1.2;
+    } else if (this.currentCharacterId === 'char_nova') {
+      this.leftArmGroup.rotation.set(0.1, 0, -0.2);
+      this.rightArmGroup.rotation.set(0.1, 0, 0.2);
+      this.leftForearmGroup.rotation.x = -0.2;
+      this.rightForearmGroup.rotation.x = -0.2;
+    } else {
+      this.leftArmGroup.rotation.set(0.05, 0, -0.25);
+      this.rightArmGroup.rotation.set(-0.1, 0, 0.3);
+      this.leftForearmGroup.rotation.x = -0.35;
+      this.rightForearmGroup.rotation.x = -0.45;
+    }
+
+    // Legs planted naturally on turntable podium
+    this.leftLegGroup.rotation.set(0.05, 0, -0.05);
+    this.leftCalfGroup.rotation.set(0.02, 0, 0);
+    this.rightLegGroup.rotation.set(-0.05, 0, 0.05);
+    this.rightCalfGroup.rotation.set(0.02, 0, 0);
+
+    this.rootGroup.position.set(0, 0, 0);
+    this.rootGroup.rotation.set(0, 0, 0);
   }
 
   public setHoverboardModel(boardId: HoverboardId): void {
@@ -345,199 +1014,5 @@ export class CharacterModel {
     if (!invulnerable) {
       this.mesh.visible = true;
     }
-  }
-
-  /**
-   * Showcase Idle Animation for 3D Turntable Preview
-   */
-  public animateTurntableIdle(dt: number): void {
-    this.animTime += dt * 3.5;
-    const t = this.animTime;
-
-    // Subtle rhythmic weight shift & breathing
-    const breath = Math.sin(t) * 0.025;
-    const sway = Math.sin(t * 0.5) * 0.04;
-
-    this.hipsGroup.position.y = 0.95 + breath;
-    this.hipsGroup.rotation.z = sway * 0.5;
-    this.spineGroup.rotation.x = -0.02 + Math.cos(t) * 0.015;
-    this.spineGroup.rotation.y = Math.sin(t * 0.4) * 0.06;
-
-    this.headGroup.rotation.x = -Math.cos(t) * 0.02;
-    this.headGroup.rotation.y = -Math.sin(t * 0.4) * 0.08;
-
-    // Relaxed arms at sides with personality
-    if (this.currentCharacterId === 'char_cruz') {
-      // Cruz has confident b-boy posture (arms slightly crossed / fists on hips)
-      this.leftArmGroup.rotation.set(-0.2, 0.2, -0.4 + sway * 0.2);
-      this.rightArmGroup.rotation.set(-0.2, -0.2, 0.4 - sway * 0.2);
-      this.leftForearmGroup.rotation.x = -0.6;
-      this.rightForearmGroup.rotation.x = -0.6;
-    } else if (this.currentCharacterId === 'char_luna') {
-      // Luna has sleek tech posture (one hand tapping cyber visor, one relaxed)
-      this.leftArmGroup.rotation.set(-0.1, 0, -0.25);
-      this.leftForearmGroup.rotation.x = -0.3;
-      this.rightArmGroup.rotation.set(-0.7, -0.3, 0.2);
-      this.rightForearmGroup.rotation.x = -1.2; // Hand up near visor
-    } else if (this.currentCharacterId === 'char_nova') {
-      // Nova has streamlined aero posture (shoulders broad, arms back)
-      this.leftArmGroup.rotation.set(0.1, 0, -0.2);
-      this.rightArmGroup.rotation.set(0.1, 0, 0.2);
-      this.leftForearmGroup.rotation.x = -0.2;
-      this.rightForearmGroup.rotation.x = -0.2;
-    } else {
-      // Jax has classic street runner idle (weight shifted, ready to spring)
-      this.leftArmGroup.rotation.set(0.05, 0, -0.25);
-      this.rightArmGroup.rotation.set(-0.1, 0, 0.3);
-      this.leftForearmGroup.rotation.x = -0.35;
-      this.rightForearmGroup.rotation.x = -0.45;
-    }
-
-    // Legs planted naturally on turntable podium
-    this.leftLegGroup.rotation.set(0.05, 0, -0.05);
-    this.leftCalfGroup.rotation.set(0.02, 0, 0);
-    this.rightLegGroup.rotation.set(-0.05, 0, 0.05);
-    this.rightCalfGroup.rotation.set(0.02, 0, 0);
-
-    this.rootGroup.position.set(0, 0, 0);
-    this.rootGroup.rotation.set(0, 0, 0);
-  }
-
-  private animateIdle(dt: number): void {
-    this.animateTurntableIdle(dt);
-  }
-
-  /**
-   * Aerodynamic Rocket Jetpack Flight Posture
-   */
-  private animateJetpack(dt: number): void {
-    const t = this.animTime * 0.45;
-    this.rootGroup.position.y = 0.12 + Math.sin(t) * 0.08;
-    this.spineGroup.rotation.x = -0.3;
-    this.headGroup.rotation.x = 0.25;
-
-    this.leftLegGroup.rotation.x = -0.42 + Math.sin(t) * 0.04;
-    this.leftCalfGroup.rotation.x = 0.2;
-    this.rightLegGroup.rotation.x = -0.42 - Math.sin(t) * 0.04;
-    this.rightCalfGroup.rotation.x = 0.2;
-
-    this.leftArmGroup.rotation.set(-0.35, 0, -0.25);
-    this.rightArmGroup.rotation.set(-0.35, 0, 0.25);
-    this.leftForearmGroup.rotation.x = -0.25;
-    this.rightForearmGroup.rotation.x = -0.25;
-  }
-
-  /**
-   * Athletic High-Cadence Sprint Cycle
-   */
-  private animateRunCycle(dt: number): void {
-    const t = this.animTime;
-    const sinT = Math.sin(t);
-    const cosT = Math.cos(t);
-
-    this.hipsGroup.position.y = 0.95 + Math.abs(sinT) * 0.08;
-    this.hipsGroup.rotation.y = -sinT * 0.08;
-    this.spineGroup.rotation.y = sinT * 0.12;
-    this.spineGroup.rotation.x = 0.15;
-
-    this.headGroup.position.y = 0.62 + Math.abs(cosT) * 0.03;
-    this.headGroup.rotation.x = -0.08;
-
-    const armSwing = sinT * 0.75;
-    this.leftArmGroup.rotation.x = -armSwing + 0.1;
-    this.leftForearmGroup.rotation.x = -0.5 - Math.max(0, -sinT) * 0.5;
-
-    this.rightArmGroup.rotation.x = armSwing + 0.1;
-    this.rightForearmGroup.rotation.x = -0.5 - Math.max(0, sinT) * 0.5;
-
-    const legSwing = sinT * 0.85;
-    this.leftLegGroup.rotation.x = legSwing;
-    this.leftCalfGroup.rotation.x = Math.max(0, -sinT) * 1.1;
-
-    this.rightLegGroup.rotation.x = -legSwing;
-    this.rightCalfGroup.rotation.x = Math.max(0, sinT) * 1.1;
-
-    this.rootGroup.position.y = 0;
-    this.rootGroup.rotation.x = 0;
-  }
-
-  /**
-   * Dynamic Jump Takeoff and Airborne Pose
-   */
-  private animateJump(progress: number): void {
-    this.spineGroup.rotation.x = 0.1;
-    this.headGroup.rotation.x = -0.15;
-
-    this.leftArmGroup.rotation.x = -0.4;
-    this.leftArmGroup.rotation.z = -0.5;
-    this.leftForearmGroup.rotation.x = -0.8;
-
-    this.rightArmGroup.rotation.x = -0.4;
-    this.rightArmGroup.rotation.z = 0.5;
-    this.rightForearmGroup.rotation.x = -0.8;
-
-    this.leftLegGroup.rotation.x = -0.6;
-    this.leftCalfGroup.rotation.x = 1.0;
-    this.rightLegGroup.rotation.x = 0.2;
-    this.rightCalfGroup.rotation.x = 0.8;
-
-    this.rootGroup.position.y = 0;
-  }
-
-  /**
-   * Smooth Baseball Slide Pose
-   */
-  private animateSlide(progress: number): void {
-    this.rootGroup.position.y = -0.45;
-    this.rootGroup.rotation.x = -0.35;
-    this.hipsGroup.rotation.y = 0.45;
-
-    this.leftLegGroup.rotation.x = -1.2;
-    this.leftCalfGroup.rotation.x = 0.1;
-
-    this.rightLegGroup.rotation.x = 0.4;
-    this.rightCalfGroup.rotation.x = 1.4;
-
-    this.leftArmGroup.rotation.x = -0.2;
-    this.leftArmGroup.rotation.z = -0.6;
-    this.rightArmGroup.rotation.x = 0.5;
-    this.rightForearmGroup.rotation.x = -1.1;
-  }
-
-  /**
-   * Surfer Stance on Hoverboard
-   */
-  private animateHoverboard(dt: number): void {
-    const t = this.animTime * 0.4;
-    this.hoverboardGroup.position.y = 0.08 + Math.sin(t) * 0.04;
-    this.hoverboardGroup.rotation.z = Math.sin(t * 0.8) * 0.06;
-
-    this.hipsGroup.position.y = 0.95;
-    this.hipsGroup.rotation.y = 0.65;
-    this.spineGroup.rotation.x = 0.05;
-
-    this.leftLegGroup.rotation.x = -0.25;
-    this.leftCalfGroup.rotation.x = 0.4;
-    this.rightLegGroup.rotation.x = 0.2;
-    this.rightCalfGroup.rotation.x = 0.35;
-
-    this.leftArmGroup.rotation.set(-0.2, 0, -0.5);
-    this.rightArmGroup.rotation.set(0.3, 0, 0.6);
-
-    // Animate board thrusters & glow rings
-    if (this.activeBoardBuilt) {
-      this.activeBoardBuilt.updateAnimation(this.animTime, dt);
-    }
-  }
-
-  private animateStumble(dt: number): void {
-    this.spineGroup.rotation.x = -0.3;
-    this.leftArmGroup.rotation.x = -1.2;
-    this.rightArmGroup.rotation.x = -1.2;
-  }
-
-  private animateDead(): void {
-    this.rootGroup.rotation.x = -Math.PI / 2;
-    this.rootGroup.position.y = -0.6;
   }
 }
