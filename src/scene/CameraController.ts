@@ -45,8 +45,13 @@ export class CameraController {
     this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma);
   }
 
-  public update(playerPos: THREE.Vector3, dt: number, timeSec: number = 0): void {
+  public update(playerPos: THREE.Vector3, dt: number, timeSec: number = 0, speed: number = CONSTANTS.INITIAL_SPEED): void {
     if (this.isLobbyMode) {
+      if (Math.abs(this.camera.fov - CONSTANTS.CAMERA_FOV) > 0.1) {
+        this.camera.fov = CONSTANTS.CAMERA_FOV;
+        this.camera.updateProjectionMatrix();
+      }
+
       // Cinematic front-quarter framing in the subway lobby
       const isPortrait = this.camera.aspect < 1.0;
       const sway = Math.sin(timeSec * 0.45) * 0.12;
@@ -66,6 +71,14 @@ export class CameraController {
       this.camera.position.copy(this.currentPosition);
       this.camera.lookAt(this.lobbyLookTarget);
       return;
+    }
+
+    // Dynamic FOV widening: subtly expands from 65° to 70.5° at high speed to widen peripheral vision
+    const speedRatio = Math.max(0, Math.min(1.0, (speed - CONSTANTS.INITIAL_SPEED) / (CONSTANTS.MAX_SPEED - CONSTANTS.INITIAL_SPEED)));
+    const targetFov = CONSTANTS.CAMERA_FOV + speedRatio * 5.5;
+    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.0 * dt));
+      this.camera.updateProjectionMatrix();
     }
 
     // Target position behind and above player in gameplay
@@ -106,6 +119,8 @@ export class CameraController {
 
   public reset(playerPos: THREE.Vector3): void {
     this.shakeTrauma = 0;
+    this.camera.fov = CONSTANTS.CAMERA_FOV;
+    this.camera.updateProjectionMatrix();
     if (this.isLobbyMode) {
       this.currentPosition.copy(this.lobbyTargetPos);
       this.camera.position.copy(this.currentPosition);

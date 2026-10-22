@@ -200,6 +200,7 @@ export class Game {
     this.coinRushElapsed = 0.0;
 
     this.player.reset();
+    this.player.setGameMode(this.activeGameMode);
     this.trackManager.reset();
     this.cameraController.reset(this.player.position);
 
@@ -416,8 +417,8 @@ export class Game {
       // 6. Update HUD UI
       this.hud.update();
 
-      // 7. Update lighting target to center around player
-      this.worldScene.updateSunPosition(this.player.position.z);
+      // 7. Update lighting target to center around player and update speed lines
+      this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
     } else if (this.lifecycleState === 'GAMEOVER') {
       // Update tumble animation
       this.player.update(dt);
@@ -428,8 +429,8 @@ export class Game {
       this.player.mesh.rotation.y = Math.PI - 0.2 + Math.sin(now * 0.001) * 0.08;
     }
 
-    // Camera follow update
-    this.cameraController.update(this.player.position, dt, now / 1000);
+    // Camera follow update with dynamic speed-based FOV
+    this.cameraController.update(this.player.position, dt, now / 1000, this.player.speed);
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();

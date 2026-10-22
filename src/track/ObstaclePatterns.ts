@@ -1,6 +1,6 @@
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { ObstacleType } from './ObstacleFactory';
-import { PowerupType } from '../player/PowerupManager';
+import { CollectibleType } from './CollectibleFactory';
 import { ReachabilityValidator, ValidatedPattern } from './ReachabilityValidator';
 
 export type PatternDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'EASY' | 'MEDIUM' | 'HARD';
@@ -14,8 +14,6 @@ export interface PatternObstacle {
   isMoving?: boolean;
   velocityZ?: number;
 }
-
-import { CollectibleType } from './CollectibleFactory';
 
 export interface PatternCollectible {
   type: CollectibleType;
@@ -39,15 +37,38 @@ export interface TrackPattern {
   minReactionDist?: number;
   speedMin?: number;
   speedMax?: number;
+  isBreather?: boolean;
 }
 
 export const OBSTACLE_PATTERNS: TrackPattern[] = [
   // =========================================================================
-  // 1. BEGINNER / EASY PATTERNS (0 - 350m, Speed: 18 - 22 m/s)
+  // 1. BEGINNER / EASY PATTERNS (0 - 250m, Speed: 18 - 24 m/s)
   // Clear spacing, single-action mechanics, generous reaction windows
   // =========================================================================
 
-  // 1. Runway Intro (Safe lane teaching)
+  // 1. Opening Runway (Introduces action immediately with readable jump & slide)
+  {
+    name: 'OPENING_RUNWAY',
+    difficulty: 'BEGINNER',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Center low hurdle at z=28m (jump over or shift left/right); high barrier at z=56m in lane 1',
+    minReactionDist: 28.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 28.0 },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 56.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 8, spacing: 2.0 },
+      { type: 'COIN', lane: 0, zOffset: 26.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 6, spacing: 2.0 },
+      { type: 'COIN', lane: 0, zOffset: 48.0, count: 8, spacing: 2.0 },
+      { type: 'COIN', lane: 1, zOffset: 52.0, yOffset: 0.6, count: 4, spacing: 1.8 }
+    ]
+  },
+
+  // 2. Runway Intro (Safe lane teaching)
   {
     name: 'RUNWAY_INTRO',
     difficulty: 'EASY',
@@ -61,11 +82,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ],
     collectibles: [
       { type: 'COIN', lane: 0, zOffset: 15.0, count: 6, spacing: 2.2 },
-      { type: 'COIN', lane: 0, zOffset: 33.0, yOffset: 2.2, count: 3, spacing: 1.8, isArc: true } // Arch over hurdle
+      { type: 'COIN', lane: 0, zOffset: 33.0, yOffset: 2.2, count: 3, spacing: 1.8, isArc: true }
     ]
   },
 
-  // 2. Center Train with Open Flanks
+  // 3. Center Train with Open Flanks
   {
     name: 'CENTER_TRAIN_FLANKS',
     difficulty: 'EASY',
@@ -84,7 +105,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 3. High Barrier Slide + Low Barrier Jump
+  // 4. High Barrier Slide + Low Barrier Jump
   {
     name: 'SLIDE_AND_JUMP_COMBO',
     difficulty: 'EASY',
@@ -104,7 +125,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 4. Side Barrier Squeeze Intro (Construction Barricade in Lane -1)
+  // 5. Side Barrier Squeeze Intro (Construction Barricade in Lane -1)
   {
     name: 'SIDE_BARRIER_SQUEEZE',
     difficulty: 'BEGINNER',
@@ -123,7 +144,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 5. Low Barrier Flanked Hurdles
+  // 6. Low Barrier Flanked Hurdles
   {
     name: 'FLANKED_HURDLES',
     difficulty: 'BEGINNER',
@@ -142,12 +163,53 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
+  // 7. Gentle Weave Intro (Staggered hurdles with wide center open path)
+  {
+    name: 'GENTLE_WEAVE_INTRO',
+    difficulty: 'BEGINNER',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Center lane stays open with rich coins; hurdles staggered on flanks',
+    minReactionDist: 32.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 25.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 52.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 12.0, count: 12, spacing: 2.2 },
+      { type: 'COIN', lane: 1, zOffset: 24.0, count: 6, spacing: 2.0 },
+      { type: 'SHIELD', lane: 0, zOffset: 44.0 }
+    ]
+  },
+
+  // 8. Coin Valley Breather (Pacing recovery section with rich coin lines)
+  {
+    name: 'COIN_VALLEY_BREATHER',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Generous recovery stretch with triple coin arches and single side hurdle',
+    minReactionDist: 35.0,
+    isBreather: true,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 58.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 10.0, yOffset: 2.2, count: 5, spacing: 1.8, isArc: true },
+      { type: 'COIN', lane: -1, zOffset: 24.0, count: 8, spacing: 2.0 },
+      { type: 'COIN', lane: 0, zOffset: 35.0, count: 10, spacing: 2.0 },
+      { type: 'MAGNET', lane: 0, zOffset: 55.0 }
+    ]
+  },
+
   // =========================================================================
-  // 2. INTERMEDIATE / MEDIUM PATTERNS (350 - 900m, Speed: 22 - 28 m/s)
+  // 2. INTERMEDIATE / MEDIUM PATTERNS (250 - 750m, Speed: 24 - 29 m/s)
   // Multi-lane decisions, train roofs, oncoming trains, tunnel arches
   // =========================================================================
 
-  // 6. Train with Ramp onto Roof!
+  // 9. Train with Ramp onto Roof!
   {
     name: 'TRAIN_ROOF_RAMP_RUN',
     difficulty: 'MEDIUM',
@@ -167,7 +229,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 7. Dual Trains with Center Escape Lane
+  // 10. Dual Trains with Center Escape Lane
   {
     name: 'DUAL_TRAINS_CENTER_ESCAPE',
     difficulty: 'MEDIUM',
@@ -187,7 +249,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 8. Zig-Zag Weave (Left Train, then Right Train)
+  // 11. Zig-Zag Weave (Left Train, then Right Train)
   {
     name: 'ZIG_ZAG_WEAVE',
     difficulty: 'MEDIUM',
@@ -208,7 +270,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 9. Telegraphed Oncoming Moving Train
+  // 12. Telegraphed Oncoming Moving Train
   {
     name: 'MOVING_TRAIN_TELEGRAPH',
     difficulty: 'INTERMEDIATE',
@@ -228,7 +290,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 10. Tunnel Archway Clearance Slide
+  // 13. Tunnel Archway Clearance Slide
   {
     name: 'TUNNEL_SLIDE_CLEARANCE',
     difficulty: 'INTERMEDIATE',
@@ -249,12 +311,71 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
+  // 14. Double Hurdle Rhythm (Jump center, shift, jump side)
+  {
+    name: 'DOUBLE_HURDLE_RHYTHM',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Jump low barrier at z=20m in center, then lane 1 hurdle at z=48m; lane -1 clear',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 20.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 48.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true },
+      { type: 'COIN', lane: -1, zOffset: 22.0, count: 8, spacing: 2.2 },
+      { type: 'COIN', lane: 1, zOffset: 46.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true }
+    ]
+  },
+
+  // 15. Side Barrier Chicane (S-curve lane transitions)
+  {
+    name: 'SIDE_BARRIER_CHICANE',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Avoid right side barrier at z=22m, then avoid left side barrier at z=48m',
+    minReactionDist: 27.0,
+    obstacles: [
+      { type: 'SIDE_BARRIER', lane: 1, zOffset: 22.0 },
+      { type: 'SIDE_BARRIER', lane: -1, zOffset: 48.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 15.0, count: 12, spacing: 2.2 },
+      { type: 'COIN', lane: 1, zOffset: 50.0, count: 6, spacing: 2.0 }
+    ]
+  },
+
+  // 16. Mid-Run Breather (Pacing relief during intermediate tempo)
+  {
+    name: 'MID_RUN_BREATHER',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Generous recovery with coin corridors across all 3 lanes and single hurdle in left',
+    minReactionDist: 30.0,
+    isBreather: true,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 54.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 14.0, count: 10, spacing: 2.0 },
+      { type: 'COIN', lane: 1, zOffset: 24.0, count: 8, spacing: 2.0 },
+      { type: 'SHIELD', lane: 0, zOffset: 45.0 }
+    ]
+  },
+
   // =========================================================================
-  // 3. ADVANCED / HARD PATTERNS (900 - 1800m, Speed: 28 - 34 m/s)
+  // 3. ADVANCED / HARD PATTERNS (750 - 1600m, Speed: 29 - 34 m/s)
   // Higher decision density, rapid slide-to-jump, moving trains, paired hazards
   // =========================================================================
 
-  // 11. Triple Track Rhythm Challenge
+  // 17. Triple Track Rhythm Challenge
   {
     name: 'RHYTHM_CHALLENGE',
     difficulty: 'HARD',
@@ -277,7 +398,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 12. Overhead Tunnel Gantry Run
+  // 18. Overhead Tunnel Gantry Run
   {
     name: 'TUNNEL_GANTRY_RUN',
     difficulty: 'HARD',
@@ -299,14 +420,14 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 13. Moving Train Intercept & Side Barricade
+  // 19. Moving Train Intercept & Side Barricade
   {
     name: 'MOVING_TRAIN_INTERCEPT',
     difficulty: 'ADVANCED',
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 1],
     requiredActions: ['LANE_CHANGE'],
-    safeRoutes: 'Center moving train rushes forward; side barrier in lane -1 at z=45m; lane 1 clear or jump in -1 early',
+    safeRoutes: 'Center moving train rushes forward; side barrier in lane -1 at z=42m; lane 1 clear or jump in -1 early',
     minReactionDist: 28.0,
     obstacles: [
       { type: 'MOVING_TRAIN', lane: 0, zOffset: 48.0, length: 24.0, isMoving: true, velocityZ: CONSTANTS.MOVING_TRAIN_SPEED },
@@ -320,7 +441,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 14. Paired Hazards Squeeze
+  // 20. Paired Hazards Squeeze
   {
     name: 'PAIRED_HAZARDS_SQUEEZE',
     difficulty: 'ADVANCED',
@@ -342,14 +463,14 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 15. Alternating Obstacles Tempo
+  // 21. Alternating Obstacles Tempo
   {
     name: 'ALTERNATING_TEMPO',
     difficulty: 'ADVANCED',
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 0, 1],
     requiredActions: ['JUMP', 'SLIDE', 'LANE_CHANGE'],
-    safeRoutes: 'Staggered obstacles: jump at z=18m, slide at z=36m, weave right at z=54m',
+    safeRoutes: 'Staggered obstacles: jump at z=18m, slide at z=32m, weave right at z=48m',
     minReactionDist: 22.0,
     obstacles: [
       { type: 'LOW_BARRIER', lane: -1, zOffset: 18.0 },
@@ -364,12 +485,33 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
+  // 22. Rooftop to Rooftop Gap Navigation
+  {
+    name: 'ROOFTOP_TO_ROOFTOP_GAP',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Climb ramp on train in lane -1, or stay in lane 1 to avoid center train',
+    minReactionDist: 24.0,
+    obstacles: [
+      { type: 'TRAIN', lane: -1, zOffset: 16.0, length: 24.0, hasRamp: true },
+      { type: 'TRAIN', lane: 0, zOffset: 46.0, length: 24.0, hasRamp: true },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 26.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 20.0, yOffset: 5.2, count: 8, spacing: 2.0 },
+      { type: 'COIN', lane: 1, zOffset: 24.0, yOffset: 0.6, count: 6, spacing: 1.8 },
+      { type: 'SNEAKERS', lane: 0, zOffset: 50.0, yOffset: 5.2 }
+    ]
+  },
+
   // =========================================================================
-  // 4. EXPERT PATTERNS (1800m+, Speed: 34 - 38 m/s)
+  // 4. EXPERT PATTERNS (1600m+, Speed: 34 - 38 m/s)
   // Tight, skill-testing, fair multi-step solutions, rewarding mastery
   // =========================================================================
 
-  // 16. Expert Gauntlet: Dive, Weave and Vault
+  // 23. Expert Gauntlet: Dive, Weave and Vault
   {
     name: 'EXPERT_DIVE_AND_VAULT',
     difficulty: 'EXPERT',
@@ -391,7 +533,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 17. Expert Double Moving Train Reflex
+  // 24. Expert Double Moving Train Reflex
   {
     name: 'EXPERT_MOVING_TRAIN_REFLEX',
     difficulty: 'EXPERT',
@@ -412,7 +554,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 18. Expert Tunnel & Train Squeeze
+  // 25. Expert Tunnel & Train Squeeze
   {
     name: 'EXPERT_TUNNEL_TRAIN_SQUEEZE',
     difficulty: 'EXPERT',
@@ -434,7 +576,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ]
   },
 
-  // 19. Precision High-Risk Coin Path (Tempting Skill Route)
+  // 26. Precision High-Risk Coin Path (Tempting Skill Route)
   {
     name: 'PRECISION_COIN_RISK_ROUTE',
     difficulty: 'EXPERT',
@@ -453,6 +595,28 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: 0, zOffset: 16.0, yOffset: 2.5, count: 5, spacing: 1.8, isArc: true },
       { type: 'COIN', lane: 0, zOffset: 34.0, yOffset: 0.6, count: 6, spacing: 1.8 },
       { type: 'MULTIPLIER', lane: 0, zOffset: 52.0 }
+    ]
+  },
+
+  // 27. Expert Triple Lane Gauntlet
+  {
+    name: 'EXPERT_TRIPLE_LANE_GAUNTLET',
+    difficulty: 'EXPERT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['LANE_CHANGE', 'SLIDE', 'JUMP'],
+    safeRoutes: 'Side barrier in lane -1 at z=18m, jump center hurdle at z=24m, then slide under high barrier in lane 1 at z=50m',
+    minReactionDist: 20.0,
+    obstacles: [
+      { type: 'SIDE_BARRIER', lane: -1, zOffset: 18.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 24.0 },
+      { type: 'TRAIN', lane: -1, zOffset: 42.0, length: 24.0 },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 50.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
+      { type: 'COIN', lane: 1, zOffset: 46.0, yOffset: 0.6, count: 6, spacing: 1.8 },
+      { type: 'SHIELD', lane: 0, zOffset: 56.0 }
     ]
   }
 ];

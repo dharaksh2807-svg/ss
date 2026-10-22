@@ -40,8 +40,56 @@ export const CONSTANTS = {
   // Speed and Difficulty Progression
   INITIAL_SPEED: 18.0, // Starting forward speed (m/s)
   MAX_SPEED: 38.0, // Top speed at high distance
-  SPEED_ACCELERATION: 0.12, // Speed gain per 100m
-  SPEED_LERP: 2.0,
+  SPEED_ACCELERATION: 0.12, // Legacy speed gain per 100m
+  SPEED_LERP: 4.0, // Speed response damping factor
+
+  // Mode-Specific Speed Progression Profiles
+  SPEED_PROFILES: {
+    NORMAL: {
+      initialSpeed: 18.0,
+      maxSpeed: 38.0,
+      earlyRampDistance: 300.0, // 0 - 300m (~12-14s)
+      earlySpeedTarget: 24.5,
+      midRampDistance: 1200.0, // 300 - 1200m (~15s to ~45s)
+      midSpeedTarget: 31.5,
+      asymptoticDistance: 3200.0
+    },
+    SURVIVAL: {
+      initialSpeed: 25.0,
+      maxSpeed: 40.0,
+      earlyRampDistance: 250.0,
+      earlySpeedTarget: 30.0,
+      midRampDistance: 900.0,
+      midSpeedTarget: 36.0,
+      asymptoticDistance: 2400.0
+    },
+    TIME_TRIAL: {
+      initialSpeed: 22.0,
+      maxSpeed: 38.0,
+      earlyRampDistance: 250.0,
+      earlySpeedTarget: 27.5,
+      midRampDistance: 1000.0,
+      midSpeedTarget: 34.0,
+      asymptoticDistance: 2600.0
+    },
+    COIN_RUSH: {
+      initialSpeed: 18.0,
+      maxSpeed: 32.0,
+      earlyRampDistance: 350.0,
+      earlySpeedTarget: 22.5,
+      midRampDistance: 1400.0,
+      midSpeedTarget: 28.0,
+      asymptoticDistance: 3000.0
+    }
+  },
+
+  // Data-Driven Difficulty Balancing Configuration
+  DIFFICULTY_CONFIG: {
+    MIN_SAFE_REACTION_TIME: 0.55, // Minimum seconds of reaction window at any speed
+    CONSECUTIVE_DIFFICULT_MAX: 2, // Max consecutive intense chunks before breather
+    MOVING_TRAIN_MIN_GAP: 75.0, // Minimum meters between moving train spawns
+    BREATHER_INTERVAL: 4, // Guaranteed breather opportunity every ~4-5 chunks
+  },
 
   // Track Chunks & Procedural Generation
   CHUNK_LENGTH: 80.0, // Length of each track segment in meters

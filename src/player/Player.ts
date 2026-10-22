@@ -8,6 +8,10 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
+import { SpeedController } from '../core/SpeedController';
+import { PacingMetrics } from '../track/PacingMetrics';
+import { GameMode } from '../progression/ProgressionTypes';
+
 export type PlayerState = 
   | 'IDLE' 
   | 'RUN' 
@@ -27,11 +31,21 @@ export class Player {
   public model: CharacterModel;
   public powerups: PowerupManager;
   public hoverboardManager: HoverboardManager;
+  public speedController: SpeedController = new SpeedController();
 
   // Position & Kinematics
   public position: THREE.Vector3 = new THREE.Vector3(0, CONSTANTS.PLAYER_BASE_Y, 0);
   public previousPosition: THREE.Vector3 = new THREE.Vector3(0, CONSTANTS.PLAYER_BASE_Y, 0);
-  public speed: number = CONSTANTS.INITIAL_SPEED;
+  
+  public get speed(): number {
+    return this.speedController ? this.speedController.getSpeed() : CONSTANTS.INITIAL_SPEED;
+  }
+  public set speed(val: number) {
+    if (this.speedController) {
+      this.speedController.setSpeed(val);
+    }
+  }
+
   public currentLane: LaneIndex = 0; // -1: Left, 0: Center, 1: Right
   public targetLane: LaneIndex = 0;
   public groundY: number = CONSTANTS.PLAYER_BASE_Y;
@@ -99,7 +113,7 @@ export class Player {
     this.targetLane = 0;
     this.position.set(0, CONSTANTS.PLAYER_BASE_Y, 0);
     this.mesh.position.copy(this.position);
-    this.speed = CONSTANTS.INITIAL_SPEED;
+    this.speedController.reset();
     this.groundY = CONSTANTS.PLAYER_BASE_Y;
     this.verticalVelocity = 0;
     this.isJumping = false;
@@ -136,8 +150,14 @@ export class Player {
     this.updateCollider();
   }
 
+  public setGameMode(mode: GameMode): void {
+    this.speedController.setMode(mode);
+  }
+
   public handleInput(action: InputAction): void {
     if (this.state === 'CRASH' || this.state === 'IDLE') return;
+
+    PacingMetrics.getInstance().recordAction(performance.now() / 1000);
 
     // During jetpack flight, jump and slide are disabled, lateral steering remains active
     if (this.state === 'JETPACK') {
@@ -283,13 +303,9 @@ export class Player {
     this.distanceTraveled += forwardStep;
     this.eventBus.emit(EVENTS.DISTANCE_TRAVELED, forwardStep);
 
-    // Speed progression
-    if (this.speed < CONSTANTS.MAX_SPEED) {
-      this.speed = Math.min(
-        CONSTANTS.MAX_SPEED,
-        CONSTANTS.INITIAL_SPEED + (this.distanceTraveled / 100.0) * CONSTANTS.SPEED_ACCELERATION
-      );
-    }
+    // Speed progression (Nonlinear, configurable, frame-rate independent)
+    this.speedController.update(dt, this.distanceTraveled);
+    PacingMetrics.getInstance().recordSpeed(this.distanceTraveled / Math.max(1, this.speed), this.speed);
 
     // 2. Lateral Movement (Lane Transition)
     if (this.isChangingLane) {

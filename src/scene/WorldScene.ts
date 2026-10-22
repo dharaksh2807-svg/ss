@@ -82,7 +82,45 @@ export class WorldScene {
     this.skylineGroup = this.createDistantSkyline();
     this.scene.add(this.skylineGroup);
 
+    // 5. Subtle high-speed motion streaks (difficulty feedback)
+    this.speedLinesMesh = this.createSpeedLines();
+    this.scene.add(this.speedLinesMesh);
+
     window.addEventListener('resize', this.onWindowResize.bind(this));
+  }
+
+  private speedLinesMesh: THREE.LineSegments;
+
+  private createSpeedLines(): THREE.LineSegments {
+    const lineCount = 45;
+    const positions = new Float32Array(lineCount * 6);
+    for (let i = 0; i < lineCount; i++) {
+      const idx = i * 6;
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 3.5 + Math.random() * 5.5;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius + 2.5;
+      const z = -Math.random() * 45;
+      const len = 3.5 + Math.random() * 6.0;
+
+      positions[idx] = x;
+      positions[idx + 1] = y;
+      positions[idx + 2] = z;
+
+      positions[idx + 3] = x;
+      positions[idx + 4] = y;
+      positions[idx + 5] = z + len;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xe0f7fa,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    });
+    return new THREE.LineSegments(geo, mat);
   }
 
   private createSkyDome(): THREE.Mesh {
@@ -194,7 +232,7 @@ export class WorldScene {
     return group;
   }
 
-  public updateSunPosition(playerZ: number): void {
+  public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED): void {
     // Keep directional shadow map frustum centered on active player and oncoming track
     this.sunLight.position.z = playerZ + 20;
     this.sunLight.target.position.z = playerZ - 12;
@@ -209,6 +247,14 @@ export class WorldScene {
 
     // Subtle cloud drift
     this.cloudsGroup.rotation.y += 0.00015;
+
+    // Subtle high-speed motion lines opacity
+    if (this.speedLinesMesh) {
+      this.speedLinesMesh.position.z = playerZ;
+      const speedThreshold = 25.0;
+      const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (CONSTANTS.MAX_SPEED - speedThreshold)));
+      (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.32;
+    }
   }
 
   public setGraphicsQuality(preset: 'HIGH' | 'MEDIUM' | 'LOW'): void {

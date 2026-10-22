@@ -7,9 +7,12 @@ import { CollectibleFactory } from './CollectibleFactory';
 import { TrackChunk } from './TrackChunk';
 import { OBSTACLE_PATTERNS, TrackPattern } from './ObstaclePatterns';
 import { ReachabilityValidator } from './ReachabilityValidator';
+import { DifficultyController } from './DifficultyController';
+import { PacingMetrics } from './PacingMetrics';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
+  public difficultyController: DifficultyController = new DifficultyController();
   private obstacleFactory: ObstacleFactory;
   private collectibleFactory: CollectibleFactory;
   private eventBus = EventBus.getInstance();
@@ -47,15 +50,35 @@ export class TrackManager {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
+  /**
+   * Proper Fisher-Yates shuffle using seeded PRNG for uniform, deterministic permutations
+   */
+  private shuffle<T>(array: T[]): T[] {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng() * (i + 1));
+      const temp = result[i];
+      result[i] = result[j];
+      result[j] = temp;
+    }
+    return result;
+  }
+
   public reset(): void {
     this.furthestZ = 0;
     this.chunkIndex = 0;
     this.cleanStreakCount = 0;
     this.lastSpawnedPattern = null;
+    this.difficultyController.reset();
 
     for (let i = 0; i < this.chunks.length; i++) {
       const chunk = this.chunks[i];
-      const pattern = this.selectPattern(i, CONSTANTS.INITIAL_SPEED, 0);
+      const encounterDist = i * CONSTANTS.CHUNK_LENGTH;
+      const expectedSpeed = Math.min(
+        CONSTANTS.MAX_SPEED,
+        CONSTANTS.INITIAL_SPEED + (encounterDist / 300.0) * (24.5 - CONSTANTS.INITIAL_SPEED)
+      );
+      const pattern = this.selectPattern(i, expectedSpeed, encounterDist);
       chunk.populate(pattern, this.furthestZ);
       this.lastSpawnedPattern = pattern;
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
@@ -70,59 +93,75 @@ export class TrackManager {
    */
   public selectPattern(index: number, playerSpeed: number = CONSTANTS.INITIAL_SPEED, distanceTraveled: number = 0): TrackPattern {
     if (index === 0) {
-      // Very first chunk is completely clear runway for smooth run start
-      return {
-        name: 'CLEAR_START',
-        difficulty: 'BEGINNER',
-        entryLanes: [-1, 0, 1],
-        exitLanes: [-1, 0, 1],
-        obstacles: [],
-        collectibles: [
-          { type: 'COIN', lane: 1, zOffset: 12.0, count: 12, spacing: 2.2 }
-        ]
-      };
+      // Chunk 0 is the curated readable opening runway (action begins quickly & fairly)
+      const opening = OBSTACLE_PATTERNS.find((p) => p.name === 'OPENING_RUNWAY') || OBSTACLE_PATTERNS[0];
+      this.difficultyController.recordPatternSpawned(opening, 0);
+      this.lastSpawnedPattern = opening;
+      PacingMetrics.getInstance().recordPattern(opening.name, opening.difficulty);
+      return opening;
     }
 
-    // Determine current progression tier by distance traveled
-    let candidatePool: TrackPattern[];
-    if (distanceTraveled < 350) {
-      // Beginner Tier: Clear spacing, single-action mechanics, generous reaction windows
-      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.difficulty === 'BEGINNER' || p.difficulty === 'EASY');
-    } else if (distanceTraveled < 900) {
-      // Intermediate Tier: Oncoming moving trains, train roofs, tunnel clearance slides
-      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.difficulty === 'INTERMEDIATE' || p.difficulty === 'MEDIUM');
-    } else if (distanceTraveled < 1800) {
-      // Advanced Tier: Higher decision density, rapid rhythm sequences, paired hazards
-      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.difficulty === 'ADVANCED' || p.difficulty === 'HARD');
-    } else {
-      // Expert Tier: Master level gauntlets, precision timing, risk routes, double train reflexes
-      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.difficulty === 'EXPERT' || p.difficulty === 'ADVANCED');
-    }
+    // 1. Data-Driven Candidate Tier Filtering & Recovery Breathing
+    const weights = this.difficultyController.getTierWeights(distanceTraveled, playerSpeed);
+    const canSpawnMovingTrain = this.difficultyController.canSpawnMovingTrain(distanceTraveled);
+
+    let candidatePool = OBSTACLE_PATTERNS.filter((p) => {
+      if (p.name === 'OPENING_RUNWAY') return false;
+      if (!canSpawnMovingTrain && p.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving)) {
+        return false;
+      }
+      const tierWeight = weights[p.difficulty] !== undefined ? weights[p.difficulty] : (p.isBreather ? weights.BREATHER : 0);
+      return tierWeight > 0;
+    });
 
     if (candidatePool.length === 0) {
-      candidatePool = OBSTACLE_PATTERNS;
+      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.name !== 'OPENING_RUNWAY');
     }
 
-    // Shuffle candidates deterministically using seeded PRNG
-    const shuffled = [...candidatePool].sort(() => this.rng() - 0.5);
+    // 2. Uniform Seeded Fisher-Yates Shuffle
+    const shuffled = this.shuffle(candidatePool);
 
+    // 3. Physical Reachability Transition Validation
     let chosen: TrackPattern = shuffled[0];
+    let foundSolvable = false;
 
-    // Filter by transition reachability from previous chunk
     if (this.lastSpawnedPattern) {
       for (const candidate of shuffled) {
         if (ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
           chosen = candidate;
+          foundSolvable = true;
           break;
+        }
+      }
+
+      // If no candidate in weighted pool provided a solvable transition, search full catalog
+      if (!foundSolvable) {
+        const allCandidates = this.shuffle(OBSTACLE_PATTERNS.filter((p) => p.name !== 'OPENING_RUNWAY'));
+        for (const candidate of allCandidates) {
+          if (ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
+            chosen = candidate;
+            foundSolvable = true;
+            break;
+          }
         }
       }
     }
 
+    if (!foundSolvable && this.lastSpawnedPattern) {
+      PacingMetrics.getInstance().recordUnreachable(chosen.name, `Transition from ${this.lastSpawnedPattern.name} could not be validated.`);
+    }
+
+    this.difficultyController.recordPatternSpawned(chosen, distanceTraveled);
     this.lastSpawnedPattern = chosen;
+    PacingMetrics.getInstance().recordPattern(chosen.name, chosen.difficulty);
+
     return chosen;
   }
 
   public update(player: Player, dt: number, time: number): void {
+    // 0. Update difficulty controller pacing
+    this.difficultyController.update(dt, player.distanceTraveled, player.speed);
+
     // 1. Recycle trailing chunks ahead of player
     for (const chunk of this.chunks) {
       const chunkEndZ = chunk.chunkZ - CONSTANTS.CHUNK_LENGTH;
@@ -135,7 +174,8 @@ export class TrackManager {
           this.cleanStreakCount = 0;
         }
 
-        const pattern = this.selectPattern(this.chunkIndex++, player.speed, player.distanceTraveled);
+        const encounterDist = Math.abs(this.furthestZ);
+        const pattern = this.selectPattern(this.chunkIndex++, player.speed, encounterDist);
         chunk.populate(pattern, this.furthestZ);
         this.lastSpawnedPattern = pattern;
         this.furthestZ -= CONSTANTS.CHUNK_LENGTH;

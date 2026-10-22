@@ -6,6 +6,7 @@ import { ObstacleFactory, ObstacleInstance } from './ObstacleFactory';
 import { CollectibleFactory, CollectibleInstance } from './CollectibleFactory';
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
+import { PacingMetrics } from './PacingMetrics';
 
 export class TrackChunk {
   public group: THREE.Group;
@@ -788,6 +789,12 @@ export class TrackChunk {
         telegraphed: false,
         headlights
       });
+
+      PacingMetrics.getInstance().recordObstacle(
+        Math.abs(worldZ - obsData.zOffset) / Math.max(1, CONSTANTS.INITIAL_SPEED),
+        obsData.type,
+        worldZ - obsData.zOffset
+      );
     }
 
     // Spawn Collectibles from pattern
