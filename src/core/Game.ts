@@ -59,12 +59,17 @@ export class Game {
   private timeTrialRemaining: number = 60.0;
   private coinRushElapsed: number = 0.0;
 
+  // Collision Debugging Visualization Group
+  private debugGroup: THREE.Group = new THREE.Group();
+  private debugOverlayEl: HTMLElement | null = null;
+
   // Performance telemetry tracker
   private frameTimes: number[] = [];
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     this.worldScene = new WorldScene(this.canvas);
+    this.worldScene.scene.add(this.debugGroup);
     this.cameraController = new CameraController();
     this.player = new Player();
     this.worldScene.scene.add(this.player.mesh);
@@ -426,8 +431,95 @@ export class Game {
     // Camera follow update
     this.cameraController.update(this.player.position, dt, now / 1000);
 
+    // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
+    this.updateCollisionDebugVisuals();
+
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+  }
+
+  private updateCollisionDebugVisuals(): void {
+    const isDebug = typeof window !== 'undefined' && !!(window as any).__DEBUG_COLLIDERS__;
+    if (!isDebug) {
+      if (this.debugGroup.children.length > 0) {
+        while (this.debugGroup.children.length > 0) {
+          this.debugGroup.remove(this.debugGroup.children[0]);
+        }
+      }
+      if (this.debugOverlayEl) {
+        this.debugOverlayEl.style.display = 'none';
+      }
+      return;
+    }
+
+    // Clear previous frame debug boxes
+    while (this.debugGroup.children.length > 0) {
+      this.debugGroup.remove(this.debugGroup.children[0]);
+    }
+
+    // 1. Player Bounding Box (Lime Green)
+    const pHelper = new THREE.Box3Helper(this.player.collider, new THREE.Color(0x00ff00));
+    this.debugGroup.add(pHelper);
+
+    // 2. Active Obstacle Collision Zones
+    for (const chunk of this.trackManager.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+        if (Math.abs(obs.collider.min.z - this.player.position.z) > 80) continue;
+
+        if (obs.bodyCollider) {
+          // Red for lethal lower hull
+          this.debugGroup.add(new THREE.Box3Helper(obs.bodyCollider, new THREE.Color(0xff1744)));
+        }
+        if (obs.frontBumperCollider) {
+          // Orange for front bumper
+          this.debugGroup.add(new THREE.Box3Helper(obs.frontBumperCollider, new THREE.Color(0xff9100)));
+        }
+        if (obs.roofCollider) {
+          // Cyan for traversable rooftop & landing capture zone
+          this.debugGroup.add(new THREE.Box3Helper(obs.roofCollider, new THREE.Color(0x00e5ff)));
+        }
+        if (obs.rampCollider) {
+          // Yellow for sloped climbable ramp
+          this.debugGroup.add(new THREE.Box3Helper(obs.rampCollider, new THREE.Color(0xffea00)));
+        }
+        if (!obs.bodyCollider && !obs.roofCollider) {
+          // Standard barriers (magenta)
+          this.debugGroup.add(new THREE.Box3Helper(obs.collider, new THREE.Color(0xe91e63)));
+        }
+      }
+    }
+
+    // 3. Telemetry HUD Overlay
+    if (!this.debugOverlayEl && typeof document !== 'undefined') {
+      this.debugOverlayEl = document.createElement('div');
+      this.debugOverlayEl.id = 'collision-debug-overlay';
+      this.debugOverlayEl.style.position = 'fixed';
+      this.debugOverlayEl.style.bottom = '12px';
+      this.debugOverlayEl.style.left = '12px';
+      this.debugOverlayEl.style.zIndex = '99999';
+      this.debugOverlayEl.style.background = 'rgba(10, 14, 23, 0.92)';
+      this.debugOverlayEl.style.border = '1px solid #00e5ff';
+      this.debugOverlayEl.style.padding = '8px 12px';
+      this.debugOverlayEl.style.borderRadius = '6px';
+      this.debugOverlayEl.style.fontFamily = 'monospace';
+      this.debugOverlayEl.style.fontSize = '12px';
+      this.debugOverlayEl.style.color = '#e0f7fa';
+      this.debugOverlayEl.style.pointerEvents = 'none';
+      document.body.appendChild(this.debugOverlayEl);
+    }
+
+    if (this.debugOverlayEl) {
+      this.debugOverlayEl.style.display = 'block';
+      const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
+      this.debugOverlayEl.innerHTML = `
+        <div style="font-weight:bold;color:#00e5ff;margin-bottom:4px;">[COLLISION DIAGNOSTICS]</div>
+        <div>STATE: <span style="color:#ffd600;">${this.player.state}</span> | SURFACE: <span style="color:#00e676;">${this.player.getSupportSurface()}</span></div>
+        <div>POS: Y=${this.player.position.y.toFixed(2)} (GroundY=${this.player.groundY.toFixed(2)}) | Vy=${this.player.verticalVelocity.toFixed(1)}</div>
+        <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)}</div>
+        <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification})` : 'NONE'}</div>
+      `;
+    }
   }
 
   public getPerformanceMetrics() {

@@ -17,8 +17,11 @@ export interface ObstacleInstance {
   type: ObstacleType;
   lane: LaneIndex;
   collider: THREE.Box3;
-  roofCollider?: THREE.Box3; // Train roof walkable surface
+  bodyCollider?: THREE.Box3; // Lower train hull lethal zone [0, TRAIN_HEIGHT - 0.45]
+  frontBumperCollider?: THREE.Box3; // Front bumper lethal impact zone
+  roofCollider?: THREE.Box3; // Train roof walkable & landing capture surface
   rampCollider?: THREE.Box3; // Sloped climbable ramp
+  roofSurfaceY?: number; // Walkable roof elevation plane (CONSTANTS.TRAIN_HEIGHT + 0.15)
   nearMissBox: THREE.Box3;
   nearMissTriggered: boolean;
   active: boolean;

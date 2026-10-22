@@ -693,11 +693,17 @@ export class TrackChunk {
       group.position.set(laneX, 0, localZ);
       this.group.add(group);
 
-      // Construct accurate collision volumes
+      // World Z position of this obstacle center
+      const worldCenterZ = this.chunkZ + localZ;
+
+      // Construct accurate separated collision volumes
       const collider = new THREE.Box3();
       const nearMissBox = new THREE.Box3();
+      let bodyCollider: THREE.Box3 | undefined;
+      let frontBumperCollider: THREE.Box3 | undefined;
       let roofCollider: THREE.Box3 | undefined;
       let rampCollider: THREE.Box3 | undefined;
+      let roofSurfaceY: number | undefined;
 
       let halfW: number;
       let height: number;
@@ -707,17 +713,34 @@ export class TrackChunk {
         halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
         height = CONSTANTS.TRAIN_HEIGHT;
         halfD = length * 0.5;
+        roofSurfaceY = CONSTANTS.TRAIN_HEIGHT + 0.15; // Exact walkable roof surface (4.35m)
 
-        roofCollider = new THREE.Box3(
-          new THREE.Vector3(laneX - halfW * 0.9, height * 0.9, localZ - halfD),
-          new THREE.Vector3(laneX + halfW * 0.9, height + 0.6, localZ + halfD)
+        // 1. Separate lower train hull lethal zone (below roof)
+        bodyCollider = new THREE.Box3(
+          new THREE.Vector3(laneX - halfW, 0, worldCenterZ - halfD),
+          new THREE.Vector3(laneX + halfW, height - 0.45, worldCenterZ + halfD)
         );
 
+        // 2. Front bumper hazard (active at unsafe heights when not climbing ramp)
+        frontBumperCollider = new THREE.Box3(
+          new THREE.Vector3(laneX - halfW, 0, worldCenterZ + halfD - 0.25),
+          new THREE.Vector3(laneX + halfW, height - 0.45, worldCenterZ + halfD + 0.35)
+        );
+
+        // 3. Traversable Roof Platform & Landing Capture Surface
+        // Generous deck width + edge margin (halfW + 0.15) to prevent slipping into lethal box at edges,
+        // and landing capture Y interval [height - 0.45, height + 1.2]
+        roofCollider = new THREE.Box3(
+          new THREE.Vector3(laneX - halfW - 0.15, height - 0.45, worldCenterZ - halfD - 0.3),
+          new THREE.Vector3(laneX + halfW + 0.15, height + 1.2, worldCenterZ + halfD + 0.3)
+        );
+
+        // 4. Sloped Ramp Collider
         if (obsData.hasRamp) {
           const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           rampCollider = new THREE.Box3(
-            new THREE.Vector3(laneX - halfW * 0.85, 0, localZ + halfD),
-            new THREE.Vector3(laneX + halfW * 0.85, height, localZ + halfD + rampD)
+            new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ + halfD),
+            new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ + halfD + rampD)
           );
         }
       } else if (obsData.type === 'LOW_BARRIER') {
@@ -738,19 +761,22 @@ export class TrackChunk {
         halfD = 0.5;
       }
 
-      collider.min.set(laneX - halfW, 0, localZ - halfD);
-      collider.max.set(laneX + halfW, height, localZ + halfD);
+      collider.min.set(laneX - halfW, 0, worldCenterZ - halfD);
+      collider.max.set(laneX + halfW, height, worldCenterZ + halfD);
 
-      nearMissBox.min.set(laneX - halfW - 0.6, 0, localZ - halfD - 0.6);
-      nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, localZ + halfD + 0.6);
+      nearMissBox.min.set(laneX - halfW - 0.6, 0, worldCenterZ - halfD - 0.6);
+      nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, worldCenterZ + halfD + 0.6);
 
       this.obstacles.push({
         group,
         type: obsData.type,
         lane: obsData.lane,
         collider,
+        bodyCollider,
+        frontBumperCollider,
         roofCollider,
         rampCollider,
+        roofSurfaceY,
         nearMissBox,
         nearMissTriggered: false,
         active: true,
@@ -796,10 +822,11 @@ export class TrackChunk {
         group.position.set(laneX, baseY, localZ);
         this.group.add(group);
 
+        const worldColZ = this.chunkZ + localZ;
         const collider = new THREE.Box3();
         const radius = CONSTANTS.COIN_RADIUS;
-        collider.min.set(laneX - radius, baseY - radius, localZ - radius);
-        collider.max.set(laneX + radius, baseY + radius, localZ + radius);
+        collider.min.set(laneX - radius, baseY - radius, worldColZ - radius);
+        collider.max.set(laneX + radius, baseY + radius, worldColZ + radius);
 
         this.collectibles.push({
           group,
@@ -819,6 +846,7 @@ export class TrackChunk {
       const randomLane = safeLanes[Math.floor(Math.random() * safeLanes.length)];
       const laneX = CONSTANTS.LANES[randomLane];
       const localZ = -18 - Math.random() * 20;
+      const worldTokenZ = this.chunkZ + localZ;
       const baseY = 1.0;
 
       const group = this.collectibleFactory.createSeasonToken();
@@ -826,8 +854,8 @@ export class TrackChunk {
       this.group.add(group);
 
       const collider = new THREE.Box3();
-      collider.min.set(laneX - 0.5, baseY - 0.5, localZ - 0.5);
-      collider.max.set(laneX + 0.5, baseY + 0.5, localZ + 0.5);
+      collider.min.set(laneX - 0.5, baseY - 0.5, worldTokenZ - 0.5);
+      collider.max.set(laneX + 0.5, baseY + 0.5, worldTokenZ + 0.5);
 
       this.collectibles.push({
         group,
@@ -850,23 +878,34 @@ export class TrackChunk {
         const speed = obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED;
         obs.group.position.z += speed * dt;
 
-        // Recalculate collision volumes in local chunk coordinates
+        // Recalculate collision volumes in world coordinates
         const currentLocalZ = obs.group.position.z;
+        const currentWorldZ = this.chunkZ + currentLocalZ;
         const laneX = CONSTANTS.LANES[obs.lane];
         const halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
         const height = CONSTANTS.TRAIN_HEIGHT;
         const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
 
-        obs.collider.min.set(laneX - halfW, 0, currentLocalZ - halfD);
-        obs.collider.max.set(laneX + halfW, height, currentLocalZ + halfD);
+        obs.collider.min.set(laneX - halfW, 0, currentWorldZ - halfD);
+        obs.collider.max.set(laneX + halfW, height, currentWorldZ + halfD);
 
-        if (obs.roofCollider) {
-          obs.roofCollider.min.set(laneX - halfW * 0.9, height * 0.9, currentLocalZ - halfD);
-          obs.roofCollider.max.set(laneX + halfW * 0.9, height + 0.6, currentLocalZ + halfD);
+        if (obs.bodyCollider) {
+          obs.bodyCollider.min.set(laneX - halfW, 0, currentWorldZ - halfD);
+          obs.bodyCollider.max.set(laneX + halfW, height - 0.45, currentWorldZ + halfD);
         }
 
-        obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, currentLocalZ - halfD - 0.6);
-        obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, currentLocalZ + halfD + 0.6);
+        if (obs.frontBumperCollider) {
+          obs.frontBumperCollider.min.set(laneX - halfW, 0, currentWorldZ + halfD - 0.25);
+          obs.frontBumperCollider.max.set(laneX + halfW, height - 0.45, currentWorldZ + halfD + 0.35);
+        }
+
+        if (obs.roofCollider) {
+          obs.roofCollider.min.set(laneX - halfW - 0.15, height - 0.45, currentWorldZ - halfD - 0.3);
+          obs.roofCollider.max.set(laneX + halfW + 0.15, height + 1.2, currentWorldZ + halfD + 0.3);
+        }
+
+        obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, currentWorldZ - halfD - 0.6);
+        obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, currentWorldZ + halfD + 0.6);
 
         // Telegraph check: if approaching player within 65m
         const worldTrainFrontZ = this.chunkZ + currentLocalZ + halfD;

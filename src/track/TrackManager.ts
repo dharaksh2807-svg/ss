@@ -152,28 +152,90 @@ export class TrackManager {
   }
 
   private updateGroundHeight(player: Player): void {
-    let targetGroundY = CONSTANTS.PLAYER_BASE_Y;
+    let targetGroundY: number = CONSTANTS.PLAYER_BASE_Y;
+    let foundSupport = false;
 
     for (const chunk of this.chunks) {
       for (const obs of chunk.obstacles) {
         if (!obs.active) continue;
 
-        // Check if player is above train roof
-        if (obs.roofCollider && obs.roofCollider.containsPoint(player.position)) {
-          targetGroundY = CONSTANTS.TRAIN_HEIGHT + 0.15;
-          break;
+        // 1. Check if player is running up a ramp
+        if (obs.rampCollider) {
+          const inRampX = player.position.x >= obs.rampCollider.min.x && player.position.x <= obs.rampCollider.max.x;
+          const inRampZ = player.position.z >= obs.rampCollider.min.z && player.position.z <= obs.rampCollider.max.z;
+
+          if (inRampX && inRampZ) {
+            const rampStart = obs.rampCollider.max.z;
+            const rampEnd = obs.rampCollider.min.z;
+            const t = Math.max(0, Math.min(1, (rampStart - player.position.z) / (rampStart - rampEnd)));
+            const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+            targetGroundY = CONSTANTS.PLAYER_BASE_Y + t * (roofY - CONSTANTS.PLAYER_BASE_Y);
+            player.setSupportSurface('RAMP');
+            if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
+              player.state = 'CLIMBING';
+            }
+            foundSupport = true;
+            break;
+          }
         }
 
-        // Check if player is running up a ramp
-        if (obs.rampCollider && obs.rampCollider.containsPoint(player.position)) {
-          const rampStart = obs.rampCollider.max.z;
-          const rampEnd = obs.rampCollider.min.z;
-          const t = Math.max(0, Math.min(1, (rampStart - player.position.z) / (rampStart - rampEnd)));
-          targetGroundY = CONSTANTS.PLAYER_BASE_Y + t * CONSTANTS.TRAIN_HEIGHT;
-          break;
+        // 2. Check if player is on top of or descending onto a train roof
+        if (obs.roofCollider) {
+          const minX = obs.roofCollider.min.x;
+          const maxX = obs.roofCollider.max.x;
+          const minZ = obs.roofCollider.min.z;
+          const maxZ = obs.roofCollider.max.z;
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+
+          const inRoofHorizontal =
+            player.position.x >= minX && player.position.x <= maxX &&
+            player.position.z >= minZ && player.position.z <= maxZ;
+
+          if (inRoofHorizontal) {
+            const prevFeetY = player.previousPosition.y;
+            const currFeetY = player.position.y;
+            const isDescending = player.verticalVelocity <= 0.1 || currFeetY <= prevFeetY;
+
+            // Swept continuous collision detection:
+            // Feet were previously at/above roof (with tolerance) and now crossed roof plane
+            const crossedPlane = prevFeetY >= roofY - 0.35 && currFeetY <= roofY + 0.45;
+            const withinCaptureWindow = currFeetY >= roofY - 0.45 && currFeetY <= roofY + 0.65;
+
+            if (player.isJumping || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN') {
+              if (isDescending && (crossedPlane || withinCaptureWindow)) {
+                // Valid roof landing!
+                player.resolveRoofLanding(roofY);
+                targetGroundY = roofY;
+                foundSupport = true;
+                break;
+              }
+            } else if (currFeetY >= roofY - 0.35) {
+              // Smooth rooftop traversal
+              targetGroundY = roofY;
+              player.setSupportSurface('TRAIN_ROOF');
+              if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
+                player.state = 'ON_TRAIN';
+              }
+              foundSupport = true;
+              break;
+            }
+          }
         }
       }
-      if (targetGroundY > CONSTANTS.PLAYER_BASE_Y) break;
+      if (foundSupport) break;
+    }
+
+    if (!foundSupport) {
+      targetGroundY = CONSTANTS.PLAYER_BASE_Y;
+      if (player.getSupportSurface() === 'TRAIN_ROOF' && !player.isJumping && player.position.y > targetGroundY + 0.15) {
+        // Stepped off train roof into air
+        player.setSupportSurface('GROUND');
+        player.isJumping = true;
+        player.state = 'FALLING_FROM_TRAIN';
+        player.verticalVelocity = Math.min(player.verticalVelocity, -2.0);
+      } else if (player.getSupportSurface() === 'RAMP') {
+        player.setSupportSurface('GROUND');
+      }
     }
 
     player.setGroundHeight(targetGroundY);
@@ -199,62 +261,100 @@ export class TrackManager {
         }
 
         // Direct obstacle collision check
-        if (obs.collider.intersectsBox(playerBox)) {
-          // If player is flying with Jetpack, skip ground-level obstacle collision
-          if (player.state === 'JETPACK' || player.position.y > 6.0) {
+        if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN') {
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+
+          // Priority 1: Safe rooftop traversal
+          if (player.getSupportSurface() === 'TRAIN_ROOF' || player.state === 'ON_TRAIN') {
             continue;
           }
 
-          // If player is on roof or climbing ramp, ignore lower train hull
-          if (player.position.y >= CONSTANTS.TRAIN_HEIGHT - 0.2) {
+          // Priority 2: Safe ramp climbing
+          if (player.getSupportSurface() === 'RAMP' || player.state === 'CLIMBING') {
             continue;
           }
 
-          // Low Barrier: if jumping high enough, clear safely + award precision bonus
-          if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
-            if (player.distanceTraveled - player.lastJumpDist < 8.0) {
-              this.eventBus.emit(EVENTS.PRECISION_ACTION, 'JUMP');
+          // Priority 3: Clear airborne height (e.g. jumping over train, super sneakers, jetpack)
+          if (player.position.y >= roofY - 0.35 || player.state === 'JETPACK' || player.position.y > 6.0) {
+            continue;
+          }
+
+          // Check physical contact with lower train hull or front bumper at unsafe height
+          const lethalBox = obs.bodyCollider || obs.collider;
+          if (lethalBox.intersectsBox(playerBox)) {
+            // Differentiate side flank collision vs direct head-on front bumper crash:
+            const isFlankContact = player.position.z < lethalBox.max.z - 0.45;
+            const overlapX = Math.min(playerBox.max.x, lethalBox.max.x) - Math.max(playerBox.min.x, lethalBox.min.x);
+            const isGlance = player.isChangingLaneActive() && (isFlankContact || overlapX < 0.28);
+
+            if (isFlankContact || isGlance) {
+              this.recordCollisionDiagnostic(obs, isFlankContact ? 'SIDE_COLLISION' : 'SIDE_GLANCE', player);
+              player.bounceBackFromSide();
+              chunk.chunkHadCollision = true;
+              return;
             }
-            continue;
-          }
 
-          // High Barrier: if sliding underneath, clear safely + award precision bonus
-          if (obs.type === 'HIGH_BARRIER' && player.isSliding) {
-            if (player.distanceTraveled - player.lastSlideDist < 8.0) {
-              this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
-            }
-            continue;
-          }
-
-          // Tunnel Arch: if sliding underneath, clear safely + award precision bonus
-          if (obs.type === 'TUNNEL_ARCH' && player.isSliding) {
-            if (player.distanceTraveled - player.lastSlideDist < 8.0) {
-              this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
-            }
-            continue;
-          }
-
-          // Differentiate glancing side collision vs direct head-on crash:
-          // If player is actively changing lanes and only glancing the edge (< 0.28m overlap in X)
-          const overlapX = Math.min(playerBox.max.x, obs.collider.max.x) - Math.max(playerBox.min.x, obs.collider.min.x);
-          const isGlance = player.isChangingLaneActive() && overlapX < 0.28;
-
-          if (isGlance) {
-            // Glancing contact: minor stumble with speed drop, non-fatal
-            player.stumble();
+            // Direct head-on impact occurs!
+            this.recordCollisionDiagnostic(obs, 'LETHAL_TRAIN_FRONT', player);
             chunk.chunkHadCollision = true;
+            const fatal = player.crash('TRAIN_COLLISION');
+            if (!fatal) {
+              obs.active = false;
+              chunk.group.remove(obs.group);
+            }
             return;
           }
+        } else {
+          // Standard barriers (LOW_BARRIER, HIGH_BARRIER, SIDE_BARRIER, TUNNEL_ARCH)
+          if (obs.collider.intersectsBox(playerBox)) {
+            if (player.state === 'JETPACK' || player.position.y > 6.0) {
+              continue;
+            }
 
-          // Direct head-on impact occurs!
-          chunk.chunkHadCollision = true;
-          const fatal = player.crash();
-          if (!fatal) {
-            // Shield or Hoverboard absorbed crash: deactivate obstacle so player passes through
-            obs.active = false;
-            chunk.group.remove(obs.group);
+            // Low Barrier: if jumping high enough, clear safely
+            if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
+              if (player.distanceTraveled - player.lastJumpDist < 8.0) {
+                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'JUMP');
+              }
+              continue;
+            }
+
+            // High Barrier: if sliding underneath, clear safely
+            if (obs.type === 'HIGH_BARRIER' && player.isSliding) {
+              if (player.distanceTraveled - player.lastSlideDist < 8.0) {
+                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
+              }
+              continue;
+            }
+
+            // Tunnel Arch: if sliding underneath, clear safely
+            if (obs.type === 'TUNNEL_ARCH' && player.isSliding) {
+              if (player.distanceTraveled - player.lastSlideDist < 8.0) {
+                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
+              }
+              continue;
+            }
+
+            // Differentiate glancing side collision vs direct crash
+            const overlapX = Math.min(playerBox.max.x, obs.collider.max.x) - Math.max(playerBox.min.x, obs.collider.min.x);
+            const isGlance = player.isChangingLaneActive() && overlapX < 0.28;
+
+            this.recordCollisionDiagnostic(obs, isGlance ? 'BARRIER_GLANCE' : 'BARRIER_CRASH', player);
+
+            if (isGlance) {
+              player.stumble();
+              chunk.chunkHadCollision = true;
+              return;
+            }
+
+            chunk.chunkHadCollision = true;
+            const fatal = player.crash(obs.type);
+            if (!fatal) {
+              obs.active = false;
+              chunk.group.remove(obs.group);
+            }
+            return;
           }
-          return;
         }
 
         // Clean obstacle dodge check when player safely passes past the obstacle
@@ -272,13 +372,15 @@ export class TrackManager {
 
         // Magnet attraction effect with upgraded radius and acceleration
         if (isMagnet && col.type === 'COIN') {
-          const distSq = col.group.position.distanceToSquared(player.position);
+          const colWorldPos = new THREE.Vector3(col.group.position.x, col.group.position.y, chunk.chunkZ + col.group.position.z);
+          const distSq = colWorldPos.distanceToSquared(player.position);
           if (distSq < magnetRadius * magnetRadius) {
             const dist = Math.sqrt(distSq);
             const speed = Math.min(32.0, CONSTANTS.MAGNET_PULL_SPEED * (1.0 + (1.0 - dist / magnetRadius) * 1.5));
-            const dir = player.position.clone().sub(col.group.position).normalize();
+            const dir = player.position.clone().sub(colWorldPos).normalize();
             col.group.position.addScaledVector(dir, speed * dt);
-            col.collider.setFromCenterAndSize(col.group.position, new THREE.Vector3(1.2, 1.2, 1.2));
+            colWorldPos.addScaledVector(dir, speed * dt);
+            col.collider.setFromCenterAndSize(colWorldPos, new THREE.Vector3(1.2, 1.2, 1.2));
           }
         }
 
@@ -297,6 +399,53 @@ export class TrackManager {
             this.eventBus.emit(EVENTS.POWERUP_COLLECTED, col.type);
           }
         }
+      }
+    }
+  }
+
+  public recordCollisionDiagnostic(
+    obs: any,
+    classification: string,
+    player: Player
+  ): void {
+    const diag = {
+      timestamp: typeof performance !== 'undefined' ? performance.now() : Date.now(),
+      collidingObject: obs.type,
+      classification,
+      lane: obs.lane,
+      playerLane: player.currentLane,
+      targetLane: player.targetLane,
+      playerState: player.state,
+      supportSurface: player.getSupportSurface(),
+      playerPosition: {
+        x: Math.round(player.position.x * 100) / 100,
+        y: Math.round(player.position.y * 100) / 100,
+        z: Math.round(player.position.z * 100) / 100
+      },
+      playerVelocityY: Math.round(player.verticalVelocity * 100) / 100,
+      groundY: Math.round(player.groundY * 100) / 100,
+      collider: {
+        min: { x: obs.collider.min.x, y: obs.collider.min.y, z: obs.collider.min.z },
+        max: { x: obs.collider.max.x, y: obs.collider.max.y, z: obs.collider.max.z }
+      },
+      roofCollider: obs.roofCollider ? {
+        min: { x: obs.roofCollider.min.x, y: obs.roofCollider.min.y, z: obs.roofCollider.min.z },
+        max: { x: obs.roofCollider.max.x, y: obs.roofCollider.max.y, z: obs.roofCollider.max.z }
+      } : null,
+      roofLandingConsidered: player.position.y >= (obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15)) - 0.45
+    };
+
+    if (typeof window !== 'undefined') {
+      (window as any).__LAST_COLLISION_DIAGNOSTIC__ = diag;
+      if (!(window as any).__COLLISION_LOG__) {
+        (window as any).__COLLISION_LOG__ = [];
+      }
+      (window as any).__COLLISION_LOG__.push(diag);
+      if ((window as any).__COLLISION_LOG__.length > 50) {
+        (window as any).__COLLISION_LOG__.shift();
+      }
+      if ((window as any).__DEBUG_COLLIDERS__) {
+        console.warn('⚠️ [COLLISION_DIAGNOSTIC]', diag);
       }
     }
   }

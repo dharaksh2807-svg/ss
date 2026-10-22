@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "npx tsx test/solvability.test.ts && npx tsx test/lane-movement.test.ts && npx tsx test/powerups.test.ts && npx tsx test/gameplay-depth.test.ts && npx tsx test/progression.test.ts && npx tsx test/characters.test.ts && npx tsx test/hoverboards.test.ts && npx tsx test/task7-ui-progression.test.ts && npx tsx test/task8-audit-state.test.ts"
+    "test": "npx tsx test/solvability.test.ts && npx tsx test/lane-movement.test.ts && npx tsx test/powerups.test.ts && npx tsx test/gameplay-depth.test.ts && npx tsx test/progression.test.ts && npx tsx test/characters.test.ts && npx tsx test/hoverboards.test.ts && npx tsx test/task7-ui-progression.test.ts && npx tsx test/task8-audit-state.test.ts && npx tsx test/train-rooftop-collision.test.ts"
   },
   "dependencies": {
     "three": "^0.174.0"

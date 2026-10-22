@@ -8,7 +8,19 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
-export type PlayerState = 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH';
+export type PlayerState = 
+  | 'IDLE' 
+  | 'RUN' 
+  | 'JUMP' 
+  | 'FALLING' 
+  | 'CLIMBING' 
+  | 'ON_TRAIN' 
+  | 'FALLING_FROM_TRAIN' 
+  | 'SLIDE' 
+  | 'JETPACK' 
+  | 'CRASH';
+
+export type SupportSurfaceType = 'GROUND' | 'TRAIN_ROOF' | 'RAMP';
 
 export class Player {
   public mesh: THREE.Group;
@@ -18,10 +30,12 @@ export class Player {
 
   // Position & Kinematics
   public position: THREE.Vector3 = new THREE.Vector3(0, CONSTANTS.PLAYER_BASE_Y, 0);
+  public previousPosition: THREE.Vector3 = new THREE.Vector3(0, CONSTANTS.PLAYER_BASE_Y, 0);
   public speed: number = CONSTANTS.INITIAL_SPEED;
   public currentLane: LaneIndex = 0; // -1: Left, 0: Center, 1: Right
   public targetLane: LaneIndex = 0;
   public groundY: number = CONSTANTS.PLAYER_BASE_Y;
+  public supportSurface: SupportSurfaceType = 'GROUND';
   public readonly jetpackAltitude: number = 9.0;
 
   // Lateral lane transition
@@ -34,7 +48,7 @@ export class Player {
   private bankingAngle: number = 0;
 
   // Vertical Jump & Slide
-  private verticalVelocity: number = 0;
+  public verticalVelocity: number = 0;
   public isJumping: boolean = false;
   public isSliding: boolean = false;
   private slideTimer: number = 0;
@@ -99,6 +113,8 @@ export class Player {
     this.stumbleTimer = 0;
     this.lastJumpDist = -999;
     this.lastSlideDist = -999;
+    this.supportSurface = 'GROUND';
+    this.previousPosition.copy(this.position);
     this.state = 'RUN';
     this.powerups.reset();
     this.hoverboardManager.reset();
@@ -195,6 +211,7 @@ export class Player {
     this.isJumping = true;
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
+    this.supportSurface = 'GROUND';
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {
@@ -226,6 +243,9 @@ export class Player {
 
   public update(dt: number): void {
     if (this.state === 'IDLE') return;
+
+    // Cache position for swept / continuous collision detection
+    this.previousPosition.copy(this.position);
 
     // Powerups & Hoverboard status & visual accessories
     this.powerups.update(dt);
@@ -334,25 +354,51 @@ export class Player {
           : CONSTANTS.GRAVITY;
         this.verticalVelocity -= effectiveGravity * dt;
 
-        // Landing check on current ground height (supports ground or train roofs!)
+        // Dynamic transition from ascending jump to descending fall
+        if (this.verticalVelocity < -0.1 && this.state === 'JUMP') {
+          this.state = 'FALLING';
+        }
+
+        // Landing check on current ground height (supports track ground or train roofs!)
         if (this.position.y <= this.groundY) {
           this.position.y = this.groundY;
           this.verticalVelocity = 0;
           this.isJumping = false;
-          if (!this.isSliding) {
-            this.state = 'RUN';
+          if (this.groundY > CONSTANTS.PLAYER_BASE_Y + 1.0) {
+            this.supportSurface = 'TRAIN_ROOF';
+            if (!this.isSliding) {
+              this.state = 'ON_TRAIN';
+            }
+          } else {
+            this.supportSurface = 'GROUND';
+            if (!this.isSliding) {
+              this.state = 'RUN';
+            }
           }
           this.eventBus.emit(EVENTS.LAND);
           this.eventBus.emit(EVENTS.JUMP_COMPLETED);
         }
       } else {
         // Keep grounded or handle falling off train roofs
-        if (this.position.y > this.groundY + 0.1) {
-          // Fall down
+        if (this.position.y > this.groundY + 0.15) {
+          // Stepped off train roof or elevated platform safely!
           this.isJumping = true;
-          this.verticalVelocity = -4.0;
+          this.state = this.supportSurface === 'TRAIN_ROOF' ? 'FALLING_FROM_TRAIN' : 'FALLING';
+          this.supportSurface = 'GROUND';
+          this.verticalVelocity = Math.min(this.verticalVelocity, -2.0);
         } else {
           this.position.y = this.groundY;
+          if (this.state !== 'SLIDE') {
+            if (this.groundY > CONSTANTS.PLAYER_BASE_Y + 1.0) {
+              this.supportSurface = 'TRAIN_ROOF';
+              this.state = 'ON_TRAIN';
+            } else if (this.supportSurface === 'RAMP') {
+              this.state = 'CLIMBING';
+            } else {
+              this.supportSurface = 'GROUND';
+              this.state = 'RUN';
+            }
+          }
         }
       }
     }
@@ -363,7 +409,7 @@ export class Player {
       if (this.slideTimer <= 0) {
         this.isSliding = false;
         if (!this.isJumping && this.state !== 'JETPACK') {
-          this.state = 'RUN';
+          this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
         }
         this.eventBus.emit(EVENTS.SLIDE_COMPLETED);
       }
@@ -383,7 +429,29 @@ export class Player {
     this.groundY = targetY;
   }
 
-  public crash(): boolean {
+  public setSupportSurface(surface: SupportSurfaceType): void {
+    this.supportSurface = surface;
+  }
+
+  public getSupportSurface(): SupportSurfaceType {
+    return this.supportSurface;
+  }
+
+  public resolveRoofLanding(roofY: number): void {
+    this.position.y = roofY;
+    this.groundY = roofY;
+    this.verticalVelocity = 0;
+    this.isJumping = false;
+    this.supportSurface = 'TRAIN_ROOF';
+    if (!this.isSliding) {
+      this.state = 'ON_TRAIN';
+    }
+    this.eventBus.emit(EVENTS.LAND);
+    this.eventBus.emit(EVENTS.JUMP_COMPLETED);
+    this.updateCollider();
+  }
+
+  public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
     // 1. Invulnerability grace window active
     if (this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash()) {
       return false; // Ignored during grace period
@@ -400,7 +468,7 @@ export class Player {
     }
 
     this.state = 'CRASH';
-    this.eventBus.emit(EVENTS.CRASH);
+    this.eventBus.emit(EVENTS.CRASH, reason);
     return true; // Fatal crash
   }
 
@@ -436,6 +504,19 @@ export class Player {
     this.isStumbling = true;
     this.stumbleTimer = CONSTANTS.STUMBLE_DURATION;
     this.eventBus.emit(EVENTS.STUMBLE);
+  }
+
+  public bounceBackFromSide(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
+    if (this.isChangingLane) {
+      this.isChangingLane = false;
+      this.targetLane = this.currentLane;
+      this.position.x = CONSTANTS.LANES[this.currentLane];
+      this.queuedLaneChange = null;
+      this.bankingAngle = 0;
+      this.updateCollider();
+    }
+    this.stumble();
   }
 
   public getEffectiveSpeed(): number {

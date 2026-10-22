@@ -259,7 +259,7 @@ export class CharacterModel {
    * Compatibility bridge for Player.ts update call
    */
   public updateAnimation(
-    state: 'IDLE' | 'RUN' | 'JUMP' | 'SLIDE' | 'JETPACK' | 'CRASH',
+    state: string,
     speed: number,
     bankingAngle: number,
     groundY: number,
@@ -267,10 +267,11 @@ export class CharacterModel {
   ): void {
     let animState: 'RUNNING' | 'JUMPING' | 'SLIDING' | 'JETPACK' | 'STUMBLING' | 'DEAD' | 'IDLE' = 'RUNNING';
     if (state === 'JETPACK') animState = 'JETPACK';
-    else if (state === 'JUMP') animState = 'JUMPING';
+    else if (state === 'JUMP' || state === 'FALLING' || state === 'FALLING_FROM_TRAIN') animState = 'JUMPING';
     else if (state === 'SLIDE') animState = 'SLIDING';
     else if (state === 'CRASH') animState = 'DEAD';
     else if (state === 'IDLE') animState = 'IDLE';
+    else if (state === 'CLIMBING' || state === 'ON_TRAIN' || state === 'RUN') animState = 'RUNNING';
 
     this.update(
       dt,
