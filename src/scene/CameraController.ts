@@ -10,6 +10,11 @@ export class CameraController {
   private shakeTrauma = 0;
   private shakeOffset = new THREE.Vector3();
 
+  // Lobby mode staging
+  private isLobbyMode: boolean = true;
+  private lobbyTargetPos = new THREE.Vector3(0.35, 1.45, 3.8);
+  private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
+
   constructor() {
     this.camera = new THREE.PerspectiveCamera(
       CONSTANTS.CAMERA_FOV,
@@ -18,8 +23,10 @@ export class CameraController {
       600
     );
 
-    this.currentPosition.set(0, CONSTANTS.CAMERA_OFFSET_Y, CONSTANTS.CAMERA_OFFSET_Z);
+    // Initial lobby position
+    this.currentPosition.copy(this.lobbyTargetPos);
     this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.lobbyLookTarget);
 
     window.addEventListener('resize', this.onResize.bind(this));
 
@@ -30,12 +37,38 @@ export class CameraController {
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
   }
 
+  public setLobbyMode(enabled: boolean): void {
+    this.isLobbyMode = enabled;
+  }
+
   public addShake(trauma: number): void {
     this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma);
   }
 
-  public update(playerPos: THREE.Vector3, dt: number): void {
-    // Target position behind and above player
+  public update(playerPos: THREE.Vector3, dt: number, timeSec: number = 0): void {
+    if (this.isLobbyMode) {
+      // Cinematic front-quarter framing in the subway lobby
+      const isPortrait = this.camera.aspect < 1.0;
+      const sway = Math.sin(timeSec * 0.45) * 0.12;
+      const bob = Math.cos(timeSec * 0.35) * 0.04;
+
+      if (isPortrait) {
+        // Step back further and higher to comfortably frame full runner in mobile portrait
+        this.lobbyTargetPos.set(0.25 + sway, 1.85 + bob, 5.6);
+        this.lobbyLookTarget.set(0, 1.15, -0.6);
+      } else {
+        this.lobbyTargetPos.set(0.35 + sway, 1.45 + bob, 3.8);
+        this.lobbyLookTarget.set(0, 0.95, -1.0);
+      }
+
+      const lerpFactor = 1.0 - Math.exp(-5.0 * dt);
+      this.currentPosition.lerp(this.lobbyTargetPos, lerpFactor);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lobbyLookTarget);
+      return;
+    }
+
+    // Target position behind and above player in gameplay
     this.targetPosition.x = playerPos.x;
     this.targetPosition.y = Math.max(CONSTANTS.PLAYER_BASE_Y, playerPos.y) + CONSTANTS.CAMERA_OFFSET_Y;
     this.targetPosition.z = playerPos.z + CONSTANTS.CAMERA_OFFSET_Z;
@@ -73,12 +106,18 @@ export class CameraController {
 
   public reset(playerPos: THREE.Vector3): void {
     this.shakeTrauma = 0;
-    this.currentPosition.set(
-      playerPos.x,
-      playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
-      playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
-    );
-    this.camera.position.copy(this.currentPosition);
+    if (this.isLobbyMode) {
+      this.currentPosition.copy(this.lobbyTargetPos);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lobbyLookTarget);
+    } else {
+      this.currentPosition.set(
+        playerPos.x,
+        playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
+        playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
+      );
+      this.camera.position.copy(this.currentPosition);
+    }
   }
 
   public onResize(): void {

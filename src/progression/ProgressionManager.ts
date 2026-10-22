@@ -140,7 +140,9 @@ export class ProgressionManager {
       },
       unlockedBoards: ['board_urban_glide'],
       selectedBoard: 'board_urban_glide',
-      hoverboardCharges: 5
+      hoverboardCharges: 5,
+      headstartBoosters: 2,
+      scoreBoosters: 2
     };
   }
 
@@ -217,6 +219,26 @@ export class ProgressionManager {
 
   public getState(): ProgressionState {
     return this.state;
+  }
+
+  public getActiveMissions(): Mission[] {
+    return this.state.activeMissions;
+  }
+
+  public getDailyChallenges(): DailyChallenge[] {
+    return this.state.dailyChallenges;
+  }
+
+  public getAchievementsList(): { def: AchievementDefinition; state: AchievementState }[] {
+    return ACHIEVEMENTS.map(def => ({
+      def,
+      state: this.state.achievements[def.id] || {
+        id: def.id,
+        currentProgress: 0,
+        completedTiers: [],
+        claimedTiers: []
+      }
+    }));
   }
 
   public getActiveGameMode(): GameMode {
@@ -565,6 +587,10 @@ export class ProgressionManager {
     };
   }
 
+  public getLifetimeStats(): LifetimeStats {
+    return { ...this.state.lifetimeStats };
+  }
+
   // --- Character & Outfit Collection Management ---
 
   public getUnlockedCharacters(): string[] {
@@ -857,4 +883,78 @@ export class ProgressionManager {
     this.saveState();
     this.updateAchievement('ach_hoverboards', this.state.lifetimeStats.totalHoverboardsUsed);
   }
+
+  // --- Consumable Boosters Economy ---
+
+  public getHeadstartCount(): number {
+    return this.state.headstartBoosters ?? 2;
+  }
+
+  public getScoreBoosterCount(): number {
+    return this.state.scoreBoosters ?? 2;
+  }
+
+  public consumeHeadstart(): boolean {
+    if ((this.state.headstartBoosters ?? 0) > 0) {
+      this.state.headstartBoosters!--;
+      this.saveState();
+      this.eventBus.emit('BOOSTERS_UPDATED');
+      return true;
+    }
+    return false;
+  }
+
+  public consumeScoreBooster(): boolean {
+    if ((this.state.scoreBoosters ?? 0) > 0) {
+      this.state.scoreBoosters!--;
+      this.saveState();
+      this.eventBus.emit('BOOSTERS_UPDATED');
+      return true;
+    }
+    return false;
+  }
+
+  public purchaseHeadstart(count: number = 1): { success: boolean; message: string } {
+    const cost = 400 * count;
+    const upgradeMgr = UpgradeManager.getInstance();
+    if (upgradeMgr.getCoins() < cost) {
+      return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+    }
+    if (!upgradeMgr.deductCoins(cost)) {
+      return { success: false, message: 'Transaction failed' };
+    }
+    this.state.headstartBoosters = (this.state.headstartBoosters ?? 0) + count;
+    this.saveState();
+    this.eventBus.emit('BOOSTERS_UPDATED');
+    return { success: true, message: `Purchased +${count} Headstart Booster!` };
+  }
+
+  public purchaseScoreBooster(count: number = 1): { success: boolean; message: string } {
+    const cost = 500 * count;
+    const upgradeMgr = UpgradeManager.getInstance();
+    if (upgradeMgr.getCoins() < cost) {
+      return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+    }
+    if (!upgradeMgr.deductCoins(cost)) {
+      return { success: false, message: 'Transaction failed' };
+    }
+    this.state.scoreBoosters = (this.state.scoreBoosters ?? 0) + count;
+    this.saveState();
+    this.eventBus.emit('BOOSTERS_UPDATED');
+    return { success: true, message: `Purchased +${count} Score Booster!` };
+  }
+
+  public purchaseBoardMegapack(): { success: boolean; message: string } {
+    const cost = 850; // Discounted pack of 10 (saves 150 coins!)
+    const upgradeMgr = UpgradeManager.getInstance();
+    if (upgradeMgr.getCoins() < cost) {
+      return { success: false, message: `Insufficient coins (Requires ${cost.toLocaleString()} 🪙)` };
+    }
+    if (!upgradeMgr.deductCoins(cost)) {
+      return { success: false, message: 'Transaction failed' };
+    }
+    this.addHoverboardCharges(10);
+    return { success: true, message: `Purchased +10 Hoverboard Megapack!` };
+  }
 }
+

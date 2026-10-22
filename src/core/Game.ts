@@ -12,12 +12,14 @@ import { StartScreen } from '../ui/StartScreen';
 import { PauseModal } from '../ui/PauseModal';
 import { GameOverModal } from '../ui/GameOverModal';
 import { SettingsModal } from '../ui/SettingsModal';
-import { UpgradeModal } from '../ui/UpgradeModal';
+import { ShopModal } from '../ui/ShopModal';
 import { UpgradeManager } from '../player/UpgradeManager';
 import { MissionsModal } from '../ui/MissionsModal';
 import { EventSelectModal } from '../ui/EventSelectModal';
 import { CharacterSelectModal } from '../ui/CharacterSelectModal';
 import { HoverboardSelectModal } from '../ui/HoverboardSelectModal';
+import { ProfileModal } from '../ui/ProfileModal';
+import { DailyRewardModal } from '../ui/DailyRewardModal';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
 
@@ -37,11 +39,13 @@ export class Game {
   private pauseModal: PauseModal;
   private gameOverModal: GameOverModal;
   private settingsModal: SettingsModal;
-  private upgradeModal: UpgradeModal;
+  private shopModal: ShopModal;
   private missionsModal: MissionsModal;
   private eventSelectModal: EventSelectModal;
   private characterSelectModal: CharacterSelectModal;
   private hoverboardSelectModal: HoverboardSelectModal;
+  private profileModal: ProfileModal;
+  private dailyRewardModal: DailyRewardModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -73,11 +77,17 @@ export class Game {
     this.pauseModal = new PauseModal();
     this.gameOverModal = new GameOverModal();
     this.settingsModal = new SettingsModal(this.soundManager);
-    this.upgradeModal = new UpgradeModal();
+    this.shopModal = new ShopModal();
     this.missionsModal = new MissionsModal();
     this.eventSelectModal = new EventSelectModal();
     this.characterSelectModal = new CharacterSelectModal();
     this.hoverboardSelectModal = new HoverboardSelectModal();
+    this.profileModal = new ProfileModal();
+    this.dailyRewardModal = new DailyRewardModal();
+
+    // Stage hero character in Lobby pose facing the camera
+    this.player.mesh.rotation.y = Math.PI - 0.2;
+    this.cameraController.setLobbyMode(true);
 
     this.setupEvents();
     this.startScreen.show();
@@ -183,14 +193,19 @@ export class Game {
       this.player.speed = 25.0;
     }
 
+    this.cameraController.setLobbyMode(false);
+    this.player.mesh.rotation.y = 0;
+
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
-    this.upgradeModal.hide(false);
+    this.shopModal.hide();
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);
     this.hoverboardSelectModal.hide(false);
+    this.profileModal.hide();
+    this.dailyRewardModal.hide();
 
     this.hud.reset();
     this.hud.setMode(this.activeGameMode);
@@ -224,17 +239,21 @@ export class Game {
 
   public goToMenu(): void {
     this.lifecycleState = 'MENU';
+    this.cameraController.setLobbyMode(true);
     this.hud.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
-    this.upgradeModal.hide();
+    this.shopModal.hide();
     this.missionsModal.hide();
     this.eventSelectModal.hide();
     this.characterSelectModal.hide();
     this.hoverboardSelectModal.hide();
+    this.profileModal.hide();
+    this.dailyRewardModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
+    this.player.mesh.rotation.y = Math.PI - 0.2;
     this.cameraController.reset(this.player.position);
     this.inputManager.setEnabled(false);
   }
@@ -383,13 +402,14 @@ export class Game {
       // Update tumble animation
       this.player.update(dt);
     } else if (this.lifecycleState === 'MENU') {
-      // Idle scene: slow gentle hover
+      // Idle scene: slow gentle hover & subtle sway facing camera
       this.player.position.y = CONSTANTS.PLAYER_BASE_Y + Math.sin(now * 0.003) * 0.08;
       this.player.mesh.position.copy(this.player.position);
+      this.player.mesh.rotation.y = Math.PI - 0.2 + Math.sin(now * 0.001) * 0.08;
     }
 
     // Camera follow update
-    this.cameraController.update(this.player.position, dt);
+    this.cameraController.update(this.player.position, dt, now / 1000);
 
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);

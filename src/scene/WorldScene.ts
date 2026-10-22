@@ -57,6 +57,19 @@ export class WorldScene {
     this.fillLight.position.set(-24, 28, 14);
     this.scene.add(this.fillLight);
 
+    // Dark asphalt station ground beneath tracks and lobby camera
+    const stationGroundGeo = new THREE.PlaneGeometry(80, 80);
+    const stationGroundMat = new THREE.MeshStandardMaterial({
+      color: 0x151922,
+      roughness: 0.95,
+      metalness: 0.1
+    });
+    const stationGround = new THREE.Mesh(stationGroundGeo, stationGroundMat);
+    stationGround.rotation.x = -Math.PI / 2;
+    stationGround.position.set(0, -0.28, 0);
+    stationGround.receiveShadow = true;
+    this.scene.add(stationGround);
+
     // 2. Vibrant Daytime Sky Dome
     this.skyMesh = this.createSkyDome();
     this.scene.add(this.skyMesh);

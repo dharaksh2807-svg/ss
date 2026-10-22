@@ -2,6 +2,8 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { PowerupManager, PowerupType } from '../player/PowerupManager';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
+import { ProgressionManager } from '../progression/ProgressionManager';
+
 export class HUD {
   private container: HTMLDivElement;
   private scoreEl: HTMLElement;
@@ -20,6 +22,7 @@ export class HUD {
 
   private modeBadgeEl: HTMLElement | null = null;
   private toastContainerEl: HTMLElement | null = null;
+  private missionTickerEl: HTMLElement | null = null;
 
   constructor(private powerupManager: PowerupManager) {
     this.container = document.getElementById('hud') as HTMLDivElement;
@@ -66,6 +69,16 @@ export class HUD {
       this.container.appendChild(toastEl);
     }
     this.toastContainerEl = toastEl;
+
+    // Create mini mission ticker if not present
+    let tickerEl = document.getElementById('hud-mission-ticker');
+    if (!tickerEl) {
+      tickerEl = document.createElement('div');
+      tickerEl.id = 'hud-mission-ticker';
+      tickerEl.className = 'hud-mission-ticker';
+      this.container.appendChild(tickerEl);
+    }
+    this.missionTickerEl = tickerEl;
 
     this.setupEvents();
   }
@@ -143,7 +156,21 @@ export class HUD {
       }
     }
 
-    // 2. Render active powerup duration bars & active hoverboard card
+    // 2. Update mini mission ticker
+    if (this.missionTickerEl) {
+      const activeMissions = ProgressionManager.getInstance().getActiveMissions();
+      const curr = activeMissions.find(m => !m.completed) || activeMissions[0];
+      if (curr) {
+        const pct = Math.min(100, Math.floor((curr.progress / curr.target) * 100));
+        this.missionTickerEl.innerHTML = `
+          <span class="ticker-dot">🎯</span>
+          <span class="ticker-label">${curr.title}:</span>
+          <span class="ticker-val">${Math.floor(curr.progress)} / ${curr.target} (${pct}%)</span>
+        `;
+      }
+    }
+
+    // 3. Render active powerup duration bars & active hoverboard card
     const active = this.powerupManager.getActivePowerups().filter(p => p.type !== 'HOVERBOARD');
     const isHoverboardActive = this.hoverboardManager.isBoardActive();
     const activeBoard = this.hoverboardManager.getActiveBoard();

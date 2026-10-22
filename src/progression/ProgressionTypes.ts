@@ -130,4 +130,6 @@ export interface ProgressionState {
   unlockedBoards: string[];
   selectedBoard: string;
   hoverboardCharges: number;
+  headstartBoosters?: number;
+  scoreBoosters?: number;
 }
