@@ -26,6 +26,8 @@ export type PlayerState =
 
 export type SupportSurfaceType = 'GROUND' | 'TRAIN_ROOF' | 'RAMP';
 
+export type JetpackPhase = 'NONE' | 'TAKEOFF' | 'CRUISE' | 'DESCENT' | 'SAFE_LANDING';
+
 export class Player {
   public mesh: THREE.Group;
   public model: CharacterModel;
@@ -82,6 +84,13 @@ export class Player {
   private stumbleTimer: number = 0;
   public lastJumpDist: number = -999;
   public lastSlideDist: number = -999;
+
+  // Jetpack Flight Lifecycle State
+  private jetpackPhase: JetpackPhase = 'NONE';
+  private jetpackTakeoffTimer: number = 0;
+  private jetpackDescentTimer: number = 0;
+  private jetpackStartY: number = CONSTANTS.PLAYER_BASE_Y;
+  private flightAnimTime: number = 0;
 
   // Hitbox AABB
   public collider: THREE.Box3 = new THREE.Box3();
@@ -144,6 +153,10 @@ export class Player {
     this.supportSurface = 'GROUND';
     this.previousPosition.copy(this.position);
     this.state = 'RUN';
+    this.jetpackPhase = 'NONE';
+    this.jetpackTakeoffTimer = 0;
+    this.jetpackDescentTimer = 0;
+    this.flightAnimTime = 0;
     this.powerups.reset();
     this.hoverboardManager.reset();
 
@@ -173,10 +186,11 @@ export class Player {
 
     PacingMetrics.getInstance().recordAction(performance.now() / 1000);
 
-    // During jetpack flight, jump and slide are disabled, lateral steering remains active
-    if (this.state === 'JETPACK') {
+    // During jetpack flight, jump, slide, and hoverboard are disabled; lateral steering remains fully active
+    if (this.state === 'JETPACK' || this.jetpackPhase !== 'NONE') {
       if (action === 'LEFT') this.changeLane(-1);
       if (action === 'RIGHT') this.changeLane(1);
+      // Airborne inputs (UP, DOWN, ACTION) are explicitly suppressed and NOT queued for execution after landing
       return;
     }
 
@@ -366,28 +380,65 @@ export class Player {
       this.bankingAngle *= Math.exp(-12.0 * dt); // Smooth decay back to upright
     }
 
-    // 3. Vertical Movement & Flight Modes
+    // 3. Vertical Movement & Flight Modes (NORMAL -> TAKEOFF -> CRUISE -> DESCENT -> SAFE_LANDING)
     if (this.powerups.isJetpackActive()) {
-      if (this.state !== 'JETPACK') {
+      if (this.jetpackPhase === 'NONE') {
+        this.jetpackPhase = 'TAKEOFF';
         this.state = 'JETPACK';
         this.isJumping = false;
         this.isFastDropping = false;
         this.isSliding = false;
+        this.jetpackStartY = this.position.y;
+        this.jetpackTakeoffTimer = 0;
+        this.flightAnimTime = 0;
+        this.model.setJetpackVisible(true);
+        this.eventBus.emit(EVENTS.JETPACK_TAKEOFF);
       }
 
-      // Smooth ascent to flight altitude or descent when expiring
+      this.flightAnimTime += dt;
       const remaining = this.powerups.getJetpackRemaining();
-      if (remaining > 1.2) {
-        this.position.y += (this.jetpackAltitude - this.position.y) * Math.min(1.0, dt * 7.0);
-      } else {
-        this.position.y += (this.groundY - this.position.y) * Math.min(1.0, dt * 5.5);
+
+      if (this.jetpackPhase === 'TAKEOFF') {
+        this.jetpackTakeoffTimer += dt;
+        const takeoffDuration = CONSTANTS.JETPACK_TAKEOFF_DURATION || 1.0;
+        const t = Math.min(1.0, this.jetpackTakeoffTimer / takeoffDuration);
+        const ease = t * t * (3.0 - 2.0 * t); // Smoothstep cubic ease-in-out
+        this.position.y = this.jetpackStartY + (this.jetpackAltitude - this.jetpackStartY) * ease;
+
+        if (t >= 1.0) {
+          this.jetpackPhase = 'CRUISE';
+          this.eventBus.emit(EVENTS.JETPACK_CRUISE);
+        }
+      } else if (this.jetpackPhase === 'CRUISE') {
+        const descentWindow = CONSTANTS.JETPACK_DESCENT_DURATION || 1.8;
+        if (remaining <= descentWindow) {
+          this.jetpackPhase = 'DESCENT';
+          this.jetpackDescentTimer = 0;
+          this.eventBus.emit(EVENTS.JETPACK_DESCENT);
+        } else {
+          // Subtle aerodynamic harmonic float bobbing at cruise altitude
+          const bob = Math.sin(this.flightAnimTime * 2.8) * 0.08;
+          this.position.y = this.jetpackAltitude + bob;
+        }
+      } else if (this.jetpackPhase === 'DESCENT') {
+        this.jetpackDescentTimer += dt;
+        const descentDuration = CONSTANTS.JETPACK_DESCENT_DURATION || 1.8;
+        const t = Math.min(1.0, this.jetpackDescentTimer / descentDuration);
+        const ease = t * t * (3.0 - 2.0 * t);
+        this.position.y = this.jetpackAltitude - (this.jetpackAltitude - this.groundY) * ease;
       }
     } else {
       // If exiting jetpack state
-      if (this.state === 'JETPACK') {
-        this.state = 'RUN';
+      if (this.state === 'JETPACK' || this.jetpackPhase !== 'NONE') {
+        this.jetpackPhase = 'SAFE_LANDING';
         this.position.y = this.groundY;
+        this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
+        this.model.setJetpackVisible(false);
+        this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
         this.powerups.grantInvulnerability(1.5);
+        this.eventBus.emit(EVENTS.JETPACK_LANDED);
+        this.eventBus.emit(EVENTS.LAND);
+        this.jetpackPhase = 'NONE';
       }
 
       // Regular Ground & Airborne Jump Physics (Authoritative delta-time simulation)
@@ -596,6 +647,10 @@ export class Player {
 
   public isChangingLaneActive(): boolean {
     return this.isChangingLane;
+  }
+
+  public getJetpackPhase(): JetpackPhase {
+    return this.jetpackPhase;
   }
 
   public stumble(): void {

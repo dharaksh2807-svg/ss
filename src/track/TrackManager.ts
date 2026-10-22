@@ -9,10 +9,12 @@ import { OBSTACLE_PATTERNS, TrackPattern } from './ObstaclePatterns';
 import { ReachabilityValidator } from './ReachabilityValidator';
 import { DifficultyController } from './DifficultyController';
 import { PacingMetrics } from './PacingMetrics';
+import { AerialCoinManager } from './AerialCoinManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
   public difficultyController: DifficultyController = new DifficultyController();
+  public aerialCoinManager: AerialCoinManager;
   private obstacleFactory: ObstacleFactory;
   private collectibleFactory: CollectibleFactory;
   private eventBus = EventBus.getInstance();
@@ -33,6 +35,7 @@ export class TrackManager {
   constructor(private scene: THREE.Scene) {
     this.obstacleFactory = new ObstacleFactory();
     this.collectibleFactory = new CollectibleFactory();
+    this.aerialCoinManager = new AerialCoinManager(this.scene, this.collectibleFactory);
 
     // Create pooled chunks
     for (let i = 0; i < CONSTANTS.ACTIVE_CHUNKS; i++) {
@@ -82,6 +85,9 @@ export class TrackManager {
     this.lastSpawnedPattern = null;
     this.previousPlayerZ = null;
     this.difficultyController.reset();
+    if (this.aerialCoinManager) {
+      this.aerialCoinManager.reset();
+    }
 
     for (const vfx of this.pickupVfxPool) {
       vfx.active = false;
@@ -182,6 +188,32 @@ export class TrackManager {
     // 0.1 Update pooled coin collection particle bursts
     this.updatePickupVFX(dt);
 
+    // 0.2 Dedicated Aerial Coin Trail System & Flight Lifecycle Integration
+    if (player.powerups.isJetpackActive() || player.state === 'JETPACK') {
+      if (!this.aerialCoinManager.isJetpackFlightActive()) {
+        this.aerialCoinManager.onJetpackActivated(player);
+        this.prepareSafeLandingRunway(player);
+      }
+    }
+
+    const boardMagnetBonus = player.hoverboardManager ? player.hoverboardManager.getMagnetRadiusBonus() : 0;
+    const isMagnet = player.powerups.isMagnetActive() || boardMagnetBonus > 0;
+    const magnetRadius = (player.powerups.isMagnetActive() ? player.powerups.getMagnetRadius() : 0) + boardMagnetBonus;
+
+    this.aerialCoinManager.update(
+      player,
+      dt,
+      time,
+      isMagnet,
+      magnetRadius,
+      (pos: THREE.Vector3) => this.triggerCoinPickupVFX(pos)
+    );
+
+    // Safe Landing Runway: Continually clears and verifies landing corridor during descent
+    if (player.getJetpackPhase() === 'DESCENT' || (player.powerups.isJetpackActive() && player.powerups.getJetpackRemaining() <= 2.2)) {
+      this.prepareSafeLandingRunway(player);
+    }
+
     // 1. Recycle trailing chunks ahead of player
     for (const chunk of this.chunks) {
       const chunkEndZ = chunk.chunkZ - CONSTANTS.CHUNK_LENGTH;
@@ -209,6 +241,44 @@ export class TrackManager {
 
     // 3. Collision & Collectibles Detection
     this.checkCollisions(player, dt);
+  }
+
+  /**
+   * Safe Landing Corridor:
+   * Inspects upcoming track chunks covering the touchdown zone [landingZ + 6m, landingZ - 36m].
+   * Ensures the runner's landing lane is 100% free of lethal obstacles (trains, high barriers, etc.),
+   * guaranteeing a physically clear runway so the runner never lands into an unavoidable crash.
+   */
+  public prepareSafeLandingRunway(player: Player): void {
+    const remaining = player.powerups.getJetpackRemaining();
+    const dynamicLandingZ = player.position.z - Math.max(CONSTANTS.INITIAL_SPEED, player.speed) * Math.max(0, remaining);
+    const landingZ = (remaining <= 3.0 || player.getJetpackPhase() === 'DESCENT')
+      ? dynamicLandingZ
+      : this.aerialCoinManager.getLandingZ();
+
+    const landingLane = player.currentLane;
+    this.aerialCoinManager.setLandingLane(landingLane);
+
+    // Guaranteed clearance covers from current player position through 35m past touchdown
+    const runwayZStart = player.position.z + 4.0;
+    const runwayZEnd = landingZ - (CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 35.0);
+
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+
+        const obsWorldZMin = obs.collider.min.z;
+        const obsWorldZMax = obs.collider.max.z;
+
+        const inTouchdownZ = obsWorldZMax >= runwayZEnd && obsWorldZMin <= runwayZStart;
+        const inLandingLane = obs.lane === landingLane;
+
+        if (inTouchdownZ && inLandingLane) {
+          obs.active = false;
+          chunk.group.remove(obs.group);
+        }
+      }
+    }
   }
 
   private updateGroundHeight(player: Player): void {
@@ -362,7 +432,7 @@ export class TrackManager {
           }
 
           // Priority 3: Clear airborne height (e.g. jumping over train, super sneakers, jetpack)
-          if (player.position.y >= roofY - 0.35 || player.state === 'JETPACK' || player.position.y > 6.0) {
+          if (player.position.y >= roofY - 0.35 || player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE' || player.position.y > 4.5) {
             continue;
           }
 
@@ -394,7 +464,7 @@ export class TrackManager {
         } else {
           // Standard barriers (LOW_BARRIER, HIGH_BARRIER, SIDE_BARRIER, TUNNEL_ARCH)
           if (obs.collider.intersectsBox(playerBox)) {
-            if (player.state === 'JETPACK' || player.position.y > 6.0) {
+            if (player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE' || player.position.y > 4.5) {
               continue;
             }
 
@@ -465,6 +535,13 @@ export class TrackManager {
           col.group.position.y,
           chunk.chunkZ + col.group.position.z
         );
+
+        // Ground coins are not collected from far above while high in jetpack flight
+        const isGroundCollectible = colWorldPos.y < 4.0;
+        const isPlayerHighInFlight = player.position.y > 4.5 || player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE';
+        if (isPlayerHighInFlight && isGroundCollectible) {
+          continue;
+        }
 
         // Magnet attraction effect with upgraded radius and smooth 3D acceleration
         if (isMagnet && col.type === 'COIN') {

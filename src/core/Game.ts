@@ -523,6 +523,18 @@ export class Game {
     }
   }
 
+  public getPlayer(): Player {
+    return this.player;
+  }
+
+  public getTrackManager(): TrackManager {
+    return this.trackManager;
+  }
+
+  public getCameraController(): CameraController {
+    return this.cameraController;
+  }
+
   public getPerformanceMetrics() {
     const avgDt = this.frameTimes.length > 0
       ? this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length

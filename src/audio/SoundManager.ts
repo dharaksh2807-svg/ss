@@ -60,6 +60,8 @@ export class SoundManager {
     bus.on('POWERUP_EXPIRING', () => this.playExpiringWarning());
     bus.on(EVENTS.HOVERBOARD_ACTIVATED, () => this.playHoverboard());
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.playHoverboardCrash());
+    bus.on(EVENTS.JETPACK_TAKEOFF, () => this.playJetpack());
+    bus.on(EVENTS.JETPACK_LANDED, () => this.playLandingTouchdown());
     bus.on(EVENTS.CRASH, () => this.playCrash());
     bus.on(EVENTS.STUMBLE, () => this.playStumble());
     bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss());
@@ -342,6 +344,23 @@ export class SoundManager {
     oscGain.connect(this.sfxGain);
     osc.start(now);
     osc.stop(now + 0.38);
+  }
+
+  public playLandingTouchdown(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    // Cushioned low-frequency footstep impact
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.14);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.16);
   }
 
   public playSneakers(): void {

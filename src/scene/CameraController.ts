@@ -16,9 +16,13 @@ export class CameraController {
   private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
 
   constructor() {
+    const aspect = typeof window !== 'undefined' && window.innerHeight > 0
+      ? window.innerWidth / window.innerHeight
+      : 16 / 9;
+
     this.camera = new THREE.PerspectiveCamera(
       CONSTANTS.CAMERA_FOV,
-      window.innerWidth / window.innerHeight,
+      aspect,
       0.5,
       600
     );
@@ -28,7 +32,9 @@ export class CameraController {
     this.camera.position.copy(this.currentPosition);
     this.camera.lookAt(this.lobbyLookTarget);
 
-    window.addEventListener('resize', this.onResize.bind(this));
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onResize.bind(this));
+    }
 
     const bus = EventBus.getInstance();
     bus.on(EVENTS.LAND, () => this.addShake(0.12));
@@ -88,20 +94,38 @@ export class CameraController {
     }
 
     // Coordinated vertical tracking:
-    // Follow the support surface (ground or train roof) authoritatively so elevation changes are smooth,
-    // while dampening airborne jump bobbing (tracking only ~30% of jump apex height) so the horizon and
-    // oncoming obstacles stay stable and readable while the runner visibly vaults hurdles.
+    // Support two regimes:
+    // 1. Jetpack high-altitude flight: tracks flight elevation smoothly, pulls back slightly,
+    //    and extends forward lookahead so oncoming aerial coin ribbons are clearly visible.
+    // 2. Ground & jump running: follows support surface authoritatively while dampening
+    //    airborne jump bobbing (30% apex tracking) so the horizon stays stable.
     const airborneDelta = Math.max(0, playerPos.y - groundY);
-    const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
+    const isJetpackFlight = playerPos.y > CONSTANTS.PLAYER_BASE_Y + 2.2;
+
+    let targetCamY: number;
+    let targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z;
+    let targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z;
+    let targetLookY: number;
+
+    if (isJetpackFlight) {
+      targetCamY = playerPos.y + 2.4;
+      targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8; // Step back slightly for wide sky vista
+      targetLookY = playerPos.y + 0.6;
+      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 10.0; // Look 22m ahead along flight path
+    } else {
+      const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
+      targetCamY = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
+      targetLookY = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
+    }
 
     // Target position behind and above player in gameplay
     this.targetPosition.x = playerPos.x;
-    this.targetPosition.y = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
-    this.targetPosition.z = playerPos.z + CONSTANTS.CAMERA_OFFSET_Z;
+    this.targetPosition.y = targetCamY;
+    this.targetPosition.z = playerPos.z + targetCamOffsetZ;
 
     // Frame-rate independent exponential decay interpolation
     const lerpX = 1.0 - Math.exp(-CONSTANTS.CAMERA_LERP_X * dt);
-    const lerpY = 1.0 - Math.exp(-CONSTANTS.CAMERA_LERP_Y * dt);
+    const lerpY = 1.0 - Math.exp(-(isJetpackFlight ? 6.5 : CONSTANTS.CAMERA_LERP_Y) * dt);
 
     this.currentPosition.x += (this.targetPosition.x - this.currentPosition.x) * lerpX;
     this.currentPosition.y += (this.targetPosition.y - this.currentPosition.y) * lerpY;
@@ -124,8 +148,8 @@ export class CameraController {
 
     // Look at point slightly ahead and above the character, with dampened vertical tracking
     this.lookTarget.x = this.currentPosition.x * 0.5 + playerPos.x * 0.5;
-    this.lookTarget.y = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
-    this.lookTarget.z = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
+    this.lookTarget.y = targetLookY;
+    this.lookTarget.z = playerPos.z + targetLookAheadZ;
 
     this.camera.lookAt(this.lookTarget);
   }

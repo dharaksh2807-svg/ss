@@ -131,6 +131,14 @@ export const CONSTANTS = {
   HOVERBOARD_DURATION: 20.0, // 20 seconds hoverboard duration
   HOVERBOARD_DOUBLE_TAP_WINDOW: 0.35, // Seconds for double-tap detection
 
+  // Jetpack Flight & Aerial System
+  JETPACK_ALTITUDE: 9.0, // High-altitude flight cruising level above ground
+  JETPACK_TAKEOFF_DURATION: 0.65, // Smooth transition time from ground to flight altitude (seconds)
+  JETPACK_DESCENT_DURATION: 1.8, // Smooth transition time from flight altitude to ground (seconds)
+  JETPACK_COIN_SPACING: 2.2, // Meters between aerial coins along flight path
+  JETPACK_SAFE_LANDING_RUNWAY: 35.0, // Guaranteed obstacle-free touchdown runway length (meters)
+  JETPACK_AERIAL_POOL_SIZE: 160, // Size of pre-allocated aerial coin pool
+
   // World Bending Vertex Shader
   CURVE_X: 0.00035, // Horizontal curve intensity
   CURVE_Y: -0.00045, // Vertical horizon dip intensity
