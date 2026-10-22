@@ -341,4 +341,199 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Horizontal Corrugated Stainless-Steel Fluting Texture for Classic Subway Trains
+   */
+  public static getStainlessSteelFlutingTexture(): THREE.Texture {
+    return this.getOrCreate('stainless_fluting', () => {
+      const w = 128;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Base stainless steel
+      ctx.fillStyle = '#9aa0a6';
+      ctx.fillRect(0, 0, w, h);
+
+      // Horizontal corrugation fluting ribs
+      const ribCount = 24;
+      const ribHeight = h / ribCount;
+
+      for (let i = 0; i < ribCount; i++) {
+        const y = i * ribHeight;
+        // Top highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillRect(0, y, w, ribHeight * 0.35);
+
+        // Center mid-tone
+        ctx.fillStyle = '#b0b7bd';
+        ctx.fillRect(0, y + ribHeight * 0.35, w, ribHeight * 0.35);
+
+        // Bottom crease shadow
+        ctx.fillStyle = 'rgba(25, 30, 36, 0.6)';
+        ctx.fillRect(0, y + ribHeight * 0.7, w, ribHeight * 0.3);
+      }
+
+      // Vertical rivet lines at intervals
+      ctx.fillStyle = '#4f555c';
+      for (let x = 16; x < w; x += 32) {
+        for (let i = 0; i < ribCount; i++) {
+          const cy = i * ribHeight + ribHeight * 0.5;
+          ctx.beginPath();
+          ctx.arc(x, cy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 1);
+      return tex;
+    });
+  }
+
+  /**
+   * Stylized Transit LED Destination Sign (Digital Dot-Matrix Display)
+   */
+  public static getDestinationSignTexture(routeText: string, subText: string, colorHex = 0xffb300): THREE.Texture {
+    const key = `dest_sign_${routeText}_${subText}_${colorHex}`;
+    return this.getOrCreate(key, () => {
+      const w = 384;
+      const h = 96;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark housing bezel
+      ctx.fillStyle = '#0a0d12';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle dot-matrix background grid
+      ctx.fillStyle = '#141a22';
+      for (let x = 4; x < w - 4; x += 6) {
+        for (let y = 4; y < h - 4; y += 6) {
+          ctx.fillRect(x, y, 2, 2);
+        }
+      }
+
+      // Glowing LED Route Number / Badge
+      const hexStr = `#${colorHex.toString(16).padStart(6, '0')}`;
+      ctx.font = 'bold 38px "Impact", "Arial Black", sans-serif';
+      ctx.fillStyle = hexStr;
+      ctx.shadowColor = hexStr;
+      ctx.shadowBlur = 8;
+      ctx.fillText(routeText, 16, 52);
+
+      // Sub-destination text
+      ctx.font = 'bold 22px "Arial Black", sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 4;
+      ctx.fillText(subText, 16, 82);
+
+      // Clear shadow
+      ctx.shadowBlur = 0;
+
+      // Outer bezel border
+      ctx.strokeStyle = '#252b36';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, w - 4, h - 4);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    });
+  }
+
+  /**
+   * Metal Radiator Vent & HVAC Intake Grille
+   */
+  public static getVentGrilleTexture(): THREE.Texture {
+    return this.getOrCreate('vent_grille', () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#1e2229';
+      ctx.fillRect(0, 0, size, size);
+
+      // Slat louvers
+      const slats = 16;
+      const sh = size / slats;
+      for (let i = 0; i < slats; i++) {
+        const y = i * sh;
+        ctx.fillStyle = '#0f1217';
+        ctx.fillRect(4, y + 1, size - 8, sh * 0.45);
+        ctx.fillStyle = '#3a414d';
+        ctx.fillRect(4, y + sh * 0.45, size - 8, sh * 0.45);
+      }
+
+      ctx.strokeStyle = '#3a414d';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(2, 2, size - 4, size - 4);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Industrial Anti-Slip Diamond Plate Walkway Texture
+   */
+  public static getDiamondPlateTexture(): THREE.Texture {
+    return this.getOrCreate('diamond_plate', () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#3f4652';
+      ctx.fillRect(0, 0, size, size);
+
+      // Diamond tread pattern
+      const step = 32;
+      for (let x = 0; x < size; x += step) {
+        for (let y = 0; y < size; y += step) {
+          // Diamond 1
+          ctx.save();
+          ctx.translate(x + 16, y + 16);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillStyle = '#5c6575';
+          ctx.fillRect(-6, -2, 12, 4);
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.fillRect(-6, -2, 12, 1);
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(-6, 1, 12, 1);
+          ctx.restore();
+
+          // Diamond 2
+          ctx.save();
+          ctx.translate(x + step, y + step);
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillStyle = '#5c6575';
+          ctx.fillRect(-6, -2, 12, 4);
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.fillRect(-6, -2, 12, 1);
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(-6, 1, 12, 1);
+          ctx.restore();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 8);
+      return tex;
+    });
+  }
 }

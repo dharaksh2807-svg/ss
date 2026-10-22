@@ -783,6 +783,7 @@ export class TrackChunk {
         active: true,
         hasRamp: obsData.hasRamp,
         length,
+        variant: group.userData.variant,
         isMoving: obsData.type === 'MOVING_TRAIN' || obsData.isMoving,
         velocityZ: obsData.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED,
         initialLocalZ: localZ,
