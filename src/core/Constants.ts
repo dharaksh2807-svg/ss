@@ -115,6 +115,7 @@ export const CONSTANTS = {
   PILLAR_WIDTH: 0.9, // Structural column width/diameter
   PILLAR_HEIGHT: 7.6, // Structural pillar height extending to ceiling
   TUNNEL_CEILING_HEIGHT: 7.6, // Vaulted tunnel ceiling height (guarantees camera & jump clearance)
+  TUNNEL_AERIAL_VAULT_HEIGHT: 12.5, // High-clearance aerial passage vaulted ceiling (clears 9.0m flight & 11.4m camera)
   TUNNEL_WALL_X: 5.8, // Lateral position of continuous tunnel walls
   MOVING_TRAIN_ACTIVATION_DIST: 85.0, // Distance ahead of player where oncoming train begins approach
   SIDE_BARRIER_WIDTH: 1.9,
@@ -130,14 +131,15 @@ export const CONSTANTS = {
 
   // Collectibles & Powerups
   COIN_RADIUS: 0.45,
+  COIN_PICKUP_RADIUS: 1.1, // Effective 3D pickup collision radius (runner volume + coin volume)
   COIN_ROTATION_SPEED: 2.2, // Smooth, non-flickering rotation presenting face clearly
   COIN_VFX_DURATION: 0.25, // Duration of pickup sparkle burst in seconds
   COIN_GROUND_Y: 0.85, // Standard running collection height
   COIN_SLIDE_Y: 0.60, // Low-profile slide guidance collection height
-  COIN_JUMP_PEAK_Y: 2.35, // Apex height for hurdle jump arcs (reachable within 2.25m jump)
+  COIN_JUMP_PEAK_Y: 3.10, // Physically calibrated apex height for hurdle jump arcs (0.85m ground + 2.25m jump height)
   COIN_ROOFTOP_Y: 5.20, // Walkable train roof collection height (train roof 4.35m + 0.85m)
   COIN_DEFAULT_SPACING: 2.2, // Default spacing between consecutive coins
-  COIN_ARC_SPACING: 1.8, // Tighter spacing for readable parabolic jump arcs
+  COIN_ARC_SPACING: 1.8, // Spacing for readable parabolic jump arcs
   COIN_RISK_REWARD_RATIO: 1.75, // Configurable reward multiplier for high-skill risk paths
   COIN_POST_OBSTACLE_COUNT: 4, // Number of coins in post-obstacle reward burst
   MAGNET_RADIUS: 12.0,

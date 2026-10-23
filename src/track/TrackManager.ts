@@ -50,6 +50,7 @@ export class TrackManager {
   private rampOnboardingChecked: boolean = false;
   private chaser: ChaserModel | null = null;
   private collisionDiagnostics: CollisionDiagnostic[] = [];
+  private jetpackRecollectedPending: boolean = false;
 
   constructor(private scene: THREE.Scene, chaser?: ChaserModel) {
     if (chaser) {
@@ -81,6 +82,12 @@ export class TrackManager {
     this.eventBus.on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
       for (const chunk of this.chunks) {
         chunk.setSceneryDetail(config.sceneryDetail);
+      }
+    });
+
+    this.eventBus.on('JETPACK_ACTIVATED', () => {
+      if (this.aerialCoinManager && this.aerialCoinManager.isJetpackFlightActive()) {
+        this.jetpackRecollectedPending = true;
       }
     });
 
@@ -207,6 +214,7 @@ export class TrackManager {
     this.previousPlayerZ = null;
     this.rampOnboardingChecked = false;
     this.difficultyController.reset();
+    this.jetpackRecollectedPending = false;
     if (this.aerialCoinManager) {
       this.aerialCoinManager.reset();
     }
@@ -285,6 +293,14 @@ export class TrackManager {
       const hasMovingTrain = candidate.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
       if (!canSpawnMovingTrain && hasMovingTrain) {
         continue;
+      }
+
+      // Safe route scheduling: postpone low tunnel patterns during active jetpack flight
+      if (this.aerialCoinManager && this.aerialCoinManager.isJetpackFlightActive()) {
+        const isLowTunnel = candidate.isTunnel || candidate.obstacles.some((o) => o.type === 'TUNNEL_ARCH');
+        if (isLowTunnel) {
+          continue; // Postpone low tunnel pattern to ensure clear overhead flight corridor
+        }
       }
 
       // Base tier weight (mapping legacy difficulty names)
@@ -411,8 +427,10 @@ export class TrackManager {
       if (!this.aerialCoinManager.isJetpackFlightActive()) {
         this.aerialCoinManager.onJetpackActivated(player);
         this.prepareSafeLandingRunway(player);
-      } else {
+      } else if (this.jetpackRecollectedPending) {
         this.aerialCoinManager.onJetpackRefreshed(player);
+        this.prepareSafeLandingRunway(player);
+        this.jetpackRecollectedPending = false;
       }
     }
 
@@ -446,13 +464,22 @@ export class TrackManager {
           this.cleanStreakCount = 0;
         }
 
+        // Check if flight is active across upcoming chunk
+        const isFlightActive = this.aerialCoinManager.isJetpackFlightActive() || (player && player.powerups.isJetpackActive());
+
         // Environment theme & transition portal selection
         let spawnPortal = false;
         let chunkTheme = this.envManager.getTheme(this.activeEnvironment);
         const selectionPref = this.envManager.getSelectionPreference();
 
         if (selectionPref === 'DYNAMIC') {
-          this.chunksUntilTransition--;
+          // Postpone dynamic underground transition during active open-air flight
+          if (isFlightActive) {
+            this.chunksUntilTransition = Math.max(1, this.chunksUntilTransition);
+          } else {
+            this.chunksUntilTransition--;
+          }
+
           if (this.chunksUntilTransition <= 0) {
             spawnPortal = true;
             this.targetEnvironment = this.envManager.getOtherEnvironment(this.activeEnvironment);
@@ -476,6 +503,11 @@ export class TrackManager {
 
         const encounterDist = Math.abs(this.furthestZ);
         const pattern = this.selectPattern(this.chunkIndex++, player.speed, encounterDist);
+        if (isFlightActive && (pattern.isTunnel || chunkTheme.id === 'UNDERGROUND_METRO')) {
+          chunk.isAerialCorridor = true;
+        } else {
+          chunk.isAerialCorridor = false;
+        }
         chunk.populate(pattern, this.furthestZ, chunkTheme, spawnPortal);
         this.lastSpawnedPattern = pattern;
         this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
@@ -483,6 +515,20 @@ export class TrackManager {
 
       chunk.update(dt, time, player.position.z);
     }
+
+    // 1.1 Determine whether player is currently enclosed inside a low tunnel
+    let isPlayerInEnclosedTunnel = false;
+    for (const chunk of this.chunks) {
+      const chunkStartZ = chunk.chunkZ;
+      const chunkEndZ = chunk.chunkZ - CONSTANTS.CHUNK_LENGTH;
+      if (player.position.z <= chunkStartZ && player.position.z >= chunkEndZ) {
+        if (chunk.isTunnel && !chunk.isAerialCorridor) {
+          isPlayerInEnclosedTunnel = true;
+          break;
+        }
+      }
+    }
+    player.setTunnelEnclosed(isPlayerInEnclosedTunnel);
 
     // 2. Dynamic Ground Height Check (Train Roofs & Ramps)
     this.updateGroundHeight(player, dt);
@@ -710,11 +756,55 @@ export class TrackManager {
     }
   }
 
+  /**
+   * Computes squared distance from point (px,py,pz) to 3D line segment [V, W]
+   */
+  private distToSegmentSquared(
+    px: number, py: number, pz: number,
+    vx: number, vy: number, vz: number,
+    wx: number, wy: number, wz: number
+  ): number {
+    const dx = wx - vx;
+    const dy = wy - vy;
+    const dz = wz - vz;
+    const l2 = dx * dx + dy * dy + dz * dz;
+    if (l2 === 0) {
+      const ex = px - vx;
+      const ey = py - vy;
+      const ez = pz - vz;
+      return ex * ex + ey * ey + ez * ez;
+    }
+    const t = Math.max(0, Math.min(1, ((px - vx) * dx + (py - vy) * dy + (pz - vz) * dz) / l2));
+    const projX = vx + t * dx;
+    const projY = vy + t * dy;
+    const projZ = vz + t * dz;
+    const rx = px - projX;
+    const ry = py - projY;
+    const rz = pz - projZ;
+    return rx * rx + ry * ry + rz * rz;
+  }
+
   private checkCollisions(player: Player, dt: number): void {
     const playerBox = player.collider;
-    // High-speed swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
+    // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
     this.sweptCollectibleBox.copy(playerBox);
-    if (this.previousPlayerZ !== null) {
+    const prevPos = player.previousPosition;
+    if (prevPos) {
+      const halfW = CONSTANTS.PLAYER_WIDTH * 0.5 + 0.45;
+      const halfD = CONSTANTS.PLAYER_DEPTH * 0.5 + 0.45;
+      const height = (player.isSliding ? CONSTANTS.PLAYER_HEIGHT_SLIDE : CONSTANTS.PLAYER_HEIGHT_RUN) + 0.45;
+
+      this.sweptCollectibleBox.min.set(
+        Math.min(playerBox.min.x, prevPos.x - halfW),
+        Math.min(playerBox.min.y, prevPos.y - 0.25),
+        Math.min(playerBox.min.z, prevPos.z - halfD)
+      );
+      this.sweptCollectibleBox.max.set(
+        Math.max(playerBox.max.x, prevPos.x + halfW),
+        Math.max(playerBox.max.y, prevPos.y + height),
+        Math.max(playerBox.max.z, prevPos.z + halfD)
+      );
+    } else if (this.previousPlayerZ !== null) {
       const zDelta = Math.abs(player.position.z - this.previousPlayerZ);
       const maxPhysicalStep = Math.max(1.8, (player.speed || CONSTANTS.INITIAL_SPEED) * dt * 1.5 + 0.5);
       if (zDelta <= maxPhysicalStep) {
@@ -915,9 +1005,22 @@ export class TrackManager {
           col.isMagnetized = false;
         }
 
-        // Collection check: swept volume ensures zero missed coins at high speeds
+        // Collection check: full 3D swept box, 3D trajectory segment test, and proximity
+        const prevChestPos = prevPos ? prevPos.clone() : playerChestPos.clone();
+        if (prevPos) prevChestPos.y += 0.5;
+
+        const distSqToSegment = this.distToSegmentSquared(
+          colWorldPos.x, colWorldPos.y, colWorldPos.z,
+          prevChestPos.x, prevChestPos.y, prevChestPos.z,
+          playerChestPos.x, playerChestPos.y, playerChestPos.z
+        );
+        const pickupRadius = CONSTANTS.COIN_PICKUP_RADIUS || 1.1;
+        const distToCurrent = colWorldPos.distanceTo(playerChestPos);
+
         const isCollected = col.collider.intersectsBox(sweptCollectibleBox) ||
-          (isMagnet && col.isMagnetized && colWorldPos.distanceTo(playerChestPos) <= 1.25);
+          distSqToSegment <= pickupRadius * pickupRadius ||
+          distToCurrent <= pickupRadius ||
+          (isMagnet && col.isMagnetized && distToCurrent <= 1.5);
 
         if (isCollected) {
           col.active = false;
@@ -936,6 +1039,10 @@ export class TrackManager {
             ProgressionManager.getInstance().addKeys(1);
             this.eventBus.emit('KEY_COLLECTED', 1);
           } else {
+            if (col.type === 'JETPACK' && this.aerialCoinManager.isJetpackFlightActive()) {
+              this.aerialCoinManager.onJetpackRefreshed(player);
+              this.prepareSafeLandingRunway(player);
+            }
             this.eventBus.emit(EVENTS.POWERUP_COLLECTED, col.type);
           }
         }

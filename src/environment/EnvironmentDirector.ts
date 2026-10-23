@@ -187,7 +187,8 @@ export class EnvironmentDirector {
       detail,
       seed,
       scheduledLandmark?.landmarkId || null,
-      smallMoment
+      smallMoment,
+      !!chunk.isAerialCorridor
     );
 
     // Track active chunk metadata for diagnostics

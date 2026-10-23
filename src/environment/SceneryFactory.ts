@@ -598,7 +598,8 @@ export class SceneryFactory {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL',
     seed: number = 1337,
     landmark: LandmarkType | null = null,
-    smallMoment: SmallMomentType | null = null
+    smallMoment: SmallMomentType | null = null,
+    isAerialCorridor: boolean = false
   ): void {
     // Clean previous scenery
     this.sceneryPool.clearDecorativeGroup(decorativeGroup);
@@ -610,7 +611,7 @@ export class SceneryFactory {
     if (landmark) {
       this.buildLandmarkEncounter(landmark, decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
     } else if (theme.id === 'UNDERGROUND_METRO' || isTunnel) {
-      this.buildUndergroundMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, worldZ, seed, detail, tunnelPortal);
+      this.buildUndergroundMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, worldZ, seed, detail, tunnelPortal, isAerialCorridor);
     } else if (isTransition) {
       this.buildTransitionPortalScenery(decorativeGroup, roadbedWidth, curbWidth, theme, chunkLength);
     } else if (theme.id === 'HISTORIC_QUARTER') {
@@ -1732,7 +1733,8 @@ export class SceneryFactory {
     worldZ: number,
     seed: number,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    portalType: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE'
+    portalType: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE',
+    isAerialCorridor: boolean = false
   ): void {
     const mats = this.getSharedMaterials();
     const rng = new SeededRandom(seed);
@@ -1750,11 +1752,13 @@ export class SceneryFactory {
     const chunkIdx = Math.round(Math.abs(worldZ / chunkLength));
     const isStationHall = (chunkIdx % 2) === 1;
     
-    // Vault height: Crown at 8.8m (running tunnel) or 9.6m (station hall)
-    // Train roof is 4.35m. Jump apex is 7.61m. Camera follow height is 7.60m.
-    // A crown of 8.8m - 9.6m provides >1.2m headroom and 0 camera clipping!
-    const ceilingH = isStationHall ? 9.6 : 8.8;
-    const wallH = 6.5;
+    // Vault height:
+    // For designated aerial corridors, crown rises to 12.5m (TUNNEL_AERIAL_VAULT_HEIGHT)
+    // providing generous overhead clearance for runner at 9.0m and camera at 11.4m with 0 clipping!
+    const ceilingH = isAerialCorridor
+      ? (CONSTANTS.TUNNEL_AERIAL_VAULT_HEIGHT || 12.5)
+      : (isStationHall ? 9.6 : 8.8);
+    const wallH = isAerialCorridor ? 10.5 : 6.5;
 
     const wallGeo = new THREE.BoxGeometry(wallThick, wallH, chunkLength);
 

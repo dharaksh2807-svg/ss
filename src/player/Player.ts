@@ -98,6 +98,8 @@ export class Player {
   private jetpackDescentTimer: number = 0;
   private jetpackStartY: number = CONSTANTS.PLAYER_BASE_Y;
   private flightAnimTime: number = 0;
+  public isTunnelEnclosed: boolean = false;
+  public isDeferredJetpackTakeoff: boolean = false;
 
   // Hitbox AABB
   public collider: THREE.Box3 = new THREE.Box3();
@@ -411,6 +413,28 @@ export class Player {
     // 3. Vertical Movement & Flight Modes (NORMAL -> TAKEOFF -> CRUISE -> DESCENT -> SAFE_LANDING)
     if (this.powerups.isJetpackActive() || this.jetpackPhase === 'DESCENT') {
       if (this.jetpackPhase === 'NONE') {
+        if (this.isTunnelEnclosed) {
+          // Inside enclosed low tunnel: defer takeoff until exiting tunnel portal
+          this.isDeferredJetpackTakeoff = true;
+          this.powerups.setJetpackPaused(true);
+        } else {
+          this.isDeferredJetpackTakeoff = false;
+          this.powerups.setJetpackPaused(false);
+          this.jetpackPhase = 'TAKEOFF';
+          this.state = 'JETPACK';
+          this.isJumping = false;
+          this.isFastDropping = false;
+          this.isSliding = false;
+          this.jetpackStartY = this.position.y;
+          this.jetpackTakeoffTimer = 0;
+          this.flightAnimTime = 0;
+          this.model.setJetpackVisible(true);
+          this.eventBus.emit(EVENTS.JETPACK_TAKEOFF);
+        }
+      } else if (this.isDeferredJetpackTakeoff && !this.isTunnelEnclosed) {
+        // Exited tunnel portal into open sky! Initiate delayed takeoff now
+        this.isDeferredJetpackTakeoff = false;
+        this.powerups.setJetpackPaused(false);
         this.jetpackPhase = 'TAKEOFF';
         this.state = 'JETPACK';
         this.isJumping = false;
@@ -423,8 +447,11 @@ export class Player {
         this.eventBus.emit(EVENTS.JETPACK_TAKEOFF);
       }
 
-      this.flightAnimTime += dt;
-      const remaining = this.powerups.getJetpackRemaining();
+      if (this.isDeferredJetpackTakeoff) {
+        // Player continues ground locomotion while waiting for tunnel exit
+      } else {
+        this.flightAnimTime += dt;
+        const remaining = this.powerups.getJetpackRemaining();
 
       if (this.jetpackPhase === 'TAKEOFF') {
         this.jetpackTakeoffTimer += dt;
@@ -475,6 +502,7 @@ export class Player {
           }
         }
       }
+    }
     } else {
       // If exiting jetpack state
       if (this.state === 'JETPACK' || this.jetpackPhase !== 'NONE') {
@@ -801,6 +829,32 @@ export class Player {
 
   public getJetpackPhase(): JetpackPhase {
     return this.jetpackPhase;
+  }
+
+  public setJetpackPhase(phase: JetpackPhase): void {
+    this.jetpackPhase = phase;
+  }
+
+  public setTunnelEnclosed(enclosed: boolean): void {
+    this.isTunnelEnclosed = enclosed;
+    if (!enclosed && this.isDeferredJetpackTakeoff) {
+      this.isDeferredJetpackTakeoff = false;
+      this.powerups.setJetpackPaused(false);
+      this.jetpackPhase = 'TAKEOFF';
+      this.state = 'JETPACK';
+      this.isJumping = false;
+      this.isFastDropping = false;
+      this.isSliding = false;
+      this.jetpackStartY = this.position.y;
+      this.jetpackTakeoffTimer = 0;
+      this.flightAnimTime = 0;
+      this.model.setJetpackVisible(true);
+      this.eventBus.emit(EVENTS.JETPACK_TAKEOFF);
+    }
+  }
+
+  public isTakeoffDeferred(): boolean {
+    return this.isDeferredJetpackTakeoff;
   }
 
   public stumble(): void {

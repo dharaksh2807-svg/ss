@@ -364,7 +364,9 @@ assert(player.getJetpackPhase() === 'DESCENT', 'Jetpack enters DESCENT phase as 
 
 // Advance to full expiration and touchdown
 (player.powerups as any).activePowerups.get('JETPACK')!.remaining = 0.05;
-player.update(0.1);
+for (let i = 0; i < 25 && player.getJetpackPhase() !== 'NONE'; i++) {
+  player.update(0.1);
+}
 assert(player.getJetpackPhase() === 'NONE', 'Jetpack flight concluded cleanly');
 assert(player.position.y === CONSTANTS.PLAYER_BASE_Y, 'Player landed safely on track');
 assert(player.powerups.isInvulnerable(), 'Player granted invulnerability grace window on landing');

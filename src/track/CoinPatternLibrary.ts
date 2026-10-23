@@ -158,7 +158,7 @@ export class CoinPatternLibrary {
     const landingSupportY = options.landingSurface === 'TRAIN_ROOF' ? 4.35 : (options.landingSurface === 'GROUND' ? CONSTANTS.PLAYER_BASE_Y : takeoffSupportY);
 
     const deltaY = landingSupportY - takeoffSupportY;
-    // Ballistic airtime: 0.5 * g * T^2 - v0 * T + deltaY = 0
+    // Ballistic airtime to landing surface: 0.5 * g * T^2 - v0 * T + deltaY = 0
     const discriminant = v0 * v0 - 2 * g * deltaY;
     const airTime = discriminant >= 0 ? (v0 + Math.sqrt(discriminant)) / g : (2 * v0) / g;
     const timeToApex = v0 / g;
@@ -167,7 +167,7 @@ export class CoinPatternLibrary {
 
     const takeoffCoinY = options.supportSurface === 'TRAIN_ROOF' ? CONSTANTS.COIN_ROOFTOP_Y : CONSTANTS.COIN_GROUND_Y;
     const landingCoinY = options.landingSurface === 'TRAIN_ROOF' ? CONSTANTS.COIN_ROOFTOP_Y : (options.landingSurface === 'GROUND' ? CONSTANTS.COIN_GROUND_Y : takeoffCoinY);
-    const apexCoinY = takeoffCoinY + Math.min(peakHeightAboveTakeoff, isSuper ? 3.5 : 1.50);
+    const apexCoinY = takeoffCoinY + peakHeightAboveTakeoff;
 
     const hurdleZ = options.hurdleZ || 0;
     const apexZ = hurdleZ;
@@ -209,10 +209,12 @@ export class CoinPatternLibrary {
     });
 
     const isSuper = options.jumpType === 'SUPER_SNEAKERS';
-    const count = options.count || (isSuper ? 6 : 4);
-    const spacing = options.spacing || CONSTANTS.COIN_ARC_SPACING;
-    const arcSpan = (count - 1) * spacing;
-    const startZ = Math.max(0, options.hurdleZ - arcSpan / 2);
+    const count = options.count || (isSuper ? 6 : 5);
+    const arcSpan = physics.horizontalDistance;
+    const spacing = options.spacing || Math.round((arcSpan / Math.max(1, count - 1)) * 100) / 100;
+    const startZ = options.hurdleZ !== undefined
+      ? options.hurdleZ - physics.forwardSpeed * physics.timeToApex
+      : (options.speed || CONSTANTS.INITIAL_SPEED) * 0.3;
 
     return {
       type: 'COIN',
@@ -242,9 +244,9 @@ export class CoinPatternLibrary {
     spacing: number = CONSTANTS.COIN_ARC_SPACING,
     isSuperJump: boolean = false
   ): PatternCollectible {
+    const apexBoost = isSuperJump ? 4.73 : CONSTANTS.JUMP_HEIGHT;
     const arcSpan = (count - 1) * spacing;
     const startZ = Math.max(0, hurdleZ - arcSpan / 2);
-    const apexBoost = isSuperJump ? 2.2 : 1.5;
     return {
       type: 'COIN',
       lane,
@@ -276,7 +278,7 @@ export class CoinPatternLibrary {
       type: 'COIN',
       lane,
       zOffset: Math.round(roofEndZ * 10) / 10,
-      yOffset: CONSTANTS.COIN_ROOFTOP_Y + 0.8,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y + CONSTANTS.JUMP_HEIGHT,
       startYOffset: CONSTANTS.COIN_ROOFTOP_Y,
       endYOffset: CONSTANTS.COIN_GROUND_Y,
       count,
@@ -285,6 +287,52 @@ export class CoinPatternLibrary {
       archetype: 'JUMP_ARC',
       supportSurface: 'TRAIN_ROOF',
       landingSurface: 'GROUND'
+    };
+  }
+
+  /**
+   * Create Ramp Ascent Trail: Ascends smoothly from track level (0.85m) to train roof deck (5.20m)
+   */
+  public static createRampAscent(
+    lane: LaneIndex,
+    rampZ: number,
+    count: number = 4,
+    spacing: number = 2.0
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(rampZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      count,
+      spacing,
+      isRampAscent: true,
+      archetype: 'TRAIN_ROOFTOP'
+    };
+  }
+
+  /**
+   * Create Ramp-Assisted Jump Arc: Launching off top of ramp into elevated ballistic trajectory
+   */
+  public static createRampAssistedJumpArc(
+    lane: LaneIndex,
+    rampTopZ: number,
+    count: number = 5,
+    spacing: number = 2.4
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(rampTopZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y + CONSTANTS.JUMP_HEIGHT,
+      startYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      endYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      count,
+      spacing,
+      isArc: true,
+      archetype: 'JUMP_ARC',
+      supportSurface: 'TRAIN_ROOF',
+      landingSurface: 'TRAIN_ROOF'
     };
   }
 

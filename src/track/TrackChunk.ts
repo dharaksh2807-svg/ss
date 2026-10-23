@@ -25,6 +25,7 @@ export class TrackChunk {
   public currentTheme: EnvironmentTheme = MODERN_METRO_THEME;
   public isTransitionPortal: boolean = false;
   public isTunnel: boolean = false;
+  public isAerialCorridor: boolean = false;
   public tunnelPortal: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE' = 'NONE';
   private playerInTunnel: boolean = false;
 
@@ -1654,7 +1655,7 @@ export class TrackChunk {
         let baseY = colData.yOffset !== undefined ? colData.yOffset : (colData.isSlideGuidance ? CONSTANTS.COIN_SLIDE_Y : CONSTANTS.COIN_GROUND_Y);
 
         if (colData.isArc && count > 1) {
-          // Ballistic parabola with support surface adaptability (ground, rooftop, super sneakers)
+          // Ballistic trajectory with support surface adaptability (ground, rooftop, super sneakers)
           const startY = colData.startYOffset !== undefined 
             ? colData.startYOffset 
             : (colData.supportSurface === 'TRAIN_ROOF' || (colData.yOffset && colData.yOffset > 4.0) ? CONSTANTS.COIN_ROOFTOP_Y : CONSTANTS.COIN_GROUND_Y);
@@ -1662,16 +1663,29 @@ export class TrackChunk {
             ? colData.endYOffset 
             : (colData.landingSurface === 'TRAIN_ROOF' ? CONSTANTS.COIN_ROOFTOP_Y : (colData.landingSurface === 'GROUND' ? CONSTANTS.COIN_GROUND_Y : startY));
           
-          let peakBoost: number;
-          if (colData.yOffset !== undefined) {
-            peakBoost = colData.yOffset - Math.max(startY, endY);
-          } else if (colData.isSuperJump || colData.jumpType === 'SUPER_SNEAKERS') {
-            peakBoost = 3.20;
+          if (colData.yOffset !== undefined && colData.yOffset <= 2.65 && !colData.isSuperJump && colData.jumpType !== 'SUPER_SNEAKERS' && colData.supportSurface !== 'TRAIN_ROOF') {
+            // Backward-compatibility for patterns with legacy peak annotation
+            const peakBoost = colData.yOffset - Math.max(startY, endY);
+            const baseline = startY + t * (endY - startY);
+            baseY = baseline + Math.max(0, peakBoost) * 4.0 * t * (1.0 - t);
           } else {
-            peakBoost = 1.50;
+            // Physically calibrated ballistic flight
+            const isSuper = colData.isSuperJump || colData.jumpType === 'SUPER_SNEAKERS';
+            const v0 = CONSTANTS.JUMP_INITIAL_VELOCITY * (isSuper ? CONSTANTS.SUPER_JUMP_MULTIPLIER : 1.0);
+            const g = CONSTANTS.GRAVITY;
+            const startSupportY = colData.supportSurface === 'TRAIN_ROOF' ? 4.35 : CONSTANTS.PLAYER_BASE_Y;
+            const endSupportY = colData.landingSurface === 'TRAIN_ROOF' ? 4.35 : (colData.landingSurface === 'GROUND' ? CONSTANTS.PLAYER_BASE_Y : startSupportY);
+            const deltaY = endSupportY - startSupportY;
+            const disc = v0 * v0 - 2 * g * deltaY;
+            const totalAirTime = disc >= 0 ? (v0 + Math.sqrt(disc)) / g : (2 * v0) / g;
+            const simT = t * totalAirTime;
+
+            const ballisticY = v0 * simT - 0.5 * g * simT * simT;
+            const startOffset = startY - startSupportY;
+            const endOffset = endY - endSupportY;
+            const curOffset = startOffset + t * (endOffset - startOffset);
+            baseY = startSupportY + ballisticY + curOffset;
           }
-          const baseline = startY + t * (endY - startY);
-          baseY = baseline + Math.max(0, peakBoost) * 4.0 * t * (1.0 - t);
         } else if (colData.isRampAscent && count > 1) {
           // Smooth ascending coin ramp: starts at 0.85m ground height and ascends continuously up the incline to 5.20m roof height
           const groundY = CONSTANTS.COIN_GROUND_Y;

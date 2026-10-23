@@ -14,6 +14,7 @@ export interface ActivePowerup {
 export class PowerupManager {
   private activePowerups: Map<PowerupType, ActivePowerup> = new Map();
   private invulnerabilityTimer: number = 0;
+  private isJetpackPaused: boolean = false;
   private eventBus = EventBus.getInstance();
   private upgradeManager: UpgradeManager;
 
@@ -65,6 +66,10 @@ export class PowerupManager {
 
     // 2. Active powerups countdown
     for (const [type, powerup] of this.activePowerups.entries()) {
+      if (type === 'JETPACK' && this.isJetpackPaused) {
+        // Paused during deferred takeoff inside enclosed low tunnels to preserve duration
+        continue;
+      }
       powerup.remaining -= dt;
 
       // Expiration warning when 3 seconds remaining
@@ -108,6 +113,14 @@ export class PowerupManager {
   public getJetpackDuration(): number {
     const jp = this.activePowerups.get('JETPACK');
     return jp ? jp.duration : 1;
+  }
+
+  public setJetpackPaused(paused: boolean): void {
+    this.isJetpackPaused = paused;
+  }
+
+  public isJetpackTimerPaused(): boolean {
+    return this.isJetpackPaused;
   }
 
   // --- Super Sneakers ---

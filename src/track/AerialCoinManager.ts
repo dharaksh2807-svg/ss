@@ -32,6 +32,7 @@ export class AerialCoinManager {
   private postLandingEndZ: number = 0;
   private landingLane: LaneIndex = 0;
   private flightStartLane: LaneIndex = 0;
+  private lastPlannedSpeed: number = CONSTANTS.INITIAL_SPEED;
 
   constructor(
     private scene: THREE.Scene,
@@ -95,6 +96,7 @@ export class AerialCoinManager {
     this.landingZ = this.flightStartPlayerZ - totalFlightDist;
     this.descentStartZ = this.landingZ + descentDist;
     this.postLandingEndZ = this.landingZ - postLandingRunway;
+    this.lastPlannedSpeed = this.flightSpeed;
 
     // Start spawning coins immediately ahead along takeoff climb arc
     const spacing = CONSTANTS.JETPACK_COIN_SPACING || 2.2;
@@ -115,6 +117,7 @@ export class AerialCoinManager {
     this.landingZ = player.position.z - totalRemainingDist;
     this.descentStartZ = this.landingZ + descentDist;
     this.postLandingEndZ = this.landingZ - postLandingRunway;
+    this.lastPlannedSpeed = currentSpeed;
   }
 
   public getLandingZ(): number {
@@ -196,13 +199,16 @@ export class AerialCoinManager {
         this.landingLane = player.currentLane;
       }
 
-      // Dynamically refine landingZ during cruise if runner speed changes
+      // Dynamically refine landingZ during cruise only if runner speed changes significantly
       if (player.getJetpackPhase() === 'CRUISE' && remaining > (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8) + 0.5) {
-        const descentDist = currentSpeed * (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8);
-        const projectedLandingZ = player.position.z - currentSpeed * remaining;
-        this.landingZ = projectedLandingZ;
-        this.descentStartZ = this.landingZ + descentDist;
-        this.postLandingEndZ = this.landingZ - (CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 25.0);
+        if (Math.abs(currentSpeed - this.lastPlannedSpeed) > 1.5) {
+          this.lastPlannedSpeed = currentSpeed;
+          const descentDist = currentSpeed * (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8);
+          const projectedLandingZ = player.position.z - currentSpeed * remaining;
+          this.landingZ = projectedLandingZ;
+          this.descentStartZ = this.landingZ + descentDist;
+          this.postLandingEndZ = this.landingZ - (CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 25.0);
+        }
       }
 
       const aheadHorizon = 120.0;

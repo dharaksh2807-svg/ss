@@ -304,7 +304,7 @@ export class ReachabilityValidator {
             ? col.startYOffset 
             : (col.yOffset && col.yOffset > 4.0 ? CONSTANTS.COIN_ROOFTOP_Y : CONSTANTS.COIN_GROUND_Y);
           const endY = col.endYOffset !== undefined ? col.endYOffset : startY;
-          const peak = col.yOffset !== undefined ? col.yOffset : (startY + 1.50);
+          const peak = col.yOffset !== undefined ? col.yOffset : (startY + CONSTANTS.JUMP_HEIGHT);
           const peakBoost = Math.max(0, peak - Math.max(startY, endY));
           const baseline = startY + t * (endY - startY);
           y = baseline + peakBoost * 4.0 * t * (1.0 - t);
