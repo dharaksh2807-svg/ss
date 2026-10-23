@@ -536,4 +536,313 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Weathered Victorian Brick Texture with soot staining and distressed mortar
+   */
+  public static getWeatheredBrickTexture(): THREE.Texture {
+    return this.getOrCreate('brick_weathered_victorian', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Aged dark lime mortar base
+      ctx.fillStyle = '#7a7066';
+      ctx.fillRect(0, 0, w, h);
+
+      const rows = 16;
+      const rowHeight = h / rows;
+      const brickWidth = 32;
+      const brickColors = ['#8d3d32', '#7b2f27', '#63251e', '#9e463b', '#48201a', '#5c322b'];
+
+      for (let r = 0; r < rows; r++) {
+        const isOffset = r % 2 === 1;
+        const startX = isOffset ? -brickWidth / 2 : 0;
+        const y = r * rowHeight + 1.5;
+        const bh = rowHeight - 3;
+
+        for (let x = startX; x < w + brickWidth; x += brickWidth) {
+          const col = brickColors[Math.floor(Math.random() * brickColors.length)];
+          ctx.fillStyle = col;
+          ctx.fillRect(x + 1.5, y, brickWidth - 3, bh);
+
+          // Weathered soot / grime mottling
+          if (Math.random() > 0.4) {
+            ctx.fillStyle = 'rgba(25, 20, 20, 0.28)';
+            ctx.fillRect(x + 1.5, y + Math.random() * (bh - 4), brickWidth - 3, 4);
+          }
+
+          // Subtle top highlight
+          ctx.fillStyle = 'rgba(255, 240, 220, 0.08)';
+          ctx.fillRect(x + 1.5, y, brickWidth - 3, 1.5);
+        }
+      }
+
+      // Vertical soot dripping streaks
+      for (let s = 0; s < 12; s++) {
+        const sx = Math.random() * w;
+        const sLen = 40 + Math.random() * 80;
+        const grad = ctx.createLinearGradient(sx, 0, sx, sLen);
+        grad.addColorStop(0, 'rgba(20, 15, 15, 0.35)');
+        grad.addColorStop(1, 'rgba(20, 15, 15, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(sx, 0, 4 + Math.random() * 6, sLen);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 4);
+      return tex;
+    });
+  }
+
+  /**
+   * Heavy Ashlar Stone Masonry Texture for Historic Viaduct Arches and Piers
+   */
+  public static getStoneMasonryTexture(): THREE.Texture {
+    return this.getOrCreate('stone_masonry_ashlar', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark joint mortar
+      ctx.fillStyle = '#403833';
+      ctx.fillRect(0, 0, size, size);
+
+      const rows = 8;
+      const rowHeight = size / rows;
+      const blockWidth = 64;
+      const stoneColors = ['#8c7b70', '#9c8c80', '#7b6c62', '#a8988c', '#6c5d54'];
+
+      for (let r = 0; r < rows; r++) {
+        const isOffset = r % 2 === 1;
+        const startX = isOffset ? -blockWidth / 2 : 0;
+        const y = r * rowHeight + 2;
+        const bh = rowHeight - 4;
+
+        for (let x = startX; x < size + blockWidth; x += blockWidth) {
+          const col = stoneColors[Math.floor(Math.random() * stoneColors.length)];
+          ctx.fillStyle = col;
+          ctx.fillRect(x + 2, y, blockWidth - 4, bh);
+
+          // Chiselled stone grain texture
+          for (let g = 0; g < 15; g++) {
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.1)';
+            const gx = x + 4 + Math.random() * (blockWidth - 12);
+            const gy = y + 2 + Math.random() * (bh - 6);
+            ctx.fillRect(gx, gy, 8 + Math.random() * 12, 1.5);
+          }
+
+          // Bevelled ashlar edge highlights
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+          ctx.fillRect(x + 2, y, blockWidth - 4, 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+          ctx.fillRect(x + 2, y + bh - 2, blockWidth - 4, 2);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(3, 3);
+      return tex;
+    });
+  }
+
+  /**
+   * Cobblestone Street Paving Texture
+   */
+  public static getCobblestoneTexture(): THREE.Texture {
+    return this.getOrCreate('cobblestone_street', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark earth mortar
+      ctx.fillStyle = '#3a312a';
+      ctx.fillRect(0, 0, size, size);
+
+      const rows = 16;
+      const rowH = size / rows;
+      const cobW = 20;
+      const cobColors = ['#5e544c', '#6e635a', '#4e453d', '#786d63'];
+
+      for (let r = 0; r < rows; r++) {
+        const isOffset = r % 2 === 1;
+        const startX = isOffset ? -cobW / 2 : 0;
+        const y = r * rowH + 1.5;
+        const ch = rowH - 3;
+
+        for (let x = startX; x < size + cobW; x += cobW) {
+          ctx.fillStyle = cobColors[Math.floor(Math.random() * cobColors.length)];
+          ctx.beginPath();
+          if (typeof (ctx as any).roundRect === 'function') {
+            (ctx as any).roundRect(x + 1.5, y, cobW - 3, ch, 3);
+          } else {
+            ctx.rect(x + 1.5, y, cobW - 3, ch);
+          }
+          ctx.fill();
+
+          // Smooth dome highlight
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+          ctx.beginPath();
+          ctx.ellipse(x + cobW * 0.5, y + 2.5, 4, 1.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 4);
+      return tex;
+    });
+  }
+
+  /**
+   * Oxidized Copper Verdigris Green Patina Texture for Mansard Roofs & Domes
+   */
+  public static getCopperPatinaTexture(): THREE.Texture {
+    return this.getOrCreate('copper_patina', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Rich verdigris turquoise base
+      ctx.fillStyle = '#489f87';
+      ctx.fillRect(0, 0, size, size);
+
+      // Organic oxidation mottling
+      const patinaTones = ['#388470', '#5abfa4', '#2d6a5a', '#6fcdb3'];
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 4 + Math.random() * 12;
+        ctx.fillStyle = patinaTones[Math.floor(Math.random() * patinaTones.length)];
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Standing seam roof lines
+      const seams = 8;
+      const seamW = size / seams;
+      for (let s = 0; s < seams; s++) {
+        const sx = s * seamW;
+        ctx.fillStyle = '#26594b';
+        ctx.fillRect(sx, 0, 2.5, size);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.fillRect(sx + 2.5, 0, 1.5, size);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 6);
+      return tex;
+    });
+  }
+
+  /**
+   * Historic Enameled Railway Station Sign
+   */
+  public static getHistoricSignTexture(stationName: string): THREE.Texture {
+    return this.getOrCreate(`historic_sign_${stationName}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep vintage British railway maroon / oxford blue
+      ctx.fillStyle = '#1c2833';
+      ctx.fillRect(0, 0, w, h);
+
+      // Ornate brass border
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Classical serif typography
+      ctx.fillStyle = '#fdfefe';
+      ctx.font = 'bold 38px "Times New Roman", Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(stationName.toUpperCase(), w / 2, h / 2 - 4);
+
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 16px "Times New Roman", Georgia, serif';
+      ctx.fillText('EST. 1888 • METROPOLITAN LINE', w / 2, h / 2 + 28);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    });
+  }
+
+  /**
+   * Modern Digital LED / Acrylic Transit Sign
+   */
+  public static getModernMetroSignTexture(stationName: string, line: string = 'METRO BLUE'): THREE.Texture {
+    return this.getOrCreate(`modern_sign_${stationName}_${line}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark obsidian acrylic glass
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Vibrant cyan top strip
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(0, 0, w, 10);
+
+      // Line badge pill
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.roundRect(24, 26, 110, 32, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(line, 79, 42);
+
+      // Station Name in modern crisp sans-serif
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(stationName.toUpperCase(), 154, 44);
+
+      // Next train status indicator
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(36, 88, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('TRACK 1 • ON TIME • EXPRESS SERVICE', 54, 90);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    });
+  }
 }
+

@@ -11,6 +11,7 @@ import { DifficultyController } from './DifficultyController';
 import { PacingMetrics } from './PacingMetrics';
 import { AerialCoinManager } from './AerialCoinManager';
 import { GraphicsManager, QualityConfig } from '../scene/GraphicsManager';
+import { EnvironmentManager, EnvironmentId, EnvironmentTheme } from '../environment/EnvironmentConfig';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -19,6 +20,11 @@ export class TrackManager {
   private obstacleFactory: ObstacleFactory;
   private collectibleFactory: CollectibleFactory;
   private eventBus = EventBus.getInstance();
+  private envManager = EnvironmentManager.getInstance();
+
+  private activeEnvironment: EnvironmentId = 'MODERN_METRO';
+  private targetEnvironment: EnvironmentId = 'MODERN_METRO';
+  private chunksUntilTransition: number = 10;
 
   private furthestZ: number = 0; // Leading edge of the track
   private chunkIndex: number = 0;
@@ -109,6 +115,11 @@ export class TrackManager {
       this.aerialCoinManager.reset();
     }
 
+    this.activeEnvironment = this.envManager.getStartingEnvironment();
+    this.targetEnvironment = this.activeEnvironment;
+    this.chunksUntilTransition = 10;
+    const initialTheme = this.envManager.getTheme(this.activeEnvironment);
+
     for (const vfx of this.pickupVfxPool) {
       vfx.active = false;
       vfx.group.visible = false;
@@ -122,7 +133,7 @@ export class TrackManager {
         CONSTANTS.INITIAL_SPEED + (encounterDist / 300.0) * (24.5 - CONSTANTS.INITIAL_SPEED)
       );
       const pattern = this.selectPattern(i, expectedSpeed, encounterDist);
-      chunk.populate(pattern, this.furthestZ);
+      chunk.populate(pattern, this.furthestZ, initialTheme, false);
       this.lastSpawnedPattern = pattern;
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       this.chunkIndex++;
@@ -246,9 +257,37 @@ export class TrackManager {
           this.cleanStreakCount = 0;
         }
 
+        // Environment theme & transition portal selection
+        let spawnPortal = false;
+        let chunkTheme = this.envManager.getTheme(this.activeEnvironment);
+        const selectionPref = this.envManager.getSelectionPreference();
+
+        if (selectionPref === 'DYNAMIC') {
+          this.chunksUntilTransition--;
+          if (this.chunksUntilTransition <= 0) {
+            spawnPortal = true;
+            this.targetEnvironment = this.envManager.getOtherEnvironment(this.activeEnvironment);
+            chunkTheme = this.envManager.getTheme(this.targetEnvironment);
+            this.chunksUntilTransition = 10;
+            this.eventBus.emit('ENVIRONMENT_TRANSITION_APPROACHING', {
+              from: this.activeEnvironment,
+              to: this.targetEnvironment,
+              portalZ: this.furthestZ
+            });
+          } else if (this.activeEnvironment !== this.targetEnvironment) {
+            this.activeEnvironment = this.targetEnvironment;
+            chunkTheme = this.envManager.getTheme(this.activeEnvironment);
+            this.eventBus.emit('ENVIRONMENT_CHANGED', this.activeEnvironment);
+          }
+        } else {
+          this.activeEnvironment = selectionPref as EnvironmentId;
+          this.targetEnvironment = this.activeEnvironment;
+          chunkTheme = this.envManager.getTheme(this.activeEnvironment);
+        }
+
         const encounterDist = Math.abs(this.furthestZ);
         const pattern = this.selectPattern(this.chunkIndex++, player.speed, encounterDist);
-        chunk.populate(pattern, this.furthestZ);
+        chunk.populate(pattern, this.furthestZ, chunkTheme, spawnPortal);
         this.lastSpawnedPattern = pattern;
         this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       }
@@ -802,4 +841,24 @@ export class TrackManager {
       }
     }
   }
+
+  public getActiveEnvironment(): EnvironmentId {
+    return this.activeEnvironment;
+  }
+
+  public setEnvironment(envId: EnvironmentId): void {
+    this.activeEnvironment = envId;
+    this.targetEnvironment = envId;
+    this.envManager.savePreference(envId);
+    const theme = this.envManager.getTheme(envId);
+    for (const chunk of this.chunks) {
+      chunk.buildEnvironmentScenery(theme, false);
+    }
+    this.eventBus.emit('ENVIRONMENT_CHANGED', envId);
+  }
+
+  public getChunksUntilTransition(): number {
+    return this.chunksUntilTransition;
+  }
 }
+

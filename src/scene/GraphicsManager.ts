@@ -330,4 +330,8 @@ export class GraphicsManager {
       resolvedQuality: this.resolvedQuality
     };
   }
+
+  public getAverageFPS(): number {
+    return Math.round(this.lastFps) || 60;
+  }
 }

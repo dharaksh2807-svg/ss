@@ -31,6 +31,8 @@ import { PracticeModal } from '../ui/PracticeModal';
 import { DevTestArena } from '../debug/DevTestArena';
 import { PracticeModuleId } from '../practice/PracticeTypes';
 import { GraphicsManager } from '../scene/GraphicsManager';
+import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
+import { EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -58,6 +60,7 @@ export class Game {
   private hoverboardSelectModal: HoverboardSelectModal;
   private profileModal: ProfileModal;
   private dailyRewardModal: DailyRewardModal;
+  private environmentSelectModal: EnvironmentSelectModal;
   private practiceController: PracticeController;
   private practiceModal: PracticeModal;
   private devTestArena: DevTestArena;
@@ -112,6 +115,7 @@ export class Game {
     this.hoverboardSelectModal = new HoverboardSelectModal();
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
+    this.environmentSelectModal = new EnvironmentSelectModal();
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
@@ -250,6 +254,37 @@ export class Game {
     bus.on(EVENTS.CRASH, () => {
       this.handleGameOver('CRASH');
     });
+
+    // Environment District & Transitions
+    bus.on('ENVIRONMENT_PREFERENCE_CHANGED', (pref: string) => {
+      if (this.lifecycleState === 'MENU') {
+        if (pref === 'HISTORIC_QUARTER') {
+          this.trackManager.setEnvironment('HISTORIC_QUARTER');
+          this.worldScene.applyEnvironment(HISTORIC_QUARTER_THEME);
+          this.soundManager.setEnvironmentAmbience('HISTORIC_QUARTER');
+        } else if (pref === 'MODERN_METRO') {
+          this.trackManager.setEnvironment('MODERN_METRO');
+          this.worldScene.applyEnvironment(MODERN_METRO_THEME);
+          this.soundManager.setEnvironmentAmbience('MODERN_METRO');
+        } else {
+          const initialTheme = EnvironmentManager.getInstance().getTheme();
+          this.trackManager.setEnvironment(initialTheme.id);
+          this.worldScene.applyEnvironment(initialTheme);
+          this.soundManager.setEnvironmentAmbience(initialTheme.id);
+        }
+      }
+    });
+
+    bus.on('ENVIRONMENT_TRANSITION_APPROACHING', () => {
+      this.soundManager.playEnvironmentTransition();
+    });
+
+    bus.on('ENVIRONMENT_CHANGED', (envId: string, targetTheme: any) => {
+      if (targetTheme) {
+        this.worldScene.startAtmosphericTransition(targetTheme, 3.0);
+      }
+      this.soundManager.setEnvironmentAmbience(envId);
+    });
   }
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
@@ -266,6 +301,10 @@ export class Game {
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
     this.trackManager.reset();
+    const startEnvId = this.trackManager.getActiveEnvironment();
+    const startTheme = EnvironmentManager.getInstance().getTheme(startEnvId);
+    this.worldScene.applyEnvironment(startTheme);
+    this.soundManager.setEnvironmentAmbience(startEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
     this.cameraController.reset(this.player.position);
@@ -292,6 +331,7 @@ export class Game {
     this.hoverboardSelectModal.hide(false);
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.environmentSelectModal.hide();
     this.practiceModal.hide(false);
     this.practiceController.exit();
 
@@ -350,11 +390,16 @@ export class Game {
     this.hoverboardSelectModal.hide();
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.environmentSelectModal.hide();
     this.practiceModal.hide();
     this.practiceController.exit();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
+    const menuEnvId = this.trackManager.getActiveEnvironment();
+    const menuTheme = EnvironmentManager.getInstance().getTheme(menuEnvId);
+    this.worldScene.applyEnvironment(menuTheme);
+    this.soundManager.setEnvironmentAmbience(menuEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
     this.openingSequence.skip();
@@ -602,7 +647,8 @@ export class Game {
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();
 
-    // Update adaptive graphics profiling and ground contact shadow
+    // Update adaptive graphics profiling, atmospheric transitions, and ground contact shadow
+    this.worldScene.updateAtmosphere(effectiveDt);
     GraphicsManager.getInstance().update(effectiveDt, this.lifecycleState === 'PLAYING');
     this.worldScene.updatePlayerContactShadow(
       this.player.position.x,

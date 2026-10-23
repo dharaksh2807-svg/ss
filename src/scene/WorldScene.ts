@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { GraphicsManager, QualityConfig, GraphicsPreset, ResolvedQuality } from './GraphicsManager';
 import { EventBus } from '../core/EventBus';
+import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -12,14 +13,29 @@ export class WorldScene {
   public skyMesh: THREE.Mesh;
   public cloudsGroup: THREE.Group;
   public skylineGroup: THREE.Group;
+  public modernSkyline: THREE.Group | null = null;
+  public historicSkyline: THREE.Group | null = null;
+  public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   private currentConfig: QualityConfig;
 
+  // Environment and smooth atmospheric transition states
+  public currentTheme: EnvironmentTheme = MODERN_METRO_THEME;
+  public targetTheme: EnvironmentTheme = MODERN_METRO_THEME;
+  public prevTheme: EnvironmentTheme | null = null;
+  public transitionProgress: number = 1.0;
+  private transitionSpeed: number = 0.5; // Smooth 2s transition
+
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(CONSTANTS.COLORS.FOG);
+    const envManager = EnvironmentManager.getInstance();
+    const initialEnvId = envManager.getStartingEnvironment();
+    this.currentTheme = envManager.getTheme(initialEnvId);
+    this.targetTheme = this.currentTheme;
+
+    this.scene.background = new THREE.Color(this.currentTheme.fog.color);
     // Soft atmospheric distance haze
-    this.scene.fog = new THREE.FogExp2(CONSTANTS.COLORS.FOG, 0.0042);
+    this.scene.fog = new THREE.FogExp2(this.currentTheme.fog.color, this.currentTheme.fog.density);
 
     const graphics = GraphicsManager.getInstance();
     this.currentConfig = graphics.getActiveConfig();
@@ -37,14 +53,24 @@ export class WorldScene {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
-    // 1. Balanced Daylight Lighting Setup
-    // Bright sky hemisphere fill (sky: cyan blue, ground: urban slate)
-    this.hemiLight = new THREE.HemisphereLight(0xb3e5fc, 0x455a64, 1.15);
+    // 1. Balanced Lighting Setup initialized to active theme
+    this.hemiLight = new THREE.HemisphereLight(
+      this.currentTheme.hemi.sky,
+      this.currentTheme.hemi.ground,
+      this.currentTheme.hemi.intensity
+    );
     this.scene.add(this.hemiLight);
 
-    // Warm golden sunlight from 45 degree angle
-    this.sunLight = new THREE.DirectionalLight(0xfffaea, 1.4);
-    this.sunLight.position.set(24, 42, 18);
+    // Directional sunlight
+    this.sunLight = new THREE.DirectionalLight(
+      this.currentTheme.sun.color,
+      this.currentTheme.sun.intensity
+    );
+    this.sunLight.position.set(
+      this.currentTheme.sun.position.x,
+      this.currentTheme.sun.position.y,
+      this.currentTheme.sun.position.z
+    );
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
@@ -151,8 +177,8 @@ export class WorldScene {
   private createSkyDome(): THREE.Mesh {
     const geo = new THREE.SphereGeometry(450, 32, 20);
     const colors: number[] = [];
-    const topColor = new THREE.Color(CONSTANTS.COLORS.SKY_TOP);
-    const bottomColor = new THREE.Color(CONSTANTS.COLORS.SKY_BOTTOM);
+    const topColor = new THREE.Color(this.currentTheme.sky.top);
+    const bottomColor = new THREE.Color(this.currentTheme.sky.bottom);
 
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
@@ -171,6 +197,21 @@ export class WorldScene {
     });
 
     return new THREE.Mesh(geo, mat);
+  }
+
+  public updateSkyDomeColors(topColor: THREE.Color, bottomColor: THREE.Color): void {
+    if (!this.skyMesh) return;
+    const geo = this.skyMesh.geometry as THREE.BufferGeometry;
+    const colorAttr = geo.getAttribute('color') as THREE.BufferAttribute;
+    if (!colorAttr) return;
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const t = Math.max(0, Math.min(1, (y + 40) / 400));
+      const c = bottomColor.clone().lerp(topColor, Math.pow(t, 0.8));
+      colorAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+    colorAttr.needsUpdate = true;
   }
 
   /**
@@ -223,38 +264,159 @@ export class WorldScene {
   }
 
   /**
-   * Creates distant hazy skyline silhouette towers along horizon
+   * Creates distant hazy skyline silhouettes for both Modern Metro and Historic Quarter
    */
   private createDistantSkyline(): THREE.Group {
     const group = new THREE.Group();
-    const skylineMat = new THREE.MeshBasicMaterial({
-      color: 0x90caf9,
+    this.skylineMaterial = new THREE.MeshBasicMaterial({
+      color: this.currentTheme.skyline.color,
       transparent: true,
-      opacity: 0.75,
+      opacity: this.currentTheme.skyline.opacity,
       fog: false
     });
 
-    // Ring of stylized skyscraper silhouettes in the far distance
     const towerGeo = new THREE.BoxGeometry(1, 1, 1);
+
+    // 1. Ring of Modern Skyscraper Silhouettes
+    this.modernSkyline = new THREE.Group();
     for (let i = 0; i < 28; i++) {
       const angle = (i / 28) * Math.PI * 2;
-      // Don't obstruct direct forward view
       const dist = 320;
       const h = 40 + Math.random() * 80;
       const w = 15 + Math.random() * 25;
       const d = 15 + Math.random() * 25;
 
-      const tower = new THREE.Mesh(towerGeo, skylineMat);
+      const tower = new THREE.Mesh(towerGeo, this.skylineMaterial);
       tower.scale.set(w, h, d);
       tower.position.set(
         Math.cos(angle) * dist,
         h * 0.5 - 10,
         Math.sin(angle) * dist
       );
-      group.add(tower);
+      this.modernSkyline.add(tower);
     }
+    group.add(this.modernSkyline);
+
+    // 2. Ring of Historic Victorian Silhouettes (Spires, Clocktowers, Mansard Roofs)
+    this.historicSkyline = new THREE.Group();
+    for (let i = 0; i < 28; i++) {
+      const angle = (i / 28) * Math.PI * 2;
+      const dist = 320;
+      const h = 25 + Math.random() * 45;
+      const w = 18 + Math.random() * 18;
+      const d = 15 + Math.random() * 18;
+
+      const bGroup = new THREE.Group();
+      bGroup.position.set(
+        Math.cos(angle) * dist,
+        -10,
+        Math.sin(angle) * dist
+      );
+
+      // Base masonry building
+      const base = new THREE.Mesh(towerGeo, this.skylineMaterial);
+      base.scale.set(w, h, d);
+      base.position.y = h * 0.5;
+      bGroup.add(base);
+
+      if (i % 2 === 0) {
+        // Pointed church spire
+        const spireGeo = new THREE.ConeGeometry(w * 0.28, h * 0.55, 6);
+        const spire = new THREE.Mesh(spireGeo, this.skylineMaterial);
+        spire.position.y = h + h * 0.27;
+        bGroup.add(spire);
+      } else {
+        // Clocktower gable or dual chimneys
+        const gableGeo = new THREE.BoxGeometry(w * 0.45, h * 0.35, d * 0.45);
+        const gable = new THREE.Mesh(gableGeo, this.skylineMaterial);
+        gable.position.y = h + h * 0.17;
+        bGroup.add(gable);
+      }
+
+      this.historicSkyline.add(bGroup);
+    }
+    group.add(this.historicSkyline);
+
+    this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO';
+    this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
 
     return group;
+  }
+
+  public applyEnvironment(
+    targetTheme: EnvironmentTheme,
+    blendFactor: number = 1.0,
+    prevTheme?: EnvironmentTheme
+  ): void {
+    const t = Math.max(0, Math.min(1, blendFactor));
+    const base = prevTheme || this.currentTheme || targetTheme;
+
+    // 1. Fog & Background Color
+    const fogColor = EnvironmentManager.lerpColor(base.fog.color, targetTheme.fog.color, t);
+    this.scene.background = fogColor;
+    if (this.scene.fog && (this.scene.fog as THREE.FogExp2).isFogExp2) {
+      this.scene.fog.color.copy(fogColor);
+      (this.scene.fog as THREE.FogExp2).density = THREE.MathUtils.lerp(base.fog.density, targetTheme.fog.density, t);
+    }
+
+    // 2. Sun Directional Light
+    const sunColor = EnvironmentManager.lerpColor(base.sun.color, targetTheme.sun.color, t);
+    this.sunLight.color.copy(sunColor);
+    this.sunLight.intensity = THREE.MathUtils.lerp(base.sun.intensity, targetTheme.sun.intensity, t);
+
+    // 3. Fill Directional Light
+    const fillColor = EnvironmentManager.lerpColor(base.fill.color, targetTheme.fill.color, t);
+    this.fillLight.color.copy(fillColor);
+    this.fillLight.intensity = THREE.MathUtils.lerp(base.fill.intensity, targetTheme.fill.intensity, t);
+
+    // 4. Hemisphere Light
+    const hemiSky = EnvironmentManager.lerpColor(base.hemi.sky, targetTheme.hemi.sky, t);
+    const hemiGround = EnvironmentManager.lerpColor(base.hemi.ground, targetTheme.hemi.ground, t);
+    this.hemiLight.color.copy(hemiSky);
+    this.hemiLight.groundColor.copy(hemiGround);
+    this.hemiLight.intensity = THREE.MathUtils.lerp(base.hemi.intensity, targetTheme.hemi.intensity, t);
+
+    // 5. Sky Dome Vertex Colors
+    const topColor = EnvironmentManager.lerpColor(base.sky.top, targetTheme.sky.top, t);
+    const bottomColor = EnvironmentManager.lerpColor(base.sky.bottom, targetTheme.sky.bottom, t);
+    this.updateSkyDomeColors(topColor, bottomColor);
+
+    // 6. Skyline Silhouettes
+    if (this.skylineMaterial) {
+      const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
+      this.skylineMaterial.color.copy(skylineColor);
+      this.skylineMaterial.opacity = THREE.MathUtils.lerp(base.skyline.opacity, targetTheme.skyline.opacity, t);
+    }
+
+    if (this.modernSkyline && this.historicSkyline) {
+      if (t < 0.5) {
+        this.modernSkyline.visible = base.id === 'MODERN_METRO';
+        this.historicSkyline.visible = base.id === 'HISTORIC_QUARTER';
+      } else {
+        this.modernSkyline.visible = targetTheme.id === 'MODERN_METRO';
+        this.historicSkyline.visible = targetTheme.id === 'HISTORIC_QUARTER';
+      }
+    }
+
+    if (t >= 0.999) {
+      this.currentTheme = targetTheme;
+      this.prevTheme = null;
+    }
+  }
+
+  public startAtmosphericTransition(targetTheme: EnvironmentTheme, durationSeconds: number = 2.0): void {
+    if (this.currentTheme.id === targetTheme.id && this.transitionProgress >= 1.0) return;
+    this.prevTheme = this.currentTheme;
+    this.targetTheme = targetTheme;
+    this.transitionProgress = 0.0;
+    this.transitionSpeed = durationSeconds > 0 ? 1.0 / durationSeconds : 10.0;
+  }
+
+  public updateAtmosphere(dt: number): void {
+    if (this.transitionProgress < 1.0) {
+      this.transitionProgress = Math.min(1.0, this.transitionProgress + dt * this.transitionSpeed);
+      this.applyEnvironment(this.targetTheme, this.transitionProgress, this.prevTheme || this.currentTheme);
+    }
   }
 
   public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED): void {

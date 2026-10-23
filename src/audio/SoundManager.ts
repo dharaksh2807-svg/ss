@@ -80,7 +80,9 @@ export class SoundManager {
 
   // Environmental Ambient Train Rumble
   private trainRumbleOsc: OscillatorNode | null = null;
+  private trainRumbleFilter: BiquadFilterNode | null = null;
   private trainRumbleGain: GainNode | null = null;
+  private activeEnvironmentId: string = 'MODERN_METRO';
 
   // Train Horn Prioritization & Cooldown
   private lastTrainHornTime: number = -999;
@@ -364,6 +366,15 @@ export class SoundManager {
     this.unsubscribers.push(bus.on(EVENTS.REWARD_CLAIMED, () => this.playRewardClaim()));
     this.unsubscribers.push(bus.on(EVENTS.ITEM_PURCHASED, () => this.playPurchase()));
     this.unsubscribers.push(bus.on(EVENTS.UI_CLICK, () => this.playButtonClick()));
+
+    // Environmental District Transitions & Audio Feedback
+    this.unsubscribers.push(bus.on('ENVIRONMENT_TRANSITION_APPROACHING', () => this.playEnvironmentTransition()));
+    this.unsubscribers.push(bus.on('ENVIRONMENT_CHANGED', (envId: string) => this.setEnvironmentAmbience(envId)));
+    this.unsubscribers.push(bus.on('ENVIRONMENT_PREFERENCE_CHANGED', (pref: string) => {
+      if (pref !== 'DYNAMIC') {
+        this.setEnvironmentAmbience(pref);
+      }
+    }));
 
     // Game Lifecycle
     this.unsubscribers.push(
@@ -1391,20 +1402,87 @@ export class SoundManager {
     try {
       this.trainRumbleOsc = this.ctx.createOscillator();
       this.trainRumbleOsc.type = 'sawtooth';
-      this.trainRumbleOsc.frequency.setValueAtTime(45, this.ctx.currentTime);
+      const baseFreq = this.activeEnvironmentId === 'HISTORIC_QUARTER' ? 38 : 50;
+      this.trainRumbleOsc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
 
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(140, this.ctx.currentTime);
+      this.trainRumbleFilter = this.ctx.createBiquadFilter();
+      this.trainRumbleFilter.type = 'lowpass';
+      const filterCutoff = this.activeEnvironmentId === 'HISTORIC_QUARTER' ? 105 : 155;
+      this.trainRumbleFilter.frequency.setValueAtTime(filterCutoff, this.ctx.currentTime);
 
       this.trainRumbleGain = this.ctx.createGain();
       this.trainRumbleGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
 
-      this.trainRumbleOsc.connect(filter);
-      filter.connect(this.trainRumbleGain);
+      this.trainRumbleOsc.connect(this.trainRumbleFilter);
+      this.trainRumbleFilter.connect(this.trainRumbleGain);
       this.trainRumbleGain.connect(this.ambientGain);
 
       this.trainRumbleOsc.start();
+    } catch {}
+  }
+
+  public setEnvironmentAmbience(envId: string): void {
+    this.activeEnvironmentId = envId;
+    if (!this.ctx || !this.trainRumbleOsc || !this.trainRumbleFilter) return;
+    const now = this.ctx.currentTime;
+    if (envId === 'HISTORIC_QUARTER') {
+      // Deeper industrial mechanical rumble, heavier steam/iron frequencies
+      this.trainRumbleOsc.frequency.setTargetAtTime(38, now, 1.2);
+      this.trainRumbleFilter.frequency.setTargetAtTime(105, now, 1.2);
+    } else {
+      // Modern electric traction, higher frequency resonant hum
+      this.trainRumbleOsc.frequency.setTargetAtTime(50, now, 1.2);
+      this.trainRumbleFilter.frequency.setTargetAtTime(155, now, 1.2);
+    }
+  }
+
+  public playEnvironmentTransition(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+
+      // Resonant transition chime (C5 -> G5 ascending bell tone)
+      const chimeOsc = this.ctx.createOscillator();
+      const chimeGain = this.ctx.createGain();
+      chimeOsc.type = 'sine';
+      chimeOsc.frequency.setValueAtTime(523.25, now);
+      chimeOsc.frequency.exponentialRampToValueAtTime(783.99, now + 0.35);
+      chimeGain.gain.setValueAtTime(0.0001, now);
+      chimeGain.gain.linearRampToValueAtTime(0.18, now + 0.08);
+      chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+      chimeOsc.connect(chimeGain);
+      chimeGain.connect(this.ambientGain);
+      chimeOsc.start(now);
+      chimeOsc.stop(now + 1.25);
+
+      // Atmospheric whoosh noise
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.8);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.sin((Math.PI * i) / bufferSize);
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const whooshFilter = this.ctx.createBiquadFilter();
+      whooshFilter.type = 'bandpass';
+      whooshFilter.frequency.setValueAtTime(320, now);
+      whooshFilter.frequency.exponentialRampToValueAtTime(880, now + 0.4);
+      whooshFilter.frequency.exponentialRampToValueAtTime(240, now + 0.8);
+      whooshFilter.Q.value = 2.0;
+
+      const whooshGain = this.ctx.createGain();
+      whooshGain.gain.setValueAtTime(0.0001, now);
+      whooshGain.gain.linearRampToValueAtTime(0.2, now + 0.35);
+      whooshGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+
+      noise.connect(whooshFilter);
+      whooshFilter.connect(whooshGain);
+      whooshGain.connect(this.ambientGain);
+      noise.start(now);
+      noise.stop(now + 0.85);
     } catch {}
   }
 

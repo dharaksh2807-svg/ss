@@ -4,6 +4,7 @@ import { UpgradeManager } from '../player/UpgradeManager';
 import { DailyRewardManager } from '../progression/DailyRewardManager';
 import { getCharacterById } from '../characters/CharacterCatalog';
 import { getHoverboardById } from '../hoverboard/HoverboardCatalog';
+import { EnvironmentManager } from '../environment/EnvironmentConfig';
 
 export class StartScreen {
   private element: HTMLElement;
@@ -136,7 +137,7 @@ export class StartScreen {
           </div>
         </aside>
 
-        <!-- Right Side Challenge Modes Widget -->
+        <!-- Right Side Challenge Modes & Environment Widget -->
         <aside class="lobby-side-rail right-rail">
           <div class="lobby-card-widget event-widget" id="lobby-event-snippet" role="button" tabindex="0" title="Open Event Modes">
             <span class="widget-icon">⚡</span>
@@ -144,6 +145,15 @@ export class StartScreen {
               <span class="widget-label">FEATURED EVENT</span>
               <span class="widget-val highlight-cyan">TIME TRIAL 2X</span>
               <span class="widget-sub">60s Clock • Double Score</span>
+            </div>
+          </div>
+
+          <div class="lobby-card-widget env-widget" id="lobby-env-snippet" role="button" tabindex="0" title="Select Railway District">
+            <span class="widget-icon" id="lobby-env-icon">🔄</span>
+            <div class="widget-text">
+              <span class="widget-label">RAILWAY DISTRICT</span>
+              <span class="widget-val highlight-cyan" id="lobby-env-title">DYNAMIC DISTRICTS</span>
+              <span class="widget-sub" id="lobby-env-sub">Transitions every 800m</span>
             </div>
           </div>
         </aside>
@@ -330,12 +340,21 @@ export class StartScreen {
       });
     }
 
+    const envSnippet = document.getElementById('lobby-env-snippet');
+    if (envSnippet) {
+      envSnippet.addEventListener('click', () => {
+        this.eventBus.emit('OPEN_ENVIRONMENT_SELECT');
+      });
+    }
+
     // Event updates
     this.eventBus.on('WALLET_UPDATED', () => this.updateState());
     this.eventBus.on('BOARD_CHARGES_UPDATED', () => this.updateState());
     this.eventBus.on('CHARACTER_EQUIPPED', () => this.updateState());
     this.eventBus.on('BOARD_EQUIPPED', () => this.updateState());
     this.eventBus.on('DAILY_REWARD_CLAIMED', () => this.updateState());
+    this.eventBus.on('ENVIRONMENT_PREFERENCE_CHANGED', () => this.updateState());
+    this.eventBus.on('ENVIRONMENT_CHANGED', () => this.updateState());
 
     this.updateState();
   }
@@ -401,6 +420,30 @@ export class StartScreen {
       const pct = Math.min(100, Math.floor((currentMission.progress / currentMission.target) * 100));
       missionTitleEl.textContent = `${currentMission.title} (${pct}%)`;
       missionBarEl.style.width = `${pct}%`;
+    }
+
+    // 6. Railway District Environment Selector
+    const envPref = EnvironmentManager.getInstance().getPreference();
+    const envIconEl = document.getElementById('lobby-env-icon');
+    const envTitleEl = document.getElementById('lobby-env-title');
+    const envSubEl = document.getElementById('lobby-env-sub');
+    if (envIconEl && envTitleEl && envSubEl) {
+      if (envPref === 'DYNAMIC') {
+        envIconEl.textContent = '🔄';
+        envTitleEl.textContent = 'DYNAMIC DISTRICTS';
+        envTitleEl.className = 'widget-val highlight-cyan';
+        envSubEl.textContent = 'Transitions every 800m';
+      } else if (envPref === 'MODERN_METRO') {
+        envIconEl.textContent = '🏙️';
+        envTitleEl.textContent = 'MODERN METRO';
+        envTitleEl.className = 'widget-val highlight-cyan';
+        envSubEl.textContent = 'Glass high-rises & azure skies';
+      } else if (envPref === 'HISTORIC_QUARTER') {
+        envIconEl.textContent = '🏛️';
+        envTitleEl.textContent = 'HISTORIC QUARTER';
+        envTitleEl.className = 'widget-val highlight-gold';
+        envSubEl.textContent = 'Brick viaducts & golden hour';
+      }
     }
   }
 
