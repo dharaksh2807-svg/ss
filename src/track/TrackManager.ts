@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { Player, SupportSurfaceType } from '../player/Player';
-import { ObstacleFactory } from './ObstacleFactory';
+import { ObstacleFactory, ObstacleInstance } from './ObstacleFactory';
 import { CollectibleFactory, CoinPickupVFXInstance } from './CollectibleFactory';
 import { TrackChunk } from './TrackChunk';
 import { OBSTACLE_PATTERNS, TrackPattern } from './ObstaclePatterns';
@@ -161,6 +161,36 @@ export class TrackManager {
     return this.chunks;
   }
 
+  public findObstacleById(id: string): ObstacleInstance | null {
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (obs.id === id) return obs;
+      }
+    }
+    return null;
+  }
+
+  public getApproachingTrainDistance(playerZ: number): number {
+    let nearestDist = 999;
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+        if (obs.isMoving || obs.type === 'MOVING_TRAIN') {
+          const currentWorldZ = chunk.chunkZ + obs.group.position.z;
+          const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+          const frontZ = currentWorldZ + halfD; // Front bumper of oncoming train
+          if (frontZ < playerZ) {
+            const dist = playerZ - frontZ;
+            if (dist < nearestDist) {
+              nearestDist = dist;
+            }
+          }
+        }
+      }
+    }
+    return nearestDist;
+  }
+
   public reset(forceFreshSeed: boolean = false): void {
     if (forceFreshSeed || !this.isDebugSeed) {
       this.generateFreshSeed();
@@ -272,7 +302,7 @@ export class TrackManager {
 
       // When moving train is eligible, grant priority to ensure dynamic railway rhythm
       if (canSpawnMovingTrain && hasMovingTrain) {
-        tierWeight *= 1.45;
+        tierWeight *= 2.4;
       }
 
       // Recent history penalties: prevent back-to-back repetitions
@@ -453,7 +483,7 @@ export class TrackManager {
     }
 
     // 2. Dynamic Ground Height Check (Train Roofs & Ramps)
-    this.updateGroundHeight(player);
+    this.updateGroundHeight(player, dt);
 
     // 2.1 First-encounter unobtrusive onboarding cue for climbable train ramps
     if (!this.rampOnboardingChecked) {
@@ -539,7 +569,7 @@ export class TrackManager {
     }
   }
 
-  private updateGroundHeight(player: Player): void {
+  private updateGroundHeight(player: Player, dt: number = 0.016): void {
     let targetGroundY: number = CONSTANTS.PLAYER_BASE_Y;
     let foundSupport = false;
     let supportedObstacleId: string | null = null;
@@ -644,6 +674,16 @@ export class TrackManager {
       if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
         player.state = supportType === 'RAMP' ? 'CLIMBING' : 'ON_TRAIN';
       }
+
+      // If traversing on a moving train roof, apply platform-relative support velocity
+      if (supportType === 'TRAIN_ROOF') {
+        const supportObs = this.findObstacleById(supportedObstacleId);
+        if (supportObs && supportObs.isMoving && supportObs.velocityZ) {
+          player.position.z += supportObs.velocityZ * dt;
+          player.updateCollider();
+        }
+      }
+
       if (!this.rampOnboardingChecked && (supportType === 'RAMP' || supportType === 'TRAIN_ROOF')) {
         this.rampOnboardingChecked = true;
         if (typeof localStorage !== 'undefined') {
@@ -724,7 +764,34 @@ export class TrackManager {
           ? (obs.bodyCollider || obs.collider)
           : obs.collider;
 
-        if (lethalBox.intersectsBox(playerBox)) {
+        let hasDirectCollision = lethalBox.intersectsBox(playerBox);
+
+        // Continuous swept collision for fast-moving oncoming obstacles (prevents tunneling through player at high speeds or frame spikes)
+        let hasSweptCollision = false;
+        if (!hasDirectCollision && obs.isMoving && obs.previousWorldZ !== undefined) {
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+          // Only check swept collision if player is at hazard height (not safely on roof or high airborne)
+          if (player.position.y < roofY - 0.25 && player.state !== 'JETPACK' && player.getJetpackPhase() === 'NONE') {
+            const laneTolerance = CONSTANTS.LANE_WIDTH * 0.45; // ~1.44m from lane center
+            const isInTrainLane = Math.abs(player.position.x - obs.group.position.x) <= laneTolerance;
+            if (isInTrainLane) {
+              const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+              const currentWorldZ = chunk.chunkZ + obs.group.position.z;
+              const trainMinZ = Math.min(obs.previousWorldZ, currentWorldZ) - halfD;
+              const trainMaxZ = Math.max(obs.previousWorldZ, currentWorldZ) + halfD;
+
+              const prevPZ = this.previousPlayerZ !== null ? this.previousPlayerZ : player.position.z;
+              const playerMinZ = Math.min(prevPZ, player.position.z) - 0.45;
+              const playerMaxZ = Math.max(prevPZ, player.position.z) + 0.45;
+
+              if (playerMinZ <= trainMaxZ && playerMaxZ >= trainMinZ) {
+                hasSweptCollision = true;
+              }
+            }
+          }
+        }
+
+        if (hasDirectCollision || hasSweptCollision) {
           const resolution = CollisionResolver.resolveOutcome(obs, player, this.chaser);
           const { outcome, diagnostic, isGlance, isFlankContact } = resolution;
 

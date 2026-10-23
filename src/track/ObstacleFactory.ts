@@ -126,10 +126,14 @@ export interface ObstacleInstance {
   accessibilityProfile?: TrainAccessibilityProfile; // Authoritative accessibility metadata
   // Dynamic moving train behavior
   isMoving?: boolean;
+  isMovingActive?: boolean; // Activated when approaching player
   velocityZ?: number;
   initialLocalZ?: number;
+  previousWorldZ?: number;
   telegraphed?: boolean;
   headlights?: THREE.Mesh[];
+  wheelMeshes?: THREE.Mesh[]; // Bogie wheel meshes for realistic rotation
+  headlightBeam?: THREE.Mesh; // Forward track illumination beam
 }
 
 export class ObstacleFactory {
@@ -1901,19 +1905,42 @@ export class ObstacleFactory {
   public createMovingTrain(
     length: number = CONSTANTS.TRAIN_LENGTH_SHORT,
     colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_2
-  ): { group: THREE.Group; headlights: THREE.Mesh[] } {
+  ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
     const group = this.createTrain(length, false, colorHex);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 
-    // Find and reference the twin headlights for flashing telegraph
+    // Find and reference the twin headlights for flashing telegraph & bogie wheel meshes
     const headlights: THREE.Mesh[] = [];
+    const wheelMeshes: THREE.Mesh[] = [];
     group.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material === this.trainHeadlightMat) {
-        headlights.push(child);
+      if (child instanceof THREE.Mesh) {
+        if (child.material === this.trainHeadlightMat) {
+          headlights.push(child);
+        } else if (child.material === this.trainWheelMat) {
+          wheelMeshes.push(child);
+        }
       }
     });
 
-    return { group, headlights };
+    // Add subtle forward headlight track illumination beam (cast onto rails ahead in +Z)
+    const halfD = length * 0.5;
+    const beamLength = 16.0;
+    const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.95, beamLength);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0xfffae6,
+      transparent: true,
+      opacity: 0.16,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    this.curvedManager.applyCurvature(beamMat);
+    const headlightBeam = new THREE.Mesh(beamGeo, beamMat);
+    headlightBeam.rotation.x = -Math.PI / 2; // Flat just above ballast surface
+    headlightBeam.position.set(0, 0.08, halfD + beamLength * 0.5);
+    group.add(headlightBeam);
+
+    return { group, headlights, wheelMeshes, headlightBeam };
   }
 }

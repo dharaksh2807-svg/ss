@@ -1462,6 +1462,8 @@ export class TrackChunk {
       const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP');
       const length = obsData.length || (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
       let headlights: THREE.Mesh[] | undefined;
+      let wheelMeshes: THREE.Mesh[] | undefined;
+      let headlightBeam: THREE.Mesh | undefined;
 
       if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
         const colors = [
@@ -1475,6 +1477,8 @@ export class TrackChunk {
         const movingData = this.obstacleFactory.createMovingTrain(length, CONSTANTS.COLORS.TRAIN_BODY_2);
         group = movingData.group;
         headlights = movingData.headlights;
+        wheelMeshes = movingData.wheelMeshes;
+        headlightBeam = movingData.headlightBeam;
       } else if (obsData.type === 'LOW_BARRIER') {
         group = this.obstacleFactory.createLowBarrier();
       } else if (obsData.type === 'MEDIUM_BARRIER') {
@@ -1610,10 +1614,14 @@ export class TrackChunk {
         length,
         variant: group.userData.variant,
         isMoving,
-        velocityZ: obsData.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED,
+        isMovingActive: false,
+        velocityZ: isMoving ? (obsData.velocityZ !== undefined ? obsData.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED) : 0,
         initialLocalZ: localZ,
+        previousWorldZ: worldCenterZ,
         telegraphed: false,
-        headlights
+        headlights,
+        wheelMeshes,
+        headlightBeam
       });
 
       PacingMetrics.getInstance().recordObstacle(
@@ -1770,19 +1778,54 @@ export class TrackChunk {
         const currentLocalZ = obs.group.position.z;
         const currentWorldZ = this.chunkZ + currentLocalZ;
         const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
-        const worldTrainFrontZ = currentWorldZ + halfD; // Front bumper position
-        const separation = playerZ - worldTrainFrontZ; // Positive when train is ahead (more negative Z)
+        const isSameDirection = (obs.velocityZ || 0) < 0;
 
-        const isAhead = worldTrainFrontZ < playerZ;
+        // Front bumper is in +Z for oncoming trains (facing runner running down -Z),
+        // or in -Z for same-direction trains (leading the train down track)
+        const worldTrainFrontZ = isSameDirection ? currentWorldZ - halfD : currentWorldZ + halfD;
+        const worldTrainRearZ = isSameDirection ? currentWorldZ + halfD : currentWorldZ - halfD;
+
+        // Activation check: oncoming train begins physical approach when front bumper is within activation distance
         const activationDist = CONSTANTS.MOVING_TRAIN_ACTIVATION_DIST || 85.0;
-        const isWithinRange = separation <= activationDist && isAhead;
-        const hasPassedBehind = (currentWorldZ - halfD) > (playerZ + 25.0);
+        const separation = isSameDirection
+          ? (playerZ - worldTrainRearZ) // Distance behind same-direction train
+          : (playerZ - worldTrainFrontZ); // Distance ahead to oncoming front
 
-        // Only advance moving train along +Z toward player when player is within approach window
-        // (prevents distant staged trains from moving past player prematurely while 300m away)
-        if (isWithinRange && !hasPassedBehind) {
-          const speed = obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED;
+        if (!obs.isMovingActive) {
+          if (!isSameDirection && separation <= activationDist && worldTrainFrontZ < playerZ) {
+            obs.isMovingActive = true;
+          } else if (isSameDirection && currentWorldZ < playerZ && (playerZ - currentWorldZ) <= activationDist) {
+            obs.isMovingActive = true;
+          }
+        }
+
+        // Has train passed completely behind the player?
+        // For oncoming train (+Z), rear bumper (currentWorldZ - halfD) passes behind player into positive territory (playerZ + 25.0)
+        // For same-direction train (-Z), front bumper passes behind if player overtakes it (currentWorldZ + halfD > playerZ + 25.0)
+        const hasPassedBehind = isSameDirection
+          ? (currentWorldZ + halfD > playerZ + 25.0)
+          : (worldTrainRearZ > playerZ + 25.0);
+
+        // Store previousWorldZ before advancing position for swept collision detection
+        obs.previousWorldZ = currentWorldZ;
+
+        // Continuous physical advance: once activated, train advances until completely passed behind the player!
+        if (obs.isMovingActive && !hasPassedBehind) {
+          const speed = obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED;
           obs.group.position.z += speed * dt;
+
+          // Wheel and bogie roll animation based on linear speed: omega = v / r
+          if (obs.wheelMeshes && obs.wheelMeshes.length > 0) {
+            const wheelRadius = 0.33;
+            const rollAngle = (speed * dt) / wheelRadius;
+            for (const wheel of obs.wheelMeshes) {
+              wheel.rotation.x += rollAngle;
+            }
+          }
+
+          // Subtle rail joint suspension sway / rumble (high-speed track vibration)
+          const rumbleOffset = Math.sin(animTime * 28.0) * 0.015;
+          obs.group.position.y = rumbleOffset;
         }
 
         // Recalculate collision volumes in world coordinates every frame
@@ -1833,17 +1876,20 @@ export class TrackChunk {
             EventBus.getInstance().emit(EVENTS.TRAIN_HORN, {
               laneX,
               distance: currentSeparation,
-              speed: obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED
+              speed: obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED
             });
             obs.telegraphed = true;
           }
 
-          // Strobe twin headlights at high frequency (12 Hz)
+          // Strobe twin headlights at high frequency (12 Hz) and modulate forward beam
           if (obs.headlights && obs.headlights.length > 0) {
             const strobe = Math.sin(animTime * 30.0) > 0;
             obs.headlights.forEach((h) => {
               h.visible = strobe;
             });
+          }
+          if (obs.headlightBeam) {
+            obs.headlightBeam.visible = Math.sin(animTime * 30.0) > -0.2;
           }
         }
       }

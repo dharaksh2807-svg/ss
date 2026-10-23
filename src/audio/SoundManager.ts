@@ -1753,11 +1753,12 @@ export class SoundManager {
       for (const chunk of trackManager.chunks) {
         if (!chunk.obstacles) continue;
         for (const obs of chunk.obstacles) {
-          if (obs.type === 'TRAIN' && obs.speed && obs.speed > 0) {
-            const worldZ = chunk.chunkZ + obs.localZ;
-            // Approaching ahead of player (worldZ is negative, further ahead in negative direction)
-            if (worldZ < pZ) {
-              const d = Math.abs(pZ - worldZ);
+          if (obs.active && (obs.isMoving || obs.type === 'MOVING_TRAIN')) {
+            const worldZ = chunk.chunkZ + (obs.group?.position?.z ?? obs.initialLocalZ ?? 0);
+            const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+            const frontZ = worldZ + halfD;
+            if (frontZ < pZ) {
+              const d = pZ - frontZ;
               if (d < nearestApproachingDist) nearestApproachingDist = d;
             }
           }
@@ -1766,12 +1767,23 @@ export class SoundManager {
     }
 
     const now = this.ctx.currentTime;
-    if (nearestApproachingDist <= 80) {
-      const proximity = 1.0 - nearestApproachingDist / 80;
-      const targetGain = 0.16 * proximity;
-      this.trainRumbleGain.gain.setTargetAtTime(targetGain, now, 0.15);
+    if (nearestApproachingDist <= 85) {
+      const proximity = Math.max(0, Math.min(1.0, 1.0 - nearestApproachingDist / 85));
+      const targetGain = 0.18 * proximity;
+      this.trainRumbleGain.gain.setTargetAtTime(targetGain, now, 0.12);
+
+      // Dynamically raise rumble lowpass filter cutoff as train roars close
+      if (this.trainRumbleFilter) {
+        const baseCutoff = this.activeEnvironmentId === 'HISTORIC_QUARTER' ? 105 : 155;
+        const dynamicCutoff = baseCutoff + proximity * 90;
+        this.trainRumbleFilter.frequency.setTargetAtTime(dynamicCutoff, now, 0.12);
+      }
     } else {
-      this.trainRumbleGain.gain.setTargetAtTime(0.0001, now, 0.3);
+      this.trainRumbleGain.gain.setTargetAtTime(0.0001, now, 0.35);
+      if (this.trainRumbleFilter) {
+        const baseCutoff = this.activeEnvironmentId === 'HISTORIC_QUARTER' ? 105 : 155;
+        this.trainRumbleFilter.frequency.setTargetAtTime(baseCutoff, now, 0.35);
+      }
     }
   }
 
