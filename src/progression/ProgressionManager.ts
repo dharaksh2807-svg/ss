@@ -287,24 +287,73 @@ export class ProgressionManager {
   }
 
   // --- Central Event Listeners ---
+  private isProgressionEligible(): boolean {
+    return this.activeGameMode !== 'PRACTICE' && this.activeGameMode !== 'ARENA';
+  }
+
   private setupEventListeners(): void {
-    this.eventBus.on(EVENTS.RUN_STARTED, () => this.onRunStarted());
-    this.eventBus.on(EVENTS.GAME_START, () => this.onRunStarted());
+    this.eventBus.on(EVENTS.RUN_STARTED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onRunStarted();
+    });
+    this.eventBus.on(EVENTS.GAME_START, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onRunStarted();
+    });
 
-    this.eventBus.on(EVENTS.RUN_FINISHED, () => this.onRunFinished());
-    this.eventBus.on(EVENTS.GAME_OVER, () => this.onRunFinished());
+    this.eventBus.on(EVENTS.RUN_FINISHED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onRunFinished();
+    });
+    this.eventBus.on(EVENTS.GAME_OVER, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onRunFinished();
+    });
 
-    this.eventBus.on(EVENTS.COIN_COLLECTED, () => this.onCoinCollected());
-    this.eventBus.on(EVENTS.DISTANCE_TRAVELED, (meters: number) => this.onDistanceTraveled(meters));
-    this.eventBus.on(EVENTS.JUMP_COMPLETED, () => this.onJumpCompleted());
-    this.eventBus.on(EVENTS.SLIDE_COMPLETED, () => this.onSlideCompleted());
-    this.eventBus.on(EVENTS.POWERUP_ACTIVATED, (type: string) => this.onPowerupActivated(type));
-    this.eventBus.on(EVENTS.OBSTACLE_DODGED, (type: string) => this.onObstacleDodged(type));
-    this.eventBus.on(EVENTS.NEAR_MISS, () => this.onNearMiss());
-    this.eventBus.on(EVENTS.BOARD_ACTIVATED, () => this.onBoardActivated());
-    this.eventBus.on(EVENTS.HOVERBOARD_ACTIVATED, () => this.onBoardActivated());
-    this.eventBus.on(EVENTS.SCORE_UPDATED, (score: number) => this.onScoreUpdated(score));
-    this.eventBus.on(EVENTS.SEASON_TOKEN_COLLECTED, (count: number = 1) => this.onSeasonTokenCollected(count));
+    this.eventBus.on(EVENTS.COIN_COLLECTED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onCoinCollected();
+    });
+    this.eventBus.on(EVENTS.DISTANCE_TRAVELED, (meters: number) => {
+      if (!this.isProgressionEligible()) return;
+      this.onDistanceTraveled(meters);
+    });
+    this.eventBus.on(EVENTS.JUMP_COMPLETED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onJumpCompleted();
+    });
+    this.eventBus.on(EVENTS.SLIDE_COMPLETED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onSlideCompleted();
+    });
+    this.eventBus.on(EVENTS.POWERUP_ACTIVATED, (type: string) => {
+      if (!this.isProgressionEligible()) return;
+      this.onPowerupActivated(type);
+    });
+    this.eventBus.on(EVENTS.OBSTACLE_DODGED, (type: string) => {
+      if (!this.isProgressionEligible()) return;
+      this.onObstacleDodged(type);
+    });
+    this.eventBus.on(EVENTS.NEAR_MISS, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onNearMiss();
+    });
+    this.eventBus.on(EVENTS.BOARD_ACTIVATED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onBoardActivated();
+    });
+    this.eventBus.on(EVENTS.HOVERBOARD_ACTIVATED, () => {
+      if (!this.isProgressionEligible()) return;
+      this.onBoardActivated();
+    });
+    this.eventBus.on(EVENTS.SCORE_UPDATED, (score: number) => {
+      if (!this.isProgressionEligible()) return;
+      this.onScoreUpdated(score);
+    });
+    this.eventBus.on(EVENTS.SEASON_TOKEN_COLLECTED, (count: number = 1) => {
+      if (!this.isProgressionEligible()) return;
+      this.onSeasonTokenCollected(count);
+    });
   }
 
   private onRunStarted(): void {

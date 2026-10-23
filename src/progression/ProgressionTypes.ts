@@ -87,7 +87,7 @@ export interface SeasonPass {
   milestones: SeasonMilestone[];
 }
 
-export type GameMode = 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL';
+export type GameMode = 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | 'PRACTICE' | 'ARENA';
 
 export interface GameModeConfig {
   id: GameMode;

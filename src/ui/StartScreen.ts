@@ -13,6 +13,7 @@ export class StartScreen {
   private shopBtn: HTMLButtonElement | null = null;
   private missionsBtn: HTMLButtonElement | null = null;
   private eventsBtn: HTMLButtonElement | null = null;
+  private practiceBtn: HTMLButtonElement | null = null;
   private profileBtn: HTMLButtonElement | null = null;
   private settingsBtn: HTMLButtonElement;
   private dailyRewardBtn: HTMLElement | null = null;
@@ -37,6 +38,7 @@ export class StartScreen {
     this.shopBtn = document.getElementById('start-shop-btn') as HTMLButtonElement;
     this.missionsBtn = document.getElementById('start-missions-btn') as HTMLButtonElement;
     this.eventsBtn = document.getElementById('start-events-btn') as HTMLButtonElement;
+    this.practiceBtn = document.getElementById('start-practice-btn') as HTMLButtonElement;
     this.profileBtn = document.getElementById('start-profile-btn') as HTMLButtonElement;
     this.settingsBtn = document.getElementById('start-settings-btn') as HTMLButtonElement;
     this.dailyRewardBtn = document.getElementById('lobby-daily-widget');
@@ -190,6 +192,10 @@ export class StartScreen {
             <span class="dock-icon">🛒</span>
             <span class="dock-label">SHOP</span>
           </button>
+          <button id="start-practice-btn" class="dock-btn" data-nav="practice">
+            <span class="dock-icon">🎓</span>
+            <span class="dock-label">PRACTICE</span>
+          </button>
           <button id="start-missions-btn" class="dock-btn" data-nav="missions">
             <span class="dock-icon">🎯</span>
             <span class="dock-label">MISSIONS</span>
@@ -247,6 +253,13 @@ export class StartScreen {
       this.eventsBtn.addEventListener('click', () => {
         this.hide();
         this.eventBus.emit('OPEN_EVENTS', 'START');
+      });
+    }
+
+    if (this.practiceBtn) {
+      this.practiceBtn.addEventListener('click', () => {
+        this.hide();
+        this.eventBus.emit('OPEN_PRACTICE', 'START');
       });
     }
 

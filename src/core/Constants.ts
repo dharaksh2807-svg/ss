@@ -103,6 +103,7 @@ export const CONSTANTS = {
   TRAIN_WIDTH: 3.1,
   TRAIN_HEIGHT: 4.2,
   TRAIN_LENGTH_SHORT: 16.0,
+  TRAIN_LENGTH_MEDIUM: 22.0,
   TRAIN_LENGTH_LONG: 28.0,
   TRAIN_RAMP_LENGTH: 8.0, // Ramp to run up onto train roof!
   MOVING_TRAIN_SPEED: 11.0, // Velocity of oncoming train relative to track

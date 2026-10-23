@@ -209,6 +209,10 @@ export class HoverboardManager {
     return this.progression.getHoverboardCharges();
   }
 
+  public grantPracticeCharge(): void {
+    this.cooldownRemaining = 0;
+  }
+
   // Ability Modifiers
   public getSpeedMultiplier(): number {
     if (!this.isActive || !this.activeBoardDef) return 1.0;

@@ -4200,3 +4200,630 @@ kbd {
 .intro-skip-pill.hidden {
   display: none !important;
 }
+
+/* ==========================================================================
+   TASK 5 — PRACTICE MODE & ACADEMY STYLING
+   ========================================================================== */
+
+#practice-modal {
+  z-index: 200;
+  background: rgba(6, 10, 18, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.practice-modal-card {
+  max-width: 820px;
+  width: 94%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+}
+
+.practice-modal-header {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.practice-modal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.practice-academy-badge {
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(255, 152, 0, 0.4);
+}
+
+.practice-difficulty-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.difficulty-bar-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #94a3b8;
+}
+
+.practice-toggle-btn {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.practice-toggle-btn.active-harder {
+  background: linear-gradient(135deg, #ff5722, #f44336) !important;
+  border-color: #ff5722 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+}
+
+.practice-economy-pill {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.practice-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 52vh;
+  padding-right: 6px;
+}
+
+.practice-module-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.practice-module-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 152, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.practice-module-card.selected {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.18), rgba(255, 87, 34, 0.12));
+  border: 2px solid #ff9800;
+  box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
+}
+
+.practice-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.practice-card-icon {
+  font-size: 1.8rem;
+}
+
+.practice-card-title-area {
+  flex: 1;
+}
+
+.practice-card-category {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ff9800;
+  text-transform: uppercase;
+}
+
+.practice-card-title {
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 1.05rem;
+  color: #fff;
+  margin: 0;
+}
+
+.practice-card-medal {
+  font-size: 1.4rem;
+}
+
+.practice-card-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.practice-card-objective {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+}
+
+.objective-label {
+  color: #ff9800;
+  font-weight: 800;
+  margin-right: 6px;
+}
+
+.objective-desc {
+  color: #f1f5f9;
+}
+
+.practice-card-controls {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+
+.controls-tag {
+  font-weight: 800;
+  color: #00e5ff;
+  margin-right: 4px;
+}
+
+.practice-harder-badge {
+  background: rgba(255, 87, 34, 0.15);
+  border: 1px solid rgba(255, 87, 34, 0.35);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  color: #ff8a65;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   PRACTICE HUD OVERLAY
+   ========================================================================== */
+
+.practice-hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.practice-top-banner {
+  pointer-events: auto;
+  max-width: 900px;
+  width: 94%;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1.5px solid rgba(255, 152, 0, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 152, 0, 0.2);
+  border-radius: 16px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.practice-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.practice-mod-icon {
+  font-size: 2rem;
+}
+
+.practice-mod-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.practice-tag {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #ff9800;
+  letter-spacing: 1px;
+}
+
+.practice-mod-tier {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #cbd5e1;
+}
+
+.practice-mod-tier.harder-tier {
+  background: rgba(255, 87, 34, 0.3);
+  color: #ff7043;
+}
+
+.practice-mod-title {
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 1.2rem;
+  color: #fff;
+  margin: 0;
+}
+
+.practice-banner-center {
+  flex: 1;
+  text-align: center;
+}
+
+.practice-objective-text {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 3px;
+}
+
+.practice-controls-hint {
+  font-size: 0.78rem;
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+.practice-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.practice-attempt-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.attempt-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.attempt-num {
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 1.1rem;
+  color: #ffd700;
+}
+
+.practice-exit-icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.practice-exit-icon-btn:hover {
+  background: rgba(244, 67, 54, 0.4);
+  border-color: #f44336;
+}
+
+.practice-result-card {
+  pointer-events: auto;
+  max-width: 540px;
+  width: 90%;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.practice-result-card.success {
+  border: 2px solid #00e676;
+  box-shadow: 0 10px 40px rgba(0, 230, 118, 0.35);
+}
+
+.practice-result-card.failure {
+  border: 2px solid #ff1744;
+  box-shadow: 0 10px 40px rgba(255, 23, 68, 0.35);
+}
+
+.practice-result-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #00e676;
+  background: rgba(0, 230, 118, 0.15);
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.practice-result-badge.failure-badge {
+  color: #ff1744;
+  background: rgba(255, 23, 68, 0.15);
+}
+
+.practice-result-title {
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 1.4rem;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.practice-result-tip {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0 0 18px 0;
+  line-height: 1.4;
+}
+
+.practice-action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.practice-btn {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   DEVELOPER PHYSICS TEST ARENA DOCK
+   ========================================================================== */
+
+.dev-arena-dock {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 580px;
+  max-width: 95vw;
+  background: rgba(10, 15, 26, 0.95);
+  border: 1.5px solid rgba(0, 229, 255, 0.5);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 229, 255, 0.2);
+  border-radius: 14px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e2e8f0;
+}
+
+.dev-arena-dock.hidden {
+  display: none !important;
+}
+
+.arena-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(18, 24, 38, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.arena-title-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.arena-badge {
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #00e5ff;
+}
+
+.arena-subtitle {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.arena-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arena-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.arena-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+}
+
+.arena-btn.active {
+  background: #00e5ff !important;
+  color: #050b14 !important;
+  border-color: #00e5ff !important;
+}
+
+.arena-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.arena-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.arena-close-btn:hover {
+  background: #f44336;
+  border-color: #f44336;
+}
+
+.arena-body {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 12px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.arena-panel {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.arena-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.arena-row label {
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.arena-select, .arena-input {
+  background: rgba(18, 24, 38, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.arena-slider {
+  width: 100%;
+  accent-color: #00e5ff;
+}
+
+.arena-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.arena-seed-group {
+  display: flex;
+  gap: 6px;
+}
+
+.arena-checkboxes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.arena-checkboxes label {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.arena-buttons-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.arena-action-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 0.8rem;
+}
+
+.arena-replay-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.rec-btn.recording {
+  background: #ff1744 !important;
+  color: #fff !important;
+  border-color: #ff1744 !important;
+  animation: pulse 1s infinite;
+}
+
+.arena-log-console {
+  background: #060910;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  height: 140px;
+  overflow-y: auto;
+  font-family: 'SF Mono', Monaco, Menlo, 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: #a5f3fc;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arena-log-line {
+  word-break: break-all;
+  line-height: 1.3;
+}
+

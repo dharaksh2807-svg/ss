@@ -26,6 +26,10 @@ import { TrainScenarioRunner } from '../debug/TrainScenarioRunner';
 import { LocomotionVFX } from '../scene/LocomotionVFX';
 import { ChaserModel } from '../characters/ChaserModel';
 import { OpeningSequenceController } from '../chase/OpeningSequenceController';
+import { PracticeController } from '../practice/PracticeController';
+import { PracticeModal } from '../ui/PracticeModal';
+import { DevTestArena } from '../debug/DevTestArena';
+import { PracticeModuleId } from '../practice/PracticeTypes';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -53,6 +57,9 @@ export class Game {
   private hoverboardSelectModal: HoverboardSelectModal;
   private profileModal: ProfileModal;
   private dailyRewardModal: DailyRewardModal;
+  private practiceController: PracticeController;
+  private practiceModal: PracticeModal;
+  private devTestArena: DevTestArena;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -104,6 +111,30 @@ export class Game {
     this.hoverboardSelectModal = new HoverboardSelectModal();
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
+
+    this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
+    this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
+    this.devTestArena = new DevTestArena(
+      this.worldScene.scene,
+      this.player,
+      this.trackManager,
+      () => {
+        this.activeGameMode = 'ARENA';
+        this.progression.setActiveGameMode('ARENA');
+        this.lifecycleState = 'PLAYING';
+        this.cameraController.setLobbyMode(false);
+        this.cameraController.reset(this.player.position);
+        this.player.mesh.rotation.y = 0;
+        this.openingSequence.skip();
+        this.startScreen.hide();
+        this.hud.hide();
+        this.inputManager.setEnabled(true);
+      }
+    );
+    this.devTestArena.attachToWindow(this);
+    if (typeof window !== 'undefined') {
+      (window as any).__METRO_GAME__ = this;
+    }
 
     // Apply saved graphics quality preset
     const savedQuality = (localStorage.getItem('metro_graphics_preset') || 'HIGH') as 'HIGH' | 'MEDIUM' | 'LOW';
@@ -257,9 +288,14 @@ export class Game {
     this.hoverboardSelectModal.hide(false);
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.practiceModal.hide(false);
+    this.practiceController.exit();
 
     this.hud.reset();
-    this.hud.setMode(this.activeGameMode);
+    const hudMode = (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA')
+      ? 'NORMAL'
+      : this.activeGameMode;
+    this.hud.setMode(hudMode);
     if (this.activeGameMode === 'TIME_TRIAL') {
       this.hud.setTimeTrialTime(60.0);
     } else if (this.activeGameMode === 'COIN_RUSH') {
@@ -301,6 +337,8 @@ export class Game {
     this.hoverboardSelectModal.hide();
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.practiceModal.hide();
+    this.practiceController.exit();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
@@ -312,8 +350,52 @@ export class Game {
     this.inputManager.setEnabled(false);
   }
 
+  public startPractice(moduleId: PracticeModuleId, isHarder: boolean = false): void {
+    this.activeGameMode = 'PRACTICE';
+    this.progression.setActiveGameMode('PRACTICE');
+
+    this.lifecycleState = 'PLAYING';
+    this.score = 0;
+    this.coinsCount = 0;
+    this.scoreMultiplier = 1;
+
+    this.cameraController.setLobbyMode(false);
+    this.cameraController.reset(this.player.position);
+    this.player.mesh.rotation.y = 0;
+
+    // Instantly skip opening cinematic sequence in practice drills
+    if (this.openingSequence.isActive()) {
+      this.openingSequence.skip();
+    }
+
+    this.startScreen.hide();
+    this.pauseModal.hide();
+    this.gameOverModal.hide();
+    this.shopModal.hide();
+    this.missionsModal.hide(false);
+    this.eventSelectModal.hide(false);
+    this.characterSelectModal.hide(false);
+    this.hoverboardSelectModal.hide(false);
+    this.profileModal.hide();
+    this.dailyRewardModal.hide();
+    this.practiceModal.hide(false);
+
+    // Practice mode uses dedicated objective overlay
+    this.hud.hide();
+
+    this.practiceController.startModule(moduleId, isHarder);
+    this.inputManager.setEnabled(true);
+  }
+
   private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' = 'CRASH'): void {
     if (this.lifecycleState === 'GAMEOVER') return;
+
+    if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
+      // In Practice & Arena modes, collision results are handled directly by PracticeController / DevTestArena
+      // Economy, high scores, and mission rewards are strictly isolated to prevent reward farming!
+      return;
+    }
+
     this.lifecycleState = 'GAMEOVER';
     this.inputManager.setEnabled(false);
     this.chaser.triggerCaughtReaction();
@@ -417,8 +499,25 @@ export class Game {
     // Clamp delta-time to avoid simulation instability (e.g. tab switching)
     const dt = Math.min(rawDt, 0.08);
 
+    // Developer Physics Test Arena Pause / Step Frame check
+    if (this.devTestArena && this.devTestArena.isSimulationPaused()) {
+      if (!this.devTestArena.consumeStepRequest()) {
+        this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+        return;
+      }
+    }
+
+    const effectiveDt = dt * (this.devTestArena ? this.devTestArena.getTimeScale() : 1.0);
+
     if (this.lifecycleState === 'PLAYING') {
-      if (this.openingSequence.isActive()) {
+      if (this.activeGameMode === 'PRACTICE') {
+        this.player.update(effectiveDt);
+        this.chaser.update(effectiveDt, this.player.position, this.player.speed, this.player.groundY);
+        this.locomotionVFX.update(effectiveDt, this.player);
+        this.trackManager.update(this.player, effectiveDt, now / 1000);
+        this.practiceController.update(effectiveDt);
+        this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
+      } else if (this.openingSequence.isActive()) {
         this.openingSequence.update(dt);
         this.locomotionVFX.update(dt, this.player);
         this.hud.update(dt);
@@ -492,6 +591,10 @@ export class Game {
 
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+
+    if (this.devTestArena) {
+      this.devTestArena.update(effectiveDt);
+    }
   }
 
   private updateCollisionDebugVisuals(): void {
@@ -629,5 +732,17 @@ export class Game {
       textures: this.worldScene.renderer.info.memory.textures,
       shaderPrograms: (this.worldScene.renderer.info as any).programs?.length || 0
     };
+  }
+
+  public getPracticeController(): PracticeController {
+    return this.practiceController;
+  }
+
+  public getPracticeModal(): PracticeModal {
+    return this.practiceModal;
+  }
+
+  public getDevTestArena(): DevTestArena {
+    return this.devTestArena;
   }
 }
