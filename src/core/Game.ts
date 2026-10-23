@@ -103,6 +103,8 @@ export class Game {
 
     this.chaser = new ChaserModel();
     this.worldScene.scene.add(this.chaser.mesh);
+    this.trackManager.setChaser(this.chaser);
+    this.player.setChaser(this.chaser);
     this.openingSequence = new OpeningSequenceController(this.player, this.cameraController, this.chaser);
 
     this.progression = ProgressionManager.getInstance();
@@ -201,13 +203,20 @@ export class Game {
     bus.on('GO_TO_MENU', () => this.goToMenu());
 
     bus.on(EVENTS.STUMBLE, () => {
-      this.chaser.triggerStumbleReaction();
+      this.chaser.onMinorStumble();
     });
     bus.on(EVENTS.CHASER_STUMBLE_REACTION, () => {
-      this.chaser.triggerStumbleReaction();
+      // Audio-visual feedback on shield/board break without advancing guard chase state
+      EventBus.getInstance().emit(EVENTS.CHASER_WHISTLE);
     });
     bus.on(EVENTS.NEAR_MISS, () => {
       this.chaser.triggerNearMissReaction();
+    });
+    bus.on(EVENTS.CHASER_PROXIMITY_WARNING, () => {
+      this.hud.showFeedbackBadge('⚠️ GUARD IN PURSUIT!', 'precision');
+    });
+    bus.on(EVENTS.CHASER_CAPTURED, () => {
+      this.hud.showFeedbackBadge('BUSTED! 👮‍♂️', 'nearmiss');
     });
 
     bus.on('TOGGLE_SOUND', () => {
@@ -455,7 +464,7 @@ export class Game {
     this.inputManager.setEnabled(true);
   }
 
-  private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' = 'CRASH'): void {
+  private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' | 'CHASER_CAPTURE' = 'CRASH'): void {
     if (this.lifecycleState === 'GAMEOVER') return;
 
     this.reviveModal.hide();
@@ -485,7 +494,12 @@ export class Game {
       title: 'RUN OVER!'
     };
 
-    if (this.activeGameMode === 'TIME_TRIAL') {
+    if (reason === 'CHASER_CAPTURE') {
+      resultMeta = {
+        title: 'BUSTED! 👮‍♂️',
+        subtitle: 'Captured by Transit Security Officer Thorne'
+      };
+    } else if (this.activeGameMode === 'TIME_TRIAL') {
       if (reason === 'TIME_TRIAL_COMPLETE') {
         resultMeta = {
           title: "TIME'S UP! ⏱️",
@@ -856,10 +870,10 @@ export class Game {
         this.score,
         this.coinsCount,
         () => this.onReviveAccepted(),
-        () => this.onReviveDeclined()
+        () => this.onReviveDeclined(reason)
       );
     } else {
-      this.handleGameOver('CRASH');
+      this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
     }
   }
 
@@ -891,8 +905,8 @@ export class Game {
     this.lifecycleState = 'PLAYING';
   }
 
-  private onReviveDeclined(): void {
+  private onReviveDeclined(reason: string = 'CRASH'): void {
     this.reviveManager.cancelOffer();
-    this.handleGameOver('CRASH');
+    this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
   }
 }

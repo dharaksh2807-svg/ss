@@ -9,6 +9,14 @@ export type ChaserActionState =
   | 'LUNGE_REACH'
   | 'CAUGHT_STAND';
 
+export type ChaseState =
+  | 'INTRO_CHASE'
+  | 'DISTANT'
+  | 'CLOSING_IN'
+  | 'CLOSE_PURSUIT'
+  | 'CAPTURE'
+  | 'RESET';
+
 export type ChaserMode = 
   | 'INTRO'
   | 'STANDBY'
@@ -37,6 +45,7 @@ export class ChaserModel {
   // State management
   private actionState: ChaserActionState = 'IDLE';
   private mode: ChaserMode = 'STANDBY';
+  private chaseState: ChaseState = 'DISTANT';
   private animTime: number = 0;
 
   // Relative follow tracking
@@ -44,6 +53,11 @@ export class ChaserModel {
   private targetDistanceZ: number = 14.0;
   private reactionTimer: number = 0;
   private reactionDuration: number = 0;
+  private cleanRunTimer: number = 0;
+  private cleanRunDuration: number = 1.8; // Duration of clean running required to shake off pursuit
+  private catchUpTimer: number = 0;
+  private catchUpDuration: number = 0.8;
+  private lastStumbleTimestamp: number = 0;
   private isWhistleBlownThisEvent: boolean = false;
 
   // Smoothing
@@ -375,42 +389,129 @@ export class ChaserModel {
   }
 
   public reset(): void {
-    this.mode = 'STANDBY';
-    this.actionState = 'PURSUIT_RUN';
-    this.currentDistanceZ = 14.0;
-    this.targetDistanceZ = 14.0;
-    this.reactionTimer = 0;
-    this.reactionDuration = 0;
-    this.animTime = 0;
+    this.setChaseState('RESET');
+  }
+
+  public setChaseState(state: ChaseState): void {
+    this.chaseState = state;
     this.isWhistleBlownThisEvent = false;
-    this.mesh.visible = false;
+
+    switch (state) {
+      case 'INTRO_CHASE':
+        this.mode = 'INTRO';
+        this.mesh.visible = true;
+        this.actionState = 'WHISTLE_ALERT';
+        this.currentDistanceZ = 3.6;
+        this.targetDistanceZ = 3.0;
+        this.currentX = 0.65; // Positioned authoritatively in right track lane during intro
+        this.reactionTimer = 0;
+        this.cleanRunTimer = 0;
+        break;
+
+      case 'DISTANT':
+        this.mode = 'STANDBY';
+        this.targetDistanceZ = 14.0;
+        this.actionState = 'PURSUIT_RUN';
+        this.cleanRunTimer = 0;
+        this.catchUpTimer = 0;
+        break;
+
+      case 'CLOSING_IN':
+        this.mode = 'STUMBLE';
+        this.mesh.visible = true;
+        this.actionState = 'LUNGE_REACH';
+        // Snap closer if lingering back in standby (14m) so lunge immediately punches into camera frame
+        if (this.currentDistanceZ > 6.0) {
+          this.currentDistanceZ = 4.6;
+        }
+        this.targetDistanceZ = 3.0;
+        this.catchUpTimer = 0;
+        this.catchUpDuration = 0.8;
+        this.reactionTimer = 0;
+        this.reactionDuration = this.cleanRunDuration;
+        EventBus.getInstance().emit(EVENTS.CHASER_WHISTLE);
+        EventBus.getInstance().emit(EVENTS.CHASER_PROXIMITY_WARNING || 'CHASER_PROXIMITY_WARNING');
+        break;
+
+      case 'CLOSE_PURSUIT':
+        this.mode = 'STUMBLE';
+        this.mesh.visible = true;
+        this.actionState = 'LUNGE_REACH';
+        this.targetDistanceZ = 2.4; // Hot on runner's heels
+        this.cleanRunTimer = 0;
+        break;
+
+      case 'CAPTURE':
+        this.mode = 'CAUGHT';
+        this.mesh.visible = true;
+        this.targetDistanceZ = 1.8;
+        this.actionState = 'CAUGHT_STAND';
+        EventBus.getInstance().emit(EVENTS.CHASER_CAPTURED || 'CHASER_CAPTURED');
+        break;
+
+      case 'RESET':
+        this.chaseState = 'DISTANT';
+        this.mode = 'STANDBY';
+        this.currentDistanceZ = 14.0;
+        this.targetDistanceZ = 14.0;
+        this.reactionTimer = 0;
+        this.reactionDuration = 0;
+        this.cleanRunTimer = 0;
+        this.catchUpTimer = 0;
+        this.animTime = 0;
+        this.isWhistleBlownThisEvent = false;
+        this.actionState = 'PURSUIT_RUN';
+        this.mesh.visible = false;
+        break;
+    }
+  }
+
+  public getChaseState(): ChaseState {
+    return this.chaseState;
+  }
+
+  public isCatchUpMode(): boolean {
+    return this.chaseState === 'CLOSING_IN' || this.chaseState === 'CLOSE_PURSUIT';
+  }
+
+  public setCleanRunDuration(sec: number): void {
+    this.cleanRunDuration = Math.max(0.5, sec);
+  }
+
+  public getCleanRunDuration(): number {
+    return this.cleanRunDuration;
+  }
+
+  public onMinorStumble(): { wasClose: boolean; captured: boolean } {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.lastStumbleTimestamp < 120) {
+      return {
+        wasClose: this.isCatchUpMode(),
+        captured: this.chaseState === 'CAPTURE'
+      };
+    }
+    this.lastStumbleTimestamp = now;
+
+    if (this.isCatchUpMode()) {
+      this.setChaseState('CAPTURE');
+      return { wasClose: true, captured: true };
+    } else {
+      this.setChaseState('CLOSING_IN');
+      return { wasClose: false, captured: false };
+    }
   }
 
   public setMode(mode: ChaserMode): void {
-    this.mode = mode;
     this.isWhistleBlownThisEvent = false;
 
     if (mode === 'INTRO') {
-      this.mesh.visible = true;
-      this.actionState = 'WHISTLE_ALERT';
-      this.currentDistanceZ = 3.6;
-      this.targetDistanceZ = 3.0;
-      this.currentX = 0.65; // Positioned authoritatively in right track lane during intro
+      this.setChaseState('INTRO_CHASE');
     } else if (mode === 'STANDBY') {
-      this.targetDistanceZ = 14.0;
-      this.actionState = 'PURSUIT_RUN';
+      this.setChaseState('DISTANT');
     } else if (mode === 'STUMBLE') {
-      this.mesh.visible = true;
-      this.actionState = 'LUNGE_REACH';
-      // Snap closer if lingering back in standby (14m) so lunge immediately punches into camera frame
-      if (this.currentDistanceZ > 4.6) {
-        this.currentDistanceZ = 4.6;
-      }
-      this.targetDistanceZ = 2.4; // Surge closely behind player into camera frustum (cam is at z + 5.6m)
-      this.reactionTimer = 0;
-      this.reactionDuration = 1.8; // 1.8s close pursuit window
-      EventBus.getInstance().emit(EVENTS.CHASER_WHISTLE);
+      this.setChaseState('CLOSING_IN');
     } else if (mode === 'NEAR_MISS') {
+      this.mode = 'NEAR_MISS';
       this.mesh.visible = true;
       this.actionState = 'PURSUIT_RUN';
       if (this.currentDistanceZ > 7.5) {
@@ -421,9 +522,7 @@ export class ChaserModel {
       this.reactionDuration = 1.0;
       EventBus.getInstance().emit(EVENTS.CHASER_WHISTLE);
     } else if (mode === 'CAUGHT') {
-      this.mesh.visible = true;
-      this.targetDistanceZ = 1.8;
-      this.actionState = 'CAUGHT_STAND';
+      this.setChaseState('CAPTURE');
     }
   }
 
@@ -432,17 +531,17 @@ export class ChaserModel {
   }
 
   public triggerStumbleReaction(): void {
-    this.setMode('STUMBLE');
+    this.onMinorStumble();
   }
 
   public triggerNearMissReaction(): void {
-    if (this.mode === 'STANDBY') {
+    if (this.chaseState === 'DISTANT') {
       this.setMode('NEAR_MISS');
     }
   }
 
   public triggerCaughtReaction(): void {
-    this.setMode('CAUGHT');
+    this.setChaseState('CAPTURE');
   }
 
   /**
@@ -456,14 +555,27 @@ export class ChaserModel {
   ): void {
     this.animTime += dt * Math.max(1.0, (playerSpeed / CONSTANTS.INITIAL_SPEED) * 12.0);
 
-    // 1. Manage Reaction Timers & Dynamic Distances
-    if (this.mode === 'STUMBLE' || this.mode === 'NEAR_MISS') {
+    // 1. Manage Reaction Timers & Dynamic Chase State Transitions
+    if (this.chaseState === 'CLOSING_IN') {
+      this.catchUpTimer += dt;
+      this.reactionTimer += dt;
+      if (this.currentDistanceZ <= 3.4 || this.catchUpTimer >= this.catchUpDuration) {
+        this.setChaseState('CLOSE_PURSUIT');
+      }
+      if (this.reactionTimer >= this.reactionDuration) {
+        this.setChaseState('DISTANT');
+      }
+    } else if (this.chaseState === 'CLOSE_PURSUIT') {
+      this.cleanRunTimer += dt;
+      this.reactionTimer += dt;
+      if (this.cleanRunTimer >= this.cleanRunDuration || this.reactionTimer >= this.reactionDuration) {
+        // Player ran cleanly! Guard gradually retreats back to DISTANT
+        this.setChaseState('DISTANT');
+      }
+    } else if (this.mode === 'NEAR_MISS') {
       this.reactionTimer += dt;
       if (this.reactionTimer >= this.reactionDuration) {
-        // Recovery: ease back to standby
-        this.mode = 'STANDBY';
-        this.targetDistanceZ = 14.0;
-        this.actionState = 'PURSUIT_RUN';
+        this.setChaseState('DISTANT');
       }
     }
 
@@ -484,8 +596,8 @@ export class ChaserModel {
     this.mesh.position.set(this.currentX, this.currentY, chaserZ);
 
     // Frustum / Distance Visibility optimization
-    // If chaser is far back in standby (> 15m), hide mesh to save draw calls
-    if (this.mode === 'STANDBY' && this.currentDistanceZ >= 13.5) {
+    // If chaser is far back in standby (> 13.5m) and in DISTANT state, hide mesh to save draw calls
+    if (this.chaseState === 'DISTANT' && this.currentDistanceZ >= 13.5) {
       this.mesh.visible = false;
     } else {
       this.mesh.visible = true;

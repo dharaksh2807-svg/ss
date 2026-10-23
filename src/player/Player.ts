@@ -7,6 +7,7 @@ import { InputAction } from '../core/InputManager';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
+import { ChaserModel } from '../characters/ChaserModel';
 
 import { SpeedController } from '../core/SpeedController';
 import { PacingMetrics } from '../track/PacingMetrics';
@@ -33,6 +34,7 @@ export class Player {
   public model: CharacterModel;
   public powerups: PowerupManager;
   public hoverboardManager: HoverboardManager;
+  private chaser: ChaserModel | null = null;
   public speedController: SpeedController = new SpeedController();
 
   // Position & Kinematics
@@ -193,6 +195,14 @@ export class Player {
     this.speedController.setMode(mode);
   }
 
+  public setChaser(chaser: ChaserModel): void {
+    this.chaser = chaser;
+  }
+
+  public getChaser(): ChaserModel | null {
+    return this.chaser;
+  }
+
   public handleInput(action: InputAction): void {
     if (this.state === 'CRASH' || this.state === 'IDLE') return;
 
@@ -239,8 +249,7 @@ export class Player {
     const nextLane = THREE.MathUtils.clamp(this.currentLane + direction, -1, 1) as LaneIndex;
     if (nextLane === this.currentLane) {
       // Hit outer side boundary / wall bump feedback
-      this.stumble();
-      this.bankingAngle = direction * -0.15;
+      this.handleBoundaryCollision(direction);
       return;
     }
 
@@ -711,13 +720,13 @@ export class Player {
       return false; // Ignored during grace period
     }
 
-    // 1. Protective Shield absorbs collision
+    // 1. Protective Shield absorbs collision (does not advance guard capture state)
     if (this.powerups.consumeShield()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by shield!
     }
 
-    // 2. Hoverboard absorbs collision
+    // 2. Hoverboard absorbs collision (breaks board without advancing guard to capture)
     if (this.hoverboardManager.breakBoard()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by hoverboard!
@@ -726,6 +735,23 @@ export class Player {
     this.state = 'CRASH';
     this.eventBus.emit(EVENTS.CRASH, reason);
     return true; // Fatal crash
+  }
+
+  public handleBoundaryCollision(direction: -1 | 1): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE' || this.isInvulnerable()) return;
+
+    if (this.chaser && this.chaser.isCatchUpMode()) {
+      // Guard is already close! Second stumble while guard close results in capture!
+      this.chaser.setChaseState('CAPTURE');
+      this.crash('CHASER_CAPTURE');
+      return;
+    }
+
+    this.stumble();
+    this.bankingAngle = direction * -0.15;
+    if (this.chaser) {
+      this.chaser.onMinorStumble();
+    }
   }
 
   public updateCollider(): void {
