@@ -1,5 +1,6 @@
 import { SoundManager } from '../audio/SoundManager';
 import { EventBus } from '../core/EventBus';
+import { GraphicsManager, GraphicsPreset, QualityConfig } from '../scene/GraphicsManager';
 
 export class SettingsModal {
   private element: HTMLElement;
@@ -9,8 +10,16 @@ export class SettingsModal {
   private sfxSlider: HTMLInputElement;
   private qualitySelect: HTMLSelectElement | null;
   private introSelect: HTMLSelectElement | null;
+  private resolvedBadgeEl: HTMLElement | null;
+  private qualityDescEl: HTMLElement | null;
+  private showFpsCheckbox: HTMLInputElement | null;
+  private presetButtons: NodeListOf<HTMLButtonElement>;
+
+  private graphicsManager: GraphicsManager;
 
   constructor(private soundManager: SoundManager) {
+    this.graphicsManager = GraphicsManager.getInstance();
+
     this.element = document.getElementById('settings-modal')!;
     this.closeBtn = document.getElementById('settings-close-btn') as HTMLButtonElement;
     this.masterSlider = document.getElementById('setting-master-vol') as HTMLInputElement;
@@ -19,6 +28,16 @@ export class SettingsModal {
     this.qualitySelect = document.getElementById('setting-graphics-quality') as HTMLSelectElement | null;
     this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
 
+    this.resolvedBadgeEl = document.getElementById('setting-graphics-resolved-badge');
+    this.qualityDescEl = document.getElementById('setting-graphics-desc');
+    this.showFpsCheckbox = document.getElementById('setting-show-fps') as HTMLInputElement | null;
+    this.presetButtons = this.element.querySelectorAll('.preset-segment-btn');
+
+    this.setupListeners();
+    this.refreshGraphicsUI();
+  }
+
+  private setupListeners(): void {
     this.closeBtn.addEventListener('click', () => this.hide());
 
     this.masterSlider.addEventListener('input', (e) => {
@@ -36,13 +55,31 @@ export class SettingsModal {
       this.soundManager.setSfxVolume(val);
     });
 
+    // Segmented Preset Buttons
+    this.presetButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = btn.getAttribute('data-preset') as GraphicsPreset;
+        if (preset) {
+          this.graphicsManager.setPreset(preset, true);
+          this.refreshGraphicsUI();
+        }
+      });
+    });
+
+    // Programmatic select synchronization
     if (this.qualitySelect) {
-      const savedQuality = localStorage.getItem('metro_graphics_preset') || 'HIGH';
-      this.qualitySelect.value = savedQuality;
       this.qualitySelect.addEventListener('change', () => {
-        const quality = this.qualitySelect!.value as 'HIGH' | 'MEDIUM' | 'LOW';
-        localStorage.setItem('metro_graphics_preset', quality);
-        EventBus.getInstance().emit('GRAPHICS_QUALITY_CHANGED', quality);
+        const preset = this.qualitySelect!.value as GraphicsPreset;
+        this.graphicsManager.setPreset(preset, true);
+        this.refreshGraphicsUI();
+      });
+    }
+
+    // FPS Display toggle
+    if (this.showFpsCheckbox) {
+      this.showFpsCheckbox.checked = this.graphicsManager.isFpsDisplayEnabled();
+      this.showFpsCheckbox.addEventListener('change', () => {
+        this.graphicsManager.setFpsDisplayEnabled(this.showFpsCheckbox!.checked);
       });
     }
 
@@ -56,12 +93,56 @@ export class SettingsModal {
     }
 
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
+
+    // Update badge when adaptive controller shifts quality in real time
+    EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
+      this.updateResolvedBadge(config);
+    });
+  }
+
+  private refreshGraphicsUI(): void {
+    const preset = this.graphicsManager.getPreset();
+    const config = this.graphicsManager.getActiveConfig();
+
+    // 1. Update active class on segmented buttons
+    this.presetButtons.forEach((btn) => {
+      const btnPreset = btn.getAttribute('data-preset');
+      btn.classList.toggle('active', btnPreset === preset);
+    });
+
+    // 2. Sync select element
+    if (this.qualitySelect) {
+      this.qualitySelect.value = preset;
+    }
+
+    // 3. Update description and badge
+    this.updateResolvedBadge(config);
+
+    // 4. Sync FPS checkbox
+    if (this.showFpsCheckbox) {
+      this.showFpsCheckbox.checked = this.graphicsManager.isFpsDisplayEnabled();
+    }
+  }
+
+  private updateResolvedBadge(config: QualityConfig): void {
+    if (this.resolvedBadgeEl) {
+      const preset = this.graphicsManager.getPreset();
+      if (preset === 'AUTO') {
+        this.resolvedBadgeEl.textContent = `Auto (${config.resolved})`;
+        this.resolvedBadgeEl.className = `quality-resolved-badge auto-badge tier-${config.resolved.toLowerCase()}`;
+      } else {
+        this.resolvedBadgeEl.textContent = `${config.resolved}`;
+        this.resolvedBadgeEl.className = `quality-resolved-badge manual-badge tier-${config.resolved.toLowerCase()}`;
+      }
+    }
+
+    if (this.qualityDescEl) {
+      this.qualityDescEl.textContent = config.description;
+    }
   }
 
   public show(): void {
-    if (this.qualitySelect) {
-      this.qualitySelect.value = localStorage.getItem('metro_graphics_preset') || 'HIGH';
-    }
+    this.refreshGraphicsUI();
     if (this.introSelect) {
       this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
     }

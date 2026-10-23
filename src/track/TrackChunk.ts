@@ -16,6 +16,7 @@ export class TrackChunk {
   public obstacles: ObstacleInstance[] = [];
   public collectibles: CollectibleInstance[] = [];
   public chunkHadCollision: boolean = false;
+  public decorativeGroup: THREE.Group;
 
   private static sharedMaterials: {
     ballastMat: THREE.MeshStandardMaterial;
@@ -37,13 +38,28 @@ export class TrackChunk {
     graffitiMat2: THREE.MeshBasicMaterial;
   } | null = null;
 
+  private static sleeperGeo: THREE.BoxGeometry | null = null;
+  private static tiePlateGeo: THREE.BoxGeometry | null = null;
+  private static railGeo: THREE.BoxGeometry | null = null;
+
   constructor(
     private obstacleFactory: ObstacleFactory,
     private collectibleFactory: CollectibleFactory
   ) {
     this.group = new THREE.Group();
+    this.decorativeGroup = new THREE.Group();
+    this.decorativeGroup.name = 'chunk_decorative_scenery';
+    this.group.add(this.decorativeGroup);
     this.initSharedMaterials();
     this.buildStaticTrackGeometry();
+  }
+
+  public setSceneryDetail(detail: 'FULL' | 'BALANCED' | 'MINIMAL'): void {
+    if (detail === 'MINIMAL') {
+      this.decorativeGroup.visible = false;
+    } else {
+      this.decorativeGroup.visible = true;
+    }
   }
 
   private initSharedMaterials(): void {
@@ -225,26 +241,43 @@ export class TrackChunk {
     // 3. Trackside Brick / Concrete Retaining Walls with Graffiti & Conduits
     this.buildTracksideRetainingWalls(roadbedWidth, curbWidth);
 
-    // 4. Rails & Wooden Sleepers with Tie Plates for all 3 lanes
+    // 4. Rails & Wooden Sleepers with Tie Plates for all 3 lanes using InstancedMesh
     const sleeperSpacing = 1.4;
     const sleeperCount = Math.floor(this.length / sleeperSpacing);
-    const sleeperGeo = new THREE.BoxGeometry(CONSTANTS.LANE_WIDTH * 0.82, 0.16, 0.36);
-    const tiePlateGeo = new THREE.BoxGeometry(0.24, 0.04, 0.38);
-
     const railGauge = 1.6; // Distance between rails in lane
     const railHeadW = 0.12;
     const railHeadH = 0.18;
-    const railGeo = new THREE.BoxGeometry(railHeadW, railHeadH, this.length);
+
+    if (!TrackChunk.sleeperGeo) {
+      TrackChunk.sleeperGeo = new THREE.BoxGeometry(CONSTANTS.LANE_WIDTH * 0.82, 0.16, 0.36);
+      TrackChunk.tiePlateGeo = new THREE.BoxGeometry(0.24, 0.04, 0.38);
+      TrackChunk.railGeo = new THREE.BoxGeometry(railHeadW, railHeadH, this.length);
+    }
+
+    const totalSleepers = sleeperCount * CONSTANTS.LANE_POSITIONS.length;
+    const totalTiePlates = totalSleepers * 2;
+
+    const sleeperInstanced = new THREE.InstancedMesh(TrackChunk.sleeperGeo!, mats.sleeperMat, totalSleepers);
+    sleeperInstanced.receiveShadow = true;
+    this.group.add(sleeperInstanced);
+
+    const tiePlateInstanced = new THREE.InstancedMesh(TrackChunk.tiePlateGeo!, mats.tiePlateMat, totalTiePlates);
+    tiePlateInstanced.receiveShadow = true;
+    this.group.add(tiePlateInstanced);
+
+    const dummy = new THREE.Object3D();
+    let sleeperIdx = 0;
+    let tiePlateIdx = 0;
 
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
       // Chrome polished steel running rails (left & right rail per lane)
-      const leftRail = new THREE.Mesh(railGeo, mats.railTopMat);
+      const leftRail = new THREE.Mesh(TrackChunk.railGeo!, mats.railTopMat);
       leftRail.position.set(laneX - railGauge * 0.5, railHeadH * 0.5 + 0.05, -this.length * 0.5);
       leftRail.castShadow = true;
       leftRail.receiveShadow = true;
       this.group.add(leftRail);
 
-      const rightRail = new THREE.Mesh(railGeo, mats.railTopMat);
+      const rightRail = new THREE.Mesh(TrackChunk.railGeo!, mats.railTopMat);
       rightRail.position.set(laneX + railGauge * 0.5, railHeadH * 0.5 + 0.05, -this.length * 0.5);
       rightRail.castShadow = true;
       rightRail.receiveShadow = true;
@@ -254,21 +287,24 @@ export class TrackChunk {
       for (let s = 0; s < sleeperCount; s++) {
         const sz = -s * sleeperSpacing - sleeperSpacing * 0.5;
 
-        const sleeper = new THREE.Mesh(sleeperGeo, mats.sleeperMat);
-        sleeper.position.set(laneX, 0.06, sz);
-        sleeper.receiveShadow = true;
-        this.group.add(sleeper);
+        dummy.position.set(laneX, 0.06, sz);
+        dummy.updateMatrix();
+        sleeperInstanced.setMatrixAt(sleeperIdx++, dummy.matrix);
 
-        // Left & right steel tie plates under rails
-        const leftPlate = new THREE.Mesh(tiePlateGeo, mats.tiePlateMat);
-        leftPlate.position.set(laneX - railGauge * 0.5, 0.14, sz);
-        this.group.add(leftPlate);
+        // Left tie plate
+        dummy.position.set(laneX - railGauge * 0.5, 0.14, sz);
+        dummy.updateMatrix();
+        tiePlateInstanced.setMatrixAt(tiePlateIdx++, dummy.matrix);
 
-        const rightPlate = new THREE.Mesh(tiePlateGeo, mats.tiePlateMat);
-        rightPlate.position.set(laneX + railGauge * 0.5, 0.14, sz);
-        this.group.add(rightPlate);
+        // Right tie plate
+        dummy.position.set(laneX + railGauge * 0.5, 0.14, sz);
+        dummy.updateMatrix();
+        tiePlateInstanced.setMatrixAt(tiePlateIdx++, dummy.matrix);
       }
     });
+
+    sleeperInstanced.instanceMatrix.needsUpdate = true;
+    tiePlateInstanced.instanceMatrix.needsUpdate = true;
 
     // 5. Overhead Catenary Steel Truss Gantries & Power Cables
     this.buildCatenarySystem();
@@ -321,13 +357,13 @@ export class TrackChunk {
     [-wallX, wallX].forEach((wx) => {
       const topBar = new THREE.Mesh(railBarGeo, yellowMat);
       topBar.position.set(wx, wallHeight + 0.8, -this.length * 0.5);
-      this.group.add(topBar);
+      this.decorativeGroup.add(topBar);
 
       // Stanchion posts every 6m
       for (let z = 0; z < this.length; z += 6) {
         const post = new THREE.Mesh(railPostGeo, yellowMat);
         post.position.set(wx, wallHeight + 0.45, -z - 3);
-        this.group.add(post);
+        this.decorativeGroup.add(post);
       }
     });
 
@@ -337,12 +373,12 @@ export class TrackChunk {
     const decal1 = new THREE.Mesh(decalGeo, mats.graffitiMat1);
     decal1.rotation.y = Math.PI / 2;
     decal1.position.set(-wallX + wallThick * 0.5 + 0.02, 1.3, -this.length * 0.3);
-    this.group.add(decal1);
+    this.decorativeGroup.add(decal1);
 
     const decal2 = new THREE.Mesh(decalGeo, mats.graffitiMat2);
     decal2.rotation.y = -Math.PI / 2;
     decal2.position.set(wallX - wallThick * 0.5 - 0.02, 1.3, -this.length * 0.7);
-    this.group.add(decal2);
+    this.decorativeGroup.add(decal2);
 
     // Industrial electrical conduits & transformers along wall
     const pipeGeo = new THREE.CylinderGeometry(0.06, 0.06, this.length, 8);
@@ -350,7 +386,7 @@ export class TrackChunk {
     const leftPipe = new THREE.Mesh(pipeGeo, pipeMat);
     leftPipe.rotation.x = Math.PI / 2;
     leftPipe.position.set(-wallX + wallThick * 0.5 + 0.08, 0.65, -this.length * 0.5);
-    this.group.add(leftPipe);
+    this.decorativeGroup.add(leftPipe);
 
     // Trackside utility transformer cabinet
     const transGeo = new THREE.BoxGeometry(0.8, 1.4, 1.1);
@@ -358,7 +394,7 @@ export class TrackChunk {
     const trans = new THREE.Mesh(transGeo, transMat);
     trans.position.set(-wallX + wallThick * 0.5 + 0.5, 0.7, -this.length * 0.55);
     trans.castShadow = true;
-    this.group.add(trans);
+    this.decorativeGroup.add(trans);
   }
 
   /**
@@ -429,7 +465,7 @@ export class TrackChunk {
         gantryGroup.add(greenLens);
       });
 
-      this.group.add(gantryGroup);
+      this.decorativeGroup.add(gantryGroup);
     }
 
     // Overhead catenary contact power cables stretching along the chunk for each lane
@@ -438,7 +474,7 @@ export class TrackChunk {
       const cable = new THREE.Mesh(cableGeo, mats.cableMat);
       cable.rotation.x = Math.PI / 2;
       cable.position.set(laneX, poleHeight - 1.0, -this.length * 0.5);
-      this.group.add(cable);
+      this.decorativeGroup.add(cable);
     });
   }
 
@@ -541,7 +577,7 @@ export class TrackChunk {
           bGroup.add(vent);
         }
 
-        this.group.add(bGroup);
+        this.decorativeGroup.add(bGroup);
       });
     }
   }
@@ -587,7 +623,7 @@ export class TrackChunk {
       bridgeGroup.add(pier);
     });
 
-    this.group.add(bridgeGroup);
+    this.decorativeGroup.add(bridgeGroup);
   }
 
   /**

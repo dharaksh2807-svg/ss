@@ -30,6 +30,7 @@ import { PracticeController } from '../practice/PracticeController';
 import { PracticeModal } from '../ui/PracticeModal';
 import { DevTestArena } from '../debug/DevTestArena';
 import { PracticeModuleId } from '../practice/PracticeTypes';
+import { GraphicsManager } from '../scene/GraphicsManager';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -132,13 +133,15 @@ export class Game {
       }
     );
     this.devTestArena.attachToWindow(this);
+    // Apply saved graphics quality preset
+    const graphics = GraphicsManager.getInstance();
+    const config = graphics.getActiveConfig();
+    this.worldScene.applyGraphicsConfig(config);
+
     if (typeof window !== 'undefined') {
       (window as any).__METRO_GAME__ = this;
+      (window as any).__GRAPHICS_MANAGER__ = graphics;
     }
-
-    // Apply saved graphics quality preset
-    const savedQuality = (localStorage.getItem('metro_graphics_preset') || 'HIGH') as 'HIGH' | 'MEDIUM' | 'LOW';
-    this.worldScene.setGraphicsQuality(savedQuality);
 
     // Stage hero character in Lobby pose facing the camera
     this.player.mesh.rotation.y = Math.PI - 0.2;
@@ -588,6 +591,15 @@ export class Game {
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();
+
+    // Update adaptive graphics profiling and ground contact shadow
+    GraphicsManager.getInstance().update(effectiveDt, this.lifecycleState === 'PLAYING');
+    this.worldScene.updatePlayerContactShadow(
+      this.player.position.x,
+      this.player.position.y,
+      this.player.position.z,
+      this.player.groundY
+    );
 
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);

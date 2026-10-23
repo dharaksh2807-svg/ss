@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { SupportSurfaceType } from '../player/Player';
+import { GraphicsManager, QualityConfig } from './GraphicsManager';
 
 interface DustParticle {
   mesh: THREE.Mesh;
@@ -18,6 +19,7 @@ export class LocomotionVFX {
   private landingPool: DustParticle[] = [];
   private slidePool: DustParticle[] = [];
   private slideSpawnAccumulator: number = 0;
+  private particleMultiplier: number = 1.0;
   private eventBus = EventBus.getInstance();
   private unsubs: Array<() => void> = [];
 
@@ -25,6 +27,9 @@ export class LocomotionVFX {
     this.group = new THREE.Group();
     this.group.name = 'locomotion_vfx_group';
     scene.add(this.group);
+
+    const initialConfig = GraphicsManager.getInstance().getActiveConfig();
+    this.particleMultiplier = initialConfig.particleMultiplier;
 
     this.initPools();
     this.setupListeners();
@@ -97,6 +102,11 @@ export class LocomotionVFX {
       }
     });
     this.unsubs.push(unsub);
+
+    const unsubGraphics = this.eventBus.on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
+      this.particleMultiplier = config.particleMultiplier;
+    });
+    this.unsubs.push(unsubGraphics);
   }
 
   public spawnLandingDust(
@@ -104,7 +114,8 @@ export class LocomotionVFX {
     isFastDrop: boolean,
     surface: SupportSurfaceType
   ): void {
-    const particleCount = isFastDrop ? 12 : 8;
+    const rawCount = isFastDrop ? 12 : 8;
+    const particleCount = Math.max(1, Math.round(rawCount * this.particleMultiplier));
     const baseColor = surface === 'TRAIN_ROOF' ? 0xa0aec0 : 0xd8dde4;
     const speed = isFastDrop ? 2.6 : 1.8;
     const maxAge = isFastDrop ? 0.25 : 0.20;
@@ -148,7 +159,8 @@ export class LocomotionVFX {
 
   public spawnSlideFriction(pos: THREE.Vector3, dt: number, isBoard: boolean = false): void {
     this.slideSpawnAccumulator += dt;
-    if (this.slideSpawnAccumulator < 0.045) return;
+    const threshold = (isBoard ? 0.035 : 0.045) / Math.max(0.2, this.particleMultiplier);
+    if (this.slideSpawnAccumulator < threshold) return;
     this.slideSpawnAccumulator = 0;
 
     // Pick 1-2 inactive particles from slide pool

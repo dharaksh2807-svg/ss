@@ -10,6 +10,7 @@ import { ReachabilityValidator } from './ReachabilityValidator';
 import { DifficultyController } from './DifficultyController';
 import { PacingMetrics } from './PacingMetrics';
 import { AerialCoinManager } from './AerialCoinManager';
+import { GraphicsManager, QualityConfig } from '../scene/GraphicsManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -51,6 +52,18 @@ export class TrackManager {
     for (const vfx of this.pickupVfxPool) {
       this.scene.add(vfx.group);
     }
+
+    // Apply active scenery detail level from GraphicsManager
+    const currentConfig = GraphicsManager.getInstance().getActiveConfig();
+    for (const chunk of this.chunks) {
+      chunk.setSceneryDetail(currentConfig.sceneryDetail);
+    }
+
+    this.eventBus.on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
+      for (const chunk of this.chunks) {
+        chunk.setSceneryDetail(config.sceneryDetail);
+      }
+    });
 
     this.reset();
   }

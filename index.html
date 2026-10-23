@@ -396,13 +396,31 @@
               <label for="setting-sfx-vol">SFX Volume</label>
               <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.05" value="0.85" />
             </div>
-            <div class="setting-row">
-              <label for="setting-graphics-quality">Graphics Quality</label>
-              <select id="setting-graphics-quality" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
-                <option value="HIGH" selected>High (PBR Shadows & 2x DPR)</option>
-                <option value="MEDIUM">Medium (Balanced)</option>
-                <option value="LOW">Low (Battery Saver)</option>
+            <div class="setting-row graphics-setting-container">
+              <div class="setting-label-row">
+                <label>Graphics Quality</label>
+                <span id="setting-graphics-resolved-badge" class="quality-resolved-badge">Auto (High)</span>
+              </div>
+              <div class="graphics-preset-segmented" id="graphics-preset-selector">
+                <button type="button" class="preset-segment-btn" data-preset="AUTO">AUTO</button>
+                <button type="button" class="preset-segment-btn" data-preset="LOW">LOW</button>
+                <button type="button" class="preset-segment-btn" data-preset="MEDIUM">MEDIUM</button>
+                <button type="button" class="preset-segment-btn" data-preset="HIGH">HIGH</button>
+              </div>
+              <div id="setting-graphics-desc" class="quality-tradeoff-desc">
+                Automatically adjusts rendering quality based on hardware capabilities and live framerate.
+              </div>
+              <!-- Hidden select for programmatic/test compatibility -->
+              <select id="setting-graphics-quality" class="arcade-select" style="display: none;">
+                <option value="AUTO">Auto</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
               </select>
+            </div>
+            <div class="setting-row checkbox-row">
+              <label for="setting-show-fps">Show FPS & Frame Times</label>
+              <input type="checkbox" id="setting-show-fps" class="arcade-checkbox" />
             </div>
             <div class="setting-row">
               <label for="setting-opening-cinematic">Opening Sequence</label>

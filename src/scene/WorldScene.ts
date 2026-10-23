@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
+import { GraphicsManager, QualityConfig, GraphicsPreset, ResolvedQuality } from './GraphicsManager';
+import { EventBus } from '../core/EventBus';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -10,12 +12,17 @@ export class WorldScene {
   public skyMesh: THREE.Mesh;
   public cloudsGroup: THREE.Group;
   public skylineGroup: THREE.Group;
+  public playerContactShadow: THREE.Mesh;
+  private currentConfig: QualityConfig;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(CONSTANTS.COLORS.FOG);
     // Soft atmospheric distance haze
     this.scene.fog = new THREE.FogExp2(CONSTANTS.COLORS.FOG, 0.0042);
+
+    const graphics = GraphicsManager.getInstance();
+    this.currentConfig = graphics.getActiveConfig();
 
     // High performance WebGL renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -24,9 +31,9 @@ export class WorldScene {
       powerPreference: 'high-performance'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setPixelRatio(this.currentConfig.pixelRatio);
+    this.renderer.shadowMap.enabled = this.currentConfig.shadowMapEnabled;
+    this.renderer.shadowMap.type = this.currentConfig.shadowMapType;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
@@ -85,6 +92,24 @@ export class WorldScene {
     // 5. Subtle high-speed motion streaks (difficulty feedback)
     this.speedLinesMesh = this.createSpeedLines();
     this.scene.add(this.speedLinesMesh);
+
+    // 6. Ground contact blob shadow for player (active when real-time directional shadows are disabled)
+    const shadowGeo = new THREE.PlaneGeometry(1.5, 1.5);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x05070a,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false
+    });
+    this.playerContactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+    this.playerContactShadow.rotation.x = -Math.PI / 2;
+    this.playerContactShadow.position.set(0, 0.02, 0);
+    this.playerContactShadow.visible = this.currentConfig.contactBlobShadow;
+    this.scene.add(this.playerContactShadow);
+
+    EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
+      this.applyGraphicsConfig(config);
+    });
 
     window.addEventListener('resize', this.onWindowResize.bind(this));
   }
@@ -257,28 +282,81 @@ export class WorldScene {
     }
   }
 
-  public setGraphicsQuality(preset: 'HIGH' | 'MEDIUM' | 'LOW'): void {
-    if (preset === 'HIGH') {
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      this.sunLight.castShadow = true;
-      this.sunLight.shadow.mapSize.set(2048, 2048);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
-    } else if (preset === 'MEDIUM') {
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.BasicShadowMap;
-      this.sunLight.castShadow = true;
-      this.sunLight.shadow.mapSize.set(1024, 1024);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    } else {
-      this.renderer.shadowMap.enabled = false;
-      this.sunLight.castShadow = false;
-      this.renderer.setPixelRatio(1.0);
+  public applyGraphicsConfig(config: QualityConfig): void {
+    const wasShadowEnabled = this.renderer.shadowMap.enabled;
+    const wasShadowType = this.renderer.shadowMap.type;
+    this.currentConfig = config;
+
+    // 1. Reconfigure Pixel Ratio & Viewport Resolution
+    this.renderer.setPixelRatio(config.pixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 2. Reconfigure Shadow Maps
+    this.renderer.shadowMap.enabled = config.shadowMapEnabled;
+    this.renderer.shadowMap.type = config.shadowMapType;
+    this.sunLight.castShadow = config.shadowMapEnabled;
+
+    if (config.shadowMapEnabled) {
+      this.sunLight.shadow.mapSize.set(config.shadowMapSize, config.shadowMapSize);
+      if (this.sunLight.shadow.map) {
+        this.sunLight.shadow.map.dispose();
+        (this.sunLight.shadow.map as any) = null;
+      }
+    }
+
+    // Force material shader recompilation if shadow state changed at runtime
+    if (wasShadowEnabled !== config.shadowMapEnabled || wasShadowType !== config.shadowMapType) {
+      this.scene.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m) => {
+              if (m) m.needsUpdate = true;
+            });
+          } else if (mesh.material) {
+            mesh.material.needsUpdate = true;
+          }
+        }
+      });
+    }
+
+    // 3. Scenery Detail Toggles
+    this.cloudsGroup.visible = config.cloudsVisible;
+    this.skylineGroup.visible = config.skylineVisible;
+    if (this.speedLinesMesh) {
+      this.speedLinesMesh.visible = config.speedLinesVisible;
+    }
+
+    // 4. Contact Blob Shadow (Active when directional shadows are off)
+    if (this.playerContactShadow) {
+      this.playerContactShadow.visible = config.contactBlobShadow;
     }
   }
 
+  public updatePlayerContactShadow(playerX: number, playerY: number, playerZ: number, groundY: number = 0.02): void {
+    if (!this.playerContactShadow || !this.playerContactShadow.visible) return;
+
+    this.playerContactShadow.position.set(playerX, groundY + 0.02, playerZ);
+
+    // Scale and fade contact shadow as character jumps higher off ground/roof
+    const heightAboveSurface = Math.max(0, playerY - groundY);
+    const scaleFactor = Math.max(0.4, 1.5 - heightAboveSurface * 0.25);
+    this.playerContactShadow.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    const mat = this.playerContactShadow.material as THREE.MeshBasicMaterial;
+    if (mat) {
+      mat.opacity = Math.max(0.12, 0.45 - heightAboveSurface * 0.12);
+    }
+  }
+
+  public setGraphicsQuality(preset: 'HIGH' | 'MEDIUM' | 'LOW'): void {
+    const graphics = GraphicsManager.getInstance();
+    graphics.setPreset(preset, true);
+  }
+
   public onWindowResize(): void {
+    const config = GraphicsManager.getInstance().getActiveConfig();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(config.pixelRatio);
   }
 }

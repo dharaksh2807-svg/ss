@@ -3,6 +3,7 @@ import { PowerupManager, PowerupType } from '../player/PowerupManager';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
 import { ProgressionManager } from '../progression/ProgressionManager';
+import { GraphicsManager } from '../scene/GraphicsManager';
 
 export class HUD {
   private container: HTMLDivElement;
@@ -25,6 +26,8 @@ export class HUD {
   private modeBadgeEl: HTMLElement | null = null;
   private toastContainerEl: HTMLElement | null = null;
   private missionTickerEl: HTMLElement | null = null;
+  private fpsCounterEl: HTMLElement | null = null;
+  private fpsUpdateTimer: number = 0;
 
   private completedCelebrationMissionId: string | null = null;
   private completedCelebrationTimer: number = 0;
@@ -134,6 +137,25 @@ export class HUD {
     bus.on('CHRONO_ORB_COLLECTED', (sec: number = 5) => {
       this.showFeedbackBadge(`+${sec}s TIME BONUS! ⏱️`, 'precision');
     });
+
+    // Lightweight In-Game FPS & Diagnostics display
+    let fpsEl = document.getElementById('hud-fps-counter');
+    if (!fpsEl) {
+      fpsEl = document.createElement('div');
+      fpsEl.id = 'hud-fps-counter';
+      fpsEl.className = 'hud-fps-counter hidden';
+      this.container.appendChild(fpsEl);
+    }
+    this.fpsCounterEl = fpsEl;
+
+    const graphics = GraphicsManager.getInstance();
+    if (graphics.isFpsDisplayEnabled()) {
+      this.fpsCounterEl.classList.remove('hidden');
+    }
+
+    bus.on('FPS_DISPLAY_TOGGLED', (enabled: boolean) => {
+      this.fpsCounterEl?.classList.toggle('hidden', !enabled);
+    });
   }
 
   public setMultiplier(val: number): void {
@@ -147,6 +169,21 @@ export class HUD {
   }
 
   public update(dt: number = 0.016): void {
+    // 0. Update lightweight FPS & Performance counter if enabled
+    if (this.fpsCounterEl && !this.fpsCounterEl.classList.contains('hidden')) {
+      this.fpsUpdateTimer += dt;
+      if (this.fpsUpdateTimer >= 0.25) {
+        this.fpsUpdateTimer = 0;
+        const fps = Math.min(120, Math.round(dt > 0 ? 1 / dt : 60));
+        const ms = (dt * 1000).toFixed(1);
+        const gm = GraphicsManager.getInstance();
+        const resolved = gm.getResolvedQuality();
+        const preset = gm.getPreset();
+        const modeStr = preset === 'AUTO' ? `Auto (${resolved})` : resolved;
+        this.fpsCounterEl.textContent = `${fps} FPS • ${ms}ms • ${modeStr}`;
+      }
+    }
+
     // 1. Update on-screen hoverboard deploy button
     if (this.boardBtn && this.boardChargesBadge) {
       const isBoardActive = this.hoverboardManager.isBoardActive();
