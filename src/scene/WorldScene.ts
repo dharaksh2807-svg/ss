@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { GraphicsManager, QualityConfig, GraphicsPreset, ResolvedQuality } from './GraphicsManager';
 import { EventBus } from '../core/EventBus';
-import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
+import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -17,6 +18,8 @@ export class WorldScene {
   public historicSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
+  public rainParticles: THREE.Points | null = null;
+  public currentAtmospherePreset: AtmospherePreset = 'CLEAR_DAYLIGHT';
   private currentConfig: QualityConfig;
 
   // Environment and smooth atmospheric transition states
@@ -133,11 +136,37 @@ export class WorldScene {
     this.playerContactShadow.visible = this.currentConfig.contactBlobShadow;
     this.scene.add(this.playerContactShadow);
 
+    // 7. Light atmospheric rain particle streaks
+    this.rainParticles = this.createRainParticles();
+    this.scene.add(this.rainParticles);
+
     EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
       this.applyGraphicsConfig(config);
     });
 
     window.addEventListener('resize', this.onWindowResize.bind(this));
+  }
+
+  private createRainParticles(): THREE.Points {
+    const count = 350;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 36;
+      positions[i * 3 + 1] = Math.random() * 22;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 55;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x93c5fd,
+      size: 0.20,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false
+    });
+    const p = new THREE.Points(geo, mat);
+    p.visible = false;
+    return p;
   }
 
   private speedLinesMesh: THREE.LineSegments;
@@ -418,7 +447,100 @@ export class WorldScene {
     }
   }
 
-  public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED): void {
+  /**
+   * Applies a weather or time-of-day atmospheric lighting and fog preset
+   */
+  public applyAtmospherePreset(preset: AtmospherePreset, blendFactor: number = 1.0): void {
+    this.currentAtmospherePreset = preset;
+    const t = Math.max(0, Math.min(1, blendFactor));
+
+    let sunColorHex = 0xfff8eb;
+    let sunIntensity = 1.35;
+    let skyTopHex = 0x3a82f7;
+    let skyBottomHex = 0xcfe2ff;
+    let fogColorHex = 0x88c4ff;
+    let fogDensity = 0.0022;
+    let fillColorHex = 0xa0c4e8;
+    let fillIntensity = 0.70;
+    let isRain = false;
+
+    switch (preset) {
+      case 'WARM_GOLDEN_HOUR':
+        sunColorHex = 0xffb366;
+        sunIntensity = 1.25;
+        skyTopHex = 0xd9531e;
+        skyBottomHex = 0xfed7aa;
+        fogColorHex = 0xe6915b;
+        fogDensity = 0.0030;
+        fillColorHex = 0xffaa77;
+        fillIntensity = 0.65;
+        break;
+      case 'SOFT_OVERCAST':
+        sunColorHex = 0xd0e0f0;
+        sunIntensity = 0.95;
+        skyTopHex = 0x64748b;
+        skyBottomHex = 0xc8d6e5;
+        fogColorHex = 0x94a3b8;
+        fogDensity = 0.0038;
+        fillColorHex = 0x94a3b8;
+        fillIntensity = 0.60;
+        break;
+      case 'LIGHT_RAIN':
+        sunColorHex = 0x94a3b8;
+        sunIntensity = 0.75;
+        skyTopHex = 0x334155;
+        skyBottomHex = 0x64748b;
+        fogColorHex = 0x475569;
+        fogDensity = 0.0050;
+        fillColorHex = 0x64748b;
+        fillIntensity = 0.50;
+        isRain = true;
+        break;
+      case 'ILLUMINATED_UNDERGROUND':
+        sunColorHex = 0xfff5e6;
+        sunIntensity = 0.45;
+        skyTopHex = 0x0f172a;
+        skyBottomHex = 0x1e293b;
+        fogColorHex = 0x111827;
+        fogDensity = 0.0055;
+        fillColorHex = 0x38bdf8;
+        fillIntensity = 0.85;
+        break;
+      case 'CLEAR_DAYLIGHT':
+      default:
+        sunColorHex = 0xfff8eb;
+        sunIntensity = 1.35;
+        skyTopHex = 0x3a82f7;
+        skyBottomHex = 0xcfe2ff;
+        fogColorHex = 0x88c4ff;
+        fogDensity = 0.0022;
+        fillColorHex = 0xa0c4e8;
+        fillIntensity = 0.70;
+        break;
+    }
+
+    if (this.rainParticles) {
+      this.rainParticles.visible = isRain;
+    }
+
+    // Smoothly lerp towards target
+    const targetFog = new THREE.Color(fogColorHex);
+    this.scene.background = targetFog;
+    if (this.scene.fog && (this.scene.fog as THREE.FogExp2).isFogExp2) {
+      this.scene.fog.color.lerp(targetFog, t);
+      (this.scene.fog as THREE.FogExp2).density = THREE.MathUtils.lerp((this.scene.fog as THREE.FogExp2).density, fogDensity, t);
+    }
+
+    this.sunLight.color.lerp(new THREE.Color(sunColorHex), t);
+    this.sunLight.intensity = THREE.MathUtils.lerp(this.sunLight.intensity, sunIntensity, t);
+
+    this.fillLight.color.lerp(new THREE.Color(fillColorHex), t);
+    this.fillLight.intensity = THREE.MathUtils.lerp(this.fillLight.intensity, fillIntensity, t);
+
+    this.updateSkyDomeColors(new THREE.Color(skyTopHex), new THREE.Color(skyBottomHex));
+  }
+
+  public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED, dt: number = 0.016): void {
     // Keep directional shadow map frustum centered on active player and oncoming track
     this.sunLight.position.z = playerZ + 20;
     this.sunLight.target.position.z = playerZ - 12;
@@ -440,6 +562,18 @@ export class WorldScene {
       const speedThreshold = 25.0;
       const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (CONSTANTS.MAX_SPEED - speedThreshold)));
       (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.32;
+    }
+
+    // Atmospheric rain particles tracking & animation
+    if (this.rainParticles && this.rainParticles.visible) {
+      this.rainParticles.position.z = playerZ - 12;
+      const pos = (this.rainParticles.geometry as THREE.BufferGeometry).attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - 28 * (dt || 0.016);
+        if (y < 0) y = 22;
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
     }
   }
 

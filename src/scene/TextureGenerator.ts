@@ -1549,6 +1549,314 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Monumental Grand Terminal Station Sign & Departure Schedule Texture
+   */
+  public static getGrandStationSignTexture(): THREE.Texture {
+    return this.getOrCreate('grand_station_sign', () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep emerald green and polished brass frame
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(0, 0, w, h);
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      // Inner ornate border
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#d97706';
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      // Golden serif terminal title
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '900 32px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('GRAND CENTRAL TERMINAL', w / 2, 52);
+
+      // Illuminated digital status ticker bar
+      ctx.fillStyle = '#022c22';
+      ctx.fillRect(16, 70, w - 32, 40);
+
+      ctx.font = '700 15px monospace';
+      ctx.fillStyle = '#34d399';
+      ctx.fillText('TRACKS 1-4 • EXPRESS TRAINS TO ALL DISTRICTS • ON TIME', w / 2, 96);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Futuristic Modern Space-Frame Glass Truss Texture
+   */
+  public static getModernSpaceFrameGlassTexture(): THREE.Texture {
+    return this.getOrCreate('modern_space_frame_glass', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep tinted cyan glass base
+      ctx.fillStyle = '#082f49';
+      ctx.fillRect(0, 0, size, size);
+
+      // Glass gradient shine
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      grad.addColorStop(0.5, 'rgba(14, 165, 233, 0.20)');
+      grad.addColorStop(1, 'rgba(2, 132, 199, 0.50)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Triangular space-frame steel truss lines
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      // Outer border
+      ctx.strokeRect(0, 0, size, size);
+      // Diagonals
+      ctx.moveTo(0, 0); ctx.lineTo(size, size);
+      ctx.moveTo(size, 0); ctx.lineTo(0, size);
+      ctx.moveTo(size / 2, 0); ctx.lineTo(size, size / 2);
+      ctx.moveTo(size, size / 2); ctx.lineTo(size / 2, size);
+      ctx.moveTo(size / 2, size); ctx.lineTo(0, size / 2);
+      ctx.moveTo(0, size / 2); ctx.lineTo(size / 2, 0);
+      ctx.stroke();
+
+      // Glowing LED structural connector nodes
+      ctx.fillStyle = '#38bdf8';
+      const nodes = [
+        [0, 0], [size, 0], [0, size], [size, size],
+        [size / 2, 0], [size / 2, size], [0, size / 2], [size, size / 2],
+        [size / 2, size / 2]
+      ];
+      for (const [nx, ny] of nodes) {
+        ctx.beginPath();
+        ctx.arc(nx, ny, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 4);
+      return tex;
+    });
+  }
+
+  /**
+   * Industrial Weathered Corrugated Sheet Metal Texture
+   */
+  public static getIndustrialCorrugatedSheetTexture(): THREE.Texture {
+    return this.getOrCreate('industrial_corrugated_metal', () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Weathered steel grey background
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, 0, size, size);
+
+      // Vertical corrugated ribs with highlights & shadows
+      const numRibs = 16;
+      const ribW = size / numRibs;
+      for (let i = 0; i < numRibs; i++) {
+        const x = i * ribW;
+        // Shadow flank
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(x, 0, ribW * 0.45, size);
+        // Highlight ridge
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(x + ribW * 0.45, 0, ribW * 0.45, size);
+        // Trough groove
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(x + ribW * 0.9, 0, ribW * 0.1, size);
+      }
+
+      // Rust blotches
+      ctx.fillStyle = 'rgba(180, 83, 9, 0.35)';
+      for (let r = 0; r < 20; r++) {
+        const rx = Math.random() * size;
+        const ry = Math.random() * size;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3 + Math.random() * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 4);
+      return tex;
+    });
+  }
+
+  /**
+   * Industrial Heavy Safety Warning Chevron Texture (Yellow & Black)
+   */
+  public static getIndustrialWarningChevronTexture(): THREE.Texture {
+    return this.getOrCreate('industrial_warning_chevron', () => {
+      const w = 256;
+      const h = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Vibrant yellow safety background
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(0, 0, w, h);
+
+      // Bold black diagonal 45-degree hazard stripes
+      ctx.fillStyle = '#18181b';
+      const stripeW = 28;
+      for (let x = -h; x < w + h; x += stripeW * 2) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + stripeW, 0);
+        ctx.lineTo(x + stripeW + h, h);
+        ctx.lineTo(x + h, h);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 1);
+      return tex;
+    });
+  }
+
+  /**
+   * Waterfront Harbor Ocean Surface Texture with Specular Ripples
+   */
+  public static getWaterfrontRipplesTexture(): THREE.Texture {
+    return this.getOrCreate('waterfront_ripples', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep blue oceanic gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, size);
+      grad.addColorStop(0, '#0c4a6e');
+      grad.addColorStop(0.5, '#075985');
+      grad.addColorStop(1, '#0369a1');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Wave ripple caustics & sun specular ribbons
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.45)';
+      ctx.lineWidth = 2.5;
+      for (let y = 8; y < size; y += 12) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x < size; x += 16) {
+          const cy = y + Math.sin(x * 0.08 + y * 0.1) * 3;
+          ctx.lineTo(x, cy);
+        }
+        ctx.stroke();
+      }
+
+      // Subtle specular sparkles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      for (let i = 0; i < 40; i++) {
+        const sx = Math.random() * size;
+        const sy = Math.random() * size;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 16);
+      return tex;
+    });
+  }
+
+  /**
+   * Underground Grand Cathedral Mosaic Mural Texture
+   */
+  public static getUndergroundCathedralMuralTexture(): THREE.Texture {
+    return this.getOrCreate('underground_cathedral_mural', () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Royal cobalt blue and terracotta tiled background
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold leaf decorative border
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#d97706';
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      // Mosaic tessellation grid effect
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      const tileSize = 8;
+      for (let x = 16; x < w - 16; x += tileSize) {
+        ctx.beginPath(); ctx.moveTo(x, 16); ctx.lineTo(x, h - 16); ctx.stroke();
+      }
+      for (let y = 16; y < h - 16; y += tileSize) {
+        ctx.beginPath(); ctx.moveTo(16, y); ctx.lineTo(w - 16, y); ctx.stroke();
+      }
+
+      // Monumental station banner title
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '900 36px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('GRAND CONCOURSE', w / 2, 90);
+
+      ctx.fillStyle = '#fde68a';
+      ctx.font = '700 20px sans-serif';
+      ctx.fillText('CENTRAL INTERCHANGE • PLATFORMS 1-6', w / 2, 130);
+
+      // Classical decorative acanthus leaf arch motif
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(w / 2, 175, 45, Math.PI, 0);
+      ctx.stroke();
+
+      ctx.font = '600 13px sans-serif';
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText('FOUNDED 1904 • SUBTERRANEAN RAPID TRANSIT', w / 2, 215);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
 }
 
 

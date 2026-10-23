@@ -6,6 +6,7 @@ import { EnvironmentRegistry } from './EnvironmentRegistry';
 import { DistrictPlanner, TransitionProgress } from './DistrictPlanner';
 import { SceneryFactory } from './SceneryFactory';
 import { SceneryPool } from './SceneryPool';
+import { EnvironmentalEncounterDirector, LandmarkType, SmallMomentType, AtmospherePreset } from './EnvironmentalEncounterDirector';
 import type { TrackChunk } from '../track/TrackChunk';
 import type { WorldScene } from '../scene/WorldScene';
 
@@ -15,6 +16,8 @@ export interface ChunkSceneryMeta {
   seed: number;
   districtId: EnvironmentId;
   isPortal: boolean;
+  landmark?: LandmarkType | null;
+  smallMoment?: SmallMomentType | null;
 }
 
 export interface EnvironmentDiagnostics {
@@ -22,6 +25,8 @@ export interface EnvironmentDiagnostics {
   currentRegionIndex: number;
   nextEnvironment: EnvironmentId;
   distanceToTransition: number;
+  activeAtmospherePreset: AtmospherePreset;
+  activeLandmark: LandmarkType | null;
   activeChunkSeeds: ChunkSceneryMeta[];
   sceneryMeshCount: number;
   estimatedDrawCalls: number;
@@ -68,6 +73,7 @@ export class EnvironmentDirector {
     this.runSeed = seed >>> 0;
     this.isDebugSeed = isDebug;
     this.planner.reset(this.runSeed);
+    EnvironmentalEncounterDirector.getInstance().setRunSeed(this.runSeed);
     this.activeChunksMeta.clear();
     this.transitionEventEmittedForPortalZ = null;
     this.changedEventEmittedForPortalZ = null;
@@ -109,6 +115,7 @@ export class EnvironmentDirector {
     options?: {
       forceTheme?: EnvironmentTheme | string;
       forcePortal?: boolean;
+      forceLandmark?: LandmarkType | null;
       detail?: 'FULL' | 'BALANCED' | 'MINIMAL';
     }
   ): void {
@@ -160,7 +167,15 @@ export class EnvironmentDirector {
     const seed = this.computeScenerySeed(chunkIndex, worldZ);
     (chunk as any).scenerySeed = seed;
 
-    // 3. Build Scenery via SceneryFactory
+    // 3. Evaluate Landmark Encounter & Small Moments
+    const encounterDir = EnvironmentalEncounterDirector.getInstance();
+    let scheduledLandmark = options?.forceLandmark !== undefined
+      ? (options.forceLandmark ? { landmarkId: options.forceLandmark } : null)
+      : encounterDir.evaluateChunkLandmark(worldZ, chunkIndex, districtId, isPortal, isTunnel, seed);
+
+    const smallMoment = encounterDir.evaluateSmallMoment(worldZ, chunkIndex, districtId, seed);
+
+    // 4. Build Scenery via SceneryFactory
     const detail = options?.detail || 'FULL';
     this.factory.buildScenery(
       chunk.decorativeGroup,
@@ -170,7 +185,9 @@ export class EnvironmentDirector {
       isTunnel,
       tunnelPortal,
       detail,
-      seed
+      seed,
+      scheduledLandmark?.landmarkId || null,
+      smallMoment
     );
 
     // Track active chunk metadata for diagnostics
@@ -179,7 +196,9 @@ export class EnvironmentDirector {
       chunkIndex,
       seed,
       districtId,
-      isPortal
+      isPortal,
+      landmark: scheduledLandmark?.landmarkId || null,
+      smallMoment
     });
   }
 
@@ -189,6 +208,7 @@ export class EnvironmentDirector {
   public updateAtmosphere(playerZ: number, worldScene: WorldScene, dt: number): void {
     const transition = this.planner.getTransitionProgress(playerZ);
     const bus = EventBus.getInstance();
+    const encounterDir = EnvironmentalEncounterDirector.getInstance();
 
     // Check for transition events
     if (transition.inTransition) {
@@ -222,6 +242,10 @@ export class EnvironmentDirector {
       }
       worldScene.applyEnvironment(activeTheme, 1.0);
     }
+
+    // Apply weather and time-of-day atmospheric preset
+    const activePreset = encounterDir.resolveAtmospherePreset(playerZ, transition.fromEnv);
+    worldScene.applyAtmospherePreset(activePreset, transition.inTransition ? transition.progress : 1.0);
   }
 
   public getCurrentDistrict(): EnvironmentId {
@@ -242,6 +266,14 @@ export class EnvironmentDirector {
     this.planner.setDebugOverrideDistrict(null);
   }
 
+  public forceLandmark(landmark: LandmarkType | null): void {
+    EnvironmentalEncounterDirector.getInstance().setForcedLandmark(landmark);
+  }
+
+  public previewAtmosphere(preset: AtmospherePreset | null): void {
+    EnvironmentalEncounterDirector.getInstance().setForcedAtmosphere(preset);
+  }
+
   public recordFrameTime(ms: number): void {
     this.lastFrameTime = ms;
   }
@@ -254,11 +286,17 @@ export class EnvironmentDirector {
     const activeSeeds = Array.from(this.activeChunksMeta.values()).sort((a, b) => b.chunkZ - a.chunkZ);
     const meshCount = this.pool.getActiveMeshCount();
 
+    const encounterDir = EnvironmentalEncounterDirector.getInstance();
+    const lastLandmark = encounterDir.getLastLandmark();
+    const activePreset = encounterDir.resolveAtmospherePreset(playerZ, info.districtId);
+
     return {
       currentEnvironment: info.districtId,
       currentRegionIndex: info.regionIndex,
       nextEnvironment: nextEnv,
       distanceToTransition: Math.round(distToTrans),
+      activeAtmospherePreset: activePreset,
+      activeLandmark: lastLandmark?.landmarkId || null,
       activeChunkSeeds: activeSeeds,
       sceneryMeshCount: meshCount,
       estimatedDrawCalls: Math.max(12, Math.floor(meshCount * 0.45)),

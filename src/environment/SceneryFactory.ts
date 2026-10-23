@@ -3,6 +3,7 @@ import { CONSTANTS } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { TextureGenerator } from '../scene/TextureGenerator';
 import { EnvironmentTheme, EnvironmentId } from './EnvironmentConfig';
+import { LandmarkType, SmallMomentType } from './EnvironmentalEncounterDirector';
 import { SceneryPool } from './SceneryPool';
 
 export class SeededRandom {
@@ -99,6 +100,17 @@ export class SceneryFactory {
     subwaySignalGreenMat: THREE.MeshBasicMaterial;
     subwaySignalAmberMat: THREE.MeshBasicMaterial;
     subwaySignalRedMat: THREE.MeshBasicMaterial;
+    // Task 3 Landmarks & Environmental Moments
+    grandStationSignMat: THREE.MeshBasicMaterial;
+    spaceFrameGlassMat: THREE.MeshStandardMaterial;
+    hazardChevronMat: THREE.MeshBasicMaterial;
+    industrialCorrugatedSheetMat: THREE.MeshStandardMaterial;
+    waterfrontRipplesMat: THREE.MeshStandardMaterial;
+    marineBollardMat: THREE.MeshStandardMaterial;
+    whiteEnamelMat: THREE.MeshStandardMaterial;
+    lighthouseRedMat: THREE.MeshStandardMaterial;
+    undergroundCathedralMuralMat: THREE.MeshStandardMaterial;
+    goldFiligreeMat: THREE.MeshStandardMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -489,12 +501,92 @@ export class SceneryFactory {
       subwayDuctMat,
       subwaySignalGreenMat,
       subwaySignalAmberMat,
-      subwaySignalRedMat
+      subwaySignalRedMat,
+      grandStationSignMat: new THREE.MeshBasicMaterial({
+        map: TextureGenerator.getGrandStationSignTexture()
+      }),
+      spaceFrameGlassMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getModernSpaceFrameGlassTexture(),
+          roughness: 0.15,
+          metalness: 0.75,
+          transparent: true,
+          opacity: 0.88
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      industrialCorrugatedSheetMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getIndustrialCorrugatedSheetTexture(),
+          roughness: 0.65,
+          metalness: 0.55
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hazardChevronMat: new THREE.MeshBasicMaterial({
+        map: TextureGenerator.getIndustrialWarningChevronTexture()
+      }),
+      waterfrontRipplesMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getWaterfrontRipplesTexture(),
+          roughness: 0.12,
+          metalness: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      undergroundCathedralMuralMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getUndergroundCathedralMuralTexture(),
+          roughness: 0.35,
+          metalness: 0.25
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      goldFiligreeMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          roughness: 0.3,
+          metalness: 0.8
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      marineBollardMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          roughness: 0.5,
+          metalness: 0.7
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      whiteEnamelMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.25,
+          metalness: 0.1
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      lighthouseRedMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xdc2626,
+          roughness: 0.4,
+          metalness: 0.2
+        });
+        curved.applyCurvature(m);
+        return m;
+      })()
     };
   }
 
   /**
-   * Builds rich procedural scenery for a chunk based on its district theme and deterministic seed
+   * Builds rich procedural scenery for a chunk based on its district theme, deterministic seed, and landmark encounters
    */
   public buildScenery(
     decorativeGroup: THREE.Group,
@@ -504,7 +596,9 @@ export class SceneryFactory {
     isTunnel: boolean,
     tunnelPortal: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE' = 'NONE',
     detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL',
-    seed: number = 1337
+    seed: number = 1337,
+    landmark: LandmarkType | null = null,
+    smallMoment: SmallMomentType | null = null
   ): void {
     // Clean previous scenery
     this.sceneryPool.clearDecorativeGroup(decorativeGroup);
@@ -513,9 +607,9 @@ export class SceneryFactory {
     const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8;
     const curbWidth = 0.5;
 
-    let meshCountBefore = 0;
-
-    if (theme.id === 'UNDERGROUND_METRO' || isTunnel) {
+    if (landmark) {
+      this.buildLandmarkEncounter(landmark, decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
+    } else if (theme.id === 'UNDERGROUND_METRO' || isTunnel) {
       this.buildUndergroundMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, worldZ, seed, detail, tunnelPortal);
     } else if (isTransition) {
       this.buildTransitionPortalScenery(decorativeGroup, roadbedWidth, curbWidth, theme, chunkLength);
@@ -525,6 +619,10 @@ export class SceneryFactory {
       this.buildNeonIndustrialScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    }
+
+    if (smallMoment) {
+      this.buildSmallMoment(smallMoment, decorativeGroup, chunkLength, seed);
     }
 
     let meshesAdded = 0;
@@ -1959,15 +2057,877 @@ export class SceneryFactory {
     portal.add(hazard);
 
     // Red illuminated portal clearance warning beacons
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    const beaconGeo = new THREE.SphereGeometry(0.25, 8, 8);
     [-spanW * 0.42, spanW * 0.42].forEach((bx) => {
-      const beacon = new THREE.Mesh(
-        new THREE.SphereGeometry(0.24, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xff1744 })
-      );
-      beacon.position.set(bx, portalH + 0.9, type === 'ENTRY' ? 1.8 : -1.8);
+      const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+      beacon.position.set(bx, ceilingH + 0.6, type === 'ENTRY' ? 2.0 : -2.0);
       portal.add(beacon);
     });
 
     parent.add(portal);
+  }
+
+  // -------------------------------------------------------------------------
+  // LANDMARK ENCOUNTERS & RARE MOMENTS
+  // -------------------------------------------------------------------------
+
+  private buildLandmarkEncounter(
+    landmark: LandmarkType,
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    theme: EnvironmentTheme
+  ): void {
+    switch (landmark) {
+      case 'GRAND_RAILWAY_STATION':
+        this.buildGrandRailwayStation(group, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
+        break;
+      case 'HISTORIC_STONE_VIADUCT':
+        this.buildHistoricStoneViaduct(group, roadbedWidth, curbWidth, chunkLength, seed, detail);
+        break;
+      case 'MODERN_GLASS_TRANSIT_HUB':
+        this.buildModernGlassTransitHub(group, roadbedWidth, curbWidth, chunkLength, seed, detail);
+        break;
+      case 'INDUSTRIAL_MAINTENANCE_YARD':
+        this.buildIndustrialMaintenanceYard(group, roadbedWidth, curbWidth, chunkLength, seed, detail);
+        break;
+      case 'OPEN_WATERFRONT_VISTA':
+        this.buildOpenWaterfrontVista(group, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
+        break;
+      case 'UNDERGROUND_GRAND_STATION':
+        this.buildUndergroundGrandStation(group, roadbedWidth, curbWidth, chunkLength, seed, detail);
+        break;
+      case 'ROOFTOP_SKYLINE_MOMENT':
+        this.buildRooftopSkylineMoment(group, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
+        break;
+    }
+  }
+
+  /**
+   * Landmark 1: Grand Railway Station Terminal
+   */
+  private buildGrandRailwayStation(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    theme: EnvironmentTheme
+  ): void {
+    const mats = this.getSharedMaterials();
+    const stationGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6; // 6.5m
+    const platformW = 4.2;
+    const platformH = 0.65;
+    const platformX = wallX + platformW * 0.5 + 0.1; // 8.7m
+
+    // 1. Raised Passenger Platforms (Left & Right)
+    const platGeo = new THREE.BoxGeometry(platformW, platformH, chunkLength);
+    [-1, 1].forEach((side) => {
+      const plat = new THREE.Mesh(platGeo, mats.subwayPlatformSlabMat);
+      plat.position.set(side * platformX, platformH * 0.5, -chunkLength * 0.5);
+      plat.receiveShadow = true;
+      stationGroup.add(plat);
+
+      // Yellow tactile safety warning line along track edge
+      const lineGeo = new THREE.BoxGeometry(0.35, 0.04, chunkLength);
+      const line = new THREE.Mesh(lineGeo, mats.hazardStripeMat);
+      line.position.set(side * (platformX - platformW * 0.5 + 0.2), platformH + 0.02, -chunkLength * 0.5);
+      stationGroup.add(line);
+
+      // Classical cast-iron platform columns & platform roofs
+      const colGeo = new THREE.CylinderGeometry(0.22, 0.28, 4.2, 8);
+      const colX = side * (platformX + 0.6);
+      for (let z = -8; z >= -chunkLength + 8; z -= 16) {
+        const col = new THREE.Mesh(colGeo, mats.castIronMat);
+        col.position.set(colX, 2.1, z);
+        col.castShadow = true;
+        stationGroup.add(col);
+
+        // Platform canopy roof above waiting area
+        const canopyGeo = new THREE.BoxGeometry(platformW - 0.4, 0.25, 14.5);
+        const canopy = new THREE.Mesh(canopyGeo, mats.slateRoofMat);
+        canopy.position.set(side * platformX, 4.3, z);
+        canopy.castShadow = true;
+        stationGroup.add(canopy);
+
+        // Platform waiting bench (High / Medium)
+        if (detail !== 'MINIMAL') {
+          const benchGeo = new THREE.BoxGeometry(1.4, 0.45, 0.7);
+          const bench = new THREE.Mesh(benchGeo, mats.historicWaterTankWoodMat);
+          bench.position.set(side * platformX, platformH + 0.25, z);
+          bench.receiveShadow = true;
+          stationGroup.add(bench);
+        }
+      }
+    });
+
+    // 2. Monumental Overhead Barrel Vault Arches & Canopy
+    // Crown apex: Y = 22.3m, springing line clearance: Y = 8.8m (well above 7.6m jump apex)
+    const spanW = 27.0;
+    const archSpringY = 8.8;
+    for (let z = -10; z >= -chunkLength + 10; z -= 18) {
+      // Arched cross truss rib
+      const ribGeo = new THREE.CylinderGeometry(spanW * 0.5, spanW * 0.5, 0.8, 16, 1, true, 0, Math.PI);
+      const rib = new THREE.Mesh(ribGeo, mats.industrialSteelMat);
+      rib.rotation.z = Math.PI / 2;
+      rib.rotation.y = Math.PI / 2;
+      rib.position.set(0, archSpringY, z);
+      stationGroup.add(rib);
+
+      // Flanking support columns at outer station perimeter (X = ±13.5m)
+      [-spanW * 0.5, spanW * 0.5].forEach((cx) => {
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(0.8, archSpringY, 0.8), mats.industrialSteelMat);
+        pier.position.set(cx, archSpringY * 0.5, z);
+        stationGroup.add(pier);
+      });
+    }
+
+    // Glass vaulted skylight roof
+    const roofGeo = new THREE.CylinderGeometry(spanW * 0.5 - 0.1, spanW * 0.5 - 0.1, chunkLength - 4, 16, 1, true, 0, Math.PI);
+    const roof = new THREE.Mesh(roofGeo, mats.spaceFrameGlassMat);
+    roof.rotation.z = Math.PI / 2;
+    roof.rotation.y = Math.PI / 2;
+    roof.position.set(0, archSpringY, -chunkLength * 0.5);
+    stationGroup.add(roof);
+
+    // 3. Grand Entrance Crossover Bridge & Sign
+    // Overhead bridge at Z = -40m with clearance at Y = 9.2m
+    const bridgeGeo = new THREE.BoxGeometry(spanW + 2, 2.2, 8.0);
+    const bridge = new THREE.Mesh(bridgeGeo, mats.stoneMasonryMat);
+    bridge.position.set(0, 10.3, -40);
+    bridge.castShadow = true;
+    stationGroup.add(bridge);
+
+    // Monumental Terminal Sign facing oncoming runners
+    const signGeo = new THREE.PlaneGeometry(16.0, 3.2);
+    const signMesh = new THREE.Mesh(signGeo, mats.grandStationSignMat);
+    signMesh.position.set(0, 10.3, -35.9);
+    stationGroup.add(signMesh);
+
+    // Illuminated golden terminal clock above bridge center
+    const clockGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.4, 24);
+    const clock = new THREE.Mesh(clockGeo, mats.historicClockFaceMat);
+    clock.rotation.x = Math.PI / 2;
+    clock.position.set(0, 12.8, -35.8);
+    stationGroup.add(clock);
+
+    // Ornate gold clock bezel ring
+    const bezelGeo = new THREE.TorusGeometry(1.7, 0.18, 12, 32);
+    const bezel = new THREE.Mesh(bezelGeo, mats.goldFiligreeMat);
+    bezel.position.set(0, 12.8, -35.75);
+    stationGroup.add(bezel);
+
+    group.add(stationGroup);
+  }
+
+  /**
+   * Landmark 2: Historic Monumental Stone Viaduct & Aqueduct
+   */
+  private buildHistoricStoneViaduct(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const viaductGroup = new THREE.Group();
+
+    // Regular retaining walls along track
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6;
+    const wallGeo = new THREE.BoxGeometry(0.8, 2.5, chunkLength);
+    [-1, 1].forEach((side) => {
+      const wall = new THREE.Mesh(wallGeo, mats.stoneMasonryMat);
+      wall.position.set(side * wallX, 1.25, -chunkLength * 0.5);
+      wall.receiveShadow = true;
+      viaductGroup.add(wall);
+    });
+
+    // Colossal Multi-Arch Stone Viaduct Crossing Overhead at Z = -40m
+    // Clearance: Y = 9.8m, Top deck: Y = 14.5m
+    const bridgeZ = -40;
+    const bridgeThick = 9.0;
+    const spanW = 28.0;
+
+    // Heavy rusticated stone piers outside active lanes
+    const bridgeHeight = 16.5;
+    const pierGeo = new THREE.BoxGeometry(2.4, bridgeHeight, bridgeThick);
+    [-12.0, -7.2, 7.2, 12.0].forEach((px) => {
+      const pier = new THREE.Mesh(pierGeo, mats.stoneMasonryMat);
+      pier.position.set(px, bridgeHeight * 0.5, bridgeZ);
+      pier.castShadow = true;
+      pier.receiveShadow = true;
+      viaductGroup.add(pier);
+    });
+
+    // Central Arch Over Tracks (Clearance Y = 8.8m at springing line, apex Y = 15.6m)
+    const archRadius = 6.8;
+    const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, bridgeThick, 20, 1, true, 0, Math.PI);
+    const arch = new THREE.Mesh(archGeo, mats.stoneMasonryMat);
+    arch.rotation.z = Math.PI / 2;
+    arch.rotation.y = Math.PI / 2;
+    arch.position.set(0, 8.8, bridgeZ);
+    viaductGroup.add(arch);
+
+    // Upper Spandrel & Roadway Deck
+    const deckGeo = new THREE.BoxGeometry(spanW + 8, 3.2, bridgeThick);
+    const deck = new THREE.Mesh(deckGeo, mats.stoneMasonryMat);
+    deck.position.set(0, bridgeHeight, bridgeZ);
+    deck.castShadow = true;
+    viaductGroup.add(deck);
+
+    // Classical Stone Balustrade and Antique Gas Lanterns
+    const balustradeGeo = new THREE.BoxGeometry(spanW + 8, 1.1, 0.4);
+    [-bridgeThick * 0.45, bridgeThick * 0.45].forEach((bz) => {
+      const bal = new THREE.Mesh(balustradeGeo, mats.stoneMasonryMat);
+      bal.position.set(0, bridgeHeight + 2.1, bridgeZ + bz);
+      viaductGroup.add(bal);
+
+      // Gas lamps along viaduct balustrade
+      [-10, 0, 10].forEach((lx) => {
+        const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.6, 6), mats.castIronMat);
+        lamp.position.set(lx, bridgeHeight + 3.2, bridgeZ + bz);
+        viaductGroup.add(lamp);
+
+        const globe = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), mats.gasLampMat);
+        globe.position.set(lx, bridgeHeight + 4.1, bridgeZ + bz);
+        viaductGroup.add(globe);
+      });
+    });
+
+    // Flanking Industrial Brick Chimney (Right side: X = +14.5m)
+    const chimneyH = 36.0;
+    const chimneyGeo = new THREE.CylinderGeometry(1.6, 2.5, chimneyH, 12);
+    const chimney = new THREE.Mesh(chimneyGeo, mats.weatheredBrickMat1);
+    chimney.position.set(14.5, chimneyH * 0.5, -25);
+    chimney.castShadow = true;
+    viaductGroup.add(chimney);
+
+    // Chimney crown ring
+    const crown = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.25, 8, 16), mats.castIronMat);
+    crown.rotation.x = Math.PI / 2;
+    crown.position.set(14.5, chimneyH, -25);
+    viaductGroup.add(crown);
+
+    group.add(viaductGroup);
+  }
+
+  /**
+   * Landmark 3: Modern Glass Transit Hub Space-Frame
+   */
+  private buildModernGlassTransitHub(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const hubGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6;
+
+    // Polished concrete retaining walls with glowing cyan LED base strips
+    const wallGeo = new THREE.BoxGeometry(0.6, 2.2, chunkLength);
+    [-1, 1].forEach((side) => {
+      const wall = new THREE.Mesh(wallGeo, mats.modernConcreteMat);
+      wall.position.set(side * wallX, 1.1, -chunkLength * 0.5);
+      wall.receiveShadow = true;
+      hubGroup.add(wall);
+
+      // Cyan LED guidance strip
+      const ledGeo = new THREE.BoxGeometry(0.1, 0.15, chunkLength);
+      const led = new THREE.Mesh(ledGeo, mats.modernNeonMat);
+      led.position.set(side * (wallX - 0.28), 1.8, -chunkLength * 0.5);
+      hubGroup.add(led);
+    });
+
+    // Sweeping Futuristic Space-Frame Glass Wings Overhead
+    // Clearance at apex: Y = 12.5m, eaves: Y = 9.8m
+    const wingW = 14.0;
+    const wingH = 12.0;
+    [-1, 1].forEach((side) => {
+      // Angled glass space-frame roof
+      const canopyGeo = new THREE.PlaneGeometry(wingW, chunkLength);
+      const canopy = new THREE.Mesh(canopyGeo, mats.spaceFrameGlassMat);
+      canopy.position.set(side * 8.5, wingH, -chunkLength * 0.5);
+      canopy.rotation.x = Math.PI / 2;
+      canopy.rotation.y = side * 0.25; // Gentle upward slope
+      hubGroup.add(canopy);
+
+      // Angled steel support pylons (X = side * 10.5m)
+      const pylonGeo = new THREE.CylinderGeometry(0.35, 0.5, 14.0, 8);
+      for (let z = -12; z >= -chunkLength + 12; z -= 24) {
+        const pylon = new THREE.Mesh(pylonGeo, mats.modernSteelMat);
+        pylon.position.set(side * 10.5, 7.0, z);
+        pylon.rotation.z = -side * 0.15;
+        pylon.castShadow = true;
+        hubGroup.add(pylon);
+      }
+    });
+
+    // High-Tech Elevated Mezzanine Skybridge at Z = -40m (Clearance Y = 10.0m)
+    const bridgeGeo = new THREE.BoxGeometry(26.0, 1.8, 6.0);
+    const bridge = new THREE.Mesh(bridgeGeo, mats.modernConcreteMat);
+    bridge.position.set(0, 10.8, -40);
+    bridge.castShadow = true;
+    hubGroup.add(bridge);
+
+    // Transparent Tinted Glass Balustrade
+    const glassBalGeo = new THREE.BoxGeometry(26.0, 1.2, 0.15);
+    [-2.8, 2.8].forEach((bz) => {
+      const gBal = new THREE.Mesh(glassBalGeo, mats.modernGlassBridgeMat);
+      gBal.position.set(0, 12.3, -40 + bz);
+      hubGroup.add(gBal);
+    });
+
+    // Digital Transit Indicator Screen on skybridge
+    const screenGeo = new THREE.PlaneGeometry(12.0, 1.6);
+    const screen = new THREE.Mesh(screenGeo, mats.modernSignMat);
+    screen.position.set(0, 10.8, -36.9);
+    hubGroup.add(screen);
+
+    // Vertical Glass Elevator Shafts outside track envelope (X = ±9.5m)
+    [-1, 1].forEach((side) => {
+      const elevGeo = new THREE.BoxGeometry(2.4, 20.0, 2.4);
+      const elev = new THREE.Mesh(elevGeo, mats.spaceFrameGlassMat);
+      elev.position.set(side * 9.5, 10.0, -40);
+      elev.castShadow = true;
+      hubGroup.add(elev);
+
+      // Glowing elevator cab inside
+      const cabGeo = new THREE.BoxGeometry(1.8, 2.5, 1.8);
+      const cab = new THREE.Mesh(cabGeo, mats.modernNeonMat);
+      cab.position.set(side * 9.5, 7.5, -40);
+      hubGroup.add(cab);
+    });
+
+    group.add(hubGroup);
+  }
+
+  /**
+   * Landmark 4: Heavy Industrial Rail Maintenance Depot
+   */
+  private buildIndustrialMaintenanceYard(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const yardGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6;
+
+    // Heavy weathered retaining walls
+    const wallGeo = new THREE.BoxGeometry(0.7, 2.4, chunkLength);
+    [-1, 1].forEach((side) => {
+      const wall = new THREE.Mesh(wallGeo, mats.industrialConcreteMat);
+      wall.position.set(side * wallX, 1.2, -chunkLength * 0.5);
+      wall.receiveShadow = true;
+      yardGroup.add(wall);
+    });
+
+    // 1. Colossal Industrial Gantry Crane at Z = -40m (Clearance Y = 10.0m)
+    const craneZ = -40;
+    const spanW = 24.0;
+    const craneH = 12.8;
+
+    // Steel truss crossbeam
+    const beamGeo = new THREE.BoxGeometry(spanW + 4, 1.4, 1.6);
+    const beam = new THREE.Mesh(beamGeo, mats.industrialSteelMat);
+    beam.position.set(0, craneH, craneZ);
+    beam.castShadow = true;
+    yardGroup.add(beam);
+
+    // Yellow hazard warning stripe along crossbeam
+    const chevronGeo = new THREE.BoxGeometry(spanW + 4, 0.4, 1.65);
+    const chevron = new THREE.Mesh(chevronGeo, mats.hazardChevronMat);
+    chevron.position.set(0, craneH - 0.45, craneZ);
+    yardGroup.add(chevron);
+
+    // Crane vertical legs at X = ±11.5m
+    const legGeo = new THREE.BoxGeometry(1.2, craneH, 1.4);
+    [-spanW * 0.5, spanW * 0.5].forEach((lx) => {
+      const leg = new THREE.Mesh(legGeo, mats.industrialSteelMat);
+      leg.position.set(lx, craneH * 0.5, craneZ);
+      leg.castShadow = true;
+      yardGroup.add(leg);
+    });
+
+    // Crane Hoist Trolley & Hook (Offset to X = +3.5m over track lane 2)
+    const trolleyGeo = new THREE.BoxGeometry(2.0, 0.8, 1.8);
+    const trolley = new THREE.Mesh(trolleyGeo, mats.rustIronMat);
+    trolley.position.set(3.5, craneH - 0.8, craneZ);
+    yardGroup.add(trolley);
+
+    // Hoist cable & Hook (Suspended safely at Y = 8.5m > 7.6m apex)
+    const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.8, 6);
+    const cable = new THREE.Mesh(cableGeo, mats.cableMat);
+    cable.position.set(3.5, craneH - 1.8, craneZ);
+    yardGroup.add(cable);
+
+    const hookGeo = new THREE.TorusGeometry(0.35, 0.08, 6, 12, Math.PI * 1.5);
+    const hook = new THREE.Mesh(hookGeo, mats.castIronMat);
+    hook.position.set(3.5, craneH - 2.8, craneZ);
+    yardGroup.add(hook);
+
+    // 2. Corrugated Metal Repair Shed (Left side: X = -13.5m)
+    const shedW = 10.0;
+    const shedH = 7.5;
+    const shedGeo = new THREE.BoxGeometry(shedW, shedH, 28.0);
+    const shed = new THREE.Mesh(shedGeo, mats.industrialCorrugatedSheetMat);
+    shed.position.set(-13.5, shedH * 0.5, -35);
+    shed.castShadow = true;
+    yardGroup.add(shed);
+
+    // 3. Parked Heavy Switcher Locomotive on Siding (Right side: X = +9.5m, Z = -35m)
+    // Strictly outside hazard envelope (|X| = 9.5m > 5.5m)
+    const locoGroup = new THREE.Group();
+    locoGroup.position.set(9.5, 0, -35);
+
+    // Locomotive main chassis
+    const chassisGeo = new THREE.BoxGeometry(2.6, 2.2, 12.0);
+    const chassis = new THREE.Mesh(chassisGeo, mats.hazardChevronMat);
+    chassis.position.y = 1.6;
+    chassis.castShadow = true;
+    locoGroup.add(chassis);
+
+    // Locomotive engineer cab
+    const cabGeo = new THREE.BoxGeometry(2.5, 2.2, 4.0);
+    const cab = new THREE.Mesh(cabGeo, mats.industrialSteelMat);
+    cab.position.set(0, 3.2, 2.5);
+    cab.castShadow = true;
+    locoGroup.add(cab);
+
+    // Locomotive headlights
+    const lightGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.2, 8);
+    [-0.8, 0.8].forEach((lx) => {
+      const light = new THREE.Mesh(lightGeo, mats.sodiumLampMat);
+      light.rotation.x = Math.PI / 2;
+      light.position.set(lx, 2.0, -6.0);
+      locoGroup.add(light);
+    });
+
+    yardGroup.add(locoGroup);
+
+    // 4. Industrial Prop Details: Wheelset racks & Floodlight Tower
+    if (detail !== 'MINIMAL') {
+      const towerGeo = new THREE.CylinderGeometry(0.3, 0.6, 14.0, 8);
+      const tower = new THREE.Mesh(towerGeo, mats.industrialSteelMat);
+      tower.position.set(13.0, 7.0, -12);
+      tower.castShadow = true;
+      yardGroup.add(tower);
+
+      const lampGeo = new THREE.BoxGeometry(1.6, 0.8, 0.6);
+      const lamp = new THREE.Mesh(lampGeo, mats.sodiumLampMat);
+      lamp.position.set(13.0, 14.0, -12);
+      yardGroup.add(lamp);
+    }
+
+    group.add(yardGroup);
+  }
+
+  /**
+   * Landmark 5: Open Waterfront Vista & Harbor Suspension Bridge
+   */
+  private buildOpenWaterfrontVista(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    theme: EnvironmentTheme
+  ): void {
+    const mats = this.getSharedMaterials();
+    const waterGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6;
+
+    // Left retaining wall (City side continues normally)
+    const leftWallGeo = new THREE.BoxGeometry(0.8, 2.6, chunkLength);
+    const leftWall = new THREE.Mesh(leftWallGeo, mats.stoneMasonryMat);
+    leftWall.position.set(-wallX, 1.3, -chunkLength * 0.5);
+    leftWall.receiveShadow = true;
+    waterGroup.add(leftWall);
+
+    // Left side coastal embankment buildings
+    const bW = 14.0, bH = 28.0, bD = Math.min(60.0, chunkLength - 8.0);
+    const coastalBuildingGeo = new THREE.BoxGeometry(bW, bH, bD);
+    const coastalBuilding = new THREE.Mesh(coastalBuildingGeo, mats.modernCurtainGlassMat);
+    coastalBuilding.position.set(-wallX - 8.0, bH * 0.5, -chunkLength * 0.5);
+    coastalBuilding.castShadow = true;
+    coastalBuilding.receiveShadow = true;
+    waterGroup.add(coastalBuilding);
+
+    // RIGHT SIDE OPENS COMPLETELY TO THE OCEAN WATERFRONT!
+    // Low decorative stone promenade seawall (Y = 0.9m)
+    const seaWallGeo = new THREE.BoxGeometry(0.6, 0.9, chunkLength);
+    const seaWall = new THREE.Mesh(seaWallGeo, mats.stoneMasonryMat);
+    seaWall.position.set(wallX, 0.45, -chunkLength * 0.5);
+    seaWall.receiveShadow = true;
+    waterGroup.add(seaWall);
+
+    // Cast-iron maritime promenade railing
+    const railGeo = new THREE.BoxGeometry(0.12, 0.6, chunkLength);
+    const rail = new THREE.Mesh(railGeo, mats.castIronMat);
+    rail.position.set(wallX, 1.15, -chunkLength * 0.5);
+    waterGroup.add(rail);
+
+    // Maritime Bollards along promenade
+    const bollardGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.7, 8);
+    for (let z = -6; z >= -chunkLength + 6; z -= 14) {
+      const bollard = new THREE.Mesh(bollardGeo, mats.marineBollardMat);
+      bollard.position.set(wallX + 0.5, 0.35, z);
+      waterGroup.add(bollard);
+    }
+
+    // Vast Reflective Water Plane extending to the horizon (X = 6.5m to 120m)
+    const waterW = 110.0;
+    const waterGeo = new THREE.PlaneGeometry(waterW, chunkLength + 40);
+    const water = new THREE.Mesh(waterGeo, mats.waterfrontRipplesMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(wallX + waterW * 0.5, -0.45, -chunkLength * 0.5);
+    waterGroup.add(water);
+
+    // Distant Twin Suspension Bridge Silhouette Across Harbor (X = +55m, Z = -110m)
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.position.set(55.0, 0, -110);
+
+    const towerH = 38.0;
+    const towerGeo = new THREE.BoxGeometry(3.0, towerH, 3.0);
+    [-14.0, 14.0].forEach((tx) => {
+      const tower = new THREE.Mesh(towerGeo, mats.industrialSteelMat);
+      tower.position.set(tx, towerH * 0.5, 0);
+      bridgeGroup.add(tower);
+
+      // Cross struts
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(tx === -14.0 ? 28.0 : 0.1, 1.2, 1.2), mats.industrialSteelMat);
+      strut.position.set(0, towerH * 0.7, 0);
+      bridgeGroup.add(strut);
+    });
+
+    // Suspension bridge vehicle deck
+    const deckGeo = new THREE.BoxGeometry(60.0, 1.6, 6.0);
+    const deck = new THREE.Mesh(deckGeo, mats.modernConcreteMat);
+    deck.position.set(0, 12.0, 0);
+    bridgeGroup.add(deck);
+
+    waterGroup.add(bridgeGroup);
+
+    // Harbor Lighthouse (X = +35m, Z = -35m)
+    const lighthouseGroup = new THREE.Group();
+    lighthouseGroup.position.set(35.0, 0, -35);
+
+    const lightH = 18.0;
+    // Striped lighthouse tower
+    const lhBase = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 3.2, lightH * 0.5, 12), mats.whiteEnamelMat);
+    lhBase.position.y = lightH * 0.25;
+    lighthouseGroup.add(lhBase);
+
+    const lhMid = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.0, lightH * 0.5, 12), mats.lighthouseRedMat);
+    lhMid.position.y = lightH * 0.75;
+    lighthouseGroup.add(lhMid);
+
+    // Glowing lantern room
+    const lantern = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 2.2, 12), mats.gasLampMat);
+    lantern.position.y = lightH + 1.1;
+    lighthouseGroup.add(lantern);
+
+    waterGroup.add(lighthouseGroup);
+
+    group.add(waterGroup);
+  }
+
+  /**
+   * Landmark 6: Subterranean Grand Concourse Vault
+   */
+  private buildUndergroundGrandStation(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const stationGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6; // 6.5m
+    const platformW = 4.0;
+    const platformH = 0.65;
+    const platformX = wallX + platformW * 0.5; // 8.5m
+
+    // 1. Raised Terrazzo Passenger Platforms with Yellow Tactile Warning Edge
+    const platGeo = new THREE.BoxGeometry(platformW, platformH, chunkLength);
+    [-1, 1].forEach((side) => {
+      const plat = new THREE.Mesh(platGeo, mats.subwayPlatformSlabMat);
+      plat.position.set(side * platformX, platformH * 0.5, -chunkLength * 0.5);
+      plat.receiveShadow = true;
+      stationGroup.add(plat);
+
+      const tactileGeo = new THREE.BoxGeometry(0.35, 0.04, chunkLength);
+      const tactile = new THREE.Mesh(tactileGeo, mats.hazardStripeMat);
+      tactile.position.set(side * (platformX - platformW * 0.5 + 0.18), platformH + 0.02, -chunkLength * 0.5);
+      stationGroup.add(tactile);
+
+      // Station benches along platform
+      for (let z = -12; z >= -chunkLength + 12; z -= 20) {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 0.7), mats.historicWaterTankWoodMat);
+        bench.position.set(side * (platformX + 0.5), platformH + 0.25, z);
+        stationGroup.add(bench);
+      }
+    });
+
+    // 2. Colossal Subterranean Vaulted Ceiling (Clearance Y = 8.8m at springing line, apex Y = 23.3m)
+    const vaultRadius = 14.5;
+    const vaultGeo = new THREE.CylinderGeometry(vaultRadius, vaultRadius, chunkLength, 24, 1, true, 0, Math.PI);
+    const vault = new THREE.Mesh(vaultGeo, mats.tunnelCeilingMat);
+    vault.rotation.z = Math.PI / 2;
+    vault.rotation.y = Math.PI / 2;
+    vault.position.set(0, 8.8, -chunkLength * 0.5);
+    stationGroup.add(vault);
+
+    // 3. Ornate Bronze Chandelier Ring Fixtures (Suspended at Y = 9.2m > 8.6m envelope)
+    for (let z = -16; z >= -chunkLength + 16; z -= 24) {
+      // Suspension stem
+      const stemGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6);
+      const stem = new THREE.Mesh(stemGeo, mats.castIronMat);
+      stem.position.set(0, 10.7, z);
+      stationGroup.add(stem);
+
+      // Chandelier ring
+      const ringGeo = new THREE.TorusGeometry(2.2, 0.16, 8, 24);
+      const ring = new THREE.Mesh(ringGeo, mats.goldFiligreeMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, 9.4, z);
+      stationGroup.add(ring);
+
+      // Glowing chandelier core
+      const coreGeo = new THREE.SphereGeometry(0.5, 8, 8);
+      const core = new THREE.Mesh(coreGeo, mats.tunnelLampMat);
+      core.position.set(0, 9.4, z);
+      stationGroup.add(core);
+    }
+
+    // 4. Royal Cobalt Blue & Gold Leaf Mosaic Murals along side walls
+    const muralGeo = new THREE.PlaneGeometry(24.0, 5.0);
+    [-1, 1].forEach((side) => {
+      const mural = new THREE.Mesh(muralGeo, mats.undergroundCathedralMuralMat);
+      mural.position.set(side * (platformX + platformW * 0.5 - 0.05), 3.8, -chunkLength * 0.5);
+      mural.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+      stationGroup.add(mural);
+    });
+
+    // 5. Overhead Grand Mezzanine Balcony at Z = -40m (Clearance Y = 9.8m)
+    const mezzGeo = new THREE.BoxGeometry(25.0, 1.4, 6.0);
+    const mezz = new THREE.Mesh(mezzGeo, mats.stoneMasonryMat);
+    mezz.position.set(0, 10.5, -40);
+    mezz.castShadow = true;
+    stationGroup.add(mezz);
+
+    // Brass balustrade along mezzanine
+    const mezzRailGeo = new THREE.BoxGeometry(25.0, 1.0, 0.12);
+    [-2.8, 2.8].forEach((bz) => {
+      const rail = new THREE.Mesh(mezzRailGeo, mats.goldFiligreeMat);
+      rail.position.set(0, 11.7, -40 + bz);
+      stationGroup.add(rail);
+    });
+
+    group.add(stationGroup);
+  }
+
+  /**
+   * Landmark 7: Rooftop Skyline Moment & Panoramic Elevated Viaduct
+   */
+  private buildRooftopSkylineMoment(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    theme: EnvironmentTheme
+  ): void {
+    const mats = this.getSharedMaterials();
+    const roofGroup = new THREE.Group();
+
+    const wallX = roadbedWidth * 0.5 + curbWidth + 0.6;
+
+    // Side retaining walls drop to low safety crash barrier (Y = 0.8m)
+    // Opening up panoramic view of the cityscape below
+    const barrierGeo = new THREE.BoxGeometry(0.4, 0.8, chunkLength);
+    [-1, 1].forEach((side) => {
+      const barrier = new THREE.Mesh(barrierGeo, mats.modernConcreteMat);
+      barrier.position.set(side * wallX, 0.4, -chunkLength * 0.5);
+      barrier.receiveShadow = true;
+      roofGroup.add(barrier);
+
+      // Sleek brushed aluminum safety top rail
+      const railGeo = new THREE.CylinderGeometry(0.08, 0.08, chunkLength, 8);
+      const rail = new THREE.Mesh(railGeo, mats.modernSteelMat);
+      rail.rotation.x = Math.PI / 2;
+      rail.position.set(side * wallX, 0.85, -chunkLength * 0.5);
+      roofGroup.add(rail);
+    });
+
+    // Elevated Skyway Suspension Pylons at ends (Z = -4m and Z = -chunkLength + 4m)
+    [-4, -chunkLength + 4].forEach((pz) => {
+      [-wallX - 2.5, wallX + 2.5].forEach((px) => {
+        const pylonGeo = new THREE.CylinderGeometry(0.35, 0.5, 18.0, 8);
+        const pylon = new THREE.Mesh(pylonGeo, mats.modernSteelMat);
+        pylon.position.set(px, 9.0, pz);
+        pylon.castShadow = true;
+        roofGroup.add(pylon);
+
+        // Angled stay cables stretching down along viaduct deck outer flank
+        const stayGeo = new THREE.CylinderGeometry(0.03, 0.03, 14.0, 6);
+        const stay = new THREE.Mesh(stayGeo, mats.cableMat);
+        stay.position.set(px, 8.0, pz + (pz < -20 ? -6 : 6));
+        stay.rotation.x = pz < -20 ? -0.4 : 0.4;
+        roofGroup.add(stay);
+      });
+    });
+
+    // Distant City Towers rising from below track elevation (Y = -25m up to -1.5m)
+    // Giving an unforgettable impression of traveling high on an elevated railway
+    const rng = new SeededRandom(seed + 999);
+    [-1, 1].forEach((side) => {
+      for (let z = -10; z >= -chunkLength + 10; z -= 26) {
+        const bW = rng.range(12, 18);
+        const bD = rng.range(14, 22);
+        const bH = rng.range(16, 24); // Rises from Y = -26 to Y = -2
+        const bX = side * (wallX + 10.0 + bW * 0.5);
+
+        const towerGeo = new THREE.BoxGeometry(bW, bH, bD);
+        const tower = new THREE.Mesh(towerGeo, mats.modernCurtainGlassMat);
+        tower.position.set(bX, -bH * 0.5 - 1.0, z);
+        tower.castShadow = true;
+        roofGroup.add(tower);
+      }
+    });
+
+    group.add(roofGroup);
+  }
+
+  // -------------------------------------------------------------------------
+  // SMALL MOMENTS & ATMOSPHERIC SURPRISES
+  // -------------------------------------------------------------------------
+
+  private buildSmallMoment(
+    moment: SmallMomentType,
+    group: THREE.Group,
+    chunkLength: number,
+    seed: number
+  ): void {
+    switch (moment) {
+      case 'PASSING_BACKGROUND_TRAIN':
+        this.buildPassingBackgroundTrain(group, chunkLength, seed);
+        break;
+      case 'DISTANT_BIRDS_FLOCK':
+        this.buildDistantBirdsFlock(group, chunkLength, seed);
+        break;
+      case 'ILLUMINATED_SUBWAY_HALO':
+        this.buildIlluminatedSubwayHalo(group, chunkLength, seed);
+        break;
+    }
+  }
+
+  /**
+   * Distant passing passenger train on parallel outer track (X = ±13.5m, well outside 5.5m hazard envelope)
+   */
+  private buildPassingBackgroundTrain(group: THREE.Group, chunkLength: number, seed: number): void {
+    const mats = this.getSharedMaterials();
+    const trainGroup = new THREE.Group();
+    const side = (seed % 2 === 0) ? 1 : -1;
+    trainGroup.position.set(side * 13.5, 0.4, -chunkLength * 0.5);
+
+    // Locomotive + 2 passenger cars (Total length 34m)
+    const carLen = 10.5;
+    const carH = 3.2;
+    const carW = 2.4;
+
+    for (let c = 0; c < 3; c++) {
+      const zOffset = (c - 1) * (carLen + 0.8);
+      const carGeo = new THREE.BoxGeometry(carW, carH, carLen);
+      const carMat = (c === 0) ? mats.hazardChevronMat : mats.modernWhiteMat;
+      const car = new THREE.Mesh(carGeo, carMat);
+      car.position.set(0, carH * 0.5, zOffset);
+      trainGroup.add(car);
+
+      // Glowing interior passenger window strip
+      const winGeo = new THREE.BoxGeometry(carW + 0.08, 0.7, carLen - 1.2);
+      const win = new THREE.Mesh(winGeo, mats.sodiumLampMat);
+      win.position.set(0, carH * 0.65, zOffset);
+      trainGroup.add(win);
+    }
+
+    group.add(trainGroup);
+  }
+
+  /**
+   * Stylized low-poly birds flock banking across upper skyline (Y = 28m to 34m)
+   */
+  private buildDistantBirdsFlock(group: THREE.Group, chunkLength: number, seed: number): void {
+    const mats = this.getSharedMaterials();
+    const flockGroup = new THREE.Group();
+    const rng = new SeededRandom(seed);
+    const startX = rng.range(-15, 15);
+    const startY = rng.range(28, 35);
+
+    // 6 birds in V-formation
+    const birdGeo = new THREE.ConeGeometry(0.35, 1.2, 4);
+    birdGeo.rotateX(Math.PI / 2);
+    const birdMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+
+    for (let i = 0; i < 6; i++) {
+      const bird = new THREE.Mesh(birdGeo, birdMat);
+      const row = Math.floor(i / 2);
+      const wingSide = (i % 2 === 0) ? -1 : 1;
+      bird.position.set(
+        startX + wingSide * row * 2.2,
+        startY + Math.sin(row) * 0.8,
+        -15 - row * 3.5
+      );
+      bird.rotation.z = wingSide * 0.2;
+      flockGroup.add(bird);
+    }
+
+    group.add(flockGroup);
+  }
+
+  /**
+   * Illuminated subterranean station lantern halos
+   */
+  private buildIlluminatedSubwayHalo(group: THREE.Group, chunkLength: number, seed: number): void {
+    const mats = this.getSharedMaterials();
+    const haloGroup = new THREE.Group();
+
+    // Halo glow spheres along tunnel ceiling
+    for (let z = -12; z >= -chunkLength + 12; z -= 24) {
+      const haloGeo = new THREE.SphereGeometry(0.8, 8, 8);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xfde047,
+        transparent: true,
+        opacity: 0.35
+      });
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      halo.position.set(0, 8.2, z);
+      haloGroup.add(halo);
+    }
+
+    group.add(haloGroup);
   }
 }

@@ -192,6 +192,7 @@ export class SoundManager {
   }
 
   private setupAutoplayUnlocking(): void {
+    if (typeof window === 'undefined') return;
     const unlock = () => {
       if (!this.ctx) {
         this.initAudio();
@@ -1570,6 +1571,175 @@ export class SoundManager {
       osc.start(now);
       osc.stop(now + 0.55);
     } catch {}
+  }
+
+  /**
+   * Station Public Address Announcement Chime (F4 -> A4 melodic bell)
+   */
+  public playStationAnnouncement(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [349.23, 440.0]; // F4, A4
+      notes.forEach((freq, idx) => {
+        const time = now + idx * 0.22;
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.linearRampToValueAtTime(0.14, time + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.8);
+
+        osc.connect(gain);
+        gain.connect(this.ambientGain!);
+        osc.start(time);
+        osc.stop(time + 0.85);
+      });
+    } catch {}
+  }
+
+  /**
+   * Industrial Rail Maintenance Depot Ambience (Steam hiss & metallic clank)
+   */
+  public playIndustrialAmbience(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+
+      // Heavy metallic clank (square wave + quick decay)
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ambientGain);
+      osc.start(now);
+      osc.stop(now + 0.4);
+
+      // Steam pressure release hiss (filtered noise)
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.6);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, now);
+      filter.Q.value = 3.0;
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.001, now);
+      noiseGain.gain.linearRampToValueAtTime(0.10, now + 0.08);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(this.ambientGain);
+      noise.start(now);
+      noise.stop(now + 0.65);
+    } catch {}
+  }
+
+  /**
+   * Waterfront Harbor Ambience (Oceanic breeze & distant low foghorn)
+   */
+  public playWaterfrontAmbience(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+
+      // Distant ship foghorn (Dual-tone low brass: 110Hz & 146.8Hz)
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(110.0, now + 0.2);
+      osc2.frequency.setValueAtTime(146.83, now + 0.2);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(320, now);
+
+      gain.gain.setValueAtTime(0.0001, now + 0.2);
+      gain.gain.linearRampToValueAtTime(0.10, now + 0.6);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ambientGain);
+
+      osc1.start(now + 0.2);
+      osc2.start(now + 0.2);
+      osc1.stop(now + 1.85);
+      osc2.stop(now + 1.85);
+    } catch {}
+  }
+
+  /**
+   * Rooftop Skyline Moment (High-altitude rushing wind sweep)
+   */
+  public playRooftopWind(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.9);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.sin((Math.PI * i) / bufferSize);
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(450, now);
+      filter.frequency.linearRampToValueAtTime(750, now + 0.45);
+      filter.frequency.exponentialRampToValueAtTime(350, now + 0.9);
+      filter.Q.value = 1.8;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ambientGain);
+      noise.start(now);
+      noise.stop(now + 0.95);
+    } catch {}
+  }
+
+  /**
+   * Dispatches environmental landmark audio cues
+   */
+  public playLandmarkAudio(cue: string): void {
+    switch (cue) {
+      case 'station':
+        this.playStationAnnouncement();
+        break;
+      case 'industrial':
+        this.playIndustrialAmbience();
+        break;
+      case 'waterfront':
+        this.playWaterfrontAmbience();
+        break;
+      case 'rooftop':
+        this.playRooftopWind();
+        break;
+      case 'viaduct':
+        this.playIndustrialAmbience();
+        break;
+    }
   }
 
   private updateAmbientTrainRumble(player: any, trackManager?: any): void {

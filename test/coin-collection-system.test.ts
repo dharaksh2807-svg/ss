@@ -232,6 +232,9 @@ bus.on(EVENTS.COIN_COLLECTED, coinListener);
 
 const initialCoins = coinCollectedCount;
 
+// Isolate targetCoin by deactivating any other coins in active chunks
+trackManager.chunks.forEach(ch => ch.collectibles.forEach(c => { if (c !== targetCoin) c.active = false; }));
+
 // Place player directly on the target coin
 const targetWorldZ = targetChunk!.chunkZ + targetCoin.group.position.z;
 player.position.set(targetCoin.group.position.x, targetCoin.group.position.y, targetWorldZ);

@@ -1017,10 +1017,12 @@ export class TrackManager {
     this.activeEnvironment = envId;
     this.targetEnvironment = envId;
     this.envManager.savePreference(envId);
-    EnvironmentDirector.getInstance().jumpToDistrict(envId);
+    const director = EnvironmentDirector.getInstance();
+    director.jumpToDistrict(envId);
     const theme = this.envManager.getTheme(envId);
     for (const chunk of this.chunks) {
-      chunk.buildEnvironmentScenery(theme, false);
+      const chunkIndex = Math.round(Math.abs(chunk.chunkZ / chunk.length));
+      director.decorateChunk(chunk, chunk.chunkZ, chunkIndex, { forceTheme: theme });
     }
     this.eventBus.emit('ENVIRONMENT_CHANGED', envId, theme);
   }

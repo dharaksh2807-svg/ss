@@ -34,6 +34,8 @@ import { GraphicsManager } from '../scene/GraphicsManager';
 import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
 import { EnvironmentManager, EnvironmentId, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
+import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/EnvironmentalEncounterDirector';
+import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
 import { ReviveManager } from '../revive/ReviveManager';
 import { ReviveModal } from '../ui/ReviveModal';
 
@@ -162,6 +164,24 @@ export class Game {
       };
       (window as any).__PREVIEW_ENVIRONMENT__ = (envId: EnvironmentId) => {
         EnvironmentDirector.getInstance().jumpToDistrict(envId);
+      };
+      (window as any).__DEV_SET_DISTRICT__ = (envId: EnvironmentId) => {
+        EnvironmentDirector.getInstance().jumpToDistrict(envId);
+        this.trackManager.setEnvironment(envId);
+        const theme = EnvironmentRegistry.getInstance().get(envId);
+        this.worldScene.applyEnvironment(theme, 1.0);
+      };
+      (window as any).__DEV_SPAWN_LANDMARK__ = (landmark: any) => {
+        EnvironmentDirector.getInstance().forceLandmark(landmark);
+      };
+      (window as any).__DEV_SPAWN_SMALL_MOMENT__ = (moment: any) => {
+        EnvironmentalEncounterDirector.getInstance().setForcedSmallMoment(moment);
+      };
+      (window as any).__DEV_SET_ATMOSPHERE__ = (preset: any) => {
+        EnvironmentDirector.getInstance().previewAtmosphere(preset);
+      };
+      (window as any).__DEV_SKIP_DISTANCE__ = (meters: number) => {
+        this.player.position.z -= meters;
       };
       window.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.shiftKey && (e.key === 'E' || e.key === 'e')) {
@@ -317,6 +337,13 @@ export class Game {
         this.worldScene.startAtmosphericTransition(targetTheme, 3.0);
       }
       this.soundManager.setEnvironmentAmbience(envId);
+    });
+
+    bus.on('LANDMARK_ENCOUNTERED', (data: { landmarkId: string; name: string; worldZ: number; districtId: string }) => {
+      const def = EnvironmentalEncounterDirector.getInstance().getEncounterDef(data.landmarkId as any);
+      if (def && def.audioCue) {
+        this.soundManager.playLandmarkAudio(def.audioCue);
+      }
     });
   }
 
@@ -856,16 +883,49 @@ export class Game {
       const diag = director.getDiagnostics(this.player.position.z);
       this.worldGenOverlayEl.innerHTML = `
         <div style="font-weight:bold;color:#38bdf8;margin-bottom:6px;display:flex;justify-content:space-between;">
-          <span>[WORLD GEN DIAGNOSTICS]</span>
+          <span>[WORLD GEN & ENCOUNTERS]</span>
           <span style="color:#a7f3d0;">${diag.frameTimeMs}ms (${Math.round(1000 / Math.max(1, diag.frameTimeMs))} FPS)</span>
         </div>
         <div>DISTRICT: <strong style="color:#f59e0b;">${diag.currentEnvironment}</strong> (Region #${diag.currentRegionIndex})</div>
         <div>NEXT DISTRICT: <span style="color:#38bdf8;">${diag.nextEnvironment}</span></div>
         <div>DIST TO TRANSITION: <span style="color:#00e676;">${diag.distanceToTransition}m</span></div>
+        <div>ATMOSPHERE: <span style="color:#93c5fd;">${diag.activeAtmospherePreset}</span></div>
+        <div>ACTIVE LANDMARK: <span style="color:#f43f5e;">${diag.activeLandmark || 'NONE'}</span></div>
         <div>SCENERY MESHES: <span style="color:#ffd600;">${diag.sceneryMeshCount}</span> | EST. DRAWS: <span style="color:#ffd600;">${diag.estimatedDrawCalls}</span></div>
+        <div style="margin-top:6px;padding-top:4px;border-top:1px solid #1e293b;">
+          <div style="font-weight:bold;color:#f59e0b;font-size:10px;margin-bottom:3px;">DISTRICT PREVIEW:</div>
+          <div style="display:flex;gap:4px;margin-bottom:5px;flex-wrap:wrap;">
+            <button style="font-size:9px;background:#0284c7;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('MODERN_METRO')">Modern</button>
+            <button style="font-size:9px;background:#d97706;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('HISTORIC_QUARTER')">Historic</button>
+            <button style="font-size:9px;background:#475569;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('UNDERGROUND_METRO')">Underground</button>
+          </div>
+          <div style="font-weight:bold;color:#10b981;font-size:10px;margin-bottom:3px;">SPAWN LANDMARK:</div>
+          <div style="display:flex;gap:3px;margin-bottom:5px;flex-wrap:wrap;">
+            <button style="font-size:8px;background:#15803d;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('GRAND_RAILWAY_STATION')">Grand Station</button>
+            <button style="font-size:8px;background:#78350f;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('HISTORIC_STONE_VIADUCT')">Viaduct</button>
+            <button style="font-size:8px;background:#0369a1;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('MODERN_GLASS_TRANSIT_HUB')">Glass Hub</button>
+            <button style="font-size:8px;background:#ca8a04;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('INDUSTRIAL_MAINTENANCE_YARD')">Maint. Yard</button>
+            <button style="font-size:8px;background:#0284c7;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('OPEN_WATERFRONT_VISTA')">Waterfront</button>
+            <button style="font-size:8px;background:#581c87;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('UNDERGROUND_GRAND_STATION')">Grand Concourse</button>
+            <button style="font-size:8px;background:#0d9488;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SPAWN_LANDMARK__('ROOFTOP_SKYLINE_MOMENT')">Rooftop</button>
+          </div>
+          <div style="font-weight:bold;color:#a855f7;font-size:10px;margin-bottom:3px;">ATMOSPHERE PRESET:</div>
+          <div style="display:flex;gap:3px;margin-bottom:5px;flex-wrap:wrap;">
+            <button style="font-size:8px;background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SET_ATMOSPHERE__('CLEAR_DAYLIGHT')">Clear</button>
+            <button style="font-size:8px;background:#f97316;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SET_ATMOSPHERE__('WARM_GOLDEN_HOUR')">Golden Hour</button>
+            <button style="font-size:8px;background:#64748b;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SET_ATMOSPHERE__('SOFT_OVERCAST')">Overcast</button>
+            <button style="font-size:8px;background:#334155;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SET_ATMOSPHERE__('LIGHT_RAIN')">Light Rain</button>
+            <button style="font-size:8px;background:#1e1b4b;color:#fff;border:none;border-radius:3px;padding:2px 4px;cursor:pointer;" onclick="window.__DEV_SET_ATMOSPHERE__('ILLUMINATED_UNDERGROUND')">Subterranean</button>
+          </div>
+          <div style="font-weight:bold;color:#f43f5e;font-size:10px;margin-bottom:3px;">SKIP CONTROLS:</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button style="font-size:8px;background:#e11d48;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__DEV_SKIP_DISTANCE__(400)">Skip +400m</button>
+            <button style="font-size:8px;background:#9333ea;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__DEV_SKIP_DISTANCE__(800)">Skip +800m</button>
+          </div>
+        </div>
         <div style="margin-top:6px;font-size:10px;color:#94a3b8;border-top:1px solid #1e293b;padding-top:4px;">ACTIVE CHUNK SEEDS:</div>
-        <div style="max-height:85px;overflow-y:auto;font-size:10px;color:#cbd5e1;">
-          ${diag.activeChunkSeeds.map(c => `<div>Chunk Z=${Math.round(c.chunkZ)} | ${c.districtId} ${c.isPortal ? '🏛️[PORTAL]' : ''} | Seed: ${c.seed.toString(16)}</div>`).join('')}
+        <div style="max-height:75px;overflow-y:auto;font-size:10px;color:#cbd5e1;">
+          ${diag.activeChunkSeeds.map(c => `<div>Chunk Z=${Math.round(c.chunkZ)} | ${c.districtId} ${c.isPortal ? '🏛️[PORTAL]' : ''} ${c.landmark ? `⭐[${c.landmark}]` : ''} | Seed: ${c.seed.toString(16)}</div>`).join('')}
         </div>
       `;
     }
