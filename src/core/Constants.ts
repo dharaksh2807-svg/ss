@@ -111,7 +111,7 @@ export const CONSTANTS = {
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)
   MEDIUM_BARRIER_HEIGHT: 1.65, // Must peak jump or lane change (cannot slide under)
   HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under (jumping hits overhead beam)
-  HIGH_BARRIER_HEIGHT: 3.8,
+  HIGH_BARRIER_HEIGHT: 4.05, // Substantial train-height overhead gantry (train height is 4.2m)
   PILLAR_WIDTH: 0.9, // Structural column width/diameter
   PILLAR_HEIGHT: 7.6, // Structural pillar height extending to ceiling
   TUNNEL_CEILING_HEIGHT: 7.6, // Vaulted tunnel ceiling height (guarantees camera & jump clearance)

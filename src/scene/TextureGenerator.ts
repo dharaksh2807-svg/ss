@@ -946,55 +946,267 @@ export class TextureGenerator {
   }
 
   /**
-   * High Barrier Overhead Gantry Warning Texture
-   * Includes illuminated caution sign, downward teeth chevrons, and "LOW CLEARANCE 1.25M"
+   * High-Contrast Low Railway Jump Hurdle Warning Texture (Variant-Driven)
+   * V0: Safety Yellow (#ffd600) & Midnight Carbon Black (#0f172a) chevrons with reflective white trim
+   * V1: International Safety Orange (#ff6d00) & Signal White (#ffffff) chevrons with dark trim
+   * V2: Railway Maintenance Red (#d50000) & High-Intensity White (#ffffff) chevrons with steel trim
    */
-  public static getHighBarrierTexture(): THREE.Texture {
-    return this.getOrCreate('high_barrier_gantry', () => {
+  public static getLowHurdleTexture(variant: number = 0): THREE.Texture {
+    const v = Math.abs(variant) % 3;
+    return this.getOrCreate(`low_hurdle_hazard_v${v}`, () => {
       const w = 512;
-      const h = 128;
+      const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d')!;
 
-      // High-visibility caution yellow background
-      ctx.fillStyle = '#ffcc00';
+      let baseColor = '#ffd600';
+      let stripeColor = '#0f172a';
+      let trimColor = '#ffffff';
+
+      if (v === 1) {
+        baseColor = '#ff6d00';
+        stripeColor = '#ffffff';
+        trimColor = '#0f172a';
+      } else if (v === 2) {
+        baseColor = '#d50000';
+        stripeColor = '#ffffff';
+        trimColor = '#ffd600';
+      }
+
+      // Base coat
+      ctx.fillStyle = baseColor;
       ctx.fillRect(0, 0, w, h);
 
-      // Bold black diagonal hazard chevrons
-      ctx.fillStyle = '#111827';
+      // Bold 45-degree diagonal chevrons
+      ctx.fillStyle = stripeColor;
       ctx.beginPath();
-      for (let i = -w; i < w * 2; i += 48) {
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i + 24, 0);
-        ctx.lineTo(i - 12, h);
-        ctx.lineTo(i - 36, h);
+      const stripeW = 64;
+      for (let x = -h; x < w + h; x += stripeW * 2) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + stripeW, 0);
+        ctx.lineTo(x + stripeW - h, h);
+        ctx.lineTo(x - h, h);
         ctx.closePath();
       }
       ctx.fill();
 
-      // Center high-contrast clearance sign placard
-      const padW = 280;
-      const padH = 64;
-      const padX = (w - padW) * 0.5;
-      const padY = (h - padH) * 0.5;
+      // Top & Bottom high-durability reflective trim
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(0, 0, w, 16);
+      ctx.fillRect(0, h - 16, w, 16);
+
+      // Inner contrasting pinstripes on trims
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(0, 14, w, 2);
+      ctx.fillRect(0, h - 16, w, 2);
+
+      // Rivet bolts along edges
+      ctx.fillStyle = '#cbd5e1';
+      for (let rx = 24; rx < w; rx += 48) {
+        ctx.beginPath();
+        ctx.arc(rx, 8, 3.5, 0, Math.PI * 2);
+        ctx.arc(rx, h - 8, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * High Barrier Overhead Gantry Warning Texture (Variant-Driven)
+   * V0: Station Transit LED Gantry ("▼ LOW CLEARANCE 1.25M // SLIDE UNDER ▼")
+   * V1: Heavy Industrial Steel Bridge Gantry (Riveted Steel Flanges & Hazard Chevrons)
+   * V2: Tunnel Vault Clearance Beam ("MAX HEIGHT 1.25M // CLEARANCE DANGER")
+   */
+  public static getHighBarrierTexture(variant: number = 0): THREE.Texture {
+    const v = Math.abs(variant) % 3;
+    return this.getOrCreate(`high_barrier_gantry_v${v}`, () => {
+      const w = 1024;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      if (v === 0) {
+        // Station Transit Style
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        for (let i = -w; i < w * 2; i += 64) {
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + 32, 0);
+          ctx.lineTo(i + 32 - h * 0.4, h);
+          ctx.lineTo(i - h * 0.4, h);
+          ctx.closePath();
+        }
+        ctx.fill();
+
+        // Massive Center Backlit LED Display Placard
+        const padW = 720;
+        const padH = 140;
+        const padX = (w - padW) * 0.5;
+        const padY = (h - padH) * 0.5;
+
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(padX, padY, padW, padH);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(padX + 3, padY + 3, padW - 6, padH - 6);
+
+        // Warning Text & Icons
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▼ ▼  LOW CLEARANCE 1.25M  ▼ ▼', w * 0.5, padY + 48);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('SLIDE UNDER TO PASS // NO JUMPING', w * 0.5, padY + 98);
+      } else if (v === 1) {
+        // Heavy Industrial Steel Style
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#18181b';
+        ctx.beginPath();
+        for (let i = -w; i < w * 2; i += 72) {
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + 36, 0);
+          ctx.lineTo(i + 36 - h * 0.5, h);
+          ctx.lineTo(i - h * 0.5, h);
+          ctx.closePath();
+        }
+        ctx.fill();
+
+        // Industrial Steel Plate Placard
+        const padW = 680;
+        const padH = 130;
+        const padX = (w - padW) * 0.5;
+        const padY = (h - padH) * 0.5;
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(padX, padY, padW, padH);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(padX + 3, padY + 3, padW - 6, padH - 6);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '900 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚠️ CAUTION: OVERHEAD HAZARD ⚠️', w * 0.5, padY + 46);
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('▼ SLIDE REQUIRED — CLEARANCE 1.25M ▼', w * 0.5, padY + 95);
+      } else {
+        // Tunnel Clearance Portal Style
+        ctx.fillStyle = '#f97316';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        for (let i = -w; i < w * 2; i += 64) {
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + 32, 0);
+          ctx.lineTo(i + 32 - h * 0.45, h);
+          ctx.lineTo(i - h * 0.45, h);
+          ctx.closePath();
+        }
+        ctx.fill();
+
+        const padW = 700;
+        const padH = 130;
+        const padX = (w - padW) * 0.5;
+        const padY = (h - padH) * 0.5;
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(padX, padY, padW, padH);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(padX + 3, padY + 3, padW - 6, padH - 6);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TUNNEL PORTAL // 1.25M CLEARANCE', w * 0.5, padY + 46);
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('▼ DUCK / SLIDE UNDER FRAME ▼', w * 0.5, padY + 95);
+      }
+
+      // Top and bottom heavy steel flange borders with industrial rivets
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(padX, padY, padW, padH);
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(padX + 2, padY + 2, padW - 4, padH - 4);
+      ctx.fillRect(0, 0, w, 22);
+      ctx.fillRect(0, h - 22, w, 22);
 
-      // Warning text
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = '900 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('▼ LOW CLEARANCE 1.25M ▼', w * 0.5, padY + 22);
+      ctx.fillStyle = '#94a3b8';
+      for (let rx = 32; rx < w; rx += 48) {
+        ctx.beginPath();
+        ctx.arc(rx, 11, 4, 0, Math.PI * 2);
+        ctx.arc(rx, h - 11, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('SLIDE ONLY // NO JUMPING', w * 0.5, padY + 46);
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    });
+  }
+
+  /**
+   * Heavy Concrete Pedestal Base Texture for Overhead Gantries
+   */
+  public static getGantryPedestalTexture(): THREE.Texture {
+    return this.getOrCreate('gantry_pedestal', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Concrete gray base
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, 0, w, h);
+
+      // Fine aggregate speckles
+      ctx.fillStyle = '#334155';
+      for (let i = 0; i < 200; i++) {
+        ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+
+      // Bottom 30%: Safety hazard chevron collar
+      const beltY = h * 0.65;
+      const beltH = h * 0.35;
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(0, beltY, w, beltH);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      for (let x = -w; x < w * 2; x += 36) {
+        ctx.moveTo(x, beltY);
+        ctx.lineTo(x + 18, beltY);
+        ctx.lineTo(x + 18 - 20, h);
+        ctx.lineTo(x - 20, h);
+        ctx.closePath();
+      }
+      ctx.fill();
+
+      // Top concrete chamfer bevel
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(0, 0, w, 6);
 
       const tex = new THREE.CanvasTexture(canvas);
       return tex;

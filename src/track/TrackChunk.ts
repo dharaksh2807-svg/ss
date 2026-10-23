@@ -1480,11 +1480,11 @@ export class TrackChunk {
         wheelMeshes = movingData.wheelMeshes;
         headlightBeam = movingData.headlightBeam;
       } else if (obsData.type === 'LOW_BARRIER') {
-        group = this.obstacleFactory.createLowBarrier();
+        group = this.obstacleFactory.createLowBarrier(obsData.variant);
       } else if (obsData.type === 'MEDIUM_BARRIER') {
         group = this.obstacleFactory.createMediumBarrier();
       } else if (obsData.type === 'HIGH_BARRIER') {
-        group = this.obstacleFactory.createHighBarrier();
+        group = this.obstacleFactory.createHighBarrier(obsData.variant);
       } else if (obsData.type === 'PILLAR') {
         group = this.obstacleFactory.createPillar();
       } else if (obsData.type === 'SIDE_BARRIER') {
@@ -1492,7 +1492,7 @@ export class TrackChunk {
       } else if (obsData.type === 'TUNNEL_ARCH') {
         group = this.obstacleFactory.createTunnelArch();
       } else {
-        group = this.obstacleFactory.createLowBarrier();
+        group = this.obstacleFactory.createLowBarrier(obsData.variant);
       }
 
       group.position.set(laneX, 0, localZ);

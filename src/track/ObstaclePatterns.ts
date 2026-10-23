@@ -15,6 +15,7 @@ export interface PatternObstacle {
   hasRamp?: boolean;
   isMoving?: boolean;
   velocityZ?: number;
+  variant?: number;
 }
 
 export interface TrackPattern {
