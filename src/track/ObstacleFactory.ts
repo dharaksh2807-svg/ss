@@ -634,9 +634,9 @@ export class ObstacleFactory {
   /**
    * Create High Overhead Barrier (Requires Slide Under)
    * Height: ~4.05m (Substantial train-height presence, matching 4.2m train profile).
-   * Ground clearance: EXACTLY 1.25m (CONSTANTS.HIGH_BARRIER_CLEARANCE).
+   * Ground clearance: EXACTLY 1.40m (CONSTANTS.HIGH_BARRIER_CLEARANCE).
    * Standing player (1.8m) or jumping player (apex 3.15m) collides with the solid overhead girder.
-   * Sliding player (height 0.75m, center y = 0.45m, top y = 0.825m) slides cleanly underneath with 0.425m margin.
+   * Sliding player (height 0.75m, center y = 0.45m, top y = 0.825m in test; ground y = 0.9m in game) slides cleanly underneath with ample clearance.
    * 3 Distinct Visual Variants:
    * 0 = Station Signal Gantry (Transit LED warning board, 3-aspect signal heads, twin aviation red strobes)
    * 1 = Heavy Industrial Truss Portal (Steel lattice truss, maintenance catwalk, work lamps, amber strobes)
@@ -647,7 +647,7 @@ export class ObstacleFactory {
     const group = new THREE.Group();
     group.userData = { type: 'HIGH_BARRIER', variant: v };
     const spanW = CONSTANTS.LANE_WIDTH * 0.96; // ~3.45m
-    const clearance = CONSTANTS.HIGH_BARRIER_CLEARANCE; // 1.25m
+    const clearance = CONSTANTS.HIGH_BARRIER_CLEARANCE; // 1.40m
     const gantryTotalH = CONSTANTS.HIGH_BARRIER_HEIGHT || 4.05; // Train-height presence
     const gantryMat = this.highBarrierMats[v];
 
@@ -676,7 +676,7 @@ export class ObstacleFactory {
     });
 
     // 2. Solid Primary Overhead Clearance Box Girder
-    // Spans from clearance height (1.25m) up to 2.45m (height 1.20m, depth 0.42m)
+    // Spans from clearance height (1.40m) up to 2.60m (height 1.20m, depth 0.42m)
     const girderH = 1.20;
     const girderGeo = new THREE.BoxGeometry(spanW, girderH, 0.42);
     const girder = new THREE.Mesh(girderGeo, gantryMat);
@@ -690,20 +690,26 @@ export class ObstacleFactory {
     btmFlange.position.set(0, clearance + 0.04, 0);
     group.add(btmFlange);
 
+    // High-contrast luminous warning edge lip along bottom flange
+    const warningLipGeo = new THREE.BoxGeometry(spanW + 0.12, 0.03, 0.48);
+    const warningLip = new THREE.Mesh(warningLipGeo, this.hazardYellowMat);
+    warningLip.position.set(0, clearance + 0.015, 0);
+    group.add(warningLip);
+
     const midFlange = new THREE.Mesh(flangeGeo, this.gantryDarkSteelMat);
     midFlange.position.set(0, clearance + girderH - 0.04, 0);
     group.add(midFlange);
 
-    // 3. Downward Hazard Clearance Warning Teeth / Prongs
-    // Positioned along bottom lip at Y = 1.25m pointing down to 1.16m
-    // Visually reinforces "LOW CLEARANCE - DUCK / SLIDE"
+    // 3. High-Contrast Hazard Clearance Warning Teeth / Chevron Indicators
+    // Positioned along bottom lip terminating precisely at clearance Y = 1.40m
+    // Visually reinforces "LOW CLEARANCE - DUCK / SLIDE" with sharp contrast
     const toothMat = this.hazardYellowMat;
-    const toothGeo = new THREE.ConeGeometry(0.08, 0.16, 4);
+    const toothGeo = new THREE.ConeGeometry(0.07, 0.12, 4);
     for (let t = -4; t <= 4; t++) {
       const tx = t * (spanW * 0.095);
       const tooth = new THREE.Mesh(toothGeo, toothMat);
       tooth.rotation.z = Math.PI; // Point down
-      tooth.position.set(tx, clearance - 0.02, 0.18);
+      tooth.position.set(tx, clearance + 0.06, 0.22);
       group.add(tooth);
     }
 
@@ -780,15 +786,15 @@ export class ObstacleFactory {
       handrail.position.set(0, 3.85, 0.45);
       group.add(handrail);
 
-      // Underside work spotlight lamps pointing down at tracks
+      // Underside work spotlight lamps pointing down at tracks (mounted above clearance line)
       [-spanW * 0.25, spanW * 0.25].forEach((lx) => {
-        const lamp = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.20, 8), this.gantryDarkSteelMat);
+        const lamp = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.16, 8), this.gantryDarkSteelMat);
         lamp.rotation.x = Math.PI / 4;
-        lamp.position.set(lx, clearance + 0.12, 0.25);
+        lamp.position.set(lx, clearance + 0.18, 0.25);
         group.add(lamp);
 
-        const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfffae6 }));
-        lampBulb.position.set(lx, clearance + 0.06, 0.28);
+        const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfffae6 }));
+        lampBulb.position.set(lx, clearance + 0.12, 0.28);
         group.add(lampBulb);
       });
 
@@ -812,17 +818,17 @@ export class ObstacleFactory {
       deflector.position.set(0, gantryTotalH - 0.09, 0);
       group.add(deflector);
 
-      // Hanging flexible limit bars suspended on chains from underside of girder
+      // Hanging flexible limit bars suspended on chains from underside of girder (terminating precisely at clearance)
       for (let c = -3; c <= 3; c++) {
         const cx = c * (spanW * 0.12);
         // Chain link rod
-        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 6), this.gantryDarkSteelMat);
-        chain.position.set(cx, clearance + 0.04, 0.18);
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6), this.gantryDarkSteelMat);
+        chain.position.set(cx, clearance + 0.08, 0.18);
         group.add(chain);
 
-        // Hanging warning bob
+        // Hanging warning bob (terminates exactly at clearance)
         const bob = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), this.beaconAmberMat);
-        bob.position.set(cx, clearance - 0.04, 0.18);
+        bob.position.set(cx, clearance + 0.04, 0.18);
         group.add(bob);
       }
 

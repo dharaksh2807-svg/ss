@@ -110,7 +110,7 @@ export const CONSTANTS = {
   MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Distance to flash headlights & sounding horn
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)
   MEDIUM_BARRIER_HEIGHT: 1.65, // Must peak jump or lane change (cannot slide under)
-  HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under (jumping hits overhead beam)
+  HIGH_BARRIER_CLEARANCE: 1.40, // Must slide under (jumping hits overhead beam; raised to 1.40m for optimal readability)
   HIGH_BARRIER_HEIGHT: 4.05, // Substantial train-height overhead gantry (train height is 4.2m)
   PILLAR_WIDTH: 0.9, // Structural column width/diameter
   PILLAR_HEIGHT: 7.6, // Structural pillar height extending to ceiling

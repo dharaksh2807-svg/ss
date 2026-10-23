@@ -1020,9 +1020,9 @@ export class TextureGenerator {
 
   /**
    * High Barrier Overhead Gantry Warning Texture (Variant-Driven)
-   * V0: Station Transit LED Gantry ("▼ LOW CLEARANCE 1.25M // SLIDE UNDER ▼")
+   * V0: Station Transit LED Gantry ("▼ LOW CLEARANCE 1.40M // SLIDE UNDER ▼")
    * V1: Heavy Industrial Steel Bridge Gantry (Riveted Steel Flanges & Hazard Chevrons)
-   * V2: Tunnel Vault Clearance Beam ("MAX HEIGHT 1.25M // CLEARANCE DANGER")
+   * V2: Tunnel Vault Clearance Beam ("MAX HEIGHT 1.40M // CLEARANCE DANGER")
    */
   public static getHighBarrierTexture(variant: number = 0): THREE.Texture {
     const v = Math.abs(variant) % 3;
@@ -1067,7 +1067,7 @@ export class TextureGenerator {
         ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('▼ ▼  LOW CLEARANCE 1.25M  ▼ ▼', w * 0.5, padY + 48);
+        ctx.fillText('▼ ▼  LOW CLEARANCE 1.40M  ▼ ▼', w * 0.5, padY + 48);
 
         ctx.fillStyle = '#fbbf24';
         ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -1108,7 +1108,7 @@ export class TextureGenerator {
 
         ctx.fillStyle = '#f8fafc';
         ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillText('▼ SLIDE REQUIRED — CLEARANCE 1.25M ▼', w * 0.5, padY + 95);
+        ctx.fillText('▼ SLIDE REQUIRED — CLEARANCE 1.40M ▼', w * 0.5, padY + 95);
       } else {
         // Tunnel Clearance Portal Style
         ctx.fillStyle = '#f97316';
@@ -1140,7 +1140,7 @@ export class TextureGenerator {
         ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('TUNNEL PORTAL // 1.25M CLEARANCE', w * 0.5, padY + 46);
+        ctx.fillText('TUNNEL PORTAL // 1.40M CLEARANCE', w * 0.5, padY + 46);
 
         ctx.fillStyle = '#f8fafc';
         ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -1152,11 +1152,15 @@ export class TextureGenerator {
       ctx.fillRect(0, 0, w, 22);
       ctx.fillRect(0, h - 22, w, 22);
 
+      // High-contrast reflective warning line along bottom edge
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(0, h - 6, w, 6);
+
       ctx.fillStyle = '#94a3b8';
       for (let rx = 32; rx < w; rx += 48) {
         ctx.beginPath();
         ctx.arc(rx, 11, 4, 0, Math.PI * 2);
-        ctx.arc(rx, h - 11, 4, 0, Math.PI * 2);
+        ctx.arc(rx, h - 14, 4, 0, Math.PI * 2);
         ctx.fill();
       }
 

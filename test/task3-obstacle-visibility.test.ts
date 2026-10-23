@@ -147,7 +147,7 @@ console.log('\n--- Suite 2: High Overhead Slide Barrier Family (Train-Height Gan
       `Variant ${v} spans track lane with massive structural pylons (${width.toFixed(2)}m)`);
 
     // Collider setup matching TrackChunk:
-    // min.y is CONSTANTS.HIGH_BARRIER_CLEARANCE (1.25m), max.y is HIGH_BARRIER_HEIGHT (4.05m)
+    // min.y is CONSTANTS.HIGH_BARRIER_CLEARANCE (1.40m), max.y is HIGH_BARRIER_HEIGHT (4.05m)
     const laneX = 0;
     const halfW = CONSTANTS.LANE_WIDTH * 0.45;
     const halfD = 0.35;
@@ -158,19 +158,19 @@ console.log('\n--- Suite 2: High Overhead Slide Barrier Family (Train-Height Gan
 
     const obs = makeObsInstance(mesh, gantryCollider, 'HIGH_BARRIER', 0);
 
-    // 1. Sliding runner (height = 0.75m, center y = 0.45m, top y = 0.825m) passes cleanly through 1.25m opening
+    // 1. Sliding runner (height = 0.75m, center y = 0.45m, top y = 0.825m in test) passes cleanly through clearance opening
     player.position.set(0, 0.45, 0);
     player.isJumping = false;
     player.isSliding = true;
     player.updateCollider();
     assert(player.collider.max.y <= CONSTANTS.HIGH_BARRIER_CLEARANCE,
-      `Sliding player top (${player.collider.max.y.toFixed(3)}m) is strictly below 1.25m clearance`);
+      `Sliding player top (${player.collider.max.y.toFixed(3)}m) is strictly below ${CONSTANTS.HIGH_BARRIER_CLEARANCE}m clearance`);
 
     const slideRes = CollisionResolver.resolveOutcome(obs, player, null);
     assert(slideRes.outcome === 'SAFE_CONTACT',
-      `Variant ${v}: Sliding cleanly clears through 1.25m overhead gantry opening`);
+      `Variant ${v}: Sliding cleanly clears through ${CONSTANTS.HIGH_BARRIER_CLEARANCE}m overhead gantry opening`);
 
-    // 2. Standing upright runner (height = 1.8m) hits overhead box girder at [1.25m, 1.8m]
+    // 2. Standing upright runner (height = 1.8m) hits overhead box girder at [1.40m, 1.8m]
     player.position.set(0, 0, 0);
     player.isJumping = false;
     player.isSliding = false;
