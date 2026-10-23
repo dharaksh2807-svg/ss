@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS } from '../core/Constants';
+import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { Player, SupportSurfaceType } from '../player/Player';
 import { ObstacleFactory } from './ObstacleFactory';
@@ -859,6 +859,77 @@ export class TrackManager {
 
   public getChunksUntilTransition(): number {
     return this.chunksUntilTransition;
+  }
+
+  /**
+   * Deterministic Safe-Respawn System
+   * Deactivates the lethal collision obstacle and clears immediate hazard zone [Z - 10, Z + 6].
+   * Ensures the player is placed in a guaranteed open lane with at least 12-15m reachable runway.
+   */
+  public prepareSafeReviveRespawn(player: Player): LaneIndex {
+    const playerZ = player.position.z;
+    const playerBox = player.collider;
+    const currentLane = player.currentLane;
+
+    // 1. Deactivate and clear any lethal obstacle intersecting or immediately adjacent to player
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+
+        // Check if obstacle directly overlaps player or is within lethal impact zone in the current lane
+        const inLethalRange = obs.collider.max.z >= playerZ - 10.0 && obs.collider.min.z <= playerZ + 6.0;
+        const inCurrentLane = obs.lane === currentLane;
+        const intersects = obs.collider.intersectsBox(playerBox);
+
+        if (intersects || (inLethalRange && inCurrentLane)) {
+          obs.active = false;
+          chunk.group.remove(obs.group);
+        }
+      }
+    }
+
+    // 2. Evaluate all 3 lanes (-1, 0, 1) for safety in the upcoming 15 meters [playerZ - 15, playerZ]
+    const lanes: LaneIndex[] = [-1, 0, 1];
+    const laneHazards: Record<LaneIndex, number> = { [-1]: 0, [0]: 0, [1]: 0 };
+
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (!obs.active) continue;
+        const isAhead = obs.collider.max.z >= playerZ - 15.0 && obs.collider.min.z <= playerZ;
+        if (isAhead && lanes.includes(obs.lane as LaneIndex)) {
+          laneHazards[obs.lane as LaneIndex]++;
+        }
+      }
+    }
+
+    // Prefer current lane if clear; otherwise pick adjacent clear lane
+    let chosenLane: LaneIndex = currentLane;
+    if (laneHazards[currentLane] > 0) {
+      // Find a lane with zero upcoming hazards
+      const zeroHazardLanes = lanes.filter(l => laneHazards[l] === 0);
+      if (zeroHazardLanes.length > 0) {
+        // Pick closest zero hazard lane to current lane
+        zeroHazardLanes.sort((a, b) => Math.abs(a - currentLane) - Math.abs(b - currentLane));
+        chosenLane = zeroHazardLanes[0];
+      } else {
+        // If all lanes have obstacles, pick the lane with the fewest hazards and clear runway
+        lanes.sort((a, b) => laneHazards[a] - laneHazards[b]);
+        chosenLane = lanes[0];
+        // Clear obstacles within 10m ahead in that chosen lane to guarantee safe runway
+        for (const chunk of this.chunks) {
+          for (const obs of chunk.obstacles) {
+            if (!obs.active) continue;
+            if (obs.lane === chosenLane && obs.collider.max.z >= playerZ - 10.0 && obs.collider.min.z <= playerZ) {
+              obs.active = false;
+              chunk.group.remove(obs.group);
+            }
+          }
+        }
+      }
+    }
+
+    this.previousPlayerZ = playerZ;
+    return chosenLane;
   }
 }
 

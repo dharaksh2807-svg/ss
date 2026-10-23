@@ -7,19 +7,20 @@ export interface DailyRewardDay {
   title: string;
   coins: number;
   charges: number;
+  keys?: number;
   icon: string;
   description: string;
   isJackpot?: boolean;
 }
 
 export const DAILY_REWARDS_SCHEDULE: DailyRewardDay[] = [
-  { day: 1, title: 'Day 1 Bonus', coins: 500, charges: 0, icon: '🪙', description: '+500 Starter Coins' },
-  { day: 2, title: 'Day 2 Mobility', coins: 250, charges: 2, icon: '🛹', description: '+2 Hoverboard Charges & 250 Coins' },
-  { day: 3, title: 'Day 3 Stash', coins: 1000, charges: 0, icon: '💰', description: '+1,000 Gold Coins' },
-  { day: 4, title: 'Day 4 Skater', coins: 500, charges: 3, icon: '🛹', description: '+3 Hoverboard Charges & 500 Coins' },
-  { day: 5, title: 'Day 5 Bankroll', coins: 2500, charges: 0, icon: '💎', description: '+2,500 High-Roller Coins' },
-  { day: 6, title: 'Day 6 Mega Pack', coins: 1500, charges: 5, icon: '🚀', description: '+5 Hoverboard Charges & 1,500 Coins' },
-  { day: 7, title: 'Day 7 Jackpot', coins: 5000, charges: 10, icon: '👑', description: 'EPIC JACKPOT: 5,000 Coins + 10 Charges!', isJackpot: true }
+  { day: 1, title: 'Day 1 Bonus', coins: 500, charges: 0, keys: 0, icon: '🪙', description: '+500 Starter Coins' },
+  { day: 2, title: 'Day 2 Mobility', coins: 250, charges: 2, keys: 0, icon: '🛹', description: '+2 Hoverboard Charges & 250 Coins' },
+  { day: 3, title: 'Day 3 Stash', coins: 1000, charges: 0, keys: 1, icon: '🗝️', description: '+1,000 Gold Coins & 1 Revive Key' },
+  { day: 4, title: 'Day 4 Skater', coins: 500, charges: 3, keys: 0, icon: '🛹', description: '+3 Hoverboard Charges & 500 Coins' },
+  { day: 5, title: 'Day 5 Bankroll', coins: 2500, charges: 0, keys: 0, icon: '💎', description: '+2,500 High-Roller Coins' },
+  { day: 6, title: 'Day 6 Mega Pack', coins: 1500, charges: 5, keys: 0, icon: '🚀', description: '+5 Hoverboard Charges & 1,500 Coins' },
+  { day: 7, title: 'Day 7 Jackpot', coins: 5000, charges: 10, keys: 2, icon: '👑', description: 'EPIC JACKPOT: 5,000 Coins, 10 Charges & 2 Revive Keys!', isJackpot: true }
 ];
 
 const DAILY_STORAGE_KEY = 'metro_daily_reward_state';
@@ -167,6 +168,9 @@ export class DailyRewardManager {
     }
     if (actualReward.charges > 0) {
       ProgressionManager.getInstance().addHoverboardCharges(actualReward.charges);
+    }
+    if (actualReward.keys && actualReward.keys > 0) {
+      ProgressionManager.getInstance().addKeys(actualReward.keys);
     }
 
     // Update state

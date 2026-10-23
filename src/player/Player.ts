@@ -86,6 +86,7 @@ export class Player {
   public isStumbling: boolean = false;
   private stumbleTimer: number = 0;
   public isIntroInvincible: boolean = false;
+  private reviveGraceTimer: number = 0;
   public lastJumpDist: number = -999;
   public lastSlideDist: number = -999;
 
@@ -157,6 +158,7 @@ export class Player {
     this.isStumbling = false;
     this.stumbleTimer = 0;
     this.isIntroInvincible = false;
+    this.reviveGraceTimer = 0;
     this.lastJumpDist = -999;
     this.lastSlideDist = -999;
     this.supportSurface = 'GROUND';
@@ -326,13 +328,17 @@ export class Player {
     this.powerups.update(dt);
     this.hoverboardManager.update(dt);
 
+    if (this.reviveGraceTimer > 0) {
+      this.reviveGraceTimer = Math.max(0, this.reviveGraceTimer - dt);
+    }
+
     const isBoardActive = this.hoverboardManager.isBoardActive();
     this.model.setHoverboardVisible(isBoardActive, this.hoverboardManager.getActiveBoard()?.id);
     this.model.setSuperSneakersActive(this.powerups.isSuperSneakersActive());
     this.model.setJetpackVisible(this.powerups.isJetpackActive());
     this.model.setShieldVisible(this.powerups.hasShieldActive());
     this.model.setMagnetVisible(this.powerups.isMagnetActive() || (isBoardActive && this.hoverboardManager.getMagnetRadiusBonus() > 0));
-    this.model.setInvulnerable(this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash());
+    this.model.setInvulnerable(this.isInvulnerable());
 
     if (this.state === 'CRASH') {
       this.model.updateAnimation(this.state, this.speed, 0, this.groundY, dt);
@@ -653,24 +659,65 @@ export class Player {
     this.updateCollider();
   }
 
-  public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
-    // 0. Intro cinematic invulnerability protection
-    if (this.isIntroInvincible) {
-      return false;
+  public isInvulnerable(): boolean {
+    return this.isIntroInvincible ||
+           this.powerups.isInvulnerable() ||
+           this.hoverboardManager.isInvulnerableAfterCrash() ||
+           this.reviveGraceTimer > 0;
+  }
+
+  public activateReviveGrace(duration: number = 2.0): void {
+    this.reviveGraceTimer = Math.max(this.reviveGraceTimer, duration);
+  }
+
+  public getReviveGraceTimeRemaining(): number {
+    return this.reviveGraceTimer;
+  }
+
+  public revive(safeLane?: LaneIndex): void {
+    this.state = 'RUN';
+    this.isJumping = false;
+    this.isFastDropping = false;
+    this.jumpPhase = 'NONE';
+    this.isSliding = false;
+    this.slideTimer = 0;
+    this.verticalVelocity = 0;
+    this.groundY = CONSTANTS.PLAYER_BASE_Y;
+    this.position.y = this.groundY;
+    this.supportSurface = 'GROUND';
+    this.activeSupportObstacleId = null;
+    this.isStumbling = false;
+    this.stumbleTimer = 0;
+    this.isUnderOverheadObstacle = false;
+
+    if (safeLane !== undefined) {
+      this.currentLane = safeLane;
+      this.targetLane = safeLane;
+      this.position.x = CONSTANTS.LANES[safeLane];
+      this.isChangingLane = false;
+      this.queuedLaneChange = null;
     }
 
-    // 1. Invulnerability grace window active
-    if (this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash()) {
+    this.mesh.position.copy(this.position);
+    this.updateCollider();
+    this.activateReviveGrace(2.0);
+    this.speed = Math.min(this.speed, 18.0);
+    this.eventBus.emit(EVENTS.REVIVE_EXECUTED, { position: this.position, lane: this.currentLane });
+  }
+
+  public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
+    // 0. Active invulnerability protection (intro, powerups, crash grace, or revive grace)
+    if (this.isInvulnerable()) {
       return false; // Ignored during grace period
     }
 
-    // 2. Protective Shield absorbs collision
+    // 1. Protective Shield absorbs collision
     if (this.powerups.consumeShield()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by shield!
     }
 
-    // 3. Hoverboard absorbs collision
+    // 2. Hoverboard absorbs collision
     if (this.hoverboardManager.breakBoard()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by hoverboard!

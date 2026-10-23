@@ -20,6 +20,7 @@ export class StartScreen {
   private dailyRewardBtn: HTMLElement | null = null;
   private highScoreEl: HTMLElement;
   private walletCoinsEl: HTMLElement | null = null;
+  private keysEl: HTMLElement | null = null;
   private boardChargesEl: HTMLElement | null = null;
   private activeMissionEl: HTMLElement | null = null;
   private equippedBadgeEl: HTMLElement | null = null;
@@ -45,6 +46,7 @@ export class StartScreen {
     this.dailyRewardBtn = document.getElementById('lobby-daily-widget');
     this.highScoreEl = document.getElementById('start-high-score')!;
     this.walletCoinsEl = document.getElementById('lobby-coins-val');
+    this.keysEl = document.getElementById('lobby-keys-val');
     this.boardChargesEl = document.getElementById('lobby-boards-val');
     this.activeMissionEl = document.getElementById('lobby-mission-snippet');
     this.equippedBadgeEl = document.getElementById('lobby-equipped-name');
@@ -93,6 +95,10 @@ export class StartScreen {
                 </svg>
               </span>
               <span class="resource-val" id="lobby-coins-val">0</span>
+            </div>
+            <div class="resource-pill cyan-pill" id="lobby-keys-pill" role="button" tabindex="0" title="Key Wallet">
+              <span class="resource-icon">🔑</span>
+              <span class="resource-val" id="lobby-keys-val">3</span>
             </div>
             <div class="resource-pill purple-pill" id="lobby-boards-pill" role="button" tabindex="0" title="Open Board Hangar">
               <span class="resource-icon">🛹</span>
@@ -349,6 +355,7 @@ export class StartScreen {
 
     // Event updates
     this.eventBus.on('WALLET_UPDATED', () => this.updateState());
+    this.eventBus.on(EVENTS.KEYS_UPDATED, () => this.updateState());
     this.eventBus.on('BOARD_CHARGES_UPDATED', () => this.updateState());
     this.eventBus.on('CHARACTER_EQUIPPED', () => this.updateState());
     this.eventBus.on('BOARD_EQUIPPED', () => this.updateState());
@@ -369,6 +376,9 @@ export class StartScreen {
     // 2. Wallet & Charges
     if (this.walletCoinsEl) {
       this.walletCoinsEl.textContent = this.upgradeManager.getCoins().toLocaleString();
+    }
+    if (this.keysEl) {
+      this.keysEl.textContent = this.progression.getKeys().toString();
     }
     if (this.boardChargesEl) {
       this.boardChargesEl.textContent = this.progression.getHoverboardCharges().toString();

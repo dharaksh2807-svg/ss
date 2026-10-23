@@ -33,8 +33,10 @@ import { PracticeModuleId } from '../practice/PracticeTypes';
 import { GraphicsManager } from '../scene/GraphicsManager';
 import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
 import { EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { ReviveManager } from '../revive/ReviveManager';
+import { ReviveModal } from '../ui/ReviveModal';
 
-export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
+export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -64,6 +66,8 @@ export class Game {
   private practiceController: PracticeController;
   private practiceModal: PracticeModal;
   private devTestArena: DevTestArena;
+  private reviveManager: ReviveManager;
+  private reviveModal: ReviveModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -116,6 +120,8 @@ export class Game {
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
     this.environmentSelectModal = new EnvironmentSelectModal();
+    this.reviveManager = ReviveManager.getInstance();
+    this.reviveModal = new ReviveModal();
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
@@ -251,8 +257,8 @@ export class Game {
       this.hud.showFeedbackBadge(`${label} +${bonus}`, 'precision');
     });
 
-    bus.on(EVENTS.CRASH, () => {
-      this.handleGameOver('CRASH');
+    bus.on(EVENTS.CRASH, (reason?: string) => {
+      this.handleFatalCrash(reason || 'CRASH');
     });
 
     // Environment District & Transitions
@@ -321,6 +327,8 @@ export class Game {
     // Start opening cinematic sequence if eligible
     this.openingSequence.start(isRetry);
 
+    this.reviveManager.resetRun();
+    this.reviveModal.hide();
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
@@ -382,6 +390,8 @@ export class Game {
     this.cameraController.setLobbyMode(true);
     this.hud.hide();
     this.pauseModal.hide();
+    this.reviveModal.hide();
+    this.reviveManager.resetRun();
     this.gameOverModal.hide();
     this.shopModal.hide();
     this.missionsModal.hide();
@@ -447,6 +457,9 @@ export class Game {
 
   private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' = 'CRASH'): void {
     if (this.lifecycleState === 'GAMEOVER') return;
+
+    this.reviveModal.hide();
+    this.reviveManager.cancelOffer();
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       // In Practice & Arena modes, collision results are handled directly by PracticeController / DevTestArena
@@ -815,5 +828,71 @@ export class Game {
 
   public getDevTestArena(): DevTestArena {
     return this.devTestArena;
+  }
+
+  public getReviveManager(): ReviveManager {
+    return this.reviveManager;
+  }
+
+  public getReviveModal(): ReviveModal {
+    return this.reviveModal;
+  }
+
+  private handleFatalCrash(reason: string): void {
+    if (this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'REVIVE_OFFER') return;
+
+    if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
+      return;
+    }
+
+    if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
+      this.lifecycleState = 'REVIVE_OFFER';
+      this.inputManager.setEnabled(false);
+      this.reviveManager.beginOffer();
+      const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+
+      this.reviveModal.show(
+        offerState,
+        this.score,
+        this.coinsCount,
+        () => this.onReviveAccepted(),
+        () => this.onReviveDeclined()
+      );
+    } else {
+      this.handleGameOver('CRASH');
+    }
+  }
+
+  private onReviveAccepted(): void {
+    const result = this.reviveManager.executeRevive();
+    if (!result.success) {
+      this.handleGameOver('CRASH');
+      return;
+    }
+
+    // 1. Safe track respawn & obstacle clearance
+    const safeLane = this.trackManager.prepareSafeReviveRespawn(this.player);
+
+    // 2. Restore player state with safe lane, 2.0s grace period, and speed dampening
+    this.player.revive(safeLane);
+
+    // 3. Reset Chaser distance to 14m standby behind runner
+    this.chaser.reset();
+
+    // 4. Play audio feedback
+    this.soundManager.playReviveSound();
+
+    // 5. Show celebratory HUD badge
+    this.hud.showFeedbackBadge(`SAVED! 🔑 -${result.keysSpent}`, 'precision');
+
+    // 6. Resume game simulation
+    this.inputManager.setEnabled(true);
+    this.lastTime = performance.now();
+    this.lifecycleState = 'PLAYING';
+  }
+
+  private onReviveDeclined(): void {
+    this.reviveManager.cancelOffer();
+    this.handleGameOver('CRASH');
   }
 }

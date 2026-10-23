@@ -319,7 +319,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 5000, rewardCoins: 500 },
       { tier: 'SILVER', target: 25000, rewardCoins: 2000 },
-      { tier: 'GOLD', target: 100000, rewardCoins: 10000 }
+      { tier: 'GOLD', target: 100000, rewardCoins: 10000, rewardKeys: 1 }
     ]
   },
   {
@@ -331,7 +331,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 500, rewardCoins: 500 },
       { tier: 'SILVER', target: 2500, rewardCoins: 2500 },
-      { tier: 'GOLD', target: 10000, rewardCoins: 12000 }
+      { tier: 'GOLD', target: 10000, rewardCoins: 12000, rewardKeys: 1 }
     ]
   },
   {
@@ -343,7 +343,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 10, rewardCoins: 300 },
       { tier: 'SILVER', target: 50, rewardCoins: 1500 },
-      { tier: 'GOLD', target: 200, rewardCoins: 6000 }
+      { tier: 'GOLD', target: 200, rewardCoins: 6000, rewardKeys: 1 }
     ]
   },
   {
@@ -355,7 +355,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 50, rewardCoins: 400 },
       { tier: 'SILVER', target: 250, rewardCoins: 1800 },
-      { tier: 'GOLD', target: 1000, rewardCoins: 7500 }
+      { tier: 'GOLD', target: 1000, rewardCoins: 7500, rewardKeys: 1 }
     ]
   },
   {
@@ -367,7 +367,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 50, rewardCoins: 400 },
       { tier: 'SILVER', target: 250, rewardCoins: 1800 },
-      { tier: 'GOLD', target: 1000, rewardCoins: 7500 }
+      { tier: 'GOLD', target: 1000, rewardCoins: 7500, rewardKeys: 1 }
     ]
   },
   {
@@ -379,7 +379,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 100, rewardCoins: 500 },
       { tier: 'SILVER', target: 500, rewardCoins: 2500 },
-      { tier: 'GOLD', target: 2000, rewardCoins: 10000 }
+      { tier: 'GOLD', target: 2000, rewardCoins: 10000, rewardKeys: 1 }
     ]
   },
   {
@@ -391,7 +391,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 5, rewardCoins: 500 },
       { tier: 'SILVER', target: 25, rewardCoins: 2000 },
-      { tier: 'GOLD', target: 100, rewardCoins: 8000 }
+      { tier: 'GOLD', target: 100, rewardCoins: 8000, rewardKeys: 1 }
     ]
   },
   {
@@ -403,7 +403,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tiers: [
       { tier: 'BRONZE', target: 10000, rewardCoins: 1000 },
       { tier: 'SILVER', target: 50000, rewardCoins: 4000 },
-      { tier: 'GOLD', target: 200000, rewardCoins: 20000 }
+      { tier: 'GOLD', target: 200000, rewardCoins: 20000, rewardKeys: 2 }
     ]
   }
 ];
@@ -464,6 +464,14 @@ export const DEFAULT_SEASON_PASS: SeasonPass = {
       rewardValue: 'char_cyber_dash',
       rewardLabel: 'Cyber Dash Outfit',
       rewardIcon: '🤖'
+    },
+    {
+      milestoneIndex: 6,
+      tokensRequired: 250,
+      rewardType: 'KEYS',
+      rewardValue: 3,
+      rewardLabel: '3x Revive Keys',
+      rewardIcon: '🗝️'
     }
   ]
 };

@@ -1298,6 +1298,43 @@ export class SoundManager {
     });
   }
 
+  public playReviveSound(): void {
+    if (!this.ctx || !this.uiGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    // Celebratory ascending second-chance arpeggio (C5 -> E5 -> G5 -> C6 -> E6)
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    notes.forEach((freq, idx) => {
+      const startTime = now + idx * 0.045;
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.30, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.32);
+
+      osc.connect(gain);
+      gain.connect(this.uiGain!);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.32);
+    });
+
+    // Sub-pulse bass layer for visceral recovery punch
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(146.83, now);
+    subOsc.frequency.exponentialRampToValueAtTime(220.0, now + 0.25);
+    subGain.gain.setValueAtTime(0.35, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.30);
+    subOsc.connect(subGain);
+    subGain.connect(this.uiGain);
+    subOsc.start(now);
+    subOsc.stop(now + 0.30);
+  }
+
   public playPurchase(): void {
     if (!this.ctx || !this.uiGain || this.isMuted) return;
     const now = this.ctx.currentTime;

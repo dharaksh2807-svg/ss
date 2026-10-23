@@ -49,6 +49,7 @@ export interface TierConfig {
   tier: AchievementTier;
   target: number;
   rewardCoins: number;
+  rewardKeys?: number;
 }
 
 export interface AchievementDefinition {
@@ -70,7 +71,7 @@ export interface AchievementState {
 export interface SeasonMilestone {
   milestoneIndex: number;
   tokensRequired: number;
-  rewardType: 'COINS' | 'HOVERBOARDS' | 'BOARD_SKIN' | 'CHARACTER_SKIN';
+  rewardType: 'COINS' | 'HOVERBOARDS' | 'BOARD_SKIN' | 'CHARACTER_SKIN' | 'KEYS';
   rewardValue: number | string;
   rewardLabel: string;
   rewardIcon: string;
@@ -130,6 +131,7 @@ export interface ProgressionState {
   unlockedBoards: string[];
   selectedBoard: string;
   hoverboardCharges: number;
+  keys?: number;
   headstartBoosters?: number;
   scoreBoosters?: number;
 }

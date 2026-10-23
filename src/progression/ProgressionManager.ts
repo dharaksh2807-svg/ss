@@ -141,6 +141,7 @@ export class ProgressionManager {
       unlockedBoards: ['board_urban_glide'],
       selectedBoard: 'board_urban_glide',
       hoverboardCharges: 5,
+      keys: 3,
       headstartBoosters: 2,
       scoreBoosters: 2
     };
@@ -226,6 +227,9 @@ export class ProgressionManager {
             }
             if (parsed.hoverboardCharges === undefined) {
               parsed.hoverboardCharges = 5;
+            }
+            if (parsed.keys === undefined) {
+              parsed.keys = 3;
             }
             if (parsed.headstartBoosters === undefined) {
               parsed.headstartBoosters = 2;
@@ -582,6 +586,7 @@ export class ProgressionManager {
     if (allClaimed) {
       this.state.currentMissionSet++;
       this.state.activeMissions = getMissionsForSet(this.state.currentMissionSet);
+      this.addKeys(1); // Set completion bonus key
       advancedSet = true;
     }
 
@@ -604,7 +609,7 @@ export class ProgressionManager {
     return { success: true, coinsGranted: coins };
   }
 
-  public claimAchievementReward(achId: string, tier: AchievementTier): { success: boolean; coinsGranted: number } {
+  public claimAchievementReward(achId: string, tier: AchievementTier): { success: boolean; coinsGranted: number; keysGranted?: number } {
     const achState = this.state.achievements[achId];
     const def = ACHIEVEMENTS.find(a => a.id === achId);
     if (!achState || !def) return { success: false, coinsGranted: 0 };
@@ -619,9 +624,13 @@ export class ProgressionManager {
     if (coins > 0) {
       UpgradeManager.getInstance().addCoins(coins);
     }
+    const keys = tierConfig?.rewardKeys ?? 0;
+    if (keys > 0) {
+      this.addKeys(keys);
+    }
 
     this.saveState();
-    return { success: true, coinsGranted: coins };
+    return { success: true, coinsGranted: coins, keysGranted: keys };
   }
 
   public claimSeasonMilestone(milestoneIndex: number): { success: boolean; message: string } {
@@ -644,6 +653,8 @@ export class ProgressionManager {
       UpgradeManager.getInstance().addCoins(Number(milestone.rewardValue));
     } else if (milestone.rewardType === 'HOVERBOARDS') {
       this.addHoverboardCharges(Number(milestone.rewardValue));
+    } else if (milestone.rewardType === 'KEYS') {
+      this.addKeys(Number(milestone.rewardValue));
     } else if (milestone.rewardType === 'BOARD_SKIN') {
       if (!this.state.unlockedBoards.includes(String(milestone.rewardValue))) {
         this.state.unlockedBoards.push(String(milestone.rewardValue));
@@ -942,6 +953,27 @@ export class ProgressionManager {
       return true;
     }
     return false;
+  }
+
+  public getKeys(): number {
+    return this.state.keys ?? 3;
+  }
+
+  public addKeys(count: number): void {
+    if (count <= 0) return;
+    this.state.keys = Math.max(0, (this.state.keys ?? 0) + count);
+    this.saveState();
+    this.eventBus.emit('KEYS_UPDATED', this.state.keys);
+  }
+
+  public consumeKeys(count: number): boolean {
+    if (count <= 0) return true;
+    const current = this.state.keys ?? 0;
+    if (current < count) return false;
+    this.state.keys = current - count;
+    this.saveState();
+    this.eventBus.emit('KEYS_UPDATED', this.state.keys);
+    return true;
   }
 
   public purchaseHoverboardCharges(): { success: boolean; message: string } {
