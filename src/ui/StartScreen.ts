@@ -447,12 +447,16 @@ export class StartScreen {
         envIconEl.textContent = '🏙️';
         envTitleEl.textContent = 'MODERN METRO';
         envTitleEl.className = 'widget-val highlight-cyan';
-        envSubEl.textContent = 'Glass high-rises & azure skies';
       } else if (envPref === 'HISTORIC_QUARTER') {
         envIconEl.textContent = '🏛️';
         envTitleEl.textContent = 'HISTORIC QUARTER';
         envTitleEl.className = 'widget-val highlight-gold';
         envSubEl.textContent = 'Brick viaducts & golden hour';
+      } else if (envPref === 'UNDERGROUND_METRO') {
+        envIconEl.textContent = '🚇';
+        envTitleEl.textContent = 'UNDERGROUND METRO';
+        envTitleEl.className = 'widget-val highlight-cyan';
+        envSubEl.textContent = 'Vaulted caverns & tile murals';
       }
     }
   }

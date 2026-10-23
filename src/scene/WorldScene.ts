@@ -389,12 +389,11 @@ export class WorldScene {
     }
 
     if (this.modernSkyline && this.historicSkyline) {
-      if (t < 0.5) {
-        this.modernSkyline.visible = base.id === 'MODERN_METRO';
-        this.historicSkyline.visible = base.id === 'HISTORIC_QUARTER';
-      } else {
-        this.modernSkyline.visible = targetTheme.id === 'MODERN_METRO';
-        this.historicSkyline.visible = targetTheme.id === 'HISTORIC_QUARTER';
+      const activeId = t < 0.5 ? base.id : targetTheme.id;
+      this.modernSkyline.visible = activeId === 'MODERN_METRO';
+      this.historicSkyline.visible = activeId === 'HISTORIC_QUARTER';
+      if (this.cloudsGroup) {
+        this.cloudsGroup.visible = activeId !== 'UNDERGROUND_METRO';
       }
     }
 

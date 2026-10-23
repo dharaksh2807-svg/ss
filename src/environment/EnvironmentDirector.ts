@@ -112,9 +112,6 @@ export class EnvironmentDirector {
       detail?: 'FULL' | 'BALANCED' | 'MINIMAL';
     }
   ): void {
-    const isTunnel = !!chunk.isTunnel;
-    const tunnelPortal = chunk.tunnelPortal || 'NONE';
-
     // 1. Determine District & Portal
     let districtId: EnvironmentId;
     let isPortal = false;
@@ -135,6 +132,24 @@ export class EnvironmentDirector {
       if (options?.forcePortal === undefined) {
         isPortal = info.isPortal;
       }
+    }
+
+    const region = this.planner.getRegionForZ(worldZ);
+    let isTunnel = !!chunk.isTunnel || districtId === 'UNDERGROUND_METRO';
+    let tunnelPortal: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE' = chunk.tunnelPortal || 'NONE';
+
+    if (districtId === 'UNDERGROUND_METRO') {
+      chunk.isTunnel = true;
+      const isStartOfRegion = Math.abs(worldZ - region.startZ) < CONSTANTS.CHUNK_LENGTH * 0.5;
+      const isEndOfRegion = Math.abs(worldZ - region.endZ) < CONSTANTS.CHUNK_LENGTH * 0.5;
+      if (isStartOfRegion && isEndOfRegion) {
+        tunnelPortal = 'BOTH';
+      } else if (isStartOfRegion) {
+        tunnelPortal = 'ENTRY';
+      } else if (isEndOfRegion) {
+        tunnelPortal = 'EXIT';
+      }
+      chunk.tunnelPortal = tunnelPortal;
     }
 
     const theme = this.registry.get(districtId);

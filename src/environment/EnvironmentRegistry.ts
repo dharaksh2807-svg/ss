@@ -1,4 +1,12 @@
-import { EnvironmentId, EnvironmentTheme, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, NEON_INDUSTRIAL_THEME, ENVIRONMENTS } from './EnvironmentConfig';
+import {
+  EnvironmentId,
+  EnvironmentTheme,
+  MODERN_METRO_THEME,
+  HISTORIC_QUARTER_THEME,
+  UNDERGROUND_METRO_THEME,
+  NEON_INDUSTRIAL_THEME,
+  ENVIRONMENTS
+} from './EnvironmentConfig';
 
 export class EnvironmentRegistry {
   private static instance: EnvironmentRegistry;
@@ -7,6 +15,7 @@ export class EnvironmentRegistry {
   private constructor() {
     this.register(MODERN_METRO_THEME);
     this.register(HISTORIC_QUARTER_THEME);
+    this.register(UNDERGROUND_METRO_THEME);
     this.register(NEON_INDUSTRIAL_THEME);
   }
 
@@ -38,6 +47,11 @@ export class EnvironmentRegistry {
 
   public getAllIds(): EnvironmentId[] {
     return Array.from(this.themes.keys());
+  }
+
+  public getAllowedTransitions(id: EnvironmentId | string): EnvironmentId[] {
+    const theme = this.get(id);
+    return theme ? [...theme.allowedTransitions] : [];
   }
 
   public getNextRandomTransition(currentId: EnvironmentId, rng: () => number, excludePrevious?: EnvironmentId): EnvironmentId {

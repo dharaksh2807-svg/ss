@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'NEON_INDUSTRIAL';
-export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'NEON_INDUSTRIAL';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
+export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
 
 export interface EnvironmentTheme {
   id: EnvironmentId;
@@ -78,7 +78,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -142,7 +142,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -192,6 +192,70 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     windNoiseFilter: 750,
     humGain: 0.045,
     tag: 'HISTORIC_STEAM_RUMBLE'
+  }
+};
+
+export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
+  id: 'UNDERGROUND_METRO',
+  displayName: 'Underground Metro System',
+  subtitle: 'Vaulted Caverns, Glazed Tiles & Subterranean Stations',
+  description: 'Fully enclosed subterranean subway system with white glazed ceramic tiles, monumental vaulted concrete haunches, elevated emergency walkways, and illuminated underground station concourses.',
+  badgeEmoji: '🚇',
+  accentColor: '#38bdf8',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
+  sky: {
+    top: 0x0a0f1d,    // Subterranean dark slate shadow
+    bottom: 0x111827 // Deep tunnel ambient tone
+  },
+  fog: {
+    color: 0x111827,  // Subterranean cool slate haze
+    density: 0.0055   // Tuned so obstacles 80m ahead remain crisp and readable
+  },
+  sun: {
+    color: 0x94a3b8,  // Cool downward artificial tunnel beam
+    intensity: 0.45,
+    position: { x: 0, y: 35, z: 12 }
+  },
+  fill: {
+    color: 0x38bdf8,  // Cool fluorescent ambient bounce
+    intensity: 0.75   // High legibility on train flanks and player
+  },
+  hemi: {
+    sky: 0x7dd3fc,    // Overhead luminaire strip bounce
+    ground: 0x1e293b, // Concrete ballast floor bounce
+    intensity: 1.35
+  },
+  skyline: {
+    color: 0x0f172a,
+    opacity: 0.0,     // Hidden in enclosed subterranean environment
+    style: 'MODERN'
+  },
+  clouds: {
+    color: 0x000000,
+    roughness: 1.0
+  },
+  materials: {
+    ballastColor: 0x242833,
+    sleeperColor: 0x181a20,
+    wallBaseColor: 0x1e293b,    // Subway concrete wainscoting
+    wallAccentColor: 0x0284c7,  // Metro blue ceramic accent band
+    curbColor: 0x475569,        // Platform concrete curb
+    catenaryColor: 0x334155,    // Heavy subway steel rib
+    insulatorColor: 0x38bdf8,   // Third-rail ceramic insulator
+    pipeColor: 0x64748b,        // Conduit / sprinkler pipe
+    bridgeMainColor: 0x1e293b,   // Steel support bent
+    bridgeAccentColor: 0xf59e0b, // Yellow hazard warning stripes
+    groundPlaneColor: 0x0f172a
+  },
+  ambience: {
+    baseToneFreq: 55,
+    windNoiseFilter: 500,
+    humGain: 0.06,
+    tag: 'SUBWAY_TUNNEL_RUMBLE'
   }
 };
 
@@ -262,6 +326,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
+  UNDERGROUND_METRO: UNDERGROUND_METRO_THEME,
   NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME
 };
 
@@ -286,7 +351,7 @@ export class EnvironmentManager {
     if (typeof localStorage === 'undefined') return;
     try {
       const saved = localStorage.getItem(this.storageKey);
-      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'NEON_INDUSTRIAL' || saved === 'DYNAMIC') {
+      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'UNDERGROUND_METRO' || saved === 'NEON_INDUSTRIAL' || saved === 'DYNAMIC') {
         this.selectionPreference = saved as EnvironmentSelection;
       }
     } catch {
@@ -316,6 +381,9 @@ export class EnvironmentManager {
   public getStartingEnvironment(): EnvironmentId {
     if (this.selectionPreference === 'HISTORIC_QUARTER') {
       return 'HISTORIC_QUARTER';
+    }
+    if (this.selectionPreference === 'UNDERGROUND_METRO') {
+      return 'UNDERGROUND_METRO';
     }
     if (this.selectionPreference === 'NEON_INDUSTRIAL') {
       return 'NEON_INDUSTRIAL';

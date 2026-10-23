@@ -95,7 +95,7 @@ export class EnvironmentSelectModal {
         badge: 'ENDLESS JOURNEY',
         icon: '🔄',
         tagline: 'Monumental Portals & Seamless Era Transitions',
-        description: 'Run continuously across Modern Metro and Historic Quarter. Monumental viaduct portals bridge the districts with atmospheric lighting and sky blends.',
+        description: 'Run continuously across Modern Metro, Historic Quarter, and Underground Metro. Monumental portals bridge the districts with atmospheric lighting and sky blends.',
         accent: '#38bdf8',
         bgGradient: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(245, 158, 11, 0.18) 100%)'
       },
@@ -118,6 +118,16 @@ export class EnvironmentSelectModal {
         description: 'Aged red brick brownstones, soot-stained arched viaducts, cast-iron gas lamp posts, steam locomotive workshops, and warm golden hour atmosphere.',
         accent: '#f59e0b',
         bgGradient: 'linear-gradient(135deg, rgba(217, 119, 6, 0.22) 0%, rgba(180, 83, 9, 0.08) 100%)'
+      },
+      {
+        id: 'UNDERGROUND_METRO',
+        title: 'Underground Metro System',
+        badge: 'SUBTERRANEAN CAVERN',
+        icon: '🚇',
+        tagline: 'Vaulted Ceilings • Ceramic Tiles • Underground Stations',
+        description: 'Enclosed subterranean transit system with white glazed subway tiles, monumental vaulted concrete haunches, elevated emergency walkways, and illuminated underground station concourses.',
+        accent: '#38bdf8',
+        bgGradient: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(14, 165, 233, 0.20) 100%)'
       }
     ];
 

@@ -32,7 +32,7 @@ import { DevTestArena } from '../debug/DevTestArena';
 import { PracticeModuleId } from '../practice/PracticeTypes';
 import { GraphicsManager } from '../scene/GraphicsManager';
 import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
-import { EnvironmentManager, EnvironmentId, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentManager, EnvironmentId, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ReviveManager } from '../revive/ReviveManager';
 import { ReviveModal } from '../ui/ReviveModal';
@@ -295,6 +295,10 @@ export class Game {
           this.trackManager.setEnvironment('MODERN_METRO');
           this.worldScene.applyEnvironment(MODERN_METRO_THEME);
           this.soundManager.setEnvironmentAmbience('MODERN_METRO');
+        } else if (pref === 'UNDERGROUND_METRO') {
+          this.trackManager.setEnvironment('UNDERGROUND_METRO');
+          this.worldScene.applyEnvironment(UNDERGROUND_METRO_THEME);
+          this.soundManager.setEnvironmentAmbience('UNDERGROUND_METRO');
         } else {
           const initialTheme = EnvironmentManager.getInstance().getTheme();
           this.trackManager.setEnvironment(initialTheme.id);

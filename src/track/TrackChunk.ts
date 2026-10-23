@@ -7,7 +7,7 @@ import { CollectibleFactory, CollectibleInstance, CollectibleType } from './Coll
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
 import { PacingMetrics } from './PacingMetrics';
-import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, NEON_INDUSTRIAL_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME, NEON_INDUSTRIAL_THEME } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { SceneryFactory } from '../environment/SceneryFactory';
 
@@ -1432,7 +1432,7 @@ export class TrackChunk {
     this.group.position.z = worldZ;
 
     const resolvedTheme: EnvironmentTheme = typeof theme === 'string'
-      ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : (theme === 'NEON_INDUSTRIAL' ? NEON_INDUSTRIAL_THEME : MODERN_METRO_THEME))
+      ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : (theme === 'UNDERGROUND_METRO' ? UNDERGROUND_METRO_THEME : (theme === 'NEON_INDUSTRIAL' ? NEON_INDUSTRIAL_THEME : MODERN_METRO_THEME)))
       : theme;
 
     this.isTunnel = !!pattern?.isTunnel;

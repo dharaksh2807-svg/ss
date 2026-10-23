@@ -1059,5 +1059,496 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Modern High-Rise Curtain Wall Glass Facade
+   * Multi-tone glass window grid with dark mullions, illuminated offices, and floor spandrel bands
+   */
+  public static getCurtainWallGlassTexture(): THREE.Texture {
+    return this.getOrCreate('curtain_wall_glass', () => {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep dark charcoal mullion grid background
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      const cols = 8;
+      const rows = 16;
+      const cellW = w / cols;
+      const cellH = h / rows;
+
+      // Seeded-style pseudo random window illumination
+      for (let r = 0; r < rows; r++) {
+        // Floor spandrel beam
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, r * cellH, w, 4);
+
+        for (let c = 0; c < cols; c++) {
+          const x = c * cellW + 2;
+          const y = r * cellH + 4;
+          const pw = cellW - 4;
+          const ph = cellH - 6;
+
+          const rand = Math.sin(r * 12.9898 + c * 78.233) * 43758.5453;
+          const val = rand - Math.floor(rand);
+
+          if (val > 0.68) {
+            // Warm interior office lighting
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(x, y, pw, ph);
+            // Window blind silhouette
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+            ctx.fillRect(x, y, pw, ph * 0.3);
+          } else if (val > 0.42) {
+            // Cool white architectural LED lighting
+            ctx.fillStyle = '#e0f2fe';
+            ctx.fillRect(x, y, pw, ph);
+          } else if (val > 0.20) {
+            // Deep reflective daytime glass sheen (sky reflection)
+            const grad = ctx.createLinearGradient(x, y, x, y + ph);
+            grad.addColorStop(0, '#1e3a5f');
+            grad.addColorStop(1, '#0c1a2e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, pw, ph);
+          } else {
+            // Dark tinted corporate spandrel
+            ctx.fillStyle = '#0b1322';
+            ctx.fillRect(x, y, pw, ph);
+          }
+
+          // Glass specular edge line
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, pw, ph);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 6);
+      return tex;
+    });
+  }
+
+  /**
+   * Street-Level Commercial Storefront Podium Texture
+   * High-contrast retail display windows, warm interior lighting, glass entrance doors, and brand signage
+   */
+  public static getModernStorefrontTexture(): THREE.Texture {
+    return this.getOrCreate('modern_storefront', () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Polished dark granite podium frame
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, h);
+
+      // Top illuminated fascia board
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 10, w, 40);
+
+      // Store brands
+      const stores = ['METRO BISTRO', 'TECH LAB', 'COFFEE & CO', 'TRANSIT BOOKS'];
+      const storeW = w / 4;
+
+      for (let s = 0; s < 4; s++) {
+        const sx = s * storeW;
+
+        // Fascia signage box
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(sx + 10, 15, storeW - 20, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(stores[s], sx + storeW * 0.5, 34);
+
+        // Display window with warm glowing interior
+        const displayGrad = ctx.createLinearGradient(sx + 8, 55, sx + 8, h - 15);
+        displayGrad.addColorStop(0, '#fef3c7');
+        displayGrad.addColorStop(0.7, '#fde68a');
+        displayGrad.addColorStop(1, '#d97706');
+        ctx.fillStyle = displayGrad;
+        ctx.fillRect(sx + 8, 55, storeW - 16, h - 70);
+
+        // Glass frame mullion
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(sx + 8, 55, storeW - 16, h - 70);
+
+        // Base kickplate
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx + 8, h - 15, storeW - 16, 12);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Rooftop Photovoltaic Solar Panel Array Texture
+   */
+  public static getModernSolarPanelTexture(): THREE.Texture {
+    return this.getOrCreate('solar_panel_grid', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep dark blue silicon base
+      ctx.fillStyle = '#08172e';
+      ctx.fillRect(0, 0, size, size);
+
+      // Silicon photovoltaic wafer cells (4x4)
+      const cellSize = size / 4;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const x = c * cellSize + 2;
+          const y = r * cellSize + 2;
+          const cw = cellSize - 4;
+          const ch = cellSize - 4;
+
+          // Monocrystalline cell gradient
+          const cellGrad = ctx.createLinearGradient(x, y, x + cw, y + ch);
+          cellGrad.addColorStop(0, '#0f2b5c');
+          cellGrad.addColorStop(0.5, '#1e3a8a');
+          cellGrad.addColorStop(1, '#0f172a');
+          ctx.fillStyle = cellGrad;
+          ctx.fillRect(x, y, cw, ch);
+
+          // Silver grid busbars
+          ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+          ctx.lineWidth = 1;
+          for (let b = 1; b < 6; b++) {
+            const bx = x + (cw / 6) * b;
+            ctx.beginPath();
+            ctx.moveTo(bx, y);
+            ctx.lineTo(bx, y + ch);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Aluminum mounting frame
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, size - 2, size - 2);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      return tex;
+    });
+  }
+
+  /**
+   * Victorian Arched Window Bay Facade for Historic Quarter
+   * Weathered brickwork, arched stone headers, multi-pane sash windows with warm gaslight glow
+   */
+  public static getHistoricWindowBayTexture(): THREE.Texture {
+    return this.getOrCreate('historic_window_bay', () => {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Aged red brick background
+      ctx.fillStyle = '#7c2d12';
+      ctx.fillRect(0, 0, w, h);
+
+      // Brick pattern speckles
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        ctx.fillStyle = Math.random() > 0.5 ? '#9a3412' : '#431407';
+        ctx.fillRect(x, y, 16, 6);
+      }
+
+      const cols = 4;
+      const rows = 4;
+      const colW = w / cols;
+      const rowH = h / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cx = c * colW + 20;
+          const cy = r * rowH + 20;
+          const winW = colW - 40;
+          const winH = rowH - 35;
+
+          // Arched stone lintel header
+          ctx.fillStyle = '#d6d3d1';
+          ctx.beginPath();
+          ctx.arc(cx + winW * 0.5, cy + 12, winW * 0.5, Math.PI, 0, false);
+          ctx.fill();
+
+          // Stone window sill
+          ctx.fillStyle = '#e7e5e4';
+          ctx.fillRect(cx - 4, cy + winH - 6, winW + 8, 8);
+
+          // Window interior with warm gaslight / amber candle glow
+          const rand = Math.sin(r * 17.13 + c * 31.9) * 43758.5453;
+          const isLit = (rand - Math.floor(rand)) > 0.35;
+
+          if (isLit) {
+            const winGrad = ctx.createRadialGradient(
+              cx + winW * 0.5, cy + winH * 0.5, 4,
+              cx + winW * 0.5, cy + winH * 0.5, winW * 0.6
+            );
+            winGrad.addColorStop(0, '#fef08a');
+            winGrad.addColorStop(0.6, '#f59e0b');
+            winGrad.addColorStop(1, '#b45309');
+            ctx.fillStyle = winGrad;
+          } else {
+            ctx.fillStyle = '#1c1917';
+          }
+          ctx.fillRect(cx, cy + 12, winW, winH - 18);
+
+          // Cast-iron window mullions & muntins (6-pane sash)
+          ctx.strokeStyle = '#292524';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(cx, cy + 12, winW, winH - 18);
+
+          // Vertical muntin
+          ctx.beginPath();
+          ctx.moveTo(cx + winW * 0.5, cy + 12);
+          ctx.lineTo(cx + winW * 0.5, cy + winH - 6);
+          ctx.stroke();
+
+          // Horizontal muntins
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + 12 + (winH - 18) * 0.33);
+          ctx.lineTo(cx + winW, cy + 12 + (winH - 18) * 0.33);
+          ctx.moveTo(cx, cy + 12 + (winH - 18) * 0.66);
+          ctx.lineTo(cx + winW, cy + 12 + (winH - 18) * 0.66);
+          ctx.stroke();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 4);
+      return tex;
+    });
+  }
+
+  /**
+   * Subway Station Tiled Wall with Heritage Mosaic Name Sign
+   * White beveled subway tiles, cobalt/emerald ceramic border band, and inlaid station mosaic plaque
+   */
+  public static getSubwayTileMuralTexture(
+    stationName: string = 'METRO CENTRAL',
+    accentHex: string = '#0284c7'
+  ): THREE.Texture {
+    return this.getOrCreate(`subway_tile_mural_${stationName}_${accentHex}`, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark mortar background
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, h);
+
+      // White ceramic subway tiles
+      const rows = 12;
+      const rowHeight = h / rows;
+      const tileWidth = 42;
+
+      for (let r = 0; r < rows; r++) {
+        const isOffset = r % 2 === 1;
+        const startX = isOffset ? -tileWidth / 2 : 0;
+        const y = r * rowHeight + 1.5;
+        const th = rowHeight - 3;
+
+        for (let x = startX; x < w + tileWidth; x += tileWidth) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(x + 1.5, y, tileWidth - 3, th);
+
+          // Bevels
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x + 1.5, y, tileWidth - 3, 2);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(x + 1.5, y + th - 2, tileWidth - 3, 2);
+        }
+      }
+
+      // Ornamental ceramic border band (top & bottom of mural)
+      ctx.fillStyle = accentHex;
+      ctx.fillRect(0, 35, w, 16);
+      ctx.fillRect(0, h - 50, w, 16);
+
+      // Gold Greek-key / dentil accent strip
+      ctx.fillStyle = '#f59e0b';
+      for (let x = 0; x < w; x += 12) {
+        ctx.fillRect(x, 40, 6, 6);
+        ctx.fillRect(x, h - 45, 6, 6);
+      }
+
+      // Station Name Mosaic Plaque (centered)
+      const plaqueW = 380;
+      const plaqueH = 70;
+      const px = (w - plaqueW) * 0.5;
+      const py = (h - plaqueH) * 0.5;
+
+      // Dark blue / emerald enamel plaque frame
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(px - 4, py - 4, plaqueW + 8, plaqueH + 8);
+      ctx.fillStyle = accentHex;
+      ctx.fillRect(px, py, plaqueW, plaqueH);
+
+      // Inner white border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px + 4, py + 4, plaqueW - 8, plaqueH - 8);
+
+      // Bold classic metro typography
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px "Trebuchet MS", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.letterSpacing = '3px';
+      ctx.fillText(stationName, w * 0.5, py + 42);
+
+      // Subtitle
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '700 11px sans-serif';
+      ctx.fillText('• SUBWAY LINE 1 • PLATFORM CONCOURSE •', w * 0.5, py + 58);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Raised Emergency Catwalk Walkway Texture
+   * Heavy diamond plate steel with high-contrast safety yellow tactile warning edge
+   */
+  public static getSubwaySafetyWalkwayTexture(): THREE.Texture {
+    return this.getOrCreate('subway_safety_walkway', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Steel diamond plate tread background
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 0, w, h);
+
+      // Diamond plate tread pattern
+      ctx.fillStyle = '#475569';
+      for (let y = 0; y < h; y += 16) {
+        for (let x = 0; x < w; x += 16) {
+          ctx.beginPath();
+          ctx.ellipse(x + 8, y + 8, 4, 1.5, Math.PI / 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // High-contrast safety yellow edge stripe with black warning chevrons
+      const edgeW = 40;
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(0, 0, edgeW, h);
+
+      ctx.fillStyle = '#0f172a';
+      for (let y = -20; y < h + 20; y += 24) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(edgeW, y + 16);
+        ctx.lineTo(edgeW, y + 26);
+        ctx.lineTo(0, y + 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1, 8);
+      return tex;
+    });
+  }
+
+  /**
+   * Subterranean Station Advertising Billboard Poster Texture
+   */
+  public static getSubwayStationBillboardTexture(): THREE.Texture {
+    return this.getOrCreate('subway_station_billboard', () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Beveled illuminated lightbox frame
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Fluorescent backlit poster area
+      const posterGrad = ctx.createLinearGradient(12, 12, w - 24, h - 24);
+      posterGrad.addColorStop(0, '#0284c7');
+      posterGrad.addColorStop(0.5, '#6366f1');
+      posterGrad.addColorStop(1, '#a855f7');
+      ctx.fillStyle = posterGrad;
+      ctx.fillRect(12, 12, w - 24, h - 24);
+
+      // Geometric stylized city skyline graphic in poster
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.moveTo(12, h - 24);
+      ctx.lineTo(60, 110);
+      ctx.lineTo(120, 140);
+      ctx.lineTo(180, 80);
+      ctx.lineTo(260, 160);
+      ctx.lineTo(340, 95);
+      ctx.lineTo(420, 130);
+      ctx.lineTo(w - 24, h - 24);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bold promotional typography
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 28px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('METRO RAPID TRANSIT', 32, 60);
+
+      ctx.font = '700 16px sans-serif';
+      ctx.fillStyle = '#fde047';
+      ctx.fillText('SPEED • RELIABILITY • SAFETY', 32, 90);
+
+      ctx.font = '500 12px sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText('Connecting All Districts 24/7 • Next Train in 90 Seconds', 32, h - 45);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
 }
+
 
