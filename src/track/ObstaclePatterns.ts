@@ -1,7 +1,9 @@
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { ObstacleType } from './ObstacleFactory';
-import { CollectibleType } from './CollectibleFactory';
 import { ReachabilityValidator, ValidatedPattern } from './ReachabilityValidator';
+import { CoinPatternArchetype, PatternCollectible } from './CoinPatternLibrary';
+
+export type { CoinPatternArchetype, PatternCollectible };
 
 export type PatternDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -13,17 +15,6 @@ export interface PatternObstacle {
   hasRamp?: boolean;
   isMoving?: boolean;
   velocityZ?: number;
-}
-
-export interface PatternCollectible {
-  type: CollectibleType;
-  lane: LaneIndex;
-  zOffset: number;
-  yOffset?: number; // Ground level (0.8), hurdle arch (2.4), or train roof (5.2)
-  count?: number; // Row of coins
-  spacing?: number;
-  isArc?: boolean;
-  isRampAscent?: boolean;
 }
 
 export interface TrackPattern {
@@ -61,11 +52,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'HIGH_BARRIER', lane: 1, zOffset: 56.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 6.0, count: 8, spacing: 2.0 },
-      { type: 'COIN', lane: 0, zOffset: 26.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: -1, zOffset: 26.0, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: 0, zOffset: 48.0, count: 8, spacing: 2.0 },
-      { type: 'COIN', lane: 1, zOffset: 52.0, yOffset: 0.6, count: 4, spacing: 1.8 }
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 7, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 25.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 34.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 46.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 53.4, yOffset: 0.60, count: 4, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' }
     ]
   },
 
@@ -82,8 +73,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 0, zOffset: 35.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 15.0, count: 6, spacing: 2.2 },
-      { type: 'COIN', lane: 0, zOffset: 33.0, yOffset: 2.2, count: 3, spacing: 1.8, isArc: true }
+      { type: 'COIN', lane: 0, zOffset: 14.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 32.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 39.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 1, zOffset: 24.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
     ]
   },
 
@@ -100,9 +93,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'TRAIN', lane: 0, zOffset: 25.0, length: 22.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.5 },
-      { type: 'COIN', lane: 1, zOffset: 20.0, count: 8, spacing: 2.5 },
-      { type: 'JETPACK', lane: 1, zOffset: 46.0 }
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 12.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 24.0, count: 7, spacing: 2.4, isRiskRoute: false, archetype: 'RISK_REWARD' },
+      { type: 'COIN', lane: 1, zOffset: 24.0, count: 9, spacing: 2.2, isRiskRoute: true, archetype: 'RISK_REWARD' },
+      { type: 'JETPACK', lane: 1, zOffset: 46.0, isRiskRoute: true }
     ]
   },
 
@@ -120,9 +114,12 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 0, zOffset: 52.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 16.0, yOffset: 0.6, count: 5, spacing: 2.0 },
-      { type: 'COIN', lane: 0, zOffset: 48.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
-      { type: 'MAGNET', lane: -1, zOffset: 35.0 }
+      { type: 'COIN', lane: 0, zOffset: 16.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 26.0, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 0, zOffset: 49.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 56.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: -1, zOffset: 22.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'MAGNET', lane: -1, zOffset: 36.0 }
     ]
   },
 
@@ -139,47 +136,51 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'SIDE_BARRIER', lane: -1, zOffset: 28.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 15.0, count: 10, spacing: 2.2 },
-      { type: 'COIN', lane: 1, zOffset: 25.0, count: 6, spacing: 2.0 },
-      { type: 'MULTIPLIER', lane: 1, zOffset: 40.0 }
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 14.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 26.0, count: 9, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 34.0, count: 5, spacing: 2.0, isPostObstacle: true, archetype: 'POST_OBSTACLE' }
     ]
   },
 
-  // 6. Low Barrier Flanked Hurdles
+  // 6. Flanked Hurdles with Open Center Lane
   {
     name: 'FLANKED_HURDLES',
-    difficulty: 'BEGINNER',
+    difficulty: 'EASY',
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 0, 1],
-    requiredActions: ['JUMP'],
-    safeRoutes: 'Center lane is completely open; left/right lanes have jumping hurdles',
-    minReactionDist: 30.0,
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Center lane allows clear run-through, or jump low hurdles in left/right',
+    minReactionDist: 32.0,
     obstacles: [
-      { type: 'LOW_BARRIER', lane: -1, zOffset: 30.0 },
-      { type: 'LOW_BARRIER', lane: 1, zOffset: 30.0 }
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 22.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 22.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 16.0, count: 12, spacing: 2.2 },
-      { type: 'COIN', lane: -1, zOffset: 28.0, yOffset: 2.4, count: 3, spacing: 1.8, isArc: true }
+      { type: 'COIN', lane: 0, zOffset: 14.0, count: 7, spacing: 2.2, isRiskRoute: false, archetype: 'RISK_REWARD' },
+      { type: 'COIN', lane: 1, zOffset: 19.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, isRiskRoute: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 26.5, count: 4, spacing: 1.8, isPostObstacle: true, isRiskRoute: true, archetype: 'POST_OBSTACLE' },
+      { type: 'SNEAKERS', lane: 1, zOffset: 38.0, isRiskRoute: true }
     ]
   },
 
-  // 7. Gentle Weave Intro (Staggered hurdles with wide center open path)
+  // 7. Gentle Weave Intro (Alternating Hurdles & High Barrier)
   {
     name: 'GENTLE_WEAVE_INTRO',
     difficulty: 'BEGINNER',
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 0, 1],
-    requiredActions: ['LANE_CHANGE'],
-    safeRoutes: 'Center lane stays open with rich coins; hurdles staggered on flanks',
-    minReactionDist: 32.0,
+    requiredActions: ['LANE_CHANGE', 'JUMP'],
+    safeRoutes: 'Weave center-to-left around hurdle, or jump center',
+    minReactionDist: 30.0,
     obstacles: [
-      { type: 'LOW_BARRIER', lane: -1, zOffset: 25.0 },
-      { type: 'LOW_BARRIER', lane: 1, zOffset: 52.0 }
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 20.0 },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 40.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 12.0, count: 12, spacing: 2.2 },
-      { type: 'COIN', lane: 1, zOffset: 24.0, count: 6, spacing: 2.0 },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 10.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 17.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 24.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 36.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
       { type: 'SHIELD', lane: 0, zOffset: 44.0 }
     ]
   },
@@ -198,10 +199,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 58.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 10.0, yOffset: 2.2, count: 5, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: -1, zOffset: 24.0, count: 8, spacing: 2.0 },
-      { type: 'COIN', lane: 0, zOffset: 35.0, count: 10, spacing: 2.0 },
-      { type: 'MAGNET', lane: 0, zOffset: 55.0 }
+      { type: 'COIN', lane: 0, zOffset: 8.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, zOffset: 16.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 36.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 48.0, count: 6, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'MAGNET', lane: 0, zOffset: 62.0 }
     ]
   },
 
@@ -225,9 +227,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 45.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 1.0, count: 4, spacing: 2.0, isRampAscent: true },
-      { type: 'COIN', lane: 0, zOffset: 9.0, yOffset: 5.2, count: 11, spacing: 2.2 },
-      { type: 'SNEAKERS', lane: 0, zOffset: 36.0, yOffset: 5.2 }
+      { type: 'COIN', lane: 0, zOffset: 19.0, yOffset: 5.20, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 0, zOffset: 27.5, yOffset: 5.20, count: 8, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'SNEAKERS', lane: 0, zOffset: 38.0, yOffset: 5.20 },
+      { type: 'COIN', lane: 1, zOffset: 18.0, count: 7, spacing: 2.4, isRiskRoute: false, archetype: 'RISK_REWARD' }
     ]
   },
 
@@ -246,8 +249,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 0, zOffset: 32.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 18.0, count: 12, spacing: 2.2 },
-      { type: 'MULTIPLIER', lane: 0, zOffset: 55.0 }
+      { type: 'COIN', lane: 0, zOffset: 16.0, count: 6, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 29.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 36.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'MULTIPLIER', lane: 0, zOffset: 52.0 }
     ]
   },
 
@@ -266,9 +271,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'TRAIN', lane: 1, zOffset: 46.0, length: 20.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 1, zOffset: 18.0, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: -1, zOffset: 48.0, count: 6, spacing: 2.0 },
-      { type: 'HOVERBOARD', lane: 0, zOffset: 45.0 }
+      { type: 'COIN', lane: 1, zOffset: 16.0, count: 6, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 30.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 16.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 44.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'HOVERBOARD', lane: 0, zOffset: 44.0 }
     ]
   },
 
@@ -286,9 +293,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: -1, zOffset: 28.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 15.0, count: 10, spacing: 2.2 },
-      { type: 'COIN', lane: -1, zOffset: 26.0, yOffset: 2.4, count: 3, spacing: 1.8, isArc: true },
-      { type: 'SHIELD', lane: 0, zOffset: 42.0 }
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 24.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 25.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'SHIELD', lane: 0, zOffset: 44.0 }
     ]
   },
 
@@ -307,9 +315,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 0, zOffset: 52.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 0.6, count: 7, spacing: 1.8 },
-      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.0 },
-      { type: 'MAGNET', lane: -1, zOffset: 45.0 }
+      { type: 'COIN', lane: 0, zOffset: 20.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 30.0, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 0, zOffset: 49.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, zOffset: 18.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'MAGNET', lane: -1, zOffset: 42.0 }
     ]
   },
 
@@ -327,9 +337,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 48.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: -1, zOffset: 22.0, count: 8, spacing: 2.2 },
-      { type: 'COIN', lane: 1, zOffset: 46.0, yOffset: 2.2, count: 4, spacing: 1.8, isArc: true }
+      { type: 'COIN', lane: 0, zOffset: 17.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 24.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 34.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 45.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, zOffset: 20.0, count: 9, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
     ]
   },
 
@@ -347,8 +359,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'SIDE_BARRIER', lane: -1, zOffset: 48.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 15.0, count: 12, spacing: 2.2 },
-      { type: 'COIN', lane: 1, zOffset: 50.0, count: 6, spacing: 2.0 }
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 24.0, count: 6, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 38.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 50.0, count: 6, spacing: 2.0, isPostObstacle: true, archetype: 'POST_OBSTACLE' }
     ]
   },
 
@@ -366,9 +380,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: -1, zOffset: 54.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 14.0, count: 10, spacing: 2.0 },
-      { type: 'COIN', lane: 1, zOffset: 24.0, count: 8, spacing: 2.0 },
-      { type: 'SHIELD', lane: 0, zOffset: 45.0 }
+      { type: 'COIN', lane: 0, zOffset: 14.0, count: 10, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 51.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'SHIELD', lane: 0, zOffset: 46.0 }
     ]
   },
 
@@ -394,8 +409,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 52.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 1, zOffset: 15.0, count: 8, spacing: 2.2 },
-      { type: 'COIN', lane: 0, zOffset: 48.0, count: 8, spacing: 2.2 },
+      { type: 'COIN', lane: -1, zOffset: 19.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 18.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 34.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 46.0, count: 7, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
       { type: 'SHIELD', lane: 0, zOffset: 62.0 }
     ]
   },
@@ -416,11 +433,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'TRAIN', lane: 0, zOffset: 48.0, length: 24.0, hasRamp: true }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 18.0, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: 0, zOffset: 28.0, count: 5, spacing: 2.0, isRampAscent: true },
-      { type: 'COIN', lane: 0, zOffset: 38.0, yOffset: 5.2, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: 1, zOffset: 52.0, count: 6, spacing: 2.0 },
-      { type: 'MAGNET', lane: 0, zOffset: 55.0, yOffset: 5.2 }
+      { type: 'COIN', lane: -1, zOffset: 16.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 26.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 47.0, yOffset: 5.20, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 0, zOffset: 55.5, yOffset: 5.20, count: 6, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'MAGNET', lane: 0, zOffset: 58.0, yOffset: 5.20 }
     ]
   },
 
@@ -439,9 +456,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 20.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 1, zOffset: 18.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: 1, zOffset: 34.0, count: 8, spacing: 2.0 },
-      { type: 'HOVERBOARD', lane: 1, zOffset: 58.0 }
+      { type: 'COIN', lane: 1, zOffset: 17.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 24.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 1, zOffset: 34.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'HOVERBOARD', lane: 1, zOffset: 56.0 }
     ]
   },
 
@@ -461,8 +479,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 36.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 0.6, count: 6, spacing: 1.8 },
-      { type: 'COIN', lane: 1, zOffset: 34.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
+      { type: 'COIN', lane: 0, zOffset: 18.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 28.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 33.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 41.5, count: 5, spacing: 2.0, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
       { type: 'MULTIPLIER', lane: 1, zOffset: 58.0 }
     ]
   },
@@ -483,9 +503,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 0, zOffset: 56.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 16.0, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: -1, zOffset: 32.0, count: 6, spacing: 2.0 },
-      { type: 'COIN', lane: 1, zOffset: 20.0, count: 6, spacing: 2.0 }
+      { type: 'COIN', lane: -1, zOffset: 15.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 28.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 36.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 53.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
     ]
   },
 
@@ -504,10 +525,12 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'HIGH_BARRIER', lane: 1, zOffset: 26.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 20.0, yOffset: 5.2, count: 8, spacing: 2.0 },
-      { type: 'COIN', lane: 1, zOffset: 24.0, yOffset: 0.6, count: 6, spacing: 1.8 },
-      { type: 'COIN', lane: 0, zOffset: 26.0, count: 5, spacing: 2.0, isRampAscent: true },
-      { type: 'SNEAKERS', lane: 0, zOffset: 50.0, yOffset: 5.2 }
+      { type: 'COIN', lane: -1, zOffset: 15.0, yOffset: 5.20, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: -1, zOffset: 23.5, yOffset: 5.20, count: 6, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 0, zOffset: 45.0, yOffset: 5.20, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 0, zOffset: 53.5, yOffset: 5.20, count: 6, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 1, zOffset: 22.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'SNEAKERS', lane: 0, zOffset: 54.0, yOffset: 5.20 }
     ]
   },
 
@@ -532,10 +555,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'TRAIN', lane: 0, zOffset: 40.0, length: 24.0, hasRamp: true }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 15.0, yOffset: 0.6, count: 6, spacing: 1.8 },
-      { type: 'COIN', lane: 0, zOffset: 20.0, count: 5, spacing: 2.0, isRampAscent: true },
-      { type: 'COIN', lane: 0, zOffset: 44.0, yOffset: 5.2, count: 8, spacing: 2.0 },
-      { type: 'JETPACK', lane: 0, zOffset: 60.0, yOffset: 5.2 }
+      { type: 'COIN', lane: -1, zOffset: 14.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 26.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 39.0, yOffset: 5.20, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 0, zOffset: 47.5, yOffset: 5.20, count: 6, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'JETPACK', lane: 0, zOffset: 58.0, yOffset: 5.20 }
     ]
   },
 
@@ -554,9 +578,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'HIGH_BARRIER', lane: -1, zOffset: 45.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 22.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: -1, zOffset: 18.0, count: 8, spacing: 2.0 },
-      { type: 'SHIELD', lane: -1, zOffset: 55.0 }
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 21.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 28.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: -1, zOffset: 41.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'SHIELD', lane: -1, zOffset: 54.0 }
     ]
   },
 
@@ -576,9 +602,11 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: -1, zOffset: 52.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 16.0, yOffset: 0.6, count: 8, spacing: 1.8 },
-      { type: 'COIN', lane: 1, zOffset: 18.0, count: 8, spacing: 2.0 },
-      { type: 'HOVERBOARD', lane: -1, zOffset: 62.0 }
+      { type: 'COIN', lane: -1, zOffset: 16.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 1, zOffset: 16.0, count: 8, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 49.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'HOVERBOARD', lane: -1, zOffset: 60.0 }
     ]
   },
 
@@ -597,10 +625,13 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'TRAIN', lane: 1, zOffset: 20.0, length: 24.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: -1, zOffset: 16.0, count: 10, spacing: 2.2 },
-      { type: 'COIN', lane: 0, zOffset: 16.0, yOffset: 2.5, count: 5, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: 0, zOffset: 34.0, yOffset: 0.6, count: 6, spacing: 1.8 },
-      { type: 'MULTIPLIER', lane: 0, zOffset: 52.0 }
+      // Safe Route (Left Lane): open, no hazards, baseline 6 coins
+      { type: 'COIN', lane: -1, zOffset: 16.0, count: 6, spacing: 2.4, isRiskRoute: false, archetype: 'RISK_REWARD' },
+      // Risk Route (Center Lane): low hurdle jump arc + slide guidance under high barrier + reward burst = 13 coins + 2X Multiplier
+      { type: 'COIN', lane: 0, zOffset: 15.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, isRiskRoute: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 34.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, isRiskRoute: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 44.0, count: 4, spacing: 1.8, isPostObstacle: true, isRiskRoute: true, archetype: 'POST_OBSTACLE' },
+      { type: 'MULTIPLIER', lane: 0, zOffset: 52.0, isRiskRoute: true }
     ]
   },
 
@@ -620,8 +651,10 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'HIGH_BARRIER', lane: 1, zOffset: 50.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 18.0, yOffset: 2.4, count: 4, spacing: 1.8, isArc: true },
-      { type: 'COIN', lane: 1, zOffset: 46.0, yOffset: 0.6, count: 6, spacing: 1.8 },
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 10.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 21.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 28.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 1, zOffset: 46.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
       { type: 'SHIELD', lane: 0, zOffset: 56.0 }
     ]
   }

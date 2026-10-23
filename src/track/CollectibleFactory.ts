@@ -3,6 +3,8 @@ import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { PowerupType } from '../player/PowerupManager';
 
+import { CoinPatternArchetype } from './CoinPatternLibrary';
+
 export type CollectibleType = 'COIN' | 'SEASON_TOKEN' | 'CHRONO_ORB' | PowerupType;
 
 export interface CollectibleInstance {
@@ -15,6 +17,8 @@ export interface CollectibleInstance {
   initialLocalZ?: number;
   isMagnetized?: boolean;
   animOffsetY?: number;
+  archetype?: CoinPatternArchetype;
+  isRiskRoute?: boolean;
 }
 
 export interface CoinPickupVFXInstance {

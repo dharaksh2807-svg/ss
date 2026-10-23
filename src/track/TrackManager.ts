@@ -80,6 +80,10 @@ export class TrackManager {
     return result;
   }
 
+  public getChunks(): TrackChunk[] {
+    return this.chunks;
+  }
+
   public reset(): void {
     this.furthestZ = 0;
     this.chunkIndex = 0;

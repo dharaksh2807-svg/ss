@@ -232,4 +232,127 @@ export class ReachabilityValidator {
     const resB = this.validatePattern(chunkB, speed, resA.survivingExitLanes);
     return resB.solvable;
   }
+
+  /**
+   * Validates that all collectibles in a pattern are physically safe,
+   * reachable, and never lure the player into unavoidable collisions.
+   */
+  public static validateCollectibleReachability(
+    pattern: {
+      name: string;
+      obstacles: ValidatedObstacle[];
+      collectibles?: Array<{
+        type: string;
+        lane: LaneIndex;
+        zOffset: number;
+        yOffset?: number;
+        count?: number;
+        spacing?: number;
+        isArc?: boolean;
+        isRampAscent?: boolean;
+        endLane?: LaneIndex;
+        endYOffset?: number;
+        isSlideGuidance?: boolean;
+        isRiskRoute?: boolean;
+        isPostObstacle?: boolean;
+      }>;
+    },
+    speed: number = CONSTANTS.INITIAL_SPEED
+  ): { valid: boolean; reason?: string } {
+    if (!pattern.collectibles || pattern.collectibles.length === 0) {
+      return { valid: true };
+    }
+
+    for (const col of pattern.collectibles) {
+      const count = col.count || 1;
+      const spacing = col.spacing || CONSTANTS.COIN_DEFAULT_SPACING;
+
+      // Verify lane-switch length provides sufficient reaction distance
+      if (col.endLane !== undefined && col.endLane !== col.lane) {
+        const lateralDistance = Math.abs(col.endLane - col.lane);
+        const forwardDistance = count * spacing;
+        const timeToTraverse = forwardDistance / speed;
+        const requiredTime = lateralDistance * CONSTANTS.LANE_CHANGE_DURATION * 0.75; // 75% margin
+        if (timeToTraverse < requiredTime && speed <= 30.0) {
+          return {
+            valid: false,
+            reason: `Lane-switch trail in "${pattern.name}" from lane ${col.lane} to ${col.endLane} has insufficient forward distance (${forwardDistance.toFixed(1)}m) for speed ${speed}m/s`
+          };
+        }
+      }
+
+      for (let c = 0; c < count; c++) {
+        const z = col.zOffset + c * spacing;
+        const t = count > 1 ? c / (count - 1) : 0;
+
+        let y = col.yOffset !== undefined ? col.yOffset : (col.isSlideGuidance ? CONSTANTS.COIN_SLIDE_Y : CONSTANTS.COIN_GROUND_Y);
+        if (col.isArc && count > 1) {
+          const peak = col.yOffset !== undefined ? col.yOffset : CONSTANTS.COIN_JUMP_PEAK_Y;
+          y = CONSTANTS.COIN_GROUND_Y + (peak - CONSTANTS.COIN_GROUND_Y) * 4.0 * t * (1.0 - t);
+        } else if (col.isRampAscent && count > 1) {
+          const roofY = col.endYOffset !== undefined ? col.endYOffset : (col.yOffset !== undefined ? col.yOffset : CONSTANTS.COIN_ROOFTOP_Y);
+          y = CONSTANTS.COIN_GROUND_Y + t * (roofY - CONSTANTS.COIN_GROUND_Y);
+        }
+
+        const lane = col.endLane !== undefined ? (t >= 0.5 ? col.endLane : col.lane) : col.lane;
+
+        // Check against each obstacle in this pattern
+        for (const obs of pattern.obstacles) {
+          if (obs.lane !== lane) continue;
+
+          const obsStart = obs.zOffset;
+          const obsLength = obs.length || (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
+          const obsEnd = obsStart + obsLength;
+
+          // If moving train, calculate position at time elapsed
+          let effStart = obsStart;
+          let effEnd = obsEnd;
+          if (obs.type === 'MOVING_TRAIN' || obs.isMoving) {
+            const timeToZ = z / speed;
+            const advanceDist = (obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED) * timeToZ;
+            effStart = Math.max(0, obsStart - advanceDist);
+            effEnd = effStart + obsLength;
+          }
+
+          if (z >= effStart - 0.2 && z <= effEnd + 0.2) {
+            const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP';
+            const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
+
+            if (isTrain) {
+              if (hasRamp && z <= obsStart + CONSTANTS.TRAIN_RAMP_LENGTH + 0.5) {
+                if (y < 0.70) {
+                  return {
+                    valid: false,
+                    reason: `Coin in "${pattern.name}" at z=${z.toFixed(1)}m in lane ${lane} too low on train ramp (y=${y.toFixed(2)}m)`
+                  };
+                }
+                continue;
+              }
+
+              if (y < 4.8) {
+                return {
+                  valid: false,
+                  reason: `Lethal coin placement in "${pattern.name}": Coin at z=${z.toFixed(1)}m in lane ${lane} inside solid train body (y=${y.toFixed(2)}m)`
+                };
+              }
+            } else if (obs.type === 'SIDE_BARRIER') {
+              return {
+                valid: false,
+                reason: `Lethal coin placement in "${pattern.name}": Coin at z=${z.toFixed(1)}m inside side barrier in lane ${lane}`
+              };
+            } else if (obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') {
+              if (y > 0.75 && y < 4.0) {
+                return {
+                  valid: false,
+                  reason: `Coin in "${pattern.name}" at z=${z.toFixed(1)}m hits overhead obstacle in lane ${lane} (y=${y.toFixed(2)}m)`
+                };
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { valid: true };
+  }
 }

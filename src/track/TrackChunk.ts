@@ -814,28 +814,40 @@ export class TrackChunk {
 
     // Spawn Collectibles from pattern
     for (const colData of pattern.collectibles) {
-      const laneX = CONSTANTS.LANES[colData.lane];
+      const startLaneX = CONSTANTS.LANES[colData.lane];
+      const endLaneX = colData.endLane !== undefined ? CONSTANTS.LANES[colData.endLane] : startLaneX;
       const count = colData.count || 1;
-      const spacing = colData.spacing || 2.0;
+      const spacing = colData.spacing || CONSTANTS.COIN_DEFAULT_SPACING;
 
       for (let c = 0; c < count; c++) {
         const offsetZ = colData.zOffset + c * spacing;
         const localZ = -offsetZ;
-        let baseY = colData.yOffset !== undefined ? colData.yOffset : 0.85;
+        const t = count > 1 ? c / (count - 1) : 0;
 
-        // If parabolic coin arc over hurdle, follow exact ballistic parabola:
-        // Starts at comfortable ground height (0.85m), vaults to peak (colData.yOffset or 2.45m), lands at 0.85m
+        // Smooth lateral interpolation for lane-switch trails (Hermite ease: 3t^2 - 2t^3)
+        let posX = startLaneX;
+        if (colData.endLane !== undefined && colData.endLane !== colData.lane) {
+          const ease = t * t * (3.0 - 2.0 * t);
+          posX = startLaneX + (endLaneX - startLaneX) * ease;
+        }
+
+        // Height calculation based on pattern archetype
+        let baseY = colData.yOffset !== undefined ? colData.yOffset : (colData.isSlideGuidance ? CONSTANTS.COIN_SLIDE_Y : CONSTANTS.COIN_GROUND_Y);
+
         if (colData.isArc && count > 1) {
-          const t = c / (count - 1); // 0 to 1
-          const groundY = 0.85;
-          const peakY = colData.yOffset !== undefined ? colData.yOffset : 2.45;
+          // Exact ballistic parabola: ground height (0.85m), peak (colData.yOffset or 2.35m), lands at 0.85m
+          const groundY = CONSTANTS.COIN_GROUND_Y;
+          const peakY = colData.yOffset !== undefined ? colData.yOffset : CONSTANTS.COIN_JUMP_PEAK_Y;
           baseY = groundY + (peakY - groundY) * 4.0 * t * (1.0 - t);
         } else if (colData.isRampAscent && count > 1) {
-          // Smooth ascending coin ramp: starts at 0.85m ground height and ascends continuously up the incline to 5.2m roof height
-          const t = c / (count - 1); // 0 to 1
-          const groundY = 0.85;
-          const roofY = colData.yOffset !== undefined ? colData.yOffset : 5.2;
+          // Smooth ascending coin ramp: starts at 0.85m ground height and ascends continuously up the incline to 5.20m roof height
+          const groundY = CONSTANTS.COIN_GROUND_Y;
+          const roofY = colData.endYOffset !== undefined ? colData.endYOffset : (colData.yOffset !== undefined ? colData.yOffset : CONSTANTS.COIN_ROOFTOP_Y);
           baseY = groundY + t * (roofY - groundY);
+        } else if (colData.endYOffset !== undefined && count > 1) {
+          // Custom linear height transition (e.g. descending from roof to ground)
+          const startY = colData.yOffset !== undefined ? colData.yOffset : CONSTANTS.COIN_GROUND_Y;
+          baseY = startY + t * (colData.endYOffset - startY);
         }
 
         let group: THREE.Group;
@@ -849,25 +861,27 @@ export class TrackChunk {
           group = this.collectibleFactory.createPowerup(colData.type);
         }
 
-        group.position.set(laneX, baseY, localZ);
+        group.position.set(posX, baseY, localZ);
         this.group.add(group);
 
         const worldColZ = this.chunkZ + localZ;
         const collider = new THREE.Box3();
         const radius = colData.type === 'COIN' ? CONSTANTS.COIN_RADIUS : 0.55;
-        collider.min.set(laneX - radius, baseY - radius, worldColZ - radius);
-        collider.max.set(laneX + radius, baseY + radius, worldColZ + radius);
+        collider.min.set(posX - radius, baseY - radius, worldColZ - radius);
+        collider.max.set(posX + radius, baseY + radius, worldColZ + radius);
 
         this.collectibles.push({
           group,
           type: colData.type,
-          lane: colData.lane,
+          lane: (colData.endLane !== undefined && t >= 0.5) ? colData.endLane : colData.lane,
           collider,
           active: true,
           baseY,
           initialLocalZ: localZ,
           isMagnetized: false,
-          animOffsetY: 0
+          animOffsetY: 0,
+          archetype: colData.archetype,
+          isRiskRoute: colData.isRiskRoute
         });
       }
     }

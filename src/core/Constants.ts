@@ -125,6 +125,14 @@ export const CONSTANTS = {
   COIN_RADIUS: 0.45,
   COIN_ROTATION_SPEED: 2.2, // Smooth, non-flickering rotation presenting face clearly
   COIN_VFX_DURATION: 0.25, // Duration of pickup sparkle burst in seconds
+  COIN_GROUND_Y: 0.85, // Standard running collection height
+  COIN_SLIDE_Y: 0.60, // Low-profile slide guidance collection height
+  COIN_JUMP_PEAK_Y: 2.35, // Apex height for hurdle jump arcs (reachable within 2.25m jump)
+  COIN_ROOFTOP_Y: 5.20, // Walkable train roof collection height (train roof 4.35m + 0.85m)
+  COIN_DEFAULT_SPACING: 2.2, // Default spacing between consecutive coins
+  COIN_ARC_SPACING: 1.8, // Tighter spacing for readable parabolic jump arcs
+  COIN_RISK_REWARD_RATIO: 1.75, // Configurable reward multiplier for high-skill risk paths
+  COIN_POST_OBSTACLE_COUNT: 4, // Number of coins in post-obstacle reward burst
   MAGNET_RADIUS: 12.0,
   MAGNET_PULL_SPEED: 28.0,
   POWERUP_DURATION: 12.0, // 12 seconds active duration for magnet/sneakers/2x
