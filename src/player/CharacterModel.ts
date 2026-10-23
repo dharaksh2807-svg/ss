@@ -525,7 +525,7 @@ export class CharacterModel {
     // 3. Spine athletic forward lean & counter-twist
     let forwardLean = 0.14 + (speed / CONSTANTS.MAX_SPEED) * 0.08;
     if (variant === 'TRAIN_ROOF_RUN') forwardLean += 0.04;
-    if (variant === 'CLIMB') forwardLean += 0.08;
+    if (variant === 'CLIMB') forwardLean += 0.22;
 
     this.targetSpineRot.set(forwardLean, sinT * 0.12, 0);
 
@@ -544,9 +544,15 @@ export class CharacterModel {
     const rightSwing = Math.max(0, Math.sin(t + Math.PI - 0.35));
     this.targetRightCalfRot.set(0.06 + rightSwing * 1.15, 0, 0);
 
-    // Foot ankle flexion
-    this.targetLeftSneakerRot.set(-sinT * 0.12, 0, 0);
-    this.targetRightSneakerRot.set(sinT * 0.12, 0, 0);
+    // Foot ankle flexion (with slope-aligned dorsiflexion during climbing)
+    let leftAnklePitch = -sinT * 0.12;
+    let rightAnklePitch = sinT * 0.12;
+    if (variant === 'CLIMB') {
+      leftAnklePitch += 0.24;
+      rightAnklePitch += 0.24;
+    }
+    this.targetLeftSneakerRot.set(leftAnklePitch, 0, 0);
+    this.targetRightSneakerRot.set(rightAnklePitch, 0, 0);
 
     // 6. Natural Arm Swing with Elbow Flexion
     const armSwing = sinT * 0.68;

@@ -22,6 +22,7 @@ import { ProfileModal } from '../ui/ProfileModal';
 import { DailyRewardModal } from '../ui/DailyRewardModal';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
+import { TrainScenarioRunner } from '../debug/TrainScenarioRunner';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -104,6 +105,9 @@ export class Game {
     this.setupEvents();
     this.startScreen.show();
     this.hud.hide();
+
+    // Attach development scenario runner to window
+    TrainScenarioRunner.getInstance().attachToWindow(this);
 
     // Start requestAnimationFrame loop
     this.lastTime = performance.now();
@@ -490,6 +494,16 @@ export class Game {
         if (obs.rampCollider) {
           // Yellow for sloped climbable ramp
           this.debugGroup.add(new THREE.Box3Helper(obs.rampCollider, new THREE.Color(0xffea00)));
+
+          // Green line showing exact mathematical support slope from ground to roof
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+          const laneX = CONSTANTS.LANES[obs.lane];
+          const slopeGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(laneX, 0.05, obs.rampCollider.max.z),
+            new THREE.Vector3(laneX, roofY, obs.rampCollider.min.z)
+          ]);
+          const slopeLine = new THREE.Line(slopeGeo, new THREE.LineBasicMaterial({ color: 0x00ff88 }));
+          this.debugGroup.add(slopeLine);
         }
         if (!obs.bodyCollider && !obs.roofCollider) {
           // Standard barriers (magenta)
@@ -498,7 +512,14 @@ export class Game {
       }
     }
 
-    // 3. Telemetry HUD Overlay
+    // 3. Player Feet Marker (Magenta cross indicator at exact foot plane)
+    const feetGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    const feetMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
+    const feetMarker = new THREE.Mesh(feetGeo, feetMat);
+    feetMarker.position.set(this.player.position.x, this.player.position.y, this.player.position.z);
+    this.debugGroup.add(feetMarker);
+
+    // 4. Telemetry HUD Overlay
     if (!this.debugOverlayEl && typeof document !== 'undefined') {
       this.debugOverlayEl = document.createElement('div');
       this.debugOverlayEl.id = 'collision-debug-overlay';
@@ -521,11 +542,12 @@ export class Game {
       this.debugOverlayEl.style.display = 'block';
       const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
       this.debugOverlayEl.innerHTML = `
-        <div style="font-weight:bold;color:#00e5ff;margin-bottom:4px;">[COLLISION DIAGNOSTICS]</div>
+        <div style="font-weight:bold;color:#00e5ff;margin-bottom:4px;">[COLLISION DIAGNOSTICS & SCENARIO]</div>
         <div>STATE: <span style="color:#ffd600;">${this.player.state}</span> | SURFACE: <span style="color:#00e676;">${this.player.getSupportSurface()}</span></div>
+        <div>SUPPORT ID: <span style="color:#00e5ff;">${this.player.getActiveSupportObstacleId() || 'NONE (GROUND)'}</span></div>
         <div>POS: Y=${this.player.position.y.toFixed(2)} (GroundY=${this.player.groundY.toFixed(2)}) | Vy=${this.player.verticalVelocity.toFixed(1)}</div>
-        <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)}</div>
-        <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification})` : 'NONE'}</div>
+        <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)} (Lane=${this.player.currentLane})</div>
+        <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification}) ObsID=${lastDiag.obstacleId || 'N/A'}` : 'NONE'}</div>
       `;
     }
   }

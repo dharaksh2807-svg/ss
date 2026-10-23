@@ -52,6 +52,7 @@ export class Player {
   public targetLane: LaneIndex = 0;
   public groundY: number = CONSTANTS.PLAYER_BASE_Y;
   public supportSurface: SupportSurfaceType = 'GROUND';
+  public activeSupportObstacleId: string | null = null;
   public readonly jetpackAltitude: number = 9.0;
 
   // Lateral lane transition
@@ -154,6 +155,7 @@ export class Player {
     this.lastJumpDist = -999;
     this.lastSlideDist = -999;
     this.supportSurface = 'GROUND';
+    this.activeSupportObstacleId = null;
     this.previousPosition.copy(this.position);
     this.state = 'RUN';
     this.jetpackPhase = 'NONE';
@@ -269,6 +271,7 @@ export class Player {
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
     this.supportSurface = 'GROUND';
+    this.activeSupportObstacleId = null;
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {
@@ -517,17 +520,16 @@ export class Player {
           this.jumpPhase = 'DESCENDING';
           this.state = this.supportSurface === 'TRAIN_ROOF' ? 'FALLING_FROM_TRAIN' : 'FALLING';
           this.supportSurface = 'GROUND';
+          this.activeSupportObstacleId = null;
           this.verticalVelocity = Math.min(this.verticalVelocity, -2.0);
         } else {
           this.position.y = this.groundY;
           if (this.state !== 'SLIDE') {
-            if (this.groundY > CONSTANTS.PLAYER_BASE_Y + 1.0) {
-              this.supportSurface = 'TRAIN_ROOF';
+            if (this.supportSurface === 'TRAIN_ROOF') {
               this.state = 'ON_TRAIN';
             } else if (this.supportSurface === 'RAMP') {
               this.state = 'CLIMBING';
             } else {
-              this.supportSurface = 'GROUND';
               this.state = 'RUN';
             }
           }
@@ -581,15 +583,28 @@ export class Player {
     this.groundY = targetY;
   }
 
-  public setSupportSurface(surface: SupportSurfaceType): void {
+  public setSupportSurface(surface: SupportSurfaceType, obstacleId?: string | null): void {
     this.supportSurface = surface;
+    if (surface === 'GROUND') {
+      this.activeSupportObstacleId = null;
+    } else if (obstacleId !== undefined) {
+      this.activeSupportObstacleId = obstacleId;
+    }
   }
 
   public getSupportSurface(): SupportSurfaceType {
     return this.supportSurface;
   }
 
-  public resolveRoofLanding(roofY: number): void {
+  public getActiveSupportObstacleId(): string | null {
+    return this.activeSupportObstacleId;
+  }
+
+  public setActiveSupportObstacleId(id: string | null): void {
+    this.activeSupportObstacleId = id;
+  }
+
+  public resolveRoofLanding(roofY: number, obstacleId?: string | null): void {
     this.position.y = roofY;
     this.groundY = roofY;
     this.verticalVelocity = 0;
@@ -597,7 +612,7 @@ export class Player {
     this.isFastDropping = false;
     this.jumpPhase = 'LANDING';
     this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
-    this.supportSurface = 'TRAIN_ROOF';
+    this.setSupportSurface('TRAIN_ROOF', obstacleId);
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
     }
@@ -627,7 +642,7 @@ export class Player {
     return true; // Fatal crash
   }
 
-  private updateCollider(): void {
+  public updateCollider(): void {
     const halfW = CONSTANTS.PLAYER_WIDTH * 0.5;
     const halfD = CONSTANTS.PLAYER_DEPTH * 0.5;
     const height = this.isSliding ? CONSTANTS.PLAYER_HEIGHT_SLIDE : CONSTANTS.PLAYER_HEIGHT_RUN;

@@ -15,6 +15,7 @@ export type ObstacleType =
   | 'TUNNEL_ARCH';
 
 export interface ObstacleInstance {
+  id: string; // Unique obstacle instance identifier for binding active support
   group: THREE.Group;
   type: ObstacleType;
   lane: LaneIndex;
@@ -24,6 +25,10 @@ export interface ObstacleInstance {
   roofCollider?: THREE.Box3; // Train roof walkable & landing capture surface
   rampCollider?: THREE.Box3; // Sloped climbable ramp
   roofSurfaceY?: number; // Walkable roof elevation plane (CONSTANTS.TRAIN_HEIGHT + 0.15)
+  rampStartZ?: number; // World Z where ramp touches ground
+  rampEndZ?: number;   // World Z where ramp meets roof
+  roofStartZ?: number; // World Z where roof starts (front)
+  roofEndZ?: number;   // World Z where roof ends (rear)
   nearMissBox: THREE.Box3;
   nearMissTriggered: boolean;
   active: boolean;
@@ -1125,25 +1130,43 @@ export class ObstacleFactory {
     bodyLength: number,
     noseLength: number
   ): void {
-    const rampLength = CONSTANTS.TRAIN_RAMP_LENGTH;
+    const rampLength = CONSTANTS.TRAIN_RAMP_LENGTH; // 8.0m
     const rampWidth = w * 0.86;
-    const rampHeight = 4.35; // Climb directly up to the 4.35m walkable roof deck!
+    const rampHeight = 4.35; // Matches the exact 4.35m catwalk top surface
 
-    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.28, rampLength);
+    const halfD = bodyLength * 0.5;
+    const rampZCenter = halfD + rampLength * 0.5;
+    const slantLength = Math.sqrt(rampLength * rampLength + rampHeight * rampHeight);
+    const rampAngle = Math.atan2(rampHeight, rampLength);
+
+    // 1. Walkway Deck: Exactly connects (Z = halfD + rampLength, Y = 0) to (Z = halfD, Y = 4.35)
+    // Box dimensions: [rampWidth, 0.22, slantLength]
+    // Rotated by rampAngle around X:
+    // At -slantLength/2: Z = rampZCenter - (slant/2)*cos(theta) = halfD; Y = rampHeight/2 + (slant/2)*sin(theta) = 4.35m
+    // At +slantLength/2: Z = rampZCenter + (slant/2)*cos(theta) = halfD + rampLength; Y = rampHeight/2 - (slant/2)*sin(theta) = 0.0m
+    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength);
     const rampMesh = new THREE.Mesh(rampGeo, this.trainWalkwayMat);
-    rampMesh.rotation.x = Math.atan2(rampHeight, rampLength);
-    rampMesh.position.set(0, rampHeight * 0.5, bodyLength * 0.5 + noseLength + rampLength * 0.45);
+    rampMesh.rotation.x = rampAngle;
+    rampMesh.position.set(0, rampHeight * 0.5, rampZCenter);
     rampMesh.castShadow = true;
     rampMesh.receiveShadow = true;
     group.add(rampMesh);
 
-    const skirtGeo = new THREE.BoxGeometry(0.12, 0.45, rampLength);
+    // 2. High-Visibility Side Hazard Warning Skirts running full slant length
+    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength);
     [-rampWidth * 0.51, rampWidth * 0.51].forEach((sx) => {
       const skirt = new THREE.Mesh(skirtGeo, this.barrierMat);
-      skirt.rotation.x = Math.atan2(rampHeight, rampLength);
-      skirt.position.set(sx, rampHeight * 0.5 + 0.15, bodyLength * 0.5 + noseLength + rampLength * 0.45);
+      skirt.rotation.x = rampAngle;
+      skirt.position.set(sx, rampHeight * 0.5 + 0.15, rampZCenter);
+      skirt.castShadow = true;
       group.add(skirt);
     });
+
+    // 3. Ground Entry Transition Toe Plate (smooth steel approach wedge at base Z = halfD + rampLength)
+    const toeGeo = new THREE.BoxGeometry(rampWidth * 1.02, 0.08, 0.6);
+    const toeMesh = new THREE.Mesh(toeGeo, this.trainChassisMat);
+    toeMesh.position.set(0, 0.04, halfD + rampLength);
+    group.add(toeMesh);
   }
 
   /**

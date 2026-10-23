@@ -664,17 +664,19 @@ export class TrackChunk {
       let group: THREE.Group;
       const laneX = CONSTANTS.LANES[obsData.lane];
       const localZ = -obsData.zOffset;
-      const length = obsData.length || (obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
+      const isTrain = obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' || obsData.type === 'TRAIN_RAMP';
+      const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP');
+      const length = obsData.length || (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
       let headlights: THREE.Mesh[] | undefined;
 
-      if (obsData.type === 'TRAIN') {
+      if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
         const colors = [
           CONSTANTS.COLORS.TRAIN_BODY_1,
           CONSTANTS.COLORS.TRAIN_BODY_2,
           CONSTANTS.COLORS.TRAIN_BODY_3
         ];
         const color = colors[Math.floor(Math.random() * colors.length)];
-        group = this.obstacleFactory.createTrain(length, obsData.hasRamp, color);
+        group = this.obstacleFactory.createTrain(length, hasRamp, color);
       } else if (obsData.type === 'MOVING_TRAIN') {
         const movingData = this.obstacleFactory.createMovingTrain(length, CONSTANTS.COLORS.TRAIN_BODY_2);
         group = movingData.group;
@@ -710,11 +712,11 @@ export class TrackChunk {
       let height: number;
       let halfD: number;
 
-      if (obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN') {
+      if (isTrain) {
         halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
         height = CONSTANTS.TRAIN_HEIGHT;
         halfD = length * 0.5;
-        roofSurfaceY = CONSTANTS.TRAIN_HEIGHT + 0.15; // Exact walkable roof surface (4.35m)
+        roofSurfaceY = 4.35; // Exact walkable roof surface (CONSTANTS.TRAIN_HEIGHT + 0.15 = 4.35m)
 
         // 1. Separate lower train hull lethal zone (below roof)
         bodyCollider = new THREE.Box3(
@@ -722,7 +724,7 @@ export class TrackChunk {
           new THREE.Vector3(laneX + halfW, height - 0.45, worldCenterZ + halfD)
         );
 
-        // 2. Front bumper hazard (active at unsafe heights when not climbing ramp)
+        // 2. Front bumper hazard (active at unsafe heights on non-ramp trains)
         frontBumperCollider = new THREE.Box3(
           new THREE.Vector3(laneX - halfW, 0, worldCenterZ + halfD - 0.25),
           new THREE.Vector3(laneX + halfW, height - 0.45, worldCenterZ + halfD + 0.35)
@@ -737,7 +739,7 @@ export class TrackChunk {
         );
 
         // 4. Sloped Ramp Collider
-        if (obsData.hasRamp) {
+        if (hasRamp) {
           const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           rampCollider = new THREE.Box3(
             new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ + halfD),
@@ -768,7 +770,11 @@ export class TrackChunk {
       nearMissBox.min.set(laneX - halfW - 0.6, 0, worldCenterZ - halfD - 0.6);
       nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, worldCenterZ + halfD + 0.6);
 
+      const obstacleId = `chunk_${Math.round(worldZ)}_obs_${this.obstacles.length}_${obsData.type}_${obsData.lane}`;
+      const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+
       this.obstacles.push({
+        id: obstacleId,
         group,
         type: obsData.type,
         lane: obsData.lane,
@@ -778,10 +784,14 @@ export class TrackChunk {
         roofCollider,
         rampCollider,
         roofSurfaceY,
+        rampStartZ: hasRamp ? worldCenterZ + halfD + rampD : undefined,
+        rampEndZ: hasRamp ? worldCenterZ + halfD : undefined,
+        roofStartZ: isTrain ? worldCenterZ + halfD : undefined,
+        roofEndZ: isTrain ? worldCenterZ - halfD : undefined,
         nearMissBox,
         nearMissTriggered: false,
         active: true,
-        hasRamp: obsData.hasRamp,
+        hasRamp,
         length,
         variant: group.userData.variant,
         isMoving: obsData.type === 'MOVING_TRAIN' || obsData.isMoving,
@@ -920,6 +930,18 @@ export class TrackChunk {
           obs.roofCollider.min.set(laneX - halfW - 0.15, height - 0.45, currentWorldZ - halfD - 0.3);
           obs.roofCollider.max.set(laneX + halfW + 0.15, height + 1.2, currentWorldZ + halfD + 0.3);
         }
+
+        if (obs.rampCollider) {
+          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+          obs.rampCollider.min.set(laneX - halfW * 0.92, 0, currentWorldZ + halfD);
+          obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, currentWorldZ + halfD + rampD);
+          obs.rampStartZ = currentWorldZ + halfD + rampD;
+          obs.rampEndZ = currentWorldZ + halfD;
+        }
+
+        obs.roofStartZ = currentWorldZ + halfD;
+        obs.roofEndZ = currentWorldZ - halfD;
 
         obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, currentWorldZ - halfD - 0.6);
         obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, currentWorldZ + halfD + 0.6);

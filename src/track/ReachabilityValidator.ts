@@ -124,8 +124,9 @@ export class ReachabilityValidator {
             let climbedRoof = false;
 
             for (const obs of obstaclesAtLocation) {
-              if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN') {
-                if (obs.hasRamp && z <= obs.zOffset + CONSTANTS.TRAIN_RAMP_LENGTH) {
+              if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP') {
+                const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
+                if (hasRamp && z <= obs.zOffset + CONSTANTS.TRAIN_RAMP_LENGTH) {
                   // Running up ramp onto roof is safe!
                   climbedRoof = true;
                   continue;

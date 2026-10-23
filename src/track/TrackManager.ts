@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
-import { Player } from '../player/Player';
+import { Player, SupportSurfaceType } from '../player/Player';
 import { ObstacleFactory } from './ObstacleFactory';
 import { CollectibleFactory, CoinPickupVFXInstance } from './CollectibleFactory';
 import { TrackChunk } from './TrackChunk';
@@ -285,28 +285,49 @@ export class TrackManager {
   private updateGroundHeight(player: Player): void {
     let targetGroundY: number = CONSTANTS.PLAYER_BASE_Y;
     let foundSupport = false;
+    let supportedObstacleId: string | null = null;
+    let supportType: SupportSurfaceType = 'GROUND';
 
     for (const chunk of this.chunks) {
       for (const obs of chunk.obstacles) {
         if (!obs.active) continue;
 
-        // 1. Check if player is running up a ramp
+        // 1. Check if player is on or ascending a sloped ramp
         if (obs.rampCollider) {
           const inRampX = player.position.x >= obs.rampCollider.min.x && player.position.x <= obs.rampCollider.max.x;
-          const inRampZ = player.position.z >= obs.rampCollider.min.z && player.position.z <= obs.rampCollider.max.z;
+          // Ramp covers from max.z (base at ground) to min.z (top at roof)
+          // Extend tolerance slightly at the upper junction (0.35m) so forward steps across the boundary do not drop support
+          const rampStart = obs.rampCollider.max.z;
+          const rampEnd = obs.rampCollider.min.z;
+          const inRampZ = player.position.z >= rampEnd - 0.35 && player.position.z <= rampStart + 0.35;
 
           if (inRampX && inRampZ) {
-            const rampStart = obs.rampCollider.max.z;
-            const rampEnd = obs.rampCollider.min.z;
-            const t = Math.max(0, Math.min(1, (rampStart - player.position.z) / (rampStart - rampEnd)));
             const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-            targetGroundY = CONSTANTS.PLAYER_BASE_Y + t * (roofY - CONSTANTS.PLAYER_BASE_Y);
-            player.setSupportSurface('RAMP');
-            if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
-              player.state = 'CLIMBING';
+            const t = Math.max(0, Math.min(1, (rampStart - player.position.z) / (rampStart - rampEnd)));
+            const calculatedHeight = CONSTANTS.PLAYER_BASE_Y + t * (roofY - CONSTANTS.PLAYER_BASE_Y);
+
+            const currFeetY = player.position.y;
+            const isNearSurface = Math.abs(currFeetY - calculatedHeight) <= 0.85;
+            const isAscendingOrGrounded = !player.isJumping || player.verticalVelocity <= 0.1 || isNearSurface;
+
+            if (isAscendingOrGrounded) {
+              targetGroundY = calculatedHeight;
+              foundSupport = true;
+              supportedObstacleId = obs.id;
+              // If reached top edge (t >= 0.98), promote to TRAIN_ROOF smoothly
+              supportType = t >= 0.98 ? 'TRAIN_ROOF' : 'RAMP';
+              if (t >= 0.98) {
+                targetGroundY = roofY;
+              }
+
+              // Synchronize player position and collider immediately so collision resolution
+              // uses the newly resolved height in this same frame
+              if (!player.isJumping) {
+                player.position.y = targetGroundY;
+                player.updateCollider();
+              }
+              break;
             }
-            foundSupport = true;
-            break;
           }
         }
 
@@ -315,7 +336,8 @@ export class TrackManager {
           const minX = obs.roofCollider.min.x;
           const maxX = obs.roofCollider.max.x;
           const minZ = obs.roofCollider.min.z;
-          const maxZ = obs.roofCollider.max.z;
+          // Generous forward overlap (0.35m) to capture smooth handoff directly from the ramp top
+          const maxZ = obs.roofCollider.max.z + 0.35;
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
 
           const inRoofHorizontal =
@@ -326,28 +348,31 @@ export class TrackManager {
             const prevFeetY = player.previousPosition.y;
             const currFeetY = player.position.y;
             const isDescending = player.verticalVelocity <= 0.1 || currFeetY <= prevFeetY;
+            const isSupportedByThisTrain = player.getActiveSupportObstacleId() === obs.id;
 
-            // Swept continuous collision detection:
-            // Feet were previously at/above roof (with tolerance) and now crossed roof plane
-            const crossedPlane = prevFeetY >= roofY - 0.35 && currFeetY <= roofY + 0.45;
-            const withinCaptureWindow = currFeetY >= roofY - 0.45 && currFeetY <= roofY + 0.65;
+            // Swept continuous collision detection & landing capture window
+            const crossedPlane = prevFeetY >= roofY - 0.45 && currFeetY <= roofY + 0.55;
+            const withinCaptureWindow = currFeetY >= roofY - 0.55 && currFeetY <= roofY + 0.85;
 
             if (player.isJumping || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN') {
               if (isDescending && (crossedPlane || withinCaptureWindow)) {
                 // Valid roof landing!
-                player.resolveRoofLanding(roofY);
+                player.resolveRoofLanding(roofY, obs.id);
                 targetGroundY = roofY;
                 foundSupport = true;
+                supportedObstacleId = obs.id;
+                supportType = 'TRAIN_ROOF';
                 break;
               }
-            } else if (currFeetY >= roofY - 0.35) {
-              // Smooth rooftop traversal
+            } else if (currFeetY >= roofY - 0.55 || isSupportedByThisTrain) {
+              // Smooth rooftop traversal or direct handoff from ramp
               targetGroundY = roofY;
-              player.setSupportSurface('TRAIN_ROOF');
-              if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
-                player.state = 'ON_TRAIN';
-              }
               foundSupport = true;
+              supportedObstacleId = obs.id;
+              supportType = 'TRAIN_ROOF';
+
+              player.position.y = roofY;
+              player.updateCollider();
               break;
             }
           }
@@ -356,20 +381,26 @@ export class TrackManager {
       if (foundSupport) break;
     }
 
-    if (!foundSupport) {
+    if (foundSupport && supportedObstacleId) {
+      player.setGroundHeight(targetGroundY);
+      player.setSupportSurface(supportType, supportedObstacleId);
+      if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
+        player.state = supportType === 'RAMP' ? 'CLIMBING' : 'ON_TRAIN';
+      }
+    } else {
       targetGroundY = CONSTANTS.PLAYER_BASE_Y;
-      if (player.getSupportSurface() === 'TRAIN_ROOF' && !player.isJumping && player.position.y > targetGroundY + 0.15) {
-        // Stepped off train roof into air
-        player.setSupportSurface('GROUND');
+      const prevSurface = player.getSupportSurface();
+      if ((prevSurface === 'TRAIN_ROOF' || prevSurface === 'RAMP') && !player.isJumping && player.position.y > targetGroundY + 0.15) {
+        // Stepped off train roof or ramp into open air
+        player.setSupportSurface('GROUND', null);
         player.isJumping = true;
         player.state = 'FALLING_FROM_TRAIN';
         player.verticalVelocity = Math.min(player.verticalVelocity, -2.0);
-      } else if (player.getSupportSurface() === 'RAMP') {
-        player.setSupportSurface('GROUND');
+      } else {
+        player.setSupportSurface('GROUND', null);
       }
+      player.setGroundHeight(targetGroundY);
     }
-
-    player.setGroundHeight(targetGroundY);
   }
 
   private checkCollisions(player: Player, dt: number): void {
@@ -420,22 +451,33 @@ export class TrackManager {
         }
 
         // Direct obstacle collision check
-        if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN') {
+        if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP') {
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+          const isSupportingThisTrain = player.getActiveSupportObstacleId() === obs.id;
 
-          // Priority 1: Safe rooftop traversal
-          if (player.getSupportSurface() === 'TRAIN_ROOF' || player.state === 'ON_TRAIN') {
+          // Priority 1: Safe rooftop traversal on THIS specific train
+          if (isSupportingThisTrain && (player.getSupportSurface() === 'TRAIN_ROOF' || player.state === 'ON_TRAIN')) {
             continue;
           }
 
-          // Priority 2: Safe ramp climbing
-          if (player.getSupportSurface() === 'RAMP' || player.state === 'CLIMBING') {
+          // Priority 2: Safe ramp climbing on THIS specific train
+          if (isSupportingThisTrain && (player.getSupportSurface() === 'RAMP' || player.state === 'CLIMBING')) {
             continue;
           }
 
           // Priority 3: Clear airborne height (e.g. jumping over train, super sneakers, jetpack)
-          if (player.position.y >= roofY - 0.35 || player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE' || player.position.y > 4.5) {
+          if (player.position.y >= roofY - 0.25 || player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE' || player.position.y > 4.5) {
             continue;
+          }
+
+          // If this train has a climbable ramp and player is entering horizontally from the ramp approach:
+          if (obs.rampCollider) {
+            const inRampX = playerBox.max.x >= obs.rampCollider.min.x && playerBox.min.x <= obs.rampCollider.max.x;
+            const inRampZ = playerBox.min.z <= obs.rampCollider.max.z + 0.35 && playerBox.max.z >= obs.rampCollider.min.z - 0.25;
+            if (inRampX && inRampZ) {
+              // Valid ramp entry in progress; front bumper is enclosed by ramp
+              continue;
+            }
           }
 
           // Check physical contact with lower train hull or front bumper at unsafe height
@@ -653,6 +695,8 @@ export class TrackManager {
       collidingObject: obs.type,
       classification,
       lane: obs.lane,
+      obstacleId: obs.id,
+      activeSupportObstacleId: player.getActiveSupportObstacleId(),
       playerLane: player.currentLane,
       targetLane: player.targetLane,
       playerState: player.state,
