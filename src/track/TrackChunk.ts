@@ -731,7 +731,7 @@ export class TrackChunk {
     const mats = TrackChunk.sharedMaterials!;
     const gantrySpacing = 26.0;
     const gantryCount = Math.floor(this.length / gantrySpacing);
-    const poleHeight = 7.8;
+    const poleHeight = 10.0;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -760,34 +760,34 @@ export class TrackChunk {
       girder.castShadow = true;
       gantryGroup.add(girder);
 
-      // Insulators & Modern 3-Aspect LED Signal Boxes
+      // Insulators & Modern 3-Aspect LED Signal Boxes elevated at 8.8m+
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-        const insGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.45, 8);
+        const insGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.35, 8);
         const ins = new THREE.Mesh(insGeo, mats.insulatorMat);
-        ins.position.set(laneX, poleHeight - 0.75, 0);
+        ins.position.set(laneX, poleHeight - 0.55, 0);
         gantryGroup.add(ins);
 
-        const sigGeo = new THREE.BoxGeometry(0.4, 0.85, 0.28);
+        const sigGeo = new THREE.BoxGeometry(0.4, 0.60, 0.28);
         const sig = new THREE.Mesh(sigGeo, mats.modernSteelMat);
-        sig.position.set(laneX, poleHeight - 1.15, 0.12);
+        sig.position.set(laneX, poleHeight - 0.85, 0.12);
         gantryGroup.add(sig);
 
-        const lensGeo = new THREE.CircleGeometry(0.1, 10);
+        const lensGeo = new THREE.CircleGeometry(0.09, 10);
         const greenMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
         const greenLens = new THREE.Mesh(lensGeo, greenMat);
-        greenLens.position.set(laneX, poleHeight - 1.05, 0.27);
+        greenLens.position.set(laneX, poleHeight - 0.80, 0.27);
         gantryGroup.add(greenLens);
       });
 
       this.decorativeGroup.add(gantryGroup);
     }
 
-    // Overhead catenary contact wires
+    // Overhead catenary contact wires elevated at 9.3m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
       const cableGeo = new THREE.CylinderGeometry(0.02, 0.02, this.length, 6);
       const cable = new THREE.Mesh(cableGeo, mats.cableMat);
       cable.rotation.x = Math.PI / 2;
-      cable.position.set(laneX, poleHeight - 1.0, -this.length * 0.5);
+      cable.position.set(laneX, poleHeight - 0.70, -this.length * 0.5);
       this.decorativeGroup.add(cable);
     });
   }
@@ -913,7 +913,7 @@ export class TrackChunk {
     if (chunkIdx % 2 !== 1) return;
 
     const mats = TrackChunk.sharedMaterials!;
-    const bridgeHeight = 8.5;
+    const bridgeHeight = 9.2;
     const bridgeWidth = 7.0;
     const bridgeSpan = 32.0;
 
@@ -1041,7 +1041,7 @@ export class TrackChunk {
     const mats = TrackChunk.sharedMaterials!;
     const gantrySpacing = 26.0;
     const gantryCount = Math.floor(this.length / gantrySpacing);
-    const poleHeight = 7.6;
+    const poleHeight = 10.0;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -1068,20 +1068,20 @@ export class TrackChunk {
       girder.castShadow = true;
       gantryGroup.add(girder);
 
-      // Earthenware ceramic insulators and mechanical semaphore arms
+      // Earthenware ceramic insulators and mechanical semaphore arms elevated above 8.8m
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-        const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.4, 8), mats.earthenwareInsulatorMat);
-        ins.position.set(laneX, poleHeight - 0.65, 0);
+        const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.35, 8), mats.earthenwareInsulatorMat);
+        ins.position.set(laneX, poleHeight - 0.45, 0);
         gantryGroup.add(ins);
 
         // Mechanical Semaphore Signal Post & Blade
-        const semPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.12), mats.castIronMat);
-        semPost.position.set(laneX, poleHeight - 1.1, 0.15);
+        const semPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.12), mats.castIronMat);
+        semPost.position.set(laneX, poleHeight - 0.8, 0.15);
         gantryGroup.add(semPost);
 
         // Signal Arm Blade (Red with white stripe)
         const blade = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.04), new THREE.MeshStandardMaterial({ color: 0xd32f2f }));
-        blade.position.set(laneX + 0.35, poleHeight - 0.7, 0.22);
+        blade.position.set(laneX + 0.35, poleHeight - 0.65, 0.22);
         blade.rotation.z = -0.3; // Raised clear signal!
         gantryGroup.add(blade);
       });
@@ -1089,11 +1089,11 @@ export class TrackChunk {
       this.decorativeGroup.add(gantryGroup);
     }
 
-    // Overhead dark copper telegraph wires
+    // Overhead dark copper telegraph wires elevated at 9.4m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
       const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, this.length, 6), mats.copperCableMat);
       wire.rotation.x = Math.PI / 2;
-      wire.position.set(laneX, poleHeight - 0.95, -this.length * 0.5);
+      wire.position.set(laneX, poleHeight - 0.60, -this.length * 0.5);
       this.decorativeGroup.add(wire);
     });
   }

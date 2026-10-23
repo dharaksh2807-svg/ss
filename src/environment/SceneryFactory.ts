@@ -768,7 +768,7 @@ export class SceneryFactory {
     const mats = this.getSharedMaterials();
     const gantrySpacing = 26.0;
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
-    const poleHeight = 7.8;
+    const poleHeight = 10.0;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -793,29 +793,29 @@ export class SceneryFactory {
       girder.castShadow = true;
       gantryGroup.add(girder);
 
-      // Insulators & Signals
+      // Insulators & Signals elevated for 8.8m+ clearance
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-        const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.45, 8), mats.insulatorMat);
-        ins.position.set(laneX, poleHeight - 0.75, 0);
+        const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.35, 8), mats.insulatorMat);
+        ins.position.set(laneX, poleHeight - 0.55, 0);
         gantryGroup.add(ins);
 
-        const sig = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.85, 0.28), mats.modernSteelMat);
-        sig.position.set(laneX, poleHeight - 1.15, 0.12);
+        const sig = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.60, 0.28), mats.modernSteelMat);
+        sig.position.set(laneX, poleHeight - 0.85, 0.12);
         gantryGroup.add(sig);
 
-        const greenLens = new THREE.Mesh(new THREE.CircleGeometry(0.1, 10), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
-        greenLens.position.set(laneX, poleHeight - 1.05, 0.27);
+        const greenLens = new THREE.Mesh(new THREE.CircleGeometry(0.09, 10), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
+        greenLens.position.set(laneX, poleHeight - 0.80, 0.27);
         gantryGroup.add(greenLens);
       });
 
       group.add(gantryGroup);
     }
 
-    // Overhead catenary contact wires
+    // Overhead catenary contact wires elevated at 9.3m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
       const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, chunkLength, 6), mats.cableMat);
       cable.rotation.x = Math.PI / 2;
-      cable.position.set(laneX, poleHeight - 1.0, -chunkLength * 0.5);
+      cable.position.set(laneX, poleHeight - 0.70, -chunkLength * 0.5);
       group.add(cable);
     });
   }
@@ -1042,8 +1042,8 @@ export class SceneryFactory {
 
   private buildModernSkybridge(group: THREE.Group, chunkLength: number): void {
     const mats = this.getSharedMaterials();
-    // Ceiling clearance: 8.8m guarantees complete clearance of train (4.35m) and jump apex (7.61m)
-    const bridgeHeight = 8.8;
+    // Ceiling clearance: 9.2m guarantees complete clearance of train (4.35m) and jump apex (7.61m) with deck bottom at 8.8m
+    const bridgeHeight = 9.2;
     const bridgeWidth = 6.5;
     const bridgeSpan = 34.0;
 
@@ -1198,7 +1198,7 @@ export class SceneryFactory {
     const mats = this.getSharedMaterials();
     const gantrySpacing = 28.0;
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
-    const poleHeight = 7.6;
+    const poleHeight = 10.0;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -1223,30 +1223,30 @@ export class SceneryFactory {
       girder.castShadow = true;
       gantryGroup.add(girder);
 
-      // Earthenware insulators & mechanical semaphores
+      // Earthenware insulators & mechanical semaphores elevated above 8.8m
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
         const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.35, 6), mats.earthenwareInsulatorMat);
-        ins.position.set(laneX, poleHeight - 0.6, 0);
+        ins.position.set(laneX, poleHeight - 0.45, 0);
         gantryGroup.add(ins);
 
         const sema = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.18, 0.08), mats.copperPatinaMat);
-        sema.position.set(laneX + 0.4, poleHeight - 0.9, 0.1);
+        sema.position.set(laneX + 0.4, poleHeight - 0.70, 0.1);
         sema.rotation.z = -0.3;
         gantryGroup.add(sema);
 
         const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 6), mats.gasLampMat);
-        lamp.position.set(laneX, poleHeight - 0.9, 0.15);
+        lamp.position.set(laneX, poleHeight - 0.70, 0.15);
         gantryGroup.add(lamp);
       });
 
       group.add(gantryGroup);
     }
 
-    // Copper wires
+    // Copper wires elevated at 9.4m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
       const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, chunkLength, 6), mats.copperCableMat);
       cable.rotation.x = Math.PI / 2;
-      cable.position.set(laneX, poleHeight - 0.8, -chunkLength * 0.5);
+      cable.position.set(laneX, poleHeight - 0.60, -chunkLength * 0.5);
       group.add(cable);
     });
   }
@@ -1470,8 +1470,8 @@ export class SceneryFactory {
 
   private buildHistoricArchBridge(group: THREE.Group, chunkLength: number): void {
     const mats = this.getSharedMaterials();
-    // 8.8m provides ample clearance above trains (4.35m) and player jump apex (7.61m)
-    const bridgeHeight = 8.8;
+    // 9.8m provides ample clearance with deck underside (1.8m thick) at 8.9m, clearing train and jump apex
+    const bridgeHeight = 9.8;
     const bridgeSpan = 32.0;
     const bridgeDepth = 9.0;
 
@@ -1563,7 +1563,7 @@ export class SceneryFactory {
     const mats = this.getSharedMaterials();
     const gantrySpacing = 26.0;
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
-    const poleHeight = 7.8;
+    const poleHeight = 10.0;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -1582,10 +1582,10 @@ export class SceneryFactory {
       girder.position.set(0, poleHeight - 0.25, 0);
       gantryGroup.add(girder);
 
-      // Warning searchlights
+      // Warning searchlights elevated at 9.4m
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
         const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), mats.sodiumLampMat);
-        lamp.position.set(laneX, poleHeight - 0.7, 0.15);
+        lamp.position.set(laneX, poleHeight - 0.60, 0.15);
         gantryGroup.add(lamp);
       });
 

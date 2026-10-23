@@ -232,8 +232,15 @@ bus.on(EVENTS.COIN_COLLECTED, coinListener);
 
 const initialCoins = coinCollectedCount;
 
-// Isolate targetCoin by deactivating any other coins in active chunks
-trackManager.chunks.forEach(ch => ch.collectibles.forEach(c => { if (c !== targetCoin) c.active = false; }));
+// Isolate targetCoin by deactivating any other coins and obstacles in active chunks
+trackManager.chunks.forEach(ch => {
+  ch.collectibles.forEach(c => { if (c !== targetCoin) c.active = false; });
+  ch.obstacles.forEach(o => { o.active = false; });
+});
+
+player.state = 'RUNNING';
+player.isJumping = false;
+player.isSliding = false;
 
 // Place player directly on the target coin
 const targetWorldZ = targetChunk!.chunkZ + targetCoin.group.position.z;
