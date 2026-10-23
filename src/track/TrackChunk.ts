@@ -884,7 +884,8 @@ export class TrackChunk {
     }
   }
 
-  public update(dt: number, time: number, playerZ: number = 0): void {
+  public update(dt: number, time: number = 0, playerZ: number = 0): void {
+    const animTime = typeof time === 'number' && !isNaN(time) ? time : 0;
     // 1. Animate and update moving trains
     for (const obs of this.obstacles) {
       if (!obs.active) continue;
@@ -937,7 +938,7 @@ export class TrackChunk {
 
           // Strobe twin headlights at high frequency (12 Hz)
           if (obs.headlights && obs.headlights.length > 0) {
-            const strobe = Math.sin(time * 30.0) > 0;
+            const strobe = Math.sin(animTime * 30.0) > 0;
             obs.headlights.forEach((h) => {
               h.visible = strobe;
             });
@@ -952,9 +953,9 @@ export class TrackChunk {
 
       // Only apply ambient bobbing if not currently magnetized
       if (!col.isMagnetized) {
-        const bob = Math.sin(time * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.08;
+        const bob = Math.sin(animTime * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.08;
         col.animOffsetY = bob;
-        col.group.position.y = col.baseY + bob;
+        col.group.position.y = (col.baseY ?? 0.85) + bob;
         col.group.rotation.y += CONSTANTS.COIN_ROTATION_SPEED * dt;
       }
 

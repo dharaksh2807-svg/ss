@@ -26,6 +26,7 @@ export class TrackManager {
 
   // High-speed swept collision tracking to prevent tunneling past collectibles
   private previousPlayerZ: number | null = null;
+  private sweptCollectibleBox: THREE.Box3 = new THREE.Box3();
   // Reusable pooled collection particle bursts
   private pickupVfxPool: CoinPickupVFXInstance[] = [];
 
@@ -181,7 +182,7 @@ export class TrackManager {
     return chosen;
   }
 
-  public update(player: Player, dt: number, time: number): void {
+  public update(player: Player, dt: number, time: number = 0): void {
     // 0. Update difficulty controller pacing
     this.difficultyController.update(dt, player.distanceTraveled, player.speed);
 
@@ -374,11 +375,12 @@ export class TrackManager {
   private checkCollisions(player: Player, dt: number): void {
     const playerBox = player.collider;
     // High-speed swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
-    const sweptCollectibleBox = playerBox.clone();
+    this.sweptCollectibleBox.copy(playerBox);
     if (this.previousPlayerZ !== null) {
-      sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
-      sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
+      this.sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
+      this.sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
     }
+    const sweptCollectibleBox = this.sweptCollectibleBox;
     this.previousPlayerZ = player.position.z;
 
     const boardMagnetBonus = player.hoverboardManager ? player.hoverboardManager.getMagnetRadiusBonus() : 0;
