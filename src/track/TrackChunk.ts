@@ -7,7 +7,9 @@ import { CollectibleFactory, CollectibleInstance, CollectibleType } from './Coll
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
 import { PacingMetrics } from './PacingMetrics';
-import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, NEON_INDUSTRIAL_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentDirector } from '../environment/EnvironmentDirector';
+import { SceneryFactory } from '../environment/SceneryFactory';
 
 export class TrackChunk {
   public group: THREE.Group;
@@ -85,7 +87,10 @@ export class TrackChunk {
     this.buildStaticTrackGeometry();
   }
 
+  public currentSceneryDetail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL';
+
   public setSceneryDetail(detail: 'FULL' | 'BALANCED' | 'MINIMAL'): void {
+    this.currentSceneryDetail = detail;
     if (detail === 'MINIMAL') {
       this.decorativeGroup.visible = false;
     } else {
@@ -445,27 +450,21 @@ export class TrackChunk {
    * Rebuilds decorative scenery for active environment theme or transition portal
    */
   public buildEnvironmentScenery(theme: EnvironmentTheme, isTransition: boolean = false): void {
-    // Clear existing decorative meshes
-    while (this.decorativeGroup.children.length > 0) {
-      const child = this.decorativeGroup.children[0];
-      this.decorativeGroup.remove(child);
-    }
-
     this.currentTheme = theme;
     this.isTransitionPortal = isTransition;
-
-    const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8;
-    const curbWidth = 0.5;
-
-    if (this.isTunnel) {
-      this.buildTunnelScenery(this.tunnelPortal);
-    } else if (isTransition) {
-      this.buildTransitionPortalScenery(roadbedWidth, curbWidth, theme);
-    } else if (theme.id === 'HISTORIC_QUARTER') {
-      this.buildHistoricQuarterScenery(roadbedWidth, curbWidth);
-    } else {
-      this.buildModernMetroScenery(roadbedWidth, curbWidth);
-    }
+    const director = EnvironmentDirector.getInstance();
+    const chunkIndex = Math.round(Math.abs(this.chunkZ / this.length));
+    const seed = (this as any).scenerySeed || director.computeScenerySeed(chunkIndex, this.chunkZ);
+    SceneryFactory.getInstance().buildScenery(
+      this.decorativeGroup,
+      theme,
+      this.chunkZ,
+      isTransition,
+      this.isTunnel,
+      this.tunnelPortal,
+      this.currentSceneryDetail,
+      seed
+    );
   }
 
   /**
@@ -1433,26 +1432,21 @@ export class TrackChunk {
     this.group.position.z = worldZ;
 
     const resolvedTheme: EnvironmentTheme = typeof theme === 'string'
-      ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : MODERN_METRO_THEME)
+      ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : (theme === 'NEON_INDUSTRIAL' ? NEON_INDUSTRIAL_THEME : MODERN_METRO_THEME))
       : theme;
 
     this.isTunnel = !!pattern?.isTunnel;
     this.tunnelPortal = pattern?.tunnelPortal || 'NONE';
     this.playerInTunnel = false;
 
-    // Check if scenery needs rebuilding for theme change, transition portal, or tunnel
-    const wasTunnel = this.decorativeGroup.children.some((c) => c.name === 'tunnel_scenery');
-    if (this.isTunnel) {
-      while (this.decorativeGroup.children.length > 0) {
-        this.decorativeGroup.remove(this.decorativeGroup.children[0]);
-      }
-      this.buildTunnelScenery(this.tunnelPortal);
-    } else if (wasTunnel || this.currentTheme.id !== resolvedTheme.id || this.isTransitionPortal !== isTransition) {
-      while (this.decorativeGroup.children.length > 0) {
-        this.decorativeGroup.remove(this.decorativeGroup.children[0]);
-      }
-      this.buildEnvironmentScenery(resolvedTheme, isTransition);
-    }
+    // Dynamically regenerate modular scenery for recycled position and assigned district
+    const director = EnvironmentDirector.getInstance();
+    const chunkIndex = Math.round(Math.abs(worldZ / this.length));
+    director.decorateChunk(this, worldZ, chunkIndex, {
+      forceTheme: resolvedTheme,
+      forcePortal: isTransition,
+      detail: this.currentSceneryDetail
+    });
 
     // Clear previous dynamic items
     this.clearDynamicItems();

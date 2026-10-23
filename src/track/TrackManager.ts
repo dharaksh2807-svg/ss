@@ -15,6 +15,7 @@ import { ChaserModel } from '../characters/ChaserModel';
 import { CollisionResolver } from './CollisionResolver';
 import { CollisionDiagnostic, CollisionOutcome } from './CollisionTypes';
 import { EnvironmentManager, EnvironmentId, EnvironmentTheme } from '../environment/EnvironmentConfig';
+import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ProgressionManager } from '../progression/ProgressionManager';
 
 export class TrackManager {
@@ -93,6 +94,7 @@ export class TrackManager {
     this.lastSpawnedPattern = null;
     this.recentPatterns = [];
     this.difficultyController.reset();
+    EnvironmentDirector.getInstance().setRunSeed(seed, isDebug);
   }
 
   public setDebugSeed(seed: number): void {
@@ -165,6 +167,7 @@ export class TrackManager {
     } else {
       this.currentSeed = this.runSeed;
     }
+    EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
 
     this.furthestZ = 0;
     this.chunkIndex = 0;
@@ -1014,11 +1017,12 @@ export class TrackManager {
     this.activeEnvironment = envId;
     this.targetEnvironment = envId;
     this.envManager.savePreference(envId);
+    EnvironmentDirector.getInstance().jumpToDistrict(envId);
     const theme = this.envManager.getTheme(envId);
     for (const chunk of this.chunks) {
       chunk.buildEnvironmentScenery(theme, false);
     }
-    this.eventBus.emit('ENVIRONMENT_CHANGED', envId);
+    this.eventBus.emit('ENVIRONMENT_CHANGED', envId, theme);
   }
 
   public getChunksUntilTransition(): number {

@@ -32,7 +32,8 @@ import { DevTestArena } from '../debug/DevTestArena';
 import { PracticeModuleId } from '../practice/PracticeTypes';
 import { GraphicsManager } from '../scene/GraphicsManager';
 import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
-import { EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentManager, EnvironmentId, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ReviveManager } from '../revive/ReviveManager';
 import { ReviveModal } from '../ui/ReviveModal';
 
@@ -84,6 +85,7 @@ export class Game {
   // Collision Debugging Visualization Group
   private debugGroup: THREE.Group = new THREE.Group();
   private debugOverlayEl: HTMLElement | null = null;
+  private worldGenOverlayEl: HTMLElement | null = null;
 
   // Performance telemetry tracker
   private frameTimes: number[] = [];
@@ -154,6 +156,18 @@ export class Game {
       (window as any).__METRO_GAME__ = this;
       (window as any).__GRAPHICS_MANAGER__ = graphics;
       (window as any).__SOUND_MANAGER__ = this.soundManager;
+      (window as any).__ENV_DIRECTOR__ = EnvironmentDirector.getInstance();
+      (window as any).__TOGGLE_WORLD_GEN_DEBUG__ = () => {
+        (window as any).__DEBUG_WORLD_GEN__ = !(window as any).__DEBUG_WORLD_GEN__;
+      };
+      (window as any).__PREVIEW_ENVIRONMENT__ = (envId: EnvironmentId) => {
+        EnvironmentDirector.getInstance().jumpToDistrict(envId);
+      };
+      window.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+          (window as any).__DEBUG_WORLD_GEN__ = !(window as any).__DEBUG_WORLD_GEN__;
+        }
+      });
     }
 
     // Stage hero character in Lobby pose facing the camera
@@ -679,6 +693,9 @@ export class Game {
     this.updateCollisionDebugVisuals();
 
     // Update adaptive graphics profiling, atmospheric transitions, and ground contact shadow
+    EnvironmentDirector.getInstance().updateAtmosphere(this.player.position.z, this.worldScene, effectiveDt);
+    EnvironmentDirector.getInstance().recordFrameTime(effectiveDt * 1000);
+    this.updateWorldGenDiagnostics(effectiveDt);
     this.worldScene.updateAtmosphere(effectiveDt);
     GraphicsManager.getInstance().update(effectiveDt, this.lifecycleState === 'PLAYING');
     this.worldScene.updatePlayerContactShadow(
@@ -797,6 +814,55 @@ export class Game {
         <div>POS: Y=${this.player.position.y.toFixed(2)} (GroundY=${this.player.groundY.toFixed(2)}) | Vy=${this.player.verticalVelocity.toFixed(1)}</div>
         <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)} (Lane=${this.player.currentLane})</div>
         <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification}) ObsID=${lastDiag.obstacleId || 'N/A'}` : 'NONE'}</div>
+      `;
+    }
+  }
+
+  private updateWorldGenDiagnostics(dt: number): void {
+    const isDebug = typeof window !== 'undefined' && !!(window as any).__DEBUG_WORLD_GEN__;
+    if (!isDebug) {
+      if (this.worldGenOverlayEl) {
+        this.worldGenOverlayEl.style.display = 'none';
+      }
+      return;
+    }
+
+    if (!this.worldGenOverlayEl && typeof document !== 'undefined') {
+      this.worldGenOverlayEl = document.createElement('div');
+      this.worldGenOverlayEl.id = 'worldgen-debug-overlay';
+      this.worldGenOverlayEl.style.position = 'fixed';
+      this.worldGenOverlayEl.style.top = '12px';
+      this.worldGenOverlayEl.style.left = '12px';
+      this.worldGenOverlayEl.style.zIndex = '99999';
+      this.worldGenOverlayEl.style.background = 'rgba(12, 18, 30, 0.94)';
+      this.worldGenOverlayEl.style.border = '1px solid #38bdf8';
+      this.worldGenOverlayEl.style.padding = '10px 14px';
+      this.worldGenOverlayEl.style.borderRadius = '8px';
+      this.worldGenOverlayEl.style.fontFamily = 'monospace';
+      this.worldGenOverlayEl.style.fontSize = '11px';
+      this.worldGenOverlayEl.style.color = '#f0f9ff';
+      this.worldGenOverlayEl.style.maxWidth = '360px';
+      this.worldGenOverlayEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+      document.body.appendChild(this.worldGenOverlayEl);
+    }
+
+    if (this.worldGenOverlayEl) {
+      this.worldGenOverlayEl.style.display = 'block';
+      const director = EnvironmentDirector.getInstance();
+      const diag = director.getDiagnostics(this.player.position.z);
+      this.worldGenOverlayEl.innerHTML = `
+        <div style="font-weight:bold;color:#38bdf8;margin-bottom:6px;display:flex;justify-content:space-between;">
+          <span>[WORLD GEN DIAGNOSTICS]</span>
+          <span style="color:#a7f3d0;">${diag.frameTimeMs}ms (${Math.round(1000 / Math.max(1, diag.frameTimeMs))} FPS)</span>
+        </div>
+        <div>DISTRICT: <strong style="color:#f59e0b;">${diag.currentEnvironment}</strong> (Region #${diag.currentRegionIndex})</div>
+        <div>NEXT DISTRICT: <span style="color:#38bdf8;">${diag.nextEnvironment}</span></div>
+        <div>DIST TO TRANSITION: <span style="color:#00e676;">${diag.distanceToTransition}m</span></div>
+        <div>SCENERY MESHES: <span style="color:#ffd600;">${diag.sceneryMeshCount}</span> | EST. DRAWS: <span style="color:#ffd600;">${diag.estimatedDrawCalls}</span></div>
+        <div style="margin-top:6px;font-size:10px;color:#94a3b8;border-top:1px solid #1e293b;padding-top:4px;">ACTIVE CHUNK SEEDS:</div>
+        <div style="max-height:85px;overflow-y:auto;font-size:10px;color:#cbd5e1;">
+          ${diag.activeChunkSeeds.map(c => `<div>Chunk Z=${Math.round(c.chunkZ)} | ${c.districtId} ${c.isPortal ? '🏛️[PORTAL]' : ''} | Seed: ${c.seed.toString(16)}</div>`).join('')}
+        </div>
       `;
     }
   }

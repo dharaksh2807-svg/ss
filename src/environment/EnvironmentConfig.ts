@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER';
-export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'NEON_INDUSTRIAL';
+export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'NEON_INDUSTRIAL';
 
 export interface EnvironmentTheme {
   id: EnvironmentId;
@@ -10,6 +10,11 @@ export interface EnvironmentTheme {
   description: string;
   badgeEmoji: string;
   accentColor: string;
+  districtRange: {
+    minLengthMeters: number;
+    maxLengthMeters: number;
+  };
+  allowedTransitions: EnvironmentId[];
   sky: {
     top: number;
     bottom: number;
@@ -35,7 +40,7 @@ export interface EnvironmentTheme {
   skyline: {
     color: number;
     opacity: number;
-    style: 'MODERN' | 'HISTORIC';
+    style: 'MODERN' | 'HISTORIC' | 'INDUSTRIAL';
   };
   clouds: {
     color: number;
@@ -69,6 +74,11 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
   description: 'Gleaming corporate headquarters, azure daylight skies, glass skybridges, and modern electrified transit corridors.',
   badgeEmoji: '🏙️',
   accentColor: '#00e5ff',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['HISTORIC_QUARTER', 'NEON_INDUSTRIAL'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -109,7 +119,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     catenaryColor: 0x546e7a,    // Clean structural steel
     insulatorColor: 0x81d4fa,   // Turquoise ceramic
     pipeColor: 0x455a64,
-    bridgeMainColor: 0x37474f,   // Sleek illuminated dark steel (no pitch-black voids)
+    bridgeMainColor: 0x37474f,   // Sleek illuminated dark steel
     bridgeAccentColor: 0x00e5ff, // Cyber cyan glowing accents
     groundPlaneColor: 0x263238
   },
@@ -128,6 +138,11 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
   description: 'Aged red brick brownstones, soot-stained arched viaducts, gas lamp posts, riveted iron gantries, and warm golden hour atmosphere.',
   badgeEmoji: '🏛️',
   accentColor: '#f59e0b',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'NEON_INDUSTRIAL'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -180,9 +195,74 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
   }
 };
 
+export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
+  id: 'NEON_INDUSTRIAL',
+  displayName: 'Industrial Rail Yard',
+  subtitle: 'Nocturnal Steel, Amber Glow & Freight Gantries',
+  description: 'Heavy industrial rail depot, nocturnal amber horizon glow, towering freight cranes, corrugated warehouses, and steam pipes.',
+  badgeEmoji: '🏭',
+  accentColor: '#ff6d00',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
+  sky: {
+    top: 0x181326,    // Deep nocturnal purple dusk
+    bottom: 0xf57c00 // Radiant amber horizon glow
+  },
+  fog: {
+    color: 0xbf5700,  // Warm industrial amber haze
+    density: 0.0042
+  },
+  sun: {
+    color: 0xff8f00,  // Low amber sodium sun
+    intensity: 1.50,
+    position: { x: -28, y: 38, z: 20 }
+  },
+  fill: {
+    color: 0xffb74d,  // Warm bounce fill
+    intensity: 0.60
+  },
+  hemi: {
+    sky: 0xffa726,
+    ground: 0x241810,
+    intensity: 1.20
+  },
+  skyline: {
+    color: 0x8d6e63,
+    opacity: 0.80,
+    style: 'INDUSTRIAL'
+  },
+  clouds: {
+    color: 0xffcc80,
+    roughness: 0.88
+  },
+  materials: {
+    ballastColor: 0x3e3532,
+    sleeperColor: 0x261c14,
+    wallBaseColor: 0x5d4037,    // Aged board-formed concrete with rust
+    wallAccentColor: 0xbf360c,  // Industrial orange/rust accent
+    curbColor: 0x78909c,        // Chipped concrete curb
+    catenaryColor: 0x37474f,    // Heavy industrial steel
+    insulatorColor: 0xffb300,   // High-voltage amber ceramic
+    pipeColor: 0xd84315,        // Rust orange steam pipe
+    bridgeMainColor: 0x37474f,   // Steel truss bridge
+    bridgeAccentColor: 0xffab00, // Warning yellow/amber accents
+    groundPlaneColor: 0x181310
+  },
+  ambience: {
+    baseToneFreq: 60,
+    windNoiseFilter: 650,
+    humGain: 0.05,
+    tag: 'INDUSTRIAL_FACTORY_HUM'
+  }
+};
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
-  HISTORIC_QUARTER: HISTORIC_QUARTER_THEME
+  HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
+  NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME
 };
 
 export class EnvironmentManager {
@@ -206,7 +286,7 @@ export class EnvironmentManager {
     if (typeof localStorage === 'undefined') return;
     try {
       const saved = localStorage.getItem(this.storageKey);
-      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'DYNAMIC') {
+      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'NEON_INDUSTRIAL' || saved === 'DYNAMIC') {
         this.selectionPreference = saved as EnvironmentSelection;
       }
     } catch {
@@ -237,6 +317,9 @@ export class EnvironmentManager {
     if (this.selectionPreference === 'HISTORIC_QUARTER') {
       return 'HISTORIC_QUARTER';
     }
+    if (this.selectionPreference === 'NEON_INDUSTRIAL') {
+      return 'NEON_INDUSTRIAL';
+    }
     return 'MODERN_METRO';
   }
 
@@ -253,7 +336,10 @@ export class EnvironmentManager {
   }
 
   public getOtherEnvironment(id: EnvironmentId): EnvironmentId {
-    return id === 'MODERN_METRO' ? 'HISTORIC_QUARTER' : 'MODERN_METRO';
+    if (id === 'MODERN_METRO') {
+      return 'HISTORIC_QUARTER';
+    }
+    return 'MODERN_METRO';
   }
 
   public lerpThemeColors(from: EnvironmentTheme, to: EnvironmentTheme, t: number): EnvironmentTheme {
