@@ -74,6 +74,7 @@ export class Player {
   public jumpTakeoffVelocity: number = CONSTANTS.JUMP_INITIAL_VELOCITY;
   public jumpPhase: JumpPhase = 'NONE';
   public landingTimer: number = 0;
+  public wasFastDropLand: boolean = false;
 
   public isSliding: boolean = false;
   private slideTimer: number = 0;
@@ -144,6 +145,7 @@ export class Player {
     this.jumpProgress = 0;
     this.jumpPhase = 'NONE';
     this.landingTimer = 0;
+    this.wasFastDropLand = false;
     this.isSliding = false;
     this.slideTimer = 0;
     this.isUnderOverheadObstacle = false;
@@ -269,6 +271,7 @@ export class Player {
     this.jumpProgress = 0;
     this.jumpPhase = 'TAKEOFF';
     this.landingTimer = 0;
+    this.wasFastDropLand = false;
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
     this.supportSurface = 'GROUND';
@@ -485,7 +488,9 @@ export class Player {
           this.position.y = this.groundY;
           this.verticalVelocity = 0;
           this.isJumping = false;
+          const fastDrop = this.isFastDropping;
           this.isFastDropping = false;
+          this.wasFastDropLand = fastDrop;
           this.jumpPhase = 'LANDING';
           this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
 
@@ -500,7 +505,11 @@ export class Player {
               this.state = 'RUN';
             }
           }
-          this.eventBus.emit(EVENTS.LAND);
+          this.eventBus.emit(EVENTS.LAND, {
+            isFastDrop: fastDrop,
+            surface: this.supportSurface,
+            position: this.position
+          });
           this.eventBus.emit(EVENTS.JUMP_COMPLETED);
         }
       } else {
@@ -510,6 +519,7 @@ export class Player {
           if (this.landingTimer <= 0) {
             this.landingTimer = 0;
             this.jumpPhase = 'NONE';
+            this.wasFastDropLand = false;
           }
         }
 
@@ -560,7 +570,15 @@ export class Player {
     this.mesh.position.copy(this.position);
 
     // Compute progress values for animation controller
-    const slideProgress = this.isSliding ? 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION) : 0;
+    let slideProgress = 0;
+    if (this.isSliding) {
+      if (this.isUnderOverheadObstacle) {
+        // Lock at full SLIDE_HOLD depth (progress 0.50) while under barrier to guarantee low silhouette
+        slideProgress = 0.50;
+      } else {
+        slideProgress = 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION);
+      }
+    }
     const landingProgress = this.landingTimer > 0 ? 1.0 - (this.landingTimer / CONSTANTS.LANDING_ABSORB_DURATION) : 0;
 
     // Update model locomotion animation with full phase and progress context
@@ -573,7 +591,8 @@ export class Player {
       this.jumpPhase,
       this.jumpProgress,
       slideProgress,
-      landingProgress
+      landingProgress,
+      this.wasFastDropLand
     );
 
     // Update AABB collider
@@ -606,18 +625,24 @@ export class Player {
   }
 
   public resolveRoofLanding(roofY: number, obstacleId?: string | null): void {
+    const fastDrop = this.isFastDropping;
     this.position.y = roofY;
     this.groundY = roofY;
     this.verticalVelocity = 0;
     this.isJumping = false;
     this.isFastDropping = false;
+    this.wasFastDropLand = fastDrop;
     this.jumpPhase = 'LANDING';
     this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
     this.setSupportSurface('TRAIN_ROOF', obstacleId);
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
     }
-    this.eventBus.emit(EVENTS.LAND);
+    this.eventBus.emit(EVENTS.LAND, {
+      isFastDrop: fastDrop,
+      surface: this.supportSurface,
+      position: this.position
+    });
     this.eventBus.emit(EVENTS.JUMP_COMPLETED);
     this.updateCollider();
   }

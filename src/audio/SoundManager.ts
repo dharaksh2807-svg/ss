@@ -61,7 +61,8 @@ export class SoundManager {
     bus.on(EVENTS.HOVERBOARD_ACTIVATED, () => this.playHoverboard());
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.playHoverboardCrash());
     bus.on(EVENTS.JETPACK_TAKEOFF, () => this.playJetpack());
-    bus.on(EVENTS.JETPACK_LANDED, () => this.playLandingTouchdown());
+    bus.on(EVENTS.JETPACK_LANDED, () => this.playLandingTouchdown(true));
+    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean }) => this.playLandingTouchdown(data?.isFastDrop === true));
     bus.on(EVENTS.CRASH, () => this.playCrash());
     bus.on(EVENTS.STUMBLE, () => this.playStumble());
     bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss());
@@ -346,21 +347,29 @@ export class SoundManager {
     osc.stop(now + 0.38);
   }
 
-  public playLandingTouchdown(): void {
+  public playLandingTouchdown(isFastDrop: boolean = false): void {
     if (!this.ctx || !this.sfxGain) return;
     const now = this.ctx.currentTime;
     // Cushioned low-frequency footstep impact
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(120, now);
-    osc.frequency.exponentialRampToValueAtTime(45, now + 0.14);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    const startFreq = isFastDrop ? 150 : 115;
+    const endFreq = isFastDrop ? 36 : 42;
+    const duration = isFastDrop ? 0.18 : 0.14;
+    const peakVol = isFastDrop ? 0.40 : 0.28;
+
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration * 0.85);
+
+    gain.gain.setValueAtTime(peakVol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
     osc.connect(gain);
     gain.connect(this.sfxGain);
     osc.start(now);
-    osc.stop(now + 0.16);
+    osc.stop(now + duration);
   }
 
   public playSneakers(): void {

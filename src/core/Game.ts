@@ -23,6 +23,7 @@ import { DailyRewardModal } from '../ui/DailyRewardModal';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
 import { TrainScenarioRunner } from '../debug/TrainScenarioRunner';
+import { LocomotionVFX } from '../scene/LocomotionVFX';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -34,6 +35,7 @@ export class Game {
   private trackManager: TrackManager;
   private soundManager: SoundManager;
   private inputManager: InputManager;
+  private locomotionVFX: LocomotionVFX;
 
   private hud: HUD;
   private startScreen: StartScreen;
@@ -78,6 +80,7 @@ export class Game {
     this.trackManager = new TrackManager(this.worldScene.scene);
     this.soundManager = new SoundManager();
     this.inputManager = new InputManager();
+    this.locomotionVFX = new LocomotionVFX(this.worldScene.scene);
 
     this.progression = ProgressionManager.getInstance();
 
@@ -206,6 +209,7 @@ export class Game {
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
     this.trackManager.reset();
+    this.locomotionVFX.reset();
     this.cameraController.reset(this.player.position);
 
     // Apply Mode-Specific Initial Conditions
@@ -274,6 +278,7 @@ export class Game {
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
+    this.locomotionVFX.reset();
     this.player.mesh.rotation.y = Math.PI - 0.2;
     this.cameraController.reset(this.player.position);
     this.inputManager.setEnabled(false);
@@ -410,6 +415,7 @@ export class Game {
 
       // 3. Update player physics and movement
       this.player.update(dt);
+      this.locomotionVFX.update(dt, this.player);
 
       // 4. Update track chunks and collision detection
       this.trackManager.update(this.player, dt, now / 1000);

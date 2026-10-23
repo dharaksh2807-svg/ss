@@ -9,6 +9,7 @@ export class CameraController {
   public lookTarget = new THREE.Vector3();
   private shakeTrauma = 0;
   private shakeOffset = new THREE.Vector3();
+  private landingDipOffset = 0;
 
   // Lobby mode staging
   private isLobbyMode: boolean = true;
@@ -38,7 +39,11 @@ export class CameraController {
     }
 
     const bus = EventBus.getInstance();
-    bus.on(EVENTS.LAND, () => this.addShake(0.12));
+    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean }) => {
+      const isFastDrop = data?.isFastDrop === true;
+      this.landingDipOffset = isFastDrop ? -0.09 : -0.045;
+      this.addShake(isFastDrop ? 0.14 : 0.06);
+    });
     bus.on(EVENTS.STUMBLE, () => this.addShake(0.35));
     bus.on(EVENTS.CRASH, () => this.addShake(0.85));
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
@@ -129,6 +134,15 @@ export class CameraController {
         targetCamY -= 0.18;
         targetLookY -= 0.10;
       }
+
+      // Restrained landing vertical impact compression dip
+      if (Math.abs(this.landingDipOffset) > 0.001) {
+        targetCamY += this.landingDipOffset;
+        targetLookY += this.landingDipOffset * 0.45;
+        this.landingDipOffset += (0 - this.landingDipOffset) * (1.0 - Math.exp(-18.0 * dt));
+      } else {
+        this.landingDipOffset = 0;
+      }
     }
 
     // Target position behind and above player in gameplay
@@ -169,6 +183,7 @@ export class CameraController {
 
   public reset(playerPos: THREE.Vector3): void {
     this.shakeTrauma = 0;
+    this.landingDipOffset = 0;
     const isPortrait = this.camera.aspect < 1.0;
     this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();

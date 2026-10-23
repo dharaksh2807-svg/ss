@@ -283,7 +283,8 @@ export class CharacterModel {
     jumpPhase: JumpPhase = 'NONE',
     jumpProgress: number = 0,
     slideProgress: number = 0,
-    landingProgress: number = 0
+    landingProgress: number = 0,
+    isFastDropLand: boolean = false
   ): void {
     // Map high-level gameplay state into fine-grained animation state
     let locState: LocomotionState = 'RUN';
@@ -292,11 +293,8 @@ export class CharacterModel {
       locState = 'CRASH';
     } else if (state === 'JETPACK') {
       locState = 'JETPACK';
-    } else if (this.isHoverboard) {
-      locState = 'HOVERBOARD';
-    } else if (state === 'IDLE') {
-      locState = 'IDLE';
     } else if (state === 'SLIDE') {
+      // Slide takes priority to guarantee character crouches/slides even on hoverboard
       if (slideProgress < 0.20) {
         locState = 'SLIDE_ENTRY';
       } else if (slideProgress < 0.75) {
@@ -318,6 +316,10 @@ export class CharacterModel {
       }
     } else if (jumpPhase === 'LANDING' || landingProgress > 0) {
       locState = 'JUMP_LAND';
+    } else if (this.isHoverboard) {
+      locState = 'HOVERBOARD';
+    } else if (state === 'IDLE') {
+      locState = 'IDLE';
     } else if (state === 'ON_TRAIN') {
       locState = 'TRAIN_ROOF_RUN';
     } else if (state === 'CLIMBING') {
@@ -337,7 +339,8 @@ export class CharacterModel {
       bankingAngle,
       jumpProgress,
       slideProgress,
-      landingProgress
+      landingProgress,
+      isFastDropLand
     );
   }
 
@@ -381,7 +384,8 @@ export class CharacterModel {
     bankAngle: number,
     jumpProgress: number,
     slideProgress: number,
-    landingProgress: number
+    landingProgress: number,
+    isFastDropLand: boolean = false
   ): void {
     // 1. Advance animation clock with speed-dependent cadence
     // Stride cadence scales smoothly with forward speed, eliminating foot sliding!
@@ -399,13 +403,25 @@ export class CharacterModel {
     this.updatePowerupVisuals(dt, hasSneakers);
 
     // 2. Compute target joint transforms based on current locomotion state
-    this.computeTargetPose(state, speed, dt, bankAngle, jumpProgress, slideProgress, landingProgress);
+    this.computeTargetPose(
+      state,
+      speed,
+      dt,
+      bankAngle,
+      jumpProgress,
+      slideProgress,
+      landingProgress,
+      isFastDropLand,
+      hasHoverboard
+    );
 
     // 3. Frame-rate independent exponential pose blending / interpolation
-    // Explosive transitions (takeoff) blend snappily; normal transitions blend smoothly
+    // Explosive transitions (takeoff, dive) blend snappily; normal transitions blend smoothly
     let blendSpeed = 20.0;
-    if (state === 'JUMP_TAKEOFF') blendSpeed = 35.0;
-    else if (state === 'JUMP_LAND') blendSpeed = 24.0;
+    if (state === 'JUMP_TAKEOFF') blendSpeed = 38.0;
+    else if (state === 'FAST_DROP') blendSpeed = 34.0;
+    else if (state === 'SLIDE_ENTRY') blendSpeed = 32.0;
+    else if (state === 'JUMP_LAND') blendSpeed = 28.0;
     else if (state === 'CRASH') blendSpeed = 16.0;
 
     const blendWeight = 1.0 - Math.exp(-blendSpeed * dt);
@@ -425,7 +441,9 @@ export class CharacterModel {
     bankAngle: number,
     jumpProgress: number,
     slideProgress: number,
-    landingProgress: number
+    landingProgress: number,
+    isFastDropLand: boolean = false,
+    hasHoverboard: boolean = false
   ): void {
     // Reset targets to base neutral
     this.targetRootPos.set(0, 0, 0);
@@ -475,7 +493,7 @@ export class CharacterModel {
         break;
 
       case 'JUMP_LAND':
-        this.computeJumpLandTarget(landingProgress);
+        this.computeJumpLandTarget(landingProgress, isFastDropLand);
         break;
 
       case 'FAST_DROP':
@@ -485,7 +503,7 @@ export class CharacterModel {
       case 'SLIDE_ENTRY':
       case 'SLIDE_HOLD':
       case 'SLIDE_RECOVER':
-        this.computeSlideTarget(slideProgress);
+        this.computeSlideTarget(slideProgress, hasHoverboard);
         break;
 
       case 'JETPACK':
@@ -564,111 +582,149 @@ export class CharacterModel {
   }
 
   private computeJumpTakeoffTarget(): void {
-    // Explosive spring-up compression (micro-crouch without input latency)
-    this.targetRootPos.set(0, -0.06, 0);
-    this.targetHipsPos.set(0, this.baseHipsY - 0.04, 0);
-    this.targetSpineRot.set(0.18, 0, 0);
-    this.targetHeadRot.set(-0.10, 0, 0);
+    // Explosive kinetic spring-up compression (micro-crouch without input latency)
+    this.targetRootPos.set(0, -0.04, 0);
+    this.targetHipsPos.set(0, this.baseHipsY - 0.08, 0);
+    this.targetSpineRot.set(0.22, 0, 0);
+    this.targetHeadRot.set(-0.12, 0, 0);
 
-    this.targetLeftLegRot.set(-0.35, 0, 0);
-    this.targetLeftCalfRot.set(0.65, 0, 0);
-    this.targetRightLegRot.set(-0.35, 0, 0);
-    this.targetRightCalfRot.set(0.65, 0, 0);
+    // Deep knee flexion preparing for extension
+    this.targetLeftLegRot.set(-0.45, 0, 0);
+    this.targetLeftCalfRot.set(1.10, 0, 0);
+    this.targetRightLegRot.set(-0.45, 0, 0);
+    this.targetRightCalfRot.set(1.10, 0, 0);
 
-    this.targetLeftArmRot.set(-0.65, 0, -0.3);
-    this.targetRightArmRot.set(-0.65, 0, 0.3);
-    this.targetLeftForearmRot.set(-0.85, 0, 0);
-    this.targetRightForearmRot.set(-0.85, 0, 0);
+    // Dynamic upward arm drive sweeping back to spring forward
+    this.targetLeftArmRot.set(-0.75, 0, -0.35);
+    this.targetRightArmRot.set(-0.75, 0, 0.35);
+    this.targetLeftForearmRot.set(-0.95, 0, 0);
+    this.targetRightForearmRot.set(-0.95, 0, 0);
   }
 
   private computeJumpAscendTarget(jumpProgress: number): void {
-    // Dynamic upward leap, lead leg flexing up, arms driving upward
+    // Dynamic upward leap, lead leg flexing high, arms driving upward
     this.targetRootPos.set(0, 0, 0);
     this.targetHipsPos.set(0, this.baseHipsY, 0);
-    this.targetSpineRot.set(0.08, 0, 0);
-    this.targetHeadRot.set(-0.12, 0, 0);
+    this.targetSpineRot.set(0.06, 0, 0);
+    this.targetHeadRot.set(-0.10, 0, 0);
 
-    this.targetLeftLegRot.set(-0.75, 0, 0);
-    this.targetLeftCalfRot.set(1.15, 0, 0);
-    this.targetRightLegRot.set(0.25, 0, 0);
-    this.targetRightCalfRot.set(0.95, 0, 0);
+    this.targetLeftLegRot.set(-0.85, 0, 0);
+    this.targetLeftCalfRot.set(1.25, 0, 0);
+    this.targetRightLegRot.set(0.20, 0, 0);
+    this.targetRightCalfRot.set(0.55, 0, 0);
 
-    this.targetLeftArmRot.set(-0.55, 0.15, -0.45);
-    this.targetRightArmRot.set(-0.55, -0.15, 0.45);
-    this.targetLeftForearmRot.set(-0.75, 0, 0);
-    this.targetRightForearmRot.set(-0.75, 0, 0);
+    this.targetLeftArmRot.set(-0.65, 0.15, -0.40);
+    this.targetRightArmRot.set(-0.65, -0.15, 0.40);
+    this.targetLeftForearmRot.set(-0.80, 0, 0);
+    this.targetRightForearmRot.set(-0.80, 0, 0);
   }
 
   private computeJumpApexTarget(): void {
     // Floating weightlessness at the crest of the jump, knees tucked, arms spread for balance
+    this.targetHipsPos.set(0, this.baseHipsY + 0.02, 0);
     this.targetSpineRot.set(0.04, 0, 0);
     this.targetHeadRot.set(-0.06, 0, 0);
 
-    this.targetLeftLegRot.set(-0.55, 0, 0);
+    this.targetLeftLegRot.set(-0.50, 0, 0);
     this.targetLeftCalfRot.set(0.95, 0, 0);
-    this.targetRightLegRot.set(0.15, 0, 0);
-    this.targetRightCalfRot.set(0.85, 0, 0);
+    this.targetRightLegRot.set(-0.25, 0, 0);
+    this.targetRightCalfRot.set(0.80, 0, 0);
 
-    this.targetLeftArmRot.set(-0.35, 0.1, -0.6);
-    this.targetRightArmRot.set(-0.35, -0.1, 0.6);
+    this.targetLeftArmRot.set(-0.25, 0.1, -0.70);
+    this.targetRightArmRot.set(-0.25, -0.1, 0.70);
     this.targetLeftForearmRot.set(-0.55, 0, 0);
     this.targetRightForearmRot.set(-0.55, 0, 0);
   }
 
   private computeJumpDescendTarget(jumpProgress: number): void {
     // Natural descent, legs extending down to meet the ground, gaze downward
-    this.targetSpineRot.set(0.12, 0, 0);
-    this.targetHeadRot.set(0.06, 0, 0);
+    this.targetSpineRot.set(0.14, 0, 0);
+    this.targetHeadRot.set(0.08, 0, 0);
 
-    this.targetLeftLegRot.set(-0.25, 0, 0);
-    this.targetLeftCalfRot.set(0.35, 0, 0);
-    this.targetRightLegRot.set(-0.15, 0, 0);
-    this.targetRightCalfRot.set(0.25, 0, 0);
+    this.targetLeftLegRot.set(-0.18, 0, 0);
+    this.targetLeftCalfRot.set(0.20, 0, 0);
+    this.targetRightLegRot.set(-0.12, 0, 0);
+    this.targetRightCalfRot.set(0.18, 0, 0);
 
-    this.targetLeftArmRot.set(0.15, 0, -0.35);
-    this.targetRightArmRot.set(0.15, 0, 0.35);
+    // Ankles dorsiflexed to prep for impact
+    this.targetLeftSneakerRot.set(0.20, 0, 0);
+    this.targetRightSneakerRot.set(0.20, 0, 0);
+
+    this.targetLeftArmRot.set(0.25, 0, -0.30);
+    this.targetRightArmRot.set(0.25, 0, 0.30);
     this.targetLeftForearmRot.set(-0.35, 0, 0);
     this.targetRightForearmRot.set(-0.35, 0, 0);
   }
 
-  private computeJumpLandTarget(landingProgress: number): void {
-    // Landing impact absorption (0.12s window): hips sink ~0.08m, knees flex, arms absorb downward momentum
-    const impact = Math.sin(Math.min(1.0, landingProgress) * Math.PI);
+  private computeJumpLandTarget(landingProgress: number, isFastDrop: boolean = false): void {
+    // Landing impact absorption (0.12s window): two-stage squash and elastic rebound
+    const p = Math.min(1.0, Math.max(0, landingProgress));
+    // Asymmetric impact curve: rapid compression in first 40%, elastic spring rebound in remaining 60%
+    const compressionCurve = p < 0.40
+      ? Math.sin((p / 0.40) * (Math.PI / 2))
+      : Math.cos(((p - 0.40) / 0.60) * (Math.PI / 2));
 
-    this.targetRootPos.set(0, -0.10 * impact, 0);
-    this.targetHipsPos.set(0, this.baseHipsY - 0.06 * impact, 0);
-    this.targetSpineRot.set(0.18 * impact, 0, 0);
-    this.targetHeadRot.set(-0.10 * impact, 0, 0);
+    const intensity = isFastDrop ? 1.45 : 1.0;
+    const impact = compressionCurve * intensity;
 
-    this.targetLeftLegRot.set(-0.35 * impact, 0, 0);
-    this.targetLeftCalfRot.set(0.75 * impact, 0, 0);
-    this.targetRightLegRot.set(-0.35 * impact, 0, 0);
-    this.targetRightCalfRot.set(0.75 * impact, 0, 0);
+    this.targetRootPos.set(0, -0.12 * impact, 0);
+    this.targetHipsPos.set(0, this.baseHipsY - 0.08 * impact, 0);
+    this.targetSpineRot.set(0.24 * impact, 0, 0);
+    this.targetHeadRot.set(-0.12 * impact, 0, 0);
 
-    this.targetLeftArmRot.set(0.1, 0, -0.45 * impact);
-    this.targetRightArmRot.set(0.1, 0, 0.45 * impact);
-    this.targetLeftForearmRot.set(-0.5 * impact, 0, 0);
-    this.targetRightForearmRot.set(-0.5 * impact, 0, 0);
+    this.targetLeftLegRot.set(-0.42 * impact, 0, -0.05 * impact);
+    this.targetLeftCalfRot.set(0.92 * impact, 0, 0);
+    this.targetRightLegRot.set(-0.35 * impact, 0, 0.05 * impact);
+    this.targetRightCalfRot.set(0.85 * impact, 0, 0);
+
+    this.targetLeftArmRot.set(0.15 * impact, 0, -0.58 * impact);
+    this.targetRightArmRot.set(0.15 * impact, 0, 0.58 * impact);
+    this.targetLeftForearmRot.set(-0.65 * impact, 0, 0);
+    this.targetRightForearmRot.set(-0.65 * impact, 0, 0);
   }
 
   private computeFastDropTarget(): void {
-    // Aggressive dive posture, streamlined arms back, diving downward
+    // Streamlined aerodynamic dive arrow posture
     this.targetRootPos.set(0, 0, 0);
-    this.targetSpineRot.set(0.38, 0, 0);
-    this.targetHeadRot.set(0.15, 0, 0);
+    this.targetSpineRot.set(0.42, 0, 0);
+    this.targetHeadRot.set(0.20, 0, 0);
 
-    this.targetLeftLegRot.set(0.40, 0, 0);
-    this.targetLeftCalfRot.set(0.65, 0, 0);
-    this.targetRightLegRot.set(0.40, 0, 0);
-    this.targetRightCalfRot.set(0.65, 0, 0);
+    this.targetLeftLegRot.set(0.45, 0, 0);
+    this.targetLeftCalfRot.set(0.75, 0, 0);
+    this.targetRightLegRot.set(0.45, 0, 0);
+    this.targetRightCalfRot.set(0.75, 0, 0);
 
-    this.targetLeftArmRot.set(0.65, 0, -0.35);
-    this.targetRightArmRot.set(0.65, 0, 0.35);
-    this.targetLeftForearmRot.set(-0.25, 0, 0);
-    this.targetRightForearmRot.set(-0.25, 0, 0);
+    this.targetLeftArmRot.set(0.85, 0, -0.25);
+    this.targetRightArmRot.set(0.85, 0, 0.25);
+    this.targetLeftForearmRot.set(-0.20, 0, 0);
+    this.targetRightForearmRot.set(-0.20, 0, 0);
   }
 
-  private computeSlideTarget(progress: number): void {
+  private computeSlideTarget(progress: number, isBoard: boolean = false): void {
+    if (isBoard) {
+      // Low surfing crouch on hoverboard to guarantee clearing 0.75m barrier
+      let depth = 1.0;
+      if (progress < 0.20) {
+        depth = progress / 0.20;
+      } else if (progress > 0.75) {
+        depth = 1.0 - (progress - 0.75) / 0.25;
+      }
+      this.targetRootPos.set(0, -0.48 * depth, 0);
+      this.targetHipsPos.set(0, this.baseHipsY - 0.12 * depth, 0);
+      this.targetHipsRot.set(0, 0.55 * depth, 0);
+      this.targetSpineRot.set(0.28 * depth, 0, 0);
+      this.targetHeadRot.set(-0.15 * depth, 0, 0);
+
+      this.targetLeftLegRot.set(-0.65 * depth, 0, 0);
+      this.targetLeftCalfRot.set(1.35 * depth, 0, 0);
+      this.targetRightLegRot.set(-0.55 * depth, 0, 0);
+      this.targetRightCalfRot.set(1.35 * depth, 0, 0);
+
+      this.targetLeftArmRot.set(-0.30 * depth, 0, -0.60 * depth);
+      this.targetRightArmRot.set(0.20 * depth, 0, 0.60 * depth);
+      return;
+    }
+
     // Low baseball slide / ground roll pose, matching 0.75m collider, head and torso aligned
     // Smooth transition from entry (0 to 0.2), hold (0.2 to 0.75), and recovery (0.75 to 1.0)
     let depth = 1.0;
@@ -678,21 +734,22 @@ export class CharacterModel {
       depth = 1.0 - (progress - 0.75) / 0.25;
     }
 
-    this.targetRootPos.set(0, -0.45 * depth, 0);
-    this.targetRootRot.set(-0.32 * depth, 0, 0);
-    this.targetHipsRot.set(0, 0.45 * depth, 0);
-    this.targetSpineRot.set(-0.15 * depth, -0.20 * depth, 0);
-    this.targetHeadRot.set(0.35 * depth, -0.25 * depth, 0);
+    this.targetRootPos.set(0, -0.50 * depth, 0);
+    this.targetRootRot.set(-0.35 * depth, 0, 0);
+    this.targetHipsRot.set(0, 0.48 * depth, 0);
+    this.targetSpineRot.set(-0.18 * depth, -0.22 * depth, 0);
+    this.targetHeadRot.set(0.38 * depth, -0.22 * depth, 0);
 
-    this.targetLeftLegRot.set(-1.18 * depth, 0, 0);
-    this.targetLeftCalfRot.set(0.12 * depth, 0, 0);
+    this.targetLeftLegRot.set(-1.25 * depth, 0, 0);
+    this.targetLeftCalfRot.set(0.10 * depth, 0, 0);
+    this.targetLeftSneakerRot.set(-0.15 * depth, 0, 0);
 
-    this.targetRightLegRot.set(0.42 * depth, 0, 0);
-    this.targetRightCalfRot.set(1.35 * depth, 0, 0);
+    this.targetRightLegRot.set(0.45 * depth, 0, 0);
+    this.targetRightCalfRot.set(1.42 * depth, 0, 0);
 
     this.targetLeftArmRot.set(-0.25 * depth, 0, -0.55 * depth);
-    this.targetRightArmRot.set(0.48 * depth, 0, 0.35 * depth);
-    this.targetRightForearmRot.set(-1.05 * depth, 0, 0);
+    this.targetRightArmRot.set(0.52 * depth, 0, 0.35 * depth);
+    this.targetRightForearmRot.set(-1.10 * depth, 0, 0);
   }
 
   private computeJetpackTarget(t: number): void {
