@@ -85,6 +85,7 @@ export class Player {
   public distanceTraveled: number = 0;
   public isStumbling: boolean = false;
   private stumbleTimer: number = 0;
+  public isIntroInvincible: boolean = false;
   public lastJumpDist: number = -999;
   public lastSlideDist: number = -999;
 
@@ -155,6 +156,7 @@ export class Player {
     this.distanceTraveled = 0;
     this.isStumbling = false;
     this.stumbleTimer = 0;
+    this.isIntroInvincible = false;
     this.lastJumpDist = -999;
     this.lastSlideDist = -999;
     this.supportSurface = 'GROUND';
@@ -582,8 +584,12 @@ export class Player {
     const landingProgress = this.landingTimer > 0 ? 1.0 - (this.landingTimer / CONSTANTS.LANDING_ABSORB_DURATION) : 0;
 
     // Update model locomotion animation with full phase and progress context
+    const activeLocomotionState = (this.isStumbling && !this.isJumping && !this.isSliding)
+      ? 'STUMBLE'
+      : this.state;
+
     this.model.updateAnimation(
-      this.state,
+      activeLocomotionState,
       this.speed,
       this.bankingAngle,
       this.groundY,
@@ -648,6 +654,11 @@ export class Player {
   }
 
   public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
+    // 0. Intro cinematic invulnerability protection
+    if (this.isIntroInvincible) {
+      return false;
+    }
+
     // 1. Invulnerability grace window active
     if (this.powerups.isInvulnerable() || this.hoverboardManager.isInvulnerableAfterCrash()) {
       return false; // Ignored during grace period
@@ -655,11 +666,13 @@ export class Player {
 
     // 2. Protective Shield absorbs collision
     if (this.powerups.consumeShield()) {
+      this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by shield!
     }
 
     // 3. Hoverboard absorbs collision
     if (this.hoverboardManager.breakBoard()) {
+      this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by hoverboard!
     }
 
@@ -698,6 +711,7 @@ export class Player {
   }
 
   public stumble(): void {
+    if (this.isIntroInvincible) return;
     if (this.state === 'CRASH' || this.state === 'IDLE') return;
     if (this.powerups.isInvulnerable()) return;
 

@@ -24,6 +24,8 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { GameMode } from '../progression/ProgressionTypes';
 import { TrainScenarioRunner } from '../debug/TrainScenarioRunner';
 import { LocomotionVFX } from '../scene/LocomotionVFX';
+import { ChaserModel } from '../characters/ChaserModel';
+import { OpeningSequenceController } from '../chase/OpeningSequenceController';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
@@ -36,6 +38,8 @@ export class Game {
   private soundManager: SoundManager;
   private inputManager: InputManager;
   private locomotionVFX: LocomotionVFX;
+  private chaser: ChaserModel;
+  private openingSequence: OpeningSequenceController;
 
   private hud: HUD;
   private startScreen: StartScreen;
@@ -82,6 +86,10 @@ export class Game {
     this.inputManager = new InputManager();
     this.locomotionVFX = new LocomotionVFX(this.worldScene.scene);
 
+    this.chaser = new ChaserModel();
+    this.worldScene.scene.add(this.chaser.mesh);
+    this.openingSequence = new OpeningSequenceController(this.player, this.cameraController, this.chaser);
+
     this.progression = ProgressionManager.getInstance();
 
     this.hud = new HUD(this.player.powerups);
@@ -124,6 +132,10 @@ export class Game {
       if (this.lifecycleState === 'PLAYING') {
         if (action === 'PAUSE') {
           this.pause();
+        } else if (this.openingSequence.isActive()) {
+          if (action === 'ACTION') {
+            this.openingSequence.skip();
+          }
         } else {
           this.player.handleInput(action);
         }
@@ -136,12 +148,22 @@ export class Game {
       this.worldScene.setGraphicsQuality(quality);
     });
 
-    bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode()));
-    bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode));
+    bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode(), false));
+    bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode, false));
     bus.on(EVENTS.GAME_PAUSE, () => this.pause());
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
-    bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode));
+    bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode, true));
     bus.on('GO_TO_MENU', () => this.goToMenu());
+
+    bus.on(EVENTS.STUMBLE, () => {
+      this.chaser.triggerStumbleReaction();
+    });
+    bus.on(EVENTS.CHASER_STUMBLE_REACTION, () => {
+      this.chaser.triggerStumbleReaction();
+    });
+    bus.on(EVENTS.NEAR_MISS, () => {
+      this.chaser.triggerNearMissReaction();
+    });
 
     bus.on('TOGGLE_SOUND', () => {
       const isMuted = this.soundManager.toggleMute();
@@ -195,7 +217,7 @@ export class Game {
     });
   }
 
-  public startRun(mode: GameMode = 'NORMAL'): void {
+  public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
     this.activeGameMode = mode;
     this.progression.setActiveGameMode(mode);
 
@@ -210,6 +232,7 @@ export class Game {
     this.player.setGameMode(this.activeGameMode);
     this.trackManager.reset();
     this.locomotionVFX.reset();
+    this.chaser.reset();
     this.cameraController.reset(this.player.position);
 
     // Apply Mode-Specific Initial Conditions
@@ -220,6 +243,9 @@ export class Game {
 
     this.cameraController.setLobbyMode(false);
     this.player.mesh.rotation.y = 0;
+
+    // Start opening cinematic sequence if eligible
+    this.openingSequence.start(isRetry);
 
     this.startScreen.hide();
     this.pauseModal.hide();
@@ -279,6 +305,8 @@ export class Game {
     this.player.reset();
     this.trackManager.reset();
     this.locomotionVFX.reset();
+    this.chaser.reset();
+    this.openingSequence.skip();
     this.player.mesh.rotation.y = Math.PI - 0.2;
     this.cameraController.reset(this.player.position);
     this.inputManager.setEnabled(false);
@@ -288,6 +316,7 @@ export class Game {
     if (this.lifecycleState === 'GAMEOVER') return;
     this.lifecycleState = 'GAMEOVER';
     this.inputManager.setEnabled(false);
+    this.chaser.triggerCaughtReaction();
 
     EventBus.getInstance().emit(EVENTS.RUN_FINISHED, {
       score: this.score,
@@ -389,49 +418,58 @@ export class Game {
     const dt = Math.min(rawDt, 0.08);
 
     if (this.lifecycleState === 'PLAYING') {
-      // 1. Multiplier calculation (Time Trial awards 2X base multiplier)
-      let baseMult = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
-      if (this.activeGameMode === 'TIME_TRIAL') {
-        baseMult *= 2;
-      }
-      this.scoreMultiplier = baseMult + this.player.hoverboardManager.getScoreMultiplierBonus();
-      this.hud.setMultiplier(this.scoreMultiplier);
-
-      // 2. Mode Timers & Goals Check
-      if (this.activeGameMode === 'TIME_TRIAL') {
-        this.timeTrialRemaining -= dt;
-        this.hud.setTimeTrialTime(this.timeTrialRemaining);
-        if (this.timeTrialRemaining <= 0) {
-          this.timeTrialRemaining = 0;
-          this.handleGameOver('TIME_TRIAL_COMPLETE');
-          return;
+      if (this.openingSequence.isActive()) {
+        this.openingSequence.update(dt);
+        this.locomotionVFX.update(dt, this.player);
+        this.hud.update(dt);
+        this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
+      } else {
+        // 1. Multiplier calculation (Time Trial awards 2X base multiplier)
+        let baseMult = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
+        if (this.activeGameMode === 'TIME_TRIAL') {
+          baseMult *= 2;
         }
-      } else if (this.activeGameMode === 'COIN_RUSH') {
-        this.coinRushElapsed += dt;
-        this.hud.setCoinRushProgress(this.coinsCount, 150);
-      } else if (this.activeGameMode === 'SURVIVAL') {
-        this.hud.setSurvivalDistance(this.player.distanceTraveled);
+        this.scoreMultiplier = baseMult + this.player.hoverboardManager.getScoreMultiplierBonus();
+        this.hud.setMultiplier(this.scoreMultiplier);
+
+        // 2. Mode Timers & Goals Check
+        if (this.activeGameMode === 'TIME_TRIAL') {
+          this.timeTrialRemaining -= dt;
+          this.hud.setTimeTrialTime(this.timeTrialRemaining);
+          if (this.timeTrialRemaining <= 0) {
+            this.timeTrialRemaining = 0;
+            this.handleGameOver('TIME_TRIAL_COMPLETE');
+            return;
+          }
+        } else if (this.activeGameMode === 'COIN_RUSH') {
+          this.coinRushElapsed += dt;
+          this.hud.setCoinRushProgress(this.coinsCount, 150);
+        } else if (this.activeGameMode === 'SURVIVAL') {
+          this.hud.setSurvivalDistance(this.player.distanceTraveled);
+        }
+
+        // 3. Update player physics and movement
+        this.player.update(dt);
+        this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
+        this.locomotionVFX.update(dt, this.player);
+
+        // 4. Update track chunks and collision detection
+        this.trackManager.update(this.player, dt, now / 1000);
+
+        // 5. Update score based on forward distance
+        this.score += this.player.speed * dt * CONSTANTS.SCORE_PER_METER * this.scoreMultiplier;
+        EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
+
+        // 6. Update HUD UI
+        this.hud.update(dt);
+
+        // 7. Update lighting target to center around player and update speed lines
+        this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
       }
-
-      // 3. Update player physics and movement
-      this.player.update(dt);
-      this.locomotionVFX.update(dt, this.player);
-
-      // 4. Update track chunks and collision detection
-      this.trackManager.update(this.player, dt, now / 1000);
-
-      // 5. Update score based on forward distance
-      this.score += this.player.speed * dt * CONSTANTS.SCORE_PER_METER * this.scoreMultiplier;
-      EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
-
-      // 6. Update HUD UI
-      this.hud.update(dt);
-
-      // 7. Update lighting target to center around player and update speed lines
-      this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
     } else if (this.lifecycleState === 'GAMEOVER') {
       // Update tumble animation
       this.player.update(dt);
+      this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
     } else if (this.lifecycleState === 'MENU') {
       // Idle scene: slow gentle hover & subtle sway facing camera
       this.player.position.y = CONSTANTS.PLAYER_BASE_Y + Math.sin(now * 0.003) * 0.08;
@@ -568,6 +606,14 @@ export class Game {
 
   public getCameraController(): CameraController {
     return this.cameraController;
+  }
+
+  public getChaser(): ChaserModel {
+    return this.chaser;
+  }
+
+  public getOpeningSequence(): OpeningSequenceController {
+    return this.openingSequence;
   }
 
   public getPerformanceMetrics() {

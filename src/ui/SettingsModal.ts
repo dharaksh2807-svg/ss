@@ -8,6 +8,7 @@ export class SettingsModal {
   private musicSlider: HTMLInputElement;
   private sfxSlider: HTMLInputElement;
   private qualitySelect: HTMLSelectElement | null;
+  private introSelect: HTMLSelectElement | null;
 
   constructor(private soundManager: SoundManager) {
     this.element = document.getElementById('settings-modal')!;
@@ -16,6 +17,7 @@ export class SettingsModal {
     this.musicSlider = document.getElementById('setting-music-vol') as HTMLInputElement;
     this.sfxSlider = document.getElementById('setting-sfx-vol') as HTMLInputElement;
     this.qualitySelect = document.getElementById('setting-graphics-quality') as HTMLSelectElement | null;
+    this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
 
     this.closeBtn.addEventListener('click', () => this.hide());
 
@@ -44,12 +46,24 @@ export class SettingsModal {
       });
     }
 
+    if (this.introSelect) {
+      const savedIntro = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
+      this.introSelect.value = savedIntro;
+      this.introSelect.addEventListener('change', () => {
+        const pref = this.introSelect!.value;
+        localStorage.setItem('metro_opening_cinematic', pref);
+      });
+    }
+
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
   }
 
   public show(): void {
     if (this.qualitySelect) {
       this.qualitySelect.value = localStorage.getItem('metro_graphics_preset') || 'HIGH';
+    }
+    if (this.introSelect) {
+      this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
     }
     this.element.classList.remove('hidden');
   }

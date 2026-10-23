@@ -4147,6 +4147,56 @@ kbd {
   }
 }
 
+/* =========================================================================
+   TASK 4: OPENING CINEMATIC & CHASER FEEDBACK STYLING
+   ========================================================================= */
+.intro-skip-pill {
+  position: absolute;
+  top: max(24px, env(safe-area-inset-top, 24px));
+  right: max(24px, env(safe-area-inset-right, 24px));
+  z-index: 150;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #fff;
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  user-select: none;
+}
 
+.intro-skip-pill:hover {
+  background: rgba(0, 229, 255, 0.22);
+  border-color: rgba(0, 229, 255, 0.9);
+  box-shadow: 0 6px 24px rgba(0, 229, 255, 0.5);
+  transform: translateY(-2px) scale(1.03);
+}
 
+.intro-skip-pill:active {
+  transform: translateY(1px) scale(0.97);
+}
 
+.intro-skip-pill kbd {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-family: var(--font-ui, 'Outfit', sans-serif);
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.intro-skip-pill.hidden {
+  display: none !important;
+}

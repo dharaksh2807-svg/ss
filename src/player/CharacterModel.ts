@@ -796,11 +796,14 @@ export class CharacterModel {
   }
 
   private computeStumbleTarget(): void {
-    this.targetSpineRot.set(-0.30, 0, 0);
-    this.targetLeftArmRot.set(-1.20, 0, -0.3);
-    this.targetRightArmRot.set(-1.20, 0, 0.3);
-    this.targetLeftLegRot.set(0.3, 0, 0);
-    this.targetRightLegRot.set(-0.3, 0, 0);
+    const t = this.animTime * 1.5;
+    const wobble = Math.sin(t * 8.0) * 0.18;
+    this.targetSpineRot.set(-0.25 + Math.sin(t * 6.0) * 0.12, wobble, wobble * 0.5);
+    this.targetHeadRot.set(0.15, -wobble * 0.8, 0);
+    this.targetLeftArmRot.set(-0.80 + Math.cos(t * 7.0) * 0.45, 0, -0.45);
+    this.targetRightArmRot.set(-0.80 - Math.cos(t * 7.0) * 0.45, 0, 0.45);
+    this.targetLeftLegRot.set(0.35 + Math.sin(t * 8.0) * 0.3, 0, 0);
+    this.targetRightLegRot.set(-0.35 - Math.sin(t * 8.0) * 0.3, 0, 0);
   }
 
   private computeCrashTarget(): void {

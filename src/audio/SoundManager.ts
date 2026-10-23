@@ -67,6 +67,7 @@ export class SoundManager {
     bus.on(EVENTS.STUMBLE, () => this.playStumble());
     bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss());
     bus.on(EVENTS.TRAIN_HORN, () => this.playTrainHorn());
+    bus.on(EVENTS.CHASER_WHISTLE, () => this.playWhistle());
     bus.on(EVENTS.GAME_START, () => {
       this.initAudio();
       this.startMusic();
@@ -759,5 +760,46 @@ export class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.04);
+  }
+
+  public playWhistle(): void {
+    if (!this.ctx || !this.sfxGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    try {
+      // Dual-tone security whistle with 22Hz pea vibrato trill
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const lfo = this.ctx.createOscillator();
+      const lfoGain = this.ctx.createGain();
+      const gain = this.ctx.createGain();
+
+      lfo.frequency.setValueAtTime(22, now);
+      lfoGain.gain.setValueAtTime(65, now);
+      lfo.connect(osc1.frequency);
+      lfo.connect(osc2.frequency);
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(2450, now);
+      osc2.frequency.setValueAtTime(2880, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.025);
+      gain.gain.setValueAtTime(0.25, now + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.sfxGain);
+
+      lfo.start(now);
+      osc1.start(now);
+      osc2.start(now);
+      lfo.stop(now + 0.30);
+      osc1.stop(now + 0.30);
+      osc2.stop(now + 0.30);
+    } catch {
+      // AudioContext unavailable or error
+    }
   }
 }

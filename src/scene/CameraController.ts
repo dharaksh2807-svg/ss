@@ -16,6 +16,11 @@ export class CameraController {
   private lobbyTargetPos = new THREE.Vector3(0.35, 1.45, 3.8);
   private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
 
+  // Opening cinematic sequence camera state
+  private isIntroMode: boolean = false;
+  private introStartPos = new THREE.Vector3();
+  private introStartLook = new THREE.Vector3();
+
   constructor() {
     const aspect = typeof window !== 'undefined' && window.innerHeight > 0
       ? window.innerWidth / window.innerHeight
@@ -53,6 +58,101 @@ export class CameraController {
     this.isLobbyMode = enabled;
   }
 
+  public setIntroMode(enabled: boolean, playerPos?: THREE.Vector3): void {
+    this.isIntroMode = enabled;
+    if (enabled && playerPos) {
+      this.isLobbyMode = false;
+      // Front-quarter dynamic cinematic camera framing runner in 3/4 view
+      const camX = playerPos.x - (this.camera.aspect < 1.0 ? 1.4 : 1.9);
+      this.introStartPos.set(camX, playerPos.y + 1.22, playerPos.z - 2.8);
+      this.introStartLook.set(playerPos.x + 0.25, playerPos.y + 0.95, playerPos.z + 0.8);
+      this.currentPosition.copy(this.introStartPos);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.introStartLook);
+    }
+  }
+
+  public getIntroMode(): boolean {
+    return this.isIntroMode;
+  }
+
+  public updateIntro(progress: number, playerPos: THREE.Vector3, dt: number): void {
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    this.camera.updateProjectionMatrix();
+
+    let t = Math.max(0, Math.min(1.0, progress));
+
+    if (t < 0.35) {
+      // Phase 1 (0.0s – 0.85s): Dynamic front-quarter encounter framing with gentle push-in
+      const p = t / 0.35;
+      const push = p * 0.35;
+      const camX = playerPos.x - (isPortrait ? 1.4 : 1.9);
+      const camY = playerPos.y + 1.22;
+      const camZ = playerPos.z - 2.8 + push;
+
+      this.currentPosition.set(camX, camY, camZ);
+      this.lookTarget.set(playerPos.x + 0.25, playerPos.y + 0.95, playerPos.z + 0.8);
+    } else {
+      // Phase 2 & 3 (0.85s – 2.4s): Smooth orbital arc around runner into gameplay follow
+      const u = (t - 0.35) / 0.65;
+      const smoothU = u * u * (3.0 - 2.0 * u);
+
+      // Arc theta from -146° (front-quarter) around the side (-90°) to 0° (behind player)
+      const startAngle = -2.55; // ~ -146 degrees
+      const endAngle = 0;
+      const theta = THREE.MathUtils.lerp(startAngle, endAngle, smoothU);
+
+      const startRadius = isPortrait ? 3.0 : 3.4;
+      const endRadius = CONSTANTS.CAMERA_OFFSET_Z; // 5.60
+      const radius = THREE.MathUtils.lerp(startRadius, endRadius, smoothU);
+
+      const startHeight = 1.22;
+      const endHeight = CONSTANTS.CAMERA_OFFSET_Y; // 3.25
+      const height = THREE.MathUtils.lerp(startHeight, endHeight, smoothU);
+
+      // Position along orbital curve relative to playerPos
+      const camX = playerPos.x + radius * Math.sin(theta);
+      const camZ = playerPos.z + radius * Math.cos(theta);
+      const camY = playerPos.y + height;
+      this.currentPosition.set(camX, camY, camZ);
+
+      // Look target transitions: keep runner centered during orbital sweep,
+      // and blend forward to track horizon as camera swings into chase position (smoothU > 0.45)
+      const startLookX = playerPos.x + 0.25 * (1.0 - smoothU);
+      const startLookY = playerPos.y + 0.95;
+      const endLookY = playerPos.y + CONSTANTS.CAMERA_LOOK_Y;
+      const lookY = THREE.MathUtils.lerp(startLookY, endLookY, smoothU);
+
+      const lookAheadBlend = Math.max(0, Math.min(1.0, (smoothU - 0.40) / 0.60));
+      const smoothLookAhead = lookAheadBlend * lookAheadBlend * (3.0 - 2.0 * lookAheadBlend);
+      const startLookZ = playerPos.z + 0.2;
+      const endLookZ = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
+      const lookZ = THREE.MathUtils.lerp(startLookZ, endLookZ, smoothLookAhead);
+
+      this.lookTarget.set(startLookX, lookY, lookZ);
+    }
+
+    this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.lookTarget);
+  }
+
+  public finishIntro(playerPos: THREE.Vector3): void {
+    this.isIntroMode = false;
+    this.currentPosition.set(
+      playerPos.x,
+      playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
+      playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
+    );
+    this.camera.position.copy(this.currentPosition);
+    this.lookTarget.set(
+      playerPos.x,
+      playerPos.y + CONSTANTS.CAMERA_LOOK_Y,
+      playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z
+    );
+    this.camera.lookAt(this.lookTarget);
+  }
+
   public addShake(trauma: number): void {
     this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma);
   }
@@ -65,6 +165,10 @@ export class CameraController {
     groundY: number = CONSTANTS.PLAYER_BASE_Y,
     isSliding: boolean = false
   ): void {
+    if (this.isIntroMode) {
+      return;
+    }
+
     const isPortrait = this.camera.aspect < 1.0;
 
     if (this.isLobbyMode) {

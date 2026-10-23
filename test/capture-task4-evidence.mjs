@@ -1,121 +1,267 @@
 import { chromium } from 'playwright';
 import path from 'path';
+import fs from 'fs';
 
-const ARTIFACT_DIR = '/Users/dharaksh/.gemini/antigravity-ide/brain/7b654b27-5359-4f8b-9796-d5016a125022';
+const ARTIFACTS_DIR = '/Users/dharaksh/.gemini/antigravity-ide/brain/b3e653ae-0f2c-4503-a947-8d8985c89f1a';
 
-async function captureTask4Evidence() {
-  console.log('📸 Starting Task 4 Visual Evidence Capture with Playwright...');
-
-  const browser = await chromium.launch({
-    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    headless: true,
-    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--no-sandbox']
-  });
-
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.goto('http://localhost:3000/', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-
-  // -------------------------------------------------------------
-  // SHOT 1: Start Screen with Progression & Event Navigation
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 1: Start Screen with Event & Mission buttons...');
-  const shot1 = path.join(ARTIFACT_DIR, 'task4_start_screen.png');
-  await page.screenshot({ path: shot1 });
-
-  // -------------------------------------------------------------
-  // SHOT 2: Missions Modal - Missions Tab
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 2: Missions Tab...');
-  await page.evaluate(() => {
-    window.__METRO_BUS__.emit('OPEN_MISSIONS', 'START');
-  });
-  await page.waitForTimeout(500);
-  const shot2 = path.join(ARTIFACT_DIR, 'task4_missions_tab.png');
-  await page.screenshot({ path: shot2 });
-
-  // -------------------------------------------------------------
-  // SHOT 3: Missions Modal - Daily Objectives Tab
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 3: Daily Objectives Tab with real countdown...');
-  await page.evaluate(() => {
-    const dailyBtn = document.querySelector('.missions-tab-btn[data-tab="DAILY"]');
-    if (dailyBtn) dailyBtn.click();
-  });
-  await page.waitForTimeout(500);
-  const shot3 = path.join(ARTIFACT_DIR, 'task4_daily_tab.png');
-  await page.screenshot({ path: shot3 });
-
-  // -------------------------------------------------------------
-  // SHOT 4: Missions Modal - Achievements Tab
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 4: Multi-Tiered Lifetime Achievements Tab...');
-  await page.evaluate(() => {
-    const achBtn = document.querySelector('.missions-tab-btn[data-tab="ACHIEVEMENTS"]');
-    if (achBtn) achBtn.click();
-  });
-  await page.waitForTimeout(500);
-  const shot4 = path.join(ARTIFACT_DIR, 'task4_achievements_tab.png');
-  await page.screenshot({ path: shot4 });
-
-  // -------------------------------------------------------------
-  // SHOT 5: Missions Modal - Season Pass Tab
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 5: Season Pass Roadmap...');
-  await page.evaluate(() => {
-    const seasonBtn = document.querySelector('.missions-tab-btn[data-tab="SEASON"]');
-    if (seasonBtn) seasonBtn.click();
-  });
-  await page.waitForTimeout(500);
-  const shot5 = path.join(ARTIFACT_DIR, 'task4_season_pass_tab.png');
-  await page.screenshot({ path: shot5 });
-
-  // -------------------------------------------------------------
-  // SHOT 6: Event Modes Selection Modal
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 6: Event Challenge Modes Selector...');
-  await page.evaluate(() => {
-    document.getElementById('missions-close-btn')?.click();
-    window.__METRO_BUS__.emit('OPEN_EVENTS', 'START');
-  });
-  await page.waitForTimeout(500);
-  const shot6 = path.join(ARTIFACT_DIR, 'task4_event_select_modal.png');
-  await page.screenshot({ path: shot6 });
-
-  // -------------------------------------------------------------
-  // SHOT 7: In-Game Time Trial Challenge Mode
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 7: Time Trial Gameplay with Countdown & Chrono Orbs...');
-  await page.evaluate(() => {
-    document.getElementById('events-close-btn')?.click();
-    const game = window.__METRO_GAME__;
-    game.startRun('TIME_TRIAL');
-    game.pause();
-    document.getElementById('pause-modal')?.classList.add('hidden');
-  });
-  await page.waitForTimeout(500);
-  const shot7 = path.join(ARTIFACT_DIR, 'task4_timetrial_gameplay.png');
-  await page.screenshot({ path: shot7 });
-
-  // -------------------------------------------------------------
-  // SHOT 8: In-Game Progression Completion Toast Banner
-  // -------------------------------------------------------------
-  console.log('Capturing Shot 8: In-Game HUD Progression Completion Toast...');
-  await page.evaluate(() => {
-    window.__METRO_BUS__.emit(window.__METRO_EVENTS__.MISSION_COMPLETED, {
-      title: 'Pocket Change (50 Coins)',
-      rewardCoins: 250
-    });
-  });
-  await page.waitForTimeout(400);
-  const shot8 = path.join(ARTIFACT_DIR, 'task4_progression_toast.png');
-  await page.screenshot({ path: shot8 });
-
-  await browser.close();
-  console.log('✅ ALL Task 4 visual evidence screenshots captured successfully!');
+if (!fs.existsSync(ARTIFACTS_DIR)) {
+  fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 }
 
-captureTask4Evidence().catch((err) => {
-  console.error('Error capturing Task 4 visual evidence:', err);
+async function runTask4Capture() {
+  console.log('🎬 Starting Task 4 Browser Verification & Screenshot Suite...');
+
+  let browser;
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    });
+  } catch (err) {
+    console.log('Falling back to bundled chromium...');
+    browser = await chromium.launch({ headless: true });
+  }
+
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1
+  });
+  const page = await context.newPage();
+
+  // Clear opening sequence override to test default FIRST_ONLY
+  await page.addInitScript(() => {
+    localStorage.removeItem('metro_opening_cinematic');
+    localStorage.setItem('metro_runner_wallet', '15000');
+  });
+
+  console.log('🌐 Navigating to http://localhost:3000...');
+  await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1000);
+
+  // ----------------------------------------------------
+  // TEST 1: Launch Run -> Phase 1 Encounter & Whistle
+  // ----------------------------------------------------
+  console.log('\n[TEST 1] Starting run -> Opening Intro Encounter...');
+  await page.click('#start-play-btn', { force: true });
+  await page.waitForTimeout(400); // 0.4s into intro (Phase 1)
+
+  const isIntroActive = await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    return game ? game.getOpeningSequence().isActive() : false;
+  });
+  console.log('Opening sequence active:', isIntroActive);
+
+  console.log('📸 Capturing: task4_opening_intro_encounter.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_opening_intro_encounter.png') });
+
+  // ----------------------------------------------------
+  // TEST 2: Phase 2 Sprint Takeoff & Chase Surge
+  // ----------------------------------------------------
+  console.log('\n[TEST 2] Waiting for Phase 2 Sprint Takeoff...');
+  await page.waitForTimeout(700); // ~1.1s elapsed into intro
+
+  console.log('📸 Capturing: task4_opening_sprint_takeoff.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_opening_sprint_takeoff.png') });
+
+  // ----------------------------------------------------
+  // TEST 3: Phase 3 Seamless Camera Blend into Gameplay
+  // ----------------------------------------------------
+  console.log('\n[TEST 3] Waiting for Intro Completion -> Gameplay Camera...');
+  await page.waitForTimeout(1600); // ~2.7s total, intro completed, gameplay active
+
+  const gameplayActive = await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    return game ? (!game.getOpeningSequence().isActive() && game.getPlayer().speed > 10) : false;
+  });
+  console.log('Full gameplay running smoothly:', gameplayActive);
+
+  console.log('📸 Capturing: task4_gameplay_transition.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_gameplay_transition.png') });
+
+  // ----------------------------------------------------
+  // TEST 4: Nonfatal Stumble Feedback & Chaser Surge
+  // ----------------------------------------------------
+  console.log('\n[TEST 4] Triggering nonfatal stumble...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.getPlayer().stumble();
+    }
+  });
+  await page.waitForTimeout(250); // Peak stumble reaction
+
+  const chaserMode = await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    return game ? game.getChaser().getMode() : '';
+  });
+  console.log('Chaser reaction mode on stumble:', chaserMode);
+
+  console.log('📸 Capturing: task4_stumble_chaser_reaction.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_stumble_chaser_reaction.png') });
+
+  // ----------------------------------------------------
+  // TEST 5: Collision Recovery Feedback (Shield Break)
+  // ----------------------------------------------------
+  console.log('\n[TEST 5] Testing shield break recovery reaction...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.getPlayer().powerups.activate('SHIELD');
+      game.getPlayer().crash('BARRIER_COLLISION');
+    }
+  });
+  await page.waitForTimeout(200);
+
+  console.log('📸 Capturing: task4_protected_recovery_reaction.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_protected_recovery_reaction.png') });
+
+  // ----------------------------------------------------
+  // TEST 6: Fatal Crash & Caught Reaction
+  // ----------------------------------------------------
+  console.log('\n[TEST 6] Triggering fatal crash...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.getPlayer().powerups.reset();
+      game.getPlayer().crash('DIRECT_HEADON_TRAIN');
+    }
+  });
+  await page.waitForTimeout(400);
+
+  console.log('📸 Capturing: task4_fatal_crash_caught.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_fatal_crash_caught.png') });
+
+  // Wait for Game Over modal to display
+  await page.waitForTimeout(900);
+
+  // ----------------------------------------------------
+  // TEST 7: Retry Transition (Instant Skip under FIRST_ONLY)
+  // ----------------------------------------------------
+  console.log('\n[TEST 7] Testing Play Again / Retry transition...');
+  await page.click('#game-over-retry-btn', { force: true });
+  await page.waitForTimeout(300);
+
+  const introActiveOnRetry = await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    return game ? game.getOpeningSequence().isActive() : false;
+  });
+  console.log('Opening sequence active on retry (should be false for fast restart):', introActiveOnRetry);
+
+  console.log('📸 Capturing: task4_retry_instant_transition.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_retry_instant_transition.png') });
+
+  // ----------------------------------------------------
+  // TEST 8: Skip Button Functionality
+  // ----------------------------------------------------
+  console.log('\n[TEST 8] Testing Skip Button on fresh run with ALWAYS setting...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.goToMenu();
+      game.getOpeningSequence().setPreference('ALWAYS');
+    }
+  });
+  await page.waitForTimeout(500);
+
+  await page.click('#start-play-btn', { force: true });
+  await page.waitForTimeout(250); // Intro playing, skip button visible
+
+  console.log('Clicking Skip button...');
+  await page.click('#intro-skip-btn', { force: true });
+  await page.waitForTimeout(200);
+
+  const introActiveAfterSkip = await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    return game ? game.getOpeningSequence().isActive() : true;
+  });
+  console.log('Intro active after clicking skip button:', introActiveAfterSkip);
+
+  console.log('📸 Capturing: task4_skip_interaction.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_skip_interaction.png') });
+
+  // ----------------------------------------------------
+  // TEST 9: Character & Outfit Selection Intro Compatibility
+  // ----------------------------------------------------
+  console.log('\n[TEST 9] Selecting alternate character (Luna / Street Rebel) and starting run...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.goToMenu();
+    }
+  });
+  await page.waitForTimeout(500);
+
+  // Open character modal & equip Luna
+  await page.click('#start-characters-btn', { force: true });
+  await page.waitForTimeout(600);
+  const lunaCard = await page.$('.showroom-char-card[data-char-id="char_luna"]');
+  if (lunaCard) {
+    await lunaCard.click({ force: true });
+    await page.waitForTimeout(300);
+    const equipBtn = await page.$('#char-action-btn');
+    if (equipBtn) await equipBtn.click({ force: true });
+    await page.waitForTimeout(200);
+  }
+  await page.click('#char-close-btn', { force: true });
+  await page.waitForTimeout(400);
+
+  // Start run with Luna
+  await page.click('#start-play-btn', { force: true });
+  await page.waitForTimeout(450); // In intro
+
+  console.log('📸 Capturing: task4_character_outfit_intro.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_character_outfit_intro.png') });
+
+  // ----------------------------------------------------
+  // TEST 10: Settings Modal & Intro Persistence
+  // ----------------------------------------------------
+  console.log('\n[TEST 10] Testing Settings Modal & Opening Sequence Persistence...');
+  await page.evaluate(() => {
+    const game = window.__METRO_GAME__;
+    if (game) {
+      game.goToMenu();
+    }
+  });
+  await page.waitForTimeout(500);
+
+  // Open settings
+  await page.click('#start-settings-btn', { force: true });
+  await page.waitForTimeout(400);
+
+  // Select "DISABLED"
+  await page.selectOption('#setting-opening-cinematic', 'DISABLED');
+  await page.waitForTimeout(200);
+
+  const persistedSetting = await page.evaluate(() => localStorage.getItem('metro_opening_cinematic'));
+  console.log('Persisted opening cinematic setting in localStorage:', persistedSetting);
+
+  console.log('📸 Capturing: task4_settings_intro_persisted.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_settings_intro_persisted.png') });
+
+  await page.click('#settings-close-btn', { force: true });
+  await page.waitForTimeout(300);
+
+  // Reset setting back to default FIRST_ONLY
+  await page.evaluate(() => localStorage.setItem('metro_opening_cinematic', 'FIRST_ONLY'));
+
+  // ----------------------------------------------------
+  // TEST 11: Mobile Portrait Responsive Viewport
+  // ----------------------------------------------------
+  console.log('\n[TEST 11] Testing Mobile Portrait Viewport (412 x 915)...');
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.waitForTimeout(300);
+
+  await page.click('#start-play-btn', { force: true });
+  await page.waitForTimeout(450); // Mobile intro framing
+
+  console.log('📸 Capturing: task4_mobile_portrait_intro.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'task4_mobile_portrait_intro.png') });
+
+  console.log('\n✅ All 11 browser visual evidence captures completed successfully!');
+  await browser.close();
+}
+
+runTask4Capture().catch((err) => {
+  console.error('❌ Task 4 capture failed:', err);
   process.exit(1);
 });
