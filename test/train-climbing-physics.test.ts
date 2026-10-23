@@ -3,7 +3,8 @@ import { Player } from '../src/player/Player';
 import { TrackManager } from '../src/track/TrackManager';
 import { CONSTANTS } from '../src/core/Constants';
 import { TrainScenarioRunner, TrainScenarioConfig } from '../src/debug/TrainScenarioRunner';
-import { TrainVariant } from '../src/track/ObstacleFactory';
+import { TrainVariant, getTrainAccessibilityProfile, ObstacleFactory } from '../src/track/ObstacleFactory';
+import { EventBus, EVENTS } from '../src/core/EventBus';
 
 // Polyfill localStorage for node environment
 if (typeof globalThis.localStorage === 'undefined') {
@@ -615,6 +616,140 @@ for (const variant of variants) {
   assert(player.state === 'ON_TRAIN', `Variant ${variant} climbed successfully onto roof`);
   assert(player.getSupportSurface() === 'TRAIN_ROOF', `Variant ${variant} has TRAIN_ROOF support`);
   assert(player.state !== 'CRASH', `Variant ${variant} zero collision crashes`);
+}
+
+// =========================================================================
+// Suite 19: Authoritative Accessibility Profiles & Visual/Physical Thresholds
+// =========================================================================
+console.log('\n--- Suite 19: Authoritative Train Accessibility Profiles & Visual Alignment ---');
+{
+  const profileRamp = getTrainAccessibilityProfile('TRAIN', true, false);
+  assert(profileRamp.accessibility === 'RAMP_CLIMBABLE', 'Ramp train has RAMP_CLIMBABLE accessibility');
+  assert(profileRamp.isRoofTraversable === true, 'Ramp train has traversable roof');
+  assert(profileRamp.isSolidFrontAtGround === false, 'Ramp train has non-solid front');
+  assert(profileRamp.visualAffordance.hasInclineRamp === true, 'Profile confirms visible incline ramp');
+
+  const profileSolid = getTrainAccessibilityProfile('TRAIN', false, false);
+  assert(profileSolid.accessibility === 'SOLID_GROUND_HAZARD', 'Solid train has SOLID_GROUND_HAZARD accessibility');
+  assert(profileSolid.isRoofTraversable === true, 'Solid train has traversable roof (jump accessible)');
+  assert(profileSolid.isSolidFrontAtGround === true, 'Solid train has solid obstacle front');
+  assert(profileSolid.visualAffordance.hasHazardBumper === true, 'Solid train equips heavy hazard bumper');
+
+  const profileMoving = getTrainAccessibilityProfile('MOVING_TRAIN', false, true);
+  assert(profileMoving.accessibility === 'ONCOMING_HAZARD', 'Moving train has ONCOMING_HAZARD accessibility');
+  assert(profileMoving.isSolidFrontAtGround === true, 'Moving train has solid obstacle front');
+
+  // Verify TrackChunk obstacle instantiation attaches accessibilityProfile to instance & userData
+  const { trackManager } = createEnv();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_PROFILES',
+    difficulty: 'MEDIUM',
+    obstacles: [
+      { type: 'TRAIN', lane: -1, zOffset: 25.0, length: 20.0, hasRamp: true },
+      { type: 'TRAIN', lane: 0, zOffset: 25.0, length: 20.0, hasRamp: false },
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 25.0, length: 20.0, isMoving: true }
+    ],
+    collectibles: []
+  }, 0);
+
+  const rampObs = chunk.obstacles.find(o => o.lane === -1)!;
+  const solidObs = chunk.obstacles.find(o => o.lane === 0)!;
+  const movingObs = chunk.obstacles.find(o => o.lane === 1)!;
+
+  assert(rampObs.accessibilityProfile?.accessibility === 'RAMP_CLIMBABLE', 'TrackChunk ramp obstacle instance has RAMP_CLIMBABLE profile');
+  assert(rampObs.group.userData.accessibilityProfile?.accessibility === 'RAMP_CLIMBABLE', 'Ramp group.userData contains RAMP_CLIMBABLE profile');
+  assert(solidObs.accessibilityProfile?.accessibility === 'SOLID_GROUND_HAZARD', 'TrackChunk solid obstacle instance has SOLID_GROUND_HAZARD profile');
+  assert(movingObs.accessibilityProfile?.accessibility === 'ONCOMING_HAZARD', 'TrackChunk moving obstacle instance has ONCOMING_HAZARD profile');
+
+  // Verify visual threshold geometry in ObstacleFactory
+  const factory = new ObstacleFactory();
+  const rampGroup = factory.createTrain(20.0, true, 0x1e3a5f, 'MODERN_METRO');
+  let foundRampDeck = false;
+  let foundToeReflector = false;
+  let foundRearThreshold = false;
+
+  rampGroup.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      // Check ramp deck slope
+      if (Math.abs(child.rotation.x) > 0.3 && child.position.y > 1.8 && child.position.y < 2.5) {
+        foundRampDeck = true;
+      }
+      // Check entry toe reflector
+      if (child.position.y >= 0.05 && child.position.y <= 0.25 && child.position.z > 17.0) {
+        foundToeReflector = true;
+      }
+      // Check rear threshold plate
+      if (child.position.y >= 4.25 && child.position.y <= 4.35 && child.position.z < -8.5) {
+        foundRearThreshold = true;
+      }
+    }
+  });
+
+  assert(foundRampDeck, 'Ramp model integrates visible continuous inclined deck');
+  assert(foundToeReflector, 'Ramp model features high-visibility amber ground approach toe reflectors');
+  assert(foundRearThreshold, 'Roof model features high-visibility rear hazard boundary threshold plate');
+}
+
+// =========================================================================
+// Suite 20: Onboarding Cue Lifecycle & Non-Intrusive Persistence
+// =========================================================================
+console.log('\n--- Suite 20: Ramp Onboarding Cue Lifecycle & Persistence ---');
+{
+  const bus = EventBus.getInstance();
+  let cueEmittedCount = 0;
+  const unsubscribe = bus.on(EVENTS.RAMP_ONBOARDING_CUE, () => {
+    cueEmittedCount++;
+  });
+
+  // Ensure fresh state
+  globalThis.localStorage.removeItem('metro_runner_first_ramp_seen');
+
+  const { trackManager, player } = createEnv();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_ONBOARDING',
+    difficulty: 'EASY',
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 40.0, length: 20.0, hasRamp: true }
+    ],
+    collectibles: []
+  }, 0);
+
+  // Position player 17m ahead of ramp (within the 32m encounter window)
+  player.position.set(0, CONSTANTS.PLAYER_BASE_Y, -5.0);
+  stepGame(player, trackManager, 0.2, 60);
+
+  assert(cueEmittedCount === 1, 'First encounter within 32m emits RAMP_ONBOARDING_CUE exactly once');
+  assert(globalThis.localStorage.getItem('metro_runner_first_ramp_seen') === 'true', 'Onboarding flag saved to localStorage');
+
+  // Step further and ensure NO additional cues are emitted
+  stepGame(player, trackManager, 1.0, 60);
+  assert(cueEmittedCount === 1, 'Subsequent frames do not re-emit cue');
+
+  // Reset track manager and verify cue is suppressed because flag is already in localStorage
+  trackManager.reset();
+  const chunk2 = trackManager.chunks[0];
+  chunk2.chunkZ = 0;
+  chunk2.clearDynamicItems();
+  chunk2.populate({
+    name: 'TEST_ONBOARDING_2',
+    difficulty: 'EASY',
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 40.0, length: 20.0, hasRamp: true }
+    ],
+    collectibles: []
+  }, 0);
+
+  player.position.set(0, CONSTANTS.PLAYER_BASE_Y, -5.0);
+  stepGame(player, trackManager, 0.5, 60);
+  assert(cueEmittedCount === 1, 'Subsequent runs do not emit cue when flag is set in localStorage');
+
+  unsubscribe();
 }
 
 // =========================================================================

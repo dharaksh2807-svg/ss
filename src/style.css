@@ -417,6 +417,38 @@ html, body {
   box-shadow: 0 0 16px rgba(95, 39, 205, 0.5);
 }
 
+.hud-feedback-ramp-cue {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.95), rgba(230, 126, 34, 0.95));
+  border: 1px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 18px rgba(243, 156, 18, 0.6);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  animation: feedbackFloatLong 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes feedbackFloatLong {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0) scale(1.0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
 @keyframes feedbackFloat {
   0% {
     opacity: 0;

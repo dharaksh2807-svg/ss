@@ -14,6 +14,91 @@ export type ObstacleType =
   | 'SIDE_BARRIER' 
   | 'TUNNEL_ARCH';
 
+export type TrainAccessibility = 
+  | 'RAMP_CLIMBABLE'      // Has accessible physical ramp; climbable from ground approach
+  | 'SOLID_GROUND_HAZARD' // Impassable front at ground; roof only accessible from above (jump/powerup/adjacent roof)
+  | 'ONCOMING_HAZARD';    // Moving train, impassable front, roof landable from above only
+
+export interface TrainAccessibilityProfile {
+  type: TrainAccessibility;
+  accessibility: TrainAccessibility;
+  isClimbableFromGround: boolean;
+  isSolidFrontAtGround: boolean;
+  isRoofTraversable: boolean;
+  isMoving: boolean;
+  roofSurfaceY: number; // 4.35m
+  canJumpToFromAdjacentRoof: boolean;
+  canReachWithSuperSneakers: boolean; // Ground jump with Sneakers clears 4.2m
+  canReachWithJetpackDrop: boolean;
+  visualAffordance: {
+    hasInclineRamp: boolean;
+    hasHazardBumper: boolean;
+    hasRoofCatwalk: boolean;
+  };
+}
+
+export function getTrainAccessibilityProfile(
+  type: ObstacleType,
+  hasRamp: boolean = false,
+  isMoving: boolean = false
+): TrainAccessibilityProfile {
+  if (isMoving || type === 'MOVING_TRAIN') {
+    return {
+      type: 'ONCOMING_HAZARD',
+      accessibility: 'ONCOMING_HAZARD',
+      isClimbableFromGround: false,
+      isSolidFrontAtGround: true,
+      isRoofTraversable: true,
+      isMoving: true,
+      roofSurfaceY: 4.35,
+      canJumpToFromAdjacentRoof: true,
+      canReachWithSuperSneakers: true,
+      canReachWithJetpackDrop: true,
+      visualAffordance: {
+        hasInclineRamp: false,
+        hasHazardBumper: true,
+        hasRoofCatwalk: true
+      }
+    };
+  }
+  if (hasRamp || type === 'TRAIN_RAMP') {
+    return {
+      type: 'RAMP_CLIMBABLE',
+      accessibility: 'RAMP_CLIMBABLE',
+      isClimbableFromGround: true,
+      isSolidFrontAtGround: false,
+      isRoofTraversable: true,
+      isMoving: false,
+      roofSurfaceY: 4.35,
+      canJumpToFromAdjacentRoof: true,
+      canReachWithSuperSneakers: true,
+      canReachWithJetpackDrop: true,
+      visualAffordance: {
+        hasInclineRamp: true,
+        hasHazardBumper: false,
+        hasRoofCatwalk: true
+      }
+    };
+  }
+  return {
+    type: 'SOLID_GROUND_HAZARD',
+    accessibility: 'SOLID_GROUND_HAZARD',
+    isClimbableFromGround: false,
+    isSolidFrontAtGround: true,
+    isRoofTraversable: true,
+    isMoving: false,
+    roofSurfaceY: 4.35,
+    canJumpToFromAdjacentRoof: true,
+    canReachWithSuperSneakers: true,
+    canReachWithJetpackDrop: true,
+    visualAffordance: {
+      hasInclineRamp: false,
+      hasHazardBumper: true,
+      hasRoofCatwalk: true
+    }
+  };
+}
+
 export interface ObstacleInstance {
   id: string; // Unique obstacle instance identifier for binding active support
   group: THREE.Group;
@@ -36,6 +121,7 @@ export interface ObstacleInstance {
   hasRamp?: boolean;
   length?: number;
   variant?: TrainVariant;
+  accessibilityProfile?: TrainAccessibilityProfile; // Authoritative accessibility metadata
   // Dynamic moving train behavior
   isMoving?: boolean;
   velocityZ?: number;
@@ -65,6 +151,9 @@ export class ObstacleFactory {
   private trainDestClassicMat: THREE.MeshBasicMaterial;
   private trainDestExpressMat: THREE.MeshBasicMaterial;
   private rampPlateMat: THREE.MeshStandardMaterial;
+  private rampTrussMat: THREE.MeshStandardMaterial;
+  private rampReflectorMat: THREE.MeshBasicMaterial;
+  private rampTransitionMat: THREE.MeshStandardMaterial;
   private trainSpawnCounter = 0;
 
   constructor() {
@@ -173,6 +262,24 @@ export class ObstacleFactory {
       metalness: 0.6
     });
     this.curvedManager.applyCurvature(this.rampPlateMat);
+
+    this.rampTrussMat = new THREE.MeshStandardMaterial({
+      color: 0x21252b, // Heavy industrial charcoal steel
+      roughness: 0.65,
+      metalness: 0.55
+    });
+    this.curvedManager.applyCurvature(this.rampTrussMat);
+
+    this.rampReflectorMat = new THREE.MeshBasicMaterial({
+      color: 0xffab00 // High-intensity amber corner reflector
+    });
+
+    this.rampTransitionMat = new THREE.MeshStandardMaterial({
+      color: 0x78909c, // Steel transition plate
+      roughness: 0.35,
+      metalness: 0.75
+    });
+    this.curvedManager.applyCurvature(this.rampTransitionMat);
   }
 
   /**
@@ -337,9 +444,14 @@ export class ObstacleFactory {
     // 2. 3D Side Geometry: Windows, Recessed Frames, Doors, Fluting
     this.buildSideGeometry(group, w, h, bodyLength, variant, bodyMat, accentColor);
 
-    // 3. Front Cab Architecture (Aerodynamic / Classical / Express)
+    // 3. Front Cab Architecture (Solid Impassable Cab vs Climbable Ramp Bulkhead)
     const noseLength = 1.35;
-    this.buildFrontCab(group, w, h, bodyLength, noseLength, variant, bodyMat, colorHex, accentColor);
+    if (hasRamp) {
+      this.buildRampBulkhead(group, w, h, bodyLength, bodyMat, accentColor);
+      this.buildRamp(group, w, h, bodyLength, noseLength);
+    } else {
+      this.buildFrontCab(group, w, h, bodyLength, noseLength, variant, bodyMat, colorHex, accentColor);
+    }
 
     // 4. Rear Gangway & Taillight Details
     this.buildRearJunction(group, w, h, bodyLength);
@@ -349,11 +461,6 @@ export class ObstacleFactory {
 
     // 6. Dual 2-Axle Rail Wheel Bogies & Underbody Equipment
     this.buildBogiesAndUnderbody(group, w, h, bodyLength, variant);
-
-    // 7. Optional Climbable Front Ramp
-    if (hasRamp) {
-      this.buildRamp(group, w, h, bodyLength, noseLength);
-    }
 
     return group;
   }
@@ -665,6 +772,13 @@ export class ObstacleFactory {
       plow.position.set(0, 0.26, tipZ - 0.1);
       group.add(plow);
 
+      // Heavy-Duty Solid Obstacle Hazard Bumper Beam across front cab
+      const bumperGeo = new THREE.BoxGeometry(w * 0.92, 0.24, 0.18);
+      const bumper = new THREE.Mesh(bumperGeo, this.barrierMat);
+      bumper.position.set(0, 0.88, tipZ - 0.02);
+      bumper.castShadow = true;
+      group.add(bumper);
+
       // 6. Automatic Coupler
       const couplerGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.42, 8);
       const coupler = new THREE.Mesh(couplerGeo, this.trainChromeMat);
@@ -827,6 +941,12 @@ export class ObstacleFactory {
       spoiler.position.set(0, 0.18, tipZ + 0.08);
       group.add(spoiler);
 
+      // Heavy Hazard Anti-Climb Bumper Band (solid non-climbable hazard indicator)
+      const hazardBumperGeo = new THREE.BoxGeometry(w * 0.9, 0.22, 0.18);
+      const hazardBumper = new THREE.Mesh(hazardBumperGeo, this.barrierMat);
+      hazardBumper.position.set(0, 0.45, tipZ + 0.12);
+      group.add(hazardBumper);
+
       // Concealed Coupler Hatch
       const hatchGeo = new THREE.BoxGeometry(0.65, 0.35, 0.06);
       const hatch = new THREE.Mesh(hatchGeo, bodyMat);
@@ -908,6 +1028,13 @@ export class ObstacleFactory {
       edge.position.set(cx, 4.28, 0);
       group.add(edge);
     });
+
+    // 2. High-Visibility Rear Hazard Boundary Threshold (marks the physical end of the roof)
+    const rearThresholdGeo = new THREE.BoxGeometry(catwalkWidth + 0.08, 0.14, 0.45);
+    const rearThreshold = new THREE.Mesh(rearThresholdGeo, this.barrierMat);
+    rearThreshold.position.set(0, 4.28, -bodyLength * 0.485);
+    rearThreshold.receiveShadow = true;
+    group.add(rearThreshold);
 
     if (variant === 'MODERN_METRO') {
       // 2 Low-profile aerodynamic HVAC Pods
@@ -1121,7 +1248,79 @@ export class ObstacleFactory {
   }
 
   /**
-   * Builds the climbable steel diamond-plate ramp with yellow/black hazard skirts
+   * Builds the front structural mounting bulkhead when a train is equipped with a climbable ramp.
+   * Replaces driver cab glass/wipers with a heavy structural bulkhead, maintenance access door,
+   * safety grab irons, and frame mounting gussets.
+   */
+  private buildRampBulkhead(
+    group: THREE.Group,
+    w: number,
+    h: number,
+    bodyLength: number,
+    bodyMat: THREE.Material,
+    accentColor: number
+  ): void {
+    const halfW = w * 0.5;
+    const frontZ = bodyLength * 0.5;
+
+    // 1. Heavy Structural Steel Carriage End Wall Bulkhead
+    const bulkheadGeo = new THREE.BoxGeometry(w * 0.94, h * 0.88, 0.22);
+    const bulkhead = new THREE.Mesh(bulkheadGeo, this.trainChassisMat);
+    bulkhead.position.set(0, h * 0.48, frontZ + 0.11);
+    bulkhead.castShadow = true;
+    group.add(bulkhead);
+
+    // Outer reinforced doorframe / portal trim
+    const trimGeo = new THREE.BoxGeometry(w * 0.82, h * 0.78, 0.12);
+    const trimMesh = new THREE.Mesh(trimGeo, bodyMat);
+    trimMesh.position.set(0, h * 0.46, frontZ + 0.24);
+    group.add(trimMesh);
+
+    // 2. Heavy Industrial Service Bulkhead Door with reinforced cross-bracing
+    const doorGeo = new THREE.BoxGeometry(1.3, 2.2, 0.08);
+    const doorMesh = new THREE.Mesh(doorGeo, this.trainChassisMat);
+    doorMesh.position.set(0, 1.6, frontZ + 0.31);
+    group.add(doorMesh);
+
+    // Service door wire-mesh inspection viewport
+    const winGeo = new THREE.BoxGeometry(0.55, 0.65, 0.06);
+    const winMesh = new THREE.Mesh(winGeo, this.trainWindowMat);
+    winMesh.position.set(0, 2.1, frontZ + 0.36);
+    group.add(winMesh);
+
+    // 3. Heavy-Duty Steel Mounting Brackets connecting Ramp Stringers to Train Chassis
+    [-halfW * 0.65, halfW * 0.65].forEach((bx) => {
+      // Lower chassis anchor bracket
+      const lowerBracketGeo = new THREE.BoxGeometry(0.24, 0.55, 0.6);
+      const lowerBracket = new THREE.Mesh(lowerBracketGeo, this.rampTrussMat);
+      lowerBracket.position.set(bx, 0.8, frontZ + 0.3);
+      group.add(lowerBracket);
+
+      // Upper roof transition gusset
+      const upperBracketGeo = new THREE.BoxGeometry(0.24, 0.45, 0.5);
+      const upperBracket = new THREE.Mesh(upperBracketGeo, this.rampTrussMat);
+      upperBracket.position.set(bx, 4.1, frontZ + 0.25);
+      group.add(upperBracket);
+
+      // Vertical safety grab iron ladder for maintenance crew
+      const ladderGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.4, 6);
+      const ladder = new THREE.Mesh(ladderGeo, this.trainChromeMat);
+      ladder.position.set(bx < 0 ? -halfW * 0.85 : halfW * 0.85, 2.0, frontZ + 0.28);
+      group.add(ladder);
+    });
+
+    // 4. Overhead Amber Transit Clearance Beacons
+    [-halfW * 0.75, halfW * 0.75].forEach((mx) => {
+      const beaconGeo = new THREE.SphereGeometry(0.06, 8, 8);
+      const beacon = new THREE.Mesh(beaconGeo, this.rampReflectorMat);
+      beacon.position.set(mx, 4.22, frontZ + 0.25);
+      group.add(beacon);
+    });
+  }
+
+  /**
+   * Builds the climbable steel diamond-plate ramp with believable structural under-deck trusses,
+   * high-visibility hazard skirts, tubular safety handrails, and approach toe plate
    */
   private buildRamp(
     group: THREE.Group,
@@ -1160,13 +1359,111 @@ export class ObstacleFactory {
       skirt.position.set(sx, rampHeight * 0.5 + 0.15, rampZCenter);
       skirt.castShadow = true;
       group.add(skirt);
+
+      // Elevated Tubular Steel Safety Guide-Rails along top of skirts
+      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8);
+      const rail = new THREE.Mesh(railGeo, this.trainChromeMat);
+      rail.rotation.x = rampAngle + Math.PI / 2;
+      rail.position.set(sx, rampHeight * 0.5 + 0.42, rampZCenter);
+      group.add(rail);
     });
 
-    // 3. Ground Entry Transition Toe Plate (smooth steel approach wedge at base Z = halfD + rampLength)
-    const toeGeo = new THREE.BoxGeometry(rampWidth * 1.02, 0.08, 0.6);
-    const toeMesh = new THREE.Mesh(toeGeo, this.trainChassisMat);
+    // 3. Longitudinal Structural I-Beam Stringers under left & right deck edges
+    [-rampWidth * 0.42, rampWidth * 0.42].forEach((bx) => {
+      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength);
+      const stringer = new THREE.Mesh(stringerGeo, this.rampTrussMat);
+      stringer.rotation.x = rampAngle;
+      stringer.position.set(bx, rampHeight * 0.5 - 0.14, rampZCenter);
+      stringer.castShadow = true;
+      group.add(stringer);
+    });
+
+    // 4. Structural Steel Under-Deck Truss Bents (Ground to Incline Deck)
+    // Placed at 3 equidistant stations along the ramp:
+    // Station 1: DeltaZ = 2.0m from train body (t = 0.75, deck Y = 3.26m)
+    // Station 2: DeltaZ = 4.0m from train body (t = 0.50, deck Y = 2.18m)
+    // Station 3: DeltaZ = 6.0m from train body (t = 0.25, deck Y = 1.09m)
+    const stations = [
+      { dZ: 2.0, deckY: 3.26 },
+      { dZ: 4.0, deckY: 2.18 },
+      { dZ: 6.0, deckY: 1.09 }
+    ];
+
+    stations.forEach(({ dZ, deckY }) => {
+      const bentZ = halfD + dZ;
+      const colHeight = deckY - 0.1;
+      const colCenterY = 0.05 + colHeight * 0.5;
+
+      [-rampWidth * 0.44, rampWidth * 0.44].forEach((cx) => {
+        const colGeo = new THREE.BoxGeometry(0.12, colHeight, 0.12);
+        const col = new THREE.Mesh(colGeo, this.rampTrussMat);
+        col.position.set(cx, colCenterY, bentZ);
+        col.castShadow = true;
+        group.add(col);
+
+        // Ground anchor footplate
+        const footGeo = new THREE.BoxGeometry(0.24, 0.06, 0.28);
+        const foot = new THREE.Mesh(footGeo, this.rampTrussMat);
+        foot.position.set(cx, 0.03, bentZ);
+        group.add(foot);
+      });
+
+      // Transverse cross-brace beam connecting columns
+      const crossBeamGeo = new THREE.BoxGeometry(rampWidth * 0.88, 0.1, 0.1);
+      const crossBeam = new THREE.Mesh(crossBeamGeo, this.rampTrussMat);
+      crossBeam.position.set(0, deckY - 0.18, bentZ);
+      group.add(crossBeam);
+
+      // Diagonal cross-tie X-struts for stations with sufficient height
+      if (colHeight > 1.2) {
+        const diagLen = Math.sqrt(Math.pow(rampWidth * 0.88, 2) + Math.pow(colHeight * 0.7, 2));
+        const diagAngle = Math.atan2(colHeight * 0.7, rampWidth * 0.88);
+
+        const diag1Geo = new THREE.BoxGeometry(diagLen, 0.05, 0.05);
+        const diag1 = new THREE.Mesh(diag1Geo, this.rampTrussMat);
+        diag1.rotation.z = diagAngle;
+        diag1.position.set(0, colCenterY, bentZ);
+        group.add(diag1);
+
+        const diag2 = new THREE.Mesh(diag1Geo, this.rampTrussMat);
+        diag2.rotation.z = -diagAngle;
+        diag2.position.set(0, colCenterY, bentZ);
+        group.add(diag2);
+      }
+    });
+
+    // 5. Ground Entry Transition Toe Plate (smooth steel approach wedge at base Z = halfD + rampLength)
+    const toeGeo = new THREE.BoxGeometry(rampWidth * 1.04, 0.08, 0.7);
+    const toeMesh = new THREE.Mesh(toeGeo, this.rampTransitionMat);
     toeMesh.position.set(0, 0.04, halfD + rampLength);
+    toeMesh.receiveShadow = true;
     group.add(toeMesh);
+
+    // Hazard warning stripe across the toe plate front edge
+    const toeStripeGeo = new THREE.BoxGeometry(rampWidth * 1.04, 0.09, 0.14);
+    const toeStripe = new THREE.Mesh(toeStripeGeo, this.barrierMat);
+    toeStripe.position.set(0, 0.045, halfD + rampLength + 0.28);
+    group.add(toeStripe);
+
+    // Twin High-Intensity Amber Corner Reflector Blocks at ramp entrance
+    [-rampWidth * 0.52, rampWidth * 0.52].forEach((rx) => {
+      const reflectorGeo = new THREE.BoxGeometry(0.12, 0.18, 0.18);
+      const reflector = new THREE.Mesh(reflectorGeo, this.rampReflectorMat);
+      reflector.position.set(rx, 0.12, halfD + rampLength + 0.15);
+      group.add(reflector);
+    });
+
+    // 6. Seamless Upper Transition Threshold Plate (at crest Z = halfD, Y = 4.35m)
+    const thresholdGeo = new THREE.BoxGeometry(rampWidth * 0.98, 0.08, 0.45);
+    const threshold = new THREE.Mesh(thresholdGeo, this.rampTransitionMat);
+    threshold.position.set(0, 4.35, halfD);
+    threshold.receiveShadow = true;
+    group.add(threshold);
+
+    const thresholdStripeGeo = new THREE.BoxGeometry(rampWidth * 0.98, 0.09, 0.12);
+    const thresholdStripe = new THREE.Mesh(thresholdStripeGeo, this.barrierMat);
+    thresholdStripe.position.set(0, 4.355, halfD);
+    group.add(thresholdStripe);
   }
 
   /**

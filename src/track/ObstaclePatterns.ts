@@ -23,6 +23,7 @@ export interface PatternCollectible {
   count?: number; // Row of coins
   spacing?: number;
   isArc?: boolean;
+  isRampAscent?: boolean;
 }
 
 export interface TrackPattern {
@@ -224,7 +225,8 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'LOW_BARRIER', lane: 1, zOffset: 45.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 24.0, yOffset: 5.2, count: 10, spacing: 2.2 },
+      { type: 'COIN', lane: 0, zOffset: 1.0, count: 4, spacing: 2.0, isRampAscent: true },
+      { type: 'COIN', lane: 0, zOffset: 9.0, yOffset: 5.2, count: 11, spacing: 2.2 },
       { type: 'SNEAKERS', lane: 0, zOffset: 36.0, yOffset: 5.2 }
     ]
   },
@@ -415,6 +417,8 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ],
     collectibles: [
       { type: 'COIN', lane: -1, zOffset: 18.0, count: 6, spacing: 2.0 },
+      { type: 'COIN', lane: 0, zOffset: 28.0, count: 5, spacing: 2.0, isRampAscent: true },
+      { type: 'COIN', lane: 0, zOffset: 38.0, yOffset: 5.2, count: 6, spacing: 2.0 },
       { type: 'COIN', lane: 1, zOffset: 52.0, count: 6, spacing: 2.0 },
       { type: 'MAGNET', lane: 0, zOffset: 55.0, yOffset: 5.2 }
     ]
@@ -502,6 +506,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     collectibles: [
       { type: 'COIN', lane: -1, zOffset: 20.0, yOffset: 5.2, count: 8, spacing: 2.0 },
       { type: 'COIN', lane: 1, zOffset: 24.0, yOffset: 0.6, count: 6, spacing: 1.8 },
+      { type: 'COIN', lane: 0, zOffset: 26.0, count: 5, spacing: 2.0, isRampAscent: true },
       { type: 'SNEAKERS', lane: 0, zOffset: 50.0, yOffset: 5.2 }
     ]
   },
@@ -528,6 +533,7 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     ],
     collectibles: [
       { type: 'COIN', lane: -1, zOffset: 15.0, yOffset: 0.6, count: 6, spacing: 1.8 },
+      { type: 'COIN', lane: 0, zOffset: 20.0, count: 5, spacing: 2.0, isRampAscent: true },
       { type: 'COIN', lane: 0, zOffset: 44.0, yOffset: 5.2, count: 8, spacing: 2.0 },
       { type: 'JETPACK', lane: 0, zOffset: 60.0, yOffset: 5.2 }
     ]

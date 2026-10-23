@@ -49,6 +49,7 @@ export class Player {
   }
 
   public currentLane: LaneIndex = 0; // -1: Left, 0: Center, 1: Right
+  public get lane(): LaneIndex { return this.currentLane; }
   public targetLane: LaneIndex = 0;
   public groundY: number = CONSTANTS.PLAYER_BASE_Y;
   public supportSurface: SupportSurfaceType = 'GROUND';

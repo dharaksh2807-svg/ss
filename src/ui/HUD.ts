@@ -119,6 +119,10 @@ export class HUD {
       this.showProgressionToast('DAILY TARGET REACHED! 📅', daily.title, `+${daily.rewardCoins} 🪙`);
     });
 
+    bus.on(EVENTS.RAMP_ONBOARDING_CUE, () => {
+      this.showRampCue();
+    });
+
     bus.on(EVENTS.ACHIEVEMENT_UNLOCKED, (data: any) => {
       this.showProgressionToast(`ACHIEVEMENT ${data.tier}! 🏆`, data.achievement.title, `+${data.rewardCoins} 🪙`);
     });
@@ -301,6 +305,20 @@ export class HUD {
         badge.parentElement.removeChild(badge);
       }
     }, 1200);
+  }
+
+  public showRampCue(): void {
+    if (!this.feedbackStack) return;
+    const badge = document.createElement('div');
+    badge.className = 'hud-feedback-pill hud-feedback-ramp-cue';
+    badge.textContent = '▲ CLIMB RAMP TO ROOF';
+    this.feedbackStack.appendChild(badge);
+
+    setTimeout(() => {
+      if (badge.parentElement) {
+        badge.parentElement.removeChild(badge);
+      }
+    }, 2800);
   }
 
   public show(): void {

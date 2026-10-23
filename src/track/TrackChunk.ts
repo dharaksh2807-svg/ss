@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { CurvedShaderManager } from '../scene/CurvedShader';
-import { ObstacleFactory, ObstacleInstance } from './ObstacleFactory';
+import { ObstacleFactory, ObstacleInstance, getTrainAccessibilityProfile } from './ObstacleFactory';
 import { CollectibleFactory, CollectibleInstance } from './CollectibleFactory';
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
@@ -772,6 +772,9 @@ export class TrackChunk {
 
       const obstacleId = `chunk_${Math.round(worldZ)}_obs_${this.obstacles.length}_${obsData.type}_${obsData.lane}`;
       const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+      const isMoving = obsData.type === 'MOVING_TRAIN' || !!obsData.isMoving;
+      const accessibilityProfile = isTrain ? getTrainAccessibilityProfile(obsData.type, hasRamp, isMoving) : undefined;
+      group.userData.accessibilityProfile = accessibilityProfile;
 
       this.obstacles.push({
         id: obstacleId,
@@ -788,13 +791,14 @@ export class TrackChunk {
         rampEndZ: hasRamp ? worldCenterZ + halfD : undefined,
         roofStartZ: isTrain ? worldCenterZ + halfD : undefined,
         roofEndZ: isTrain ? worldCenterZ - halfD : undefined,
+        accessibilityProfile,
         nearMissBox,
         nearMissTriggered: false,
         active: true,
         hasRamp,
         length,
         variant: group.userData.variant,
-        isMoving: obsData.type === 'MOVING_TRAIN' || obsData.isMoving,
+        isMoving,
         velocityZ: obsData.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED,
         initialLocalZ: localZ,
         telegraphed: false,
@@ -826,6 +830,12 @@ export class TrackChunk {
           const groundY = 0.85;
           const peakY = colData.yOffset !== undefined ? colData.yOffset : 2.45;
           baseY = groundY + (peakY - groundY) * 4.0 * t * (1.0 - t);
+        } else if (colData.isRampAscent && count > 1) {
+          // Smooth ascending coin ramp: starts at 0.85m ground height and ascends continuously up the incline to 5.2m roof height
+          const t = c / (count - 1); // 0 to 1
+          const groundY = 0.85;
+          const roofY = colData.yOffset !== undefined ? colData.yOffset : 5.2;
+          baseY = groundY + t * (roofY - groundY);
         }
 
         let group: THREE.Group;

@@ -32,6 +32,7 @@ export class TrackManager {
 
   // Seedable PRNG (Mulberry32) for reproducible procedural runs and deterministic testing
   private seed: number = 1337;
+  private rampOnboardingChecked: boolean = false;
 
   constructor(private scene: THREE.Scene) {
     this.obstacleFactory = new ObstacleFactory();
@@ -85,6 +86,7 @@ export class TrackManager {
     this.cleanStreakCount = 0;
     this.lastSpawnedPattern = null;
     this.previousPlayerZ = null;
+    this.rampOnboardingChecked = false;
     this.difficultyController.reset();
     if (this.aerialCoinManager) {
       this.aerialCoinManager.reset();
@@ -240,8 +242,50 @@ export class TrackManager {
     // 2. Dynamic Ground Height Check (Train Roofs & Ramps)
     this.updateGroundHeight(player);
 
+    // 2.1 First-encounter unobtrusive onboarding cue for climbable train ramps
+    if (!this.rampOnboardingChecked) {
+      this.checkRampOnboarding(player);
+    }
+
     // 3. Collision & Collectibles Detection
     this.checkCollisions(player, dt);
+  }
+
+  /**
+   * First-encounter unobtrusive onboarding cue:
+   * Emits a brief, non-intrusive HUD micro-pill [ ▲ CLIMB RAMP TO ROOF ]
+   * when the player approaches their first climbable ramp within 32m.
+   * Persisted in localStorage so it never repeats or interrupts experienced runs.
+   */
+  private checkRampOnboarding(player: Player): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (localStorage.getItem('metro_runner_first_ramp_seen') === 'true') {
+          this.rampOnboardingChecked = true;
+          return;
+        }
+      } catch (_) {}
+    }
+
+    for (const chunk of this.chunks) {
+      for (const obs of chunk.obstacles) {
+        if (obs.active && obs.hasRamp && obs.rampCollider) {
+          const rampStart = obs.rampCollider.max.z;
+          const distToRamp = player.position.z - rampStart;
+          const playerLane = player.currentLane !== undefined ? player.currentLane : 0;
+          if (distToRamp > 0 && distToRamp < 32.0 && Math.abs(playerLane - obs.lane) <= 1) {
+            this.rampOnboardingChecked = true;
+            if (typeof localStorage !== 'undefined') {
+              try {
+                localStorage.setItem('metro_runner_first_ramp_seen', 'true');
+              } catch (_) {}
+            }
+            this.eventBus.emit(EVENTS.RAMP_ONBOARDING_CUE);
+            return;
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -386,6 +430,14 @@ export class TrackManager {
       player.setSupportSurface(supportType, supportedObstacleId);
       if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
         player.state = supportType === 'RAMP' ? 'CLIMBING' : 'ON_TRAIN';
+      }
+      if (!this.rampOnboardingChecked && (supportType === 'RAMP' || supportType === 'TRAIN_ROOF')) {
+        this.rampOnboardingChecked = true;
+        if (typeof localStorage !== 'undefined') {
+          try {
+            localStorage.setItem('metro_runner_first_ramp_seen', 'true');
+          } catch (_) {}
+        }
       }
     } else {
       targetGroundY = CONSTANTS.PLAYER_BASE_Y;
