@@ -844,5 +844,220 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * High-Contrast Medium Barrier Warning Texture (Caution Orange & Signal White Hazard Stripes)
+   */
+  public static getMediumBarrierTexture(): THREE.Texture {
+    return this.getOrCreate('medium_barrier_hazard', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Bold safety orange base
+      ctx.fillStyle = '#ff6d00';
+      ctx.fillRect(0, 0, size, size);
+
+      // High-contrast signal white diagonal stripes
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      for (let i = -size; i < size * 2; i += 48) {
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + 24, 0);
+        ctx.lineTo(i - 8, size);
+        ctx.lineTo(i - 32, size);
+        ctx.closePath();
+      }
+      ctx.fill();
+
+      // Top and bottom high-durability black safety trim
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, size, 12);
+      ctx.fillRect(0, size - 12, size, 12);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * High-Contrast Structural Railway Pillar Hazard Texture
+   * Weathered architectural concrete with bottom chevron hazard belt and high-visibility reflector
+   */
+  public static getPillarTexture(): THREE.Texture {
+    return this.getOrCreate('pillar_hazard', () => {
+      const w = 256;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Reinforced concrete column base tone
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle concrete texture speckles
+      ctx.fillStyle = '#334155';
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        ctx.fillRect(x, y, 2, 2);
+      }
+
+      // Vertical formwork lines
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(w * 0.25, 0, 3, h);
+      ctx.fillRect(w * 0.5, 0, 3, h);
+      ctx.fillRect(w * 0.75, 0, 3, h);
+
+      // Bottom 25%: High-intensity safety chevron band (Yellow & Carbon Black)
+      const hazardY = h * 0.72;
+      const hazardH = h * 0.28;
+      ctx.fillStyle = '#ffb300';
+      ctx.fillRect(0, hazardY, w, hazardH);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      for (let i = -w; i < w * 2; i += 40) {
+        ctx.moveTo(i, hazardY);
+        ctx.lineTo(i + 20, hazardY);
+        ctx.lineTo(i - 10, h);
+        ctx.lineTo(i - 30, h);
+        ctx.closePath();
+      }
+      ctx.fill();
+
+      // Eye-level high-visibility amber/white reflector band
+      ctx.fillStyle = '#ffea00';
+      ctx.fillRect(0, h * 0.45, w, 28);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, h * 0.45 + 8, w, 12);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * High Barrier Overhead Gantry Warning Texture
+   * Includes illuminated caution sign, downward teeth chevrons, and "LOW CLEARANCE 1.25M"
+   */
+  public static getHighBarrierTexture(): THREE.Texture {
+    return this.getOrCreate('high_barrier_gantry', () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // High-visibility caution yellow background
+      ctx.fillStyle = '#ffcc00';
+      ctx.fillRect(0, 0, w, h);
+
+      // Bold black diagonal hazard chevrons
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      for (let i = -w; i < w * 2; i += 48) {
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + 24, 0);
+        ctx.lineTo(i - 12, h);
+        ctx.lineTo(i - 36, h);
+        ctx.closePath();
+      }
+      ctx.fill();
+
+      // Center high-contrast clearance sign placard
+      const padW = 280;
+      const padH = 64;
+      const padX = (w - padW) * 0.5;
+      const padY = (h - padH) * 0.5;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(padX, padY, padW, padH);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(padX + 2, padY + 2, padW - 4, padH - 4);
+
+      // Warning text
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '900 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('▼ LOW CLEARANCE 1.25M ▼', w * 0.5, padY + 22);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('SLIDE ONLY // NO JUMPING', w * 0.5, padY + 46);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    });
+  }
+
+  /**
+   * Subway Tunnel Wall Ceramic Tile Texture
+   * Light subway tile with dark grout lines, moisture patina, and horizontal orange transit stripe
+   */
+  public static getTunnelWallTileTexture(): THREE.Texture {
+    return this.getOrCreate('tunnel_wall_tile', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark grout mortar background
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subway ceramic tiles (bond pattern)
+      const rows = 16;
+      const rowHeight = h / rows;
+      const tileWidth = 32;
+
+      for (let r = 0; r < rows; r++) {
+        const isOffset = r % 2 === 1;
+        const startX = isOffset ? -tileWidth / 2 : 0;
+        const y = r * rowHeight + 1.5;
+        const th = rowHeight - 3;
+
+        for (let x = startX; x < w + tileWidth; x += tileWidth) {
+          // Off-white / light transit ceramic glaze
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(x + 1.5, y, tileWidth - 3, th);
+
+          // Top highlight bevel
+          ctx.fillStyle = '#f1f5f9';
+          ctx.fillRect(x + 1.5, y, tileWidth - 3, 2);
+
+          // Bottom shadow bevel
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(x + 1.5, y + th - 2, tileWidth - 3, 2);
+        }
+      }
+
+      // Continuous middle safety transit stripe (Safety Amber)
+      const stripeY = h * 0.45;
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(0, stripeY, w, 24);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, stripeY + 8, w, 8);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 16);
+      return tex;
+    });
+  }
 }
 

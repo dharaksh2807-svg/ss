@@ -108,9 +108,15 @@ export const CONSTANTS = {
   TRAIN_RAMP_LENGTH: 8.0, // Ramp to run up onto train roof!
   MOVING_TRAIN_SPEED: 11.0, // Velocity of oncoming train relative to track
   MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Distance to flash headlights & sounding horn
-  LOW_BARRIER_HEIGHT: 1.1, // Must jump over
-  HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under
-  HIGH_BARRIER_HEIGHT: 3.5,
+  LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)
+  MEDIUM_BARRIER_HEIGHT: 1.65, // Must peak jump or lane change (cannot slide under)
+  HIGH_BARRIER_CLEARANCE: 1.25, // Must slide under (jumping hits overhead beam)
+  HIGH_BARRIER_HEIGHT: 3.8,
+  PILLAR_WIDTH: 0.9, // Structural column width/diameter
+  PILLAR_HEIGHT: 7.6, // Structural pillar height extending to ceiling
+  TUNNEL_CEILING_HEIGHT: 7.6, // Vaulted tunnel ceiling height (guarantees camera & jump clearance)
+  TUNNEL_WALL_X: 5.8, // Lateral position of continuous tunnel walls
+  MOVING_TRAIN_ACTIVATION_DIST: 85.0, // Distance ahead of player where oncoming train begins approach
   SIDE_BARRIER_WIDTH: 1.9,
   SIDE_BARRIER_HEIGHT: 2.2,
   TUNNEL_ARCH_HEIGHT: 2.9,

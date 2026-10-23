@@ -146,11 +146,23 @@ export class ReachabilityValidator {
                 }
                 collision = true;
                 break;
+              } else if (obs.type === 'MEDIUM_BARRIER') {
+                if (action.isAirborne || node.onRoof) {
+                  // Jumped over medium barrier safely
+                  continue;
+                }
+                collision = true;
+                break;
               } else if (obs.type === 'HIGH_BARRIER') {
                 if (action.isSliding && !node.onRoof) {
                   // Slid underneath high barrier safely
                   continue;
                 }
+                // Normal jumping into high barrier hits overhead crossbar
+                collision = true;
+                break;
+              } else if (obs.type === 'PILLAR') {
+                // Solid vertical pillar blocks lane completely from ground to ceiling
                 collision = true;
                 break;
               } else if (obs.type === 'SIDE_BARRIER') {
@@ -333,6 +345,18 @@ export class ReachabilityValidator {
                 return {
                   valid: false,
                   reason: `Lethal coin placement in "${pattern.name}": Coin at z=${z.toFixed(1)}m in lane ${lane} inside solid train body (y=${y.toFixed(2)}m)`
+                };
+              }
+            } else if (obs.type === 'PILLAR') {
+              return {
+                valid: false,
+                reason: `Lethal coin placement in "${pattern.name}": Coin at z=${z.toFixed(1)}m inside solid railway pillar in lane ${lane}`
+              };
+            } else if (obs.type === 'MEDIUM_BARRIER') {
+              if (y < 1.85) {
+                return {
+                  valid: false,
+                  reason: `Coin in "${pattern.name}" at z=${z.toFixed(1)}m too low for medium barrier in lane ${lane} (y=${y.toFixed(2)}m)`
                 };
               }
             } else if (obs.type === 'SIDE_BARRIER') {

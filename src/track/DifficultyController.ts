@@ -172,12 +172,13 @@ export class DifficultyController {
    * Guarantees fair telegraphing and minimum spacing between oncoming trains.
    */
   public canSpawnMovingTrain(atDistance: number): boolean {
-    // Never in the opening 15 seconds (first ~250m)
+    // Opening 240m is introductory beginner/easy track to establish rhythm
     if (atDistance < 240.0) {
       return false;
     }
     // Must observe minimum distance gap from previous moving train
-    return (atDistance - this.lastMovingTrainDistance) >= CONSTANTS.DIFFICULTY_CONFIG.MOVING_TRAIN_MIN_GAP;
+    const minGap = CONSTANTS.DIFFICULTY_CONFIG?.MOVING_TRAIN_MIN_GAP || 75.0;
+    return (atDistance - this.lastMovingTrainDistance) >= minGap;
   }
 
   /**

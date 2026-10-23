@@ -10,8 +10,10 @@ export type ObstacleType =
   | 'TRAIN_RAMP' 
   | 'MOVING_TRAIN' 
   | 'LOW_BARRIER' 
+  | 'MEDIUM_BARRIER'
   | 'HIGH_BARRIER' 
   | 'SIDE_BARRIER' 
+  | 'PILLAR'
   | 'TUNNEL_ARCH';
 
 export type TrainAccessibility = 
@@ -154,6 +156,9 @@ export class ObstacleFactory {
   private rampTrussMat: THREE.MeshStandardMaterial;
   private rampReflectorMat: THREE.MeshBasicMaterial;
   private rampTransitionMat: THREE.MeshStandardMaterial;
+  private mediumBarrierMat: THREE.MeshStandardMaterial;
+  private pillarMat: THREE.MeshStandardMaterial;
+  private highBarrierGantryMat: THREE.MeshStandardMaterial;
   private trainSpawnCounter = 0;
 
   constructor() {
@@ -165,6 +170,27 @@ export class ObstacleFactory {
       metalness: 0.2
     });
     this.curvedManager.applyCurvature(this.barrierMat);
+
+    this.mediumBarrierMat = new THREE.MeshStandardMaterial({
+      map: TextureGenerator.getMediumBarrierTexture(),
+      roughness: 0.40,
+      metalness: 0.25
+    });
+    this.curvedManager.applyCurvature(this.mediumBarrierMat);
+
+    this.pillarMat = new THREE.MeshStandardMaterial({
+      map: TextureGenerator.getPillarTexture(),
+      roughness: 0.65,
+      metalness: 0.25
+    });
+    this.curvedManager.applyCurvature(this.pillarMat);
+
+    this.highBarrierGantryMat = new THREE.MeshStandardMaterial({
+      map: TextureGenerator.getHighBarrierTexture(),
+      roughness: 0.35,
+      metalness: 0.35
+    });
+    this.curvedManager.applyCurvature(this.highBarrierGantryMat);
 
     this.trainRoofMat = new THREE.MeshStandardMaterial({
       color: 0x373b44,
@@ -284,57 +310,74 @@ export class ObstacleFactory {
 
   /**
    * Create High-Detail Low Barrier (Construction A-Frame Hazard with Beacons)
+   * Height: 1.1m. Requires jump over or lane change. Cannot slide under (solid to ground).
    */
   public createLowBarrier(): THREE.Group {
     const group = new THREE.Group();
+    group.userData = { type: 'LOW_BARRIER' };
     const laneW = CONSTANTS.LANE_WIDTH * 0.88;
 
-    // 1. Cross plank with yellow/black hazard chevrons
-    const barGeo = new THREE.BoxGeometry(laneW, CONSTANTS.LOW_BARRIER_HEIGHT * 0.45, 0.16);
+    // 1. Primary cross plank with high-contrast yellow/black hazard chevrons
+    const barGeo = new THREE.BoxGeometry(laneW, CONSTANTS.LOW_BARRIER_HEIGHT * 0.42, 0.16);
     const bar = new THREE.Mesh(barGeo, this.barrierMat);
-    bar.position.y = CONSTANTS.LOW_BARRIER_HEIGHT * 0.65;
+    bar.position.y = CONSTANTS.LOW_BARRIER_HEIGHT * 0.68;
     bar.castShadow = true;
     group.add(bar);
 
-    // 2. Heavy-duty cast-iron A-Frame support legs
+    // High-visibility reflective white border strips on top and bottom of bar
+    const trimMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const topTrim = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.04, 0.17), trimMat);
+    topTrim.position.y = CONSTANTS.LOW_BARRIER_HEIGHT * 0.89;
+    group.add(topTrim);
+
+    // 2. Lower secondary stabilizer rail (visually emphasizes barrier extends to ground)
+    const lowerBarGeo = new THREE.BoxGeometry(laneW * 0.96, 0.12, 0.12);
+    const lowerBarMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.7, metalness: 0.5 });
+    this.curvedManager.applyCurvature(lowerBarMat);
+    const lowerBar = new THREE.Mesh(lowerBarGeo, lowerBarMat);
+    lowerBar.position.y = 0.28;
+    lowerBar.castShadow = true;
+    group.add(lowerBar);
+
+    // 3. Heavy-duty cast-iron A-Frame support legs
     const legMat = new THREE.MeshStandardMaterial({ color: 0x263238, roughness: 0.7, metalness: 0.4 });
     this.curvedManager.applyCurvature(legMat);
 
-    const legGeo = new THREE.BoxGeometry(0.12, CONSTANTS.LOW_BARRIER_HEIGHT, 0.12);
-    const footGeo = new THREE.BoxGeometry(0.24, 0.08, 0.85);
+    const legGeo = new THREE.BoxGeometry(0.10, CONSTANTS.LOW_BARRIER_HEIGHT * 0.85, 0.10);
+    const footGeo = new THREE.BoxGeometry(0.22, 0.06, 0.75);
 
     [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
       // Slanted A-frame legs
       const leg1 = new THREE.Mesh(legGeo, legMat);
-      leg1.rotation.z = xPos < 0 ? 0.08 : -0.08;
-      leg1.rotation.x = 0.22;
+      leg1.rotation.z = xPos < 0 ? 0.06 : -0.06;
+      leg1.rotation.x = 0.18;
       leg1.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT * 0.45, 0);
       leg1.castShadow = true;
       group.add(leg1);
 
       const leg2 = new THREE.Mesh(legGeo, legMat);
-      leg2.rotation.z = xPos < 0 ? 0.08 : -0.08;
-      leg2.rotation.x = -0.22;
+      leg2.rotation.z = xPos < 0 ? 0.06 : -0.06;
+      leg2.rotation.x = -0.18;
       leg2.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT * 0.45, 0);
       leg2.castShadow = true;
       group.add(leg2);
 
       // Cast iron ground foot
       const foot = new THREE.Mesh(footGeo, legMat);
-      foot.position.set(xPos, 0.04, 0);
+      foot.position.set(xPos, 0.03, 0);
       foot.castShadow = true;
       group.add(foot);
 
       // Flashing amber caution beacon lamp on top
-      const beaconBaseGeo = new THREE.CylinderGeometry(0.08, 0.09, 0.08, 10);
+      const beaconBaseGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.06, 10);
       const beaconBase = new THREE.Mesh(beaconBaseGeo, legMat);
-      beaconBase.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT + 0.04, 0);
+      beaconBase.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT * 0.94, 0);
       group.add(beaconBase);
 
-      const beaconLensGeo = new THREE.SphereGeometry(0.075, 10, 8);
+      const beaconLensGeo = new THREE.SphereGeometry(0.055, 10, 8);
       const beaconLensMat = new THREE.MeshBasicMaterial({ color: 0xffa000 });
       const beaconLens = new THREE.Mesh(beaconLensGeo, beaconLensMat);
-      beaconLens.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT + 0.12, 0);
+      beaconLens.position.set(xPos, CONSTANTS.LOW_BARRIER_HEIGHT * 0.99, 0);
       group.add(beaconLens);
     });
 
@@ -342,18 +385,94 @@ export class ObstacleFactory {
   }
 
   /**
+   * Create Medium Railway Barrier (Substantial Turnstile / Barrier Gate)
+   * Height: 1.65m. Permits peak jumping or lane change. Cannot slide under.
+   */
+  public createMediumBarrier(): THREE.Group {
+    const group = new THREE.Group();
+    group.userData = { type: 'MEDIUM_BARRIER' };
+    const laneW = CONSTANTS.LANE_WIDTH * 0.90;
+    const h = CONSTANTS.MEDIUM_BARRIER_HEIGHT; // 1.65m
+
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.65 });
+    this.curvedManager.applyCurvature(steelMat);
+
+    // 1. Heavy tubular steel vertical posts on left & right
+    const postGeo = new THREE.CylinderGeometry(0.12, 0.14, h, 12);
+    const padGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.14, 12);
+
+    [-laneW * 0.46, laneW * 0.46].forEach((xPos) => {
+      const post = new THREE.Mesh(postGeo, steelMat);
+      post.position.set(xPos, h * 0.5, 0);
+      post.castShadow = true;
+      group.add(post);
+
+      const pad = new THREE.Mesh(padGeo, steelMat);
+      pad.position.set(xPos, 0.07, 0);
+      group.add(pad);
+
+      // Blue / Amber LED strobe beacon on top of each post
+      const beaconBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.08, 10), steelMat);
+      beaconBase.position.set(xPos, h + 0.04, 0);
+      group.add(beaconBase);
+
+      const beaconLens = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 10, 8),
+        new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+      );
+      beaconLens.position.set(xPos, h + 0.12, 0);
+      group.add(beaconLens);
+    });
+
+    // 2. Lower reinforced steel crossbeam
+    const lowerBeam = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.20, 0.18), steelMat);
+    lowerBeam.position.set(0, 0.70, 0);
+    lowerBeam.castShadow = true;
+    group.add(lowerBeam);
+
+    // 3. Upper primary hazard crossbeam (Orange/White diagonal warning stripes)
+    const upperBeamGeo = new THREE.BoxGeometry(laneW, 0.48, 0.22);
+    const upperBeam = new THREE.Mesh(upperBeamGeo, this.mediumBarrierMat);
+    upperBeam.position.set(0, h - 0.24, 0);
+    upperBeam.castShadow = true;
+    group.add(upperBeam);
+
+    // 4. Vertical anti-crawl security rungs connecting the two beams
+    const rungGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.70, 8);
+    for (let i = -2; i <= 2; i++) {
+      const rx = i * (laneW * 0.18);
+      const rung = new THREE.Mesh(rungGeo, steelMat);
+      rung.position.set(rx, 1.05, 0);
+      rung.castShadow = true;
+      group.add(rung);
+    }
+
+    // 5. Central reflective safety badge plate
+    const badgeMat = new THREE.MeshBasicMaterial({ color: 0xff6d00 });
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.24, 0.26), badgeMat);
+    badge.position.set(0, h - 0.24, 0.02);
+    group.add(badge);
+
+    return group;
+  }
+
+  /**
    * Create High Overhead Barrier (Requires Slide Under)
+   * Ground clearance: 1.25m. Overhead beam spans [1.25m, 2.4m] with upper truss up to 3.8m.
+   * Jumping into it is blocked by the solid overhead beam.
    */
   public createHighBarrier(): THREE.Group {
     const group = new THREE.Group();
-    const spanW = CONSTANTS.LANE_WIDTH * 0.92;
+    group.userData = { type: 'HIGH_BARRIER' };
+    const spanW = CONSTANTS.LANE_WIDTH * 0.94;
     const postHeight = CONSTANTS.HIGH_BARRIER_HEIGHT;
+    const clearance = CONSTANTS.HIGH_BARRIER_CLEARANCE; // 1.25m
 
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.6, metalness: 0.5 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.6, metalness: 0.55 });
     this.curvedManager.applyCurvature(frameMat);
 
-    // Left & Right vertical steel tubular columns
-    const postGeo = new THREE.CylinderGeometry(0.12, 0.14, postHeight, 10);
+    // 1. Left & Right vertical steel tubular columns
+    const postGeo = new THREE.CylinderGeometry(0.14, 0.16, postHeight, 12);
     [-spanW * 0.48, spanW * 0.48].forEach((xPos) => {
       const post = new THREE.Mesh(postGeo, frameMat);
       post.position.set(xPos, postHeight * 0.5, 0);
@@ -361,37 +480,133 @@ export class ObstacleFactory {
       group.add(post);
 
       // Concrete foundation foot
-      const padGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.16, 12);
+      const padGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.18, 12);
       const pad = new THREE.Mesh(padGeo, frameMat);
-      pad.position.set(xPos, 0.08, 0);
+      pad.position.set(xPos, 0.09, 0);
       group.add(pad);
     });
 
-    // Overhead clearance crossbar starting at clearance height (1.25m to 2.2m)
-    const barGeo = new THREE.BoxGeometry(spanW, 0.95, 0.28);
-    const bar = new THREE.Mesh(barGeo, this.barrierMat);
-    bar.position.set(0, CONSTANTS.HIGH_BARRIER_CLEARANCE + 0.48, 0);
+    // 2. Solid overhead clearance box girder spanning from clearance height (1.25m) to 2.35m
+    const beamH = 1.10;
+    const barGeo = new THREE.BoxGeometry(spanW, beamH, 0.35);
+    const bar = new THREE.Mesh(barGeo, this.highBarrierGantryMat);
+    bar.position.set(0, clearance + beamH * 0.5, 0);
     bar.castShadow = true;
     group.add(bar);
 
-    // Diagonal reinforcing steel brackets
-    const bracketGeo = new THREE.BoxGeometry(0.08, 0.65, 0.08);
+    // 3. Downward caution teeth prongs along bottom edge (Y = 1.25m) visually reinforcing low clearance
+    const toothMat = new THREE.MeshBasicMaterial({ color: 0xffd600 });
+    const toothGeo = new THREE.ConeGeometry(0.08, 0.18, 4);
+    for (let t = -4; t <= 4; t++) {
+      const tx = t * (spanW * 0.10);
+      const tooth = new THREE.Mesh(toothGeo, toothMat);
+      tooth.rotation.z = Math.PI; // Point down
+      tooth.position.set(tx, clearance - 0.02, 0.16);
+      group.add(tooth);
+    }
+
+    // 4. Overhead upper reinforcing steel truss structure spanning up to 3.8m
+    const trussH = postHeight - (clearance + beamH);
+    const upperTruss = new THREE.Mesh(new THREE.BoxGeometry(spanW, trussH, 0.25), frameMat);
+    upperTruss.position.set(0, (clearance + beamH) + trussH * 0.5, 0);
+    upperTruss.castShadow = true;
+    group.add(upperTruss);
+
+    // 5. Diagonal reinforcing steel brackets
+    const bracketGeo = new THREE.BoxGeometry(0.08, 0.75, 0.08);
     const leftBracket = new THREE.Mesh(bracketGeo, frameMat);
     leftBracket.rotation.z = -Math.PI / 4;
-    leftBracket.position.set(-spanW * 0.4, CONSTANTS.HIGH_BARRIER_CLEARANCE + 0.9, 0);
+    leftBracket.position.set(-spanW * 0.40, clearance + beamH + 0.35, 0);
     group.add(leftBracket);
 
     const rightBracket = new THREE.Mesh(bracketGeo, frameMat);
     rightBracket.rotation.z = Math.PI / 4;
-    rightBracket.position.set(spanW * 0.4, CONSTANTS.HIGH_BARRIER_CLEARANCE + 0.9, 0);
+    rightBracket.position.set(spanW * 0.40, clearance + beamH + 0.35, 0);
     group.add(rightBracket);
 
-    // Overhead illuminated clearance warning sign
-    const signGeo = new THREE.BoxGeometry(1.4, 0.4, 0.1);
-    const signMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
-    const sign = new THREE.Mesh(signGeo, signMat);
-    sign.position.set(0, CONSTANTS.HIGH_BARRIER_CLEARANCE + 1.15, 0.16);
-    group.add(sign);
+    // 6. Dual red warning strobe lights on top of columns
+    [-spanW * 0.48, spanW * 0.48].forEach((xPos) => {
+      const beacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.10, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff1744 })
+      );
+      beacon.position.set(xPos, postHeight + 0.12, 0);
+      group.add(beacon);
+    });
+
+    return group;
+  }
+
+  /**
+   * Create Heavy Railway Structural Hazard Pillar (Solid Column)
+   * Width: 0.9m, Height: 7.6m. Completely blocks lane.
+   * Requires changing lane. Cannot be jumped over or slid under.
+   */
+  public createPillar(): THREE.Group {
+    const group = new THREE.Group();
+    group.userData = { type: 'PILLAR' };
+    const w = CONSTANTS.PILLAR_WIDTH; // 0.9m
+    const h = CONSTANTS.PILLAR_HEIGHT; // 7.6m
+
+    // 1. Reinforced concrete base pedestal with hazard chevrons
+    const baseW = w * 0.98;
+    const baseH = 0.65;
+    const baseGeo = new THREE.BoxGeometry(baseW, baseH, baseW);
+    const base = new THREE.Mesh(baseGeo, this.pillarMat);
+    base.position.set(0, baseH * 0.5, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // 2. Main octagonal / cylindrical structural column rising to ceiling
+    const colGeo = new THREE.CylinderGeometry(w * 0.44, w * 0.48, h - baseH, 12);
+    const col = new THREE.Mesh(colGeo, this.pillarMat);
+    col.position.set(0, baseH + (h - baseH) * 0.5, 0);
+    col.castShadow = true;
+    col.receiveShadow = true;
+    group.add(col);
+
+    // 3. Heavy riveted steel reinforcement collars at base and mid-height
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.8 });
+    this.curvedManager.applyCurvature(steelMat);
+
+    const collar1 = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.49, w * 0.49, 0.22, 12), steelMat);
+    collar1.position.set(0, baseH + 0.15, 0);
+    group.add(collar1);
+
+    const collar2 = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.48, w * 0.48, 0.22, 12), steelMat);
+    collar2.position.set(0, 3.2, 0);
+    group.add(collar2);
+
+    // 4. Eye-level high-visibility reflective caution bands with red warning reflectors
+    const reflectorMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    const reflectorBandGeo = new THREE.CylinderGeometry(w * 0.47, w * 0.47, 0.28, 12);
+    const reflectorBand = new THREE.Mesh(reflectorBandGeo, this.mediumBarrierMat);
+    reflectorBand.position.set(0, 1.45, 0);
+    group.add(reflectorBand);
+
+    // Red reflector lenses on front and back
+    [-0.42, 0.42].forEach((rz) => {
+      const lens = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), reflectorMat);
+      lens.position.set(0, 1.45, rz);
+      group.add(lens);
+    });
+
+    // 5. Flashing red clearance beacon mounted on front face
+    const beaconBox = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.28, 0.12), steelMat);
+    beaconBox.position.set(0, 2.8, w * 0.44);
+    group.add(beaconBox);
+
+    const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), reflectorMat);
+    beaconLight.position.set(0, 2.8, w * 0.44 + 0.08);
+    group.add(beaconLight);
+
+    // 6. Top capital beam interface supporting ceiling
+    const capGeo = new THREE.BoxGeometry(w * 0.98, 0.35, w * 0.98);
+    const cap = new THREE.Mesh(capGeo, steelMat);
+    cap.position.set(0, h - 0.18, 0);
+    cap.castShadow = true;
+    group.add(cap);
 
     return group;
   }

@@ -189,8 +189,8 @@ export class CollisionResolver {
         };
       }
     } else {
-      // Barrier obstacles (LOW_BARRIER, HIGH_BARRIER, SIDE_BARRIER, TUNNEL_ARCH)
-      // Successful jump over low barrier
+      // Barrier and structural obstacles (LOW_BARRIER, MEDIUM_BARRIER, HIGH_BARRIER, PILLAR, SIDE_BARRIER, TUNNEL_ARCH)
+      // 1. Low jump hurdle: cleared by jump (cannot slide under)
       if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
         return {
           outcome: 'SAFE_CONTACT',
@@ -202,8 +202,21 @@ export class CollisionResolver {
         };
       }
 
-      // Successful slide under high barrier or tunnel arch
-      if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && player.isSliding) {
+      // 2. Medium barrier: cleared by high peak jump (apex >= 1.85m) or Super Sneakers (cannot slide under)
+      const hasSneakers = player.powerups?.isSuperSneakersActive?.() || false;
+      if (obs.type === 'MEDIUM_BARRIER' && player.isJumping && (player.position.y >= (CONSTANTS.MEDIUM_BARRIER_HEIGHT || 1.65) + 0.20 || hasSneakers)) {
+        return {
+          outcome: 'SAFE_CONTACT',
+          diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+          isGlance: false,
+          overlapX: 0,
+          isFrontal: false,
+          isFlankContact: false
+        };
+      }
+
+      // 3. High slide-only barrier & tunnel arch: cleared by slide (jumping hits overhead beam)
+      if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && player.isSliding && player.position.y < CONSTANTS.HIGH_BARRIER_CLEARANCE) {
         return {
           outcome: 'SAFE_CONTACT',
           diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),

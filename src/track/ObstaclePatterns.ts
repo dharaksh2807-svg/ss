@@ -30,6 +30,8 @@ export interface TrackPattern {
   speedMin?: number;
   speedMax?: number;
   isBreather?: boolean;
+  isTunnel?: boolean;
+  tunnelPortal?: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE';
 }
 
 export const OBSTACLE_PATTERNS: TrackPattern[] = [
@@ -656,6 +658,240 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: 0, zOffset: 28.5, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
       { type: 'COIN', lane: 1, zOffset: 46.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
       { type: 'SHIELD', lane: 0, zOffset: 56.0 }
+    ]
+  },
+
+  // =========================================================================
+  // TASK 2 PATTERNS: MOVING TRAINS, PILLARS, MODULAR TUNNELS, 3 BARRIERS
+  // =========================================================================
+
+  // 28. Moving Train with Free Side Lanes (Easy Oncoming Encounter)
+  {
+    name: 'MOVING_TRAIN_SIDE_CHOICE',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Oncoming moving train in center lane; shift to lane -1 or lane 1 before z=45m',
+    minReactionDist: 32.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: 0, zOffset: 45.0, length: 20.0, isMoving: true, velocityZ: CONSTANTS.MOVING_TRAIN_SPEED }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 14.0, count: 6, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 30.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 26.0, count: 9, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 29. Low Hurdle Followed by High Barrier (Rhythmic Jump-Then-Slide)
+  {
+    name: 'LOW_HURDLE_TO_HIGH_BARRIER',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP', 'SLIDE'],
+    safeRoutes: 'Jump low hurdle in center lane at z=24m, then slide under high barrier at z=52m, or take open flanks',
+    minReactionDist: 24.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 24.0 },
+      { type: 'HIGH_BARRIER', lane: 0, zOffset: 52.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 21.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 48.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 30. Central Structural Railway Pillar with Free Side Routes
+  {
+    name: 'PILLAR_CENTRAL_SPLIT',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Heavy structural bridge pillar in center lane at z=36m; dodge left to lane -1 or right to lane 1',
+    minReactionDist: 34.0,
+    obstacles: [
+      { type: 'PILLAR', lane: 0, zOffset: 36.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 14.0, count: 6, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 30.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 31. Slide Gantry Followed by Stationary Train
+  {
+    name: 'SLIDE_GANTRY_TO_TRAIN',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['SLIDE', 'LANE_CHANGE'],
+    safeRoutes: 'Slide under high barrier in lane -1 at z=22m, or jump low hurdle in lane 1 at z=26m; center lane blocked by train at z=35m',
+    minReactionDist: 22.0,
+    obstacles: [
+      { type: 'HIGH_BARRIER', lane: -1, zOffset: 22.0 },
+      { type: 'TRAIN', lane: 0, zOffset: 35.0, length: 24.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 26.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 18.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 1, zOffset: 23.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 32.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 32. Pillar and Side-Lane Hurdles
+  {
+    name: 'PILLAR_AND_LOW_BARRIER',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Pillar in lane -1 at z=30m; jump low hurdle in center lane at z=30m, or peak jump medium barrier in lane 1 at z=56m',
+    minReactionDist: 25.0,
+    obstacles: [
+      { type: 'PILLAR', lane: -1, zOffset: 30.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 30.0 },
+      { type: 'MEDIUM_BARRIER', lane: 1, zOffset: 56.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 27.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 20.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 38.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 33. Tunnel Entry Portal Followed by Overhead Slide Hazard
+  {
+    name: 'TUNNEL_ENTRY_SLIDE_HAZARD',
+    difficulty: 'MEDIUM',
+    isTunnel: true,
+    tunnelPortal: 'ENTRY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['SLIDE'],
+    safeRoutes: 'Enter subway tunnel portal; slide under overhead clearance gantry in center lane at z=28m, or take open left lane',
+    minReactionDist: 25.0,
+    obstacles: [
+      { type: 'HIGH_BARRIER', lane: 0, zOffset: 28.0 },
+      { type: 'PILLAR', lane: 1, zOffset: 46.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 24.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 36.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 34. Enclosed Short Subway Tunnel Section with Varied Internal Obstacles
+  {
+    name: 'TUNNEL_SHORT_ENCLOSED',
+    difficulty: 'MEDIUM',
+    isTunnel: true,
+    tunnelPortal: 'BOTH',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE', 'SLIDE'],
+    safeRoutes: 'Complete short tunnel; avoid center support pillar at z=26m, slide under lane 1 high barrier at z=50m, or take lane -1',
+    minReactionDist: 24.0,
+    obstacles: [
+      { type: 'PILLAR', lane: 0, zOffset: 26.0 },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 50.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 12.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 46.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' }
+    ]
+  },
+
+  // 35. Tunnel Exit Portal Followed by Oncoming Moving Train
+  {
+    name: 'TUNNEL_EXIT_MOVING_TRAIN',
+    difficulty: 'HARD',
+    isTunnel: true,
+    tunnelPortal: 'EXIT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE', 'JUMP'],
+    safeRoutes: 'Exit tunnel portal into oncoming moving train in center lane; shift to lane -1 and jump low barrier at z=22m',
+    minReactionDist: 22.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 22.0 },
+      { type: 'PILLAR', lane: 1, zOffset: 24.0 },
+      { type: 'MOVING_TRAIN', lane: 0, zOffset: 48.0, length: 22.0, isMoving: true, velocityZ: CONSTANTS.MOVING_TRAIN_SPEED }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 19.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, zOffset: 32.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 10.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' }
+    ]
+  },
+
+  // 36. Ramp and Rooftop High-Speed Traverse
+  {
+    name: 'RAMP_AND_ROOFTOP_RUN',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Climb train ramp in lane -1 at z=18m to run along roof at y=5.2m; ground level center lane blocked by train at z=46m',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'TRAIN_RAMP', lane: -1, zOffset: 18.0, length: 22.0, hasRamp: true },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 24.0 },
+      { type: 'TRAIN', lane: 0, zOffset: 46.0, length: 20.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 18.0, count: 8, spacing: 2.4, yOffset: 5.20, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 37. Consecutive Jump and Slide Gauntlet
+  {
+    name: 'CONSECUTIVE_JUMP_SLIDE_GAUNTLET',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['JUMP', 'SLIDE'],
+    safeRoutes: 'Jump low hurdle at z=20m, slide under high barrier at z=44m, peak jump medium barrier at z=66m in center lane',
+    minReactionDist: 20.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 20.0 },
+      { type: 'TRAIN', lane: 1, zOffset: 24.0, length: 26.0 },
+      { type: 'HIGH_BARRIER', lane: 0, zOffset: 44.0 },
+      { type: 'MEDIUM_BARRIER', lane: 0, zOffset: 66.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 17.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 40.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 38. Expert Moving Train and Structural Pillar Gauntlet
+  {
+    name: 'EXPERT_MOVING_TRAIN_PILLAR_MAZE',
+    difficulty: 'EXPERT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['LANE_CHANGE', 'SLIDE'],
+    safeRoutes: 'Avoid central pillar at z=24m by shifting to lane -1, then slide under high barrier at z=52m while oncoming train roars past in lane 1',
+    minReactionDist: 20.0,
+    obstacles: [
+      { type: 'PILLAR', lane: 0, zOffset: 24.0 },
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 46.0, length: 22.0, isMoving: true, velocityZ: CONSTANTS.MOVING_TRAIN_SPEED },
+      { type: 'HIGH_BARRIER', lane: -1, zOffset: 52.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 10.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 48.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 58.0, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' }
     ]
   }
 ];

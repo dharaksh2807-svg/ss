@@ -370,11 +370,8 @@ export class SoundManager {
     // Environmental District Transitions & Audio Feedback
     this.unsubscribers.push(bus.on('ENVIRONMENT_TRANSITION_APPROACHING', () => this.playEnvironmentTransition()));
     this.unsubscribers.push(bus.on('ENVIRONMENT_CHANGED', (envId: string) => this.setEnvironmentAmbience(envId)));
-    this.unsubscribers.push(bus.on('ENVIRONMENT_PREFERENCE_CHANGED', (pref: string) => {
-      if (pref !== 'DYNAMIC') {
-        this.setEnvironmentAmbience(pref);
-      }
-    }));
+    this.unsubscribers.push(bus.on(EVENTS.TUNNEL_ENTERED, () => this.playTunnelEntered()));
+    this.unsubscribers.push(bus.on(EVENTS.TUNNEL_EXITED, () => this.playTunnelExited()));
 
     // Game Lifecycle
     this.unsubscribers.push(
@@ -1520,6 +1517,58 @@ export class SoundManager {
       whooshGain.connect(this.ambientGain);
       noise.start(now);
       noise.stop(now + 0.85);
+    } catch {}
+  }
+
+  public playTunnelEntered(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      // Resonant low-end reverberant rumble shift for enclosed subway acoustics
+      if (this.trainRumbleOsc && this.trainRumbleFilter) {
+        this.trainRumbleOsc.frequency.setTargetAtTime(32, now, 0.5);
+        this.trainRumbleFilter.frequency.setTargetAtTime(85, now, 0.5);
+      }
+
+      // Deep atmospheric whoosh transition
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.6);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      osc.connect(gain);
+      gain.connect(this.ambientGain);
+      osc.start(now);
+      osc.stop(now + 0.75);
+    } catch {}
+  }
+
+  public playTunnelExited(): void {
+    if (!this.ctx || !this.ambientGain || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      // Restore open-air acoustics
+      if (this.trainRumbleOsc && this.trainRumbleFilter) {
+        this.trainRumbleOsc.frequency.setTargetAtTime(50, now, 0.5);
+        this.trainRumbleFilter.frequency.setTargetAtTime(155, now, 0.5);
+      }
+
+      // Bright emergence tone (upward sweep)
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.4);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+      osc.connect(gain);
+      gain.connect(this.ambientGain);
+      osc.start(now);
+      osc.stop(now + 0.55);
     } catch {}
   }
 

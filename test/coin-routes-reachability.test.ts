@@ -132,7 +132,7 @@ console.log('--- Suite 1: Data-Driven Coin Pattern Library & Archetype Builders 
 // =========================================================================
 console.log('\n--- Suite 2: 100% Reachability & Clearance Across All 27 Patterns ---');
 {
-  assert(OBSTACLE_PATTERNS.length === 27, `Total patterns in catalog is 27 (got ${OBSTACLE_PATTERNS.length})`);
+  assert(OBSTACLE_PATTERNS.length >= 27, `Total patterns in catalog is at least 27 (got ${OBSTACLE_PATTERNS.length})`);
 
   let validCount18 = 0;
   let validCount38 = 0;
@@ -161,8 +161,8 @@ console.log('\n--- Suite 2: 100% Reachability & Clearance Across All 27 Patterns
     }
   }
 
-  assert(validCount18 === 27, 'All 27 patterns verified safe at 18 m/s');
-  assert(validCount38 === 27, 'All 27 patterns verified safe at 38 m/s');
+  assert(validCount18 === OBSTACLE_PATTERNS.length, `All ${OBSTACLE_PATTERNS.length} patterns verified safe at 18 m/s`);
+  assert(validCount38 === OBSTACLE_PATTERNS.length, `All ${OBSTACLE_PATTERNS.length} patterns verified safe at 38 m/s`);
 }
 
 // =========================================================================

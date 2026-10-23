@@ -22,6 +22,9 @@ export class TrackChunk {
   // Environment and theme state
   public currentTheme: EnvironmentTheme = MODERN_METRO_THEME;
   public isTransitionPortal: boolean = false;
+  public isTunnel: boolean = false;
+  public tunnelPortal: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE' = 'NONE';
+  private playerInTunnel: boolean = false;
 
   private static sharedMaterials: {
     // Core physical trackbed
@@ -55,6 +58,11 @@ export class TrackChunk {
     historicSignMat: THREE.MeshBasicMaterial;
     earthenwareInsulatorMat: THREE.MeshStandardMaterial;
     copperCableMat: THREE.MeshBasicMaterial;
+    // Subway Tunnel Architecture
+    tunnelTileMat: THREE.MeshStandardMaterial;
+    tunnelCeilingMat: THREE.MeshStandardMaterial;
+    tunnelRibMat: THREE.MeshStandardMaterial;
+    tunnelLampMat: THREE.MeshBasicMaterial;
   } | null = null;
 
   private static sleeperGeo: THREE.BoxGeometry | null = null;
@@ -276,6 +284,32 @@ export class TrackChunk {
       color: 0x4e342e
     });
 
+    // 4. Subway Tunnel Architecture Materials
+    const tunnelTileMat = new THREE.MeshStandardMaterial({
+      map: TextureGenerator.getTunnelWallTileTexture(),
+      roughness: 0.45,
+      metalness: 0.15
+    });
+    curved.applyCurvature(tunnelTileMat);
+
+    const tunnelCeilingMat = new THREE.MeshStandardMaterial({
+      color: 0x1e242b,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    curved.applyCurvature(tunnelCeilingMat);
+
+    const tunnelRibMat = new THREE.MeshStandardMaterial({
+      color: 0x2a303c,
+      roughness: 0.55,
+      metalness: 0.75
+    });
+    curved.applyCurvature(tunnelRibMat);
+
+    const tunnelLampMat = new THREE.MeshBasicMaterial({
+      color: 0xffd54f
+    });
+
     TrackChunk.sharedMaterials = {
       ballastMat,
       sleeperMat,
@@ -304,7 +338,11 @@ export class TrackChunk {
       slateRoofMat,
       historicSignMat,
       earthenwareInsulatorMat,
-      copperCableMat
+      copperCableMat,
+      tunnelTileMat,
+      tunnelCeilingMat,
+      tunnelRibMat,
+      tunnelLampMat
     };
   }
 
@@ -419,13 +457,192 @@ export class TrackChunk {
     const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8;
     const curbWidth = 0.5;
 
-    if (isTransition) {
+    if (this.isTunnel) {
+      this.buildTunnelScenery(this.tunnelPortal);
+    } else if (isTransition) {
       this.buildTransitionPortalScenery(roadbedWidth, curbWidth, theme);
     } else if (theme.id === 'HISTORIC_QUARTER') {
       this.buildHistoricQuarterScenery(roadbedWidth, curbWidth);
     } else {
       this.buildModernMetroScenery(roadbedWidth, curbWidth);
     }
+  }
+
+  /**
+   * Builds modular enclosed subway tunnel section with visible portal, walls, ceiling vault, and lighting
+   */
+  private buildTunnelScenery(portalType: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE'): void {
+    const mats = TrackChunk.sharedMaterials!;
+    const tunnelGroup = new THREE.Group();
+    tunnelGroup.name = 'tunnel_scenery';
+
+    const wallX = CONSTANTS.TUNNEL_WALL_X; // 5.8m
+    const wallH = 6.4;
+    const wallThick = 0.6;
+    const ceilingH = CONSTANTS.TUNNEL_CEILING_HEIGHT; // 7.6m
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallH, this.length);
+
+    // 1. Continuous Left & Right Tunnel Walls with Subway Ceramic Tiling
+    const leftWall = new THREE.Mesh(wallGeo, mats.tunnelTileMat);
+    leftWall.position.set(-wallX, wallH * 0.5, -this.length * 0.5);
+    leftWall.castShadow = true;
+    leftWall.receiveShadow = true;
+    tunnelGroup.add(leftWall);
+
+    const rightWall = new THREE.Mesh(wallGeo, mats.tunnelTileMat);
+    rightWall.position.set(wallX, wallH * 0.5, -this.length * 0.5);
+    rightWall.castShadow = true;
+    rightWall.receiveShadow = true;
+    tunnelGroup.add(rightWall);
+
+    // 2. Vaulted Arched Ceiling Geometry
+    // Spans from Left Wall (-wallX) to Right Wall (+wallX), crowning at ceilingH (7.6m)
+    const spanW = wallX * 2.0;
+    const ceilingThick = 0.45;
+    
+    // Center horizontal crown slab
+    const crownW = spanW * 0.65;
+    const crownSlab = new THREE.Mesh(
+      new THREE.BoxGeometry(crownW, ceilingThick, this.length),
+      mats.tunnelCeilingMat
+    );
+    crownSlab.position.set(0, ceilingH, -this.length * 0.5);
+    crownSlab.receiveShadow = true;
+    tunnelGroup.add(crownSlab);
+
+    // Left and right angled vault haunches
+    const haunchW = (spanW - crownW) * 0.5 + 0.35;
+    const haunchAngle = 0.38;
+    const leftHaunch = new THREE.Mesh(
+      new THREE.BoxGeometry(haunchW, ceilingThick, this.length),
+      mats.tunnelCeilingMat
+    );
+    leftHaunch.rotation.z = -haunchAngle;
+    leftHaunch.position.set(-spanW * 0.5 + haunchW * 0.48, ceilingH - 0.55, -this.length * 0.5);
+    tunnelGroup.add(leftHaunch);
+
+    const rightHaunch = new THREE.Mesh(
+      new THREE.BoxGeometry(haunchW, ceilingThick, this.length),
+      mats.tunnelCeilingMat
+    );
+    rightHaunch.rotation.z = haunchAngle;
+    rightHaunch.position.set(spanW * 0.5 - haunchW * 0.48, ceilingH - 0.55, -this.length * 0.5);
+    tunnelGroup.add(rightHaunch);
+
+    // 3. Structural Steel Rib Arch Bents (every 16m along chunk)
+    const numRibs = 5;
+    const ribSpacing = this.length / numRibs;
+    for (let r = 0; r < numRibs; r++) {
+      const rz = -r * ribSpacing - ribSpacing * 0.5;
+      const ribGroup = new THREE.Group();
+      ribGroup.position.set(0, 0, rz);
+
+      // Left & right vertical steel rib columns
+      const colGeo = new THREE.BoxGeometry(0.35, wallH, 0.45);
+      [-wallX + 0.25, wallX - 0.25].forEach((rx) => {
+        const col = new THREE.Mesh(colGeo, mats.tunnelRibMat);
+        col.position.set(rx, wallH * 0.5, 0);
+        col.castShadow = true;
+        ribGroup.add(col);
+      });
+
+      // Overhead arch cross-girder
+      const girder = new THREE.Mesh(new THREE.BoxGeometry(spanW + 0.2, 0.50, 0.45), mats.tunnelRibMat);
+      girder.position.set(0, ceilingH - 0.25, 0);
+      girder.castShadow = true;
+      ribGroup.add(girder);
+
+      // Internal overhead high-pressure sodium strip luminaires
+      const lampGeo = new THREE.BoxGeometry(2.4, 0.15, 0.4);
+      [-CONSTANTS.LANE_WIDTH, CONSTANTS.LANE_WIDTH].forEach((lx) => {
+        const lamp = new THREE.Mesh(lampGeo, mats.tunnelLampMat);
+        lamp.position.set(lx, ceilingH - 0.35, 0);
+        ribGroup.add(lamp);
+
+        // Warm glow plane underneath
+        const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.3), mats.tunnelLampMat);
+        glow.rotation.x = Math.PI / 2;
+        glow.position.set(lx, ceilingH - 0.44, 0);
+        ribGroup.add(glow);
+      });
+
+      tunnelGroup.add(ribGroup);
+    }
+
+    // 4. Recessed Maintenance Refuge Alcoves & Cable Trays
+    [-wallX + 0.28, wallX - 0.28].forEach((ax) => {
+      const pipeGeo = new THREE.CylinderGeometry(0.06, 0.06, this.length, 8);
+      const pipe = new THREE.Mesh(pipeGeo, mats.tunnelRibMat);
+      pipe.rotation.x = Math.PI / 2;
+      pipe.position.set(ax, 3.2, -this.length * 0.5);
+      tunnelGroup.add(pipe);
+
+      const pipe2 = pipe.clone();
+      pipe2.position.set(ax, 3.4, -this.length * 0.5);
+      tunnelGroup.add(pipe2);
+    });
+
+    // 5. Entrance Portal Arch at Z = 0
+    if (portalType === 'ENTRY' || portalType === 'BOTH') {
+      const entryPortal = this.buildTunnelPortalArch(0, 'ENTRY');
+      tunnelGroup.add(entryPortal);
+    }
+
+    // 6. Exit Portal Arch at Z = -this.length (-80m)
+    if (portalType === 'EXIT' || portalType === 'BOTH') {
+      const exitPortal = this.buildTunnelPortalArch(-this.length, 'EXIT');
+      tunnelGroup.add(exitPortal);
+    }
+
+    this.decorativeGroup.add(tunnelGroup);
+  }
+
+  /**
+   * Constructs heavy portal gateway for tunnel entrance or exit
+   */
+  private buildTunnelPortalArch(zPos: number, type: 'ENTRY' | 'EXIT'): THREE.Group {
+    const mats = TrackChunk.sharedMaterials!;
+    const portal = new THREE.Group();
+    portal.position.set(0, 0, zPos);
+
+    const wallX = CONSTANTS.TUNNEL_WALL_X;
+    const spanW = wallX * 2.0;
+    const portalH = CONSTANTS.TUNNEL_CEILING_HEIGHT + 1.2;
+
+    // Massive ashlar stone pylons flanking portal
+    const pylonGeo = new THREE.BoxGeometry(2.4, portalH, 2.5);
+    [-wallX - 0.9, wallX + 0.9].forEach((px) => {
+      const pylon = new THREE.Mesh(pylonGeo, mats.stoneMasonryMat);
+      pylon.position.set(px, portalH * 0.5, 0);
+      pylon.castShadow = true;
+      pylon.receiveShadow = true;
+      portal.add(pylon);
+    });
+
+    // Monumental portal arch crown beam
+    const archCrown = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.2, 1.8, 2.8), mats.stoneMasonryMat);
+    archCrown.position.set(0, portalH + 0.5, 0);
+    archCrown.castShadow = true;
+    archCrown.receiveShadow = true;
+    portal.add(archCrown);
+
+    // Carved portal clearance sign
+    const signGeo = new THREE.BoxGeometry(8.5, 0.7, 0.2);
+    const sign = new THREE.Mesh(signGeo, mats.curbMat);
+    sign.position.set(0, portalH + 0.6, type === 'ENTRY' ? 1.45 : -1.45);
+    portal.add(sign);
+
+    // Twin flashing red portal marker beacons
+    [-wallX - 0.5, wallX + 0.5].forEach((bx) => {
+      const beacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff1744 })
+      );
+      beacon.position.set(bx, portalH + 1.5, type === 'ENTRY' ? 1.4 : -1.4);
+      portal.add(beacon);
+    });
+
+    return portal;
   }
 
   /**
@@ -1219,8 +1436,21 @@ export class TrackChunk {
       ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : MODERN_METRO_THEME)
       : theme;
 
-    // Check if scenery needs rebuilding for theme change or transition portal
-    if (this.currentTheme.id !== resolvedTheme.id || this.isTransitionPortal !== isTransition) {
+    this.isTunnel = !!pattern?.isTunnel;
+    this.tunnelPortal = pattern?.tunnelPortal || 'NONE';
+    this.playerInTunnel = false;
+
+    // Check if scenery needs rebuilding for theme change, transition portal, or tunnel
+    const wasTunnel = this.decorativeGroup.children.some((c) => c.name === 'tunnel_scenery');
+    if (this.isTunnel) {
+      while (this.decorativeGroup.children.length > 0) {
+        this.decorativeGroup.remove(this.decorativeGroup.children[0]);
+      }
+      this.buildTunnelScenery(this.tunnelPortal);
+    } else if (wasTunnel || this.currentTheme.id !== resolvedTheme.id || this.isTransitionPortal !== isTransition) {
+      while (this.decorativeGroup.children.length > 0) {
+        this.decorativeGroup.remove(this.decorativeGroup.children[0]);
+      }
       this.buildEnvironmentScenery(resolvedTheme, isTransition);
     }
 
@@ -1253,8 +1483,12 @@ export class TrackChunk {
         headlights = movingData.headlights;
       } else if (obsData.type === 'LOW_BARRIER') {
         group = this.obstacleFactory.createLowBarrier();
+      } else if (obsData.type === 'MEDIUM_BARRIER') {
+        group = this.obstacleFactory.createMediumBarrier();
       } else if (obsData.type === 'HIGH_BARRIER') {
         group = this.obstacleFactory.createHighBarrier();
+      } else if (obsData.type === 'PILLAR') {
+        group = this.obstacleFactory.createPillar();
       } else if (obsData.type === 'SIDE_BARRIER') {
         group = this.obstacleFactory.createSideBarrier();
       } else if (obsData.type === 'TUNNEL_ARCH') {
@@ -1317,13 +1551,21 @@ export class TrackChunk {
           );
         }
       } else if (obsData.type === 'LOW_BARRIER') {
-        halfW = CONSTANTS.LANE_WIDTH * 0.42;
+        halfW = CONSTANTS.LANE_WIDTH * 0.44;
         height = CONSTANTS.LOW_BARRIER_HEIGHT;
         halfD = 0.35;
-      } else if (obsData.type === 'HIGH_BARRIER') {
-        halfW = CONSTANTS.LANE_WIDTH * 0.42;
-        height = CONSTANTS.HIGH_BARRIER_HEIGHT;
+      } else if (obsData.type === 'MEDIUM_BARRIER') {
+        halfW = CONSTANTS.LANE_WIDTH * 0.45;
+        height = CONSTANTS.MEDIUM_BARRIER_HEIGHT || 1.65;
         halfD = 0.35;
+      } else if (obsData.type === 'HIGH_BARRIER') {
+        halfW = CONSTANTS.LANE_WIDTH * 0.45;
+        height = CONSTANTS.HIGH_BARRIER_HEIGHT || 3.8;
+        halfD = 0.35;
+      } else if (obsData.type === 'PILLAR') {
+        halfW = (CONSTANTS.PILLAR_WIDTH || 0.9) * 0.5;
+        height = CONSTANTS.PILLAR_HEIGHT || 7.6;
+        halfD = (CONSTANTS.PILLAR_WIDTH || 0.9) * 0.5;
       } else if (obsData.type === 'SIDE_BARRIER') {
         halfW = CONSTANTS.SIDE_BARRIER_WIDTH * 0.5;
         height = CONSTANTS.SIDE_BARRIER_HEIGHT;
@@ -1334,8 +1576,13 @@ export class TrackChunk {
         halfD = 0.5;
       }
 
-      collider.min.set(laneX - halfW, 0, worldCenterZ - halfD);
-      collider.max.set(laneX + halfW, height, worldCenterZ + halfD);
+      if (obsData.type === 'HIGH_BARRIER') {
+        collider.min.set(laneX - halfW, CONSTANTS.HIGH_BARRIER_CLEARANCE, worldCenterZ - halfD);
+        collider.max.set(laneX + halfW, height, worldCenterZ + halfD);
+      } else {
+        collider.min.set(laneX - halfW, 0, worldCenterZ - halfD);
+        collider.max.set(laneX + halfW, height, worldCenterZ + halfD);
+      }
 
       nearMissBox.min.set(laneX - halfW - 0.6, 0, worldCenterZ - halfD - 0.6);
       nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, worldCenterZ + halfD + 0.6);
@@ -1490,67 +1737,90 @@ export class TrackChunk {
 
   public update(dt: number, time: number = 0, playerZ: number = 0): void {
     const animTime = typeof time === 'number' && !isNaN(time) ? time : 0;
+
+    // 0. Tunnel transition detection and acoustic event dispatch
+    if (this.isTunnel) {
+      const inChunk = playerZ <= this.chunkZ && playerZ >= (this.chunkZ - this.length);
+      if (inChunk && !this.playerInTunnel) {
+        this.playerInTunnel = true;
+        EventBus.getInstance().emit(EVENTS.TUNNEL_ENTERED, { chunkZ: this.chunkZ });
+      } else if (!inChunk && this.playerInTunnel) {
+        this.playerInTunnel = false;
+        EventBus.getInstance().emit(EVENTS.TUNNEL_EXITED, { chunkZ: this.chunkZ });
+      }
+    }
+
     // 1. Animate and update moving trains
     for (const obs of this.obstacles) {
       if (!obs.active) continue;
 
       if (obs.isMoving) {
-        // Advance moving train along +Z toward oncoming player
-        const speed = obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED;
-        obs.group.position.z += speed * dt;
-
-        // Recalculate collision volumes in world coordinates
         const currentLocalZ = obs.group.position.z;
         const currentWorldZ = this.chunkZ + currentLocalZ;
+        const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+        const worldTrainFrontZ = currentWorldZ + halfD; // Front bumper position
+        const separation = playerZ - worldTrainFrontZ; // Positive when train is ahead (more negative Z)
+
+        const isAhead = worldTrainFrontZ < playerZ;
+        const activationDist = CONSTANTS.MOVING_TRAIN_ACTIVATION_DIST || 85.0;
+        const isWithinRange = separation <= activationDist && isAhead;
+        const hasPassedBehind = (currentWorldZ - halfD) > (playerZ + 25.0);
+
+        // Only advance moving train along +Z toward player when player is within approach window
+        // (prevents distant staged trains from moving past player prematurely while 300m away)
+        if (isWithinRange && !hasPassedBehind) {
+          const speed = obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED;
+          obs.group.position.z += speed * dt;
+        }
+
+        // Recalculate collision volumes in world coordinates every frame
+        const updatedLocalZ = obs.group.position.z;
+        const updatedWorldZ = this.chunkZ + updatedLocalZ;
         const laneX = CONSTANTS.LANES[obs.lane];
         const halfW = CONSTANTS.TRAIN_WIDTH * 0.5;
         const height = CONSTANTS.TRAIN_HEIGHT;
-        const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
 
-        obs.collider.min.set(laneX - halfW, 0, currentWorldZ - halfD);
-        obs.collider.max.set(laneX + halfW, height, currentWorldZ + halfD);
+        obs.collider.min.set(laneX - halfW, 0, updatedWorldZ - halfD);
+        obs.collider.max.set(laneX + halfW, height, updatedWorldZ + halfD);
 
         if (obs.bodyCollider) {
-          obs.bodyCollider.min.set(laneX - halfW, 0, currentWorldZ - halfD);
-          obs.bodyCollider.max.set(laneX + halfW, height - 0.45, currentWorldZ + halfD);
+          obs.bodyCollider.min.set(laneX - halfW, 0, updatedWorldZ - halfD);
+          obs.bodyCollider.max.set(laneX + halfW, height - 0.45, updatedWorldZ + halfD);
         }
 
         if (obs.frontBumperCollider) {
-          obs.frontBumperCollider.min.set(laneX - halfW, 0, currentWorldZ + halfD - 0.25);
-          obs.frontBumperCollider.max.set(laneX + halfW, height - 0.45, currentWorldZ + halfD + 0.35);
+          obs.frontBumperCollider.min.set(laneX - halfW, 0, updatedWorldZ + halfD - 0.25);
+          obs.frontBumperCollider.max.set(laneX + halfW, height - 0.45, updatedWorldZ + halfD + 0.35);
         }
 
         if (obs.roofCollider) {
-          obs.roofCollider.min.set(laneX - halfW - 0.15, height - 0.45, currentWorldZ - halfD - 0.3);
-          obs.roofCollider.max.set(laneX + halfW + 0.15, height + 1.2, currentWorldZ + halfD + 0.3);
+          obs.roofCollider.min.set(laneX - halfW - 0.15, height - 0.45, updatedWorldZ - halfD - 0.3);
+          obs.roofCollider.max.set(laneX + halfW + 0.15, height + 1.2, updatedWorldZ + halfD + 0.3);
         }
 
         if (obs.rampCollider) {
           const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-          obs.rampCollider.min.set(laneX - halfW * 0.92, 0, currentWorldZ + halfD);
-          obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, currentWorldZ + halfD + rampD);
-          obs.rampStartZ = currentWorldZ + halfD + rampD;
-          obs.rampEndZ = currentWorldZ + halfD;
+          obs.rampCollider.min.set(laneX - halfW * 0.92, 0, updatedWorldZ + halfD);
+          obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ + halfD + rampD);
+          obs.rampStartZ = updatedWorldZ + halfD + rampD;
+          obs.rampEndZ = updatedWorldZ + halfD;
         }
 
-        obs.roofStartZ = currentWorldZ + halfD;
-        obs.roofEndZ = currentWorldZ - halfD;
+        obs.roofStartZ = updatedWorldZ + halfD;
+        obs.roofEndZ = updatedWorldZ - halfD;
 
-        obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, currentWorldZ - halfD - 0.6);
-        obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, currentWorldZ + halfD + 0.6);
+        obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, updatedWorldZ - halfD - 0.6);
+        obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, updatedWorldZ + halfD + 0.6);
 
-        // Telegraph check: if approaching player within 65m
-        const worldTrainFrontZ = this.chunkZ + currentLocalZ + halfD;
-        const distToPlayer = worldTrainFrontZ - playerZ;
-
-        // When train is approaching ahead of player (worldTrainFrontZ is negative, player is moving negative Z)
-        const separation = Math.abs(playerZ - worldTrainFrontZ);
-        if (separation <= CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST && worldTrainFrontZ < playerZ) {
+        // Telegraph check: if approaching player within telegraph range (65m)
+        const updatedFrontZ = updatedWorldZ + halfD;
+        const currentSeparation = playerZ - updatedFrontZ;
+        if (currentSeparation <= CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST && updatedFrontZ < playerZ) {
           if (!obs.telegraphed) {
             EventBus.getInstance().emit(EVENTS.TRAIN_HORN, {
               laneX,
-              distance: separation,
+              distance: currentSeparation,
               speed: obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED
             });
             obs.telegraphed = true;
