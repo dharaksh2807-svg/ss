@@ -1,5 +1,5 @@
 import { SoundManager } from '../audio/SoundManager';
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { GraphicsManager, GraphicsPreset, QualityConfig } from '../scene/GraphicsManager';
 
 export class SettingsModal {
@@ -8,6 +8,8 @@ export class SettingsModal {
   private masterSlider: HTMLInputElement;
   private musicSlider: HTMLInputElement;
   private sfxSlider: HTMLInputElement;
+  private muteCheckbox: HTMLInputElement | null;
+  private reducedIntensityCheckbox: HTMLInputElement | null;
   private qualitySelect: HTMLSelectElement | null;
   private introSelect: HTMLSelectElement | null;
   private resolvedBadgeEl: HTMLElement | null;
@@ -25,6 +27,8 @@ export class SettingsModal {
     this.masterSlider = document.getElementById('setting-master-vol') as HTMLInputElement;
     this.musicSlider = document.getElementById('setting-music-vol') as HTMLInputElement;
     this.sfxSlider = document.getElementById('setting-sfx-vol') as HTMLInputElement;
+    this.muteCheckbox = document.getElementById('setting-audio-mute') as HTMLInputElement | null;
+    this.reducedIntensityCheckbox = document.getElementById('setting-reduced-intensity') as HTMLInputElement | null;
     this.qualitySelect = document.getElementById('setting-graphics-quality') as HTMLSelectElement | null;
     this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
 
@@ -34,6 +38,7 @@ export class SettingsModal {
     this.presetButtons = this.element.querySelectorAll('.preset-segment-btn');
 
     this.setupListeners();
+    this.refreshAudioUI();
     this.refreshGraphicsUI();
   }
 
@@ -54,6 +59,18 @@ export class SettingsModal {
       const val = parseFloat((e.target as HTMLInputElement).value);
       this.soundManager.setSfxVolume(val);
     });
+
+    if (this.muteCheckbox) {
+      this.muteCheckbox.addEventListener('change', () => {
+        this.soundManager.setMuted(this.muteCheckbox!.checked);
+      });
+    }
+
+    if (this.reducedIntensityCheckbox) {
+      this.reducedIntensityCheckbox.addEventListener('change', () => {
+        this.soundManager.setReducedIntensity(this.reducedIntensityCheckbox!.checked);
+      });
+    }
 
     // Segmented Preset Buttons
     this.presetButtons.forEach((btn) => {
@@ -98,6 +115,24 @@ export class SettingsModal {
     EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
       this.updateResolvedBadge(config);
     });
+
+    // Synchronize audio controls on external changes
+    EventBus.getInstance().on(EVENTS.AUDIO_SETTINGS_CHANGED, () => {
+      this.refreshAudioUI();
+    });
+  }
+
+  private refreshAudioUI(): void {
+    const prefs = this.soundManager.getPreferences();
+    this.masterSlider.value = prefs.masterVolume.toString();
+    this.musicSlider.value = prefs.musicVolume.toString();
+    this.sfxSlider.value = prefs.sfxVolume.toString();
+    if (this.muteCheckbox) {
+      this.muteCheckbox.checked = prefs.isMuted;
+    }
+    if (this.reducedIntensityCheckbox) {
+      this.reducedIntensityCheckbox.checked = prefs.reducedIntensity;
+    }
   }
 
   private refreshGraphicsUI(): void {
@@ -142,6 +177,7 @@ export class SettingsModal {
   }
 
   public show(): void {
+    this.refreshAudioUI();
     this.refreshGraphicsUI();
     if (this.introSelect) {
       this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';

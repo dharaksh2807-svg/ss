@@ -470,6 +470,7 @@ export class MissionsModal {
           const id = el.dataset.id!;
           const res = this.progression.claimMissionReward(id);
           if (res.success) {
+            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
             EventBus.getInstance().emit('WALLET_UPDATED');
             this.render();
           }
@@ -477,6 +478,7 @@ export class MissionsModal {
           const id = el.dataset.id!;
           const res = this.progression.claimDailyReward(id);
           if (res.success) {
+            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
             EventBus.getInstance().emit('WALLET_UPDATED');
             this.render();
           }
@@ -485,6 +487,7 @@ export class MissionsModal {
           const tier = el.dataset.tier as AchievementTier;
           const res = this.progression.claimAchievementReward(id, tier);
           if (res.success) {
+            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
             EventBus.getInstance().emit('WALLET_UPDATED');
             this.render();
           }
@@ -492,6 +495,7 @@ export class MissionsModal {
           const index = parseInt(el.dataset.index!, 10);
           const res = this.progression.claimSeasonMilestone(index);
           if (res.success) {
+            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
             EventBus.getInstance().emit('WALLET_UPDATED');
             this.render();
           }

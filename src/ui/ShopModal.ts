@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { UpgradeManager, UPGRADE_CONFIGS, UpgradablePowerup } from '../player/UpgradeManager';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getAllCharacters } from '../characters/CharacterCatalog';
@@ -146,6 +146,9 @@ export class ShopModal {
     toast.textContent = message;
     toast.className = `shop-toast ${isError ? 'toast-error shake-anim' : 'toast-success bounce-anim'}`;
     toast.classList.remove('hidden');
+    if (!isError) {
+      this.eventBus.emit(EVENTS.ITEM_PURCHASED);
+    }
     setTimeout(() => {
       toast.classList.add('hidden');
     }, 2800);

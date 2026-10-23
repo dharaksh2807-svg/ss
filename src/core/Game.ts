@@ -141,6 +141,7 @@ export class Game {
     if (typeof window !== 'undefined') {
       (window as any).__METRO_GAME__ = this;
       (window as any).__GRAPHICS_MANAGER__ = graphics;
+      (window as any).__SOUND_MANAGER__ = this.soundManager;
     }
 
     // Stage hero character in Lobby pose facing the camera
@@ -309,6 +310,10 @@ export class Game {
     this.hud.show();
     this.inputManager.setEnabled(true);
 
+    this.soundManager.initAudio();
+    this.soundManager.setMusicState('RUNNING_NORMAL');
+    this.soundManager.startMusic();
+
     EventBus.getInstance().emit(EVENTS.RUN_STARTED, this.activeGameMode);
   }
 
@@ -316,6 +321,8 @@ export class Game {
     if (this.lifecycleState !== 'PLAYING') return;
     this.lifecycleState = 'PAUSED';
     this.inputManager.setEnabled(false);
+    this.soundManager.pauseMusic();
+    EventBus.getInstance().emit(EVENTS.GAME_PAUSE);
     this.pauseModal.show();
   }
 
@@ -325,10 +332,13 @@ export class Game {
     this.inputManager.setEnabled(true);
     this.pauseModal.hide();
     this.lastTime = performance.now(); // Avoid huge delta jump
+    this.soundManager.resumeMusic();
+    EventBus.getInstance().emit(EVENTS.GAME_RESUME);
   }
 
   public goToMenu(): void {
     this.lifecycleState = 'MENU';
+    this.soundManager.setMusicState('LOBBY');
     this.cameraController.setLobbyMode(true);
     this.hud.hide();
     this.pauseModal.hide();
@@ -600,6 +610,9 @@ export class Game {
       this.player.position.z,
       this.player.groundY
     );
+
+    // Update dynamic audio soundscape (speed-synchronized footsteps, loops, spatial rail rumble, adaptive music)
+    this.soundManager.update(effectiveDt, this.player, this.trackManager, this.lifecycleState);
 
     // Render 3D Scene
     this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);

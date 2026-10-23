@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { DailyRewardManager, DailyRewardDay } from '../progression/DailyRewardManager';
 import { UpgradeManager } from '../player/UpgradeManager';
 
@@ -166,6 +166,7 @@ export class DailyRewardModal {
       claimBtn.addEventListener('click', () => {
         const result = this.dailyManager.claimTodayReward();
         if (result.success && result.reward) {
+          this.eventBus.emit(EVENTS.REWARD_CLAIMED);
           const toast = this.element.querySelector('#daily-toast') as HTMLElement;
           if (toast) {
             toast.textContent = `🎉 Claimed ${result.reward.description}! Added to inventory.`;

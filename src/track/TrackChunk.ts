@@ -1014,7 +1014,11 @@ export class TrackChunk {
         const separation = Math.abs(playerZ - worldTrainFrontZ);
         if (separation <= CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST && worldTrainFrontZ < playerZ) {
           if (!obs.telegraphed) {
-            EventBus.getInstance().emit(EVENTS.TRAIN_HORN);
+            EventBus.getInstance().emit(EVENTS.TRAIN_HORN, {
+              laneX,
+              distance: separation,
+              speed: obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED
+            });
             obs.telegraphed = true;
           }
 

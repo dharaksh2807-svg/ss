@@ -4923,8 +4923,24 @@ kbd {
 
 .setting-row.checkbox-row {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  padding: 4px 0;
+}
+
+.setting-label-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-hint-text {
+  font-size: 0.70rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: italic;
+  max-width: 250px;
 }
 
 .arcade-checkbox {
