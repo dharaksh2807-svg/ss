@@ -51,7 +51,7 @@ export class WorldScene {
     this.renderer.shadowMap.enabled = this.currentConfig.shadowMapEnabled;
     this.renderer.shadowMap.type = this.currentConfig.shadowMapType;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.15;
 
     // 1. Balanced Lighting Setup initialized to active theme
     this.hemiLight = new THREE.HemisphereLight(
@@ -86,16 +86,16 @@ export class WorldScene {
     this.scene.add(this.sunLight.target);
 
     // Soft sky-blue opposite fill light for shadowed canyon facades
-    this.fillLight = new THREE.DirectionalLight(0x90caf9, 0.55);
+    this.fillLight = new THREE.DirectionalLight(0xa0c4e8, 0.70);
     this.fillLight.position.set(-24, 28, 14);
     this.scene.add(this.fillLight);
 
-    // Dark asphalt station ground beneath tracks and lobby camera
+    // Modern asphalt transit ground beneath tracks and lobby camera
     const stationGroundGeo = new THREE.PlaneGeometry(80, 80);
     const stationGroundMat = new THREE.MeshStandardMaterial({
-      color: 0x151922,
-      roughness: 0.95,
-      metalness: 0.1
+      color: 0x263238,
+      roughness: 0.85,
+      metalness: 0.2
     });
     const stationGround = new THREE.Mesh(stationGroundGeo, stationGroundMat);
     stationGround.rotation.x = -Math.PI / 2;

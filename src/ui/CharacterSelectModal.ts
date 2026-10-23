@@ -83,9 +83,9 @@ export class CharacterSelectModal {
 
     this.scene = new THREE.Scene();
 
-    // Perspective Camera tailored for full-body showroom framing
+    // Perspective Camera tailored for front-quarter full-body showroom framing
     this.camera = new THREE.PerspectiveCamera(42, this.canvas.clientWidth / (this.canvas.clientHeight || 1), 0.1, 50);
-    this.camera.position.set(0, 1.15, 3.8);
+    this.camera.position.set(0.45, 1.15, 3.6);
     this.camera.lookAt(0, 0.95, 0);
 
     // High performance WebGLRenderer with antialiasing

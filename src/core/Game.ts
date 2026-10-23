@@ -332,6 +332,7 @@ export class Game {
     }
 
     this.cameraController.setLobbyMode(false);
+    this.cameraController.setGameOverMode(false);
     this.player.mesh.rotation.y = 0;
 
     // Start opening cinematic sequence if eligible
@@ -398,6 +399,7 @@ export class Game {
     this.lifecycleState = 'MENU';
     this.soundManager.setMusicState('LOBBY');
     this.cameraController.setLobbyMode(true);
+    this.cameraController.setGameOverMode(false);
     this.hud.hide();
     this.pauseModal.hide();
     this.reviveModal.hide();
@@ -480,6 +482,7 @@ export class Game {
     this.lifecycleState = 'GAMEOVER';
     this.inputManager.setEnabled(false);
     this.chaser.triggerCaughtReaction();
+    this.cameraController.setGameOverMode(true, this.player.position);
 
     EventBus.getInstance().emit(EVENTS.RUN_FINISHED, {
       score: this.score,

@@ -168,9 +168,9 @@ export class TrackChunk {
     curved.applyCurvature(modernWhiteMat);
 
     const modernSteelMat = new THREE.MeshStandardMaterial({
-      color: 0x1f242e,
-      roughness: 0.5,
-      metalness: 0.8
+      color: 0x374151,
+      roughness: 0.42,
+      metalness: 0.75
     });
     curved.applyCurvature(modernSteelMat);
 
@@ -293,16 +293,16 @@ export class TrackChunk {
     curved.applyCurvature(tunnelTileMat);
 
     const tunnelCeilingMat = new THREE.MeshStandardMaterial({
-      color: 0x1e242b,
-      roughness: 0.9,
-      metalness: 0.1
+      color: 0x334155,
+      roughness: 0.70,
+      metalness: 0.25
     });
     curved.applyCurvature(tunnelCeilingMat);
 
     const tunnelRibMat = new THREE.MeshStandardMaterial({
-      color: 0x2a303c,
-      roughness: 0.55,
-      metalness: 0.75
+      color: 0x475569,
+      roughness: 0.45,
+      metalness: 0.65
     });
     curved.applyCurvature(tunnelRibMat);
 

@@ -75,21 +75,21 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0xb3e5fc,  // Soft aerial cyan haze
-    density: 0.0040
+    density: 0.0035
   },
   sun: {
     color: 0xfffaea,  // Bright crisp white-gold midday sun
-    intensity: 1.40,
+    intensity: 1.45,
     position: { x: 24, y: 42, z: 18 }
   },
   fill: {
-    color: 0x90caf9,  // Cool sky reflection
-    intensity: 0.55
+    color: 0xa0c4e8,  // Cool sky reflection fill
+    intensity: 0.70   // Boosted to eliminate dark crushed voids on train flanks
   },
   hemi: {
-    sky: 0xb3e5fc,
-    ground: 0x455a64,
-    intensity: 1.15
+    sky: 0xc8e6f9,
+    ground: 0x546e7a, // Illuminated ground bounce to reveal underbody and trucks
+    intensity: 1.30
   },
   skyline: {
     color: 0x90caf9,
@@ -103,15 +103,15 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
   materials: {
     ballastColor: 0xffffff,
     sleeperColor: 0x42362b,
-    wallBaseColor: 0x78909c,    // Slate concrete retaining panels
-    wallAccentColor: 0x37474f,
-    curbColor: 0xdde2e6,        // Smooth light concrete
-    catenaryColor: 0x455a64,    // Industrial steel
+    wallBaseColor: 0x8a9ba8,    // Clean modern transit retaining concrete
+    wallAccentColor: 0x455a64,
+    curbColor: 0xe0e6eb,        // Clean concrete curb
+    catenaryColor: 0x546e7a,    // Clean structural steel
     insulatorColor: 0x81d4fa,   // Turquoise ceramic
-    pipeColor: 0x37474f,
-    bridgeMainColor: 0x263238,   // Sleek dark steel
+    pipeColor: 0x455a64,
+    bridgeMainColor: 0x37474f,   // Sleek illuminated dark steel (no pitch-black voids)
     bridgeAccentColor: 0x00e5ff, // Cyber cyan glowing accents
-    groundPlaneColor: 0x151922
+    groundPlaneColor: 0x263238
   },
   ambience: {
     baseToneFreq: 110,

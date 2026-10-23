@@ -21,6 +21,11 @@ export class CameraController {
   private introStartPos = new THREE.Vector3();
   private introStartLook = new THREE.Vector3();
 
+  // Game-over dramatic reaction framing
+  private isGameOverMode: boolean = false;
+  private gameOverTargetPos = new THREE.Vector3();
+  private gameOverLookTarget = new THREE.Vector3();
+
   constructor() {
     const aspect = typeof window !== 'undefined' && window.innerHeight > 0
       ? window.innerWidth / window.innerHeight
@@ -74,6 +79,23 @@ export class CameraController {
 
   public getIntroMode(): boolean {
     return this.isIntroMode;
+  }
+
+  public setGameOverMode(enabled: boolean, playerPos?: THREE.Vector3): void {
+    this.isGameOverMode = enabled;
+    if (enabled && playerPos) {
+      this.isLobbyMode = false;
+      this.isIntroMode = false;
+      const isPortrait = this.camera.aspect < 1.0;
+      // Front-side 3/4 camera framing player tumble and security guard arrest
+      const camX = playerPos.x - (isPortrait ? 1.5 : 2.1);
+      this.gameOverTargetPos.set(camX, playerPos.y + 1.25, playerPos.z - 2.8);
+      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 0.90, playerPos.z + 0.5);
+    }
+  }
+
+  public getGameOverMode(): boolean {
+    return this.isGameOverMode;
   }
 
   public updateIntro(progress: number, playerPos: THREE.Vector3, dt: number): void {
@@ -166,6 +188,20 @@ export class CameraController {
     isSliding: boolean = false
   ): void {
     if (this.isIntroMode) {
+      return;
+    }
+
+    if (this.isGameOverMode) {
+      const isPortrait = this.camera.aspect < 1.0;
+      const targetFov = isPortrait ? 66.0 : 54.0;
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-4.0 * dt));
+      this.camera.updateProjectionMatrix();
+
+      const lerpFactor = 1.0 - Math.exp(-4.5 * dt);
+      this.currentPosition.lerp(this.gameOverTargetPos, lerpFactor);
+      this.lookTarget.lerp(this.gameOverLookTarget, lerpFactor);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lookTarget);
       return;
     }
 
@@ -288,6 +324,7 @@ export class CameraController {
   public reset(playerPos: THREE.Vector3): void {
     this.shakeTrauma = 0;
     this.landingDipOffset = 0;
+    this.isGameOverMode = false;
     const isPortrait = this.camera.aspect < 1.0;
     this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();
