@@ -41,7 +41,10 @@ export class TrackManager {
   private pickupVfxPool: CoinPickupVFXInstance[] = [];
 
   // Seedable PRNG (Mulberry32) for reproducible procedural runs and deterministic testing
-  private seed: number = 1337;
+  private runSeed: number = 1337;
+  private currentSeed: number = 1337;
+  private isDebugSeed: boolean = false;
+  private recentPatterns: string[] = [];
   private rampOnboardingChecked: boolean = false;
   private chaser: ChaserModel | null = null;
   private collisionDiagnostics: CollisionDiagnostic[] = [];
@@ -82,8 +85,44 @@ export class TrackManager {
     this.reset();
   }
 
-  public setSeed(seed: number): void {
-    this.seed = seed;
+  public setSeed(seed: number, isDebug: boolean = true): void {
+    this.runSeed = seed;
+    this.currentSeed = seed;
+    this.isDebugSeed = isDebug;
+    this.lastSpawnedPattern = null;
+    this.recentPatterns = [];
+    this.difficultyController.reset();
+  }
+
+  public setDebugSeed(seed: number): void {
+    this.setSeed(seed, true);
+  }
+
+  public getSeed(): number {
+    return this.currentSeed;
+  }
+
+  public getRunSeed(): number {
+    return this.runSeed;
+  }
+
+  public isDebugMode(): boolean {
+    return this.isDebugSeed;
+  }
+
+  public clearDebugSeed(): void {
+    this.isDebugSeed = false;
+  }
+
+  public generateFreshSeed(): number {
+    const fresh = (Math.floor(Math.random() * 2147483647) + 1) >>> 0;
+    this.runSeed = fresh;
+    this.currentSeed = fresh;
+    this.isDebugSeed = false;
+    this.lastSpawnedPattern = null;
+    this.recentPatterns = [];
+    this.difficultyController.reset();
+    return fresh;
   }
 
   public setChaser(chaser: ChaserModel): void {
@@ -95,7 +134,7 @@ export class TrackManager {
   }
 
   private rng(): number {
-    let t = (this.seed += 0x6d2b79f5);
+    let t = (this.currentSeed += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -119,11 +158,18 @@ export class TrackManager {
     return this.chunks;
   }
 
-  public reset(): void {
+  public reset(forceFreshSeed: boolean = false): void {
+    if (forceFreshSeed || !this.isDebugSeed) {
+      this.generateFreshSeed();
+    } else {
+      this.currentSeed = this.runSeed;
+    }
+
     this.furthestZ = 0;
     this.chunkIndex = 0;
     this.cleanStreakCount = 0;
     this.lastSpawnedPattern = null;
+    this.recentPatterns = [];
     this.previousPlayerZ = null;
     this.rampOnboardingChecked = false;
     this.difficultyController.reset();
@@ -163,51 +209,119 @@ export class TrackManager {
    */
   public selectPattern(index: number, playerSpeed: number = CONSTANTS.INITIAL_SPEED, distanceTraveled: number = 0): TrackPattern {
     if (index === 0) {
-      // Chunk 0 is the curated readable opening runway (action begins quickly & fairly)
-      const opening = OBSTACLE_PATTERNS.find((p) => p.name === 'OPENING_RUNWAY') || OBSTACLE_PATTERNS[0];
-      this.difficultyController.recordPatternSpawned(opening, 0);
-      this.lastSpawnedPattern = opening;
-      PacingMetrics.getInstance().recordPattern(opening.name, opening.difficulty);
-      return opening;
+      // Chunk 0: Reset run pacing state and select from opening templates
+      this.lastSpawnedPattern = null;
+      this.recentPatterns = [];
+      this.difficultyController.reset();
+
+      const openingPool = OBSTACLE_PATTERNS.filter((p) => p.isOpening);
+      const chosenOpening = openingPool.length > 0
+        ? openingPool[Math.floor(this.rng() * openingPool.length)]
+        : OBSTACLE_PATTERNS[0];
+
+      this.difficultyController.recordPatternSpawned(chosenOpening, 0);
+      this.lastSpawnedPattern = chosenOpening;
+      this.recentPatterns = [chosenOpening.name];
+      PacingMetrics.getInstance().recordPattern(chosenOpening.name, chosenOpening.difficulty);
+      return chosenOpening;
     }
 
     // 1. Data-Driven Candidate Tier Filtering & Recovery Breathing
     const weights = this.difficultyController.getTierWeights(distanceTraveled, playerSpeed);
     const canSpawnMovingTrain = this.difficultyController.canSpawnMovingTrain(distanceTraveled);
 
-    let candidatePool = OBSTACLE_PATTERNS.filter((p) => {
-      if (p.name === 'OPENING_RUNWAY') return false;
-      if (!canSpawnMovingTrain && p.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving)) {
-        return false;
-      }
-      const tierWeight = weights[p.difficulty] !== undefined ? weights[p.difficulty] : (p.isBreather ? weights.BREATHER : 0);
-      return tierWeight > 0;
-    });
+    const baseCandidates = OBSTACLE_PATTERNS.filter((p) => !p.isOpening && p.name !== 'SAFE_RECOVERY_CONNECTOR');
 
-    if (candidatePool.length === 0) {
-      candidatePool = OBSTACLE_PATTERNS.filter((p) => p.name !== 'OPENING_RUNWAY');
+    // Recent history references
+    const last1 = this.recentPatterns.length > 0 ? this.recentPatterns[this.recentPatterns.length - 1] : null;
+    const last2 = this.recentPatterns.length > 1 ? this.recentPatterns[this.recentPatterns.length - 2] : null;
+    const last3 = this.recentPatterns.length > 2 ? this.recentPatterns[this.recentPatterns.length - 3] : null;
+
+    // Filter by moving train eligibility and calculate weighted score
+    interface ScoredCandidate {
+      pattern: TrackPattern;
+      weight: number;
+      key: number;
     }
 
-    // 2. Uniform Seeded Fisher-Yates Shuffle
-    const shuffled = this.shuffle(candidatePool);
+    const scored: ScoredCandidate[] = [];
 
-    // 3. Physical Reachability Transition Validation
-    let chosen: TrackPattern = shuffled[0];
+    for (const candidate of baseCandidates) {
+      // Check moving train eligibility
+      const hasMovingTrain = candidate.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
+      if (!canSpawnMovingTrain && hasMovingTrain) {
+        continue;
+      }
+
+      // Base tier weight (mapping legacy difficulty names)
+      let tierKey = candidate.difficulty as string;
+      if (tierKey === 'INTERMEDIATE') tierKey = 'MEDIUM';
+      if (tierKey === 'ADVANCED') tierKey = 'HARD';
+
+      let tierWeight = weights[tierKey] !== undefined
+        ? weights[tierKey]
+        : (candidate.isBreather ? weights.BREATHER : 0);
+
+      if (tierWeight <= 0) {
+        continue;
+      }
+
+      // When moving train is eligible, grant priority to ensure dynamic railway rhythm
+      if (canSpawnMovingTrain && hasMovingTrain) {
+        tierWeight *= 1.45;
+      }
+
+      // Recent history penalties: prevent back-to-back repetitions
+      if (candidate.name === last1) {
+        tierWeight *= 0.0; // Strictly avoid back-to-back duplicate
+      } else if (candidate.name === last2) {
+        tierWeight *= 0.15; // 85% penalty for 2 chunks ago
+      } else if (candidate.name === last3) {
+        tierWeight *= 0.40; // 60% penalty for 3 chunks ago
+      }
+
+      if (tierWeight <= 0.001) {
+        continue;
+      }
+
+      // Action variety bonus (favor complementary action mechanics)
+      if (this.lastSpawnedPattern && this.lastSpawnedPattern.requiredActions && candidate.requiredActions) {
+        const lastAction = this.lastSpawnedPattern.requiredActions[0];
+        if (lastAction === 'JUMP' && candidate.requiredActions.includes('SLIDE')) tierWeight *= 1.35;
+        if (lastAction === 'SLIDE' && candidate.requiredActions.includes('JUMP')) tierWeight *= 1.35;
+        if (candidate.requiredActions.includes('LANE_CHANGE')) tierWeight *= 1.2;
+      }
+
+      // Efraimidis-Spirakis weighted random key
+      const randVal = Math.max(0.0001, this.rng());
+      const key = Math.pow(randVal, 1.0 / tierWeight);
+
+      scored.push({ pattern: candidate, weight: tierWeight, key });
+    }
+
+    // Sort by weighted key descending
+    scored.sort((a, b) => b.key - a.key);
+
+    let chosen: TrackPattern | null = null;
     let foundSolvable = false;
 
+    // 2. Physical Reachability Transition Validation across scored candidates
     if (this.lastSpawnedPattern) {
-      for (const candidate of shuffled) {
-        if (ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
-          chosen = candidate;
+      for (const item of scored) {
+        if (ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, item.pattern, playerSpeed)) {
+          chosen = item.pattern;
           foundSolvable = true;
           break;
         }
       }
 
-      // If no candidate in weighted pool provided a solvable transition, search full catalog
+      // If no candidate in weighted pool passed, test all base candidates (excluding last1)
       if (!foundSolvable) {
-        const allCandidates = this.shuffle(OBSTACLE_PATTERNS.filter((p) => p.name !== 'OPENING_RUNWAY'));
-        for (const candidate of allCandidates) {
+        const fallbackCandidates = this.shuffle(baseCandidates.filter((p) => p.name !== last1));
+        for (const candidate of fallbackCandidates) {
+          const hasMovingTrain = candidate.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
+          if (!canSpawnMovingTrain && hasMovingTrain) continue;
+
           if (ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
             chosen = candidate;
             foundSolvable = true;
@@ -215,10 +329,33 @@ export class TrackManager {
           }
         }
       }
+    } else {
+      if (scored.length > 0) {
+        chosen = scored[0].pattern;
+        foundSolvable = true;
+      }
     }
 
-    if (!foundSolvable && this.lastSpawnedPattern) {
-      PacingMetrics.getInstance().recordUnreachable(chosen.name, `Transition from ${this.lastSpawnedPattern.name} could not be validated.`);
+    // 3. Guaranteed Safe Fallback if candidate search exhausted
+    if (!foundSolvable || !chosen) {
+      const recoveryPattern = OBSTACLE_PATTERNS.find((p) => p.name === 'SAFE_RECOVERY_CONNECTOR') || OBSTACLE_PATTERNS[0];
+      chosen = recoveryPattern;
+      foundSolvable = true;
+      PacingMetrics.getInstance().recordFallback(
+        this.lastSpawnedPattern ? this.lastSpawnedPattern.name : 'NONE',
+        `No candidate pattern passed transition reachability at ${distanceTraveled.toFixed(1)}m, speed ${playerSpeed.toFixed(1)}m/s. Deployed SAFE_RECOVERY_CONNECTOR.`
+      );
+    }
+
+    // Check for repetition detection
+    if (last1 && chosen.name === last1) {
+      PacingMetrics.getInstance().recordRepeatedPattern(chosen.name);
+    }
+
+    // Update recent patterns sliding window (keep last 5)
+    this.recentPatterns.push(chosen.name);
+    if (this.recentPatterns.length > 5) {
+      this.recentPatterns.shift();
     }
 
     this.difficultyController.recordPatternSpawned(chosen, distanceTraveled);
@@ -532,8 +669,11 @@ export class TrackManager {
     // High-speed swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
     this.sweptCollectibleBox.copy(playerBox);
     if (this.previousPlayerZ !== null) {
-      this.sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
-      this.sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
+      const zDelta = Math.abs(player.position.z - this.previousPlayerZ);
+      if (zDelta <= 6.0) {
+        this.sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
+        this.sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
+      }
     }
     const sweptCollectibleBox = this.sweptCollectibleBox;
     this.previousPlayerZ = player.position.z;
@@ -697,11 +837,13 @@ export class TrackManager {
             // Synchronize collider continuously in world space
             col.collider.setFromCenterAndSize(colWorldPos, new THREE.Vector3(1.4, 1.4, 1.4));
           }
+        } else if (!isMagnet) {
+          col.isMagnetized = false;
         }
 
         // Collection check: swept volume ensures zero missed coins at high speeds
         const isCollected = col.collider.intersectsBox(sweptCollectibleBox) ||
-          (col.isMagnetized && colWorldPos.distanceTo(playerChestPos) <= 1.25);
+          (isMagnet && col.isMagnetized && colWorldPos.distanceTo(playerChestPos) <= 1.25);
 
         if (isCollected) {
           col.active = false;

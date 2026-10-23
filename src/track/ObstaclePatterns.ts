@@ -30,20 +30,22 @@ export interface TrackPattern {
   speedMin?: number;
   speedMax?: number;
   isBreather?: boolean;
+  isOpening?: boolean;
   isTunnel?: boolean;
   tunnelPortal?: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE';
 }
 
 export const OBSTACLE_PATTERNS: TrackPattern[] = [
   // =========================================================================
-  // 1. BEGINNER / EASY PATTERNS (0 - 250m, Speed: 18 - 24 m/s)
-  // Clear spacing, single-action mechanics, generous reaction windows
+  // 0. OPENING TEMPLATES LIBRARY (0 - 80m Chunk 0)
+  // 8 distinct, beginner-accessible, readable opening experiences
   // =========================================================================
 
-  // 1. Opening Runway (Introduces action immediately with readable jump & slide)
+  // 1. Opening Runway (Central coin trail and low hurdle)
   {
     name: 'OPENING_RUNWAY',
     difficulty: 'BEGINNER',
+    isOpening: true,
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 0, 1],
     requiredActions: ['JUMP'],
@@ -54,11 +56,175 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'HIGH_BARRIER', lane: 1, zOffset: 56.0 }
     ],
     collectibles: [
-      { type: 'COIN', lane: 0, zOffset: 6.0, count: 7, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
       { type: 'COIN', lane: 0, zOffset: 25.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
       { type: 'COIN', lane: 0, endLane: -1, zOffset: 34.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
       { type: 'COIN', lane: -1, zOffset: 46.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
       { type: 'COIN', lane: 1, zOffset: 53.4, yOffset: 0.60, count: 4, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' }
+    ]
+  },
+
+  // 2. Open Center with Left/Right Flank Obstacles
+  {
+    name: 'OPENING_OPEN_CENTER_FLANKS',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Center lane 0 is an open straight runway with clear coins; avoid low hurdle in lane -1 at z=26m and side barrier in lane 1 at z=32m; jump low hurdle at z=58m in center or stay in open side lanes',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 26.0 },
+      { type: 'SIDE_BARRIER', lane: 1, zOffset: 32.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 58.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 26.0, count: 7, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 55.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: -1, zOffset: 36.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 44.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 3. Early Slide Opportunity
+  {
+    name: 'OPENING_EARLY_SLIDE',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['SLIDE'],
+    safeRoutes: 'Slide under high overhead gantry in center lane at z=30m guided by low coins, or dodge to clear flanks; hurdle in lane -1 at z=58m',
+    minReactionDist: 30.0,
+    obstacles: [
+      { type: 'HIGH_BARRIER', lane: 0, zOffset: 30.0 },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 58.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 62.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 26.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 38.0, count: 8, spacing: 2.2, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: 1, zOffset: 26.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 4. Side-Lane Coin Reward
+  {
+    name: 'OPENING_SIDE_REWARD',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Center low hurdle at z=28m invites player to switch left into lane -1 for a rich bounty; lane 1 has a stationary train at z=38m',
+    minReactionDist: 28.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 28.0 },
+      { type: 'TRAIN', lane: 1, zOffset: 38.0, length: 22.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 25.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 34.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 25.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 40.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 5. Distant Stationary Train with Sweeping Bypass
+  {
+    name: 'OPENING_DISTANT_TRAIN',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Stationary train blocks center lane 0 at z=35m; smooth lane-switch coin trails lead safely into flanking lanes -1 and 1; low hurdle in lane 1 at z=64m',
+    minReactionDist: 35.0,
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 35.0, length: 22.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 64.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 25.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 34.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 28.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 61.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+    ]
+  },
+
+  // 6. Gentle S-Curve Weave
+  {
+    name: 'OPENING_GENTLE_S_CURVE',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Following the gentle S-curve coin trail naturally weaves around offset hurdles in lane 1 (z=26m), lane 0 (z=44m), and lane -1 (z=62m)',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 26.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 44.0 },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 62.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 25.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 34.0, count: 4, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, endLane: 1, zOffset: 42.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 52.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 41.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+    ]
+  },
+
+  // 7. Small Mixed Hurdle Sequence
+  {
+    name: 'OPENING_MIXED_HURDLE_GATE',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Jump low hurdle in center lane at z=28m; medium barrier in lane -1 at z=52m has flashing beacon; low barrier in lane 1 at z=56m; center lane remains completely clear after z=34m',
+    minReactionDist: 28.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 28.0 },
+      { type: 'MEDIUM_BARRIER', lane: -1, zOffset: 52.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 56.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 25.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 36.0, count: 10, spacing: 2.2, isPostObstacle: true, archetype: 'POST_OBSTACLE' },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 5, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 8. Introductory Train Ramp Route
+  {
+    name: 'OPENING_INTRO_RAMP',
+    difficulty: 'BEGINNER',
+    isOpening: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Ground runway in center lane 0 is completely clear; lane 1 has an inviting ramp at z=32m leading onto stationary train rooftop with coins; low barrier in lane -1 at z=58m',
+    minReactionDist: 32.0,
+    obstacles: [
+      { type: 'TRAIN', lane: 1, zOffset: 32.0, length: 24.0, hasRamp: true },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 58.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 25.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 34.0, count: 4, spacing: 2.0, isRampAscent: true, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: 1, zOffset: 44.0, yOffset: 5.2, count: 6, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: -1, zOffset: 26.0, count: 5, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
     ]
   },
 
@@ -892,6 +1058,27 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: 0, endLane: -1, zOffset: 10.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
       { type: 'COIN', lane: -1, zOffset: 48.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
       { type: 'COIN', lane: -1, zOffset: 58.0, count: 4, spacing: 1.8, isPostObstacle: true, archetype: 'POST_OBSTACLE' }
+    ]
+  },
+
+  // 39. Guaranteed Safe Recovery Connector (Universal fallback & breathing section)
+  {
+    name: 'SAFE_RECOVERY_CONNECTOR',
+    difficulty: 'EASY',
+    isBreather: true,
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: [],
+    safeRoutes: 'Guaranteed universal recovery corridor; first 50m has zero obstacles across all 3 lanes, followed by light warning hurdle in lane 1 at z=56m',
+    minReactionDist: 50.0,
+    obstacles: [
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 56.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 8.0, count: 12, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 12.0, count: 6, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 53.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
     ]
   }
 ];

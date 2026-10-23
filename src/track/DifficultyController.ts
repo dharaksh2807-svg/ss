@@ -1,6 +1,17 @@
 import { CONSTANTS } from '../core/Constants';
 import { PatternDifficulty, TrackPattern } from './ObstaclePatterns';
 
+export interface DifficultyBudget {
+  tier: PatternDifficulty;
+  score: number;
+  maxObstaclesPerChunk: number;
+  movingTrainAllowed: boolean;
+  minReactionDistMeters: number;
+  minReactionTimeSeconds: number;
+  breatherMandatory: boolean;
+  weights: Record<string, number>;
+}
+
 export interface DifficultyState {
   runDuration: number;
   distanceTraveled: number;
@@ -10,6 +21,7 @@ export interface DifficultyState {
   consecutiveDifficultCount: number;
   distanceSinceDifficult: number;
   distanceSinceMovingTrain: number;
+  budget: DifficultyBudget;
 }
 
 /**
@@ -81,27 +93,18 @@ export class DifficultyController {
    * Resolves the primary difficulty tier target based on encounter distance & duration.
    */
   public getTargetTier(distance: number, speed: number): PatternDifficulty {
-    // Opening 0 - 80m is the opening runway
     if (distance < 75.0) {
       return 'BEGINNER';
     }
-
-    // First 0-15s / 0-250m: Beginner to Easy
     if (distance < 250.0) {
       return 'EASY';
     }
-
-    // 15-35s / 250 - 750m: Intermediate / Medium
     if (distance < 750.0) {
       return 'MEDIUM';
     }
-
-    // 35-70s / 750 - 1600m: Advanced / Hard
     if (distance < 1600.0) {
       return 'HARD';
     }
-
-    // 70s+ / 1600m+: Expert master gauntlets
     return 'EXPERT';
   }
 
@@ -109,62 +112,105 @@ export class DifficultyController {
    * Determines candidate tier weights for stochastic yet structured pattern selection.
    * Ensures controlled variation and guarantees recovery breathers after intense sections.
    */
-  public getTierWeights(distance: number, speed: number): Record<string, number> {
+  public getTierWeights(distance: number, speed: number, duration?: number): Record<string, number> {
     // If player just faced multiple hard/expert patterns, mandate a recovery breather!
     if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
       return {
-        BEGINNER: 0.15,
+        BEGINNER: 0.10,
         EASY: 0.45,
         MEDIUM: 0.35,
         HARD: 0.05,
         EXPERT: 0.0,
-        BREATHER: 0.60
+        BREATHER: 0.70
       };
     }
 
-    const score = this.getDifficultyScore(distance, speed);
+    const dur = duration !== undefined ? duration : (speed > 0 ? distance / speed : this.runDuration);
+    const wave = Math.sin((distance / 320.0) * Math.PI * 2.0) * 0.08;
 
-    if (score < 0.18) {
-      // Very early game (0-15s)
+    if (distance < 270.0 || dur < 15.0) {
+      // Stage 1: Opening (0-15s / 0-270m)
       return {
-        BEGINNER: 0.50,
+        BEGINNER: 0.55,
         EASY: 0.45,
-        MEDIUM: 0.05,
+        MEDIUM: 0.0,
         HARD: 0.0,
         EXPERT: 0.0,
-        BREATHER: 0.20
+        BREATHER: 0.15
       };
-    } else if (score < 0.42) {
-      // Early-mid game (15-35s)
+    } else if (distance < 750.0 || dur < 35.0) {
+      // Stage 2: Early Run (15-30s / 270-750m)
       return {
         BEGINNER: 0.10,
-        EASY: 0.35,
-        MEDIUM: 0.50,
+        EASY: 0.45,
+        MEDIUM: 0.40,
         HARD: 0.05,
         EXPERT: 0.0,
-        BREATHER: 0.15
-      };
-    } else if (score < 0.72) {
-      // Mid-late game (35-70s)
-      return {
-        BEGINNER: 0.05,
-        EASY: 0.15,
-        MEDIUM: 0.40,
-        HARD: 0.35,
-        EXPERT: 0.05,
-        BREATHER: 0.15
-      };
-    } else {
-      // Late game / Expert (70s+)
-      return {
-        BEGINNER: 0.0,
-        EASY: 0.10,
-        MEDIUM: 0.25,
-        HARD: 0.40,
-        EXPERT: 0.25,
         BREATHER: 0.12
       };
+    } else if (distance < 1600.0 || dur < 70.0) {
+      // Stage 3: Mid Run (30-60s / 750-1600m)
+      return {
+        BEGINNER: 0.0,
+        EASY: 0.15,
+        MEDIUM: 0.45,
+        HARD: 0.35,
+        EXPERT: 0.05,
+        BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+      };
+    } else if (distance < 3000.0 || dur < 120.0) {
+      // Stage 4: Advanced (60-120s / 1500-3000m)
+      return {
+        BEGINNER: 0.0,
+        EASY: 0.05,
+        MEDIUM: 0.20,
+        HARD: 0.50,
+        EXPERT: 0.25,
+        BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+      };
+    } else {
+      // Stage 5: Expert (120s+ / 3000m+)
+      return {
+        BEGINNER: 0.0,
+        EASY: 0.0,
+        MEDIUM: 0.15,
+        HARD: 0.45,
+        EXPERT: 0.40,
+        BREATHER: 0.15 + (wave < 0 ? 0.10 : 0)
+      };
     }
+  }
+
+  /**
+   * Generates the multi-variable Difficulty Budget for procedural track generation.
+   */
+  public getDifficultyBudget(distance: number, speed: number, duration?: number): DifficultyBudget {
+    const tier = this.getTargetTier(distance, speed);
+    const score = this.getDifficultyScore(distance, speed, duration);
+    const weights = this.getTierWeights(distance, speed, duration);
+    const breatherMandatory = this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX;
+
+    // Obstacle density budget per 80m chunk
+    let maxObstacles = 2;
+    if (tier === 'EASY') maxObstacles = 3;
+    else if (tier === 'MEDIUM') maxObstacles = 4;
+    else if (tier === 'HARD') maxObstacles = 5;
+    else if (tier === 'EXPERT') maxObstacles = 6;
+
+    // Dynamic reaction distance scaling
+    const minReactionTime = CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME || 0.55;
+    const minReactionDist = Math.max(24.0, speed * minReactionTime);
+
+    return {
+      tier,
+      score,
+      maxObstaclesPerChunk: maxObstacles,
+      movingTrainAllowed: this.canSpawnMovingTrain(distance),
+      minReactionDistMeters: Math.round(minReactionDist * 10) / 10,
+      minReactionTimeSeconds: minReactionTime,
+      breatherMandatory,
+      weights
+    };
   }
 
   /**
@@ -176,8 +222,17 @@ export class DifficultyController {
     if (atDistance < 240.0) {
       return false;
     }
-    // Must observe minimum distance gap from previous moving train
-    const minGap = CONSTANTS.DIFFICULTY_CONFIG?.MOVING_TRAIN_MIN_GAP || 75.0;
+
+    // Dynamic moving train gap based on game stage
+    let minGap = 75.0;
+    if (atDistance >= 3000.0) {
+      minGap = 45.0;
+    } else if (atDistance >= 1500.0) {
+      minGap = 55.0;
+    } else if (atDistance >= 650.0) {
+      minGap = 65.0;
+    }
+
     return (atDistance - this.lastMovingTrainDistance) >= minGap;
   }
 
@@ -212,7 +267,8 @@ export class DifficultyController {
       tier: this.getTargetTier(this.distanceTraveled, this.currentSpeed),
       consecutiveDifficultCount: this.consecutiveDifficultCount,
       distanceSinceDifficult: this.distanceTraveled - this.lastDifficultDistance,
-      distanceSinceMovingTrain: this.distanceTraveled - this.lastMovingTrainDistance
+      distanceSinceMovingTrain: this.distanceTraveled - this.lastMovingTrainDistance,
+      budget: this.getDifficultyBudget(this.distanceTraveled, this.currentSpeed, this.runDuration)
     };
   }
 }

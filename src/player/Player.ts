@@ -206,7 +206,8 @@ export class Player {
   public handleInput(action: InputAction): void {
     if (this.state === 'CRASH' || this.state === 'IDLE') return;
 
-    PacingMetrics.getInstance().recordAction(performance.now() / 1000);
+    const actionType: 'JUMP' | 'SLIDE' | 'LANE_CHANGE' = action === 'UP' ? 'JUMP' : (action === 'DOWN' ? 'SLIDE' : 'LANE_CHANGE');
+    PacingMetrics.getInstance().recordAction(performance.now() / 1000, actionType);
 
     // During jetpack flight, jump, slide, and hoverboard are disabled; lateral steering remains fully active
     if (this.state === 'JETPACK' || this.jetpackPhase !== 'NONE') {

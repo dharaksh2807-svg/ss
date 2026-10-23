@@ -11,8 +11,11 @@ export interface PacingReport {
   movingTrainCount: number;
   movingTrainFrequencyPerMinute: number;
   difficultyDistribution: Record<string, number>;
+  actionDistribution: Record<string, number>;
   minReactionTimeSeconds: number;
   unreachablePatternCount: number;
+  fallbackCount: number;
+  repeatedPatternCount: number;
 }
 
 /**
@@ -40,6 +43,11 @@ export class PacingMetrics {
 
   // 3. Actions required and timestamps
   private lastActionTime: number = 0;
+  private actionCounts: Record<string, number> = {
+    JUMP: 0,
+    SLIDE: 0,
+    LANE_CHANGE: 0
+  };
 
   // 4. Moving train events
   private movingTrainTimes: number[] = [];
@@ -58,9 +66,12 @@ export class PacingMetrics {
   // 6. Minimum reaction time observed
   private minReactionTime: number = 999.0;
 
-  // 7. Unreachable patterns detected
+  // 7. Unreachable patterns & safe fallback diagnostics
   private unreachableCount: number = 0;
   private unreachableLogs: string[] = [];
+  private fallbackCount: number = 0;
+  private fallbackLogs: string[] = [];
+  private repeatedPatternCount: number = 0;
 
   constructor() {
     this.reset();
@@ -72,6 +83,11 @@ export class PacingMetrics {
     this.lastObstacleZ = 0;
     this.obstacleGaps = [];
     this.lastActionTime = 0;
+    this.actionCounts = {
+      JUMP: 0,
+      SLIDE: 0,
+      LANE_CHANGE: 0
+    };
     this.movingTrainTimes = [];
     this.difficultyCounts = {
       BEGINNER: 0,
@@ -85,6 +101,9 @@ export class PacingMetrics {
     this.minReactionTime = 999.0;
     this.unreachableCount = 0;
     this.unreachableLogs = [];
+    this.fallbackCount = 0;
+    this.fallbackLogs = [];
+    this.repeatedPatternCount = 0;
   }
 
   public recordSpeed(timeSec: number, speed: number): void {
@@ -120,8 +139,11 @@ export class PacingMetrics {
     }
   }
 
-  public recordAction(timeSec: number): void {
+  public recordAction(timeSec: number, actionType?: 'JUMP' | 'SLIDE' | 'LANE_CHANGE'): void {
     this.lastActionTime = timeSec;
+    if (actionType && this.actionCounts[actionType] !== undefined) {
+      this.actionCounts[actionType]++;
+    }
   }
 
   public recordPattern(name: string, difficulty: string): void {
@@ -137,6 +159,17 @@ export class PacingMetrics {
     this.unreachableCount++;
     this.unreachableLogs.push(`[${patternName}] ${reason}`);
     console.warn(`🚨 [PACING_METRIC] Unreachable pattern detected: ${patternName} - ${reason}`);
+  }
+
+  public recordFallback(lastPatternName: string, reason: string): void {
+    this.fallbackCount++;
+    this.fallbackLogs.push(`[After ${lastPatternName}] ${reason}`);
+    console.warn(`🛡️ [PACING_METRIC] Procedural fallback engaged after ${lastPatternName}: ${reason}`);
+  }
+
+  public recordRepeatedPattern(patternName: string): void {
+    this.repeatedPatternCount++;
+    console.warn(`⚠️ [PACING_METRIC] Repeated pattern detected: ${patternName}`);
   }
 
   public getObstaclesPer10s(currentTimeSec: number): number {
@@ -171,8 +204,11 @@ export class PacingMetrics {
       movingTrainCount: this.movingTrainTimes.length,
       movingTrainFrequencyPerMinute: Math.round(movingTrainFreq * 10) / 10,
       difficultyDistribution: { ...this.difficultyCounts },
+      actionDistribution: { ...this.actionCounts },
       minReactionTimeSeconds: this.minReactionTime === 999.0 ? 0 : Math.round(this.minReactionTime * 100) / 100,
-      unreachablePatternCount: this.unreachableCount
+      unreachablePatternCount: this.unreachableCount,
+      fallbackCount: this.fallbackCount,
+      repeatedPatternCount: this.repeatedPatternCount
     };
   }
 

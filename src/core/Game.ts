@@ -315,7 +315,8 @@ export class Game {
 
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
-    this.trackManager.reset();
+    // In normal play, generate fresh seed; in debug replay mode, preserve seed
+    this.trackManager.reset(!this.trackManager.isDebugMode());
     const startEnvId = this.trackManager.getActiveEnvironment();
     const startTheme = EnvironmentManager.getInstance().getTheme(startEnvId);
     this.worldScene.applyEnvironment(startTheme);
