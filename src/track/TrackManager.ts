@@ -15,6 +15,7 @@ import { ChaserModel } from '../characters/ChaserModel';
 import { CollisionResolver } from './CollisionResolver';
 import { CollisionDiagnostic, CollisionOutcome } from './CollisionTypes';
 import { EnvironmentManager, EnvironmentId, EnvironmentTheme } from '../environment/EnvironmentConfig';
+import { ProgressionManager } from '../progression/ProgressionManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -670,7 +671,8 @@ export class TrackManager {
     this.sweptCollectibleBox.copy(playerBox);
     if (this.previousPlayerZ !== null) {
       const zDelta = Math.abs(player.position.z - this.previousPlayerZ);
-      if (zDelta <= 6.0) {
+      const maxPhysicalStep = Math.max(1.8, (player.speed || CONSTANTS.INITIAL_SPEED) * dt * 1.5 + 0.5);
+      if (zDelta <= maxPhysicalStep) {
         this.sweptCollectibleBox.min.z = Math.min(playerBox.min.z, this.previousPlayerZ - 0.45);
         this.sweptCollectibleBox.max.z = Math.max(playerBox.max.z, this.previousPlayerZ + 0.45);
       }
@@ -858,6 +860,9 @@ export class TrackManager {
             this.eventBus.emit(EVENTS.SEASON_TOKEN_COLLECTED, 1);
           } else if (col.type === 'CHRONO_ORB') {
             this.eventBus.emit('CHRONO_ORB_COLLECTED', 5);
+          } else if (col.type === 'KEY') {
+            ProgressionManager.getInstance().addKeys(1);
+            this.eventBus.emit('KEY_COLLECTED', 1);
           } else {
             this.eventBus.emit(EVENTS.POWERUP_COLLECTED, col.type);
           }

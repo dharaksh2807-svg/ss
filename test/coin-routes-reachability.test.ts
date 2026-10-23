@@ -233,6 +233,8 @@ console.log('\n--- Suite 4: Kinematic Collection Integrity at Maximum Speed (38 
 {
   const scene = new THREE.Scene();
   const trackManager = new TrackManager(scene);
+  trackManager.setDebugSeed(7);
+  trackManager.reset();
   const player = new Player();
   player.reset();
 

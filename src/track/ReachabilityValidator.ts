@@ -258,12 +258,13 @@ export class ReachabilityValidator {
         lane: LaneIndex;
         zOffset: number;
         yOffset?: number;
+        startYOffset?: number;
+        endYOffset?: number;
         count?: number;
         spacing?: number;
         isArc?: boolean;
         isRampAscent?: boolean;
         endLane?: LaneIndex;
-        endYOffset?: number;
         isSlideGuidance?: boolean;
         isRiskRoute?: boolean;
         isPostObstacle?: boolean;
@@ -299,11 +300,18 @@ export class ReachabilityValidator {
 
         let y = col.yOffset !== undefined ? col.yOffset : (col.isSlideGuidance ? CONSTANTS.COIN_SLIDE_Y : CONSTANTS.COIN_GROUND_Y);
         if (col.isArc && count > 1) {
-          const peak = col.yOffset !== undefined ? col.yOffset : CONSTANTS.COIN_JUMP_PEAK_Y;
-          y = CONSTANTS.COIN_GROUND_Y + (peak - CONSTANTS.COIN_GROUND_Y) * 4.0 * t * (1.0 - t);
+          const startY = col.startYOffset !== undefined 
+            ? col.startYOffset 
+            : (col.yOffset && col.yOffset > 4.0 ? CONSTANTS.COIN_ROOFTOP_Y : CONSTANTS.COIN_GROUND_Y);
+          const endY = col.endYOffset !== undefined ? col.endYOffset : startY;
+          const peak = col.yOffset !== undefined ? col.yOffset : (startY + 1.50);
+          const peakBoost = Math.max(0, peak - Math.max(startY, endY));
+          const baseline = startY + t * (endY - startY);
+          y = baseline + peakBoost * 4.0 * t * (1.0 - t);
         } else if (col.isRampAscent && count > 1) {
+          const groundY = CONSTANTS.COIN_GROUND_Y;
           const roofY = col.endYOffset !== undefined ? col.endYOffset : (col.yOffset !== undefined ? col.yOffset : CONSTANTS.COIN_ROOFTOP_Y);
-          y = CONSTANTS.COIN_GROUND_Y + t * (roofY - CONSTANTS.COIN_GROUND_Y);
+          y = groundY + t * (roofY - groundY);
         }
 
         const lane = col.endLane !== undefined ? (t >= 0.5 ? col.endLane : col.lane) : col.lane;

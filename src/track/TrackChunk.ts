@@ -3,7 +3,7 @@ import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { ObstacleFactory, ObstacleInstance, getTrainAccessibilityProfile } from './ObstacleFactory';
-import { CollectibleFactory, CollectibleInstance } from './CollectibleFactory';
+import { CollectibleFactory, CollectibleInstance, CollectibleType } from './CollectibleFactory';
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
 import { PacingMetrics } from './PacingMetrics';
@@ -1652,10 +1652,24 @@ export class TrackChunk {
         let baseY = colData.yOffset !== undefined ? colData.yOffset : (colData.isSlideGuidance ? CONSTANTS.COIN_SLIDE_Y : CONSTANTS.COIN_GROUND_Y);
 
         if (colData.isArc && count > 1) {
-          // Exact ballistic parabola: ground height (0.85m), peak (colData.yOffset or 2.35m), lands at 0.85m
-          const groundY = CONSTANTS.COIN_GROUND_Y;
-          const peakY = colData.yOffset !== undefined ? colData.yOffset : CONSTANTS.COIN_JUMP_PEAK_Y;
-          baseY = groundY + (peakY - groundY) * 4.0 * t * (1.0 - t);
+          // Ballistic parabola with support surface adaptability (ground, rooftop, super sneakers)
+          const startY = colData.startYOffset !== undefined 
+            ? colData.startYOffset 
+            : (colData.supportSurface === 'TRAIN_ROOF' || (colData.yOffset && colData.yOffset > 4.0) ? CONSTANTS.COIN_ROOFTOP_Y : CONSTANTS.COIN_GROUND_Y);
+          const endY = colData.endYOffset !== undefined 
+            ? colData.endYOffset 
+            : (colData.landingSurface === 'TRAIN_ROOF' ? CONSTANTS.COIN_ROOFTOP_Y : (colData.landingSurface === 'GROUND' ? CONSTANTS.COIN_GROUND_Y : startY));
+          
+          let peakBoost: number;
+          if (colData.yOffset !== undefined) {
+            peakBoost = colData.yOffset - Math.max(startY, endY);
+          } else if (colData.isSuperJump || colData.jumpType === 'SUPER_SNEAKERS') {
+            peakBoost = 3.20;
+          } else {
+            peakBoost = 1.50;
+          }
+          const baseline = startY + t * (endY - startY);
+          baseY = baseline + Math.max(0, peakBoost) * 4.0 * t * (1.0 - t);
         } else if (colData.isRampAscent && count > 1) {
           // Smooth ascending coin ramp: starts at 0.85m ground height and ascends continuously up the incline to 5.20m roof height
           const groundY = CONSTANTS.COIN_GROUND_Y;
@@ -1674,6 +1688,8 @@ export class TrackChunk {
           group = this.collectibleFactory.createSeasonToken();
         } else if (colData.type === 'CHRONO_ORB') {
           group = this.collectibleFactory.createChronoOrb();
+        } else if (colData.type === 'KEY') {
+          group = this.collectibleFactory.createKey();
         } else {
           group = this.collectibleFactory.createPowerup(colData.type);
         }
@@ -1703,7 +1719,7 @@ export class TrackChunk {
       }
     }
 
-    // Occasionally spawn a Seasonal Event Token or Chrono Orb in safe open areas (35% probability)
+    // Occasionally spawn a Seasonal Event Token, Chrono Orb, or rare Key in safe open areas (35% probability)
     if (Math.random() < 0.35) {
       // Pick an open lane
       const safeLanes: LaneIndex[] = [-1, 0, 1];
@@ -1713,7 +1729,9 @@ export class TrackChunk {
       const worldTokenZ = this.chunkZ + localZ;
       const baseY = 1.0;
 
-      const group = this.collectibleFactory.createSeasonToken();
+      const isKey = Math.random() < 0.15;
+      const colType: CollectibleType = isKey ? 'KEY' : 'SEASON_TOKEN';
+      const group = isKey ? this.collectibleFactory.createKey() : this.collectibleFactory.createSeasonToken();
       group.position.set(laneX, baseY, localZ);
       this.group.add(group);
 
@@ -1723,7 +1741,7 @@ export class TrackChunk {
 
       this.collectibles.push({
         group,
-        type: 'SEASON_TOKEN',
+        type: colType,
         lane: randomLane,
         collider,
         active: true,
@@ -1843,7 +1861,10 @@ export class TrackChunk {
 
       // Only apply ambient bobbing if not currently magnetized
       if (!col.isMagnetized) {
-        const bob = Math.sin(animTime * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.08;
+        // Exclude jump arcs from vertical bobbing to guarantee strict ballistic collision synchronization
+        const bob = col.archetype === 'JUMP_ARC' 
+          ? 0 
+          : Math.sin(animTime * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.05;
         col.animOffsetY = bob;
         col.group.position.y = (col.baseY ?? 0.85) + bob;
         col.group.rotation.y += CONSTANTS.COIN_ROTATION_SPEED * dt;

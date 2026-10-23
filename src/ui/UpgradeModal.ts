@@ -1,5 +1,6 @@
 import { EventBus } from '../core/EventBus';
 import { UpgradeManager, UpgradablePowerup, UPGRADE_CONFIGS } from '../player/UpgradeManager';
+import { getPowerupIconSvg } from './IconCatalog';
 
 export class UpgradeModal {
   private element: HTMLElement;
@@ -80,7 +81,7 @@ export class UpgradeModal {
 
       const iconEl = document.createElement('div');
       iconEl.className = 'shop-item-icon';
-      iconEl.textContent = config.icon;
+      iconEl.innerHTML = getPowerupIconSvg(type, 36);
 
       const detailsEl = document.createElement('div');
       detailsEl.className = 'shop-item-details';

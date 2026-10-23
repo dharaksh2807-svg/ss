@@ -4,6 +4,9 @@ import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GraphicsManager } from '../scene/GraphicsManager';
+import { getPowerupIconSvg } from './IconCatalog';
+import { FirstUseGuidance } from './FirstUseGuidance';
+import { UpgradeManager, UpgradablePowerup } from '../player/UpgradeManager';
 
 export class HUD {
   private container: HTMLDivElement;
@@ -131,7 +134,33 @@ export class HUD {
     });
 
     bus.on(EVENTS.SEASON_TOKEN_COLLECTED, () => {
-      this.showFeedbackBadge('+1 EVENT TOKEN 💎', 'streak');
+      this.showFeedbackBadge('+1 EVENT TOKEN', 'streak');
+      const guidance = FirstUseGuidance.getInstance().checkAndTriggerGuidance('SEASON_TOKEN');
+      if (guidance.isFirst && guidance.info && guidance.iconSvg) {
+        this.showFirstUseToast(guidance.iconSvg, guidance.info.title, guidance.info.shortDesc);
+      }
+    });
+
+    bus.on('KEY_COLLECTED', () => {
+      this.showFeedbackBadge('+1 SAVE ME KEY', 'streak');
+      const guidance = FirstUseGuidance.getInstance().checkAndTriggerGuidance('KEY');
+      if (guidance.isFirst && guidance.info && guidance.iconSvg) {
+        this.showFirstUseToast(guidance.iconSvg, guidance.info.title, guidance.info.shortDesc);
+      }
+    });
+
+    bus.on(EVENTS.POWERUP_ACTIVATED, (type: PowerupType) => {
+      const guidance = FirstUseGuidance.getInstance().checkAndTriggerGuidance(type);
+      if (guidance.isFirst && guidance.info && guidance.iconSvg) {
+        this.showFirstUseToast(guidance.iconSvg, guidance.info.title, guidance.info.shortDesc);
+      } else {
+        const name = type === 'MAGNET' ? 'COIN MAGNET'
+          : (type === 'JETPACK' ? 'ROCKET JETPACK'
+          : (type === 'SNEAKERS' ? 'SUPER SNEAKERS'
+          : (type === 'MULTIPLIER' ? '2X MULTIPLIER'
+          : (type === 'SHIELD' ? 'PROTECTIVE SHIELD' : 'HOVERBOARD'))));
+        this.showFeedbackBadge(`${name} ACTIVE!`, 'precision');
+      }
     });
 
     bus.on('CHRONO_ORB_COLLECTED', (sec: number = 5) => {
@@ -261,12 +290,13 @@ export class HUD {
       const isExpiring = remaining <= 3.0;
       const expiringClass = isExpiring ? 'powerup-expiring' : '';
       const timerDisplay = isExpiring ? `${remaining.toFixed(1)}s` : `${Math.ceil(remaining)}s`;
+      const boardIcon = getPowerupIconSvg('HOVERBOARD', 22);
 
       html += `
         <div class="powerup-badge powerup-hoverboard powerup-${activeBoard.id} ${expiringClass}">
           <div class="powerup-header">
-            <span class="powerup-icon">${activeBoard.icon}</span>
-            <span class="powerup-name">${activeBoard.name.toUpperCase()}</span>
+            <span class="powerup-icon">${boardIcon}</span>
+            <span class="powerup-name">${activeBoard.name.toUpperCase()} <span class="powerup-lvl-badge">BOARD</span></span>
             <span class="powerup-timer">${timerDisplay}</span>
           </div>
           <div class="powerup-bar-track">
@@ -276,32 +306,39 @@ export class HUD {
       `;
     }
 
+    const upgradeManager = UpgradeManager.getInstance();
+
     for (const p of active) {
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
-      let icon = '⚡';
+      const icon = getPowerupIconSvg(p.type, 22);
       let name = 'POWER-UP';
       let colorClass = 'powerup-default';
 
       if (p.type === 'MAGNET') {
-        icon = '🧲';
         name = 'MAGNET';
         colorClass = 'powerup-magnet';
       } else if (p.type === 'JETPACK') {
-        icon = '🚀';
         name = 'JETPACK';
         colorClass = 'powerup-jetpack';
       } else if (p.type === 'SNEAKERS') {
-        icon = '👟';
         name = 'SNEAKERS';
         colorClass = 'powerup-sneakers';
       } else if (p.type === 'MULTIPLIER') {
-        icon = '⚡';
         name = 'SCORE 2X';
         colorClass = 'powerup-multiplier';
       } else if (p.type === 'SHIELD') {
-        icon = '🛡️';
         name = 'SHIELD';
         colorClass = 'powerup-shield';
+      }
+
+      let lvlBadge = '';
+      try {
+        const lvl = upgradeManager.getLevel(p.type as UpgradablePowerup);
+        if (lvl) {
+          lvlBadge = `<span class="powerup-lvl-badge">${lvl >= 5 ? 'MAX' : `LV.${lvl}`}</span>`;
+        }
+      } catch {
+        // level optional
       }
 
       const isExpiring = p.remaining <= 3.0;
@@ -312,7 +349,7 @@ export class HUD {
         <div class="powerup-badge ${colorClass} ${expiringClass}">
           <div class="powerup-header">
             <span class="powerup-icon">${icon}</span>
-            <span class="powerup-name">${name}</span>
+            <span class="powerup-name">${name} ${lvlBadge}</span>
             <span class="powerup-timer">${timerDisplay}</span>
           </div>
           <div class="powerup-bar-track">
@@ -468,6 +505,32 @@ export class HUD {
         }
       }, 400);
     }, 3200);
+  }
+
+  public showFirstUseToast(iconSvg: string, title: string, shortDesc: string): void {
+    if (!this.toastContainerEl) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'first-use-guidance-toast glassmorphic slide-down-anim';
+    toast.innerHTML = `
+      <div class="first-use-icon-wrap">${iconSvg}</div>
+      <div class="first-use-body">
+        <div class="first-use-tag">⚡ POWER-UP DISCOVERED</div>
+        <div class="first-use-title">${title}</div>
+        <div class="first-use-desc">${shortDesc}</div>
+      </div>
+    `;
+
+    this.toastContainerEl.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('slide-up-anim');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.parentElement.removeChild(toast);
+        }
+      }, 400);
+    }, 2800);
   }
 
   public triggerCoinBump(): void {

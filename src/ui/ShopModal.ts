@@ -3,6 +3,7 @@ import { UpgradeManager, UPGRADE_CONFIGS, UpgradablePowerup } from '../player/Up
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getAllCharacters } from '../characters/CharacterCatalog';
 import { getAllHoverboards } from '../hoverboard/HoverboardCatalog';
+import { getPowerupIconSvg } from './IconCatalog';
 
 export type ShopCategory = 'FEATURED' | 'UPGRADES' | 'BOOSTERS' | 'CHARACTERS' | 'HOVERBOARDS';
 
@@ -200,7 +201,7 @@ export class ShopModal {
 
       <div class="shop-grid">
         <div class="shop-card-item">
-          <div class="item-icon-box gold-glow">🚀</div>
+          <div class="item-icon-box gold-glow">${getPowerupIconSvg('JETPACK', 30)}</div>
           <div class="item-meta">
             <div class="item-name">Rocket Headstart</div>
             <div class="item-sub">Blast forward 500m at supersonic flight!</div>
@@ -212,7 +213,7 @@ export class ShopModal {
         </div>
 
         <div class="shop-card-item">
-          <div class="item-icon-box orange-glow">⚡</div>
+          <div class="item-icon-box orange-glow">${getPowerupIconSvg('MULTIPLIER', 30)}</div>
           <div class="item-meta">
             <div class="item-name">Score Booster +5X</div>
             <div class="item-sub">+5X Multiplier boost for your next subway run.</div>
@@ -224,7 +225,7 @@ export class ShopModal {
         </div>
 
         <div class="shop-card-item">
-          <div class="item-icon-box purple-glow">🛹</div>
+          <div class="item-icon-box purple-glow">${getPowerupIconSvg('HOVERBOARD', 30)}</div>
           <div class="item-meta">
             <div class="item-name">3x Board Pack</div>
             <div class="item-sub">Instant 3 emergency crash-shields.</div>
@@ -272,10 +273,11 @@ export class ShopModal {
         levelDots += `<span class="lvl-dot ${i <= level ? 'filled' : ''}"></span>`;
       }
 
+      const iconSvg = getPowerupIconSvg(type, 30);
       const row = document.createElement('div');
       row.className = 'shop-card-item upgrade-item';
       row.innerHTML = `
-        <div class="item-icon-box cyan-glow">${config.icon}</div>
+        <div class="item-icon-box cyan-glow">${iconSvg}</div>
         <div class="item-meta">
           <div class="item-header-row">
             <span class="item-name">${config.name}</span>
@@ -325,7 +327,7 @@ export class ShopModal {
 
     list.innerHTML = `
       <div class="shop-card-item booster-card">
-        <div class="item-icon-box purple-glow">🛹</div>
+        <div class="item-icon-box purple-glow">${getPowerupIconSvg('HOVERBOARD', 30)}</div>
         <div class="item-meta">
           <div class="item-name">3x Hoverboard Pack</div>
           <div class="item-sub">Instantly restocks 3 deployable hoverboards with crash-shielding.</div>
@@ -337,7 +339,7 @@ export class ShopModal {
       </div>
 
       <div class="shop-card-item booster-card">
-        <div class="item-icon-box gold-glow">🛹🔥</div>
+        <div class="item-icon-box gold-glow">${getPowerupIconSvg('HOVERBOARD', 30)}</div>
         <div class="item-meta">
           <div class="item-name">10x Megapack (Best Value)</div>
           <div class="item-sub">Bulk supply of 10 boards with 15% discount. Never run without a shield!</div>
@@ -349,7 +351,7 @@ export class ShopModal {
       </div>
 
       <div class="shop-card-item booster-card">
-        <div class="item-icon-box cyan-glow">🚀</div>
+        <div class="item-icon-box cyan-glow">${getPowerupIconSvg('JETPACK', 30)}</div>
         <div class="item-meta">
           <div class="item-name">Rocket Headstart</div>
           <div class="item-sub">Launches player 500m forward right as the subway run begins.</div>
@@ -361,7 +363,7 @@ export class ShopModal {
       </div>
 
       <div class="shop-card-item booster-card">
-        <div class="item-icon-box orange-glow">⚡</div>
+        <div class="item-icon-box orange-glow">${getPowerupIconSvg('MULTIPLIER', 30)}</div>
         <div class="item-meta">
           <div class="item-name">Score Booster (+5X)</div>
           <div class="item-sub">Supercharges score multiplier by +5 for the duration of the run.</div>
