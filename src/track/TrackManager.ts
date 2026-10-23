@@ -411,6 +411,8 @@ export class TrackManager {
       if (!this.aerialCoinManager.isJetpackFlightActive()) {
         this.aerialCoinManager.onJetpackActivated(player);
         this.prepareSafeLandingRunway(player);
+      } else {
+        this.aerialCoinManager.onJetpackRefreshed(player);
       }
     }
 
@@ -885,8 +887,8 @@ export class TrackManager {
         );
 
         // Ground coins are not collected from far above while high in jetpack flight
-        const isGroundCollectible = colWorldPos.y < 4.0;
-        const isPlayerHighInFlight = player.position.y > 4.5 || player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE';
+        const isGroundCollectible = colWorldPos.y < 3.0;
+        const isPlayerHighInFlight = player.position.y > 3.2;
         if (isPlayerHighInFlight && isGroundCollectible) {
           continue;
         }

@@ -22,21 +22,20 @@ export class AerialCoinManager {
   // Active Flight Generation State
   private isFlightActive: boolean = false;
   private flightStartPlayerZ: number = 0;
+  private takeoffStartY: number = CONSTANTS.PLAYER_BASE_Y;
   private flightSpeed: number = CONSTANTS.INITIAL_SPEED;
   private flightDuration: number = CONSTANTS.POWERUP_DURATION;
   private spawnCursorZ: number = 0;
   private landingZ: number = 0;
   private takeoffEndZ: number = 0;
   private descentStartZ: number = 0;
+  private postLandingEndZ: number = 0;
   private landingLane: LaneIndex = 0;
   private flightStartLane: LaneIndex = 0;
 
-  // Procedural pattern rhythm
-  private cruisePatternIndex: number = 0;
-
   constructor(
     private scene: THREE.Scene,
-    private collectibleFactory: CollectibleFactory
+    private collectibleFactory: CollectibleFactory = new CollectibleFactory()
   ) {
     this.group = new THREE.Group();
     this.group.name = 'AERIAL_COINS_GROUP';
@@ -80,27 +79,58 @@ export class AerialCoinManager {
   public onJetpackActivated(player: Player): void {
     this.isFlightActive = true;
     this.flightStartPlayerZ = player.position.z;
+    const baseGround = (player.groundY || CONSTANTS.PLAYER_BASE_Y) + 0.85;
+    this.takeoffStartY = (player.position.y > 5.0) ? baseGround : Math.max(player.position.y, baseGround);
     this.flightStartLane = player.currentLane;
     this.landingLane = player.currentLane; // Default landing runway matches flight approach
     this.flightSpeed = Math.max(CONSTANTS.INITIAL_SPEED, player.speed);
     this.flightDuration = player.powerups.getJetpackDuration();
 
-    const takeoffDist = this.flightSpeed * CONSTANTS.JETPACK_TAKEOFF_DURATION;
-    const descentDist = this.flightSpeed * CONSTANTS.JETPACK_DESCENT_DURATION;
+    const takeoffDist = this.flightSpeed * (CONSTANTS.JETPACK_TAKEOFF_DURATION || 1.0);
+    const descentDist = this.flightSpeed * (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8);
     const totalFlightDist = this.flightSpeed * this.flightDuration;
+    const postLandingRunway = CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 25.0;
 
     this.takeoffEndZ = this.flightStartPlayerZ - takeoffDist;
     this.landingZ = this.flightStartPlayerZ - totalFlightDist;
     this.descentStartZ = this.landingZ + descentDist;
+    this.postLandingEndZ = this.landingZ - postLandingRunway;
 
     // Start spawning coins immediately ahead along takeoff climb arc
     const spacing = CONSTANTS.JETPACK_COIN_SPACING || 2.2;
     this.spawnCursorZ = this.flightStartPlayerZ - spacing;
-    this.cruisePatternIndex = 0;
+  }
+
+  /**
+   * Extends flight route when a second jetpack is collected while flight is active
+   */
+  public onJetpackRefreshed(player: Player): void {
+    this.isFlightActive = true;
+    const remaining = player.powerups.getJetpackRemaining();
+    const currentSpeed = Math.max(CONSTANTS.INITIAL_SPEED, player.speed);
+    const descentDist = currentSpeed * (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8);
+    const totalRemainingDist = currentSpeed * remaining;
+    const postLandingRunway = CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 25.0;
+
+    this.landingZ = player.position.z - totalRemainingDist;
+    this.descentStartZ = this.landingZ + descentDist;
+    this.postLandingEndZ = this.landingZ - postLandingRunway;
   }
 
   public getLandingZ(): number {
     return this.landingZ;
+  }
+
+  public getTakeoffEndZ(): number {
+    return this.takeoffEndZ;
+  }
+
+  public getDescentStartZ(): number {
+    return this.descentStartZ;
+  }
+
+  public getPostLandingEndZ(): number {
+    return this.postLandingEndZ;
   }
 
   public getLandingLane(): LaneIndex {
@@ -112,6 +142,35 @@ export class AerialCoinManager {
   }
 
   /**
+   * Computes squared distance from point (px,py,pz) to 3D line segment [V, W]
+   */
+  private distToSegmentSquared(
+    px: number, py: number, pz: number,
+    vx: number, vy: number, vz: number,
+    wx: number, wy: number, wz: number
+  ): number {
+    const dx = wx - vx;
+    const dy = wy - vy;
+    const dz = wz - vz;
+    const l2 = dx * dx + dy * dy + dz * dz;
+    if (l2 === 0) {
+      const ex = px - vx;
+      const ey = py - vy;
+      const ez = pz - vz;
+      return ex * ex + ey * ey + ez * ez;
+    }
+    let t = ((px - vx) * dx + (py - vy) * dy + (pz - vz) * dz) / l2;
+    t = Math.max(0, Math.min(1.0, t));
+    const closeX = vx + t * dx;
+    const closeY = vy + t * dy;
+    const closeZ = vz + t * dz;
+    const rx = px - closeX;
+    const ry = py - closeY;
+    const rz = pz - closeZ;
+    return rx * rx + ry * ry + rz * rz;
+  }
+
+  /**
    * Main per-frame update loop: schedules coins ahead, animates, handles swept pickups & magnet
    */
   public update(
@@ -120,17 +179,38 @@ export class AerialCoinManager {
     timeSec: number,
     isMagnet: boolean,
     magnetRadius: number,
-    onCoinCollected: (pos: THREE.Vector3) => void
+    onCoinCollected?: (pos: THREE.Vector3) => void
   ): void {
-    const isPlayerInJetpack = player.powerups.isJetpackActive() || player.state === 'JETPACK';
+    const isPlayerInJetpack = player.powerups.isJetpackActive() ||
+      player.state === 'JETPACK' ||
+      player.getJetpackPhase() === 'DESCENT' ||
+      player.getJetpackPhase() === 'SAFE_LANDING';
 
-    // 1. If jetpack is active, schedule forward-looking aerial coins up to 120m ahead
+    // 1. If jetpack is active, dynamically adjust descent landing corridor and schedule forward-looking coins up to 120m ahead
     if (this.isFlightActive && isPlayerInJetpack) {
+      const remaining = player.powerups.getJetpackRemaining();
+      const currentSpeed = Math.max(CONSTANTS.INITIAL_SPEED, player.speed);
+
+      // Track current player lane during approach and descent
+      if (player.getJetpackPhase() === 'DESCENT' || remaining <= 2.5) {
+        this.landingLane = player.currentLane;
+      }
+
+      // Dynamically refine landingZ during cruise if runner speed changes
+      if (player.getJetpackPhase() === 'CRUISE' && remaining > (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8) + 0.5) {
+        const descentDist = currentSpeed * (CONSTANTS.JETPACK_DESCENT_DURATION || 1.8);
+        const projectedLandingZ = player.position.z - currentSpeed * remaining;
+        this.landingZ = projectedLandingZ;
+        this.descentStartZ = this.landingZ + descentDist;
+        this.postLandingEndZ = this.landingZ - (CONSTANTS.JETPACK_SAFE_LANDING_RUNWAY || 25.0);
+      }
+
       const aheadHorizon = 120.0;
       const targetSpawnHorizon = player.position.z - aheadHorizon;
       const spacing = CONSTANTS.JETPACK_COIN_SPACING || 2.2;
+      const finalCorridorZ = this.postLandingEndZ;
 
-      while (this.spawnCursorZ > targetSpawnHorizon && this.spawnCursorZ > this.landingZ) {
+      while (this.spawnCursorZ > targetSpawnHorizon && this.spawnCursorZ > finalCorridorZ) {
         this.spawnNextAerialCoin(player);
         this.spawnCursorZ -= spacing;
       }
@@ -141,12 +221,29 @@ export class AerialCoinManager {
     const playerChestPos = player.position.clone();
     playerChestPos.y += 0.5;
 
+    // Full 3D swept AABB volume to prevent tunneling during high-speed flight, lane changes, and altitude changes
     const playerBox = player.collider;
     const sweptBox = playerBox.clone();
-    if (player.previousPosition) {
-      sweptBox.min.z = Math.min(playerBox.min.z, player.previousPosition.z - 0.5);
-      sweptBox.max.z = Math.max(playerBox.max.z, player.previousPosition.z + 0.5);
+    const prevPos = player.previousPosition;
+    if (prevPos) {
+      const halfW = CONSTANTS.PLAYER_WIDTH * 0.5 + 0.5;
+      const halfD = CONSTANTS.PLAYER_DEPTH * 0.5 + 0.5;
+      const height = (player.isSliding ? CONSTANTS.PLAYER_HEIGHT_SLIDE : CONSTANTS.PLAYER_HEIGHT_RUN) + 0.5;
+
+      sweptBox.min.set(
+        Math.min(playerBox.min.x, prevPos.x - halfW),
+        Math.min(playerBox.min.y, prevPos.y - 0.35),
+        Math.min(playerBox.min.z, prevPos.z - halfD)
+      );
+      sweptBox.max.set(
+        Math.max(playerBox.max.x, prevPos.x + halfW),
+        Math.max(playerBox.max.y, prevPos.y + height),
+        Math.max(playerBox.max.z, prevPos.z + halfD)
+      );
     }
+
+    const prevChestPos = prevPos ? prevPos.clone() : playerChestPos.clone();
+    if (prevPos) prevChestPos.y += 0.5;
 
     let hasActiveCoins = false;
 
@@ -192,28 +289,40 @@ export class AerialCoinManager {
         coin.worldPos.z + CONSTANTS.COIN_RADIUS
       );
 
-      // Swept pickup detection
-      const distanceToPlayer = coin.worldPos.distanceTo(playerChestPos);
-      const isCollected = coin.collider.intersectsBox(sweptBox) ||
-        distanceToPlayer <= 1.4 ||
-        (coin.isMagnetized && distanceToPlayer <= 1.5);
+      // Continuous 3D swept segment-versus-volume and distance pickup detection
+      const distSqToSegment = this.distToSegmentSquared(
+        coin.worldPos.x, coin.worldPos.y, coin.worldPos.z,
+        prevChestPos.x, prevChestPos.y, prevChestPos.z,
+        playerChestPos.x, playerChestPos.y, playerChestPos.z
+      );
+      const distToCurrent = coin.worldPos.distanceTo(playerChestPos);
+      const pickupRadius = 1.4;
+      const isCollected =
+        coin.collider.intersectsBox(sweptBox) ||
+        distSqToSegment <= pickupRadius * pickupRadius ||
+        distToCurrent <= pickupRadius ||
+        (coin.isMagnetized && distToCurrent <= 1.5);
 
       if (isCollected) {
         coin.active = false;
         coin.group.visible = false;
-        this.eventBus.emit(EVENTS.COIN_COLLECTED);
-        onCoinCollected(coin.worldPos.clone());
+        this.eventBus.emit(EVENTS.COIN_COLLECTED, {
+          worldPos: coin.worldPos.clone(),
+          isAerial: true,
+          value: 1
+        });
+        if (onCoinCollected) onCoinCollected(coin.worldPos.clone());
         continue;
       }
 
-      // Recycle coins that have safely passed behind the player
-      if (coin.worldPos.z > player.position.z + 10.0) {
+      // Recycle coins only when they have safely passed behind the player
+      if (coin.worldPos.z > player.position.z + 12.0) {
         coin.active = false;
         coin.group.visible = false;
       }
     }
 
-    // If player is no longer flying and all coins have passed, close flight session
+    // If player is no longer flying and all coins have passed, close flight session cleanly
     if (!isPlayerInJetpack && !hasActiveCoins && this.isFlightActive) {
       this.isFlightActive = false;
     }
@@ -228,33 +337,25 @@ export class AerialCoinManager {
 
     const z = this.spawnCursorZ;
     let x = 0;
-    let y = CONSTANTS.JETPACK_ALTITUDE;
+    let y: number = CONSTANTS.JETPACK_ALTITUDE;
     let lane: LaneIndex = 0;
 
-    const groundY = 0.85;
+    const groundY = (player.groundY || CONSTANTS.PLAYER_BASE_Y) + 0.85;
     const cruiseY = CONSTANTS.JETPACK_ALTITUDE;
 
     if (z > this.takeoffEndZ) {
-      // 1. TAKEOFF ASCENT ARC: Smooth cubic rise from ground up to cruise altitude
+      // 1. TAKEOFF ASCENT ARC: Smooth cubic rise from takeoff altitude up to cruise altitude
       const totalTakeoffDist = Math.max(1.0, this.flightStartPlayerZ - this.takeoffEndZ);
       const t = Math.max(0, Math.min(1.0, (this.flightStartPlayerZ - z) / totalTakeoffDist));
-      const ease = t * t * (3.0 - 2.0 * t); // Smoothstep
-      y = groundY + (cruiseY - groundY) * ease;
+      const ease = t * t * (3.0 - 2.0 * t); // Smoothstep cubic ease-in-out
+      y = this.takeoffStartY + (cruiseY - this.takeoffStartY) * ease;
       lane = this.flightStartLane;
       x = CONSTANTS.LANES[lane];
-    } else if (z <= this.descentStartZ) {
-      // 3. DESCENT GLIDE SLOPE: Smooth glide descending into clear landing runway
-      const totalDescentDist = Math.max(1.0, this.descentStartZ - this.landingZ);
-      const t = Math.max(0, Math.min(1.0, (this.descentStartZ - z) / totalDescentDist));
-      const ease = t * t * (3.0 - 2.0 * t); // Smoothstep
-      y = cruiseY - (cruiseY - groundY) * ease;
-      lane = this.landingLane;
-      x = CONSTANTS.LANES[lane];
-    } else {
-      // 2. CRUISE FLIGHT RIBBONS: Procedural 3-lane rhythmic patterns
+    } else if (z > this.descentStartZ) {
+      // 2. CRUISE FLIGHT RIBBONS: Procedural 3-lane rhythmic patterns with 100% reachable track alignments
       y = cruiseY;
       const cruiseDist = this.takeoffEndZ - z;
-      const patternBlock = Math.floor(cruiseDist / 36.0); // 36m per pattern section (~16 coins)
+      const patternBlock = Math.floor(cruiseDist / 30.0); // 30m per pattern section (~13 coins)
       const patternType = patternBlock % 5;
 
       switch (patternType) {
@@ -265,32 +366,46 @@ export class AerialCoinManager {
           break;
 
         case 1:
-          // Sweeping smooth sinusoidal S-curve across lanes (-1 to +1)
-          const sinPhase = (cruiseDist % 36.0) / 36.0;
-          x = Math.sin(sinPhase * Math.PI * 2.0) * CONSTANTS.LANE_WIDTH;
-          lane = (x < -1.2 ? -1 : x > 1.2 ? 1 : 0) as LaneIndex;
-          break;
-
-        case 2:
-          // Left lane bonus speedway
+          // Left lane speed corridor
           lane = -1;
           x = CONSTANTS.LANES[-1];
           break;
 
-        case 3:
-          // Right lane bonus speedway
+        case 2:
+          // Right lane speed corridor
           lane = 1;
           x = CONSTANTS.LANES[1];
           break;
 
+        case 3:
+          // Center-to-Left reachable stepped lane switch
+          // 15m in center lane, then 15m in left lane with clear steering reaction time
+          const stepPhase1 = (cruiseDist % 30.0) / 30.0;
+          lane = stepPhase1 < 0.5 ? 0 : -1;
+          x = CONSTANTS.LANES[lane];
+          break;
+
         case 4:
         default:
-          // Diagonal lane switch ribbon (transitions from Left to Right)
-          const diagT = (cruiseDist % 36.0) / 36.0;
-          x = -CONSTANTS.LANE_WIDTH + diagT * (CONSTANTS.LANE_WIDTH * 2.0);
-          lane = (x < -1.2 ? -1 : x > 1.2 ? 1 : 0) as LaneIndex;
+          // Center-to-Right reachable stepped lane switch
+          const stepPhase2 = (cruiseDist % 30.0) / 30.0;
+          lane = stepPhase2 < 0.5 ? 0 : 1;
+          x = CONSTANTS.LANES[lane];
           break;
       }
+    } else if (z > this.landingZ) {
+      // 3. DESCENT GLIDE SLOPE: Smooth cubic glide slope descending into the clear landing runway
+      const totalDescentDist = Math.max(1.0, this.descentStartZ - this.landingZ);
+      const t = Math.max(0, Math.min(1.0, (this.descentStartZ - z) / totalDescentDist));
+      const ease = t * t * (3.0 - 2.0 * t); // Smoothstep
+      y = cruiseY - (cruiseY - groundY) * ease;
+      lane = this.landingLane;
+      x = CONSTANTS.LANES[lane];
+    } else {
+      // 4. POST-LANDING RUNWAY TRAIL: Short continuous ground-level corridor through touchdown zone
+      y = groundY;
+      lane = this.landingLane;
+      x = CONSTANTS.LANES[lane];
     }
 
     freeCoin.active = true;

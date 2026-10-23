@@ -409,7 +409,7 @@ export class Player {
     }
 
     // 3. Vertical Movement & Flight Modes (NORMAL -> TAKEOFF -> CRUISE -> DESCENT -> SAFE_LANDING)
-    if (this.powerups.isJetpackActive()) {
+    if (this.powerups.isJetpackActive() || this.jetpackPhase === 'DESCENT') {
       if (this.jetpackPhase === 'NONE') {
         this.jetpackPhase = 'TAKEOFF';
         this.state = 'JETPACK';
@@ -449,16 +449,35 @@ export class Player {
           this.position.y = this.jetpackAltitude + bob;
         }
       } else if (this.jetpackPhase === 'DESCENT') {
-        this.jetpackDescentTimer += dt;
-        const descentDuration = CONSTANTS.JETPACK_DESCENT_DURATION || 1.8;
-        const t = Math.min(1.0, this.jetpackDescentTimer / descentDuration);
-        const ease = t * t * (3.0 - 2.0 * t);
-        this.position.y = this.jetpackAltitude - (this.jetpackAltitude - this.groundY) * ease;
+        const descentWindow = CONSTANTS.JETPACK_DESCENT_DURATION || 1.8;
+        if (remaining > descentWindow) {
+          // Jetpack powerup refreshed while descending! Restore CRUISE
+          this.jetpackPhase = 'CRUISE';
+          this.jetpackDescentTimer = 0;
+          this.eventBus.emit(EVENTS.JETPACK_CRUISE);
+        } else {
+          this.jetpackDescentTimer += dt;
+          const descentDuration = CONSTANTS.JETPACK_DESCENT_DURATION || 1.8;
+          const t = Math.min(1.0, this.jetpackDescentTimer / descentDuration);
+          const ease = t * t * (3.0 - 2.0 * t);
+          this.position.y = this.jetpackAltitude - (this.jetpackAltitude - this.groundY) * ease;
+
+          // Touchdown check
+          if (t >= 1.0 || this.position.y <= this.groundY + 0.04) {
+            this.position.y = this.groundY;
+            this.jetpackPhase = 'SAFE_LANDING';
+            this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
+            this.model.setJetpackVisible(false);
+            this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
+            this.powerups.grantInvulnerability(1.5);
+            this.eventBus.emit(EVENTS.JETPACK_LANDED);
+            this.eventBus.emit(EVENTS.LAND);
+          }
+        }
       }
     } else {
       // If exiting jetpack state
       if (this.state === 'JETPACK' || this.jetpackPhase !== 'NONE') {
-        this.jetpackPhase = 'SAFE_LANDING';
         this.position.y = this.groundY;
         this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
         this.model.setJetpackVisible(false);

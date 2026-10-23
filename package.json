@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:task1-moving-trains": "npx tsx test/task1-real-moving-trains.test.ts",
+    "test:task2-jetpack": "npx tsx test/task2-jetpack-landing-repair.test.ts",
     "test:worldgen": "npx tsx test/dynamic-world-generation.test.ts",
     "test:task8": "npx tsx test/task8-modular-environments.test.ts",
     "test:task2": "npx tsx test/task2-railway-obstacles.test.ts",
