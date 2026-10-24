@@ -141,6 +141,7 @@ export interface ProgressionState {
   unlockedBoards: string[];
   selectedBoard: string;
   hoverboardCharges: number;
+  modiFreeRuns?: number;
   keys?: number;
   headstartBoosters?: number;
   scoreBoosters?: number;

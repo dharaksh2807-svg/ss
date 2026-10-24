@@ -261,6 +261,14 @@
             <div class="showroom-viewport-container">
               <canvas id="char-preview-canvas"></canvas>
               
+              <!-- Camera Angle Controls Bar -->
+              <div class="view-angles-bar" id="char-view-angles">
+                <button class="view-angle-btn active" data-angle="front">Front</button>
+                <button class="view-angle-btn" data-angle="three_quarter">3/4 View</button>
+                <button class="view-angle-btn" data-angle="side">Side</button>
+                <button class="view-angle-btn" data-angle="back">Back</button>
+              </div>
+
               <!-- Turntable Drag Hint Overlay -->
               <div class="drag-hint"><span>↔ DRAG TO ROTATE 360°</span></div>
               
@@ -273,7 +281,10 @@
             <div class="showroom-details-panel">
               <div class="char-header-row">
                 <div>
-                  <div id="char-title" class="char-subtitle">THE STREET LEGEND</div>
+                  <div class="char-title-wrap">
+                    <span id="char-rarity-badge" class="rarity-badge common">COMMON</span>
+                    <div id="char-title" class="char-subtitle">THE STREET LEGEND</div>
+                  </div>
                   <h3 id="char-name" class="char-heading">JAX</h3>
                 </div>
                 <div id="char-status-badge" class="status-badge active-badge">ACTIVE RUNNER</div>

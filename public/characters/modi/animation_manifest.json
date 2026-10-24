@@ -1,0 +1,146 @@
+{
+  "character": "Stylized Narendra Modi - procedural prototype",
+  "clips": [
+    {
+      "name": "idle",
+      "durationSeconds": 2.6,
+      "loop": true,
+      "rootMotion": false,
+      "animatedChannels": 6
+    },
+    {
+      "name": "run",
+      "durationSeconds": 0.74,
+      "loop": true,
+      "rootMotion": false,
+      "animatedChannels": 13
+    },
+    {
+      "name": "run_fast",
+      "durationSeconds": 0.55,
+      "loop": true,
+      "rootMotion": false,
+      "animatedChannels": 13
+    },
+    {
+      "name": "jump_start",
+      "durationSeconds": 0.3,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 8
+    },
+    {
+      "name": "jump_air",
+      "durationSeconds": 0.65,
+      "loop": true,
+      "rootMotion": false,
+      "animatedChannels": 8
+    },
+    {
+      "name": "jump_land",
+      "durationSeconds": 0.31,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 6
+    },
+    {
+      "name": "slide",
+      "durationSeconds": 0.86,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 10
+    },
+    {
+      "name": "lane_left",
+      "durationSeconds": 0.4,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 8
+    },
+    {
+      "name": "lane_right",
+      "durationSeconds": 0.4,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 8
+    },
+    {
+      "name": "stumble",
+      "durationSeconds": 0.57,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 6
+    },
+    {
+      "name": "defeat",
+      "durationSeconds": 0.92,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 7
+    },
+    {
+      "name": "revive",
+      "durationSeconds": 0.7,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 7
+    },
+    {
+      "name": "smirk",
+      "durationSeconds": 0.9,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 4
+    },
+    {
+      "name": "shrug",
+      "durationSeconds": 1.22,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 5
+    },
+    {
+      "name": "taunt",
+      "durationSeconds": 1.1,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 4
+    },
+    {
+      "name": "celebrate",
+      "durationSeconds": 1.46,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 4
+    },
+    {
+      "name": "coin_celebrate",
+      "durationSeconds": 0.95,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 3
+    },
+    {
+      "name": "selection_intro",
+      "durationSeconds": 1.35,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 3
+    },
+    {
+      "name": "selection_idle",
+      "durationSeconds": 3.2,
+      "loop": true,
+      "rootMotion": false,
+      "animatedChannels": 6
+    },
+    {
+      "name": "funny_emote",
+      "durationSeconds": 1.3,
+      "loop": false,
+      "rootMotion": false,
+      "animatedChannels": 6
+    }
+  ],
+  "notes": "Clips use LINEAR bone animation. In-place locomotion; controller must provide jump/lane displacement. Facial controls limited to eyebrow, lids, jaw, head motion."
+}

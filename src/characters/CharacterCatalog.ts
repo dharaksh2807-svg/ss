@@ -1,4 +1,6 @@
-export type CharacterId = 'char_jax' | 'char_luna' | 'char_cruz' | 'char_nova';
+export type CharacterId = 'char_jax' | 'char_luna' | 'char_cruz' | 'char_nova' | 'char_modi';
+
+export type CharacterRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
 export type UnlockType = 'FREE' | 'COINS' | 'ACHIEVEMENT' | 'SEASON_PASS';
 
@@ -16,6 +18,7 @@ export interface OutfitDefinition {
   tagline: string;
   description: string;
   icon: string;
+  previewImage?: string;
   unlock: UnlockRequirement;
   colors: {
     primary: number;     // Jacket / main garment
@@ -34,6 +37,8 @@ export interface OutfitDefinition {
     hasAfroBandana?: boolean;
     hasAeroHelmet?: boolean;
     hasLuminousTrims?: boolean;
+    hasSpectacles?: boolean;
+    hasKurtaWaistcoat?: boolean;
   };
 }
 
@@ -45,7 +50,12 @@ export interface CharacterDefinition {
   bio: string;
   silhouetteDescription: string;
   portraitIcon: string;
+  previewImage?: string;
+  thumbnailImage?: string;
   gender: 'MALE' | 'FEMALE' | 'NON_BINARY';
+  rarity?: CharacterRarity;
+  isGlb?: boolean;
+  glbPath?: string;
   proportions: {
     height: number;
     shoulderWidth: number;
@@ -413,6 +423,81 @@ export const CHARACTER_CATALOG: CharacterDefinition[] = [
         features: {
           hasAeroHelmet: true,
           hasLuminousTrims: true
+        }
+      }
+    ]
+  },
+  // --- CHARACTER 5: NARENDRA MODI (LEGENDARY) ---
+  {
+    id: 'char_modi',
+    name: 'Narendra Modi',
+    title: 'The Statesman Runner',
+    personality: 'Distinguished, energetic world leader in signature tailored waistcoat and traditional kurta, sprinting with unmatched poise.',
+    bio: 'An iconic statesman whose relentless drive, determination, and global vision power an unstoppable sprint through the subway metropolis. Outfitted in his signature hand-tailored waistcoat, traditional cream kurta, and modern high-traction sneakers.',
+    silhouetteDescription: 'Distinguished leader with groomed silver-white hair and beard, metallic spectacles, traditional cream kurta, tailored midnight-navy waistcoat, and high-performance running sneakers.',
+    portraitIcon: '🏛️',
+    previewImage: '/characters/modi/three_quarter.png',
+    thumbnailImage: '/characters/modi/hero.png',
+    gender: 'MALE',
+    rarity: 'LEGENDARY',
+    isGlb: true,
+    glbPath: '/characters/modi/character.glb',
+    proportions: {
+      height: 1.0,
+      shoulderWidth: 0.36,
+      torsoWidth: 0.30,
+      legLength: 0.85,
+      armScale: 1.0
+    },
+    unlock: {
+      type: 'COINS',
+      cost: 100000,
+      description: 'Unlock for 100,000 Coins'
+    },
+    defaultOutfitId: 'modi_classic',
+    outfits: [
+      {
+        id: 'modi_classic',
+        name: 'Vibrant Statesman',
+        tagline: 'Signature Traditional Kurta & Navy Waistcoat',
+        description: 'Impeccable cream kurta, tailored midnight-navy Nehru waistcoat with brass buttons, saffron pocket square accent, and lightweight graphite running sneakers.',
+        icon: '🏛️',
+        previewImage: '/characters/modi/front.png',
+        unlock: { type: 'FREE', description: 'Default Look with Narendra Modi' },
+        colors: {
+          primary: 0x1b2838,     // Midnight navy waistcoat
+          secondary: 0xf5f0e6,   // Cream kurta fabric
+          pants: 0xf5f0e6,       // Cream churidar
+          accent: 0xff9933,      // Saffron pocket square
+          hairOrHelmet: 0xf2f2f2,// Silver-white swept hair & beard
+          skin: 0xd7a176,        // Warm natural skin tone
+          details: 0xcd7f32      // Brushed bronze spectacles & buttons
+        },
+        features: {
+          hasSpectacles: true,
+          hasKurtaWaistcoat: true
+        }
+      },
+      {
+        id: 'modi_saffron',
+        name: 'Golden Saffron',
+        tagline: 'Ceremonial Silk & Saffron Waistcoat',
+        description: 'Vibrant royal saffron waistcoat over pure ivory silk kurta, with polished gold spectacle frames and athletic sneakers.',
+        icon: '☀️',
+        previewImage: '/characters/modi/three_quarter.png',
+        unlock: { type: 'COINS', cost: 10000, description: '10,000 Coins' },
+        colors: {
+          primary: 0xff6f00,     // Royal saffron waistcoat
+          secondary: 0xffffff,   // Pure white silk kurta
+          pants: 0xffffff,       // White churidar
+          accent: 0xffd54f,      // Gold trim
+          hairOrHelmet: 0xf2f2f2,
+          skin: 0xd7a176,
+          details: 0xffb300      // Gold spectacles
+        },
+        features: {
+          hasSpectacles: true,
+          hasKurtaWaistcoat: true
         }
       }
     ]

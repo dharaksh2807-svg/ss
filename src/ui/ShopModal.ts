@@ -181,7 +181,44 @@ export class ShopModal {
 
   // --- Featured Deals ---
   private renderFeatured(container: HTMLElement): void {
+    const coins = this.upgradeManager.getCoins();
+    const isModiUnlocked = this.progression.isCharacterUnlocked('char_modi');
+    const isModiEquipped = this.progression.getSelectedCharacter() === 'char_modi';
+
     container.innerHTML = `
+      <!-- Legendary Character Spotlight Banner -->
+      <div class="featured-hero-banner legendary-featured-banner">
+        <div class="featured-glow-fx gold-shimmer"></div>
+        <div class="featured-char-portrait">
+          <img src="/characters/modi/three_quarter.png" alt="Narendra Modi" class="featured-hero-img" />
+        </div>
+        <div class="featured-info">
+          <span class="badge-pill legendary-pill">👑 NEW LEGENDARY RUNNER</span>
+          <h3 class="featured-title">NARENDRA MODI</h3>
+          <p class="featured-desc">The Statesman Runner: Traditional tailored kurta, midnight-navy waistcoat, and agile runners with full 3D skeletal animations.</p>
+          <div class="featured-pricing">
+            <span class="new-price gold-price">100,000 🪙</span>
+            <span class="discount-badge gold-badge">LEGENDARY TIER</span>
+          </div>
+        </div>
+        <div class="featured-banner-actions">
+          ${isModiEquipped 
+            ? `<button class="arcade-btn btn-equipped" disabled>${isModiUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${this.progression.getModiFreeRuns()} LEFT)`}</button>`
+            : isModiUnlocked
+            ? `<button class="arcade-btn btn-primary" data-equip-char="char_modi">⚡ EQUIP</button>`
+            : (this.progression.getModiFreeRuns() > 0)
+            ? `<button class="arcade-btn btn-primary" data-trial-char="char_modi">⚡ FREE RUN (${this.progression.getModiFreeRuns()} LEFT)</button>
+               <button class="arcade-btn ${coins >= 100000 ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="char_modi">
+                 ${coins >= 100000 ? '100,000 🪙 UNLOCK' : '100,000 🪙 BUY'}
+               </button>`
+            : `<button class="arcade-btn ${coins >= 100000 ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="char_modi">
+                ${coins >= 100000 ? '100,000 🪙 UNLOCK' : 'NEED 100,000 🪙'}
+              </button>`
+          }
+          <button class="arcade-btn btn-ghost" data-view-char="char_modi">🔍 3D PREVIEW</button>
+        </div>
+      </div>
+
       <div class="featured-hero-banner">
         <div class="featured-glow-fx"></div>
         <div class="featured-info">
@@ -251,6 +288,7 @@ export class ShopModal {
       });
     }
 
+    this.bindCharacterButtons(container);
     this.bindShopButtons(container);
   }
 
@@ -391,68 +429,130 @@ export class ShopModal {
       const isEquipped = this.progression.getSelectedCharacter() === char.id;
       const cost = char.unlock.cost || 0;
       const canAfford = coins >= cost;
+      const isLegendary = char.rarity === 'LEGENDARY';
 
       const card = document.createElement('div');
-      card.className = `shop-card-item char-shop-card ${isUnlocked ? 'owned' : ''}`;
-      card.innerHTML = `
-        <div class="item-icon-box cyan-glow">${char.portraitIcon}</div>
-        <div class="item-meta">
-          <div class="item-name">${char.name}</div>
-          <div class="item-sub">${char.title}</div>
-          <div class="item-bio-snippet">${char.personality}</div>
-        </div>
-        <div class="item-action-area">
-          ${isEquipped 
-            ? `<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>`
-            : isUnlocked
-            ? `<button class="arcade-btn btn-secondary" data-equip-char="${char.id}">EQUIP</button>`
-            : char.unlock.type === 'COINS'
-            ? `<button class="arcade-btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" data-buy-char="${char.id}">
-                ${cost.toLocaleString()} 🪙
-              </button>`
-            : `<button class="arcade-btn btn-disabled" disabled>🔒 ${char.unlock.description}</button>`
-          }
-          <button class="arcade-btn btn-ghost" data-view-char="${char.id}">3D VIEW</button>
-        </div>
-      `;
 
-      // Event listeners
-      const buyBtn = card.querySelector(`[data-buy-char="${char.id}"]`);
-      if (buyBtn) {
-        buyBtn.addEventListener('click', () => {
-          const res = this.progression.purchaseCharacter(char.id);
-          if (res.success) {
-            this.showToast(res.message);
-            this.renderCategoryContent();
-          } else {
-            this.showToast(res.message, true);
-          }
-        });
-      }
-
-      const equipBtn = card.querySelector(`[data-equip-char="${char.id}"]`);
-      if (equipBtn) {
-        equipBtn.addEventListener('click', () => {
-          const res = this.progression.equipCharacter(char.id);
-          if (res.success) {
-            this.showToast(res.message);
-            this.renderCategoryContent();
-          }
-        });
-      }
-
-      const viewBtn = card.querySelector(`[data-view-char="${char.id}"]`);
-      if (viewBtn) {
-        viewBtn.addEventListener('click', () => {
-          this.hide();
-          this.eventBus.emit('OPEN_CHARACTERS', 'SHOP');
-        });
+      if (isLegendary) {
+        card.className = `shop-card-item char-shop-card legendary-character-card ${isUnlocked ? 'owned' : ''}`;
+        card.innerHTML = `
+          <div class="legendary-banner-strip">
+            <span class="legendary-tag">👑 LEGENDARY RUNNER</span>
+            ${isUnlocked ? '<span class="status-pill owned-pill">✓ OWNED</span>' : `<span class="status-pill price-pill">${cost.toLocaleString()} 🪙</span>`}
+          </div>
+          <div class="legendary-preview-wrap">
+            <img src="${char.previewImage || '/characters/modi/three_quarter.png'}" alt="${char.name}" class="legendary-char-img" />
+          </div>
+          <div class="item-meta">
+            <div class="item-header-row">
+              <span class="item-name legendary-name">${char.name}</span>
+              <span class="rarity-badge legendary-badge">LEGENDARY</span>
+            </div>
+            <div class="item-sub legendary-sub">${char.title}</div>
+            <div class="item-bio-snippet">${char.bio}</div>
+          </div>
+          <div class="item-action-area legendary-action-area">
+            ${isEquipped 
+              ? `<button class="arcade-btn btn-equipped" disabled>${isUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${this.progression.getModiFreeRuns()} LEFT)`}</button>`
+              : isUnlocked
+              ? `<button class="arcade-btn btn-primary" data-equip-char="${char.id}">⚡ EQUIP</button>`
+              : (char.id === 'char_modi' && this.progression.getModiFreeRuns() > 0)
+              ? `<button class="arcade-btn btn-primary" data-trial-char="${char.id}">⚡ FREE RUN (${this.progression.getModiFreeRuns()} LEFT)</button>
+                 <button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
+                   ${cost.toLocaleString()} 🪙 BUY
+                 </button>`
+              : `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
+                  ${cost.toLocaleString()} 🪙 BUY
+                </button>`
+            }
+            <button class="arcade-btn btn-secondary" data-view-char="${char.id}">🔍 3D PREVIEW</button>
+          </div>
+        `;
+      } else {
+        card.className = `shop-card-item char-shop-card ${isUnlocked ? 'owned' : ''}`;
+        card.innerHTML = `
+          <div class="item-icon-box cyan-glow">${char.portraitIcon}</div>
+          <div class="item-meta">
+            <div class="item-name">${char.name}</div>
+            <div class="item-sub">${char.title}</div>
+            <div class="item-bio-snippet">${char.personality}</div>
+          </div>
+          <div class="item-action-area">
+            ${isEquipped 
+              ? `<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>`
+              : isUnlocked
+              ? `<button class="arcade-btn btn-secondary" data-equip-char="${char.id}">EQUIP</button>`
+              : char.unlock.type === 'COINS'
+              ? `<button class="arcade-btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" data-buy-char="${char.id}">
+                  ${cost.toLocaleString()} 🪙
+                </button>`
+              : `<button class="arcade-btn btn-disabled" disabled>🔒 ${char.unlock.description}</button>`
+            }
+            <button class="arcade-btn btn-ghost" data-view-char="${char.id}">3D VIEW</button>
+          </div>
+        `;
       }
 
       list.appendChild(card);
     });
 
     container.appendChild(list);
+    this.bindCharacterButtons(container);
+    this.bindShopButtons(container);
+  }
+
+  private bindCharacterButtons(container: HTMLElement): void {
+    const buyBtns = container.querySelectorAll('[data-buy-char]');
+    buyBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const charId = (e.currentTarget as HTMLElement).dataset.buyChar;
+        if (!charId) return;
+        const res = this.progression.purchaseCharacter(charId);
+        if (res.success) {
+          this.showToast(res.message);
+          this.renderCategoryContent();
+        } else {
+          this.showToast(res.message, true);
+        }
+      });
+    });
+
+    const trialBtns = container.querySelectorAll('[data-trial-char]');
+    trialBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const charId = (e.currentTarget as HTMLElement).dataset.trialChar;
+        if (!charId) return;
+        const res = this.progression.equipCharacter(charId);
+        if (res.success) {
+          this.showToast(res.message);
+          this.renderCategoryContent();
+        } else {
+          this.showToast(res.message, true);
+        }
+      });
+    });
+
+    const equipBtns = container.querySelectorAll('[data-equip-char]');
+    equipBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const charId = (e.currentTarget as HTMLElement).dataset.equipChar;
+        if (!charId) return;
+        const res = this.progression.equipCharacter(charId);
+        if (res.success) {
+          this.showToast(res.message);
+          this.renderCategoryContent();
+        }
+      });
+    });
+
+    const viewBtns = container.querySelectorAll('[data-view-char]');
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const charId = (e.currentTarget as HTMLElement).dataset.viewChar;
+        this.hide();
+        this.eventBus.emit('OPEN_CHARACTERS', { source: 'SHOP', charId });
+      });
+    });
   }
 
   // --- Hoverboards Direct Hangar ---

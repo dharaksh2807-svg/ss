@@ -21,6 +21,7 @@ export class CharacterSelectModal {
   private charTitleEl: HTMLElement;
   private charBioEl: HTMLElement;
   private charStatusEl: HTMLElement;
+  private charRarityEl: HTMLElement | null = null;
   private outfitListEl: HTMLElement;
   private walletCoinsEl: HTMLElement;
   private characterTabsEl: HTMLElement;
@@ -50,7 +51,7 @@ export class CharacterSelectModal {
   private characters: CharacterDefinition[];
   private currentCharacterIndex: number = 0;
   private selectedOutfitId: string = '';
-  private previousScreen: 'START' | 'PAUSE' = 'START';
+  private previousScreen: 'START' | 'PAUSE' | 'SHOP' = 'START';
   private progression: ProgressionManager;
   private upgradeManager: UpgradeManager;
 
@@ -65,6 +66,7 @@ export class CharacterSelectModal {
     this.charTitleEl = document.getElementById('char-title')!;
     this.charBioEl = document.getElementById('char-bio')!;
     this.charStatusEl = document.getElementById('char-status-badge')!;
+    this.charRarityEl = document.getElementById('char-rarity-badge');
     this.outfitListEl = document.getElementById('char-outfit-list')!;
     this.walletCoinsEl = document.getElementById('char-wallet-coins')!;
     this.characterTabsEl = document.getElementById('char-tabs')!;
@@ -156,13 +158,48 @@ export class CharacterSelectModal {
   private setupEventListeners(): void {
     const bus = EventBus.getInstance();
 
-    bus.on('OPEN_CHARACTERS', (source: 'START' | 'PAUSE' = 'START') => {
+    bus.on('OPEN_CHARACTERS', (payload?: any) => {
+      let source: 'START' | 'PAUSE' | 'SHOP' = 'START';
+      let targetCharId: string | undefined = undefined;
+
+      if (typeof payload === 'string') {
+        if (payload === 'START' || payload === 'PAUSE' || payload === 'SHOP') {
+          source = payload;
+        } else {
+          targetCharId = payload;
+        }
+      } else if (payload && typeof payload === 'object') {
+        source = payload.source || payload.from || 'START';
+        targetCharId = payload.charId;
+      }
+
       this.previousScreen = source;
-      this.show();
+      this.show(targetCharId);
     });
 
     bus.on('WALLET_UPDATED', (coins: number) => {
       this.updateWalletDisplay(coins);
+    });
+
+    // View Angle Preset Buttons
+    const angleBtns = this.element.querySelectorAll('#char-view-angles .view-angle-btn');
+    angleBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        angleBtns.forEach((b) => b.classList.remove('active'));
+        const target = e.currentTarget as HTMLElement;
+        target.classList.add('active');
+        const angle = target.dataset.angle;
+        if (angle === 'front') {
+          this.turntableTargetRotationY = Math.PI;
+        } else if (angle === 'three_quarter') {
+          this.turntableTargetRotationY = Math.PI * 0.8;
+        } else if (angle === 'side') {
+          this.turntableTargetRotationY = Math.PI * 0.5;
+        } else if (angle === 'back') {
+          this.turntableTargetRotationY = 0;
+        }
+        this.idleTimeWithoutInteraction = 0;
+      });
     });
 
     if (this.closeBtn) {
@@ -255,12 +292,12 @@ export class CharacterSelectModal {
     window.addEventListener('touchend', () => onPointerUp(), { passive: true });
   }
 
-  public show(): void {
+  public show(targetCharId?: string): void {
     this.element.classList.remove('hidden');
     this.updateWalletDisplay(this.upgradeManager.getCoins());
 
-    // Select currently equipped character
-    const equippedCharId = this.progression.getSelectedCharacter();
+    // Select specified character or currently equipped character
+    const equippedCharId = targetCharId || this.progression.getSelectedCharacter();
     const foundIdx = this.characters.findIndex((c) => c.id === equippedCharId);
     this.currentCharacterIndex = foundIdx !== -1 ? foundIdx : 0;
 
@@ -295,6 +332,8 @@ export class CharacterSelectModal {
       } else if (this.previousScreen === 'PAUSE') {
         const pauseModalEl = document.getElementById('pause-modal');
         if (pauseModalEl) pauseModalEl.classList.remove('hidden');
+      } else if (this.previousScreen === 'SHOP') {
+        EventBus.getInstance().emit('OPEN_SHOP');
       }
     }
   }
@@ -358,6 +397,12 @@ export class CharacterSelectModal {
     this.charNameEl.textContent = char.name.toUpperCase();
     this.charTitleEl.textContent = char.title;
     this.charBioEl.textContent = char.bio;
+
+    if (this.charRarityEl) {
+      const rarity = char.rarity || 'COMMON';
+      this.charRarityEl.textContent = rarity;
+      this.charRarityEl.className = `rarity-badge ${rarity.toLowerCase()}`;
+    }
 
     const isCharUnlocked = this.progression.isCharacterUnlocked(char.id);
     const equippedCharId = this.progression.getSelectedCharacter();
@@ -455,6 +500,20 @@ export class CharacterSelectModal {
 
     if (!isCharUnlocked) {
       // Character is locked
+      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
+      if (modiFreeRuns > 0) {
+        if (char.id === equippedCharId) {
+          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${modiFreeRuns} LEFT)`;
+          this.actionBtn.className = 'btn btn-action equipped';
+          this.actionBtn.disabled = true;
+          return;
+        }
+        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${modiFreeRuns} LEFT)`;
+        this.actionBtn.className = 'btn btn-action equip';
+        this.actionBtn.disabled = false;
+        return;
+      }
+
       if (char.unlock.type === 'COINS') {
         const cost = char.unlock.cost || 0;
         const canAfford = coins >= cost;
@@ -500,6 +559,14 @@ export class CharacterSelectModal {
     const isOutfitUnlocked = this.progression.isOutfitUnlocked(char.id, selectedOutfit.id);
 
     if (!isCharUnlocked) {
+      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
+      if (modiFreeRuns > 0) {
+        const res = this.progression.equipCharacter(char.id, selectedOutfit.id);
+        if (res.success) {
+          this.updateCharacterView();
+        }
+        return;
+      }
       // Purchase Character
       const res = this.progression.purchaseCharacter(char.id);
       if (res.success) {

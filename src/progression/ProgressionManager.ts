@@ -154,6 +154,7 @@ export class ProgressionManager {
       unlockedBoards: ['board_urban_glide'],
       selectedBoard: 'board_urban_glide',
       hoverboardCharges: 5,
+      modiFreeRuns: 5,
       keys: 3,
       headstartBoosters: 2,
       scoreBoosters: 2
@@ -230,6 +231,9 @@ export class ProgressionManager {
                 char_cruz: 'cruz_bboy',
                 char_nova: 'nova_solar'
               };
+            }
+            if (parsed.modiFreeRuns === undefined) {
+              parsed.modiFreeRuns = 5;
             }
             if (!parsed.unlockedBoards || parsed.unlockedBoards.includes('board_default')) {
               parsed.unlockedBoards = Array.from(new Set(['board_urban_glide', ...(parsed.unlockedBoards || [])]))
@@ -464,6 +468,17 @@ export class ProgressionManager {
 
     if (this.activeGameMode === 'SURVIVAL' && this.runDistance > this.state.lifetimeStats.survivalBestDistance) {
       this.state.lifetimeStats.survivalBestDistance = Math.floor(this.runDistance);
+    }
+
+    // Free trial run deduction for Narendra Modi if not permanently owned
+    if (this.state.selectedCharacter === 'char_modi' && !this.isCharacterUnlocked('char_modi')) {
+      const current = this.state.modiFreeRuns ?? 5;
+      const remaining = Math.max(0, current - 1);
+      this.state.modiFreeRuns = remaining;
+      if (remaining === 0) {
+        this.state.selectedCharacter = 'char_jax';
+        this.eventBus.emit('CHARACTER_EQUIPPED', { charId: 'char_jax', outfitId: 'jax_classic' });
+      }
     }
 
     this.saveState();
@@ -833,8 +848,19 @@ export class ProgressionManager {
     return false;
   }
 
+  public getModiFreeRuns(): number {
+    return this.state.modiFreeRuns ?? 5;
+  }
+
+  public setModiFreeRuns(count: number): void {
+    this.state.modiFreeRuns = Math.max(0, count);
+    this.saveState();
+  }
+
   public equipCharacter(charId: string, outfitId?: string): { success: boolean; message: string } {
-    if (!this.isCharacterUnlocked(charId)) {
+    const isUnlocked = this.isCharacterUnlocked(charId);
+    const hasFreeRuns = charId === 'char_modi' && this.getModiFreeRuns() > 0;
+    if (!isUnlocked && !hasFreeRuns) {
       return { success: false, message: 'Character is locked' };
     }
 
@@ -844,6 +870,16 @@ export class ProgressionManager {
     }
 
     const targetOutfit = outfitId || this.getSelectedOutfit(charId) || charDef.defaultOutfitId;
+    if (!isUnlocked && hasFreeRuns) {
+      this.state.selectedCharacter = charId;
+      if (!this.state.selectedOutfits) this.state.selectedOutfits = {};
+      this.state.selectedOutfits[charId] = targetOutfit;
+      this.saveState();
+
+      this.eventBus.emit('CHARACTER_EQUIPPED', { charId, outfitId: targetOutfit });
+      return { success: true, message: `Equipped ${charDef.name}! (${this.getModiFreeRuns()} free runs remaining)` };
+    }
+
     if (!this.isOutfitUnlocked(charId, targetOutfit)) {
       return { success: false, message: 'Outfit is locked' };
     }

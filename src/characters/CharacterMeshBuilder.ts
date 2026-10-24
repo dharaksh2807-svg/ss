@@ -496,6 +496,41 @@ export class CharacterMeshBuilder {
       const rightPauldron = new THREE.Mesh(pauldronGeo, mats.secondaryMat);
       rightPauldron.position.set(topRadius * 1.35, height * 0.88, 0);
       spineGroup.add(rightPauldron);
+
+    } else if (characterId === 'char_modi') {
+      // NARENDRA MODI: Tailored Nehru Waistcoat over Traditional Kurta
+      // 1. Mandarin collar band around neck
+      const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.08, 16, 1, true);
+      const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+      collar.position.set(0, height * 0.96, 0);
+      spineGroup.add(collar);
+
+      // 2. Central placket and button row (facing -Z)
+      const placketGeo = new THREE.BoxGeometry(0.04, height * 0.88, 0.015);
+      const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
+      placket.position.set(0, height * 0.50, -topRadius * 0.98);
+      spineGroup.add(placket);
+
+      // Brushed bronze buttons down front
+      const buttonGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.008, 10);
+      buttonGeo.rotateX(Math.PI / 2);
+      const buttonMat = new THREE.MeshStandardMaterial({
+        color: outfit.colors.details,
+        metalness: 0.8,
+        roughness: 0.3
+      });
+      for (let b = 0; b < 5; b++) {
+        const btn = new THREE.Mesh(buttonGeo, buttonMat);
+        btn.position.set(0, height * (0.30 + b * 0.12), -topRadius * 0.995);
+        spineGroup.add(btn);
+      }
+
+      // 3. Saffron folded pocket square on left chest (facing -Z)
+      const pocketSquareGeo = new THREE.ConeGeometry(0.035, 0.06, 4);
+      pocketSquareGeo.rotateZ(0.2);
+      const pocketSquare = new THREE.Mesh(pocketSquareGeo, mats.accentMat);
+      pocketSquare.position.set(-0.11, height * 0.72, -topRadius * 0.98);
+      spineGroup.add(pocketSquare);
     }
   }
 
@@ -744,6 +779,76 @@ export class CharacterMeshBuilder {
       const rightFin = new THREE.Mesh(finGeo, mats.primaryMat);
       rightFin.position.set(0.24, 0.12, 0.14);
       headGroup.add(rightFin);
+
+    } else if (characterId === 'char_modi') {
+      // NARENDRA MODI: Groomed silver-white hair, distinguished trimmed beard, and metallic spectacles
+      // 1. Swept silver-white hair volume
+      const hairDomeGeo = new THREE.SphereGeometry(0.265, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62);
+      hairDomeGeo.scale(1.0, 1.15, 1.08);
+      const hairDome = new THREE.Mesh(hairDomeGeo, mats.hairOrHelmetMat);
+      hairDome.position.set(0, 0.07, 0.01);
+      hairDome.castShadow = true;
+      headGroup.add(hairDome);
+
+      // Swept hair strands
+      const strandGeo = new THREE.ConeGeometry(0.045, 0.14, 6);
+      for (let s = -2; s <= 2; s++) {
+        const strand = new THREE.Mesh(strandGeo, mats.hairOrHelmetMat);
+        strand.rotation.x = -Math.PI * 0.7;
+        strand.rotation.z = s * 0.18;
+        strand.position.set(s * 0.06, 0.16, -0.21);
+        headGroup.add(strand);
+      }
+
+      // 2. Sculpted white beard & mustache (facing -Z around lower jaw)
+      const beardGeo = new THREE.SphereGeometry(0.18, 14, 10, -Math.PI * 0.5, Math.PI, Math.PI * 0.35, Math.PI * 0.65);
+      beardGeo.scale(1.1, 1.05, 1.15);
+      const beardMesh = new THREE.Mesh(beardGeo, mats.hairOrHelmetMat);
+      beardMesh.position.set(0, -0.10, -0.06);
+      beardMesh.castShadow = true;
+      headGroup.add(beardMesh);
+
+      // Mustache strip
+      const mustacheGeo = new THREE.CylinderGeometry(0.025, 0.035, 0.14, 8);
+      mustacheGeo.rotateZ(Math.PI / 2);
+      const mustache = new THREE.Mesh(mustacheGeo, mats.hairOrHelmetMat);
+      mustache.position.set(0, -0.08, -0.23);
+      headGroup.add(mustache);
+
+      // 3. Metallic classic spectacles (facing -Z)
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: outfit.colors.details,
+        metalness: 0.85,
+        roughness: 0.2
+      });
+
+      // Left and right spectacle rims
+      const rimGeo = new THREE.TorusGeometry(0.045, 0.008, 8, 16);
+      const rimL = new THREE.Mesh(rimGeo, glassMat);
+      rimL.position.set(-0.085, 0.04, -0.245);
+      headGroup.add(rimL);
+
+      const rimR = new THREE.Mesh(rimGeo, glassMat);
+      rimR.position.set(0.085, 0.04, -0.245);
+      headGroup.add(rimR);
+
+      // Spectacle nose bridge
+      const bridgeGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.06, 6);
+      bridgeGeo.rotateZ(Math.PI / 2);
+      const bridge = new THREE.Mesh(bridgeGeo, glassMat);
+      bridge.position.set(0, 0.045, -0.245);
+      headGroup.add(bridge);
+
+      // Temples extending to ears
+      const templeGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.22, 6);
+      templeGeo.rotateX(Math.PI / 2);
+      const templeL = new THREE.Mesh(templeGeo, glassMat);
+      templeL.position.set(-0.13, 0.04, -0.13);
+      headGroup.add(templeL);
+
+      const templeR = new THREE.Mesh(templeGeo, glassMat);
+      templeR.position.set(0.13, 0.04, -0.13);
+      headGroup.add(templeR);
     }
   }
 
@@ -953,6 +1058,35 @@ export class CharacterMeshBuilder {
       const turbR = new THREE.Mesh(turbineGeo, turbineMat);
       turbR.position.set(0.11, 0, 0.08);
       pack.add(turbR);
+
+    } else if (characterId === 'char_modi') {
+      // NARENDRA MODI: Streamlined Statesman Tech Satchel
+      const bagGeo = new THREE.BoxGeometry(0.32, 0.36, 0.11);
+      const bag = new THREE.Mesh(bagGeo, mats.primaryMat);
+      bag.castShadow = true;
+      pack.add(bag);
+
+      // Satchel metallic trim and clasps
+      const claspGeo = new THREE.BoxGeometry(0.035, 0.04, 0.015);
+      const claspMat = new THREE.MeshStandardMaterial({
+        color: outfit.colors.details,
+        metalness: 0.9,
+        roughness: 0.2
+      });
+
+      const claspL = new THREE.Mesh(claspGeo, claspMat);
+      claspL.position.set(-0.09, -0.05, 0.06);
+      pack.add(claspL);
+
+      const claspR = new THREE.Mesh(claspGeo, claspMat);
+      claspR.position.set(0.09, -0.05, 0.06);
+      pack.add(claspR);
+
+      // Saffron/gold emblem strip
+      const stripGeo = new THREE.BoxGeometry(0.24, 0.02, 0.01);
+      const strip = new THREE.Mesh(stripGeo, mats.accentMat);
+      strip.position.set(0, 0.06, 0.06);
+      pack.add(strip);
     }
 
     return pack;

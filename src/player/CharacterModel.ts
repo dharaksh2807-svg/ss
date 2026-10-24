@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { CharacterId } from '../characters/CharacterCatalog';
+import { CharacterId, getCharacterById } from '../characters/CharacterCatalog';
 import { CharacterMeshBuilder, BuiltCharacterHierarchy } from '../characters/CharacterMeshBuilder';
+import { GlbCharacterLoader, LoadedGlbCharacter } from '../characters/GlbCharacterLoader';
 import { HoverboardId } from '../hoverboard/HoverboardCatalog';
 import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/HoverboardMeshBuilder';
 import { CONSTANTS } from '../core/Constants';
@@ -119,6 +120,11 @@ export class CharacterModel {
   // Active state machine tracker
   private activeLocomotionState: LocomotionState = 'RUN';
 
+  // GLB Character Support
+  private glbInstance: LoadedGlbCharacter | null = null;
+  private glbContainer: THREE.Group | null = null;
+  private currentGlbClip: string = '';
+
   constructor(characterId: CharacterId = 'char_jax', outfitId?: string) {
     this.mesh = new THREE.Group();
     this.currentCharacterId = characterId;
@@ -199,6 +205,30 @@ export class CharacterModel {
 
     this.mesh.add(this.rootGroup);
 
+    // If character is GLB-backed (e.g. Narendra Modi), asynchronously instantiate GLB
+    const charDef = getCharacterById(characterId);
+    if (charDef?.isGlb && charDef.glbPath && typeof window !== 'undefined') {
+      this.glbContainer = new THREE.Group();
+      this.rootGroup.add(this.glbContainer);
+
+      GlbCharacterLoader.getInstance()
+        .instantiate(charDef.glbPath)
+        .then((loaded) => {
+          if (this.currentCharacterId === characterId && this.glbContainer) {
+            this.glbInstance = loaded;
+            this.glbContainer.add(loaded.scene);
+            // Hide procedural body mesh hierarchy so the authentic 3D GLB model is visible
+            this.hipsGroup.visible = false;
+            // Start default run clip
+            this.playGlbClip('run', true);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load GLB character model, falling back to procedural rig:', err);
+          this.hipsGroup.visible = true;
+        });
+    }
+
     // Mount initial hoverboard model
     this.setHoverboardModel(this.currentBoardId);
   }
@@ -241,6 +271,18 @@ export class CharacterModel {
 
   private disposeHierarchy(): void {
     if (!this.rootGroup) return;
+
+    if (this.glbInstance) {
+      this.glbInstance.mixer.stopAllAction();
+      this.glbInstance = null;
+    }
+    if (this.glbContainer) {
+      while (this.glbContainer.children.length > 0) {
+        this.glbContainer.remove(this.glbContainer.children[0]);
+      }
+      this.glbContainer = null;
+    }
+    this.currentGlbClip = '';
 
     this.rootGroup.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
@@ -429,6 +471,66 @@ export class CharacterModel {
 
     // 4. Apply blended transforms to Three.js hierarchy
     this.applyBlendedPoseToHierarchy();
+
+    // 4.5. Advance GLB animation mixer if active
+    if (this.glbInstance) {
+      let targetClip = 'run';
+      let loop = true;
+
+      switch (state) {
+        case 'IDLE':
+          targetClip = 'idle';
+          break;
+        case 'RUN':
+          targetClip = speed >= 28 ? 'run_fast' : 'run';
+          break;
+        case 'TRAIN_ROOF_RUN':
+          targetClip = 'run_fast';
+          break;
+        case 'JUMP_TAKEOFF':
+        case 'JUMP_ASCEND':
+          targetClip = 'jump_start';
+          loop = false;
+          break;
+        case 'JUMP_APEX':
+        case 'JUMP_DESCEND':
+        case 'FAST_DROP':
+          targetClip = 'jump_air';
+          break;
+        case 'JUMP_LAND':
+          targetClip = 'jump_land';
+          loop = false;
+          break;
+        case 'SLIDE_ENTRY':
+        case 'SLIDE_HOLD':
+        case 'SLIDE_RECOVER':
+          targetClip = 'slide';
+          loop = false;
+          break;
+        case 'STUMBLE':
+          targetClip = 'stumble';
+          loop = false;
+          break;
+        case 'CRASH':
+          targetClip = 'defeat';
+          loop = false;
+          break;
+        case 'CLIMB':
+          targetClip = 'jump_start';
+          break;
+        case 'HOVERBOARD':
+          targetClip = 'idle';
+          break;
+        case 'JETPACK':
+          targetClip = 'jump_air';
+          break;
+        default:
+          targetClip = 'run';
+      }
+
+      this.playGlbClip(targetClip, loop);
+      this.glbInstance.mixer.update(dt);
+    }
 
     // 5. Dynamic shadow tracking & scaling
     this.updateShadow(state, jumpProgress);
@@ -966,9 +1068,40 @@ export class CharacterModel {
   }
 
   /**
+   * Play or transition to a GLB skeletal animation clip
+   */
+  public playGlbClip(name: string, loop: boolean = true): void {
+    if (!this.glbInstance) return;
+    if (this.currentGlbClip === name) return;
+
+    const action = this.glbInstance.actions.get(name);
+    if (!action) return;
+
+    const prevAction = this.currentGlbClip ? this.glbInstance.actions.get(this.currentGlbClip) : null;
+    if (prevAction && prevAction !== action) {
+      prevAction.fadeOut(0.12);
+    }
+
+    action.reset();
+    action.enabled = true;
+    action.setEffectiveWeight(1);
+    action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 1);
+    action.clampWhenFinished = !loop;
+    action.fadeIn(0.12).play();
+
+    this.currentGlbClip = name;
+  }
+
+  /**
    * Showcase Idle Animation for 3D Turntable Preview (direct application for preview modal)
    */
   public animateTurntableIdle(dt: number): void {
+    if (this.glbInstance) {
+      this.playGlbClip('selection_idle', true);
+      this.glbInstance.mixer.update(dt);
+      return;
+    }
+
     this.animTime += dt * 3.5;
     const t = this.animTime;
 
