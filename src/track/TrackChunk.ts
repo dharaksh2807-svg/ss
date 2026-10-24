@@ -1428,7 +1428,8 @@ export class TrackChunk {
     pattern: TrackPattern | any,
     worldZ: number,
     theme: EnvironmentTheme | string = this.currentTheme,
-    isTransition: boolean = false
+    isTransition: boolean = false,
+    dynamicTrainSpeed?: number
   ): void {
     this.chunkZ = worldZ;
     this.group.position.z = worldZ;
@@ -1657,7 +1658,7 @@ export class TrackChunk {
         variant: group.userData.variant,
         isMoving,
         isMovingActive: false,
-        velocityZ: isMoving ? (obsData.velocityZ !== undefined ? obsData.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED) : 0,
+        velocityZ: isMoving ? (dynamicTrainSpeed !== undefined ? dynamicTrainSpeed : (obsData.velocityZ !== undefined ? obsData.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED)) : 0,
         initialLocalZ: localZ,
         previousWorldZ: worldCenterZ,
         telegraphed: false,
@@ -1810,7 +1811,7 @@ export class TrackChunk {
     }
   }
 
-  public update(dt: number, time: number = 0, playerZ: number = 0): void {
+  public update(dt: number, time: number = 0, playerZ: number = 0, playerSpeed?: number): void {
     const animTime = typeof time === 'number' && !isNaN(time) ? time : 0;
 
     // 0. Tunnel transition detection and acoustic event dispatch
@@ -1840,8 +1841,12 @@ export class TrackChunk {
         const worldTrainFrontZ = isSameDirection ? currentWorldZ - halfD : currentWorldZ + halfD;
         const worldTrainRearZ = isSameDirection ? currentWorldZ + halfD : currentWorldZ - halfD;
 
-        // Activation check: oncoming train begins physical approach when front bumper is within activation distance
-        const activationDist = CONSTANTS.MOVING_TRAIN_ACTIVATION_DIST || 85.0;
+        // Activation check: calculate dynamic activation distance based on true relative closing speed
+        const trainSpeed = obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED;
+        const currentSpeed = playerSpeed || CONSTANTS.INITIAL_SPEED;
+        const closingSpeed = isSameDirection ? Math.max(1, currentSpeed - trainSpeed) : (currentSpeed + trainSpeed);
+        const activationDist = Math.max(CONSTANTS.MOVING_TRAIN_ACTIVATION_DIST || 85.0, closingSpeed * 2.2);
+
         const separation = isSameDirection
           ? (playerZ - worldTrainRearZ) // Distance behind same-direction train
           : (playerZ - worldTrainFrontZ); // Distance ahead to oncoming front
@@ -1932,28 +1937,43 @@ export class TrackChunk {
         obs.nearMissBox.min.set(laneX - halfW - 0.6, 0, updatedWorldZ - halfD - 0.6);
         obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, updatedWorldZ + halfD + 0.6);
 
-        // Telegraph check: if approaching player within telegraph range (65m)
+        // Telegraph check: dynamic warning range based on true relative closing speed
         const updatedFrontZ = updatedWorldZ + halfD;
         const currentSeparation = playerZ - updatedFrontZ;
-        if (currentSeparation <= CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST && updatedFrontZ < playerZ) {
+        const dynamicTelegraphDist = Math.max(CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST || 65.0, closingSpeed * 1.8);
+        const timeToImpact = closingSpeed > 0 ? currentSeparation / closingSpeed : 999;
+
+        if (currentSeparation <= dynamicTelegraphDist && updatedFrontZ < playerZ) {
           if (!obs.telegraphed) {
+            PacingMetrics.getInstance().recordMovingTrainEncounter(
+              animTime,
+              trainSpeed,
+              currentSpeed,
+              currentSeparation
+            );
             EventBus.getInstance().emit(EVENTS.TRAIN_HORN, {
               laneX,
               distance: currentSeparation,
-              speed: obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED
+              speed: trainSpeed,
+              relativeSpeed: closingSpeed,
+              timeToImpact
             });
             obs.telegraphed = true;
           }
 
-          // Strobe twin headlights at high frequency (12 Hz) and modulate forward beam
+          // Clear, steady high-beam headlights and lane illumination (no disorienting strobe)
           if (obs.headlights && obs.headlights.length > 0) {
-            const strobe = Math.sin(animTime * 30.0) > 0;
             obs.headlights.forEach((h) => {
-              h.visible = strobe;
+              h.visible = true;
             });
           }
           if (obs.headlightBeam) {
-            obs.headlightBeam.visible = Math.sin(animTime * 30.0) > -0.2;
+            obs.headlightBeam.visible = true;
+            const mat = obs.headlightBeam.material as THREE.MeshBasicMaterial;
+            if (mat && 'opacity' in mat) {
+              const proxFactor = Math.min(1.0, Math.max(0.2, 1.0 - (currentSeparation / dynamicTelegraphDist)));
+              mat.opacity = 0.22 + proxFactor * 0.18;
+            }
           }
         }
       }

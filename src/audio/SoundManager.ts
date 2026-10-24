@@ -354,7 +354,7 @@ export class SoundManager {
     this.unsubscribers.push(bus.on(EVENTS.STUMBLE, () => this.playStumble()));
     this.unsubscribers.push(bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss()));
     this.unsubscribers.push(
-      bus.on(EVENTS.TRAIN_HORN, (data?: { laneX?: number; distance?: number; speed?: number }) =>
+      bus.on(EVENTS.TRAIN_HORN, (data?: { laneX?: number; distance?: number; speed?: number; relativeSpeed?: number; timeToImpact?: number }) =>
         this.playTrainHorn(data)
       )
     );
@@ -1378,7 +1378,7 @@ export class SoundManager {
 
   // --- Train Warnings & 3D Spatial Audio ---
 
-  public playTrainHorn(options?: { laneX?: number; distance?: number; speed?: number }): void {
+  public playTrainHorn(options?: { laneX?: number; distance?: number; speed?: number; relativeSpeed?: number; timeToImpact?: number }): void {
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
     const now = this.ctx.currentTime;
 
@@ -1390,10 +1390,12 @@ export class SoundManager {
 
     const laneX = options?.laneX ?? 0;
     const distance = options?.distance ?? 65;
+    const relSpeed = options?.relativeSpeed ?? 30.0;
 
-    // Distance attenuation: scale volume smoothly based on distance
+    // Distance attenuation: scale volume smoothly based on distance and closing urgency
     const distFactor = Math.max(0.4, Math.min(1.0, 1.0 - (distance - 30) / 70));
-    const hornVolume = 0.32 * distFactor;
+    const urgencyBoost = relSpeed > 40 ? 1.15 : 1.0;
+    const hornVolume = 0.32 * distFactor * urgencyBoost;
 
     // Directional stereo panning based on track lane
     let panner: StereoPannerNode | null = null;
@@ -1404,8 +1406,11 @@ export class SoundManager {
       panner.connect(this.sfxGain);
     }
 
-    // Two-tone brass locomotive air horn (311Hz + 233Hz)
-    [311.13, 233.08].forEach((freq) => {
+    // Relative speed acoustic shift (Doppler urgency cue)
+    const pitchShift = 1.0 + Math.min(0.12, Math.max(0, (relSpeed - 25.0) / 180.0));
+
+    // Two-tone brass locomotive air horn (311Hz + 233Hz) with Doppler shift
+    [311.13 * pitchShift, 233.08 * pitchShift].forEach((freq) => {
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
 

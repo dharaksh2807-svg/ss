@@ -2244,14 +2244,28 @@ export class ObstacleFactory {
       }
     });
 
-    // Add subtle forward headlight track illumination beam (cast onto rails ahead in +Z)
     const halfD = length * 0.5;
-    const beamLength = 16.0;
-    const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.95, beamLength);
+
+    // Add distinctive front cab warning chevron and express beacon marker
+    const tipZ = halfD + 1.25;
+    const chevronGeo = new THREE.BoxGeometry(CONSTANTS.TRAIN_WIDTH * 0.72, 0.22, 0.16);
+    const chevronMesh = new THREE.Mesh(chevronGeo, this.hazardYellowMat);
+    chevronMesh.position.set(0, 1.85, tipZ - 0.05);
+    group.add(chevronMesh);
+
+    const markerGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12);
+    const markerMesh = new THREE.Mesh(markerGeo, this.beaconAmberMat);
+    markerMesh.rotation.x = Math.PI / 2;
+    markerMesh.position.set(0, 2.35, tipZ - 0.02);
+    group.add(markerMesh);
+
+    // Forward headlight track illumination beam (cast onto rails ahead in +Z to telegraph lane occupancy)
+    const beamLength = 22.0;
+    const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.98, beamLength);
     const beamMat = new THREE.MeshBasicMaterial({
       color: 0xfffae6,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.22,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide

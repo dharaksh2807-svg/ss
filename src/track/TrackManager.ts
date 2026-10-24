@@ -51,6 +51,7 @@ export class TrackManager {
   private chaser: ChaserModel | null = null;
   private collisionDiagnostics: CollisionDiagnostic[] = [];
   private jetpackRecollectedPending: boolean = false;
+  private elapsedTime: number = 0;
 
   constructor(private scene: THREE.Scene, chaser?: ChaserModel) {
     if (chaser) {
@@ -91,7 +92,22 @@ export class TrackManager {
       }
     });
 
+    this.eventBus.on(EVENTS.RUN_STARTED, (mode: string) => {
+      if (mode) {
+        this.setGameMode(mode);
+      }
+    });
+
     this.reset();
+  }
+
+  public setGameMode(mode: string): void {
+    this.difficultyController.setGameMode(mode);
+    PacingMetrics.getInstance().setTrainSpeedProfile(mode);
+  }
+
+  public getGameMode(): string {
+    return this.difficultyController.getGameMode();
   }
 
   public setSeed(seed: number, isDebug: boolean = true): void {
@@ -208,6 +224,7 @@ export class TrackManager {
 
     this.furthestZ = 0;
     this.chunkIndex = 0;
+    this.elapsedTime = 0;
     this.cleanStreakCount = 0;
     this.lastSpawnedPattern = null;
     this.recentPatterns = [];
@@ -237,7 +254,11 @@ export class TrackManager {
         CONSTANTS.INITIAL_SPEED + (encounterDist / 300.0) * (24.5 - CONSTANTS.INITIAL_SPEED)
       );
       const pattern = this.selectPattern(i, expectedSpeed, encounterDist);
-      chunk.populate(pattern, this.furthestZ, initialTheme, false);
+      const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
+      const dynamicTrainSpeed = hasMovingTrain
+        ? this.difficultyController.calculateMovingTrainSpeed(encounterDist, this.difficultyController.getGameMode(), pattern.difficulty, this.rng())
+        : undefined;
+      chunk.populate(pattern, this.furthestZ, initialTheme, false, dynamicTrainSpeed);
       this.lastSpawnedPattern = pattern;
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       this.chunkIndex++;
@@ -270,7 +291,7 @@ export class TrackManager {
 
     // 1. Data-Driven Candidate Tier Filtering & Recovery Breathing
     const weights = this.difficultyController.getTierWeights(distanceTraveled, playerSpeed);
-    const canSpawnMovingTrain = this.difficultyController.canSpawnMovingTrain(distanceTraveled);
+    const canSpawnMovingTrain = this.difficultyController.canSpawnMovingTrain(distanceTraveled, playerSpeed, this.elapsedTime);
 
     const baseCandidates = OBSTACLE_PATTERNS.filter((p) => !p.isOpening && p.name !== 'SAFE_RECOVERY_CONNECTOR');
 
@@ -408,7 +429,7 @@ export class TrackManager {
       this.recentPatterns.shift();
     }
 
-    this.difficultyController.recordPatternSpawned(chosen, distanceTraveled);
+    this.difficultyController.recordPatternSpawned(chosen, distanceTraveled, this.elapsedTime);
     this.lastSpawnedPattern = chosen;
     PacingMetrics.getInstance().recordPattern(chosen.name, chosen.difficulty);
 
@@ -416,8 +437,10 @@ export class TrackManager {
   }
 
   public update(player: Player, dt: number, time: number = 0): void {
+    this.elapsedTime += dt;
     // 0. Update difficulty controller pacing
     this.difficultyController.update(dt, player.distanceTraveled, player.speed);
+    PacingMetrics.getInstance().setCurrentDifficultyTier(this.difficultyController.getCurrentTier());
 
     // 0.1 Update pooled coin collection particle bursts
     this.updatePickupVFX(dt);
@@ -518,12 +541,16 @@ export class TrackManager {
         } else {
           chunk.isAerialCorridor = false;
         }
-        chunk.populate(pattern, this.furthestZ, chunkTheme, spawnPortal);
+        const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
+        const dynamicTrainSpeed = hasMovingTrain
+          ? this.difficultyController.calculateMovingTrainSpeed(encounterDist, this.difficultyController.getGameMode(), pattern.difficulty, this.rng())
+          : undefined;
+        chunk.populate(pattern, this.furthestZ, chunkTheme, spawnPortal, dynamicTrainSpeed);
         this.lastSpawnedPattern = pattern;
         this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       }
 
-      chunk.update(dt, time, player.position.z);
+      chunk.update(dt, time, player.position.z, player.speed);
     }
 
     // 1.1 Determine whether player is currently enclosed inside a low tunnel

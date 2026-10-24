@@ -21,6 +21,9 @@ export interface DifficultyState {
   consecutiveDifficultCount: number;
   distanceSinceDifficult: number;
   distanceSinceMovingTrain: number;
+  timeSinceMovingTrain?: number;
+  currentTrainSpeed?: number;
+  relativeClosingSpeed?: number;
   budget: DifficultyBudget;
 }
 
@@ -35,14 +38,24 @@ export class DifficultyController {
   private runDuration: number = 0;
   private distanceTraveled: number = 0;
   private currentSpeed: number = CONSTANTS.INITIAL_SPEED;
+  private gameMode: string = 'NORMAL';
 
   private consecutiveDifficultCount: number = 0;
   private lastDifficultDistance: number = -999;
   private lastMovingTrainDistance: number = -999;
+  private lastMovingTrainTime: number = -999;
   private chunksSpawned: number = 0;
 
   constructor() {
     this.reset();
+  }
+
+  public setGameMode(mode: string): void {
+    this.gameMode = mode;
+  }
+
+  public getGameMode(): string {
+    return this.gameMode;
   }
 
   public reset(): void {
@@ -52,6 +65,7 @@ export class DifficultyController {
     this.consecutiveDifficultCount = 0;
     this.lastDifficultDistance = -999;
     this.lastMovingTrainDistance = -999;
+    this.lastMovingTrainTime = -999;
     this.chunksSpawned = 0;
   }
 
@@ -106,6 +120,10 @@ export class DifficultyController {
       return 'HARD';
     }
     return 'EXPERT';
+  }
+
+  public getCurrentTier(): PatternDifficulty {
+    return this.getTargetTier(this.distanceTraveled, this.currentSpeed);
   }
 
   /**
@@ -205,7 +223,7 @@ export class DifficultyController {
       tier,
       score,
       maxObstaclesPerChunk: maxObstacles,
-      movingTrainAllowed: this.canSpawnMovingTrain(distance),
+      movingTrainAllowed: this.canSpawnMovingTrain(distance, speed, duration),
       minReactionDistMeters: Math.round(minReactionDist * 10) / 10,
       minReactionTimeSeconds: minReactionTime,
       breatherMandatory,
@@ -214,10 +232,88 @@ export class DifficultyController {
   }
 
   /**
-   * Checks whether a moving train obstacle can fairly spawn at the given distance.
-   * Guarantees fair telegraphing and minimum spacing between oncoming trains.
+   * Data-Driven Train Speed Progression:
+   * Smoothly computes authoritative oncoming train speed based on:
+   * 1. Active game mode (NORMAL, HARD, SURVIVAL, etc.)
+   * 2. Run distance & progression tier
+   * 3. Optional controlled random variation within safe bounds
+   * In Normal Mode: Early 10.5-12, Medium 12.5-15, Advanced 15-18, strictly capped at 18.0 m/s.
+   * In Hard Mode: 13.0 - 22.0 m/s.
    */
-  public canSpawnMovingTrain(atDistance: number): boolean {
+  public calculateMovingTrainSpeed(
+    distanceOverride?: number,
+    modeOverride?: string,
+    tierOverride?: PatternDifficulty,
+    variationSeed?: number
+  ): number {
+    const dist = distanceOverride !== undefined ? Math.max(0, distanceOverride) : this.distanceTraveled;
+    const mode = (modeOverride || this.gameMode || 'NORMAL').toUpperCase();
+    const profiles = (CONSTANTS as any).TRAIN_SPEED_PROFILES || {};
+    const profile = profiles[mode] || profiles.NORMAL || {
+      baseSpeed: 11.0,
+      earlySpeed: 11.5,
+      mediumSpeed: 13.5,
+      advancedSpeed: 16.0,
+      expertSpeed: 17.5,
+      maxSpeed: 18.0,
+      variationRange: 0.8
+    };
+
+    let targetSpeed = profile.baseSpeed;
+    if (dist <= 250.0) {
+      // Stage 1: Opening / Early (0m to 250m)
+      const t = dist / 250.0;
+      targetSpeed = profile.baseSpeed + (profile.earlySpeed - profile.baseSpeed) * t;
+    } else if (dist <= 750.0) {
+      // Stage 2: Medium progression (250m to 750m)
+      const t = (dist - 250.0) / 500.0;
+      targetSpeed = profile.earlySpeed + (profile.mediumSpeed - profile.earlySpeed) * t;
+    } else if (dist <= 1600.0) {
+      // Stage 3: Advanced progression (750m to 1600m)
+      const t = (dist - 750.0) / 850.0;
+      targetSpeed = profile.mediumSpeed + (profile.advancedSpeed - profile.mediumSpeed) * t;
+    } else {
+      // Stage 4: Expert asymptotic approach toward maxSpeed (1600m+)
+      const progress = dist - 1600.0;
+      const span = 1400.0;
+      const delta = profile.maxSpeed - profile.advancedSpeed;
+      const asymptotic = profile.maxSpeed - delta * Math.exp(-2.0 * (progress / span));
+      targetSpeed = Math.min(profile.maxSpeed, Math.max(profile.advancedSpeed, asymptotic));
+    }
+
+    // Controlled variation within safe bounds (+/- variationRange)
+    if (variationSeed !== undefined) {
+      const variation = (variationSeed * 2.0 - 1.0) * profile.variationRange;
+      targetSpeed += variation;
+    }
+
+    // Strict safety clamp: never exceed profile.maxSpeed and never dip below safe base speed
+    return Math.min(profile.maxSpeed, Math.max(profile.baseSpeed - 0.5, targetSpeed));
+  }
+
+  /**
+   * Calculates true relative closing speed between player and oncoming moving train.
+   * Oncoming train closing speed = playerSpeed + trainSpeed.
+   */
+  public calculateRelativeSpeed(playerSpeed?: number, trainSpeed?: number): number {
+    const pSpeed = playerSpeed !== undefined ? playerSpeed : this.currentSpeed;
+    const tSpeed = trainSpeed !== undefined ? trainSpeed : this.calculateMovingTrainSpeed();
+    return Math.max(1.0, pSpeed + tSpeed);
+  }
+
+  /**
+   * Calculates available time to impact based on true relative closing speed.
+   */
+  public calculateTimeToImpact(separationDistance: number, playerSpeed?: number, trainSpeed?: number): number {
+    const relSpeed = this.calculateRelativeSpeed(playerSpeed, trainSpeed);
+    return separationDistance / relSpeed;
+  }
+
+  /**
+   * Checks whether a moving train obstacle can fairly spawn at the given distance.
+   * Guarantees fair telegraphing, minimum spacing, and time-based reaction windows.
+   */
+  public canSpawnMovingTrain(atDistance: number, playerSpeed?: number, currentTime?: number): boolean {
     // Opening 240m is introductory beginner/easy track to establish rhythm
     if (atDistance < 240.0) {
       return false;
@@ -233,14 +329,32 @@ export class DifficultyController {
       minGap = 65.0;
     }
 
-    return (atDistance - this.lastMovingTrainDistance) >= minGap;
+    const distancePass = (atDistance - this.lastMovingTrainDistance) >= minGap;
+    if (!distancePass) {
+      return false;
+    }
+
+    // Time-based reaction spacing when time is tracked or inferrable from playerSpeed & distance
+    const effectiveTime = (currentTime !== undefined && currentTime > 0)
+      ? currentTime
+      : (playerSpeed !== undefined && playerSpeed > 0 && atDistance > 0 ? atDistance / playerSpeed : (currentTime !== undefined ? currentTime : undefined));
+
+    if (effectiveTime !== undefined && this.lastMovingTrainTime >= 0) {
+      const timeGap = effectiveTime - this.lastMovingTrainTime;
+      const minTime = atDistance >= 1500.0 ? 2.2 : 3.5;
+      if (timeGap < minTime && timeGap >= 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
    * Records that a pattern was committed to the track chunk.
    * Updates pacing counters for moving trains and difficult patterns.
    */
-  public recordPatternSpawned(pattern: TrackPattern, encounterDistance: number): void {
+  public recordPatternSpawned(pattern: TrackPattern, encounterDistance: number, atTime?: number): void {
     this.chunksSpawned++;
 
     const isDifficult = pattern.difficulty === 'ADVANCED' || pattern.difficulty === 'HARD' || pattern.difficulty === 'EXPERT';
@@ -255,10 +369,16 @@ export class DifficultyController {
     const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
     if (hasMovingTrain) {
       this.lastMovingTrainDistance = encounterDistance;
+      const effectiveTime = (atTime !== undefined && atTime > 0)
+        ? atTime
+        : (encounterDistance > 0 && this.currentSpeed > 0 ? encounterDistance / this.currentSpeed : (atTime !== undefined ? atTime : this.runDuration));
+      this.lastMovingTrainTime = effectiveTime;
     }
   }
 
   public getState(): DifficultyState {
+    const trainSpeed = this.calculateMovingTrainSpeed();
+    const relSpeed = this.calculateRelativeSpeed(this.currentSpeed, trainSpeed);
     return {
       runDuration: this.runDuration,
       distanceTraveled: this.distanceTraveled,
@@ -268,6 +388,9 @@ export class DifficultyController {
       consecutiveDifficultCount: this.consecutiveDifficultCount,
       distanceSinceDifficult: this.distanceTraveled - this.lastDifficultDistance,
       distanceSinceMovingTrain: this.distanceTraveled - this.lastMovingTrainDistance,
+      timeSinceMovingTrain: this.lastMovingTrainTime >= 0 ? this.runDuration - this.lastMovingTrainTime : 999.0,
+      currentTrainSpeed: trainSpeed,
+      relativeClosingSpeed: relSpeed,
       budget: this.getDifficultyBudget(this.distanceTraveled, this.currentSpeed, this.runDuration)
     };
   }

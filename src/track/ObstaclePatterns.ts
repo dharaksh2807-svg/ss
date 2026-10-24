@@ -1227,6 +1227,167 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: -1, zOffset: 42.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' },
       { type: 'COIN', lane: -1, zOffset: 66.0, count: 4, spacing: 2.0, archetype: 'POST_ROOFTOP_REWARD' }
     ]
+  },
+
+  // =========================================================================
+  // TASK 4 PATTERNS: DYNAMIC MOVING TRAINS & PROGRESSIVE RAILWAY TRAFFIC
+  // =========================================================================
+
+  // 44. Moving Train with Open Left Bypass (Easy Early Encounter)
+  {
+    name: 'MOVING_TRAIN_LEFT_BYPASS',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['LANE_CHANGE', 'JUMP'],
+    safeRoutes: 'Oncoming moving train in Left lane (-1); shift right into Center or Right lane; low hurdle in center at z=24m',
+    minReactionDist: 34.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: -1, zOffset: 48.0, length: 22.0, isMoving: true },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 24.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 21.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 45. Moving Train Right Approach (Easy Clear Center Runway)
+  {
+    name: 'MOVING_TRAIN_RIGHT_APPROACH',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Oncoming moving train in Right lane (1); Center lane provides wide-open clear passage with coin line',
+    minReactionDist: 32.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 46.0, length: 20.0, isMoving: true },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 56.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 14.0, count: 5, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 26.0, count: 9, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: -1, zOffset: 24.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 46. Moving Train Center with Stationary Flank (Medium Traffic Arrangement)
+  {
+    name: 'MOVING_TRAIN_CENTER_STATIONARY_FLANK',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [1],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Stationary train blocks Left lane (-1) at z=18m, oncoming train rushes Center lane (0) at z=48m; Right lane (1) is the safe express channel',
+    minReactionDist: 28.0,
+    obstacles: [
+      { type: 'TRAIN', lane: -1, zOffset: 18.0, length: 22.0 },
+      { type: 'MOVING_TRAIN', lane: 0, zOffset: 48.0, length: 22.0, isMoving: true }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, endLane: 1, zOffset: 12.0, count: 6, spacing: 2.2, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 1, zOffset: 26.0, count: 10, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 47. Moving Train Right with Slide Option (Medium Agile Evasion)
+  {
+    name: 'MOVING_TRAIN_RIGHT_SLIDE_ESCAPE',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['LANE_CHANGE', 'SLIDE'],
+    safeRoutes: 'Oncoming train in Right lane (1); slide under high barrier in Left lane (-1) at z=28m, or run through clear Center lane',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 46.0, length: 22.0, isMoving: true },
+      { type: 'HIGH_BARRIER', lane: -1, zOffset: 28.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 24.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 22.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 48. Staggered Dual Moving Trains (Hard Multi-Train Safe Channel)
+  {
+    name: 'MOVING_TRAIN_STAGGERED_DOUBLE',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0],
+    requiredActions: ['LANE_CHANGE'],
+    safeRoutes: 'Staggered oncoming trains in Right lane (z=32m) and Left lane (z=58m); Center lane 0 remains open throughout as a high-speed express route',
+    minReactionDist: 26.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 32.0, length: 20.0, isMoving: true },
+      { type: 'MOVING_TRAIN', lane: -1, zOffset: 58.0, length: 20.0, isMoving: true }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: 0, zOffset: 24.0, count: 12, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 49. Climbable Ramp Train with Flanking Moving Train (Hard Dynamic Rooftop Opportunity)
+  {
+    name: 'STATIONARY_RAMP_WITH_ONCOMING_TRAIN',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0],
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Climb ramp in Center lane (0) at z=14m to ride safely on roof at Y=4.35m while oncoming train roars past on Right lane (1); or bypass via Left lane',
+    minReactionDist: 25.0,
+    obstacles: [
+      { type: 'TRAIN_RAMP', lane: 0, zOffset: 14.0, length: 26.0, hasRamp: true },
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 48.0, length: 22.0, isMoving: true },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 34.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 14.0, yOffset: 5.20, count: 8, spacing: 2.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: -1, zOffset: 31.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+    ]
+  },
+
+  // 50. Expert Moving Train Express Weave (Expert Rapid Decisions)
+  {
+    name: 'EXPERT_MOVING_TRAIN_EXPRESS_WEAVE',
+    difficulty: 'EXPERT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 1],
+    requiredActions: ['LANE_CHANGE', 'SLIDE', 'JUMP'],
+    safeRoutes: 'Center moving train rushes down; slide under high barrier in Right lane (z=24m), or jump low hurdle in Left lane (z=30m)',
+    minReactionDist: 22.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: 0, zOffset: 48.0, length: 24.0, isMoving: true },
+      { type: 'HIGH_BARRIER', lane: 1, zOffset: 24.0 },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 30.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 1, zOffset: 20.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: -1, zOffset: 27.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+    ]
+  },
+
+  // 51. Expert Rapid Traffic Corridor (Expert Clustered Challenge)
+  {
+    name: 'EXPERT_RAPID_TRAFFIC_CORRIDOR',
+    difficulty: 'EXPERT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0],
+    requiredActions: ['LANE_CHANGE', 'JUMP'],
+    safeRoutes: 'Moving train on Left lane (-1) and stationary train on Right lane (1); Center lane has low hurdle at z=22m leading into clear sprint',
+    minReactionDist: 20.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: -1, zOffset: 46.0, length: 22.0, isMoving: true },
+      { type: 'TRAIN', lane: 1, zOffset: 36.0, length: 24.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 22.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 19.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 32.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
+    ]
   }
 ];
 

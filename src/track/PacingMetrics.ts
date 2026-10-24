@@ -10,6 +10,14 @@ export interface PacingReport {
   timeSinceLastActionSeconds: number;
   movingTrainCount: number;
   movingTrainFrequencyPerMinute: number;
+  currentTrainSpeedProfile: string;
+  averageMovingTrainVelocity: number;
+  fastestEncounteredTrainSpeed: number;
+  timeBetweenTrainEncounters: number[];
+  averageTimeBetweenTrainEncounters: number;
+  lastRelativeClosingSpeed: number;
+  minTimeToImpactSeconds: number;
+  currentDifficultyTier: string;
   difficultyDistribution: Record<string, number>;
   actionDistribution: Record<string, number>;
   minReactionTimeSeconds: number;
@@ -49,8 +57,15 @@ export class PacingMetrics {
     LANE_CHANGE: 0
   };
 
-  // 4. Moving train events
+  // 4. Moving train events & developer diagnostics
   private movingTrainTimes: number[] = [];
+  private movingTrainVelocities: number[] = [];
+  private fastestTrainSpeed: number = 0;
+  private trainEncounterGaps: number[] = [];
+  private currentSpeedProfile: string = 'NORMAL';
+  private lastRelativeSpeed: number = 0;
+  private minTimeToImpact: number = 999.0;
+  private activeTier: string = 'BEGINNER';
 
   // 5. Pattern difficulty distribution
   private difficultyCounts: Record<string, number> = {
@@ -89,6 +104,13 @@ export class PacingMetrics {
       LANE_CHANGE: 0
     };
     this.movingTrainTimes = [];
+    this.movingTrainVelocities = [];
+    this.fastestTrainSpeed = 0;
+    this.trainEncounterGaps = [];
+    this.currentSpeedProfile = 'NORMAL';
+    this.lastRelativeSpeed = 0;
+    this.minTimeToImpact = 999.0;
+    this.activeTier = 'BEGINNER';
     this.difficultyCounts = {
       BEGINNER: 0,
       EASY: 0,
@@ -104,6 +126,14 @@ export class PacingMetrics {
     this.fallbackCount = 0;
     this.fallbackLogs = [];
     this.repeatedPatternCount = 0;
+  }
+
+  public setTrainSpeedProfile(profile: string): void {
+    this.currentSpeedProfile = profile;
+  }
+
+  public setCurrentDifficultyTier(tier: string): void {
+    this.activeTier = tier;
   }
 
   public recordSpeed(timeSec: number, speed: number): void {
@@ -129,6 +159,12 @@ export class PacingMetrics {
     }
 
     if (type === 'MOVING_TRAIN') {
+      if (this.movingTrainTimes.length > 0) {
+        const timeGap = timeSec - this.movingTrainTimes[this.movingTrainTimes.length - 1];
+        if (timeGap > 0) {
+          this.trainEncounterGaps.push(Math.round(timeGap * 10) / 10);
+        }
+      }
       this.movingTrainTimes.push(timeSec);
     }
 
@@ -136,6 +172,39 @@ export class PacingMetrics {
     const reactionTime = reactionDist / Math.max(10.0, speed);
     if (reactionTime < this.minReactionTime) {
       this.minReactionTime = reactionTime;
+    }
+  }
+
+  public recordMovingTrainEncounter(
+    timeSec: number,
+    trainSpeed: number,
+    playerSpeed: number,
+    separationDist: number,
+    tier?: string
+  ): void {
+    if (this.movingTrainTimes.length > 0) {
+      const timeGap = timeSec - this.movingTrainTimes[this.movingTrainTimes.length - 1];
+      if (timeGap > 0.1) {
+        this.trainEncounterGaps.push(Math.round(timeGap * 10) / 10);
+      }
+    }
+    this.movingTrainTimes.push(timeSec);
+    this.movingTrainVelocities.push(trainSpeed);
+
+    if (trainSpeed > this.fastestTrainSpeed) {
+      this.fastestTrainSpeed = trainSpeed;
+    }
+
+    const relSpeed = playerSpeed + trainSpeed;
+    this.lastRelativeSpeed = relSpeed;
+
+    const timeToImpact = relSpeed > 0 ? separationDist / relSpeed : 999.0;
+    if (timeToImpact < this.minTimeToImpact && timeToImpact > 0) {
+      this.minTimeToImpact = timeToImpact;
+    }
+
+    if (tier) {
+      this.activeTier = tier;
     }
   }
 
@@ -148,6 +217,7 @@ export class PacingMetrics {
 
   public recordPattern(name: string, difficulty: string): void {
     const key = difficulty.toUpperCase();
+    this.activeTier = key;
     if (this.difficultyCounts[key] !== undefined) {
       this.difficultyCounts[key]++;
     } else {
@@ -193,6 +263,14 @@ export class PacingMetrics {
     const durationMinutes = Math.max(0.1, currentTimeSec / 60.0);
     const movingTrainFreq = this.movingTrainTimes.length / durationMinutes;
 
+    const avgTrainVel = this.movingTrainVelocities.length > 0
+      ? this.movingTrainVelocities.reduce((a, b) => a + b, 0) / this.movingTrainVelocities.length
+      : CONSTANTS.MOVING_TRAIN_SPEED;
+
+    const avgTimeBetween = this.trainEncounterGaps.length > 0
+      ? this.trainEncounterGaps.reduce((a, b) => a + b, 0) / this.trainEncounterGaps.length
+      : 0;
+
     return {
       speedSamplesCount: this.speedSamples.length,
       averageSpeed: Math.round(avgSpeed * 10) / 10,
@@ -203,6 +281,14 @@ export class PacingMetrics {
       timeSinceLastActionSeconds: Math.round(Math.max(0, currentTimeSec - this.lastActionTime) * 10) / 10,
       movingTrainCount: this.movingTrainTimes.length,
       movingTrainFrequencyPerMinute: Math.round(movingTrainFreq * 10) / 10,
+      currentTrainSpeedProfile: this.currentSpeedProfile,
+      averageMovingTrainVelocity: Math.round(avgTrainVel * 10) / 10,
+      fastestEncounteredTrainSpeed: Math.round(this.fastestTrainSpeed * 10) / 10,
+      timeBetweenTrainEncounters: [...this.trainEncounterGaps],
+      averageTimeBetweenTrainEncounters: Math.round(avgTimeBetween * 10) / 10,
+      lastRelativeClosingSpeed: Math.round(this.lastRelativeSpeed * 10) / 10,
+      minTimeToImpactSeconds: this.minTimeToImpact === 999.0 ? 0 : Math.round(this.minTimeToImpact * 100) / 100,
+      currentDifficultyTier: this.activeTier,
       difficultyDistribution: { ...this.difficultyCounts },
       actionDistribution: { ...this.actionCounts },
       minReactionTimeSeconds: this.minReactionTime === 999.0 ? 0 : Math.round(this.minReactionTime * 100) / 100,

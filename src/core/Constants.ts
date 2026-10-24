@@ -91,7 +91,67 @@ export const CONSTANTS = {
     MIN_SAFE_REACTION_TIME: 0.55, // Minimum seconds of reaction window at any speed
     CONSECUTIVE_DIFFICULT_MAX: 2, // Max consecutive intense chunks before breather
     MOVING_TRAIN_MIN_GAP: 75.0, // Minimum meters between moving train spawns
+    MOVING_TRAIN_MIN_TIME_GAP: 3.5, // Minimum seconds between moving train encounters
     BREATHER_INTERVAL: 4, // Guaranteed breather opportunity every ~4-5 chunks
+  },
+
+  // Dynamic Moving Train Speed Progression Profiles
+  TRAIN_SPEED_PROFILES: {
+    NORMAL: {
+      baseSpeed: 11.0,      // Baseline train velocity
+      earlySpeed: 11.5,     // 0 - 250m early run (~10.5 - 12.0 m/s)
+      mediumSpeed: 13.5,    // 250 - 750m medium progression (~12.5 - 14.5 m/s)
+      advancedSpeed: 16.0,  // 750 - 1600m advanced progression (~15.0 - 17.0 m/s)
+      expertSpeed: 17.5,    // 1600m+ expert progression (~17.0 - 18.0 m/s)
+      maxSpeed: 18.0,       // Strict upper speed cap for Normal Mode
+      variationRange: 0.8,  // Controlled variation within safe bounds (+/- 0.8 m/s)
+      minTimeGap: 4.0,      // Minimum seconds between encounters in early run
+      minTimeGapLate: 2.2,  // Minimum seconds between encounters in late run
+    },
+    HARD: {
+      baseSpeed: 13.0,
+      earlySpeed: 14.0,
+      mediumSpeed: 16.5,
+      advancedSpeed: 19.0,
+      expertSpeed: 21.0,
+      maxSpeed: 22.0,
+      variationRange: 1.0,
+      minTimeGap: 3.0,
+      minTimeGapLate: 1.8,
+    },
+    SURVIVAL: {
+      baseSpeed: 12.5,
+      earlySpeed: 13.5,
+      mediumSpeed: 16.0,
+      advancedSpeed: 18.0,
+      expertSpeed: 20.0,
+      maxSpeed: 20.0,
+      variationRange: 0.8,
+      minTimeGap: 3.5,
+      minTimeGapLate: 2.0,
+    },
+    TIME_TRIAL: {
+      baseSpeed: 12.0,
+      earlySpeed: 13.0,
+      mediumSpeed: 15.5,
+      advancedSpeed: 17.5,
+      expertSpeed: 19.0,
+      maxSpeed: 19.5,
+      variationRange: 0.8,
+      minTimeGap: 3.5,
+      minTimeGapLate: 2.0,
+    },
+    COIN_RUSH: {
+      baseSpeed: 10.0,
+      earlySpeed: 11.0,
+      mediumSpeed: 13.0,
+      advancedSpeed: 15.0,
+      expertSpeed: 16.0,
+      maxSpeed: 16.5,
+      variationRange: 0.6,
+      minTimeGap: 4.5,
+      minTimeGapLate: 2.5,
+    }
   },
 
   // Track Chunks & Procedural Generation
