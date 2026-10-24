@@ -144,7 +144,7 @@ console.log('--- Suite 4: Speed Cap & Hard Mode Profile Capability ---');
   const hardEarly = dc.calculateMovingTrainSpeed(350, 'HARD', 'EASY', 0.5);
   const hardLate = dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5);
   assert(hardEarly >= 13.0, `Hard Mode early speed starts higher (>= 13.0 m/s, got ${hardEarly.toFixed(2)})`);
-  assert(hardLate >= 18.5 && hardLate <= 22.0, `Hard Mode scales up to 22.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
+  assert(hardLate >= 18.5 && hardLate <= 24.0, `Hard Mode scales up to 24.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
   assert(hardLate > 18.0, 'Hard Mode profile exceeds Normal Mode cap as intended');
 
   // Verify Normal Mode profile remains untouched

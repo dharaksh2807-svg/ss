@@ -405,6 +405,30 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
       { tier: 'SILVER', target: 50000, rewardCoins: 4000 },
       { tier: 'GOLD', target: 200000, rewardCoins: 20000, rewardKeys: 2 }
     ]
+  },
+  {
+    id: 'ach_hard_score',
+    title: 'Express Master',
+    description: 'Achieve legendary high scores in Hard Mode.',
+    category: 'HIGHSCORE',
+    badgeIcon: '⚡',
+    tiers: [
+      { tier: 'BRONZE', target: 20000, rewardCoins: 1200 },
+      { tier: 'SILVER', target: 75000, rewardCoins: 5000 },
+      { tier: 'GOLD', target: 250000, rewardCoins: 25000, rewardKeys: 2 }
+    ]
+  },
+  {
+    id: 'ach_hard_distance',
+    title: 'Speedway Survivor',
+    description: 'Sprint through high-velocity Hard Mode tracks.',
+    category: 'DISTANCE',
+    badgeIcon: '🚄',
+    tiers: [
+      { tier: 'BRONZE', target: 1500, rewardCoins: 1000 },
+      { tier: 'SILVER', target: 5000, rewardCoins: 4000 },
+      { tier: 'GOLD', target: 15000, rewardCoins: 15000, rewardKeys: 2 }
+    ]
   }
 ];
 
@@ -489,6 +513,21 @@ export const GAME_MODES: GameModeConfig[] = [
       'Escalating train speeds and obstacle density'
     ],
     rewardDescription: 'Standard coins and achievement progress'
+  },
+  {
+    id: 'HARD',
+    name: 'Hard Mode',
+    tagline: 'High-Velocity Railway Gauntlet',
+    icon: '⚡',
+    description: 'Faster runner, faster trains, and tougher obstacle combinations for skilled veterans.',
+    rules: [
+      'Starts at 24 m/s and reaches 46 m/s top speed',
+      'High-speed oncoming trains up to 24 m/s',
+      'Earlier moving trains and demanding jump/slide sequences',
+      'Independent personal best records and statistics',
+      'Standard power-ups, hoverboards, and revives remain active'
+    ],
+    rewardDescription: '1.25x score pacing and independent Hard Mode leaderboard records'
   },
   {
     id: 'TIME_TRIAL',

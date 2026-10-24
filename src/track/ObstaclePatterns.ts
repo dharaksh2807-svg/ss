@@ -1388,6 +1388,48 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: 0, zOffset: 19.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
       { type: 'COIN', lane: 0, zOffset: 32.0, count: 6, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' }
     ]
+  },
+
+  // 52. Hard Jump-Slide Express Gauntlet (Precision Jump to Slide with Train)
+  {
+    name: 'HARD_JUMP_SLIDE_EXPRESS',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0, 1],
+    requiredActions: ['LANE_CHANGE', 'JUMP', 'SLIDE'],
+    safeRoutes: 'Moving train rushes Left lane (-1); Center lane: Jump low hurdle at z=12m, slide under high barrier at z=48m; Right lane is alternate sprint path',
+    minReactionDist: 22.0,
+    obstacles: [
+      { type: 'MOVING_TRAIN', lane: -1, zOffset: 52.0, length: 22.0, isMoving: true },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 12.0 },
+      { type: 'HIGH_BARRIER', lane: 0, zOffset: 48.0 },
+      { type: 'PILLAR', lane: 1, zOffset: 28.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 9.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 44.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 1, zOffset: 34.0, count: 6, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
+
+  // 53. Hard Slide-Switch Roof Run (Slide into Lane Switch onto Train Rooftop)
+  {
+    name: 'HARD_SLIDE_SWITCH_ROOF_RUN',
+    difficulty: 'EXPERT',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [0],
+    requiredActions: ['SLIDE', 'LANE_CHANGE'],
+    safeRoutes: 'Slide under high barrier in Left lane (-1) at z=16m, switch to Center lane (0) to mount ramp train at z=32m and run along roof; Right lane has oncoming moving train',
+    minReactionDist: 22.0,
+    obstacles: [
+      { type: 'HIGH_BARRIER', lane: -1, zOffset: 16.0 },
+      { type: 'TRAIN', lane: 0, zOffset: 32.0, length: 26.0, hasRamp: true },
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 48.0, length: 22.0, isMoving: true }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 12.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
+      { type: 'COIN', lane: 0, zOffset: 42.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' }
+    ]
   }
 ];
 

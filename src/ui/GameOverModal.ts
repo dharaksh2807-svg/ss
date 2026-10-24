@@ -29,6 +29,7 @@ export class GameOverModal {
 
         <div class="modal-top-bar" style="justify-content: center;">
           <div class="modal-title-group" style="text-align: center;">
+            <div id="game-over-mode-badge" class="game-over-mode-pill" style="display: none; margin-bottom: 6px;"></div>
             <h2 id="game-over-main-title" class="arcade-title game-over-title">RUN COMPLETED!</h2>
             <div id="game-over-sub-title" class="tab-subtitle" style="margin-top: 4px;">Good hustle out on the rails!</div>
           </div>
@@ -41,7 +42,7 @@ export class GameOverModal {
             <span id="game-over-score" class="stat-value highlight">0</span>
           </div>
           <div class="stat-box">
-            <span class="stat-label">ALL-TIME BEST</span>
+            <span id="game-over-high-label" class="stat-label">ALL-TIME BEST</span>
             <span id="game-over-high-score" class="stat-value">0</span>
           </div>
           <div class="stat-box">
@@ -150,22 +151,62 @@ export class GameOverModal {
     mode: GameMode = 'NORMAL',
     modeResult?: { title?: string; subtitle?: string; bonusCoins?: number }
   ): void {
-    const rawHigh = localStorage.getItem('metro_surf_high_score') || '0';
-    let highScore = parseInt(rawHigh, 10);
+    let highScore = 0;
     let isNewRecord = false;
+    const stats = this.progression.getState().lifetimeStats;
 
-    if (mode === 'NORMAL' && score > highScore) {
-      highScore = score;
-      localStorage.setItem('metro_surf_high_score', Math.floor(score).toString());
-      isNewRecord = true;
+    if (mode === 'HARD') {
+      highScore = stats.hardModeHighScore || 0;
+      if (score > highScore) {
+        highScore = Math.floor(score);
+        isNewRecord = true;
+      }
+    } else if (mode === 'NORMAL') {
+      const rawHigh = localStorage.getItem('metro_surf_high_score') || '0';
+      highScore = parseInt(rawHigh, 10);
+      if (score > highScore) {
+        highScore = Math.floor(score);
+        localStorage.setItem('metro_surf_high_score', highScore.toString());
+        isNewRecord = true;
+      }
+    } else if (mode === 'TIME_TRIAL') {
+      highScore = stats.timeTrialHighScore || 0;
+      if (score > highScore) {
+        highScore = Math.floor(score);
+        isNewRecord = true;
+      }
+    } else {
+      highScore = stats.bestScore || 0;
     }
 
     const titleEl = this.element.querySelector('#game-over-main-title') as HTMLElement;
     const subTitleEl = this.element.querySelector('#game-over-sub-title') as HTMLElement;
     const recordBadge = this.element.querySelector('#new-record-badge') as HTMLElement;
+    const modeBadge = this.element.querySelector('#game-over-mode-badge') as HTMLElement;
+
+    if (modeBadge) {
+      if (mode === 'HARD') {
+        modeBadge.className = 'game-over-mode-pill mode-hard-pill';
+        modeBadge.innerHTML = '⚡ HARD MODE • EXPRESS';
+        modeBadge.style.display = 'inline-block';
+      } else if (mode === 'NORMAL') {
+        modeBadge.className = 'game-over-mode-pill mode-normal-pill';
+        modeBadge.innerHTML = '🏃 NORMAL MODE';
+        modeBadge.style.display = 'inline-block';
+      } else {
+        modeBadge.className = 'game-over-mode-pill';
+        modeBadge.innerHTML = `🏆 ${mode}`;
+        modeBadge.style.display = 'inline-block';
+      }
+    }
 
     if (isNewRecord) {
       recordBadge?.classList.remove('hidden');
+      if (recordBadge) {
+        recordBadge.innerHTML = mode === 'HARD'
+          ? `<span>⚡ NEW HARD MODE RECORD! ⚡</span>`
+          : `<span>🔥 NEW PERSONAL RECORD! 🔥</span>`;
+      }
     } else {
       recordBadge?.classList.add('hidden');
     }
@@ -173,6 +214,9 @@ export class GameOverModal {
     if (modeResult && modeResult.title) {
       if (titleEl) titleEl.textContent = modeResult.title;
       if (subTitleEl && modeResult.subtitle) subTitleEl.textContent = modeResult.subtitle;
+    } else if (mode === 'HARD') {
+      if (titleEl) titleEl.textContent = isNewRecord ? 'NEW HARD RECORD! ⚡' : 'HARD RUN ENDED! ⚡';
+      if (subTitleEl) subTitleEl.textContent = `High-velocity sprint: ${Math.floor(distanceMeters).toLocaleString()}m survived`;
     } else if (mode === 'TIME_TRIAL') {
       if (titleEl) titleEl.textContent = "TIME'S UP! ⏱️";
       if (subTitleEl) subTitleEl.textContent = 'Clock ran out in supersonic gauntlet!';
@@ -188,7 +232,14 @@ export class GameOverModal {
     }
 
     // Static stats
+    const highLabelEl = this.element.querySelector('#game-over-high-label') as HTMLElement;
+    if (highLabelEl) {
+      highLabelEl.textContent = mode === 'HARD' ? 'HARD MODE BEST' : 'ALL-TIME BEST';
+    }
     const highEl = this.element.querySelector('#game-over-high-score') as HTMLElement;
+    if (highEl) {
+      highEl.textContent = Math.floor(highScore).toLocaleString();
+    }
     const coinsEl = this.element.querySelector('#game-over-coins') as HTMLElement;
     const distEl = this.element.querySelector('#game-over-distance') as HTMLElement;
 

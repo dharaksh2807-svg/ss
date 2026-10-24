@@ -233,18 +233,23 @@ console.log('\n--- Test 4: Permanent Multi-Tiered Achievements ---');
 // =========================================================================
 console.log('\n--- Test 5: Distinct Event Challenge Modes ---');
 {
-  assert(GAME_MODES.length === 4, 'Four distinct game modes available');
+  assert(GAME_MODES.length >= 4, 'Multiple distinct game modes available');
 
+  const hardMode = GAME_MODES.find(m => m.id === 'HARD');
   const timeTrial = GAME_MODES.find(m => m.id === 'TIME_TRIAL')!;
   const coinRush = GAME_MODES.find(m => m.id === 'COIN_RUSH')!;
   const survival = GAME_MODES.find(m => m.id === 'SURVIVAL')!;
 
+  assert(hardMode !== undefined, 'Hard Mode verified');
   assert(timeTrial !== undefined, '1. Time Trial mode verified');
   assert(coinRush !== undefined && coinRush.targetGoal === 150, '2. Coin Rush mode verified with 150 target');
   assert(survival !== undefined, '3. Survival challenge mode verified');
 
   // Verify ProgressionManager mode switching
   const progression = ProgressionManager.getInstance();
+  progression.setActiveGameMode('HARD');
+  assert(progression.getActiveGameMode() === 'HARD', 'Game mode switches to HARD');
+
   progression.setActiveGameMode('TIME_TRIAL');
   assert(progression.getActiveGameMode() === 'TIME_TRIAL', 'Game mode switches to TIME_TRIAL');
 

@@ -302,4 +302,62 @@ export class PacingMetrics {
     const report = this.getReport(currentTimeSec);
     console.log('📊 [PACING_REPORT]', JSON.stringify(report, null, 2));
   }
+
+  /**
+   * Comparative diagnostics comparing Normal Mode and Hard Mode telemetry:
+   * Speeds, moving trains/min, train velocities, obstacle encounter frequencies,
+   * reaction windows, pattern distributions, and physical solvability.
+   */
+  public static compareProfiles(normalReport: PacingReport, hardReport: PacingReport): Record<string, any> {
+    const normTrainFreq = normalReport.movingTrainFrequencyPerMinute || 0;
+    const hardTrainFreq = hardReport.movingTrainFrequencyPerMinute || 0;
+    const trainRatio = normTrainFreq > 0 ? (hardTrainFreq / normTrainFreq).toFixed(2) : 'N/A';
+
+    return {
+      averageSpeed: {
+        normal: normalReport.averageSpeed,
+        hard: hardReport.averageSpeed,
+        differenceMps: Math.round((hardReport.averageSpeed - normalReport.averageSpeed) * 10) / 10
+      },
+      currentSpeed: {
+        normal: normalReport.currentSpeed,
+        hard: hardReport.currentSpeed
+      },
+      movingTrainsPerMinute: {
+        normal: normTrainFreq,
+        hard: hardTrainFreq,
+        ratio: trainRatio
+      },
+      averageMovingTrainVelocity: {
+        normal: normalReport.averageMovingTrainVelocity,
+        hard: hardReport.averageMovingTrainVelocity,
+        differenceMps: Math.round((hardReport.averageMovingTrainVelocity - normalReport.averageMovingTrainVelocity) * 10) / 10
+      },
+      fastestEncounteredTrainSpeed: {
+        normal: normalReport.fastestEncounteredTrainSpeed,
+        hard: hardReport.fastestEncounteredTrainSpeed
+      },
+      obstaclesPer10s: {
+        normal: normalReport.obstaclesPer10s,
+        hard: hardReport.obstaclesPer10s
+      },
+      actionDistribution: {
+        normal: normalReport.actionDistribution,
+        hard: hardReport.actionDistribution
+      },
+      minReactionWindow: {
+        normal: normalReport.minReactionTimeSeconds,
+        hard: hardReport.minReactionTimeSeconds
+      },
+      patternTierDistribution: {
+        normal: normalReport.difficultyDistribution,
+        hard: hardReport.difficultyDistribution
+      },
+      solvabilityAndSafety: {
+        normalUnreachable: normalReport.unreachablePatternCount,
+        hardUnreachable: hardReport.unreachablePatternCount,
+        allPatternsSolvable: normalReport.unreachablePatternCount === 0 && hardReport.unreachablePatternCount === 0
+      }
+    };
+  }
 }

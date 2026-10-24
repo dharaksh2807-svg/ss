@@ -426,7 +426,7 @@ export class HUD {
     }
   }
 
-  public setMode(mode: 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL'): void {
+  public setMode(mode: 'NORMAL' | 'HARD' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | string): void {
     if (!this.modeBadgeEl) return;
     if (mode === 'NORMAL') {
       this.modeBadgeEl.classList.add('hidden');
@@ -434,7 +434,13 @@ export class HUD {
     }
 
     this.modeBadgeEl.classList.remove('hidden');
-    if (mode === 'TIME_TRIAL') {
+    if (mode === 'HARD') {
+      this.modeBadgeEl.innerHTML = `
+        <span class="mode-badge-icon">⚡</span>
+        <span class="mode-badge-title">HARD MODE</span>
+        <span id="hud-hard-badge-val" class="mode-badge-val" style="color: #ffb300; font-weight: 700;">EXPRESS</span>
+      `;
+    } else if (mode === 'TIME_TRIAL') {
       this.modeBadgeEl.innerHTML = `
         <span class="mode-badge-icon">⏱️</span>
         <span class="mode-badge-title">TIME TRIAL</span>

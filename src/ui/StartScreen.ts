@@ -173,6 +173,16 @@ export class StartScreen {
             <span class="equipped-arrow">✎</span>
           </div>
 
+          <!-- Difficulty Mode Selection Toggle -->
+          <div class="lobby-mode-toggle" id="lobby-mode-toggle" role="group" aria-label="Difficulty Mode Selection">
+            <button id="mode-toggle-normal" class="mode-toggle-btn active" data-mode="NORMAL" title="Normal Mode: Balanced arcade running">
+              <span class="mode-toggle-icon">🏃</span> NORMAL
+            </button>
+            <button id="mode-toggle-hard" class="mode-toggle-btn" data-mode="HARD" title="Hard Mode: Faster runner, faster trains, tougher challenges">
+              <span class="mode-toggle-icon">⚡</span> HARD MODE
+            </button>
+          </div>
+
           <!-- Huge Tactile Play Now Button -->
           <button id="start-play-btn" class="arcade-play-btn pulse-glow" aria-label="Play Game Now">
             <span class="play-btn-glow"></span>
@@ -234,6 +244,20 @@ export class StartScreen {
     this.playBtn.addEventListener('click', () => {
       this.hide();
       this.eventBus.emit(EVENTS.GAME_START);
+    });
+
+    // Mode Toggle Buttons
+    const normalToggle = document.getElementById('mode-toggle-normal');
+    const hardToggle = document.getElementById('mode-toggle-hard');
+
+    normalToggle?.addEventListener('click', () => {
+      this.progression.setActiveGameMode('NORMAL');
+      this.updateState();
+    });
+
+    hardToggle?.addEventListener('click', () => {
+      this.progression.setActiveGameMode('HARD');
+      this.updateState();
     });
 
     // Navigation dock items
@@ -367,10 +391,29 @@ export class StartScreen {
   }
 
   public updateState(): void {
-    // 1. High Score
-    const high = localStorage.getItem('metro_surf_high_score') || '0';
-    if (this.highScoreEl) {
-      this.highScoreEl.textContent = parseInt(high, 10).toLocaleString();
+    // 1. High Score & Active Mode Toggle
+    const activeMode = this.progression.getActiveGameMode();
+    const stats = this.progression.getState().lifetimeStats;
+    const scoreLabelEl = document.querySelector('.score-widget .widget-label');
+
+    const normalToggle = document.getElementById('mode-toggle-normal');
+    const hardToggle = document.getElementById('mode-toggle-hard');
+
+    if (activeMode === 'HARD') {
+      normalToggle?.classList.remove('active');
+      hardToggle?.classList.add('active');
+      if (scoreLabelEl) scoreLabelEl.textContent = 'HARD MODE BEST';
+      if (this.highScoreEl) {
+        this.highScoreEl.textContent = (stats.hardModeHighScore || 0).toLocaleString();
+      }
+    } else {
+      normalToggle?.classList.add('active');
+      hardToggle?.classList.remove('active');
+      if (scoreLabelEl) scoreLabelEl.textContent = 'ALL-TIME BEST';
+      if (this.highScoreEl) {
+        const high = localStorage.getItem('metro_surf_high_score') || '0';
+        this.highScoreEl.textContent = parseInt(high, 10).toLocaleString();
+      }
     }
 
     // 2. Wallet & Charges

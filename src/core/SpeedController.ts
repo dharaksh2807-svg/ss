@@ -154,6 +154,9 @@ export class SpeedController {
     const k = 2.5 / span;
     const progress = d - p.midRampDistance;
     const asymptotic = p.maxSpeed - delta * Math.exp(-k * progress);
+    if (p.maxSpeed - asymptotic < 0.02) {
+      return p.maxSpeed;
+    }
 
     return Math.min(p.maxSpeed, Math.max(p.initialSpeed, asymptotic));
   }

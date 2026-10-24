@@ -42,6 +42,9 @@ export class ProgressionManager {
 
   private constructor() {
     this.state = this.loadState();
+    if (this.state.lastSelectedMode) {
+      this.activeGameMode = this.state.lastSelectedMode;
+    }
     this.checkDailyReset();
     this.setupEventListeners();
   }
@@ -120,10 +123,14 @@ export class ProgressionManager {
         totalDodges: 0,
         totalHoverboardsUsed: 0,
         bestScore: 0,
+        hardModeHighScore: 0,
+        hardModeBestDistance: 0,
+        hardModeRuns: 0,
         timeTrialHighScore: 0,
         coinRushBestTime: 0,
         survivalBestDistance: 0
       },
+      lastSelectedMode: 'NORMAL',
       unlockedCharacters: ['char_jax'],
       selectedCharacter: 'char_jax',
       unlockedOutfits: {
@@ -240,6 +247,9 @@ export class ProgressionManager {
             if (parsed.currentMissionSet === undefined) {
               parsed.currentMissionSet = 1;
             }
+            if (!parsed.lastSelectedMode) {
+              parsed.lastSelectedMode = 'NORMAL';
+            }
             return parsed;
           }
         }
@@ -288,6 +298,12 @@ export class ProgressionManager {
 
   public setActiveGameMode(mode: GameMode): void {
     this.activeGameMode = mode;
+    this.state.lastSelectedMode = mode;
+    this.saveState();
+  }
+
+  public getLastSelectedMode(): GameMode {
+    return this.state.lastSelectedMode || 'NORMAL';
   }
 
   // --- Central Event Listeners ---
@@ -387,9 +403,21 @@ export class ProgressionManager {
     if (!this.runActive) return;
     this.runActive = false;
 
-    if (this.runScore > this.state.lifetimeStats.bestScore) {
-      this.state.lifetimeStats.bestScore = Math.floor(this.runScore);
-      this.updateAchievement('ach_highscore', this.state.lifetimeStats.bestScore);
+    if (this.activeGameMode === 'HARD') {
+      this.state.lifetimeStats.hardModeRuns = (this.state.lifetimeStats.hardModeRuns || 0) + 1;
+      if (this.runScore > (this.state.lifetimeStats.hardModeHighScore || 0)) {
+        this.state.lifetimeStats.hardModeHighScore = Math.floor(this.runScore);
+      }
+      if (this.runDistance > (this.state.lifetimeStats.hardModeBestDistance || 0)) {
+        this.state.lifetimeStats.hardModeBestDistance = Math.floor(this.runDistance);
+      }
+      this.updateAchievement('ach_hard_score', this.state.lifetimeStats.hardModeHighScore);
+      this.updateAchievement('ach_hard_distance', this.state.lifetimeStats.hardModeBestDistance);
+    } else {
+      if (this.runScore > this.state.lifetimeStats.bestScore) {
+        this.state.lifetimeStats.bestScore = Math.floor(this.runScore);
+        this.updateAchievement('ach_highscore', this.state.lifetimeStats.bestScore);
+      }
     }
 
     if (this.activeGameMode === 'TIME_TRIAL' && this.runScore > this.state.lifetimeStats.timeTrialHighScore) {
@@ -433,7 +461,12 @@ export class ProgressionManager {
     this.advanceDaily('DAILY_DISTANCE', meters);
     this.updateAchievement('ach_distance', Math.floor(this.state.lifetimeStats.totalDistance));
 
-    if (this.activeGameMode === 'SURVIVAL') {
+    if (this.activeGameMode === 'HARD') {
+      if (this.runDistance > (this.state.lifetimeStats.hardModeBestDistance || 0)) {
+        this.state.lifetimeStats.hardModeBestDistance = Math.floor(this.runDistance);
+        this.updateAchievement('ach_hard_distance', this.state.lifetimeStats.hardModeBestDistance);
+      }
+    } else if (this.activeGameMode === 'SURVIVAL') {
       if (this.runDistance > this.state.lifetimeStats.survivalBestDistance) {
         this.state.lifetimeStats.survivalBestDistance = Math.floor(this.runDistance);
       }

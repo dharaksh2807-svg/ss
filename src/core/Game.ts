@@ -354,12 +354,13 @@ export class Game {
     this.lifecycleState = 'PLAYING';
     this.score = 0;
     this.coinsCount = 0;
-    this.scoreMultiplier = 1;
+    this.scoreMultiplier = mode === 'HARD' ? 1.25 : 1;
     this.timeTrialRemaining = 60.0;
     this.coinRushElapsed = 0.0;
 
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
+    this.trackManager.setGameMode(this.activeGameMode);
     // In normal play, generate fresh seed; in debug replay mode, preserve seed
     this.trackManager.reset(!this.trackManager.isDebugMode());
     const startEnvId = this.trackManager.getActiveEnvironment();
@@ -371,7 +372,9 @@ export class Game {
     this.cameraController.reset(this.player.position);
 
     // Apply Mode-Specific Initial Conditions
-    if (this.activeGameMode === 'SURVIVAL') {
+    if (this.activeGameMode === 'HARD') {
+      this.player.speed = 24.0;
+    } else if (this.activeGameMode === 'SURVIVAL') {
       // Survival starts fast at 25 m/s immediately!
       this.player.speed = 25.0;
     }
@@ -605,6 +608,14 @@ export class Game {
         title: 'SURVIVAL ENDED! 💀',
         subtitle: `${rank} — ${dist}m (+${bonusCoins} Coins)`,
         bonusCoins
+      };
+    } else if (this.activeGameMode === 'HARD') {
+      const dist = Math.floor(this.player.distanceTraveled);
+      const stats = this.progression.getState().lifetimeStats;
+      const isNewBest = this.score > (stats.hardModeHighScore || 0);
+      resultMeta = {
+        title: isNewBest ? 'NEW HARD RECORD! ⚡' : 'HARD SPRINT ENDED! ⚡',
+        subtitle: `${dist.toLocaleString()}m sprinted at up to 46 m/s`
       };
     }
 

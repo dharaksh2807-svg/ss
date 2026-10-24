@@ -1702,6 +1702,82 @@ kbd {
   to { transform: scale(1.15); filter: drop-shadow(0 0 12px #ff4757); }
 }
 
+/* Game Over Mode Badge Pill */
+.game-over-mode-pill {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.mode-hard-pill {
+  background: rgba(255, 179, 0, 0.15);
+  border: 1px solid rgba(255, 179, 0, 0.6);
+  color: #ffb300;
+  box-shadow: 0 0 12px rgba(255, 179, 0, 0.25);
+}
+
+.mode-normal-pill {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  color: #00e5ff;
+}
+
+/* Lobby Hero Mode Toggle */
+.lobby-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 4px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-family: var(--font-display, 'Lilita One', sans-serif);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mode-toggle-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-toggle-btn.active[data-mode="NORMAL"] {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(0, 229, 255, 0.12));
+  border-color: rgba(0, 229, 255, 0.6);
+  color: #00e5ff;
+  box-shadow: 0 2px 10px rgba(0, 229, 255, 0.2);
+}
+
+.mode-toggle-btn.active[data-mode="HARD"] {
+  background: linear-gradient(135deg, rgba(255, 179, 0, 0.3), rgba(255, 111, 0, 0.15));
+  border-color: rgba(255, 179, 0, 0.7);
+  color: #ffb300;
+  box-shadow: 0 2px 12px rgba(255, 179, 0, 0.25);
+}
+
+.mode-toggle-icon {
+  font-size: 1rem;
+}
+
 /* Floating Progression Toast */
 .hud-toast-container {
   position: absolute;

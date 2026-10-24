@@ -88,7 +88,7 @@ export interface SeasonPass {
   milestones: SeasonMilestone[];
 }
 
-export type GameMode = 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | 'PRACTICE' | 'ARENA';
+export type GameMode = 'NORMAL' | 'HARD' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | 'PRACTICE' | 'ARENA';
 
 export interface GameModeConfig {
   id: GameMode;
@@ -110,6 +110,9 @@ export interface LifetimeStats {
   totalDodges: number;
   totalHoverboardsUsed: number;
   bestScore: number;
+  hardModeHighScore: number;
+  hardModeBestDistance: number;
+  hardModeRuns: number;
   timeTrialHighScore: number;
   coinRushBestTime: number; // in seconds, lower is better
   survivalBestDistance: number;
@@ -124,6 +127,7 @@ export interface ProgressionState {
   achievements: Record<string, AchievementState>;
   seasonPass: SeasonPass;
   lifetimeStats: LifetimeStats;
+  lastSelectedMode?: GameMode;
   unlockedCharacters: string[];
   selectedCharacter: string;
   unlockedOutfits: Record<string, string[]>; // characterId -> list of outfitIds

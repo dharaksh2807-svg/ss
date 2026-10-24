@@ -107,6 +107,19 @@ export class DifficultyController {
    * Resolves the primary difficulty tier target based on encounter distance & duration.
    */
   public getTargetTier(distance: number, speed: number): PatternDifficulty {
+    if (this.gameMode === 'HARD') {
+      if (distance < 60.0) {
+        return 'EASY'; // Opening 0-60m is readable intro
+      }
+      if (distance < 380.0) {
+        return 'MEDIUM'; // 0-15s
+      }
+      if (distance < 850.0) {
+        return 'HARD'; // 15-30s
+      }
+      return 'EXPERT'; // 30s+
+    }
+
     if (distance < 75.0) {
       return 'BEGINNER';
     }
@@ -131,7 +144,77 @@ export class DifficultyController {
    * Ensures controlled variation and guarantees recovery breathers after intense sections.
    */
   public getTierWeights(distance: number, speed: number, duration?: number): Record<string, number> {
-    // If player just faced multiple hard/expert patterns, mandate a recovery breather!
+    const dur = duration !== undefined ? duration : (speed > 0 ? distance / speed : this.runDuration);
+    const wave = Math.sin((distance / 320.0) * Math.PI * 2.0) * 0.08;
+
+    // Hard Mode specific progression pacing
+    if (this.gameMode === 'HARD') {
+      // If player just faced multiple hard/expert patterns, mandate a recovery breather!
+      if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.30,
+          MEDIUM: 0.50,
+          HARD: 0.20,
+          EXPERT: 0.0,
+          BREATHER: 0.65
+        };
+      }
+
+      if (distance < 380.0 || dur < 15.0) {
+        // Stage 1: Opening (0-15s / 0-380m) - Intermediate/Medium focus earlier
+        return {
+          BEGINNER: 0.05,
+          EASY: 0.35,
+          MEDIUM: 0.50,
+          HARD: 0.10,
+          EXPERT: 0.0,
+          BREATHER: 0.12
+        };
+      } else if (distance < 850.0 || dur < 30.0) {
+        // Stage 2: Early Run (15-30s / 380-850m) - Escalating density and moving trains
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.15,
+          MEDIUM: 0.40,
+          HARD: 0.40,
+          EXPERT: 0.05,
+          BREATHER: 0.10
+        };
+      } else if (distance < 1950.0 || dur < 60.0) {
+        // Stage 3: Mid Run (30-60s / 850-1950m) - High speed, multi-step combinations
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.05,
+          MEDIUM: 0.25,
+          HARD: 0.45,
+          EXPERT: 0.25,
+          BREATHER: 0.10 + (wave < 0 ? 0.06 : 0)
+        };
+      } else if (distance < 4500.0 || dur < 120.0) {
+        // Stage 4: Advanced (60-120s / 1950-4500m) - Advanced & expert patterns
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.0,
+          MEDIUM: 0.15,
+          HARD: 0.45,
+          EXPERT: 0.40,
+          BREATHER: 0.10 + (wave < 0 ? 0.06 : 0)
+        };
+      } else {
+        // Stage 5: Expert (120s+ / 4500m+) - Sustained high challenge with controlled recovery
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.0,
+          MEDIUM: 0.10,
+          HARD: 0.40,
+          EXPERT: 0.50,
+          BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+        };
+      }
+    }
+
+    // Normal Mode progression pacing (preserved completely unchanged)
     if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
       return {
         BEGINNER: 0.10,
@@ -142,9 +225,6 @@ export class DifficultyController {
         BREATHER: 0.70
       };
     }
-
-    const dur = duration !== undefined ? duration : (speed > 0 ? distance / speed : this.runDuration);
-    const wave = Math.sin((distance / 320.0) * Math.PI * 2.0) * 0.08;
 
     if (distance < 270.0 || dur < 15.0) {
       // Stage 1: Opening (0-15s / 0-270m)
@@ -287,6 +367,15 @@ export class DifficultyController {
       targetSpeed += variation;
     }
 
+    // Difficulty budget control: If runner is at extreme Hard Mode velocity (> 40 m/s)
+    // and pattern is already complex (EXPERT / HARD), prevent uncontrolled difficulty stacking
+    // by keeping oncoming train speed at a controlled high threshold
+    if (this.gameMode === 'HARD' && (tierOverride === 'EXPERT' || tierOverride === 'ADVANCED' || tierOverride === 'HARD')) {
+      if (this.currentSpeed > 40.0) {
+        targetSpeed = Math.min(targetSpeed, 22.0);
+      }
+    }
+
     // Strict safety clamp: never exceed profile.maxSpeed and never dip below safe base speed
     return Math.min(profile.maxSpeed, Math.max(profile.baseSpeed - 0.5, targetSpeed));
   }
@@ -314,19 +403,30 @@ export class DifficultyController {
    * Guarantees fair telegraphing, minimum spacing, and time-based reaction windows.
    */
   public canSpawnMovingTrain(atDistance: number, playerSpeed?: number, currentTime?: number): boolean {
-    // Opening 240m is introductory beginner/easy track to establish rhythm
-    if (atDistance < 240.0) {
+    // Opening introductory distance: Hard Mode introduces moving trains earlier (90m vs 240m)
+    const introDist = this.gameMode === 'HARD' ? 90.0 : 240.0;
+    if (atDistance < introDist) {
       return false;
     }
 
-    // Dynamic moving train gap based on game stage
+    // Dynamic moving train gap based on game mode & stage
     let minGap = 75.0;
-    if (atDistance >= 3000.0) {
-      minGap = 45.0;
-    } else if (atDistance >= 1500.0) {
-      minGap = 55.0;
-    } else if (atDistance >= 650.0) {
-      minGap = 65.0;
+    if (this.gameMode === 'HARD') {
+      if (atDistance >= 2000.0) {
+        minGap = 40.0;
+      } else if (atDistance >= 800.0) {
+        minGap = 50.0;
+      } else {
+        minGap = 60.0;
+      }
+    } else {
+      if (atDistance >= 3000.0) {
+        minGap = 45.0;
+      } else if (atDistance >= 1500.0) {
+        minGap = 55.0;
+      } else if (atDistance >= 650.0) {
+        minGap = 65.0;
+      }
     }
 
     const distancePass = (atDistance - this.lastMovingTrainDistance) >= minGap;
@@ -341,7 +441,9 @@ export class DifficultyController {
 
     if (effectiveTime !== undefined && this.lastMovingTrainTime >= 0) {
       const timeGap = effectiveTime - this.lastMovingTrainTime;
-      const minTime = atDistance >= 1500.0 ? 2.2 : 3.5;
+      const minTime = this.gameMode === 'HARD'
+        ? (atDistance >= 1500.0 ? 1.8 : 2.5)
+        : (atDistance >= 1500.0 ? 2.2 : 3.5);
       if (timeGap < minTime && timeGap >= 0) {
         return false;
       }

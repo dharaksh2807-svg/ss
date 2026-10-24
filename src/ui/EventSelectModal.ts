@@ -83,7 +83,10 @@ export class EventSelectModal {
       let recordLabel = 'BEST SCORE:';
       let recordValue = `${stats.bestScore.toLocaleString()} pts`;
 
-      if (mode.id === 'TIME_TRIAL') {
+      if (mode.id === 'HARD') {
+        recordLabel = 'HARD MODE RECORD:';
+        recordValue = `${(stats.hardModeHighScore || 0).toLocaleString()} pts | ${(stats.hardModeBestDistance || 0).toLocaleString()} m`;
+      } else if (mode.id === 'TIME_TRIAL') {
         recordLabel = 'TIME TRIAL BEST:';
         recordValue = `${stats.timeTrialHighScore.toLocaleString()} pts`;
       } else if (mode.id === 'COIN_RUSH') {

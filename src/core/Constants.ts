@@ -57,6 +57,15 @@ export const CONSTANTS = {
       midSpeedTarget: 31.5,
       asymptoticDistance: 3200.0
     },
+    HARD: {
+      initialSpeed: 24.0,
+      maxSpeed: 46.0,
+      earlyRampDistance: 250.0,
+      earlySpeedTarget: 31.0,
+      midRampDistance: 1000.0,
+      midSpeedTarget: 39.5,
+      asymptoticDistance: 2600.0
+    },
     SURVIVAL: {
       initialSpeed: 25.0,
       maxSpeed: 40.0,
@@ -109,15 +118,15 @@ export const CONSTANTS = {
       minTimeGapLate: 2.2,  // Minimum seconds between encounters in late run
     },
     HARD: {
-      baseSpeed: 13.0,
-      earlySpeed: 14.0,
-      mediumSpeed: 16.5,
-      advancedSpeed: 19.0,
-      expertSpeed: 21.0,
-      maxSpeed: 22.0,
-      variationRange: 1.0,
-      minTimeGap: 3.0,
-      minTimeGapLate: 1.8,
+      baseSpeed: 14.0,      // Baseline train velocity
+      earlySpeed: 15.0,     // 0 - 250m early run (~14.0 - 16.0 m/s)
+      mediumSpeed: 18.0,    // 250 - 750m medium progression (~16.0 - 20.0 m/s)
+      advancedSpeed: 21.5,  // 750 - 1600m advanced progression (~20.0 - 23.5 m/s)
+      expertSpeed: 23.5,    // 1600m+ expert progression (~23.0 - 24.0 m/s)
+      maxSpeed: 24.0,       // Strict upper train speed cap for Hard Mode
+      variationRange: 1.0,  // Controlled variation within safe bounds (+/- 1.0 m/s)
+      minTimeGap: 2.8,      // Minimum seconds between encounters in early run
+      minTimeGapLate: 1.8,  // Minimum seconds between encounters in late run
     },
     SURVIVAL: {
       baseSpeed: 12.5,
