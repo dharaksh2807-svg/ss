@@ -403,8 +403,8 @@ export class ObstacleFactory {
     if (v === 0) {
       // Variant 0: Standard Striped Rail Hurdle (A-frame legs, dual rails, amber beacons)
       // 1. Primary cross plank (Yellow/Black chevrons)
-      const barH = 0.44;
-      const barY = 0.66;
+      const barH = 0.52;
+      const barY = 0.78;
       const barGeo = new THREE.BoxGeometry(laneW, barH, 0.20);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
@@ -421,13 +421,13 @@ export class ObstacleFactory {
       group.add(btmTrim);
 
       // 2. Lower solid steel ground rail (solid to ground, prevents slide under)
-      const lowerBar = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.94, 0.20, 0.16), this.barrierCastIronMat);
-      lowerBar.position.set(0, 0.18, 0);
+      const lowerBar = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.94, 0.24, 0.16), this.barrierCastIronMat);
+      lowerBar.position.set(0, 0.20, 0);
       lowerBar.castShadow = true;
       group.add(lowerBar);
 
       // 3. Heavy-duty cast-iron A-Frame support legs
-      const legGeo = new THREE.BoxGeometry(0.12, 1.02, 0.12);
+      const legGeo = new THREE.BoxGeometry(0.12, 1.20, 0.12);
       const footGeo = new THREE.BoxGeometry(0.24, 0.06, 0.72);
 
       [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
@@ -435,14 +435,14 @@ export class ObstacleFactory {
         const legFront = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legFront.rotation.z = xPos < 0 ? 0.05 : -0.05;
         legFront.rotation.x = 0.18;
-        legFront.position.set(xPos, 0.51, 0);
+        legFront.position.set(xPos, 0.60, 0);
         legFront.castShadow = true;
         group.add(legFront);
 
         const legRear = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legRear.rotation.z = xPos < 0 ? 0.05 : -0.05;
         legRear.rotation.x = -0.18;
-        legRear.position.set(xPos, 0.51, 0);
+        legRear.position.set(xPos, 0.60, 0);
         legRear.castShadow = true;
         group.add(legRear);
 
@@ -459,18 +459,18 @@ export class ObstacleFactory {
 
         // Top amber strobe caution beacon
         const beaconBase = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.06, 12), this.barrierCastIronMat);
-        beaconBase.position.set(xPos, 1.08, 0);
+        beaconBase.position.set(xPos, 1.27, 0);
         group.add(beaconBase);
 
         const beaconLens = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), this.beaconAmberMat);
-        beaconLens.position.set(xPos, 1.13, 0);
+        beaconLens.position.set(xPos, 1.33, 0);
         group.add(beaconLens);
       });
 
     } else if (v === 1) {
       // Variant 1: Heavy Track Maintenance Gate (Box uprights, orange/white chevrons, counterweight footings)
-      const barH = 0.46;
-      const barY = 0.68;
+      const barH = 0.54;
+      const barY = 0.80;
       const barGeo = new THREE.BoxGeometry(laneW, barH, 0.22);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
@@ -490,19 +490,19 @@ export class ObstacleFactory {
       group.add(pipeBtm);
 
       // Lower anti-crawl steel skirt plate (solid to ground)
-      const skirtGeo = new THREE.BoxGeometry(laneW * 0.94, 0.22, 0.14);
+      const skirtGeo = new THREE.BoxGeometry(laneW * 0.94, 0.26, 0.14);
       const skirt = new THREE.Mesh(skirtGeo, this.barrierCastIronMat);
-      skirt.position.set(0, 0.18, 0);
+      skirt.position.set(0, 0.20, 0);
       skirt.castShadow = true;
       group.add(skirt);
 
       // Heavy rectangular tubular steel upright posts
-      const postGeo = new THREE.BoxGeometry(0.16, 1.08, 0.16);
+      const postGeo = new THREE.BoxGeometry(0.16, 1.27, 0.16);
       const weightBaseGeo = new THREE.BoxGeometry(0.32, 0.08, 0.70);
 
       [-laneW * 0.46, laneW * 0.46].forEach((xPos) => {
         const post = new THREE.Mesh(postGeo, this.barrierCastIronMat);
-        post.position.set(xPos, 0.54, 0);
+        post.position.set(xPos, 0.64, 0);
         post.castShadow = true;
         group.add(post);
 
@@ -513,11 +513,11 @@ export class ObstacleFactory {
 
         // Flasher cap & amber lens
         const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.05, 12), this.barrierCastIronMat);
-        cap.position.set(xPos, 1.09, 0);
+        cap.position.set(xPos, 1.29, 0);
         group.add(cap);
 
         const flasher = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.09, 12), this.beaconAmberMat);
-        flasher.position.set(xPos, 1.14, 0);
+        flasher.position.set(xPos, 1.35, 0);
         group.add(flasher);
       });
 
@@ -528,8 +528,8 @@ export class ObstacleFactory {
 
     } else {
       // Variant 2: Buffer Stop Style Barrier (Cross-braced X trestle legs, red/white chevrons)
-      const barH = 0.48;
-      const barY = 0.65;
+      const barH = 0.56;
+      const barY = 0.77;
       const barGeo = new THREE.BoxGeometry(laneW, barH, 0.24);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
@@ -537,25 +537,25 @@ export class ObstacleFactory {
       group.add(bar);
 
       // Lower timber/steel sleeper rail
-      const sleeperRail = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.96, 0.20, 0.18), this.barrierCastIronMat);
-      sleeperRail.position.set(0, 0.18, 0);
+      const sleeperRail = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.96, 0.24, 0.18), this.barrierCastIronMat);
+      sleeperRail.position.set(0, 0.20, 0);
       sleeperRail.castShadow = true;
       group.add(sleeperRail);
 
       // X-Braced trestle side supports
-      const strutGeo = new THREE.BoxGeometry(0.12, 1.06, 0.12);
+      const strutGeo = new THREE.BoxGeometry(0.12, 1.25, 0.12);
       const trestleFootGeo = new THREE.BoxGeometry(0.28, 0.06, 0.76);
 
       [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
         const strut1 = new THREE.Mesh(strutGeo, this.barrierCastIronMat);
         strut1.rotation.x = 0.30;
-        strut1.position.set(xPos, 0.50, 0);
+        strut1.position.set(xPos, 0.59, 0);
         strut1.castShadow = true;
         group.add(strut1);
 
         const strut2 = new THREE.Mesh(strutGeo, this.barrierCastIronMat);
         strut2.rotation.x = -0.30;
-        strut2.position.set(xPos, 0.50, 0);
+        strut2.position.set(xPos, 0.59, 0);
         strut2.castShadow = true;
         group.add(strut2);
 
@@ -566,11 +566,11 @@ export class ObstacleFactory {
 
         // Railway lantern lamp on top
         const lanternHousing = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), this.barrierCastIronMat);
-        lanternHousing.position.set(xPos, 1.06, 0);
+        lanternHousing.position.set(xPos, 1.25, 0);
         group.add(lanternHousing);
 
         const lanternLens = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), this.beaconRedMat);
-        lanternLens.position.set(xPos, 1.13, 0);
+        lanternLens.position.set(xPos, 1.33, 0);
         group.add(lanternLens);
       });
     }

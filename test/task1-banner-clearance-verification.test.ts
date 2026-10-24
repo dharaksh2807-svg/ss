@@ -61,7 +61,7 @@ console.log('--- Suite 1: Active Configuration & Constant Verification ---');
   assert(CONSTANTS.PLAYER_HEIGHT_SLIDE === 0.75, 'Sliding player height is exactly 0.75 units');
   assert(CONSTANTS.HIGH_BARRIER_CLEARANCE === 1.40, 'High barrier ground clearance is raised to 1.40 units (within 1.35-1.45 range)');
   assert(CONSTANTS.HIGH_BARRIER_HEIGHT === 4.05, 'High barrier overall height remains 4.05 units (substantial train profile)');
-  assert(CONSTANTS.LOW_BARRIER_HEIGHT === 1.1, 'Low barrier height remains 1.1 units (strict scope: no modification)');
+  assert(CONSTANTS.LOW_BARRIER_HEIGHT === 1.30, 'Low barrier height is raised to 1.30 units (+18% for high-speed visibility)');
   assert(CONSTANTS.JUMP_HEIGHT === 2.25, 'Player jump height remains 2.25 units (strict scope: no modification)');
   assert(CONSTANTS.SLIDE_DURATION === 0.65, 'Player slide duration remains 0.65s (strict scope: no modification)');
 }
@@ -221,7 +221,7 @@ console.log('\n--- Suite 4: High Speed Traversal & Unrelated Obstacle Regression
   const lowObs = makeObsInstance(lowMesh, lowBox, 'LOW_BARRIER', 0);
 
   // Low hurdle jump
-  player.position.set(0, 1.45, 0);
+  player.position.set(0, 1.55, 0);
   player.isJumping = true;
   player.isSliding = false;
   player.updateCollider();
