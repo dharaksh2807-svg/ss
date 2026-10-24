@@ -7,6 +7,7 @@ import { GraphicsManager } from '../scene/GraphicsManager';
 import { getPowerupIconSvg } from './IconCatalog';
 import { FirstUseGuidance } from './FirstUseGuidance';
 import { UpgradeManager, UpgradablePowerup } from '../player/UpgradeManager';
+import { CharacterPortraitRenderer } from './CharacterPortraitRenderer';
 
 export class HUD {
   private container: HTMLDivElement;
@@ -19,6 +20,7 @@ export class HUD {
   private boardBtn: HTMLButtonElement | null = null;
   private boardChargesBadge: HTMLElement | null = null;
   private hoverboardManager: HoverboardManager;
+  private portraitRenderer: CharacterPortraitRenderer;
 
   private score: number = 0;
   private coins: number = 0;
@@ -46,6 +48,7 @@ export class HUD {
     this.feedbackStack = document.getElementById('hud-feedback-stack');
     this.pauseBtn = document.getElementById('hud-pause-btn') as HTMLButtonElement;
     this.hoverboardManager = HoverboardManager.getInstance();
+    this.portraitRenderer = CharacterPortraitRenderer.getInstance();
 
     this.boardBtn = document.getElementById('hud-board-btn') as HTMLButtonElement;
     this.boardChargesBadge = document.getElementById('hud-board-charges');
@@ -197,7 +200,15 @@ export class HUD {
     }
   }
 
-  public update(dt: number = 0.016): void {
+  public update(
+    dt: number = 0.016,
+    isSliding: boolean = false,
+    isJumping: boolean = false,
+    speed: number = 18.0
+  ): void {
+    // Live Animated Character Facial Portrait & Reaction Update
+    this.portraitRenderer.update(dt, isSliding, isJumping, speed);
+
     // 0. Update lightweight FPS & Performance counter if enabled
     if (this.fpsCounterEl && !this.fpsCounterEl.classList.contains('hidden')) {
       this.fpsUpdateTimer += dt;
@@ -397,6 +408,7 @@ export class HUD {
 
   public show(): void {
     this.container.classList.remove('hidden');
+    this.portraitRenderer.syncFromProgression();
   }
 
   public hide(): void {

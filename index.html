@@ -45,6 +45,18 @@
             <span id="hud-coins" class="hud-stat-value">0</span>
           </div>
           <div id="hud-multiplier" class="hud-multiplier-badge">1X</div>
+
+          <!-- Dynamic Character Facial Portrait & Live Reaction Display -->
+          <div id="hud-character-portrait" class="hud-portrait-pill" role="region" aria-label="Selected Character Reaction Portrait">
+            <div class="portrait-viewport-frame">
+              <canvas id="hud-portrait-canvas" width="128" height="128" aria-hidden="true"></canvas>
+              <div id="hud-portrait-ring" class="hud-portrait-ring"></div>
+            </div>
+            <div class="portrait-meta-column">
+              <span id="hud-portrait-name" class="portrait-name-label">JAX</span>
+              <span id="hud-portrait-mood" class="portrait-mood-badge">RUNNING</span>
+            </div>
+          </div>
         </div>
 
         <!-- Top Right: Score & Pause Button -->
@@ -451,6 +463,20 @@
                 <option value="ALWAYS">Always Play</option>
                 <option value="DISABLED">Disable Intro</option>
               </select>
+            </div>
+            <div class="setting-row">
+              <label for="setting-camera-mode">Gameplay Camera</label>
+              <select id="setting-camera-mode" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
+                <option value="CHARACTER_FOCUS" selected>Character Focus (3/4 Profile)</option>
+                <option value="CLASSIC">Classic Chase (Rear View)</option>
+              </select>
+            </div>
+            <div class="setting-row checkbox-row">
+              <div class="setting-label-block">
+                <label for="setting-facial-portrait">Character Facial Portrait</label>
+                <div class="setting-hint-text">Live animated 3D portrait showing character reactions during runs.</div>
+              </div>
+              <input type="checkbox" id="setting-facial-portrait" class="arcade-checkbox" checked />
             </div>
           </div>
 

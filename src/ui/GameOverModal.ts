@@ -1,6 +1,7 @@
 import { EventBus, EVENTS } from '../core/EventBus';
 import { GameMode } from '../progression/ProgressionTypes';
 import { ProgressionManager } from '../progression/ProgressionManager';
+import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
 
 export class GameOverModal {
   private element: HTMLElement;
@@ -32,6 +33,20 @@ export class GameOverModal {
             <div id="game-over-mode-badge" class="game-over-mode-pill" style="display: none; margin-bottom: 6px;"></div>
             <h2 id="game-over-main-title" class="arcade-title game-over-title">RUN COMPLETED!</h2>
             <div id="game-over-sub-title" class="tab-subtitle" style="margin-top: 4px;">Good hustle out on the rails!</div>
+          </div>
+        </div>
+
+        <!-- Selected Character Showcase -->
+        <div id="game-over-runner-card" class="game-over-runner-card">
+          <div class="runner-card-avatar-wrap">
+            <div id="game-over-runner-avatar" class="runner-card-avatar">🏃</div>
+          </div>
+          <div class="runner-card-details">
+            <div class="runner-card-header">
+              <span id="game-over-runner-name" class="runner-card-name">Jax</span>
+              <span id="game-over-runner-rarity" class="runner-card-badge">COMMON</span>
+            </div>
+            <div id="game-over-runner-outfit" class="runner-card-outfit">Classic Street</div>
           </div>
         </div>
 
@@ -289,6 +304,36 @@ export class GameOverModal {
         }
       };
       requestAnimationFrame(animateCount);
+    }
+
+    // Populate equipped runner showcase
+    const selCharId = this.progression.getSelectedCharacter();
+    const selChar = getCharacterById(selCharId);
+    const selOutfitId = this.progression.getSelectedOutfit(selCharId);
+    const selOutfit = selOutfitId ? getOutfitById(selCharId, selOutfitId) : undefined;
+
+    const runnerNameEl = this.element.querySelector('#game-over-runner-name') as HTMLElement;
+    const runnerRarityEl = this.element.querySelector('#game-over-runner-rarity') as HTMLElement;
+    const runnerOutfitEl = this.element.querySelector('#game-over-runner-outfit') as HTMLElement;
+    const runnerAvatarEl = this.element.querySelector('#game-over-runner-avatar') as HTMLElement;
+
+    if (selChar) {
+      if (runnerNameEl) runnerNameEl.textContent = selChar.name;
+      if (runnerRarityEl) {
+        runnerRarityEl.textContent = selChar.rarity || 'COMMON';
+        runnerRarityEl.className = `runner-card-badge rarity-${(selChar.rarity || 'COMMON').toLowerCase()}`;
+      }
+      if (runnerOutfitEl) {
+        runnerOutfitEl.textContent = selOutfit ? `${selOutfit.name} • ${selChar.title}` : selChar.title;
+      }
+      if (runnerAvatarEl) {
+        if (selChar.thumbnailImage || selChar.previewImage) {
+          const imgSrc = selChar.thumbnailImage || selChar.previewImage;
+          runnerAvatarEl.innerHTML = `<img src="${imgSrc}" alt="${selChar.name}" class="runner-avatar-img" />`;
+        } else {
+          runnerAvatarEl.textContent = selChar.portraitIcon || '🏃';
+        }
+      }
     }
 
     // Render Claimable Missions Section

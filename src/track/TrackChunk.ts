@@ -736,7 +736,7 @@ export class TrackChunk {
     const mats = TrackChunk.sharedMaterials!;
     const gantrySpacing = 26.0;
     const gantryCount = Math.floor(this.length / gantrySpacing);
-    const poleHeight = 10.0;
+    const poleHeight = 11.2;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
 
     for (let g = 0; g < gantryCount; g++) {
@@ -745,54 +745,54 @@ export class TrackChunk {
       gantryGroup.position.set(0, 0, gz);
 
       // Vertical steel columns
-      const colGeo = new THREE.BoxGeometry(0.4, poleHeight, 0.4);
+      const colGeo = new THREE.BoxGeometry(0.36, poleHeight, 0.36);
       [-spanWidth * 0.5, spanWidth * 0.5].forEach((cx) => {
         const col = new THREE.Mesh(colGeo, mats.catenarySteelMat);
         col.position.set(cx, poleHeight * 0.5, 0);
         col.castShadow = true;
         gantryGroup.add(col);
 
-        const pedGeo = new THREE.BoxGeometry(0.7, 0.8, 0.7);
+        const pedGeo = new THREE.BoxGeometry(0.65, 0.8, 0.65);
         const ped = new THREE.Mesh(pedGeo, mats.curbMat);
         ped.position.set(cx, 0.4, 0);
         gantryGroup.add(ped);
       });
 
-      // Horizontal steel girder
-      const girderGeo = new THREE.BoxGeometry(spanWidth + 0.6, 0.55, 0.45);
+      // Streamlined horizontal steel girder elevated well above camera clearance (10.9m+)
+      const girderGeo = new THREE.BoxGeometry(spanWidth + 0.6, 0.36, 0.38);
       const girder = new THREE.Mesh(girderGeo, mats.catenarySteelMat);
-      girder.position.set(0, poleHeight - 0.28, 0);
+      girder.position.set(0, poleHeight - 0.18, 0);
       girder.castShadow = true;
       gantryGroup.add(girder);
 
-      // Insulators & Modern 3-Aspect LED Signal Boxes elevated at 8.8m+
+      // Insulators & Modern 3-Aspect LED Signal Boxes elevated at 10.4m+
       CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-        const insGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.35, 8);
+        const insGeo = new THREE.CylinderGeometry(0.10, 0.10, 0.30, 8);
         const ins = new THREE.Mesh(insGeo, mats.insulatorMat);
-        ins.position.set(laneX, poleHeight - 0.55, 0);
+        ins.position.set(laneX, poleHeight - 0.42, 0);
         gantryGroup.add(ins);
 
-        const sigGeo = new THREE.BoxGeometry(0.4, 0.60, 0.28);
+        const sigGeo = new THREE.BoxGeometry(0.36, 0.54, 0.24);
         const sig = new THREE.Mesh(sigGeo, mats.modernSteelMat);
-        sig.position.set(laneX, poleHeight - 0.85, 0.12);
+        sig.position.set(laneX, poleHeight - 0.70, 0.12);
         gantryGroup.add(sig);
 
-        const lensGeo = new THREE.CircleGeometry(0.09, 10);
+        const lensGeo = new THREE.CircleGeometry(0.08, 10);
         const greenMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
         const greenLens = new THREE.Mesh(lensGeo, greenMat);
-        greenLens.position.set(laneX, poleHeight - 0.80, 0.27);
+        greenLens.position.set(laneX, poleHeight - 0.65, 0.25);
         gantryGroup.add(greenLens);
       });
 
       this.decorativeGroup.add(gantryGroup);
     }
 
-    // Overhead catenary contact wires elevated at 9.3m
+    // Overhead catenary contact wires elevated at 10.7m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-      const cableGeo = new THREE.CylinderGeometry(0.02, 0.02, this.length, 6);
+      const cableGeo = new THREE.CylinderGeometry(0.015, 0.015, this.length, 6);
       const cable = new THREE.Mesh(cableGeo, mats.cableMat);
       cable.rotation.x = Math.PI / 2;
-      cable.position.set(laneX, poleHeight - 0.70, -this.length * 0.5);
+      cable.position.set(laneX, poleHeight - 0.50, -this.length * 0.5);
       this.decorativeGroup.add(cable);
     });
   }
@@ -918,35 +918,36 @@ export class TrackChunk {
     if (chunkIdx % 2 !== 1) return;
 
     const mats = TrackChunk.sharedMaterials!;
-    const bridgeHeight = 9.2;
-    const bridgeWidth = 7.0;
+    // Elevated ceiling clearance: 12.0m guarantees wide sky vistas and 0 clipping on jump & train rooftops
+    const bridgeHeight = 12.0;
+    const bridgeWidth = 5.8;
     const bridgeSpan = 32.0;
 
     const bridgeGroup = new THREE.Group();
     bridgeGroup.position.set(0, bridgeHeight, -this.length * 0.5);
 
-    // Main floor deck girder
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan, 0.8, bridgeWidth), mats.modernSteelMat);
+    // Slim, elegant floor deck girder
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan, 0.42, bridgeWidth), mats.modernSteelMat);
     deck.castShadow = true;
     deck.receiveShadow = true;
     bridgeGroup.add(deck);
 
     // Glass enclosed walkway walls
-    const glassWallGeo = new THREE.BoxGeometry(bridgeSpan, 2.8, 0.15);
+    const glassWallGeo = new THREE.BoxGeometry(bridgeSpan, 2.4, 0.12);
     [-bridgeWidth * 0.5 + 0.1, bridgeWidth * 0.5 - 0.1].forEach((gz) => {
       const gw = new THREE.Mesh(glassWallGeo, mats.modernGlassMat);
-      gw.position.set(0, 1.8, gz);
+      gw.position.set(0, 1.5, gz);
       bridgeGroup.add(gw);
     });
 
-    // Sleek white aerodynamic roof
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan + 0.6, 0.45, bridgeWidth + 0.4), mats.modernWhiteMat);
-    roof.position.set(0, 3.4, 0);
+    // Sleek white aerodynamic roof canopy
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan + 0.6, 0.35, bridgeWidth + 0.4), mats.modernWhiteMat);
+    roof.position.set(0, 2.85, 0);
     roof.castShadow = true;
     bridgeGroup.add(roof);
 
     // Outside support columns
-    const colGeo = new THREE.BoxGeometry(1.4, bridgeHeight, 2.2);
+    const colGeo = new THREE.BoxGeometry(1.2, bridgeHeight, 2.0);
     [-bridgeSpan * 0.38, bridgeSpan * 0.38].forEach((cx) => {
       const col = new THREE.Mesh(colGeo, mats.modernSteelMat);
       col.position.set(cx, -bridgeHeight * 0.5, 0);

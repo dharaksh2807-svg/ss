@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 
+export type CameraMode = 'CLASSIC' | 'CHARACTER_FOCUS';
+
 export class CameraController {
   public camera: THREE.PerspectiveCamera;
   private targetPosition = new THREE.Vector3();
@@ -10,6 +12,11 @@ export class CameraController {
   private shakeTrauma = 0;
   private shakeOffset = new THREE.Vector3();
   private landingDipOffset = 0;
+
+  // Camera Preferences: 'CLASSIC' (rear chase) or 'CHARACTER_FOCUS' (expressive 3/4 side profile)
+  private cameraMode: CameraMode = 'CHARACTER_FOCUS';
+  private currentLateralOffset: number = 0;
+  private targetLateralOffset: number = 0;
 
   // Lobby mode staging
   private isLobbyMode: boolean = true;
@@ -31,13 +38,21 @@ export class CameraController {
       ? window.innerWidth / window.innerHeight
       : 16 / 9;
 
-    // Near plane lowered from 0.5 to 0.2 to prevent near-clipping on adjacent train carriages
+    // Near plane set to 0.22 to prevent near-clipping on adjacent trains and overhead structures
     this.camera = new THREE.PerspectiveCamera(
       CONSTANTS.CAMERA_FOV,
       aspect,
-      0.2,
+      0.22,
       600
     );
+
+    // Load persisted camera preference
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('metro_camera_mode') as CameraMode | null;
+      if (saved === 'CLASSIC' || saved === 'CHARACTER_FOCUS') {
+        this.cameraMode = saved;
+      }
+    }
 
     // Initial lobby position
     this.currentPosition.copy(this.lobbyTargetPos);
@@ -57,6 +72,21 @@ export class CameraController {
     bus.on(EVENTS.STUMBLE, () => this.addShake(0.35));
     bus.on(EVENTS.CRASH, () => this.addShake(0.85));
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
+    bus.on('CAMERA_MODE_CHANGED', (mode: CameraMode) => {
+      this.setCameraMode(mode);
+    });
+  }
+
+  public getCameraMode(): CameraMode {
+    return this.cameraMode;
+  }
+
+  public setCameraMode(mode: CameraMode): void {
+    this.cameraMode = mode;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('metro_camera_mode', mode);
+    }
+    EventBus.getInstance().emit('CAMERA_MODE_UPDATED', mode);
   }
 
   public setLobbyMode(enabled: boolean): void {
@@ -67,10 +97,11 @@ export class CameraController {
     this.isIntroMode = enabled;
     if (enabled && playerPos) {
       this.isLobbyMode = false;
-      // Front-quarter dynamic cinematic camera framing runner in 3/4 view
-      const camX = playerPos.x - (this.camera.aspect < 1.0 ? 1.4 : 1.9);
-      this.introStartPos.set(camX, playerPos.y + 1.22, playerPos.z - 2.8);
-      this.introStartLook.set(playerPos.x + 0.25, playerPos.y + 0.95, playerPos.z + 0.8);
+      // Close-up front 3/4 cinematic camera framing runner's face and upper outfit prominently
+      const isPortrait = this.camera.aspect < 1.0;
+      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
+      this.introStartPos.set(camX, playerPos.y + 1.25, playerPos.z - 2.1);
+      this.introStartLook.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
       this.currentPosition.copy(this.introStartPos);
       this.camera.position.copy(this.currentPosition);
       this.camera.lookAt(this.introStartLook);
@@ -87,10 +118,10 @@ export class CameraController {
       this.isLobbyMode = false;
       this.isIntroMode = false;
       const isPortrait = this.camera.aspect < 1.0;
-      // Front-side 3/4 camera framing player tumble and security guard arrest
-      const camX = playerPos.x - (isPortrait ? 1.5 : 2.1);
-      this.gameOverTargetPos.set(camX, playerPos.y + 1.25, playerPos.z - 2.8);
-      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 0.90, playerPos.z + 0.5);
+      // Front-side 3/4 dramatic cinematic framing player's face, defeat reaction, and scene context
+      const camX = playerPos.x - (isPortrait ? 1.15 : 1.55);
+      this.gameOverTargetPos.set(camX, playerPos.y + 1.15, playerPos.z - 2.3);
+      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 1.05, playerPos.z);
     }
   }
 
@@ -106,53 +137,53 @@ export class CameraController {
     let t = Math.max(0, Math.min(1.0, progress));
 
     if (t < 0.35) {
-      // Phase 1 (0.0s – 0.85s): Dynamic front-quarter encounter framing with gentle push-in
+      // Phase 1 (0.0s – 0.85s): Expressive front 3/4 character reveal with gentle push-in
       const p = t / 0.35;
-      const push = p * 0.35;
-      const camX = playerPos.x - (isPortrait ? 1.4 : 1.9);
-      const camY = playerPos.y + 1.22;
-      const camZ = playerPos.z - 2.8 + push;
+      const push = p * 0.30;
+      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
+      const camY = playerPos.y + 1.25;
+      const camZ = playerPos.z - 2.1 + push;
 
       this.currentPosition.set(camX, camY, camZ);
-      this.lookTarget.set(playerPos.x + 0.25, playerPos.y + 0.95, playerPos.z + 0.8);
+      this.lookTarget.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
     } else {
-      // Phase 2 & 3 (0.85s – 2.4s): Smooth orbital arc around runner into gameplay follow
+      // Phase 2 & 3 (0.85s – 2.4s): Smooth orbital arc around runner into active gameplay camera
       const u = (t - 0.35) / 0.65;
       const smoothU = u * u * (3.0 - 2.0 * u);
 
-      // Arc theta from -146° (front-quarter) around the side (-90°) to 0° (behind player)
-      const startAngle = -2.55; // ~ -146 degrees
-      const endAngle = 0;
+      const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+      const endAngle = isCharFocus ? 0.13 : 0; // ~7.5° offset in character focus
+      const startAngle = -2.55; // ~ -146°
       const theta = THREE.MathUtils.lerp(startAngle, endAngle, smoothU);
 
-      const startRadius = isPortrait ? 3.0 : 3.4;
-      const endRadius = CONSTANTS.CAMERA_OFFSET_Z; // 5.60
+      const startRadius = isPortrait ? 2.5 : 2.8;
+      const endRadius = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
       const radius = THREE.MathUtils.lerp(startRadius, endRadius, smoothU);
 
-      const startHeight = 1.22;
-      const endHeight = CONSTANTS.CAMERA_OFFSET_Y; // 3.25
+      const startHeight = 1.25;
+      const endHeight = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
       const height = THREE.MathUtils.lerp(startHeight, endHeight, smoothU);
 
-      // Position along orbital curve relative to playerPos
       const camX = playerPos.x + radius * Math.sin(theta);
       const camZ = playerPos.z + radius * Math.cos(theta);
       const camY = playerPos.y + height;
       this.currentPosition.set(camX, camY, camZ);
 
-      // Look target transitions: keep runner centered during orbital sweep,
-      // and blend forward to track horizon as camera swings into chase position (smoothU > 0.45)
-      const startLookX = playerPos.x + 0.25 * (1.0 - smoothU);
-      const startLookY = playerPos.y + 0.95;
-      const endLookY = playerPos.y + CONSTANTS.CAMERA_LOOK_Y;
+      const startLookX = playerPos.x;
+      const endLookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
+      const lookX = THREE.MathUtils.lerp(startLookX, endLookX, smoothU);
+
+      const startLookY = playerPos.y + 1.18;
+      const endLookY = playerPos.y + (isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y);
       const lookY = THREE.MathUtils.lerp(startLookY, endLookY, smoothU);
 
       const lookAheadBlend = Math.max(0, Math.min(1.0, (smoothU - 0.40) / 0.60));
       const smoothLookAhead = lookAheadBlend * lookAheadBlend * (3.0 - 2.0 * lookAheadBlend);
-      const startLookZ = playerPos.z + 0.2;
+      const startLookZ = playerPos.z + 0.1;
       const endLookZ = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
       const lookZ = THREE.MathUtils.lerp(startLookZ, endLookZ, smoothLookAhead);
 
-      this.lookTarget.set(startLookX, lookY, lookZ);
+      this.lookTarget.set(lookX, lookY, lookZ);
     }
 
     this.camera.position.copy(this.currentPosition);
@@ -161,15 +192,22 @@ export class CameraController {
 
   public finishIntro(playerPos: THREE.Vector3): void {
     this.isIntroMode = false;
+    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+    const offsetX = isCharFocus ? 0.68 : 0;
+    const offsetZ = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+    const offsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
+    const lookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
+    const lookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
+
     this.currentPosition.set(
-      playerPos.x,
-      playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
-      playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
+      playerPos.x + offsetX,
+      playerPos.y + offsetY,
+      playerPos.z + offsetZ
     );
     this.camera.position.copy(this.currentPosition);
     this.lookTarget.set(
-      playerPos.x,
-      playerPos.y + CONSTANTS.CAMERA_LOOK_Y,
+      lookX,
+      playerPos.y + lookY,
       playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z
     );
     this.camera.lookAt(this.lookTarget);
@@ -185,7 +223,8 @@ export class CameraController {
     timeSec: number = 0,
     speed: number = CONSTANTS.INITIAL_SPEED,
     groundY: number = CONSTANTS.PLAYER_BASE_Y,
-    isSliding: boolean = false
+    isSliding: boolean = false,
+    isTunnelEnclosed: boolean = false
   ): void {
     if (this.isIntroMode) {
       return;
@@ -253,12 +292,26 @@ export class CameraController {
     // 2. Ground & train-roof running: tracks support surface authoritatively while dampening
     //    airborne jump bobbing (30% apex follow) so track horizon remains clear and stable.
     const airborneDelta = Math.max(0, playerPos.y - groundY);
-    // Jetpack flight occurs at high altitude (>=7.0m) or high vertical clearance above ground (>3.6m)
-    // Train rooftop running (groundY = 4.35m, playerPos.y = 4.35m) is ground locomotion, not jetpack flight
     const isJetpackFlight = playerPos.y >= 7.0 || (playerPos.y - groundY > 3.6);
 
+    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+
+    // Character Focus Lateral Composition:
+    // Provides an expressive 3/4 side profile view revealing facial profile, hair/cap, and outfit details.
+    // Safety fallback: smoothly return to center chase in narrow tunnels, on train roofs, or in jetpack flight.
+    const isUnsafeForOffset = isTunnelEnclosed || groundY >= 4.0 || isJetpackFlight || this.shakeTrauma > 0.35;
+    if (isCharFocus && !isUnsafeForOffset) {
+      this.targetLateralOffset = isPortrait ? 0.58 : 0.70;
+    } else {
+      this.targetLateralOffset = 0;
+    }
+
+    // Smooth exponential decay interpolation for lateral offset
+    const lateralBlendRate = 6.0;
+    this.currentLateralOffset += (this.targetLateralOffset - this.currentLateralOffset) * (1.0 - Math.exp(-lateralBlendRate * dt));
+
     let targetCamY: number;
-    let targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z;
+    let targetCamOffsetZ = isCharFocus && !isJetpackFlight ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
     let targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z;
     let targetLookY: number;
 
@@ -269,8 +322,11 @@ export class CameraController {
       targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 6.0; // Look 24m ahead along flight path
     } else {
       const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
-      targetCamY = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
-      targetLookY = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
+      const baseOffsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
+      const baseLookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
+
+      targetCamY = cameraBaseY + baseOffsetY;
+      targetLookY = cameraBaseY + baseLookY;
 
       // Train rooftop enhanced perspective: extend lookahead and elevate slightly for clear forward hazard visibility
       if (groundY >= 4.0) {
@@ -297,7 +353,7 @@ export class CameraController {
     }
 
     // Target position behind and above player in gameplay
-    this.targetPosition.x = playerPos.x;
+    this.targetPosition.x = playerPos.x + this.currentLateralOffset;
     this.targetPosition.y = targetCamY;
     this.targetPosition.z = playerPos.z + targetCamOffsetZ;
 
@@ -325,7 +381,9 @@ export class CameraController {
     this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
 
     // Look at point slightly ahead and above the character, with centered lateral tracking
-    this.lookTarget.x = this.currentPosition.x * 0.5 + playerPos.x * 0.5;
+    // In Character Focus, angle slightly inward across runner to keep center lane & incoming trains locked in center
+    const inwardAimOffset = this.currentLateralOffset * 0.28;
+    this.lookTarget.x = this.currentPosition.x * 0.45 + (playerPos.x - inwardAimOffset) * 0.55;
     this.lookTarget.y = targetLookY;
     this.lookTarget.z = playerPos.z + targetLookAheadZ;
 

@@ -704,8 +704,8 @@ export class Game {
         this.score += this.player.speed * dt * CONSTANTS.SCORE_PER_METER * this.scoreMultiplier;
         EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
 
-        // 6. Update HUD UI
-        this.hud.update(dt);
+        // 6. Update HUD UI & live portrait reaction state
+        this.hud.update(dt, this.player.isSliding, this.player.isJumping, this.player.speed);
 
         // 7. Update lighting target to center around player and update speed lines
         this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
@@ -728,7 +728,8 @@ export class Game {
       now / 1000,
       this.player.speed,
       this.player.groundY,
-      this.player.isSliding
+      this.player.isSliding,
+      this.player.isTunnelEnclosed
     );
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)

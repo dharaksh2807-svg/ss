@@ -12,6 +12,8 @@ export class SettingsModal {
   private reducedIntensityCheckbox: HTMLInputElement | null;
   private qualitySelect: HTMLSelectElement | null;
   private introSelect: HTMLSelectElement | null;
+  private cameraModeSelect: HTMLSelectElement | null;
+  private facialPortraitCheckbox: HTMLInputElement | null;
   private resolvedBadgeEl: HTMLElement | null;
   private qualityDescEl: HTMLElement | null;
   private showFpsCheckbox: HTMLInputElement | null;
@@ -31,6 +33,8 @@ export class SettingsModal {
     this.reducedIntensityCheckbox = document.getElementById('setting-reduced-intensity') as HTMLInputElement | null;
     this.qualitySelect = document.getElementById('setting-graphics-quality') as HTMLSelectElement | null;
     this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
+    this.cameraModeSelect = document.getElementById('setting-camera-mode') as HTMLSelectElement | null;
+    this.facialPortraitCheckbox = document.getElementById('setting-facial-portrait') as HTMLInputElement | null;
 
     this.resolvedBadgeEl = document.getElementById('setting-graphics-resolved-badge');
     this.qualityDescEl = document.getElementById('setting-graphics-desc');
@@ -40,10 +44,19 @@ export class SettingsModal {
     this.setupListeners();
     this.refreshAudioUI();
     this.refreshGraphicsUI();
+    this.refreshCameraAndPortraitUI();
   }
 
   private setupListeners(): void {
     this.closeBtn.addEventListener('click', () => this.hide());
+    this.element.addEventListener('click', (e) => {
+      if (e.target === this.element) this.hide();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.element.classList.contains('hidden')) {
+        this.hide();
+      }
+    });
 
     this.masterSlider.addEventListener('input', (e) => {
       const val = parseFloat((e.target as HTMLInputElement).value);
@@ -109,6 +122,26 @@ export class SettingsModal {
       });
     }
 
+    if (this.cameraModeSelect) {
+      const savedCamera = localStorage.getItem('metro_camera_mode') || 'CHARACTER_FOCUS';
+      this.cameraModeSelect.value = savedCamera;
+      this.cameraModeSelect.addEventListener('change', () => {
+        const mode = this.cameraModeSelect!.value;
+        localStorage.setItem('metro_camera_mode', mode);
+        EventBus.getInstance().emit('CAMERA_MODE_CHANGED', mode);
+      });
+    }
+
+    if (this.facialPortraitCheckbox) {
+      const savedPortrait = localStorage.getItem('metro_portrait_enabled') !== 'false';
+      this.facialPortraitCheckbox.checked = savedPortrait;
+      this.facialPortraitCheckbox.addEventListener('change', () => {
+        const enabled = this.facialPortraitCheckbox!.checked;
+        localStorage.setItem('metro_portrait_enabled', enabled ? 'true' : 'false');
+        EventBus.getInstance().emit('PORTRAIT_TOGGLED', enabled);
+      });
+    }
+
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
 
     // Update badge when adaptive controller shifts quality in real time
@@ -120,6 +153,15 @@ export class SettingsModal {
     EventBus.getInstance().on(EVENTS.AUDIO_SETTINGS_CHANGED, () => {
       this.refreshAudioUI();
     });
+  }
+
+  private refreshCameraAndPortraitUI(): void {
+    if (this.cameraModeSelect) {
+      this.cameraModeSelect.value = localStorage.getItem('metro_camera_mode') || 'CHARACTER_FOCUS';
+    }
+    if (this.facialPortraitCheckbox) {
+      this.facialPortraitCheckbox.checked = localStorage.getItem('metro_portrait_enabled') !== 'false';
+    }
   }
 
   private refreshAudioUI(): void {
@@ -179,6 +221,7 @@ export class SettingsModal {
   public show(): void {
     this.refreshAudioUI();
     this.refreshGraphicsUI();
+    this.refreshCameraAndPortraitUI();
     if (this.introSelect) {
       this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
     }
