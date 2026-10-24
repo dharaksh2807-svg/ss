@@ -109,10 +109,10 @@ export const CONSTANTS = {
     firstNormal: [7.0, 9.0],
     firstHard: [6.0, 7.5],
     stages: [
-      { end: 300, normalGap: [10, 14], hardGap: [9, 12] },
-      { end: 1200, normalGap: [4.8, 6.5], hardGap: [4.5, 6.0] },
-      { end: 2500, normalGap: [4.5, 6], hardGap: [4.2, 5.3] },
-      { end: Infinity, normalGap: [3.9, 5], hardGap: [3.5, 4.5] }
+      { end: 300, normalGap: [7.5, 10], hardGap: [6.5, 8], normalStaticGap: [14, 20], hardStaticGap: [12, 17] },
+      { end: 1200, normalGap: [4.2, 5.3], hardGap: [3.5, 4.5], normalStaticGap: [7, 10], hardStaticGap: [6, 8] },
+      { end: 2500, normalGap: [3.5, 4.5], hardGap: [2.9, 3.7], normalStaticGap: [7, 10], hardStaticGap: [4.5, 6] },
+      { end: Infinity, normalGap: [2.8, 3.6], hardGap: [2.4, 3.0], normalStaticGap: [4.5, 6], hardStaticGap: [4.5, 6.5] }
     ],
     rushNormalDistance: 1200,
     rushHardDistance: 900,

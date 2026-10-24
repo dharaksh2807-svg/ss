@@ -230,20 +230,21 @@ console.log('\n--- Suite 5: Multi-Variable Progressive Difficulty Curve ---');
   const weightsOpening = dc.getTierWeights(100, 18.0, 5.0);
   assert(weightsOpening.BEGINNER + weightsOpening.EASY > 0.9, 'Opening tier is dominated by BEGINNER and EASY patterns');
   assert(weightsOpening.HARD === 0.0 && weightsOpening.EXPERT === 0.0, 'No HARD or EXPERT patterns in opening stage');
-  assert(dc.canSpawnMovingTrain(100) === false, 'Moving trains strictly forbidden at 100m (< 240m gate)');
+  assert(dc.canSpawnMovingTrain(79) === false, 'Moving trains remain forbidden inside the protected opening chunk');
+  assert(dc.canSpawnMovingTrain(100) === true, 'Moving trains can be scheduled beyond the existing 80m opening gate');
 
   // Stage 2: Early Run (15-30s / 270-650m)
   const tierEarly = dc.getTargetTier(450, 22.0, 20.0);
   assert(tierEarly === 'MEDIUM', `Early run tier at 450m is ${tierEarly}`);
   const weightsEarly = dc.getTierWeights(450, 22.0, 20.0);
   assert(weightsEarly.EASY + weightsEarly.MEDIUM > 0.8, 'Early run focuses on EASY and MEDIUM patterns');
-  assert(dc.canSpawnMovingTrain(300) === true, 'Moving trains become eligible at >= 240m');
+  assert(dc.canSpawnMovingTrain(300) === true, 'Moving trains remain eligible after the opening');
 
-  // Moving train cooldown gap at early run (75m)
+  // Existing speed-aware scheduling floor: max(40m, runner speed * 1.5s).
   const mockMovingTrain = OBSTACLE_PATTERNS.find((p) => p.obstacles.some((o) => o.type === 'MOVING_TRAIN'))!;
   dc.recordPatternSpawned(mockMovingTrain, 300);
-  assert(dc.canSpawnMovingTrain(350) === false, 'Moving train forbidden within 75m cooldown gap at 350m');
-  assert(dc.canSpawnMovingTrain(385) === true, 'Moving train allowed after 75m cooldown gap at 385m');
+  assert(dc.canSpawnMovingTrain(335) === false, 'Moving train forbidden within the 40m scheduling gap');
+  assert(dc.canSpawnMovingTrain(345) === true, 'Moving train allowed beyond the 40m scheduling gap');
 
   // Stage 3: Mid Run (30-60s / 650-1500m)
   const tierMid = dc.getTargetTier(1000, 27.0, 40.0);

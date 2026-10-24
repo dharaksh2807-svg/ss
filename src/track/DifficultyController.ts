@@ -398,7 +398,8 @@ export class DifficultyController {
     const stage = config.stages.findIndex((entry) => distance < entry.end);
     const hard = this.gameMode === 'HARD';
     const [minGap, maxGap] = hard ? config.stages[stage].hardGap : config.stages[stage].normalGap;
-    return { stage, minGap, maxGap, minimumGap: config.minimumArrivalGap,
+    const [staticMinGap, staticMaxGap] = hard ? config.stages[stage].hardStaticGap : config.stages[stage].normalStaticGap;
+    return { stage, minGap, maxGap, staticMinGap, staticMaxGap, minimumGap: config.minimumArrivalGap,
       rushAllowed: distance >= (hard ? config.rushHardDistance : config.rushNormalDistance) };
   }
 

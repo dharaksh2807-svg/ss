@@ -1431,6 +1431,29 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: 0, zOffset: 42.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' }
     ]
   },
+  // Readable early roof access also fits the reserved moving-traffic corridors.
+  {
+    name: 'RAILWAY_EARLY_ROOF_LINK', difficulty: 'EASY',
+    entryLanes: [-1, 0, 1], exitLanes: [-1, 0, 1], requiredActions: ['LANE_CHANGE'],
+    minReactionDist: 32,
+    safeRoutes: 'Climb the parked train ramp or use either open adjacent track.',
+    obstacles: [{ type: 'TRAIN_RAMP', lane: 0, zOffset: 40, length: 26, hasRamp: true }],
+    collectibles: [{ type: 'COIN', lane: 0, zOffset: 30, count: 7, spacing: 3, yOffset: 5.2, archetype: 'TRAIN_ROOFTOP' }]
+  },
+  {
+    name: 'RAILWAY_EARLY_MIXED_APPROACH', difficulty: 'EASY',
+    entryLanes: [-1, 0, 1], exitLanes: [-1, 0], requiredActions: ['LANE_CHANGE'],
+    minReactionDist: 32,
+    safeRoutes: 'Left track stays clear beside a ramp train and an approaching right-track express.',
+    obstacles: [
+      { type: 'TRAIN_RAMP', lane: 0, zOffset: 40, length: 26, hasRamp: true },
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 48, length: 20, isMoving: true }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 30, count: 7, spacing: 3, yOffset: 5.2, archetype: 'TRAIN_ROOFTOP' },
+      { type: 'COIN', lane: -1, zOffset: 20, count: 9, spacing: 3, archetype: 'STRAIGHT_TRAIL' }
+    ]
+  },
   // Single-lane roof links leave the two scheduled traffic corridors clear.
   {
     name: 'RAILWAY_ROOF_LINK', difficulty: 'MEDIUM',
@@ -1460,6 +1483,14 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
 
 
 ];
+
+// Recombine proven roof geometry with traffic; retain a completely open bypass.
+for (const name of ['RAILWAY_ROOF_LINK', 'RAILWAY_LONG_ROOF_LINK']) {
+  const roof = OBSTACLE_PATTERNS.find((pattern) => pattern.name === name)!;
+  OBSTACLE_PATTERNS.push({ ...roof, name: `${name}_EXPRESS`,
+    obstacles: [...roof.obstacles, { type: 'MOVING_TRAIN', lane: 1, zOffset: 52, length: 22, isMoving: true }],
+    exitLanes: [-1, 0], safeRoutes: 'Climb the existing roof route or use the open left bypass beside approaching traffic.' });
+}
 
 /**
  * Automated Feasibility Validator:
