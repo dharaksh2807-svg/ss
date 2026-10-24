@@ -225,95 +225,112 @@ export class CollectibleFactory {
 
   /**
    * 1. 3D Coin Magnet Collectible:
-   * Prominent, high-contrast red horseshoe magnet with polished silver pole tips,
-   * mini floating attracted golden coins, and magnetic field flux waves.
+   * Bold, high-contrast red horseshoe magnet with distinct North (Red) and South (Blue)
+   * magnetic pole bands, polished silver tips, floating gold coin, and pulsing flux arc.
    */
   public createMagnetPickup(): THREE.Group {
     const group = new THREE.Group();
     group.name = 'PICKUP_MAGNET';
 
     // Main red horseshoe arch
-    const archGeo = new THREE.TorusGeometry(0.36, 0.11, 12, 28, Math.PI);
+    const archGeo = new THREE.TorusGeometry(0.40, 0.12, 14, 32, Math.PI);
     const magRedMat = new THREE.MeshStandardMaterial({
       color: 0xd50000,
       emissive: 0xff1744,
-      emissiveIntensity: 0.35,
-      roughness: 0.22,
-      metalness: 0.7
+      emissiveIntensity: 0.40,
+      roughness: 0.20,
+      metalness: 0.75
     });
     this.curvedManager.applyCurvature(magRedMat);
     const arch = new THREE.Mesh(archGeo, magRedMat);
     arch.name = 'MAGNET_HORSESHOE';
     arch.rotation.z = Math.PI; // Opening points upwards
-    arch.position.y = -0.05;
+    arch.position.y = -0.06;
     group.add(arch);
 
     // Two vertical red legs
-    const legGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.22, 16);
-    [-0.36, 0.36].forEach((lx) => {
+    const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.25, 16);
+    [-0.40, 0.40].forEach((lx) => {
       const leg = new THREE.Mesh(legGeo, magRedMat);
       leg.name = 'MAGNET_LEG';
-      leg.position.set(lx, 0.06, 0);
+      leg.position.set(lx, 0.08, 0);
       group.add(leg);
     });
 
+    // Magnetic Polarity Accent Bands: North (Red/Gold, Left), South (Cyan/Blue, Right)
+    const poleBandGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.07, 16);
+    const northMat = new THREE.MeshStandardMaterial({ color: 0xff1744, emissive: 0xff5252, emissiveIntensity: 0.5 });
+    const southMat = new THREE.MeshStandardMaterial({ color: 0x2979ff, emissive: 0x448aff, emissiveIntensity: 0.5 });
+    this.curvedManager.applyCurvature(northMat);
+    this.curvedManager.applyCurvature(southMat);
+
+    const northBand = new THREE.Mesh(poleBandGeo, northMat);
+    northBand.position.set(-0.40, 0.22, 0);
+    group.add(northBand);
+
+    const southBand = new THREE.Mesh(poleBandGeo, southMat);
+    southBand.position.set(0.40, 0.22, 0);
+    group.add(southBand);
+
     // Silver magnetic pole tips
-    const tipGeo = new THREE.BoxGeometry(0.25, 0.20, 0.25);
+    const tipGeo = new THREE.BoxGeometry(0.28, 0.20, 0.28);
     const tipMat = new THREE.MeshStandardMaterial({
-      color: 0xf5f5f5,
-      roughness: 0.12,
-      metalness: 0.95,
-      emissive: 0x90caf9,
-      emissiveIntensity: 0.25
+      color: 0xffffff,
+      roughness: 0.10,
+      metalness: 0.98,
+      emissive: 0xbbdefb,
+      emissiveIntensity: 0.30
     });
     this.curvedManager.applyCurvature(tipMat);
-    [-0.36, 0.36].forEach((tx) => {
+    [-0.40, 0.40].forEach((tx) => {
       const tip = new THREE.Mesh(tipGeo, tipMat);
       tip.name = 'MAGNET_POLE';
-      tip.position.set(tx, 0.26, 0);
+      tip.position.set(tx, 0.32, 0);
       group.add(tip);
     });
 
     // Magnetic flux arc across tips
-    const fluxGeo = new THREE.TorusGeometry(0.24, 0.03, 8, 20, Math.PI);
+    const fluxGeo = new THREE.TorusGeometry(0.28, 0.035, 8, 24, Math.PI);
     const fluxMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
     const flux = new THREE.Mesh(fluxGeo, fluxMat);
     flux.name = 'MAGNET_FLUX';
     flux.rotation.z = 0;
-    flux.position.set(0, 0.26, 0);
+    flux.position.set(0, 0.32, 0);
     group.add(flux);
 
-    // Mini floating gold coin in flux
-    const miniCoinGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.05, 16);
+    // Mini floating gold coin captured in magnetic field
+    const miniCoinGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.06, 18);
     const miniCoinMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0xff9100,
-      emissiveIntensity: 0.5,
-      roughness: 0.2,
-      metalness: 0.9
+      emissiveIntensity: 0.6,
+      roughness: 0.18,
+      metalness: 0.92
     });
     this.curvedManager.applyCurvature(miniCoinMat);
     const miniCoin = new THREE.Mesh(miniCoinGeo, miniCoinMat);
     miniCoin.name = 'MAGNET_MINI_COIN';
     miniCoin.rotation.x = Math.PI / 2;
-    miniCoin.position.set(0, 0.14, 0.04);
+    miniCoin.position.set(0, 0.16, 0.05);
     group.add(miniCoin);
 
-    // Orbiting cyan attraction beacon
-    const ringGeo = new THREE.TorusGeometry(0.55, 0.03, 8, 24);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x2979ff });
+    // Orbiting cyan magnetic attraction wave
+    const ringGeo = new THREE.TorusGeometry(0.62, 0.035, 8, 28);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.name = 'MAGNET_RING';
-    ring.rotation.x = Math.PI / 2.5;
+    ring.rotation.x = Math.PI / 2.4;
     group.add(ring);
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 
   /**
    * 2. 3D Rocket Jetpack Collectible:
    * Twin industrial rocket cylinders with intake manifold, dual exhaust nozzles,
-   * and glowing twin propellant exhaust plumes.
+   * hazard bands, and glowing twin propellant exhaust plumes.
    */
   public createJetpackPickup(): THREE.Group {
     const group = new THREE.Group();
@@ -321,79 +338,93 @@ export class CollectibleFactory {
 
     const titaniumMat = new THREE.MeshStandardMaterial({
       color: 0x37474f,
-      roughness: 0.35,
-      metalness: 0.85
+      roughness: 0.32,
+      metalness: 0.88
     });
     this.curvedManager.applyCurvature(titaniumMat);
 
     const rocketMat = new THREE.MeshStandardMaterial({
       color: 0xff6d00,
       emissive: 0xff9100,
-      emissiveIntensity: 0.4,
-      roughness: 0.25,
-      metalness: 0.6
+      emissiveIntensity: 0.45,
+      roughness: 0.22,
+      metalness: 0.65
     });
     this.curvedManager.applyCurvature(rocketMat);
+
+    const stripeMat = new THREE.MeshStandardMaterial({
+      color: 0x212121,
+      roughness: 0.3,
+      metalness: 0.5
+    });
+    this.curvedManager.applyCurvature(stripeMat);
 
     const flameMat = new THREE.MeshBasicMaterial({
       color: 0xffd600
     });
 
     // Central mounting chassis
-    const chassisGeo = new THREE.BoxGeometry(0.24, 0.45, 0.14);
+    const chassisGeo = new THREE.BoxGeometry(0.28, 0.50, 0.16);
     const chassis = new THREE.Mesh(chassisGeo, titaniumMat);
     chassis.name = 'JETPACK_CHASSIS';
     group.add(chassis);
 
-    // Center pressure core dial
-    const coreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.16, 12), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+    // Center pressure core gauge
+    const coreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.18, 14), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
     coreMesh.name = 'JETPACK_CORE';
     coreMesh.rotation.x = Math.PI / 2;
     group.add(coreMesh);
 
-    // Twin rocket cylinders & nose cones
-    const tankGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.58, 16);
-    const noseGeo = new THREE.ConeGeometry(0.12, 0.22, 16);
-    const nozzleGeo = new THREE.CylinderGeometry(0.14, 0.09, 0.15, 12);
-    const flameGeo = new THREE.ConeGeometry(0.09, 0.28, 10);
+    // Twin rocket cylinders, hazard stripes & nose cones
+    const tankGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.62, 16);
+    const stripeGeo = new THREE.CylinderGeometry(0.135, 0.135, 0.08, 16);
+    const noseGeo = new THREE.ConeGeometry(0.13, 0.24, 16);
+    const nozzleGeo = new THREE.CylinderGeometry(0.15, 0.10, 0.16, 14);
+    const flameGeo = new THREE.ConeGeometry(0.10, 0.32, 12);
 
-    [-0.20, 0.20].forEach((rx) => {
+    [-0.22, 0.22].forEach((rx) => {
       const tank = new THREE.Mesh(tankGeo, rocketMat);
       tank.name = 'JETPACK_TANK';
       tank.position.set(rx, 0, 0);
       group.add(tank);
 
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.position.set(rx, 0.05, 0);
+      group.add(stripe);
+
       const nose = new THREE.Mesh(noseGeo, titaniumMat);
       nose.name = 'JETPACK_NOSE';
-      nose.position.set(rx, 0.38, 0);
+      nose.position.set(rx, 0.40, 0);
       group.add(nose);
 
       const nozzle = new THREE.Mesh(nozzleGeo, titaniumMat);
       nozzle.name = 'JETPACK_NOZZLE';
-      nozzle.position.set(rx, -0.36, 0);
+      nozzle.position.set(rx, -0.38, 0);
       group.add(nozzle);
 
       const flame = new THREE.Mesh(flameGeo, flameMat);
       flame.name = 'JETPACK_EXHAUST';
       flame.rotation.x = Math.PI; // Points downwards
-      flame.position.set(rx, -0.56, 0);
+      flame.position.set(rx, -0.60, 0);
       group.add(flame);
     });
 
-    // Orbiting flame-amber particle halo
-    const ringGeo = new THREE.TorusGeometry(0.55, 0.03, 8, 24);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6d00 });
+    // Orbiting flame-amber propulsion ring
+    const ringGeo = new THREE.TorusGeometry(0.60, 0.035, 8, 28);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff9100 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.name = 'JETPACK_RING';
     ring.rotation.x = Math.PI / 3;
     group.add(ring);
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 
   /**
    * 3. 3D Super Sneakers Collectible:
-   * Large high-top athletic sneaker with winged golden fins and upward kinetic energy rings.
+   * Large high-top athletic sneaker with winged golden flight fins and upward kinetic energy rings.
    */
   public createSneakersPickup(): THREE.Group {
     const group = new THREE.Group();
@@ -402,91 +433,93 @@ export class CollectibleFactory {
     const redShoeMat = new THREE.MeshStandardMaterial({
       color: 0xff1744,
       emissive: 0xd50000,
-      emissiveIntensity: 0.35,
-      roughness: 0.3,
-      metalness: 0.4
+      emissiveIntensity: 0.38,
+      roughness: 0.28,
+      metalness: 0.45
     });
     this.curvedManager.applyCurvature(redShoeMat);
 
     const whiteRubberMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: 0.2,
-      metalness: 0.1
+      roughness: 0.22,
+      metalness: 0.12
     });
     this.curvedManager.applyCurvature(whiteRubberMat);
 
     const goldWingMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0xffaa00,
-      emissiveIntensity: 0.5,
-      roughness: 0.18,
-      metalness: 0.9
+      emissiveIntensity: 0.55,
+      roughness: 0.16,
+      metalness: 0.92
     });
     this.curvedManager.applyCurvature(goldWingMat);
 
-    // Sole base
-    const soleGeo = new THREE.BoxGeometry(0.32, 0.10, 0.75);
+    // Sole base with tread
+    const soleGeo = new THREE.BoxGeometry(0.36, 0.12, 0.80);
     const sole = new THREE.Mesh(soleGeo, whiteRubberMat);
     sole.name = 'SNEAKER_SOLE';
-    sole.position.set(0, -0.15, 0);
+    sole.position.set(0, -0.16, 0);
     group.add(sole);
 
     // Sneaker high-top body
-    const upperGeo = new THREE.BoxGeometry(0.28, 0.32, 0.42);
+    const upperGeo = new THREE.BoxGeometry(0.30, 0.34, 0.44);
     const upper = new THREE.Mesh(upperGeo, redShoeMat);
     upper.name = 'SNEAKER_UPPER';
-    upper.position.set(0, 0.06, -0.10);
+    upper.position.set(0, 0.07, -0.10);
     group.add(upper);
 
-    // Toe box
-    const toeGeo = new THREE.BoxGeometry(0.28, 0.18, 0.32);
+    // Toe box with rubber cap
+    const toeGeo = new THREE.BoxGeometry(0.30, 0.20, 0.34);
     const toe = new THREE.Mesh(toeGeo, whiteRubberMat);
     toe.name = 'SNEAKER_TOE';
-    toe.position.set(0, -0.01, 0.22);
+    toe.position.set(0, 0.0, 0.23);
     group.add(toe);
 
     // Left and right golden wings
-    const wingGeo = new THREE.ConeGeometry(0.18, 0.45, 4);
+    const wingGeo = new THREE.ConeGeometry(0.20, 0.48, 4);
     const leftWing = new THREE.Mesh(wingGeo, goldWingMat);
     leftWing.name = 'SNEAKER_WING';
     leftWing.rotation.set(0.3, 0, -1.25);
-    leftWing.position.set(-0.24, 0.18, -0.15);
+    leftWing.position.set(-0.26, 0.20, -0.15);
     group.add(leftWing);
 
     const rightWing = new THREE.Mesh(wingGeo, goldWingMat);
     rightWing.name = 'SNEAKER_WING';
     rightWing.rotation.set(0.3, 0, 1.25);
-    rightWing.position.set(0.24, 0.18, -0.15);
+    rightWing.position.set(0.26, 0.20, -0.15);
     group.add(rightWing);
 
     // Kinetic green jump ring underneath
-    const ringGeo = new THREE.TorusGeometry(0.50, 0.035, 8, 24);
+    const ringGeo = new THREE.TorusGeometry(0.55, 0.038, 8, 28);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.name = 'SNEAKER_RING';
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = -0.22;
+    ring.position.y = -0.24;
     group.add(ring);
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 
   /**
    * 4. 3D Score Multiplier Collectible:
-   * Bold golden "2X" dimensional insignia on a high-contrast dark obsidian / electric amber hexagonal plate.
+   * Bold golden "2X" dimensional insignia on a high-contrast dark obsidian hexagonal plate.
    */
   public createMultiplierPickup(): THREE.Group {
     const group = new THREE.Group();
     group.name = 'PICKUP_MULTIPLIER';
 
     // Dark obsidian hexagonal badge plate for maximum contrast
-    const plateGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.09, 6);
+    const plateGeo = new THREE.CylinderGeometry(0.58, 0.58, 0.10, 6);
     const plateMat = new THREE.MeshStandardMaterial({
-      color: 0x181400,
+      color: 0x141002,
       emissive: 0x3e2723,
-      emissiveIntensity: 0.3,
-      roughness: 0.3,
-      metalness: 0.8
+      emissiveIntensity: 0.35,
+      roughness: 0.25,
+      metalness: 0.85
     });
     this.curvedManager.applyCurvature(plateMat);
     const plate = new THREE.Mesh(plateGeo, plateMat);
@@ -495,86 +528,88 @@ export class CollectibleFactory {
     group.add(plate);
 
     // Glowing golden border rim
-    const borderGeo = new THREE.TorusGeometry(0.54, 0.035, 8, 6);
+    const borderGeo = new THREE.TorusGeometry(0.57, 0.04, 8, 6);
     const borderMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0xffaa00,
-      emissiveIntensity: 0.7,
+      emissiveIntensity: 0.75,
       roughness: 0.15,
       metalness: 0.95
     });
     this.curvedManager.applyCurvature(borderMat);
     const border = new THREE.Mesh(borderGeo, borderMat);
     border.name = 'MULTIPLIER_BORDER';
-    border.position.z = 0.05;
+    border.position.z = 0.055;
     group.add(border);
 
     // Bold 3D Golden "2"
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0xff8f00,
-      emissiveIntensity: 0.45,
-      roughness: 0.16,
-      metalness: 0.9
+      emissiveIntensity: 0.55,
+      roughness: 0.15,
+      metalness: 0.92
     });
     this.curvedManager.applyCurvature(goldMat);
 
-    const barGeo = new THREE.BoxGeometry(0.12, 0.38, 0.12);
-    const hBarGeo = new THREE.BoxGeometry(0.32, 0.10, 0.12);
+    const barGeo = new THREE.BoxGeometry(0.13, 0.40, 0.13);
+    const hBarGeo = new THREE.BoxGeometry(0.34, 0.11, 0.13);
 
     // "2" shape
     const top2 = new THREE.Mesh(hBarGeo, goldMat);
     top2.name = 'MULTIPLIER_2X';
-    top2.position.set(-0.20, 0.16, 0.08);
+    top2.position.set(-0.21, 0.17, 0.09);
     group.add(top2);
 
     const diag2 = new THREE.Mesh(barGeo, goldMat);
     diag2.name = 'MULTIPLIER_2X';
     diag2.rotation.z = -0.62;
-    diag2.position.set(-0.20, 0.01, 0.08);
+    diag2.position.set(-0.21, 0.01, 0.09);
     group.add(diag2);
 
     const bot2 = new THREE.Mesh(hBarGeo, goldMat);
     bot2.name = 'MULTIPLIER_2X';
-    bot2.position.set(-0.20, -0.16, 0.08);
+    bot2.position.set(-0.21, -0.17, 0.09);
     group.add(bot2);
 
     // "X" shape
     const diagX1 = new THREE.Mesh(barGeo, goldMat);
     diagX1.name = 'MULTIPLIER_2X';
     diagX1.rotation.z = 0.785;
-    diagX1.position.set(0.20, 0, 0.08);
+    diagX1.position.set(0.21, 0, 0.09);
     group.add(diagX1);
 
     const diagX2 = new THREE.Mesh(barGeo, goldMat);
     diagX2.name = 'MULTIPLIER_2X';
     diagX2.rotation.z = -0.785;
-    diagX2.position.set(0.20, 0, 0.08);
+    diagX2.position.set(0.21, 0, 0.09);
     group.add(diagX2);
 
     // Subtle pitch toward camera
     group.rotation.x = 0.18;
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 
   /**
    * 5. 3D Protective Shield Collectible:
    * Hexagonal cyber-aegis shield with glowing cyan energy border,
-   * metallic boss, and heraldic defensive emblem (visually 100% distinct from horizontal hoverboard).
+   * metallic boss, and heraldic defensive emblem.
    */
   public createShieldPickup(): THREE.Group {
     const group = new THREE.Group();
     group.name = 'PICKUP_SHIELD';
 
     // Hexagonal Shield Body
-    const shieldGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.08, 6);
+    const shieldGeo = new THREE.CylinderGeometry(0.52, 0.52, 0.09, 6);
     const shieldPlateMat = new THREE.MeshStandardMaterial({
       color: 0x01579b,
       emissive: 0x0288d1,
-      emissiveIntensity: 0.4,
-      roughness: 0.2,
-      metalness: 0.8
+      emissiveIntensity: 0.45,
+      roughness: 0.20,
+      metalness: 0.82
     });
     this.curvedManager.applyCurvature(shieldPlateMat);
     const shieldPlate = new THREE.Mesh(shieldGeo, shieldPlateMat);
@@ -583,43 +618,45 @@ export class CollectibleFactory {
     group.add(shieldPlate);
 
     // Outer cyan protective barrier rim
-    const rimGeo = new THREE.TorusGeometry(0.48, 0.04, 8, 6);
+    const rimGeo = new THREE.TorusGeometry(0.52, 0.045, 8, 6);
     const rimMat = new THREE.MeshStandardMaterial({
       color: 0x00e5ff,
       emissive: 0x00e5ff,
-      emissiveIntensity: 0.8,
-      roughness: 0.1,
+      emissiveIntensity: 0.85,
+      roughness: 0.10,
       metalness: 0.95
     });
     this.curvedManager.applyCurvature(rimMat);
     const rim = new THREE.Mesh(rimGeo, rimMat);
     rim.name = 'SHIELD_RING';
-    rim.position.z = 0.04;
+    rim.position.z = 0.045;
     group.add(rim);
 
     // Chrome central shield boss
-    const bossGeo = new THREE.SphereGeometry(0.18, 16, 12);
+    const bossGeo = new THREE.SphereGeometry(0.20, 16, 12);
     const bossMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      metalness: 0.95,
-      roughness: 0.1
+      metalness: 0.96,
+      roughness: 0.10
     });
     this.curvedManager.applyCurvature(bossMat);
     const boss = new THREE.Mesh(bossGeo, bossMat);
     boss.name = 'SHIELD_BOSS';
     boss.scale.set(1.0, 1.0, 0.5);
-    boss.position.z = 0.08;
+    boss.position.z = 0.09;
     group.add(boss);
 
     // Inner bright defense star
-    const starMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.14, 0), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+    const starMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
     starMesh.name = 'SHIELD_STAR';
-    starMesh.position.z = 0.14;
+    starMesh.position.z = 0.15;
     group.add(starMesh);
 
     // Standing vertical heraldic orientation
     group.rotation.x = 0.15;
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 
@@ -632,13 +669,13 @@ export class CollectibleFactory {
     const group = new THREE.Group();
     group.name = 'PICKUP_HOVERBOARD';
 
-    const deckGeo = new THREE.BoxGeometry(0.32, 0.06, 0.85);
+    const deckGeo = new THREE.BoxGeometry(0.35, 0.07, 0.90);
     const deckMat = new THREE.MeshStandardMaterial({
       color: 0x00e676,
       emissive: 0x00c853,
-      emissiveIntensity: 0.5,
-      roughness: 0.25,
-      metalness: 0.7
+      emissiveIntensity: 0.55,
+      roughness: 0.22,
+      metalness: 0.72
     });
     this.curvedManager.applyCurvature(deckMat);
     const deck = new THREE.Mesh(deckGeo, deckMat);
@@ -646,26 +683,28 @@ export class CollectibleFactory {
     group.add(deck);
 
     // Center grip tape pad
-    const gripGeo = new THREE.BoxGeometry(0.24, 0.02, 0.65);
+    const gripGeo = new THREE.BoxGeometry(0.26, 0.02, 0.70);
     const gripMat = new THREE.MeshStandardMaterial({ color: 0x12241b, roughness: 0.9 });
     const grip = new THREE.Mesh(gripGeo, gripMat);
     grip.name = 'HOVERBOARD_GRIP';
-    grip.position.y = 0.035;
+    grip.position.y = 0.04;
     group.add(grip);
 
     // Twin undercarriage repulsor discs
-    const repGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 12);
+    const repGeo = new THREE.CylinderGeometry(0.10, 0.10, 0.045, 14);
     const repMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-    [-0.24, 0.24].forEach((rz) => {
+    [-0.26, 0.26].forEach((rz) => {
       const rep = new THREE.Mesh(repGeo, repMat);
       rep.name = 'HOVERBOARD_THRUSTER';
-      rep.position.set(0, -0.04, rz);
+      rep.position.set(0, -0.045, rz);
       group.add(rep);
     });
 
     // Dynamic 3/4 surfing orientation
     group.rotation.set(0.35, 0.65, 0.20);
 
+    // 1.25x scale for instant long-range legibility
+    group.scale.set(1.25, 1.25, 1.25);
     return group;
   }
 

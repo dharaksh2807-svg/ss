@@ -228,34 +228,63 @@ html, body {
   transform: scale(0.95);
 }
 
-/* Powerup Duration Stack — positioned on left screen margin to preserve clear forward track sightlines */
+/* Upper-Center Powerup Duration Cluster — horizontally centered between coin badge and score */
 .hud-powerups-stack {
   position: absolute;
-  top: 90px;
-  left: 20px;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 200px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  max-width: min(660px, 92vw);
   pointer-events: none;
-  z-index: 100;
+  z-index: 120;
 }
 
 .powerup-badge {
-  background: rgba(15, 20, 35, 0.88);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  opacity: 1;
+  background: rgba(13, 18, 32, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 6px 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  min-width: 170px;
+  max-width: 215px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.powerup-badge.animate-pop-in {
+  animation: powerupPopIn 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes powerupPopIn {
+  0% { transform: scale(0.65) translateY(-8px); opacity: 0; }
+  100% { transform: scale(1.0) translateY(0); opacity: 1; }
+}
+
+.powerup-badge.powerup-refreshed {
+  animation: powerupRefreshFlash 0.4s ease-out;
+}
+
+@keyframes powerupRefreshFlash {
+  0% { transform: scale(1.0); filter: brightness(1.0); }
+  50% { transform: scale(1.08); filter: brightness(1.7); box-shadow: 0 0 24px #ffd700; }
+  100% { transform: scale(1.0); filter: brightness(1.0); }
 }
 
 .powerup-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -265,15 +294,15 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
 .powerup-icon svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
 }
 
 .powerup-lvl-badge {
@@ -282,7 +311,7 @@ html, body {
   font-weight: 800;
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
   letter-spacing: 0.5px;
   margin-left: 4px;
@@ -293,17 +322,29 @@ html, body {
   flex: 1;
   margin-left: 6px;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-display, 'Lilita One', 'Montserrat', sans-serif);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
 }
 
 .powerup-timer {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-family: var(--font-display, 'Lilita One', 'Montserrat', sans-serif);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  min-width: 38px;
+  text-align: right;
+  line-height: 1;
+  margin-left: 6px;
 }
 
 .powerup-bar-track {
   width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -311,72 +352,95 @@ html, body {
 .powerup-bar-fill {
   height: 100%;
   border-radius: 3px;
-  transition: width 0.1s linear;
+  transition: width 0.08s linear;
 }
 
 /* Powerup Theme Variants */
 .powerup-magnet {
-  border-color: rgba(255, 71, 87, 0.5);
+  border-color: rgba(255, 23, 68, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 23, 68, 0.25);
 }
 .powerup-magnet .powerup-name, .powerup-magnet .powerup-timer {
-  color: #ff4757;
+  color: #ff1744;
+  text-shadow: 0 0 8px rgba(255, 23, 68, 0.4);
 }
 .powerup-magnet .powerup-bar-fill {
-  background: linear-gradient(90deg, #ff4757, #ff6b81);
+  background: linear-gradient(90deg, #d50000, #ff1744, #ff5252);
 }
 
 .powerup-sneakers {
-  border-color: rgba(46, 213, 115, 0.5);
+  border-color: rgba(0, 230, 118, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 230, 118, 0.25);
 }
 .powerup-sneakers .powerup-name, .powerup-sneakers .powerup-timer {
-  color: #2ed573;
+  color: #00e676;
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
 }
 .powerup-sneakers .powerup-bar-fill {
-  background: linear-gradient(90deg, #2ed573, #7bed9f);
+  background: linear-gradient(90deg, #00c853, #00e676, #69f0ae);
 }
 
 .powerup-multiplier {
-  border-color: rgba(255, 190, 38, 0.5);
+  border-color: rgba(255, 215, 0, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 215, 0, 0.25);
 }
 .powerup-multiplier .powerup-name, .powerup-multiplier .powerup-timer {
-  color: #ffbe26;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
 }
 .powerup-multiplier .powerup-bar-fill {
-  background: linear-gradient(90deg, #ffbe26, #f1c40f);
+  background: linear-gradient(90deg, #ff8f00, #ffd700, #fff59d);
 }
 
 .powerup-hoverboard {
-  border-color: rgba(0, 210, 211, 0.5);
+  border-color: rgba(0, 245, 212, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 245, 212, 0.25);
 }
 .powerup-hoverboard .powerup-name, .powerup-hoverboard .powerup-timer {
-  color: #00d2d3;
+  color: #00f5d4;
+  text-shadow: 0 0 8px rgba(0, 245, 212, 0.4);
 }
 .powerup-hoverboard .powerup-bar-fill {
-  background: linear-gradient(90deg, #00d2d3, #48dbfb);
+  background: linear-gradient(90deg, #00bfa5, #00f5d4, #64ffda);
 }
 
 .powerup-jetpack {
-  border-color: rgba(255, 109, 0, 0.6);
+  border-color: rgba(255, 145, 0, 0.6);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 145, 0, 0.3);
 }
 .powerup-jetpack .powerup-name, .powerup-jetpack .powerup-timer {
   color: #ff9100;
+  text-shadow: 0 0 8px rgba(255, 145, 0, 0.4);
 }
 .powerup-jetpack .powerup-bar-fill {
-  background: linear-gradient(90deg, #ff6d00, #ffab00);
+  background: linear-gradient(90deg, #e65100, #ff9100, #ffcc80);
 }
 
 .powerup-shield {
   border-color: rgba(0, 229, 255, 0.6);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 229, 255, 0.3);
 }
 .powerup-shield .powerup-name, .powerup-shield .powerup-timer {
   color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
 }
 .powerup-shield .powerup-bar-fill {
-  background: linear-gradient(90deg, #00b0ff, #80d8ff);
+  background: linear-gradient(90deg, #0288d1, #00e5ff, #b3e5fc);
 }
 
+/* Near-Expiration States (<= 3s warning, <= 1s critical) */
 .powerup-expiring {
-  animation: pulseExpiring 0.35s infinite alternate ease-in-out;
+  animation: pulseExpiring 0.40s infinite alternate ease-in-out;
+  border-color: #ff5252 !important;
+}
+
+.powerup-expiring .powerup-bar-fill {
+  background: linear-gradient(90deg, #d50000, #ff5252) !important;
+}
+
+.powerup-expiring .powerup-timer {
+  color: #ff5252 !important;
+  text-shadow: 0 0 10px rgba(255, 82, 82, 0.8) !important;
 }
 
 @keyframes pulseExpiring {
@@ -385,10 +449,91 @@ html, body {
     box-shadow: 0 0 6px rgba(255, 50, 50, 0.4);
   }
   to {
-    transform: scale(1.03);
-    box-shadow: 0 0 14px rgba(255, 50, 50, 0.85);
-    border-color: #ff1744;
+    transform: scale(1.04);
+    box-shadow: 0 0 16px rgba(255, 50, 50, 0.9);
   }
+}
+
+.powerup-critical {
+  animation: pulseCritical 0.22s infinite alternate ease-in-out !important;
+  border-color: #ff1744 !important;
+}
+
+@keyframes pulseCritical {
+  from {
+    transform: scale(0.98);
+    box-shadow: 0 0 10px rgba(255, 23, 68, 0.7);
+  }
+  to {
+    transform: scale(1.06);
+    box-shadow: 0 0 22px rgba(255, 23, 68, 1.0);
+  }
+}
+
+/* Instant Pickup Confirmation Banner (Upper-Center Notification) */
+.hud-pickup-toast {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 15, 30, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid #00f5d4;
+  border-radius: 24px;
+  padding: 6px 16px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 245, 212, 0.35);
+  pointer-events: none;
+  z-index: 125;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-pickup-toast.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px) scale(0.9);
+  pointer-events: none;
+}
+
+.hud-pickup-toast .toast-icon-wrap {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hud-pickup-toast .toast-icon-wrap svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.hud-pickup-toast .toast-text-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.hud-pickup-toast .toast-title {
+  font-family: var(--font-display, 'Lilita One', 'Montserrat', sans-serif);
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.hud-pickup-toast .toast-desc {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #00f5d4;
+  letter-spacing: 0.02em;
 }
 
 /* Floating Gameplay Feedback Badges (Streak, Precision, Near-miss) */
@@ -4199,17 +4344,30 @@ kbd {
 /* 9. Mobile Responsive Layout (< 768px) */
 @media (max-width: 768px) {
   .hud-powerups-stack {
-    top: 74px;
-    left: 10px;
-    width: 170px;
+    top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 94vw;
     gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .hud-pickup-toast {
+    top: max(96px, calc(env(safe-area-inset-top, 0px) + 90px));
+    max-width: 90vw;
+    padding: 5px 12px;
   }
   .powerup-badge {
+    min-width: 120px;
+    max-width: 145px;
     padding: 4px 8px;
     border-radius: 10px;
   }
   .powerup-name {
     font-size: 0.68rem;
+  }
+  .powerup-timer {
+    font-size: 0.88rem;
   }
   .first-use-guidance-toast {
     max-width: 280px;

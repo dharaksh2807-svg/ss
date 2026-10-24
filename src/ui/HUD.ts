@@ -4,10 +4,21 @@ import { HoverboardManager } from '../hoverboard/HoverboardManager';
 
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GraphicsManager } from '../scene/GraphicsManager';
+import { getPowerupConfig } from './PowerupRegistry';
 import { getPowerupIconSvg } from './IconCatalog';
 import { FirstUseGuidance } from './FirstUseGuidance';
 import { UpgradeManager, UpgradablePowerup } from '../player/UpgradeManager';
 import { CharacterPortraitRenderer } from './CharacterPortraitRenderer';
+
+interface PowerupDOMItem {
+  key: string;
+  badgeEl: HTMLDivElement;
+  fillEl: HTMLDivElement;
+  timerEl: HTMLElement;
+  nameEl: HTMLElement;
+  isExpiring: boolean;
+  isCritical: boolean;
+}
 
 export class HUD {
   private container: HTMLDivElement;
@@ -33,6 +44,11 @@ export class HUD {
   private missionTickerEl: HTMLElement | null = null;
   private fpsCounterEl: HTMLElement | null = null;
   private fpsUpdateTimer: number = 0;
+
+  // Cached DOM elements for power-up duration cards to avoid 60fps innerHTML rebuilds
+  private activePowerupDOMs: Map<string, PowerupDOMItem> = new Map();
+  private pickupToastEl: HTMLElement | null = null;
+  private pickupToastTimeout: number | null = null;
 
   private completedCelebrationMissionId: string | null = null;
   private completedCelebrationTimer: number = 0;
@@ -157,13 +173,31 @@ export class HUD {
       if (guidance.isFirst && guidance.info && guidance.iconSvg) {
         this.showFirstUseToast(guidance.iconSvg, guidance.info.title, guidance.info.shortDesc);
       } else {
-        const name = type === 'MAGNET' ? 'COIN MAGNET'
-          : (type === 'JETPACK' ? 'ROCKET JETPACK'
-          : (type === 'SNEAKERS' ? 'SUPER SNEAKERS'
-          : (type === 'MULTIPLIER' ? '2X MULTIPLIER'
-          : (type === 'SHIELD' ? 'PROTECTIVE SHIELD' : 'HOVERBOARD'))));
-        this.showFeedbackBadge(`${name} ACTIVE!`, 'precision');
+        const config = getPowerupConfig(type);
+        this.showPickupToast(type);
+        this.showFeedbackBadge(`${config.title} ACTIVE!`, 'precision');
       }
+      this.triggerBadgeRefresh(type);
+    });
+
+    bus.on(EVENTS.HOVERBOARD_ACTIVATED, (boardDef?: any) => {
+      const guidance = FirstUseGuidance.getInstance().checkAndTriggerGuidance('HOVERBOARD');
+      const boardName = boardDef?.name || 'HOVERBOARD';
+      if (guidance.isFirst && guidance.info && guidance.iconSvg) {
+        this.showFirstUseToast(guidance.iconSvg, guidance.info.title, guidance.info.shortDesc);
+      } else {
+        this.showPickupToast('HOVERBOARD', `${boardName.toUpperCase()} ACTIVE`, 'Crash Immunity & Speed Boost');
+        this.showFeedbackBadge(`${boardName.toUpperCase()} READY!`, 'precision');
+      }
+      this.triggerBadgeRefresh('HOVERBOARD');
+    });
+
+    bus.on(EVENTS.GAME_OVER, () => {
+      this.clearPowerupCards();
+    });
+
+    bus.on(EVENTS.GAME_RESTART, () => {
+      this.clearPowerupCards();
     });
 
     bus.on('CHRONO_ORB_COLLECTED', (sec: number = 5) => {
@@ -282,94 +316,155 @@ export class HUD {
       }
     }
 
-    // 3. Render active powerup duration bars & active hoverboard card
+    // 3. Render active powerup duration bars & active hoverboard card using cached DOM elements
     const active = this.powerupManager.getActivePowerups().filter(p => p.type !== 'HOVERBOARD');
     const isHoverboardActive = this.hoverboardManager.isBoardActive();
     const activeBoard = this.hoverboardManager.getActiveBoard();
 
-    if (active.length === 0 && !isHoverboardActive) {
-      this.powerupContainer.innerHTML = '';
-      return;
-    }
+    const activeKeys = new Set<string>();
 
-    let html = '';
+    const formatTimer = (sec: number): string => {
+      if (sec <= 1.0) {
+        return `${Math.max(0, sec).toFixed(1)}s`;
+      }
+      if (sec <= 3.0) {
+        return `${sec.toFixed(1)}s`;
+      }
+      return `${Math.ceil(sec)}s`;
+    };
 
-    // Active Hoverboard Card at top of stack
+    // Active Hoverboard Card at top of stack (authoritative state from HoverboardManager)
     if (isHoverboardActive && activeBoard) {
+      activeKeys.add('HOVERBOARD');
       const remaining = this.hoverboardManager.getRemaining();
       const pct = Math.max(0, Math.min(100, this.hoverboardManager.getProgress() * 100));
       const isExpiring = remaining <= 3.0;
-      const expiringClass = isExpiring ? 'powerup-expiring' : '';
-      const timerDisplay = isExpiring ? `${remaining.toFixed(1)}s` : `${Math.ceil(remaining)}s`;
-      const boardIcon = getPowerupIconSvg('HOVERBOARD', 22);
+      const isCritical = remaining <= 1.0;
+      const timerDisplay = formatTimer(remaining);
 
-      html += `
-        <div class="powerup-badge powerup-hoverboard powerup-${activeBoard.id} ${expiringClass}">
+      let item = this.activePowerupDOMs.get('HOVERBOARD');
+      if (item) {
+        item.fillEl.style.width = `${pct}%`;
+        if (item.timerEl.textContent !== timerDisplay) {
+          item.timerEl.textContent = timerDisplay;
+        }
+        item.badgeEl.classList.toggle('powerup-expiring', isExpiring);
+        item.badgeEl.classList.toggle('powerup-critical', isCritical);
+        item.isExpiring = isExpiring;
+        item.isCritical = isCritical;
+      } else {
+        const config = getPowerupConfig('HOVERBOARD');
+        const badgeEl = document.createElement('div');
+        badgeEl.className = `powerup-badge powerup-hoverboard powerup-${activeBoard.id} animate-pop-in`;
+        if (isExpiring) badgeEl.classList.add('powerup-expiring');
+        if (isCritical) badgeEl.classList.add('powerup-critical');
+
+        badgeEl.innerHTML = `
           <div class="powerup-header">
-            <span class="powerup-icon">${boardIcon}</span>
+            <span class="powerup-icon">${config.iconSvg}</span>
             <span class="powerup-name">${activeBoard.name.toUpperCase()} <span class="powerup-lvl-badge">BOARD</span></span>
             <span class="powerup-timer">${timerDisplay}</span>
           </div>
           <div class="powerup-bar-track">
             <div class="powerup-bar-fill" style="width: ${pct}%"></div>
           </div>
-        </div>
-      `;
+        `;
+        this.powerupContainer.appendChild(badgeEl);
+
+        const fillEl = badgeEl.querySelector('.powerup-bar-fill') as HTMLDivElement;
+        const timerEl = badgeEl.querySelector('.powerup-timer') as HTMLElement;
+        const nameEl = badgeEl.querySelector('.powerup-name') as HTMLElement;
+
+        item = {
+          key: 'HOVERBOARD',
+          badgeEl,
+          fillEl,
+          timerEl,
+          nameEl,
+          isExpiring,
+          isCritical
+        };
+        this.activePowerupDOMs.set('HOVERBOARD', item);
+      }
     }
 
     const upgradeManager = UpgradeManager.getInstance();
 
     for (const p of active) {
+      activeKeys.add(p.type);
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
-      const icon = getPowerupIconSvg(p.type, 22);
-      let name = 'POWER-UP';
-      let colorClass = 'powerup-default';
-
-      if (p.type === 'MAGNET') {
-        name = 'MAGNET';
-        colorClass = 'powerup-magnet';
-      } else if (p.type === 'JETPACK') {
-        name = 'JETPACK';
-        colorClass = 'powerup-jetpack';
-      } else if (p.type === 'SNEAKERS') {
-        name = 'SNEAKERS';
-        colorClass = 'powerup-sneakers';
-      } else if (p.type === 'MULTIPLIER') {
-        name = 'SCORE 2X';
-        colorClass = 'powerup-multiplier';
-      } else if (p.type === 'SHIELD') {
-        name = 'SHIELD';
-        colorClass = 'powerup-shield';
-      }
-
-      let lvlBadge = '';
-      try {
-        const lvl = upgradeManager.getLevel(p.type as UpgradablePowerup);
-        if (lvl) {
-          lvlBadge = `<span class="powerup-lvl-badge">${lvl >= 5 ? 'MAX' : `LV.${lvl}`}</span>`;
-        }
-      } catch {
-        // level optional
-      }
-
       const isExpiring = p.remaining <= 3.0;
-      const expiringClass = isExpiring ? 'powerup-expiring' : '';
-      const timerDisplay = isExpiring ? `${p.remaining.toFixed(1)}s` : `${Math.ceil(p.remaining)}s`;
+      const isCritical = p.remaining <= 1.0;
+      const timerDisplay = formatTimer(p.remaining);
 
-      html += `
-        <div class="powerup-badge ${colorClass} ${expiringClass}">
+      let item = this.activePowerupDOMs.get(p.type);
+      if (item) {
+        item.fillEl.style.width = `${pct}%`;
+        if (item.timerEl.textContent !== timerDisplay) {
+          item.timerEl.textContent = timerDisplay;
+        }
+        item.badgeEl.classList.toggle('powerup-expiring', isExpiring);
+        item.badgeEl.classList.toggle('powerup-critical', isCritical);
+        item.isExpiring = isExpiring;
+        item.isCritical = isCritical;
+      } else {
+        const config = getPowerupConfig(p.type);
+        let lvlBadge = '';
+        try {
+          const lvl = upgradeManager.getLevel(p.type as UpgradablePowerup);
+          if (lvl) {
+            lvlBadge = `<span class="powerup-lvl-badge">${lvl >= 5 ? 'MAX' : `LV.${lvl}`}</span>`;
+          }
+        } catch {
+          // level optional
+        }
+
+        const badgeEl = document.createElement('div');
+        badgeEl.className = `powerup-badge ${config.badgeClass} animate-pop-in`;
+        if (isExpiring) badgeEl.classList.add('powerup-expiring');
+        if (isCritical) badgeEl.classList.add('powerup-critical');
+
+        badgeEl.innerHTML = `
           <div class="powerup-header">
-            <span class="powerup-icon">${icon}</span>
-            <span class="powerup-name">${name} ${lvlBadge}</span>
+            <span class="powerup-icon">${config.iconSvg}</span>
+            <span class="powerup-name">${config.title} ${lvlBadge}</span>
             <span class="powerup-timer">${timerDisplay}</span>
           </div>
           <div class="powerup-bar-track">
             <div class="powerup-bar-fill" style="width: ${pct}%"></div>
           </div>
-        </div>
-      `;
+        `;
+        this.powerupContainer.appendChild(badgeEl);
+
+        const fillEl = badgeEl.querySelector('.powerup-bar-fill') as HTMLDivElement;
+        const timerEl = badgeEl.querySelector('.powerup-timer') as HTMLElement;
+        const nameEl = badgeEl.querySelector('.powerup-name') as HTMLElement;
+
+        item = {
+          key: p.type,
+          badgeEl,
+          fillEl,
+          timerEl,
+          nameEl,
+          isExpiring,
+          isCritical
+        };
+        this.activePowerupDOMs.set(p.type, item);
+      }
     }
-    this.powerupContainer.innerHTML = html;
+
+    // Clean up expired items cleanly without rebuilding the entire stack
+    for (const [key, item] of this.activePowerupDOMs.entries()) {
+      if (!activeKeys.has(key)) {
+        if (item.badgeEl.parentElement === this.powerupContainer) {
+          this.powerupContainer.removeChild(item.badgeEl);
+        }
+        this.activePowerupDOMs.delete(key);
+      }
+    }
+
+    // Adapt layout style when 3 or more are active simultaneously
+    this.powerupContainer.classList.toggle('powerup-multi-3', activeKeys.size >= 3);
   }
 
   public showFeedbackBadge(text: string, type: 'streak' | 'precision' | 'nearmiss' = 'precision'): void {
@@ -422,7 +517,7 @@ export class HUD {
     this.scoreEl.textContent = '0';
     this.coinEl.textContent = '0';
     this.multiplierEl.textContent = '1X';
-    this.powerupContainer.innerHTML = '';
+    this.clearPowerupCards();
     if (this.feedbackStack) {
       this.feedbackStack.innerHTML = '';
     }
@@ -436,6 +531,63 @@ export class HUD {
     if (this.missionTickerEl) {
       this.missionTickerEl.classList.remove('ticker-celebrating');
     }
+  }
+
+  public clearPowerupCards(): void {
+    for (const item of this.activePowerupDOMs.values()) {
+      if (item.badgeEl.parentElement === this.powerupContainer) {
+        this.powerupContainer.removeChild(item.badgeEl);
+      }
+    }
+    this.activePowerupDOMs.clear();
+    this.powerupContainer.innerHTML = '';
+    this.powerupContainer.classList.remove('powerup-multi-3');
+    if (this.pickupToastEl) {
+      this.pickupToastEl.classList.add('hidden');
+    }
+  }
+
+  public triggerBadgeRefresh(key: string): void {
+    const item = this.activePowerupDOMs.get(key);
+    if (item) {
+      item.badgeEl.classList.remove('powerup-refreshed');
+      void item.badgeEl.offsetWidth;
+      item.badgeEl.classList.add('powerup-refreshed');
+    }
+  }
+
+  public showPickupToast(type: PowerupType, customTitle?: string, customDesc?: string): void {
+    if (!this.pickupToastEl) {
+      this.pickupToastEl = document.getElementById('hud-pickup-toast');
+    }
+    if (!this.pickupToastEl) return;
+
+    const config = getPowerupConfig(type);
+    const title = customTitle || `${config.title} ACTIVATED`;
+    const desc = customDesc || config.tagline;
+
+    this.pickupToastEl.innerHTML = `
+      <div class="toast-icon-wrap">${config.iconSvg}</div>
+      <div class="toast-text-col">
+        <span class="toast-title">${title}</span>
+        <span class="toast-desc">${desc}</span>
+      </div>
+    `;
+
+    this.pickupToastEl.style.borderColor = config.accentColor;
+    this.pickupToastEl.style.boxShadow = `0 8px 26px rgba(0, 0, 0, 0.6), 0 0 16px ${config.glowColor}`;
+    this.pickupToastEl.classList.remove('hidden');
+
+    if (this.pickupToastTimeout !== null) {
+      clearTimeout(this.pickupToastTimeout);
+    }
+
+    this.pickupToastTimeout = window.setTimeout(() => {
+      if (this.pickupToastEl) {
+        this.pickupToastEl.classList.add('hidden');
+      }
+      this.pickupToastTimeout = null;
+    }, 1100);
   }
 
   public setMode(mode: 'BEGINNER' | 'EASY' | 'HARD' | 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | string): void {
