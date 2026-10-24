@@ -335,10 +335,15 @@ console.log('\n--- Suite 10: Fast Dropping Onto Train Roof ---');
 
   stepGame(player, trackManager, 0.15, 60);
 
-  assert(player.state === 'ON_TRAIN', `Fast drop captured by roof collider (got ${player.state})`);
+  assert(player.isSliding === true, 'Fast drop initiates immediate slide upon rooftop touchdown');
+  assert(player.state === 'SLIDE', `Fast drop captured by roof collider and transitions to SLIDE (got ${player.state})`);
   assert(player.getSupportSurface() === 'TRAIN_ROOF', 'Support surface is TRAIN_ROOF');
   assert(Math.abs(player.position.y - 4.35) < 0.05, `Position snapped cleanly to roof (got ${player.position.y.toFixed(2)})`);
   assert(player.state !== 'CRASH', 'Fast drop onto roof did not crash');
+
+  // Complete slide on roof
+  stepGame(player, trackManager, CONSTANTS.SLIDE_DURATION, 60);
+  assert(player.state === 'ON_TRAIN', 'Player returns to ON_TRAIN after rooftop slide completes');
 }
 
 // =========================================================================

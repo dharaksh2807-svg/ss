@@ -79,6 +79,7 @@ export class Player {
   public wasFastDropLand: boolean = false;
 
   public isSliding: boolean = false;
+  public pendingSlideOnLanding: boolean = false;
   private slideTimer: number = 0;
   public isUnderOverheadObstacle: boolean = false;
 
@@ -152,6 +153,7 @@ export class Player {
     this.jumpPhase = 'NONE';
     this.landingTimer = 0;
     this.wasFastDropLand = false;
+    this.pendingSlideOnLanding = false;
     this.isSliding = false;
     this.slideTimer = 0;
     this.isUnderOverheadObstacle = false;
@@ -280,6 +282,7 @@ export class Player {
       this.isSliding = false;
       this.slideTimer = 0;
     }
+    this.pendingSlideOnLanding = false;
 
     this.isJumping = true;
     this.isFastDropping = false;
@@ -307,12 +310,16 @@ export class Player {
   }
 
   public slide(): void {
-    if (this.isJumping) {
-      // Fast drop / dive-down mechanic when pressing down while airborne!
-      this.verticalVelocity = CONSTANTS.FAST_DROP_SPEED;
-      this.isFastDropping = true;
-      this.jumpPhase = 'FAST_DROP';
-      this.eventBus.emit(EVENTS.FAST_DROP);
+    if (this.isJumping || this.position.y > this.groundY + 0.05) {
+      // Record intended slide upon landing and engage fast-drop descent immediately
+      this.pendingSlideOnLanding = true;
+      if (!this.isFastDropping) {
+        this.verticalVelocity = CONSTANTS.FAST_DROP_SPEED;
+        this.isFastDropping = true;
+        this.isJumping = true;
+        this.jumpPhase = 'FAST_DROP';
+        this.eventBus.emit(EVENTS.FAST_DROP);
+      }
       return;
     }
 
@@ -322,10 +329,26 @@ export class Player {
       return;
     }
 
+    this.pendingSlideOnLanding = false;
     this.isSliding = true;
     this.lastSlideDist = this.distanceTraveled;
     this.slideTimer = CONSTANTS.SLIDE_DURATION;
     this.state = 'SLIDE';
+    this.updateCollider();
+    this.eventBus.emit(EVENTS.SLIDE);
+  }
+
+  /**
+   * Authoritatively transitions from an airborne fast-drop to an immediate ground/rooftop slide upon valid touchdown.
+   */
+  private executeLandingSlide(): void {
+    this.pendingSlideOnLanding = false;
+    this.isSliding = true;
+    this.lastSlideDist = this.distanceTraveled;
+    this.slideTimer = CONSTANTS.SLIDE_DURATION;
+    this.state = 'SLIDE';
+    this.jumpPhase = 'NONE';
+    this.landingTimer = 0;
     this.updateCollider();
     this.eventBus.emit(EVENTS.SLIDE);
   }
@@ -425,6 +448,7 @@ export class Player {
           this.isJumping = false;
           this.isFastDropping = false;
           this.isSliding = false;
+          this.pendingSlideOnLanding = false;
           this.jetpackStartY = this.position.y;
           this.jetpackTakeoffTimer = 0;
           this.flightAnimTime = 0;
@@ -440,6 +464,7 @@ export class Player {
         this.isJumping = false;
         this.isFastDropping = false;
         this.isSliding = false;
+        this.pendingSlideOnLanding = false;
         this.jetpackStartY = this.position.y;
         this.jetpackTakeoffTimer = 0;
         this.flightAnimTime = 0;
@@ -576,6 +601,10 @@ export class Player {
             position: this.position
           });
           this.eventBus.emit(EVENTS.JUMP_COMPLETED);
+
+          if (this.pendingSlideOnLanding) {
+            this.executeLandingSlide();
+          }
         }
       } else {
         // Landing absorption timer decay
@@ -623,8 +652,15 @@ export class Player {
         } else {
           this.isSliding = false;
           this.slideTimer = 0;
+          this.pendingSlideOnLanding = false;
           if (!this.isJumping && this.state !== 'JETPACK') {
-            this.state = this.supportSurface === 'TRAIN_ROOF' ? 'ON_TRAIN' : 'RUN';
+            if (this.supportSurface === 'TRAIN_ROOF') {
+              this.state = 'ON_TRAIN';
+            } else if (this.supportSurface === 'RAMP') {
+              this.state = 'CLIMBING';
+            } else {
+              this.state = 'RUN';
+            }
           }
           this.eventBus.emit(EVENTS.SLIDE_COMPLETED);
         }
@@ -729,7 +765,12 @@ export class Player {
       position: this.position
     });
     this.eventBus.emit(EVENTS.JUMP_COMPLETED);
-    this.updateCollider();
+
+    if (this.pendingSlideOnLanding) {
+      this.executeLandingSlide();
+    } else {
+      this.updateCollider();
+    }
   }
 
   public isInvulnerable(): boolean {
@@ -752,6 +793,7 @@ export class Player {
     this.isJumping = false;
     this.isFastDropping = false;
     this.jumpPhase = 'NONE';
+    this.pendingSlideOnLanding = false;
     this.isSliding = false;
     this.slideTimer = 0;
     this.verticalVelocity = 0;
@@ -796,6 +838,8 @@ export class Player {
       return false; // Absorbed by hoverboard!
     }
 
+    this.pendingSlideOnLanding = false;
+    this.isFastDropping = false;
     this.state = 'CRASH';
     this.eventBus.emit(EVENTS.CRASH, reason);
     return true; // Fatal crash
@@ -861,6 +905,7 @@ export class Player {
       this.isJumping = false;
       this.isFastDropping = false;
       this.isSliding = false;
+      this.pendingSlideOnLanding = false;
       this.jetpackStartY = this.position.y;
       this.jetpackTakeoffTimer = 0;
       this.flightAnimTime = 0;

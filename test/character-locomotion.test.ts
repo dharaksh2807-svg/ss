@@ -265,13 +265,18 @@ console.log('\n--- Test 6: Train-Roof Landing, Rooftop Jump & Stepping Off ---')
   assert(player.position.y === roofY, 'Player height resolved cleanly to roofY');
   assert(player.state === 'ON_TRAIN', 'State returned to ON_TRAIN');
 
-  // Fast drop on train roof
+  // Fast drop on train roof -> automatic slide upon landing combo!
   player.handleInput('UP');
   stepPlayer(player, 0.20, 60);
   player.handleInput('DOWN'); // fast drop
   stepPlayer(player, 0.15, 60);
   assert(player.position.y === roofY, `Fast drop landed cleanly on roof (Y = ${player.position.y}m)`);
-  assert(player.state === 'ON_TRAIN', 'State remained ON_TRAIN after rooftop fast drop');
+  assert(player.isSliding === true, 'Player automatically slides upon landing on train roof');
+  assert(player.state === 'SLIDE', 'State transitions to SLIDE upon rooftop landing');
+
+  // Complete slide duration on roof
+  stepPlayer(player, CONSTANTS.SLIDE_DURATION, 60);
+  assert(player.state === 'ON_TRAIN', 'State returned to ON_TRAIN after rooftop slide completed');
 
   // Step off train roof into air (simulate stepping beyond train edge)
   player.setGroundHeight(CONSTANTS.PLAYER_BASE_Y);
