@@ -10,7 +10,12 @@ export type CoinPatternArchetype =
   | 'TRAIN_ROOFTOP'
   | 'RISK_REWARD'
   | 'POST_OBSTACLE'
-  | 'JETPACK_AERIAL';
+  | 'JETPACK_AERIAL'
+  | 'RAMP_ASCENT'
+  | 'ROOFTOP_RUN'
+  | 'CARRIAGE_GAP_JUMP'
+  | 'DESCENT_TRAIL'
+  | 'POST_ROOFTOP_REWARD';
 
 export interface PatternCollectible {
   type: CollectibleType;
@@ -337,6 +342,76 @@ export class CoinPatternLibrary {
   }
 
   /**
+   * Create Stable Train Rooftop Run: Horizontal coin trail at 5.20m along carriage catwalk
+   */
+  public static createRooftopRun(
+    lane: LaneIndex,
+    startZ: number,
+    count: number = 6,
+    spacing: number = 2.2
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(startZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      count,
+      spacing,
+      archetype: 'TRAIN_ROOFTOP',
+      supportSurface: 'TRAIN_ROOF'
+    };
+  }
+
+  /**
+   * Create Carriage Gap Jump Arc: Ballistic jump arc bridging across gap between uncoupled carriages
+   */
+  public static createCarriageGapJumpArc(
+    lane: LaneIndex,
+    gapZ: number,
+    count: number = 5,
+    spacing: number = 2.0
+  ): PatternCollectible {
+    const arcSpan = (count - 1) * spacing;
+    const startZ = Math.max(0, gapZ - arcSpan / 2);
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(startZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y + CONSTANTS.JUMP_HEIGHT,
+      startYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      endYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      count,
+      spacing,
+      isArc: true,
+      archetype: 'JUMP_ARC',
+      supportSurface: 'TRAIN_ROOF',
+      landingSurface: 'TRAIN_ROOF',
+      jumpType: 'NORMAL'
+    };
+  }
+
+  /**
+   * Create Post-Rooftop Reward Trail: Rewarding coin cluster on railway ground following successful roof traversal
+   */
+  public static createPostRooftopReward(
+    lane: LaneIndex,
+    exitZ: number,
+    count: number = 4,
+    spacing: number = 2.0
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(exitZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_GROUND_Y,
+      count,
+      spacing,
+      archetype: 'POST_ROOFTOP_REWARD',
+      supportSurface: 'GROUND'
+    };
+  }
+
+  /**
    * 3. Slide Guidance: Low-profile trail (0.60m) leading into, under, and out of a slide obstacle.
    */
   public static createSlideGuidance(
@@ -556,10 +631,13 @@ export class CoinPatternLibrary {
       }
 
       // Verify coin does not clip into ceiling
-      if (coinY > CONSTANTS.TUNNEL_CEILING_HEIGHT - 0.3) {
+      const ceilingHeight = (arc.supportSurface === 'TRAIN_ROOF' || startY >= CONSTANTS.COIN_ROOFTOP_Y)
+        ? (CONSTANTS.TUNNEL_AERIAL_VAULT_HEIGHT || 12.5)
+        : CONSTANTS.TUNNEL_CEILING_HEIGHT;
+      if (coinY > ceilingHeight - 0.3) {
         return {
           reachable: false,
-          reason: `Coin ${c} height (${coinY.toFixed(2)}m) clips tunnel ceiling (${CONSTANTS.TUNNEL_CEILING_HEIGHT}m)`
+          reason: `Coin ${c} height (${coinY.toFixed(2)}m) clips tunnel ceiling (${ceilingHeight}m)`
         };
       }
     }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { TextureGenerator } from '../scene/TextureGenerator';
+import { TrainCompositionDef, CarriageComponent, RooftopObstacleDef } from './TrainComposition';
 
 export type TrainVariant = 'MODERN_METRO' | 'CLASSIC_TRANSIT' | 'STREAMLINED_EXPRESS';
 
@@ -9,6 +10,9 @@ export type ObstacleType =
   | 'TRAIN' 
   | 'TRAIN_RAMP' 
   | 'MOVING_TRAIN' 
+  | 'TRAIN_COMPOSITION'
+  | 'ROOFTOP_AC_HURDLE'
+  | 'ROOFTOP_VENT'
   | 'LOW_BARRIER' 
   | 'MEDIUM_BARRIER'
   | 'HIGH_BARRIER' 
@@ -134,6 +138,21 @@ export interface ObstacleInstance {
   headlights?: THREE.Mesh[];
   wheelMeshes?: THREE.Mesh[]; // Bogie wheel meshes for realistic rotation
   headlightBeam?: THREE.Mesh; // Forward track illumination beam
+  // Train composition & multi-carriage support
+  isComposition?: boolean;
+  compositionDef?: TrainCompositionDef;
+  carriageGroupId?: string; // Stable group identifier connecting multiple carriages
+  carriages?: Array<{ id: string; type: string; length: number; localOffsetZ: number }>;
+  hasExitRamp?: boolean;
+  exitRampCollider?: THREE.Box3;
+  exitRampStartZ?: number; // World Z where exit ramp starts (at roof)
+  exitRampEndZ?: number;   // World Z where exit ramp touches ground
+  rooftopObstacles?: Array<{
+    id: string;
+    type: 'ROOFTOP_AC_HURDLE' | 'ROOFTOP_VENT';
+    collider: THREE.Box3;
+    cleared?: boolean;
+  }>;
 }
 
 export class ObstacleFactory {
@@ -2244,5 +2263,297 @@ export class ObstacleFactory {
     group.add(headlightBeam);
 
     return { group, headlights, wheelMeshes, headlightBeam };
+  }
+
+  /**
+   * Builds an arcade-quality low-profile rooftop AC hurdle with diamond-plate housing,
+   * high-visibility diagonal hazard stripes, twin circular fan grilles, and mounting feet
+   */
+  public createRooftopACHurdle(
+    width: number = 1.6,
+    length: number = 1.8,
+    height: number = 0.65
+  ): THREE.Group {
+    const group = new THREE.Group();
+    group.userData = { isRooftopObstacle: true, type: 'ROOFTOP_AC_HURDLE' };
+
+    // 1. Heavy industrial housing unit (Y sits right on catwalk top: 4.35m)
+    const baseGeo = new THREE.BoxGeometry(width, height - 0.08, length);
+    const baseMesh = new THREE.Mesh(baseGeo, this.trainChassisMat);
+    baseMesh.position.set(0, 4.35 + (height - 0.08) * 0.5, 0);
+    baseMesh.castShadow = true;
+    baseMesh.receiveShadow = true;
+    group.add(baseMesh);
+
+    // 2. High-visibility diagonal hazard skirt along perimeter base
+    const skirtGeo = new THREE.BoxGeometry(width + 0.06, 0.18, length + 0.06);
+    const skirtMesh = new THREE.Mesh(skirtGeo, this.barrierMat);
+    skirtMesh.position.set(0, 4.35 + 0.09, 0);
+    skirtMesh.castShadow = true;
+    group.add(skirtMesh);
+
+    // 3. Twin top circular ventilation fan grilles
+    [-length * 0.25, length * 0.25].forEach((fz) => {
+      const fanGeo = new THREE.CylinderGeometry(width * 0.35, width * 0.35, 0.06, 14);
+      const fanMesh = new THREE.Mesh(fanGeo, this.trainVentGrilleMat);
+      fanMesh.position.set(0, 4.35 + height - 0.05, fz);
+      fanMesh.castShadow = true;
+      group.add(fanMesh);
+
+      // Center spin hub
+      const hubGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.08, 10);
+      const hubMesh = new THREE.Mesh(hubGeo, this.trainChromeMat);
+      hubMesh.position.set(0, 4.35 + height - 0.03, fz);
+      group.add(hubMesh);
+    });
+
+    // 4. Sturdy corner mounting brackets bolted into the catwalk
+    [-width * 0.46, width * 0.46].forEach((bx) => {
+      [-length * 0.44, length * 0.44].forEach((bz) => {
+        const bracketGeo = new THREE.BoxGeometry(0.12, 0.08, 0.12);
+        const bracket = new THREE.Mesh(bracketGeo, this.trainChromeMat);
+        bracket.position.set(bx, 4.35 + 0.04, bz);
+        group.add(bracket);
+      });
+    });
+
+    return group;
+  }
+
+  /**
+   * Builds an industrial rooftop ventilator exhaust cowl
+   */
+  public createRooftopVent(
+    width: number = 1.4,
+    length: number = 1.4,
+    height: number = 0.50
+  ): THREE.Group {
+    const group = new THREE.Group();
+    group.userData = { isRooftopObstacle: true, type: 'ROOFTOP_VENT' };
+
+    // Square plenum base
+    const baseGeo = new THREE.BoxGeometry(width, height * 0.6, length);
+    const baseMesh = new THREE.Mesh(baseGeo, this.trainChassisMat);
+    baseMesh.position.set(0, 4.35 + (height * 0.6) * 0.5, 0);
+    baseMesh.castShadow = true;
+    group.add(baseMesh);
+
+    // Exhaust louver cowl
+    const cowlGeo = new THREE.CylinderGeometry(width * 0.42, width * 0.48, height * 0.45, 12);
+    const cowlMesh = new THREE.Mesh(cowlGeo, this.trainVentGrilleMat);
+    cowlMesh.position.set(0, 4.35 + height * 0.75, 0);
+    cowlMesh.castShadow = true;
+    group.add(cowlMesh);
+
+    // Amber perimeter clearance reflectors
+    [-width * 0.48, width * 0.48].forEach((rx) => {
+      const refGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const refMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+      const ref = new THREE.Mesh(refGeo, refMat);
+      ref.position.set(rx, 4.35 + height * 0.4, 0);
+      group.add(ref);
+    });
+
+    return group;
+  }
+
+  /**
+   * Builds a safe descent exit ramp at the rear of a train carriage,
+   * connecting the 4.35m roof catwalk down to ground track level
+   */
+  private buildExitRamp(
+    group: THREE.Group,
+    w: number,
+    h: number,
+    bodyLength: number
+  ): void {
+    const rampLength = CONSTANTS.TRAIN_RAMP_LENGTH; // 8.0m
+    const rampWidth = w * 0.86;
+    const rampHeight = 4.35;
+
+    const halfD = bodyLength * 0.5;
+    const rampZCenter = -halfD - rampLength * 0.5;
+    const slantLength = Math.sqrt(rampLength * rampLength + rampHeight * rampHeight);
+    const rampAngle = Math.atan2(rampHeight, rampLength);
+
+    // 1. Walkway Deck sloping down towards -Z
+    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength);
+    const rampMesh = new THREE.Mesh(rampGeo, this.trainWalkwayMat);
+    rampMesh.rotation.x = -rampAngle;
+    rampMesh.position.set(0, rampHeight * 0.5, rampZCenter);
+    rampMesh.castShadow = true;
+    rampMesh.receiveShadow = true;
+    group.add(rampMesh);
+
+    // 2. Hazard Skirts and Guide Rails
+    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength);
+    [-rampWidth * 0.51, rampWidth * 0.51].forEach((sx) => {
+      const skirt = new THREE.Mesh(skirtGeo, this.barrierMat);
+      skirt.rotation.x = -rampAngle;
+      skirt.position.set(sx, rampHeight * 0.5 + 0.15, rampZCenter);
+      skirt.castShadow = true;
+      group.add(skirt);
+
+      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8);
+      const rail = new THREE.Mesh(railGeo, this.trainChromeMat);
+      rail.rotation.x = -rampAngle + Math.PI / 2;
+      rail.position.set(sx, rampHeight * 0.5 + 0.42, rampZCenter);
+      group.add(rail);
+    });
+
+    // 3. Longitudinal I-Beams
+    [-rampWidth * 0.42, rampWidth * 0.42].forEach((bx) => {
+      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength);
+      const stringer = new THREE.Mesh(stringerGeo, this.rampTrussMat);
+      stringer.rotation.x = -rampAngle;
+      stringer.position.set(bx, rampHeight * 0.5 - 0.14, rampZCenter);
+      stringer.castShadow = true;
+      group.add(stringer);
+    });
+
+    // 4. Ground Toe Plate (at Z = -halfD - rampLength)
+    const toeGeo = new THREE.BoxGeometry(rampWidth * 1.02, 0.12, 0.6);
+    const toeMesh = new THREE.Mesh(toeGeo, this.barrierMat);
+    toeMesh.position.set(0, 0.06, -halfD - rampLength + 0.3);
+    group.add(toeMesh);
+  }
+
+  /**
+   * Create Full Modular Multi-Carriage Train Composition
+   * Composes authentic individual carriages with inter-carriage accordion gangways,
+   * tightlock couplers, uninterrupted 4.35m catwalk plates, and optional rooftop obstacles
+   */
+  public createTrainComposition(
+    composition: TrainCompositionDef,
+    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_1
+  ): THREE.Group {
+    const masterGroup = new THREE.Group();
+    masterGroup.userData = {
+      isTrain: true,
+      isComposition: true,
+      type: 'TRAIN_COMPOSITION',
+      composition
+    };
+
+    const w = CONSTANTS.TRAIN_WIDTH;
+    const h = CONSTANTS.TRAIN_HEIGHT;
+    const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
+
+    // 1. Build and position each distinct carriage component
+    for (let i = 0; i < composition.carriages.length; i++) {
+      const comp = composition.carriages[i];
+      const carriageGroup = new THREE.Group();
+      carriageGroup.name = comp.id;
+      carriageGroup.position.z = comp.localOffsetZ;
+
+      const variant = comp.variant || variants[(this.trainSpawnCounter++) % variants.length];
+      const carColor = comp.colorHex || colorHex;
+
+      let accentColor = 0xffd600;
+      if (carColor === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
+      if (carColor === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : carColor,
+        roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : 0.32,
+        metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : 0.35
+      });
+      this.curvedManager.applyCurvature(bodyMat);
+
+      // Carriage Hull
+      const hullMesh = this.buildCarriageHull(w, h, comp.length, bodyMat);
+      carriageGroup.add(hullMesh);
+
+      // 3D Side Geometry
+      this.buildSideGeometry(carriageGroup, w, h, comp.length, variant, bodyMat, accentColor);
+
+      // Front / Rear end treatment
+      const noseLength = variant === 'STREAMLINED_EXPRESS' ? 1.85 : (variant === 'CLASSIC_TRANSIT' ? 1.15 : 1.45);
+      if (comp.hasRamp) {
+        this.buildRampBulkhead(carriageGroup, w, h, comp.length, bodyMat, accentColor);
+        this.buildRamp(carriageGroup, w, h, comp.length, noseLength);
+      } else if (comp.type === 'LOCOMOTIVE_CAB') {
+        this.buildFrontCab(carriageGroup, w, h, comp.length, noseLength, variant, bodyMat, carColor, accentColor);
+      } else {
+        // Intermediate front bulkhead connection
+        const bellowGeo = new THREE.BoxGeometry(w * 0.52, 2.35, 0.35);
+        const bellow = new THREE.Mesh(bellowGeo, this.trainDarkRubberMat);
+        bellow.position.set(0, 1.8, comp.length * 0.5 + 0.15);
+        carriageGroup.add(bellow);
+      }
+
+      if (comp.hasExitRamp) {
+        this.buildExitRamp(carriageGroup, w, h, comp.length);
+      } else if (comp.type === 'CABOOSE_END' || i === composition.carriages.length - 1) {
+        this.buildRearJunction(carriageGroup, w, h, comp.length);
+      } else {
+        // Intermediate rear bulkhead connection
+        const bellowGeo = new THREE.BoxGeometry(w * 0.52, 2.35, 0.35);
+        const bellow = new THREE.Mesh(bellowGeo, this.trainDarkRubberMat);
+        bellow.position.set(0, 1.8, -comp.length * 0.5 - 0.15);
+        carriageGroup.add(bellow);
+      }
+
+      // Roof Architecture & Walkable Catwalk Platform (strictly Y = 4.35m)
+      this.buildRoofArchitecture(carriageGroup, w, h, comp.length, variant);
+
+      // Wheel Bogies & Underbody
+      this.buildBogiesAndUnderbody(carriageGroup, w, h, comp.length, variant);
+
+      masterGroup.add(carriageGroup);
+    }
+
+    // 2. Build inter-carriage gangway couplers & continuous roof walkplates
+    for (let i = 0; i < composition.carriages.length - 1; i++) {
+      const c1 = composition.carriages[i];
+      const c2 = composition.carriages[i + 1];
+      const junctionZ = (c1.localOffsetZ - c1.length * 0.5 + c2.localOffsetZ + c2.length * 0.5) * 0.5;
+      const gap = Math.abs((c1.localOffsetZ - c1.length * 0.5) - (c2.localOffsetZ + c2.length * 0.5));
+
+      // Gangway accordion connection (for standard coupled carriages with gap <= 2.0m)
+      if (gap <= 2.0) {
+        // Accordion rubber bellow sleeve
+        const bellowGeo = new THREE.BoxGeometry(w * 0.54, 2.4, gap + 0.1);
+        const bellow = new THREE.Mesh(bellowGeo, this.trainDarkRubberMat);
+        bellow.position.set(0, 1.8, junctionZ);
+        masterGroup.add(bellow);
+
+        // Transit coupler knuckle
+        const couplerGeo = new THREE.CylinderGeometry(0.14, 0.14, gap + 0.3, 10);
+        const coupler = new THREE.Mesh(couplerGeo, this.trainChromeMat);
+        coupler.rotation.x = Math.PI / 2;
+        coupler.position.set(0, 0.42, junctionZ);
+        masterGroup.add(coupler);
+
+        // Continuous diamond-plate steel gangway catwalk bridge (top face Y = 4.35m)
+        const bridgeGeo = new THREE.BoxGeometry(1.7, 0.14, gap + 0.2);
+        const bridge = new THREE.Mesh(bridgeGeo, this.trainWalkwayMat);
+        bridge.position.set(0, 4.28, junctionZ);
+        bridge.receiveShadow = true;
+        masterGroup.add(bridge);
+
+        // Yellow safety edge plates along bridge
+        [-1.7 * 0.5, 1.7 * 0.5].forEach((cx) => {
+          const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, gap + 0.2);
+          const edge = new THREE.Mesh(edgeGeo, this.barrierMat);
+          edge.position.set(cx, 4.28, junctionZ);
+          masterGroup.add(edge);
+        });
+      }
+    }
+
+    // 3. Build rooftop obstacles (AC units, vents)
+    if (composition.rooftopObstacles && composition.rooftopObstacles.length > 0) {
+      for (const obs of composition.rooftopObstacles) {
+        const obsMesh = obs.type === 'ROOFTOP_AC_HURDLE'
+          ? this.createRooftopACHurdle(obs.width || 1.6, obs.length || 1.8, obs.height || 0.65)
+          : this.createRooftopVent(obs.width || 1.4, obs.length || 1.4, obs.height || 0.50);
+
+        obsMesh.position.set(0, 0, obs.localOffsetZ);
+        masterGroup.add(obsMesh);
+      }
+    }
+
+    return masterGroup;
   }
 }

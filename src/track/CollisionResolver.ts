@@ -67,10 +67,11 @@ export class CollisionResolver {
       };
     }
 
-    // 3. Trains, Moving Trains, and Train Ramps
-    if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP') {
+    // 3. Trains, Moving Trains, Train Ramps, and Train Compositions
+    if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
       const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-      const isSupportingThisTrain = player.getActiveSupportObstacleId() === obs.id;
+      const isSupportingThisTrain = player.getActiveSupportObstacleId() === obs.id ||
+        (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId);
 
       // Safe Priority 1: Traversing on top of this train roof
       if (isSupportingThisTrain && (player.getSupportSurface() === 'TRAIN_ROOF' || player.state === 'ON_TRAIN')) {
@@ -113,6 +114,22 @@ export class CollisionResolver {
         const inRampX = playerBox.max.x >= obs.rampCollider.min.x && playerBox.min.x <= obs.rampCollider.max.x;
         const inRampZ = playerBox.min.z <= obs.rampCollider.max.z + 0.35 && playerBox.max.z >= obs.rampCollider.min.z - 0.25;
         if (inRampX && inRampZ) {
+          return {
+            outcome: 'SAFE_CONTACT',
+            diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+            isGlance: false,
+            overlapX: 0,
+            isFrontal: false,
+            isFlankContact: false
+          };
+        }
+      }
+
+      // Safe Priority 5: Exit ramp descent approach
+      if (obs.exitRampCollider) {
+        const inExitX = playerBox.max.x >= obs.exitRampCollider.min.x && playerBox.min.x <= obs.exitRampCollider.max.x;
+        const inExitZ = playerBox.min.z <= obs.exitRampCollider.max.z + 0.35 && playerBox.max.z >= obs.exitRampCollider.min.z - 0.25;
+        if (inExitX && inExitZ) {
           return {
             outcome: 'SAFE_CONTACT',
             diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
@@ -189,7 +206,61 @@ export class CollisionResolver {
         };
       }
     } else {
-      // Barrier and structural obstacles (LOW_BARRIER, MEDIUM_BARRIER, HIGH_BARRIER, PILLAR, SIDE_BARRIER, TUNNEL_ARCH)
+      // Barrier, structural, and rooftop obstacles
+      // Vertical clearance check 1: Player running on elevated train roof ignores ground barriers below
+      if ((player.getSupportSurface() === 'TRAIN_ROOF' || player.position.y >= 3.8) && obs.collider.max.y < playerBox.min.y + 0.1) {
+        return {
+          outcome: 'SAFE_CONTACT',
+          diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+          isGlance: false,
+          overlapX: 0,
+          isFrontal: false,
+          isFlankContact: false
+        };
+      }
+
+      // Vertical clearance check 2: Player on ground ignores high rooftop obstacles overhead
+      if (obs.collider.min.y > playerBox.max.y - 0.1) {
+        return {
+          outcome: 'SAFE_CONTACT',
+          diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+          isGlance: false,
+          overlapX: 0,
+          isFrontal: false,
+          isFlankContact: false
+        };
+      }
+
+      // Rooftop AC Hurdle on top of train roof (cleared by rooftop jump)
+      if (obs.type === 'ROOFTOP_AC_HURDLE') {
+        const hurdleRoofY = obs.roofSurfaceY || 4.35;
+        if (player.isJumping && player.position.y > hurdleRoofY + CONSTANTS.ROOFTOP_AC_HURDLE_HEIGHT * 0.7) {
+          return {
+            outcome: 'SAFE_CONTACT',
+            diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+            isGlance: false,
+            overlapX: 0,
+            isFrontal: false,
+            isFlankContact: false
+          };
+        }
+      }
+
+      // Rooftop Vent on top of train roof (cleared by rooftop jump)
+      if (obs.type === 'ROOFTOP_VENT') {
+        const ventRoofY = obs.roofSurfaceY || 4.35;
+        if (player.isJumping && player.position.y > ventRoofY + CONSTANTS.ROOFTOP_VENT_HEIGHT * 0.7) {
+          return {
+            outcome: 'SAFE_CONTACT',
+            diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+            isGlance: false,
+            overlapX: 0,
+            isFrontal: false,
+            isFlankContact: false
+          };
+        }
+      }
+
       // 1. Low jump hurdle: cleared by jump (cannot slide under)
       if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
         return {

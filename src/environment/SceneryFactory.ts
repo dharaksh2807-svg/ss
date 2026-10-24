@@ -1803,13 +1803,13 @@ export class SceneryFactory {
 
     const leftHaunch = new THREE.Mesh(new THREE.BoxGeometry(haunchW, ceilingThick, chunkLength), mats.tunnelCeilingMat);
     leftHaunch.rotation.z = -haunchAngle;
-    leftHaunch.position.set(-spanW * 0.5 + haunchW * 0.48, ceilingH - 0.6, -chunkLength * 0.5);
+    leftHaunch.position.set(-spanW * 0.5 + haunchW * 0.48, ceilingH - 0.35, -chunkLength * 0.5);
     leftHaunch.receiveShadow = true;
     undergroundGroup.add(leftHaunch);
 
     const rightHaunch = new THREE.Mesh(new THREE.BoxGeometry(haunchW, ceilingThick, chunkLength), mats.tunnelCeilingMat);
     rightHaunch.rotation.z = haunchAngle;
-    rightHaunch.position.set(spanW * 0.5 - haunchW * 0.48, ceilingH - 0.6, -chunkLength * 0.5);
+    rightHaunch.position.set(spanW * 0.5 - haunchW * 0.48, ceilingH - 0.35, -chunkLength * 0.5);
     rightHaunch.receiveShadow = true;
     undergroundGroup.add(rightHaunch);
 

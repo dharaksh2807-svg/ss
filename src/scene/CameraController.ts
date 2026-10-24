@@ -269,6 +269,14 @@ export class CameraController {
       targetCamY = cameraBaseY + CONSTANTS.CAMERA_OFFSET_Y;
       targetLookY = cameraBaseY + CONSTANTS.CAMERA_LOOK_Y;
 
+      // Train rooftop enhanced perspective: extend lookahead and elevate slightly for clear forward hazard visibility
+      if (groundY >= 4.0) {
+        targetCamY += 0.35;
+        targetCamOffsetZ += 0.65;
+        targetLookAheadZ -= 3.5;
+        targetLookY += 0.20;
+      }
+
       // Subtle dynamic camera dip during slide for enhanced tactile action feedback
       if (isSliding) {
         targetCamY -= 0.18;

@@ -5,6 +5,14 @@ import { CoinPatternArchetype, PatternCollectible } from './CoinPatternLibrary';
 
 export type { CoinPatternArchetype, PatternCollectible };
 
+import {
+  TrainCompositionDef,
+  COMMUTER_TWIN_SET,
+  METRO_TRIPLE_CONSIST,
+  EXPRESS_QUAD_CONSIST,
+  DUAL_TRAIN_GAP_HOP
+} from './TrainComposition';
+
 export type PatternDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'EASY' | 'MEDIUM' | 'HARD';
 
 export interface PatternObstacle {
@@ -13,9 +21,12 @@ export interface PatternObstacle {
   zOffset: number; // Z distance from chunk start (0 to 80m)
   length?: number;
   hasRamp?: boolean;
+  hasExitRamp?: boolean;
   isMoving?: boolean;
   velocityZ?: number;
   variant?: number;
+  composition?: string | TrainCompositionDef;
+  carriageGroupId?: string;
 }
 
 export interface TrackPattern {
@@ -1080,6 +1091,141 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: -1, zOffset: 20.0, count: 8, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' },
       { type: 'COIN', lane: 1, zOffset: 12.0, count: 6, spacing: 2.4, archetype: 'STRAIGHT_TRAIL' },
       { type: 'COIN', lane: 1, zOffset: 53.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+    ]
+  },
+
+  // 40. Beginner Rooftop Cruise (37m 2-carriage commuter consist)
+  {
+    name: 'BEGINNER_ROOFTOP_CRUISE',
+    difficulty: 'EASY',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Climb 8m visible ramp onto commuter twin-set, collect rooftop gold, descend safely via rear ramp',
+    minReactionDist: 35.0,
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 12.0,
+        length: 37.2,
+        hasRamp: true,
+        hasExitRamp: true,
+        composition: COMMUTER_TWIN_SET,
+        carriageGroupId: 'commuter_twin_0'
+      },
+      { type: 'LOW_BARRIER', lane: -1, zOffset: 24.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 36.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 4.0, count: 5, spacing: 1.6, archetype: 'RAMP_ASCENT' },
+      { type: 'COIN', lane: 0, zOffset: 14.0, yOffset: 5.20, count: 8, spacing: 2.2, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: 0, zOffset: 34.0, count: 4, spacing: 1.8, archetype: 'DESCENT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 44.0, count: 5, spacing: 2.0, archetype: 'POST_ROOFTOP_REWARD' }
+    ]
+  },
+
+  // 41. Intermediate Multi-Carriage Expedition (52m 3-carriage consist with AC hurdle)
+  {
+    name: 'INTERMEDIATE_MULTI_CARRIAGE_EXPEDITION',
+    difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Ascend center ramp onto 52m 3-carriage metro consist, jump over rooftop AC unit, ride rear exit ramp down',
+    minReactionDist: 28.0,
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 10.0,
+        length: 52.4,
+        hasRamp: true,
+        hasExitRamp: true,
+        composition: METRO_TRIPLE_CONSIST,
+        carriageGroupId: 'metro_triple_0'
+      },
+      { type: 'SIDE_BARRIER', lane: -1, zOffset: 28.0 },
+      { type: 'SIDE_BARRIER', lane: 1, zOffset: 42.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 0, zOffset: 2.0, count: 5, spacing: 1.6, archetype: 'RAMP_ASCENT' },
+      { type: 'COIN', lane: 0, zOffset: 12.0, yOffset: 5.20, count: 7, spacing: 2.2, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: 0, zOffset: 30.0, yOffset: 6.20, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 0, zOffset: 40.0, yOffset: 5.20, count: 5, spacing: 2.2, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: 0, zOffset: 54.0, count: 4, spacing: 1.8, archetype: 'DESCENT_TRAIL' },
+      { type: 'COIN', lane: 0, zOffset: 64.0, count: 5, spacing: 2.0, archetype: 'POST_ROOFTOP_REWARD' }
+    ]
+  },
+
+  // 42. Express Quad Rooftop Challenge (70m 4-carriage consist with rooftop obstacles)
+  {
+    name: 'EXPRESS_QUAD_ROOFTOP_CHALLENGE',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP', 'LANE_CHANGE'],
+    safeRoutes: 'Climb 4-carriage express train on right, leap over rooftop hurdles, step down safe exit ramp',
+    minReactionDist: 24.0,
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 1,
+        zOffset: 6.0,
+        length: 69.6,
+        hasRamp: true,
+        hasExitRamp: true,
+        composition: EXPRESS_QUAD_CONSIST,
+        carriageGroupId: 'express_quad_1'
+      },
+      { type: 'TRAIN', lane: -1, zOffset: 22.0, length: 28.0 },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 38.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: 1, zOffset: 0.0, count: 5, spacing: 1.6, archetype: 'RAMP_ASCENT' },
+      { type: 'COIN', lane: 1, zOffset: 10.0, yOffset: 5.20, count: 8, spacing: 2.0, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: 1, zOffset: 30.0, yOffset: 6.20, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 48.0, yOffset: 6.20, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' },
+      { type: 'COIN', lane: 1, zOffset: 62.0, count: 4, spacing: 1.8, archetype: 'DESCENT_TRAIL' },
+      { type: 'SHIELD', lane: 1, zOffset: 72.0 }
+    ]
+  },
+
+  // 43. Advanced Carriage Gap Hop (Leap across 3.5m gap between uncoupled trains)
+  {
+    name: 'ADVANCED_CARRIAGE_GAP_HOP',
+    difficulty: 'HARD',
+    entryLanes: [-1, 0, 1],
+    exitLanes: [-1, 0, 1],
+    requiredActions: ['JUMP'],
+    safeRoutes: 'Ascend train on lane -1, leap across 3.5m carriage gap to rear train roof, dismount safely onto clear ground',
+    minReactionDist: 22.0,
+    obstacles: [
+      {
+        type: 'TRAIN',
+        lane: -1,
+        zOffset: 8.0,
+        length: 26.0,
+        hasRamp: true,
+        carriageGroupId: 'gap_hop_lead'
+      },
+      {
+        type: 'TRAIN',
+        lane: -1,
+        zOffset: 37.5,
+        length: 26.0,
+        hasRamp: false,
+        carriageGroupId: 'gap_hop_trail'
+      },
+      { type: 'LOW_BARRIER', lane: 0, zOffset: 20.0 },
+      { type: 'MEDIUM_BARRIER', lane: 1, zOffset: 34.0 }
+    ],
+    collectibles: [
+      { type: 'COIN', lane: -1, zOffset: 0.0, count: 5, spacing: 1.6, archetype: 'RAMP_ASCENT' },
+      { type: 'COIN', lane: -1, zOffset: 10.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: -1, zOffset: 28.0, yOffset: 6.30, count: 5, spacing: 1.8, isArc: true, archetype: 'CARRIAGE_GAP_JUMP' },
+      { type: 'COIN', lane: -1, zOffset: 42.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' },
+      { type: 'COIN', lane: -1, zOffset: 66.0, count: 4, spacing: 2.0, archetype: 'POST_ROOFTOP_REWARD' }
     ]
   }
 ];

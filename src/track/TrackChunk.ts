@@ -10,6 +10,7 @@ import { PacingMetrics } from './PacingMetrics';
 import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME, NEON_INDUSTRIAL_THEME } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { SceneryFactory } from '../environment/SceneryFactory';
+import { TrainCompositionDef, getCompositionForDifficulty } from './TrainComposition';
 
 export class TrackChunk {
   public group: THREE.Group;
@@ -1459,14 +1460,20 @@ export class TrackChunk {
       let group: THREE.Group;
       const laneX = CONSTANTS.LANES[obsData.lane as LaneIndex];
       const localZ = -obsData.zOffset;
-      const isTrain = obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' || obsData.type === 'TRAIN_RAMP';
-      const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP');
-      const length = obsData.length || (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0);
+      const isComposition = obsData.type === 'TRAIN_COMPOSITION' || !!obsData.composition;
+      const isTrain = obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' || obsData.type === 'TRAIN_RAMP' || isComposition;
+      const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP' || (isComposition && obsData.composition?.hasEntryRamp));
+      const hasExitRamp = !!(obsData.hasExitRamp || (isComposition && obsData.composition?.hasExitRamp));
+      const length = obsData.length || (isComposition ? (obsData.composition?.totalLength || CONSTANTS.TRAIN_SET_MEDIUM_LENGTH) : (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0));
+      const carriageGroupId = obsData.carriageGroupId || (isComposition ? `train_set_${Math.round(worldZ)}_${obsData.lane}` : undefined);
       let headlights: THREE.Mesh[] | undefined;
       let wheelMeshes: THREE.Mesh[] | undefined;
       let headlightBeam: THREE.Mesh | undefined;
 
-      if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
+      if (obsData.type === 'TRAIN_COMPOSITION' || (obsData.composition && isComposition)) {
+        const compDef: TrainCompositionDef = obsData.composition || getCompositionForDifficulty('BEGINNER', 18);
+        group = this.obstacleFactory.createTrainComposition(compDef);
+      } else if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
         const colors = [
           CONSTANTS.COLORS.TRAIN_BODY_1,
           CONSTANTS.COLORS.TRAIN_BODY_2,
@@ -1480,6 +1487,10 @@ export class TrackChunk {
         headlights = movingData.headlights;
         wheelMeshes = movingData.wheelMeshes;
         headlightBeam = movingData.headlightBeam;
+      } else if (obsData.type === 'ROOFTOP_AC_HURDLE') {
+        group = this.obstacleFactory.createRooftopACHurdle(obsData.width || 1.6, obsData.length || 1.8, obsData.height || 0.65);
+      } else if (obsData.type === 'ROOFTOP_VENT') {
+        group = this.obstacleFactory.createRooftopVent(obsData.width || 1.4, obsData.length || 1.4, obsData.height || 0.50);
       } else if (obsData.type === 'LOW_BARRIER') {
         group = this.obstacleFactory.createLowBarrier(obsData.variant);
       } else if (obsData.type === 'MEDIUM_BARRIER') {
@@ -1509,6 +1520,7 @@ export class TrackChunk {
       let frontBumperCollider: THREE.Box3 | undefined;
       let roofCollider: THREE.Box3 | undefined;
       let rampCollider: THREE.Box3 | undefined;
+      let exitRampCollider: THREE.Box3 | undefined;
       let roofSurfaceY: number | undefined;
 
       let halfW: number;
@@ -1549,6 +1561,25 @@ export class TrackChunk {
             new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ + halfD + rampD)
           );
         }
+
+        // 5. Sloped Exit Ramp Collider
+        if (hasExitRamp) {
+          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+          exitRampCollider = new THREE.Box3(
+            new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ - halfD - rampD),
+            new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ - halfD)
+          );
+        }
+      } else if (obsData.type === 'ROOFTOP_AC_HURDLE') {
+        halfW = (obsData.width || 1.6) * 0.5;
+        height = CONSTANTS.ROOFTOP_AC_HURDLE_HEIGHT || 0.65;
+        halfD = (obsData.length || 1.8) * 0.5;
+        roofSurfaceY = 4.35;
+      } else if (obsData.type === 'ROOFTOP_VENT') {
+        halfW = (obsData.width || 1.4) * 0.5;
+        height = CONSTANTS.ROOFTOP_VENT_HEIGHT || 0.50;
+        halfD = (obsData.length || 1.4) * 0.5;
+        roofSurfaceY = 4.35;
       } else if (obsData.type === 'LOW_BARRIER') {
         halfW = CONSTANTS.LANE_WIDTH * 0.44;
         height = CONSTANTS.LOW_BARRIER_HEIGHT;
@@ -1575,7 +1606,10 @@ export class TrackChunk {
         halfD = 0.5;
       }
 
-      if (obsData.type === 'HIGH_BARRIER') {
+      if (obsData.type === 'ROOFTOP_AC_HURDLE' || obsData.type === 'ROOFTOP_VENT') {
+        collider.min.set(laneX - halfW, 4.35, worldCenterZ - halfD);
+        collider.max.set(laneX + halfW, 4.35 + height, worldCenterZ + halfD);
+      } else if (obsData.type === 'HIGH_BARRIER') {
         collider.min.set(laneX - halfW, CONSTANTS.HIGH_BARRIER_CLEARANCE, worldCenterZ - halfD);
         collider.max.set(laneX + halfW, height, worldCenterZ + halfD);
       } else {
@@ -1602,9 +1636,12 @@ export class TrackChunk {
         frontBumperCollider,
         roofCollider,
         rampCollider,
+        exitRampCollider,
         roofSurfaceY,
         rampStartZ: hasRamp ? worldCenterZ + halfD + rampD : undefined,
         rampEndZ: hasRamp ? worldCenterZ + halfD : undefined,
+        exitRampStartZ: hasExitRamp ? worldCenterZ - halfD : undefined,
+        exitRampEndZ: hasExitRamp ? worldCenterZ - halfD - rampD : undefined,
         roofStartZ: isTrain ? worldCenterZ + halfD : undefined,
         roofEndZ: isTrain ? worldCenterZ - halfD : undefined,
         accessibilityProfile,
@@ -1612,7 +1649,11 @@ export class TrackChunk {
         nearMissTriggered: false,
         active: true,
         hasRamp,
+        hasExitRamp,
         length,
+        isComposition,
+        compositionDef: obsData.composition,
+        carriageGroupId,
         variant: group.userData.variant,
         isMoving,
         isMovingActive: false,
@@ -1874,6 +1915,15 @@ export class TrackChunk {
           obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ + halfD + rampD);
           obs.rampStartZ = updatedWorldZ + halfD + rampD;
           obs.rampEndZ = updatedWorldZ + halfD;
+        }
+
+        if (obs.exitRampCollider) {
+          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+          obs.exitRampCollider.min.set(laneX - halfW * 0.92, 0, updatedWorldZ - halfD - rampD);
+          obs.exitRampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ - halfD);
+          obs.exitRampStartZ = updatedWorldZ - halfD;
+          obs.exitRampEndZ = updatedWorldZ - halfD - rampD;
         }
 
         obs.roofStartZ = updatedWorldZ + halfD;

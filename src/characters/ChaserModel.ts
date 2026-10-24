@@ -484,7 +484,7 @@ export class ChaserModel {
 
   public onMinorStumble(): { wasClose: boolean; captured: boolean } {
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    if (now - this.lastStumbleTimestamp < 120) {
+    if (this.lastStumbleTimestamp > 0 && now - this.lastStumbleTimestamp < 120) {
       return {
         wasClose: this.isCatchUpMode(),
         captured: this.chaseState === 'CAPTURE'

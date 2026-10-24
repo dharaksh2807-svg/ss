@@ -672,12 +672,20 @@ export class Player {
     this.groundY = targetY;
   }
 
-  public setSupportSurface(surface: SupportSurfaceType, obstacleId?: string | null): void {
+  private activeSupportGroupId: string | null = null;
+
+  public setSupportSurface(surface: SupportSurfaceType, obstacleId?: string | null, groupId?: string | null): void {
     this.supportSurface = surface;
     if (surface === 'GROUND') {
       this.activeSupportObstacleId = null;
-    } else if (obstacleId !== undefined) {
-      this.activeSupportObstacleId = obstacleId;
+      this.activeSupportGroupId = null;
+    } else {
+      if (obstacleId !== undefined) {
+        this.activeSupportObstacleId = obstacleId;
+      }
+      if (groupId !== undefined) {
+        this.activeSupportGroupId = groupId;
+      }
     }
   }
 
@@ -693,7 +701,15 @@ export class Player {
     this.activeSupportObstacleId = id;
   }
 
-  public resolveRoofLanding(roofY: number, obstacleId?: string | null): void {
+  public getActiveSupportGroupId(): string | null {
+    return this.activeSupportGroupId;
+  }
+
+  public setActiveSupportGroupId(id: string | null): void {
+    this.activeSupportGroupId = id;
+  }
+
+  public resolveRoofLanding(roofY: number, obstacleId?: string | null, groupId?: string | null): void {
     const fastDrop = this.isFastDropping;
     this.position.y = roofY;
     this.groundY = roofY;
@@ -703,7 +719,7 @@ export class Player {
     this.wasFastDropLand = fastDrop;
     this.jumpPhase = 'LANDING';
     this.landingTimer = CONSTANTS.LANDING_ABSORB_DURATION;
-    this.setSupportSurface('TRAIN_ROOF', obstacleId);
+    this.setSupportSurface('TRAIN_ROOF', obstacleId, groupId);
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
     }

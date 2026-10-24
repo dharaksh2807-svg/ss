@@ -124,7 +124,7 @@ export class ReachabilityValidator {
             let climbedRoof = false;
 
             for (const obs of obstaclesAtLocation) {
-              if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP') {
+              if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
                 const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
                 if (hasRamp && z <= obs.zOffset + CONSTANTS.TRAIN_RAMP_LENGTH) {
                   // Running up ramp onto roof is safe!
@@ -139,23 +139,41 @@ export class ReachabilityValidator {
                 // Ground collision with train hull
                 collision = true;
                 break;
+              } else if (obs.type === 'ROOFTOP_AC_HURDLE' || obs.type === 'ROOFTOP_VENT') {
+                if (node.onRoof) {
+                  if (action.isAirborne) {
+                    // Jumped over rooftop equipment safely
+                    continue;
+                  }
+                  // Hit rooftop obstacle on train top
+                  collision = true;
+                  break;
+                } else {
+                  // Ground runner passes safely underneath elevated rooftop obstacle
+                  continue;
+                }
               } else if (obs.type === 'LOW_BARRIER') {
                 if (action.isAirborne || node.onRoof) {
-                  // Jumped over low hurdle safely
+                  // Jumped over low hurdle safely or running above on train roof
                   continue;
                 }
                 collision = true;
                 break;
               } else if (obs.type === 'MEDIUM_BARRIER') {
                 if (action.isAirborne || node.onRoof) {
-                  // Jumped over medium barrier safely
+                  // Jumped over medium barrier safely or running above on train roof
                   continue;
                 }
                 collision = true;
                 break;
               } else if (obs.type === 'HIGH_BARRIER') {
-                if (action.isSliding && !node.onRoof) {
-                  // Slid underneath high barrier safely
+                if (node.onRoof) {
+                  // High barrier overhead beam blocks rooftop runner
+                  collision = true;
+                  break;
+                }
+                if (action.isSliding) {
+                  // Slid underneath high barrier safely on ground
                   continue;
                 }
                 // Normal jumping into high barrier hits overhead crossbar
@@ -185,9 +203,25 @@ export class ReachabilityValidator {
             }
 
             if (!collision) {
+              let newOnRoof = climbedRoof;
+              if (!climbedRoof && node.onRoof) {
+                const onTrain = obstaclesAtLocation.some(
+                  (o) => o.type === 'TRAIN' || o.type === 'MOVING_TRAIN' || o.type === 'TRAIN_RAMP' || o.type === 'TRAIN_COMPOSITION'
+                );
+                if (onTrain) {
+                  newOnRoof = true;
+                } else if (action.isAirborne) {
+                  // Jumping across a carriage gap
+                  newOnRoof = true;
+                } else {
+                  // Exited train roof onto ground
+                  newOnRoof = false;
+                }
+              }
+
               nextNodes.push({
                 lane: targetLane,
-                onRoof: climbedRoof || node.onRoof,
+                onRoof: newOnRoof,
                 airborneTimer: action.isAirborne ? (updatedAirTimer > 0 ? updatedAirTimer : CONSTANTS.JUMP_DURATION) : 0,
                 slidingTimer: action.isSliding ? (updatedSlideTimer > 0 ? updatedSlideTimer : CONSTANTS.SLIDE_DURATION) : 0,
                 lateralCooldown: transition.newCooldown

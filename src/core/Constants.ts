@@ -106,6 +106,17 @@ export const CONSTANTS = {
   TRAIN_LENGTH_MEDIUM: 22.0,
   TRAIN_LENGTH_LONG: 28.0,
   TRAIN_RAMP_LENGTH: 8.0, // Ramp to run up onto train roof!
+  TRAIN_ROOF_SURFACE_Y: 4.35, // Exact walkable roof surface (4.2m height + 0.15m catwalk)
+  CARRIAGE_LENGTH_SHORT: 16.0,
+  CARRIAGE_LENGTH_MEDIUM: 18.0,
+  CARRIAGE_LENGTH_LONG: 22.0,
+  CARRIAGE_GANGWAY_LENGTH: 1.2,
+  TRAIN_SET_TWIN_LENGTH: 37.2,
+  TRAIN_SET_TRIPLE_LENGTH: 52.4,
+  TRAIN_SET_MEDIUM_LENGTH: 52.4,
+  TRAIN_SET_QUAD_LENGTH: 69.6,
+  ROOFTOP_AC_HURDLE_HEIGHT: 0.65,
+  ROOFTOP_VENT_HEIGHT: 0.50,
   MOVING_TRAIN_SPEED: 11.0, // Velocity of oncoming train relative to track
   MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Distance to flash headlights & sounding horn
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)
