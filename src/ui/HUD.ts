@@ -426,9 +426,9 @@ export class HUD {
     }
   }
 
-  public setMode(mode: 'NORMAL' | 'HARD' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | string): void {
+  public setMode(mode: 'BEGINNER' | 'EASY' | 'HARD' | 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | string): void {
     if (!this.modeBadgeEl) return;
-    if (mode === 'NORMAL') {
+    if (mode === 'BEGINNER' || mode === 'NORMAL') {
       this.modeBadgeEl.classList.add('hidden');
       return;
     }
@@ -436,9 +436,15 @@ export class HUD {
     this.modeBadgeEl.classList.remove('hidden');
     if (mode === 'HARD') {
       this.modeBadgeEl.innerHTML = `
-        <span class="mode-badge-icon">⚡</span>
+        <span class="mode-badge-icon">🔥</span>
         <span class="mode-badge-title">HARD MODE</span>
-        <span id="hud-hard-badge-val" class="mode-badge-val" style="color: #ffb300; font-weight: 700;">EXPRESS</span>
+        <span id="hud-hard-badge-val" class="mode-badge-val" style="color: #ff3d00; font-weight: 700;">EXPRESS</span>
+      `;
+    } else if (mode === 'EASY') {
+      this.modeBadgeEl.innerHTML = `
+        <span class="mode-badge-icon">⚡</span>
+        <span class="mode-badge-title">EASY MODE</span>
+        <span id="hud-easy-badge-val" class="mode-badge-val" style="color: #00e5ff; font-weight: 700;">ACTIVE</span>
       `;
     } else if (mode === 'TIME_TRIAL') {
       this.modeBadgeEl.innerHTML = `

@@ -2048,6 +2048,8 @@ export class TrackChunk {
         const b = entries[j];
         if (a.chunk !== this && b.chunk !== this) continue;
         if (!a.obs.isMoving && !b.obs.isMoving) continue;
+        // Only adjacent chunks or same chunk can have continuous path conflict
+        if (Math.abs(a.chunk.chunkZ - b.chunk.chunkZ) > CONSTANTS.CHUNK_LENGTH + 5) continue;
         const moving = a.obs.isMoving ? a : b;
         const other = a.obs.isMoving ? b : a;
         // Broad envelopes include roof protrusions at chassis height. Only solid
@@ -2062,6 +2064,7 @@ export class TrackChunk {
       if (!a.obs.isMoving) continue;
       for (const chunk of chunks) {
         if (a.chunk !== this && chunk !== this) continue;
+        if (Math.abs(a.chunk.chunkZ - chunk.chunkZ) > CONSTANTS.CHUNK_LENGTH + 5) continue;
         chunk.decorativeGroup.updateWorldMatrix(true, false);
         for (const local of chunk.solidSceneryBounds) {
           const box = local.clone().applyMatrix4(chunk.decorativeGroup.matrixWorld);

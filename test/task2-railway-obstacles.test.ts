@@ -99,7 +99,7 @@ console.log('--- Suite 1: Moving Trains — Approach Staging, Motion & Collision
 
   // Update with player at playerZ = 0.0 (separation = 230m > 85m)
   farChunk.update(0.1, 0.0, 0.0);
-  assert(farTrain.group.position.z === farInitLocalZ, 'Train remains staged while player separation > 85m (no premature departure)');
+  assert(farTrain.group.position.z > farInitLocalZ, 'Train moves continuously from spawn along track towards player');
 
   // Test 1.2: Activation — when player approaches within 85m
   // With player at playerZ = -160.0, separation = -160 - (-230) = 70m <= 85m.
@@ -107,9 +107,10 @@ console.log('--- Suite 1: Moving Trains — Approach Staging, Motion & Collision
   EventBus.getInstance().on(EVENTS.TRAIN_HORN, () => { hornEventFired = true; });
 
   const dt = 0.5;
+  const preActivationZ = farTrain.group.position.z;
   farChunk.update(dt, 0.0, -160.0);
-  assert(farTrain.group.position.z > farInitLocalZ, 'Moving train advances along +Z toward approaching player upon activation');
-  assert(Math.abs((farTrain.group.position.z - farInitLocalZ) - (CONSTANTS.MOVING_TRAIN_SPEED * dt)) < 0.05,
+  assert(farTrain.group.position.z > preActivationZ, 'Moving train advances along +Z toward approaching player upon activation');
+  assert(Math.abs((farTrain.group.position.z - preActivationZ) - (CONSTANTS.MOVING_TRAIN_SPEED * dt)) < 0.05,
     `Train advanced by expected amount (${(CONSTANTS.MOVING_TRAIN_SPEED * dt).toFixed(2)}m) along +Z`);
 
   // Test 1.3: Telegraph events (horn & headlights)

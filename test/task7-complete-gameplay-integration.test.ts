@@ -83,14 +83,15 @@ assert(diffCtrl.getTargetTier(1000, 30.0) === 'HARD', '750-1600m resolves to HAR
 assert(diffCtrl.getTargetTier(2000, 35.0) === 'EXPERT', '1600m+ resolves to EXPERT');
 
 // Moving train safety rules
-assert(!diffCtrl.canSpawnMovingTrain(100), 'Moving trains forbidden in opening 240m');
+assert(!diffCtrl.canSpawnMovingTrain(79), 'Moving trains forbidden inside protected opening chunk');
+assert(diffCtrl.canSpawnMovingTrain(100), 'Moving trains allowed beyond opening gate');
 assert(diffCtrl.canSpawnMovingTrain(300), 'Moving trains allowed beyond 240m');
 
-// Record a moving train spawn and verify 75m cooldown spacing
+// Record a moving train spawn and verify cooldown spacing
 const movingPattern = OBSTACLE_PATTERNS.find(p => p.obstacles.some(o => o.type === 'MOVING_TRAIN'))!;
 diffCtrl.recordPatternSpawned(movingPattern, 300);
-assert(!diffCtrl.canSpawnMovingTrain(340), 'Moving train forbidden within 75m cooldown');
-assert(diffCtrl.canSpawnMovingTrain(380), 'Moving train permitted after 75m cooldown distance');
+assert(!diffCtrl.canSpawnMovingTrain(335), 'Moving train forbidden within cooldown');
+assert(diffCtrl.canSpawnMovingTrain(380), 'Moving train permitted after cooldown distance');
 
 // Test consecutive difficult pattern recovery
 diffCtrl.reset();

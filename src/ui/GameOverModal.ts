@@ -161,9 +161,15 @@ export class GameOverModal {
         highScore = Math.floor(score);
         isNewRecord = true;
       }
-    } else if (mode === 'NORMAL') {
-      const rawHigh = localStorage.getItem('metro_surf_high_score') || '0';
-      highScore = parseInt(rawHigh, 10);
+    } else if (mode === 'EASY') {
+      highScore = stats.easyModeHighScore || 0;
+      if (score > highScore) {
+        highScore = Math.floor(score);
+        isNewRecord = true;
+      }
+    } else if (mode === 'BEGINNER' || mode === 'NORMAL') {
+      const rawHigh = stats.beginnerModeHighScore || parseInt(localStorage.getItem('metro_surf_high_score') || '0', 10);
+      highScore = rawHigh;
       if (score > highScore) {
         highScore = Math.floor(score);
         localStorage.setItem('metro_surf_high_score', highScore.toString());
@@ -187,11 +193,15 @@ export class GameOverModal {
     if (modeBadge) {
       if (mode === 'HARD') {
         modeBadge.className = 'game-over-mode-pill mode-hard-pill';
-        modeBadge.innerHTML = '⚡ HARD MODE • EXPRESS';
+        modeBadge.innerHTML = '🔥 HARD MODE • EXPRESS';
         modeBadge.style.display = 'inline-block';
-      } else if (mode === 'NORMAL') {
+      } else if (mode === 'EASY') {
+        modeBadge.className = 'game-over-mode-pill mode-easy-pill';
+        modeBadge.innerHTML = '⚡ EASY MODE';
+        modeBadge.style.display = 'inline-block';
+      } else if (mode === 'BEGINNER' || mode === 'NORMAL') {
         modeBadge.className = 'game-over-mode-pill mode-normal-pill';
-        modeBadge.innerHTML = '🏃 NORMAL MODE';
+        modeBadge.innerHTML = '🏃 BEGINNER MODE';
         modeBadge.style.display = 'inline-block';
       } else {
         modeBadge.className = 'game-over-mode-pill';
@@ -203,9 +213,13 @@ export class GameOverModal {
     if (isNewRecord) {
       recordBadge?.classList.remove('hidden');
       if (recordBadge) {
-        recordBadge.innerHTML = mode === 'HARD'
-          ? `<span>⚡ NEW HARD MODE RECORD! ⚡</span>`
-          : `<span>🔥 NEW PERSONAL RECORD! 🔥</span>`;
+        if (mode === 'HARD') {
+          recordBadge.innerHTML = `<span>🔥 NEW HARD MODE RECORD! 🔥</span>`;
+        } else if (mode === 'EASY') {
+          recordBadge.innerHTML = `<span>⚡ NEW EASY MODE RECORD! ⚡</span>`;
+        } else {
+          recordBadge.innerHTML = `<span>🏃 NEW BEGINNER RECORD! 🏃</span>`;
+        }
       }
     } else {
       recordBadge?.classList.add('hidden');
@@ -215,8 +229,11 @@ export class GameOverModal {
       if (titleEl) titleEl.textContent = modeResult.title;
       if (subTitleEl && modeResult.subtitle) subTitleEl.textContent = modeResult.subtitle;
     } else if (mode === 'HARD') {
-      if (titleEl) titleEl.textContent = isNewRecord ? 'NEW HARD RECORD! ⚡' : 'HARD RUN ENDED! ⚡';
+      if (titleEl) titleEl.textContent = isNewRecord ? 'NEW HARD RECORD! 🔥' : 'HARD RUN ENDED! 🔥';
       if (subTitleEl) subTitleEl.textContent = `High-velocity sprint: ${Math.floor(distanceMeters).toLocaleString()}m survived`;
+    } else if (mode === 'EASY') {
+      if (titleEl) titleEl.textContent = isNewRecord ? 'NEW EASY RECORD! ⚡' : 'EASY RUN ENDED! ⚡';
+      if (subTitleEl) subTitleEl.textContent = `Dynamic sprint: ${Math.floor(distanceMeters).toLocaleString()}m survived`;
     } else if (mode === 'TIME_TRIAL') {
       if (titleEl) titleEl.textContent = "TIME'S UP! ⏱️";
       if (subTitleEl) subTitleEl.textContent = 'Clock ran out in supersonic gauntlet!';

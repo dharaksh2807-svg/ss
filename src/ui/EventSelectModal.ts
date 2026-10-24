@@ -78,6 +78,7 @@ export class EventSelectModal {
     let html = '';
 
     for (const mode of GAME_MODES) {
+      if (mode.id === 'NORMAL') continue;
       const isSelected = mode.id === this.selectedMode;
 
       let recordLabel = 'BEST SCORE:';
@@ -86,6 +87,12 @@ export class EventSelectModal {
       if (mode.id === 'HARD') {
         recordLabel = 'HARD MODE RECORD:';
         recordValue = `${(stats.hardModeHighScore || 0).toLocaleString()} pts | ${(stats.hardModeBestDistance || 0).toLocaleString()} m`;
+      } else if (mode.id === 'EASY') {
+        recordLabel = 'EASY MODE RECORD:';
+        recordValue = `${(stats.easyModeHighScore || stats.hardModeHighScore || 0).toLocaleString()} pts | ${(stats.easyModeBestDistance || 0).toLocaleString()} m`;
+      } else if (mode.id === 'BEGINNER') {
+        recordLabel = 'BEGINNER RECORD:';
+        recordValue = `${(stats.beginnerModeHighScore || stats.bestScore || 0).toLocaleString()} pts`;
       } else if (mode.id === 'TIME_TRIAL') {
         recordLabel = 'TIME TRIAL BEST:';
         recordValue = `${stats.timeTrialHighScore.toLocaleString()} pts`;

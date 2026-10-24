@@ -107,19 +107,34 @@ export class DifficultyController {
    * Resolves the primary difficulty tier target based on encounter distance & duration.
    */
   public getTargetTier(distance: number, speed: number): PatternDifficulty {
-    if (this.gameMode === 'HARD') {
+    const mode = (this.gameMode === 'NORMAL' ? 'BEGINNER' : this.gameMode).toUpperCase();
+    if (mode === 'HARD') {
       if (distance < 60.0) {
-        return 'EASY'; // Opening 0-60m is readable intro
+        return 'EASY';
       }
-      if (distance < 380.0) {
-        return 'MEDIUM'; // 0-15s
+      if (distance < 300.0) {
+        return 'MEDIUM';
       }
-      if (distance < 850.0) {
-        return 'HARD'; // 15-30s
+      if (distance < 800.0) {
+        return 'HARD';
       }
-      return 'EXPERT'; // 30s+
+      return 'EXPERT';
     }
 
+    if (mode === 'EASY') {
+      if (distance < 60.0) {
+        return 'EASY';
+      }
+      if (distance < 380.0) {
+        return 'MEDIUM';
+      }
+      if (distance < 850.0) {
+        return 'HARD';
+      }
+      return 'EXPERT';
+    }
+
+    // BEGINNER / NORMAL
     if (distance < 75.0) {
       return 'BEGINNER';
     }
@@ -146,10 +161,62 @@ export class DifficultyController {
   public getTierWeights(distance: number, speed: number, duration?: number): Record<string, number> {
     const dur = duration !== undefined ? duration : (speed > 0 ? distance / speed : this.runDuration);
     const wave = Math.sin((distance / 320.0) * Math.PI * 2.0) * 0.08;
+    const mode = (this.gameMode === 'NORMAL' ? 'BEGINNER' : this.gameMode).toUpperCase();
 
-    // Hard Mode specific progression pacing
-    if (this.gameMode === 'HARD') {
-      // If player just faced multiple hard/expert patterns, mandate a recovery breather!
+    // 1. HARD Mode specific high-intensity progression pacing
+    if (mode === 'HARD') {
+      if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.15,
+          MEDIUM: 0.50,
+          HARD: 0.30,
+          EXPERT: 0.05,
+          BREATHER: 0.35
+        };
+      }
+
+      if (distance <= 250.0 || dur < 10.0) {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.20,
+          MEDIUM: 0.50,
+          HARD: 0.30,
+          EXPERT: 0.0,
+          BREATHER: 0.05
+        };
+      } else if (distance < 600.0 || dur < 20.0) {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.05,
+          MEDIUM: 0.30,
+          HARD: 0.45,
+          EXPERT: 0.20,
+          BREATHER: 0.05
+        };
+      } else if (distance < 1400.0 || dur < 40.0) {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.0,
+          MEDIUM: 0.20,
+          HARD: 0.45,
+          EXPERT: 0.35,
+          BREATHER: 0.05
+        };
+      } else {
+        return {
+          BEGINNER: 0.0,
+          EASY: 0.0,
+          MEDIUM: 0.10,
+          HARD: 0.40,
+          EXPERT: 0.50,
+          BREATHER: 0.06
+        };
+      }
+    }
+
+    // 2. EASY Mode (Enhanced from previous harder profile)
+    if (mode === 'EASY') {
       if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
         return {
           BEGINNER: 0.0,
@@ -157,64 +224,50 @@ export class DifficultyController {
           MEDIUM: 0.50,
           HARD: 0.20,
           EXPERT: 0.0,
-          BREATHER: 0.65
+          BREATHER: 0.55
         };
       }
 
       if (distance < 380.0 || dur < 15.0) {
-        // Stage 1: Opening (0-15s / 0-380m) - Intermediate/Medium focus earlier
         return {
           BEGINNER: 0.05,
           EASY: 0.35,
           MEDIUM: 0.50,
           HARD: 0.10,
           EXPERT: 0.0,
-          BREATHER: 0.12
+          BREATHER: 0.10
         };
       } else if (distance < 850.0 || dur < 30.0) {
-        // Stage 2: Early Run (15-30s / 380-850m) - Escalating density and moving trains
         return {
           BEGINNER: 0.0,
           EASY: 0.15,
           MEDIUM: 0.40,
           HARD: 0.40,
           EXPERT: 0.05,
-          BREATHER: 0.10
+          BREATHER: 0.08
         };
       } else if (distance < 1950.0 || dur < 60.0) {
-        // Stage 3: Mid Run (30-60s / 850-1950m) - High speed, multi-step combinations
         return {
           BEGINNER: 0.0,
           EASY: 0.05,
           MEDIUM: 0.25,
           HARD: 0.45,
           EXPERT: 0.25,
-          BREATHER: 0.10 + (wave < 0 ? 0.06 : 0)
+          BREATHER: 0.08 + (wave < 0 ? 0.05 : 0)
         };
-      } else if (distance < 4500.0 || dur < 120.0) {
-        // Stage 4: Advanced (60-120s / 1950-4500m) - Advanced & expert patterns
+      } else {
         return {
           BEGINNER: 0.0,
           EASY: 0.0,
           MEDIUM: 0.15,
           HARD: 0.45,
           EXPERT: 0.40,
-          BREATHER: 0.10 + (wave < 0 ? 0.06 : 0)
-        };
-      } else {
-        // Stage 5: Expert (120s+ / 4500m+) - Sustained high challenge with controlled recovery
-        return {
-          BEGINNER: 0.0,
-          EASY: 0.0,
-          MEDIUM: 0.10,
-          HARD: 0.40,
-          EXPERT: 0.50,
-          BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+          BREATHER: 0.08 + (wave < 0 ? 0.05 : 0)
         };
       }
     }
 
-    // Normal Mode progression pacing (preserved completely unchanged)
+    // 3. BEGINNER / NORMAL Mode progression pacing
     if (this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX) {
       return {
         BEGINNER: 0.10,
@@ -222,59 +275,54 @@ export class DifficultyController {
         MEDIUM: 0.35,
         HARD: 0.05,
         EXPERT: 0.0,
-        BREATHER: 0.70
+        BREATHER: 0.65
       };
     }
 
     if (distance < 270.0 || dur < 15.0) {
-      // Stage 1: Opening (0-15s / 0-270m)
       return {
-        BEGINNER: 0.55,
+        BEGINNER: 0.52,
         EASY: 0.45,
-        MEDIUM: 0.0,
+        MEDIUM: 0.03,
         HARD: 0.0,
         EXPERT: 0.0,
-        BREATHER: 0.15
+        BREATHER: 0.10
       };
     } else if (distance < 750.0 || dur < 35.0) {
-      // Stage 2: Early Run (15-30s / 270-750m)
       return {
         BEGINNER: 0.10,
         EASY: 0.45,
         MEDIUM: 0.40,
         HARD: 0.05,
         EXPERT: 0.0,
-        BREATHER: 0.12
+        BREATHER: 0.10
       };
     } else if (distance < 1600.0 || dur < 70.0) {
-      // Stage 3: Mid Run (30-60s / 750-1600m)
       return {
         BEGINNER: 0.0,
         EASY: 0.15,
         MEDIUM: 0.45,
         HARD: 0.35,
         EXPERT: 0.05,
-        BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+        BREATHER: 0.10 + (wave < 0 ? 0.05 : 0)
       };
     } else if (distance < 3000.0 || dur < 120.0) {
-      // Stage 4: Advanced (60-120s / 1500-3000m)
       return {
         BEGINNER: 0.0,
         EASY: 0.05,
         MEDIUM: 0.20,
         HARD: 0.50,
         EXPERT: 0.25,
-        BREATHER: 0.12 + (wave < 0 ? 0.08 : 0)
+        BREATHER: 0.10 + (wave < 0 ? 0.05 : 0)
       };
     } else {
-      // Stage 5: Expert (120s+ / 3000m+)
       return {
         BEGINNER: 0.0,
         EASY: 0.0,
         MEDIUM: 0.15,
         HARD: 0.45,
         EXPERT: 0.40,
-        BREATHER: 0.15 + (wave < 0 ? 0.10 : 0)
+        BREATHER: 0.10 + (wave < 0 ? 0.05 : 0)
       };
     }
   }
@@ -287,13 +335,26 @@ export class DifficultyController {
     const score = this.getDifficultyScore(distance, speed, duration);
     const weights = this.getTierWeights(distance, speed, duration);
     const breatherMandatory = this.consecutiveDifficultCount >= CONSTANTS.DIFFICULTY_CONFIG.CONSECUTIVE_DIFFICULT_MAX;
+    const mode = (this.gameMode === 'NORMAL' ? 'BEGINNER' : this.gameMode).toUpperCase();
 
     // Obstacle density budget per 80m chunk
-    let maxObstacles = 2;
-    if (tier === 'EASY') maxObstacles = 3;
-    else if (tier === 'MEDIUM') maxObstacles = 4;
-    else if (tier === 'HARD') maxObstacles = 5;
-    else if (tier === 'EXPERT') maxObstacles = 6;
+    let maxObstacles = 3;
+    if (mode === 'HARD') {
+      if (tier === 'BEGINNER' || tier === 'EASY') maxObstacles = 4;
+      else if (tier === 'MEDIUM') maxObstacles = 5;
+      else maxObstacles = 6;
+    } else if (mode === 'EASY') {
+      if (tier === 'BEGINNER') maxObstacles = 3;
+      else if (tier === 'EASY') maxObstacles = 3;
+      else if (tier === 'MEDIUM') maxObstacles = 4;
+      else maxObstacles = 5;
+    } else {
+      // BEGINNER / NORMAL
+      if (tier === 'EASY') maxObstacles = 3;
+      else if (tier === 'MEDIUM') maxObstacles = 3;
+      else if (tier === 'HARD') maxObstacles = 4;
+      else if (tier === 'EXPERT') maxObstacles = 4;
+    }
 
     // Dynamic reaction distance scaling
     const minReactionTime = CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME || 0.55;
@@ -314,10 +375,9 @@ export class DifficultyController {
   /**
    * Data-Driven Train Speed Progression:
    * Smoothly computes authoritative oncoming train speed based on:
-   * 1. Active game mode (NORMAL, HARD, SURVIVAL, etc.)
+   * 1. Active game mode (BEGINNER, EASY, HARD, etc.)
    * 2. Run distance & progression tier
    * 3. Optional controlled random variation within safe bounds
-   * Normal progresses from 20 to 32 m/s; Hard from 26 to 42 m/s.
    */
   public calculateMovingTrainSpeed(
     distanceOverride?: number,
@@ -326,9 +386,10 @@ export class DifficultyController {
     variationSeed?: number
   ): number {
     const dist = distanceOverride !== undefined ? Math.max(0, distanceOverride) : this.distanceTraveled;
-    const mode = (modeOverride || this.gameMode || 'NORMAL').toUpperCase();
+    const rawMode = (modeOverride || this.gameMode || 'BEGINNER').toUpperCase();
+    const mode = rawMode === 'NORMAL' ? 'BEGINNER' : rawMode;
     const profiles = CONSTANTS.TRAIN_SPEED_PROFILES;
-    const profile = profiles[mode as keyof typeof profiles] || profiles.NORMAL;
+    const profile = profiles[mode as keyof typeof profiles] || profiles.BEGINNER;
 
     let targetSpeed: number = profile.baseSpeed;
     if (dist <= 250.0) {
@@ -356,15 +417,6 @@ export class DifficultyController {
     if (variationSeed !== undefined) {
       const variation = (variationSeed * 2.0 - 1.0) * profile.variationRange;
       targetSpeed += variation;
-    }
-
-    // Difficulty budget control: If runner is at extreme Hard Mode velocity (> 40 m/s)
-    // and pattern is already complex (EXPERT / HARD), prevent uncontrolled difficulty stacking
-    // by keeping oncoming train speed at a controlled high threshold
-    if (mode === 'HARD' && (tierOverride === 'EXPERT' || tierOverride === 'ADVANCED' || tierOverride === 'HARD')) {
-      if (this.currentSpeed > 40.0) {
-        targetSpeed = Math.min(targetSpeed, profile.advancedSpeed);
-      }
     }
 
     // Strict safety clamp: never exceed profile.maxSpeed and never dip below safe base speed
@@ -395,18 +447,49 @@ export class DifficultyController {
    */
   public getTrainEncounterPacing(distance: number = this.distanceTraveled) {
     const config = CONSTANTS.TRAIN_ENCOUNTER_PACING;
-    const stage = config.stages.findIndex((entry) => distance < entry.end);
-    const hard = this.gameMode === 'HARD';
-    const [minGap, maxGap] = hard ? config.stages[stage].hardGap : config.stages[stage].normalGap;
-    const [staticMinGap, staticMaxGap] = hard ? config.stages[stage].hardStaticGap : config.stages[stage].normalStaticGap;
-    return { stage, minGap, maxGap, staticMinGap, staticMaxGap, minimumGap: config.minimumArrivalGap,
-      rushAllowed: distance >= (hard ? config.rushHardDistance : config.rushNormalDistance) };
+    const stageIndex = config.stages.findIndex((entry) => distance < entry.end);
+    const stage = stageIndex >= 0 ? stageIndex : config.stages.length - 1;
+    const currentStage = config.stages[stage];
+    const rawMode = (this.gameMode || 'BEGINNER').toUpperCase();
+    const mode = rawMode === 'NORMAL' ? 'BEGINNER' : rawMode;
+
+    let minGap: number, maxGap: number, staticMinGap: number, staticMaxGap: number;
+    if (mode === 'HARD') {
+      [minGap, maxGap] = currentStage.hardGap;
+      [staticMinGap, staticMaxGap] = currentStage.hardStaticGap;
+    } else if (mode === 'EASY') {
+      [minGap, maxGap] = currentStage.easyGap;
+      [staticMinGap, staticMaxGap] = currentStage.easyStaticGap;
+    } else {
+      [minGap, maxGap] = currentStage.beginnerGap || currentStage.normalGap;
+      [staticMinGap, staticMaxGap] = currentStage.beginnerStaticGap || currentStage.normalStaticGap;
+    }
+
+    const rushAllowed = distance >= (
+      mode === 'HARD' ? config.rushHardDistance :
+      mode === 'EASY' ? config.rushEasyDistance :
+      config.rushBeginnerDistance
+    );
+
+    return {
+      stage,
+      minGap,
+      maxGap,
+      staticMinGap,
+      staticMaxGap,
+      minimumGap: config.minimumArrivalGap,
+      rushAllowed
+    };
   }
 
   public canSpawnMovingTrain(atDistance: number, playerSpeed?: number, currentTime?: number): boolean {
-    if (atDistance < 80) return false;
+    const rawMode = (this.gameMode || 'BEGINNER').toUpperCase();
+    const mode = rawMode === 'NORMAL' ? 'BEGINNER' : rawMode;
+    const minDistanceThreshold = mode === 'HARD' ? 60 : (mode === 'EASY' ? 70 : 80);
+    if (atDistance < minDistanceThreshold) return false;
+
     const pacing = this.getTrainEncounterPacing(atDistance);
-    const minGap = Math.max(40, (playerSpeed ?? this.currentSpeed) * 1.5);
+    const minGap = Math.max(mode === 'HARD' ? 35 : 40, (playerSpeed ?? this.currentSpeed) * (mode === 'HARD' ? 1.0 : 1.3));
     if (atDistance - this.lastMovingTrainDistance < minGap) return false;
     // Never compare spawn time with distance / current speed: acceleration changes that clock.
     const time = currentTime ?? (this.runDuration > 0 ? this.runDuration : undefined);

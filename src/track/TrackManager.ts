@@ -63,6 +63,7 @@ export class TrackManager {
   private currentSeed: number = 1337;
   private isDebugSeed: boolean = false;
   private recentPatterns: string[] = [];
+  private lastHazardZ: number = 0;
   private rampOnboardingChecked: boolean = false;
   private chaser: ChaserModel | null = null;
   private collisionDiagnostics: CollisionDiagnostic[] = [];
@@ -123,7 +124,8 @@ export class TrackManager {
   }
 
   public getGameMode(): string {
-    return this.difficultyController.getGameMode();
+    const mode = this.difficultyController.getGameMode();
+    return (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
   }
 
   public setSeed(seed: number, isDebug: boolean = true): void {
@@ -239,13 +241,17 @@ export class TrackManager {
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
 
     this.furthestZ = 0;
-    const first = this.getGameMode() === 'HARD' ? CONSTANTS.TRAIN_ENCOUNTER_PACING.firstHard : CONSTANTS.TRAIN_ENCOUNTER_PACING.firstNormal;
+    const mode = this.getGameMode();
+    const first = mode === 'HARD'
+      ? CONSTANTS.TRAIN_ENCOUNTER_PACING.firstHard
+      : (mode === 'EASY' ? CONSTANTS.TRAIN_ENCOUNTER_PACING.firstEasy : CONSTANTS.TRAIN_ENCOUNTER_PACING.firstBeginner);
     this.nextTrainArrival = first[0] + this.rng() * (first[1] - first[0]);
-    this.nextStaticArrival = 4 + this.rng() * 2;
+    this.nextStaticArrival = mode === 'HARD' ? 2.8 : (mode === 'EASY' ? 4.0 : 5.0);
     this.lastPlannedArrival = -Infinity;
     this.lastRushArrival = -Infinity;
     this.rushFollowup = false;
     this.lastTrainLane = null;
+    this.lastHazardZ = 0;
     this.encounterPlayer = undefined;
     this.observedTrains = new WeakSet();
     this.warnedTrains = new WeakSet();
@@ -461,6 +467,9 @@ export class TrackManager {
     }
     this.recentPatterns.push(pattern.name);
     if (this.recentPatterns.length > 5) this.recentPatterns.shift();
+    if (pattern.obstacles.length > 0) {
+      this.lastHazardZ = distance;
+    }
     this.difficultyController.recordPatternSpawned(pattern, distance, this.elapsedTime);
     this.lastSpawnedPattern = pattern;
     PacingMetrics.getInstance().recordPattern(pattern.name, pattern.difficulty);
@@ -538,17 +547,21 @@ export class TrackManager {
     const layouts = candidates.flatMap((candidate) => permutations.map((lanes) => this.remapRailwayPattern(candidate, lanes)));
     // Alternation is a preference; physical occupancy and the full action window
     // remain hard gates, including when the next lane has not cleared yet.
+    const activeMode = this.getGameMode();
+    const hazardThreshold = activeMode === 'HARD' ? 30 : (activeMode === 'EASY' ? 45 : 65);
+    const hazardNeeded = (Math.abs(worldZ) - this.lastHazardZ) > hazardThreshold;
     const repetitionCost = (candidate: TrackPattern) =>
       Number(staticDue !== (parked(candidate).length > 0)) * 40 +
       Number(!!pattern.isBreather && !trainDue && !staticDue && !candidate.isBreather) * 20 +
+      Number(hazardNeeded && (candidate.isBreather || candidate.obstacles.length === 0)) * 150 +
       Number(moving(candidate)[0]?.lane === this.lastTrainLane) * 8 + this.recentPatterns.lastIndexOf(candidate.name) + 1;
     layouts.sort((a, b) => repetitionCost(a) - repetitionCost(b));
     const attempt = (candidate: TrackPattern, withTrain: boolean): TrackPattern | null => {
       let trains = moving(candidate);
       if (withTrain && this.encounterPlayer?.isChangingLaneActive()) return null;
       if (withTrain ? (trains.length !== 1 && !(rush && pacing.stage >= 2 && trains.length === 2)) : trains.length !== 0) return null;
-      if (candidate.obstacles.some((obs) => !obs.isMoving && obs.type !== 'MOVING_TRAIN' && traffic.includes(obs.lane))) return null;
-      if (trains.some((obs) => !traffic.includes(obs.lane))) return null;
+      if (withTrain && candidate.obstacles.some((obs) => !obs.isMoving && obs.type !== 'MOVING_TRAIN' && trains.some((t) => t.lane === obs.lane))) return null;
+      if (withTrain && trains.some((obs) => !traffic.includes(obs.lane))) return null;
       if (this.lastSpawnedPattern && !ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
         if (this.encounterDebugEnabled) {
           this.encounterMetrics.reachabilityRejections++;
@@ -558,10 +571,15 @@ export class TrackManager {
       }
       let speed = withTrain ? this.difficultyController.calculateMovingTrainSpeed(Math.abs(worldZ), this.getGameMode(), rush ? 'HARD' : candidate.difficulty, rush ? 1 : variation) : undefined;
       if (speed !== undefined) {
-        // A lane's active express cohort shares one track velocity. Faster
-        // followers would eventually catch the leader, even far behind camera.
+        // A lane's active express cohort shares one track velocity only if close enough to risk rear-ending
         for (const peer of peers) for (const obs of peer.obstacles) {
-          if (peer !== chunk && obs.active && obs.isMoving && trains.some((train) => train.lane === obs.lane) && (obs.velocityZ ?? 0) > 0) speed = Math.min(speed, obs.velocityZ!);
+          if (peer !== chunk && obs.active && obs.isMoving && trains.some((train) => train.lane === obs.lane) && (obs.velocityZ ?? 0) > 0) {
+            const myZ = worldZ - (trains.find((t) => t.lane === obs.lane)?.zOffset ?? 0);
+            const peerZ = peer.chunkZ + obs.group.position.z;
+            if (Math.abs(myZ - peerZ) < 85.0) {
+              speed = Math.min(speed, obs.velocityZ!);
+            }
+          }
         }
         let front = Math.max(...trains.map((train) => worldZ - train.zOffset + (train.length ?? CONSTANTS.TRAIN_LENGTH_SHORT) / 2 + 2.1));
         // Chunk recycling is discrete, but encounter time need not be. Shift only
@@ -577,7 +595,7 @@ export class TrackManager {
           front -= shift;
         }
         const arrival = arrivalFor(front, speed);
-        if (arrival < this.nextTrainArrival - config.placementTolerance || arrival - this.lastPlannedArrival < config.minimumArrivalGap || arrival - this.elapsedTime < CONSTANTS.MOVING_TRAIN_WARNING_TIME + 0.3) {
+        if (arrival - this.lastPlannedArrival < config.minimumArrivalGap || arrival - this.elapsedTime < CONSTANTS.MOVING_TRAIN_WARNING_TIME + 0.3) {
           if (this.encounterDebugEnabled) this.encounterMetrics.spacingRejections++;
           return null;
         }
@@ -675,6 +693,16 @@ export class TrackManager {
     for (const candidate of layouts) {
       const accepted = attempt(candidate, false);
       if (accepted) return accepted;
+    }
+    // If ordinary layouts fail, try non-breather active candidates before defaulting to recovery
+    if (hazardNeeded) {
+      const activeCandidates = candidates.filter((c) => !c.isBreather && c.obstacles.length > 0);
+      for (const cand of activeCandidates) {
+        for (const lanes of permutations) {
+          const accepted = attempt(this.remapRailwayPattern(cand, lanes), false);
+          if (accepted) return accepted;
+        }
+      }
     }
     // The existing recovery connector can always be mapped to the non-traffic lane.
     const recovery = OBSTACLE_PATTERNS.find((candidate) => candidate.name === 'SAFE_RECOVERY_CONNECTOR')!;

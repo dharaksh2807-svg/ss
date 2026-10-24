@@ -236,10 +236,13 @@ export class CameraController {
 
     // Dynamic FOV widening:
     // Base FOV: 60° landscape, 68° portrait to frame all 3 track lanes cleanly.
-    // Expands smoothly by +4.5° at high speed to enhance sense of velocity without stretching trains.
+    // Expands smoothly up to +8.5° at high speed (especially in Hard mode up to 52 m/s)
+    // to give intense peripheral velocity cues without distorting track center.
     const baseFov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    const speedRatio = Math.max(0, Math.min(1.0, (speed - CONSTANTS.INITIAL_SPEED) / (CONSTANTS.MAX_SPEED - CONSTANTS.INITIAL_SPEED)));
-    const targetFov = baseFov + speedRatio * 4.5;
+    const minSpd = 19.0;
+    const maxSpd = 52.0;
+    const speedRatio = Math.max(0, Math.min(1.0, (speed - minSpd) / (maxSpd - minSpd)));
+    const targetFov = baseFov + speedRatio * 8.5;
     if (Math.abs(this.camera.fov - targetFov) > 0.05) {
       this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.5 * dt));
       this.camera.updateProjectionMatrix();

@@ -559,9 +559,10 @@ export class WorldScene {
     // Subtle high-speed motion lines opacity
     if (this.speedLinesMesh) {
       this.speedLinesMesh.position.z = playerZ;
-      const speedThreshold = 25.0;
-      const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (CONSTANTS.MAX_SPEED - speedThreshold)));
-      (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.32;
+      const speedThreshold = 21.0;
+      const maxSpd = 52.0;
+      const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (maxSpd - speedThreshold)));
+      (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.52;
     }
 
     // Atmospheric rain particles tracking & animation

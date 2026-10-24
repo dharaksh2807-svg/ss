@@ -88,7 +88,7 @@ export interface SeasonPass {
   milestones: SeasonMilestone[];
 }
 
-export type GameMode = 'NORMAL' | 'HARD' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | 'PRACTICE' | 'ARENA';
+export type GameMode = 'BEGINNER' | 'EASY' | 'HARD' | 'NORMAL' | 'TIME_TRIAL' | 'COIN_RUSH' | 'SURVIVAL' | 'PRACTICE' | 'ARENA';
 
 export interface GameModeConfig {
   id: GameMode;
@@ -113,6 +113,12 @@ export interface LifetimeStats {
   hardModeHighScore: number;
   hardModeBestDistance: number;
   hardModeRuns: number;
+  easyModeHighScore?: number;
+  easyModeBestDistance?: number;
+  easyModeRuns?: number;
+  beginnerModeHighScore?: number;
+  beginnerModeBestDistance?: number;
+  beginnerModeRuns?: number;
   timeTrialHighScore: number;
   coinRushBestTime: number; // in seconds, lower is better
   survivalBestDistance: number;

@@ -126,11 +126,17 @@ export class ProgressionManager {
         hardModeHighScore: 0,
         hardModeBestDistance: 0,
         hardModeRuns: 0,
+        easyModeHighScore: 0,
+        easyModeBestDistance: 0,
+        easyModeRuns: 0,
+        beginnerModeHighScore: 0,
+        beginnerModeBestDistance: 0,
+        beginnerModeRuns: 0,
         timeTrialHighScore: 0,
         coinRushBestTime: 0,
         survivalBestDistance: 0
       },
-      lastSelectedMode: 'NORMAL',
+      lastSelectedMode: 'BEGINNER',
       unlockedCharacters: ['char_jax'],
       selectedCharacter: 'char_jax',
       unlockedOutfits: {
@@ -247,8 +253,24 @@ export class ProgressionManager {
             if (parsed.currentMissionSet === undefined) {
               parsed.currentMissionSet = 1;
             }
+            // Backward-compatible migration:
+            // Old 'HARD' was the previous harder mode -> now 'EASY'.
+            // Old 'NORMAL' was the previous easier mode -> now 'BEGINNER'.
+            if (parsed.lifetimeStats) {
+              if (parsed.lifetimeStats.hardModeHighScore !== undefined && parsed.lifetimeStats.easyModeHighScore === undefined) {
+                parsed.lifetimeStats.easyModeHighScore = parsed.lifetimeStats.hardModeHighScore;
+                parsed.lifetimeStats.easyModeBestDistance = parsed.lifetimeStats.hardModeBestDistance;
+                parsed.lifetimeStats.easyModeRuns = parsed.lifetimeStats.hardModeRuns;
+                if (parsed.lastSelectedMode === 'HARD') {
+                  parsed.lastSelectedMode = 'EASY';
+                }
+              }
+            }
+            if (parsed.lastSelectedMode === 'NORMAL') {
+              parsed.lastSelectedMode = 'BEGINNER';
+            }
             if (!parsed.lastSelectedMode) {
-              parsed.lastSelectedMode = 'NORMAL';
+              parsed.lastSelectedMode = 'BEGINNER';
             }
             return parsed;
           }
@@ -413,7 +435,23 @@ export class ProgressionManager {
       }
       this.updateAchievement('ach_hard_score', this.state.lifetimeStats.hardModeHighScore);
       this.updateAchievement('ach_hard_distance', this.state.lifetimeStats.hardModeBestDistance);
+    } else if (this.activeGameMode === 'EASY') {
+      this.state.lifetimeStats.easyModeRuns = (this.state.lifetimeStats.easyModeRuns || 0) + 1;
+      if (this.runScore > (this.state.lifetimeStats.easyModeHighScore || 0)) {
+        this.state.lifetimeStats.easyModeHighScore = Math.floor(this.runScore);
+      }
+      if (this.runDistance > (this.state.lifetimeStats.easyModeBestDistance || 0)) {
+        this.state.lifetimeStats.easyModeBestDistance = Math.floor(this.runDistance);
+      }
     } else {
+      // BEGINNER / NORMAL
+      this.state.lifetimeStats.beginnerModeRuns = (this.state.lifetimeStats.beginnerModeRuns || 0) + 1;
+      if (this.runScore > (this.state.lifetimeStats.beginnerModeHighScore || 0)) {
+        this.state.lifetimeStats.beginnerModeHighScore = Math.floor(this.runScore);
+      }
+      if (this.runDistance > (this.state.lifetimeStats.beginnerModeBestDistance || 0)) {
+        this.state.lifetimeStats.beginnerModeBestDistance = Math.floor(this.runDistance);
+      }
       if (this.runScore > this.state.lifetimeStats.bestScore) {
         this.state.lifetimeStats.bestScore = Math.floor(this.runScore);
         this.updateAchievement('ach_highscore', this.state.lifetimeStats.bestScore);

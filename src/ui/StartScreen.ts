@@ -173,13 +173,16 @@ export class StartScreen {
             <span class="equipped-arrow">✎</span>
           </div>
 
-          <!-- Difficulty Mode Selection Toggle -->
+          <!-- Difficulty Mode Selection Toggle (3 Modes: Beginner, Easy, Hard) -->
           <div class="lobby-mode-toggle" id="lobby-mode-toggle" role="group" aria-label="Difficulty Mode Selection">
-            <button id="mode-toggle-normal" class="mode-toggle-btn active" data-mode="NORMAL" title="Normal Mode: Balanced arcade running">
-              <span class="mode-toggle-icon">🏃</span> NORMAL
+            <button id="mode-toggle-beginner" class="mode-toggle-btn active" data-mode="BEGINNER" title="Beginner Mode: Accessible, regular hazards and trains, forgiving curve">
+              <span class="mode-toggle-icon">🏃</span> BEGINNER
             </button>
-            <button id="mode-toggle-hard" class="mode-toggle-btn" data-mode="HARD" title="Hard Mode: Faster runner, faster trains, tougher challenges">
-              <span class="mode-toggle-icon">⚡</span> HARD MODE
+            <button id="mode-toggle-easy" class="mode-toggle-btn" data-mode="EASY" title="Easy Mode: Elevated railway pace, frequent trains, medium challenge">
+              <span class="mode-toggle-icon">⚡</span> EASY
+            </button>
+            <button id="mode-toggle-hard" class="mode-toggle-btn" data-mode="HARD" title="Hard Mode: Flagship high intensity, fast runner, relentless trains">
+              <span class="mode-toggle-icon">🔥</span> HARD
             </button>
           </div>
 
@@ -247,11 +250,17 @@ export class StartScreen {
     });
 
     // Mode Toggle Buttons
-    const normalToggle = document.getElementById('mode-toggle-normal');
+    const beginnerToggle = document.getElementById('mode-toggle-beginner');
+    const easyToggle = document.getElementById('mode-toggle-easy');
     const hardToggle = document.getElementById('mode-toggle-hard');
 
-    normalToggle?.addEventListener('click', () => {
-      this.progression.setActiveGameMode('NORMAL');
+    beginnerToggle?.addEventListener('click', () => {
+      this.progression.setActiveGameMode('BEGINNER');
+      this.updateState();
+    });
+
+    easyToggle?.addEventListener('click', () => {
+      this.progression.setActiveGameMode('EASY');
       this.updateState();
     });
 
@@ -396,23 +405,32 @@ export class StartScreen {
     const stats = this.progression.getState().lifetimeStats;
     const scoreLabelEl = document.querySelector('.score-widget .widget-label');
 
-    const normalToggle = document.getElementById('mode-toggle-normal');
+    const beginnerToggle = document.getElementById('mode-toggle-beginner');
+    const easyToggle = document.getElementById('mode-toggle-easy');
     const hardToggle = document.getElementById('mode-toggle-hard');
 
+    beginnerToggle?.classList.remove('active');
+    easyToggle?.classList.remove('active');
+    hardToggle?.classList.remove('active');
+
     if (activeMode === 'HARD') {
-      normalToggle?.classList.remove('active');
       hardToggle?.classList.add('active');
       if (scoreLabelEl) scoreLabelEl.textContent = 'HARD MODE BEST';
       if (this.highScoreEl) {
         this.highScoreEl.textContent = (stats.hardModeHighScore || 0).toLocaleString();
       }
-    } else {
-      normalToggle?.classList.add('active');
-      hardToggle?.classList.remove('active');
-      if (scoreLabelEl) scoreLabelEl.textContent = 'ALL-TIME BEST';
+    } else if (activeMode === 'EASY') {
+      easyToggle?.classList.add('active');
+      if (scoreLabelEl) scoreLabelEl.textContent = 'EASY MODE BEST';
       if (this.highScoreEl) {
-        const high = localStorage.getItem('metro_surf_high_score') || '0';
-        this.highScoreEl.textContent = parseInt(high, 10).toLocaleString();
+        this.highScoreEl.textContent = (stats.easyModeHighScore || stats.hardModeHighScore || 0).toLocaleString();
+      }
+    } else {
+      beginnerToggle?.classList.add('active');
+      if (scoreLabelEl) scoreLabelEl.textContent = 'BEGINNER BEST';
+      if (this.highScoreEl) {
+        const high = stats.beginnerModeHighScore || stats.bestScore || parseInt(localStorage.getItem('metro_surf_high_score') || '0', 10);
+        this.highScoreEl.textContent = high.toLocaleString();
       }
     }
 

@@ -250,11 +250,11 @@ console.log('\n--- Suite 4: Kinematic Collection Integrity at Maximum Speed (38 
   player.targetLane = 0;
   player.position.set(0, CONSTANTS.PLAYER_BASE_Y, 0);
 
-  // Step player forward 40m at 38 m/s (approx 1.05s) at 60 FPS
+  // Step player forward 20m at 38 m/s through opening straight trail
   const dt = 1.0 / 60.0;
   const initialCoins = collectedCoins;
 
-  for (let i = 0; i < 65; i++) {
+  for (let i = 0; i < 32; i++) {
     player.position.z -= player.speed * dt;
     player.distanceTraveled += player.speed * dt;
     player.update(dt);

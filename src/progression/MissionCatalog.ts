@@ -502,32 +502,59 @@ export const DEFAULT_SEASON_PASS: SeasonPass = {
 
 export const GAME_MODES: GameModeConfig[] = [
   {
-    id: 'NORMAL',
-    name: 'Endless Run',
-    tagline: 'Standard Arcade Mode',
+    id: 'BEGINNER',
+    name: 'Beginner',
+    tagline: 'Accessible Subway Sprint',
     icon: '🏃',
-    description: 'The classic high-speed subway sprint. Avoid trains, dodge barriers, and set new world records.',
+    description: 'A smooth, engaging run with regular hazards, active trains, and a forgiving learning curve. No empty railways.',
     rules: [
-      'Infinite procedural tracks',
-      'Full power-up and hoverboard availability',
-      'Escalating train speeds and obstacle density'
+      'Comfortable 19 m/s start, smooth acceleration up to 38 m/s',
+      'Moving trains at 23–36 m/s with ample reaction windows',
+      'Regular obstacles and train encounters with minimal empty stretches',
+      'Full power-ups, hoverboards, and revives available'
     ],
-    rewardDescription: 'Standard coins and achievement progress'
+    rewardDescription: 'Standard coins and beginner record tracking'
+  },
+  {
+    id: 'EASY',
+    name: 'Easy',
+    tagline: 'Elevated Railway Pace',
+    icon: '⚡',
+    description: 'A brisk, dynamic run with frequent train encounters, varied obstacles, and steady acceleration.',
+    rules: [
+      'Starts at 24 m/s and accelerates steadily up to 44 m/s',
+      'Faster oncoming trains (28–46 m/s) with tighter reaction timing',
+      'Frequent static and moving train combinations',
+      'Independent Easy Mode records and statistics'
+    ],
+    rewardDescription: '1.15x score pacing and Easy Mode leaderboard records'
   },
   {
     id: 'HARD',
-    name: 'Hard Mode',
-    tagline: 'High-Velocity Railway Gauntlet',
-    icon: '⚡',
-    description: 'Faster runner, faster trains, and tougher obstacle combinations for skilled veterans.',
+    name: 'Hard',
+    tagline: 'Flagship High-Intensity Gauntlet',
+    icon: '🔥',
+    description: 'Supreme reflex challenge. Extremely fast runner, relentless high-speed trains, dense railway traffic, and complex obstacle patterns.',
     rules: [
-      'Starts at 24 m/s and reaches 46 m/s top speed',
-      'High-speed oncoming trains up to 24 m/s',
-      'Earlier moving trains and demanding jump/slide sequences',
-      'Independent personal best records and statistics',
-      'Standard power-ups, hoverboards, and revives remain active'
+      'Starts fast at 28 m/s and reaches 52 m/s top speed',
+      'Blistering moving trains (34–54 m/s) with early encounters',
+      'Dense static and moving train formations with rooftop traversal',
+      'Intense Express Rush encounters with dual-train corridors',
+      'Independent Hard Mode leaderboard and lifetime records'
     ],
-    rewardDescription: '1.25x score pacing and independent Hard Mode leaderboard records'
+    rewardDescription: '1.35x score pacing and elite Hard Mode records'
+  },
+  {
+    id: 'NORMAL',
+    name: 'Beginner (Classic)',
+    tagline: 'Accessible Subway Sprint',
+    icon: '🏃',
+    description: 'Classic accessible arcade running with active railway hazards.',
+    rules: [
+      'Identical to Beginner Mode',
+      'Smooth progression and regular train encounters'
+    ],
+    rewardDescription: 'Standard coins and progression'
   },
   {
     id: 'TIME_TRIAL',

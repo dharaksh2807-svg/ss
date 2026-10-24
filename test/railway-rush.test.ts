@@ -11,7 +11,7 @@ import { OBSTACLE_PATTERNS } from '../src/track/ObstaclePatterns';
 let checks = 0;
 function check(value: boolean, message: string) { assert.ok(value, message); checks++; console.log(`PASS: ${message}`); }
 const dc = new DifficultyController();
-for (const mode of ['NORMAL', 'HARD']) {
+for (const mode of ['BEGINNER', 'EASY', 'HARD']) {
   dc.setGameMode(mode); dc.reset();
   const stages = [100, 600, 1800, 3500].map((distance) => dc.getTrainEncounterPacing(distance));
   check(stages.every((p, i) => i === 0 || p.maxGap < stages[i - 1].maxGap), `${mode}: progressively shorter maximum target gaps`);
@@ -22,8 +22,9 @@ for (const mode of ['NORMAL', 'HARD']) {
     check(Math.abs(a - b) < 0.001, `${mode}: continuous train speed at ${distance}m`);
   }
 }
-check(dc.calculateMovingTrainSpeed(1600, 'NORMAL', 'EASY', .5) === 30 &&
-  dc.calculateMovingTrainSpeed(1600, 'HARD', 'EASY', .5) === 38, 'Preserve the successful advanced train velocities');
+check(dc.calculateMovingTrainSpeed(1600, 'BEGINNER', 'EASY', .5) === 34 &&
+  dc.calculateMovingTrainSpeed(1600, 'EASY', 'EASY', .5) === 42 &&
+  dc.calculateMovingTrainSpeed(1600, 'HARD', 'EASY', .5) === 48, 'Preserve the elevated train velocities across 3 modes');
 const pattern: any = { name: 'CLOCK_TEST', difficulty: 'EASY', obstacles: [{ type: 'MOVING_TRAIN' }], collectibles: [] };
 dc.recordPatternSpawned(pattern, 500, 10);
 check(!dc.canSpawnMovingTrain(1000, 46, 11), 'A distance jump cannot bypass the simulation-time cooldown');

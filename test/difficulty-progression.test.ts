@@ -214,13 +214,14 @@ console.log('\n--- Test 5: Dedicated Difficulty Controller & Recovery Breathers 
   assert(recoveryWeights.EXPERT === 0.0, 'Expert patterns suppressed during recovery breather');
 
   // Moving train cooldown check
-  assert(dc.canSpawnMovingTrain(100) === false, 'Moving train forbidden in opening 240m');
+  assert(dc.canSpawnMovingTrain(79) === false, 'Moving trains remain forbidden inside protected opening chunk');
+  assert(dc.canSpawnMovingTrain(100) === true, 'Moving trains can be scheduled beyond opening gate');
   assert(dc.canSpawnMovingTrain(300) === true, 'Moving train allowed at 300m');
 
   const mockMovingTrain = OBSTACLE_PATTERNS.find(p => p.obstacles.some(o => o.type === 'MOVING_TRAIN'))!;
   dc.recordPatternSpawned(mockMovingTrain, 300);
-  assert(dc.canSpawnMovingTrain(340) === false, 'Moving train forbidden within 75m cooldown gap');
-  assert(dc.canSpawnMovingTrain(385) === true, 'Moving train allowed after 75m cooldown distance');
+  assert(dc.canSpawnMovingTrain(335) === false, 'Moving train forbidden within cooldown gap');
+  assert(dc.canSpawnMovingTrain(385) === true, 'Moving train allowed after cooldown distance');
 }
 
 // =========================================================================

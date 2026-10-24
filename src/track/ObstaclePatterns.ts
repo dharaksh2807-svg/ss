@@ -1321,8 +1321,8 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     safeRoutes: 'Staggered oncoming trains in Right lane (z=32m) and Left lane (z=58m); Center lane 0 remains open throughout as a high-speed express route',
     minReactionDist: 26.0,
     obstacles: [
-      { type: 'MOVING_TRAIN', lane: 1, zOffset: 32.0, length: 20.0, isMoving: true },
-      { type: 'MOVING_TRAIN', lane: -1, zOffset: 58.0, length: 20.0, isMoving: true }
+      { type: 'MOVING_TRAIN', lane: 1, zOffset: 40.0, length: 20.0, isMoving: true },
+      { type: 'MOVING_TRAIN', lane: -1, zOffset: 64.0, length: 20.0, isMoving: true }
     ],
     collectibles: [
       { type: 'COIN', lane: 1, endLane: 0, zOffset: 12.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },

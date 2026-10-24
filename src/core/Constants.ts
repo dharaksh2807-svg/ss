@@ -48,7 +48,7 @@ export const CONSTANTS = {
 
   // Mode-Specific Speed Progression Profiles
   SPEED_PROFILES: {
-    NORMAL: {
+    BEGINNER: {
       initialSpeed: 18.0,
       maxSpeed: 38.0,
       earlyRampDistance: 300.0, // 0 - 300m (~12-14s)
@@ -57,14 +57,32 @@ export const CONSTANTS = {
       midSpeedTarget: 31.5,
       asymptoticDistance: 3200.0
     },
-    HARD: {
+    EASY: {
       initialSpeed: 24.0,
-      maxSpeed: 46.0,
+      maxSpeed: 44.0,
       earlyRampDistance: 250.0,
       earlySpeedTarget: 31.0,
       midRampDistance: 1000.0,
-      midSpeedTarget: 39.5,
+      midSpeedTarget: 38.0,
       asymptoticDistance: 2600.0
+    },
+    HARD: {
+      initialSpeed: 28.0,
+      maxSpeed: 52.0,
+      earlyRampDistance: 200.0,
+      earlySpeedTarget: 36.0,
+      midRampDistance: 800.0,
+      midSpeedTarget: 44.0,
+      asymptoticDistance: 2200.0
+    },
+    NORMAL: {
+      initialSpeed: 18.0,
+      maxSpeed: 38.0,
+      earlyRampDistance: 300.0,
+      earlySpeedTarget: 24.5,
+      midRampDistance: 1200.0,
+      midSpeedTarget: 31.5,
+      asymptoticDistance: 3200.0
     },
     SURVIVAL: {
       initialSpeed: 25.0,
@@ -99,83 +117,149 @@ export const CONSTANTS = {
   DIFFICULTY_CONFIG: {
     MIN_SAFE_REACTION_TIME: 0.55, // Minimum seconds of reaction window at any speed
     CONSECUTIVE_DIFFICULT_MAX: 2, // Max consecutive intense chunks before breather
-    MOVING_TRAIN_MIN_GAP: 75.0, // Minimum meters between moving train spawns
-    MOVING_TRAIN_MIN_TIME_GAP: 3.5, // Minimum seconds between moving train encounters
+    MOVING_TRAIN_MIN_GAP: 55.0, // Minimum meters between moving train spawns
+    MOVING_TRAIN_MIN_TIME_GAP: 2.5, // Minimum seconds between moving train encounters
     BREATHER_INTERVAL: 4, // Guaranteed breather opportunity every ~4-5 chunks
   },
 
   // Encounter targets are arrival times, independent of chunk streaming lead distance.
   TRAIN_ENCOUNTER_PACING: {
-    firstNormal: [7.0, 9.0],
-    firstHard: [6.0, 7.5],
+    firstBeginner: [3.8, 5.0],
+    firstEasy: [2.8, 4.0],
+    firstHard: [1.8, 2.8],
+    firstNormal: [3.8, 5.0],
     stages: [
-      { end: 300, normalGap: [7.5, 10], hardGap: [6.5, 8], normalStaticGap: [14, 20], hardStaticGap: [12, 17] },
-      { end: 1200, normalGap: [4.2, 5.3], hardGap: [3.5, 4.5], normalStaticGap: [7, 10], hardStaticGap: [6, 8] },
-      { end: 2500, normalGap: [3.5, 4.5], hardGap: [2.9, 3.7], normalStaticGap: [7, 10], hardStaticGap: [4.5, 6] },
-      { end: Infinity, normalGap: [2.8, 3.6], hardGap: [2.4, 3.0], normalStaticGap: [4.5, 6], hardStaticGap: [4.5, 6.5] }
+      {
+        end: 300,
+        beginnerGap: [3.8, 5.5],
+        easyGap: [2.8, 4.0],
+        hardGap: [1.8, 2.8],
+        normalGap: [3.8, 5.5],
+        beginnerStaticGap: [5.0, 7.5],
+        easyStaticGap: [3.5, 5.5],
+        hardStaticGap: [2.2, 3.8],
+        normalStaticGap: [5.0, 7.5]
+      },
+      {
+        end: 1200,
+        beginnerGap: [3.2, 4.5],
+        easyGap: [2.4, 3.4],
+        hardGap: [1.5, 2.4],
+        normalGap: [3.2, 4.5],
+        beginnerStaticGap: [4.0, 6.0],
+        easyStaticGap: [3.0, 4.5],
+        hardStaticGap: [1.8, 3.0],
+        normalStaticGap: [4.0, 6.0]
+      },
+      {
+        end: 2500,
+        beginnerGap: [2.8, 3.8],
+        easyGap: [2.0, 3.0],
+        hardGap: [1.3, 2.0],
+        normalGap: [2.8, 3.8],
+        beginnerStaticGap: [3.5, 5.0],
+        easyStaticGap: [2.5, 3.8],
+        hardStaticGap: [1.6, 2.6],
+        normalStaticGap: [3.5, 5.0]
+      },
+      {
+        end: Infinity,
+        beginnerGap: [2.4, 3.4],
+        easyGap: [1.8, 2.6],
+        hardGap: [1.1, 1.8],
+        normalGap: [2.4, 3.4],
+        beginnerStaticGap: [3.0, 4.5],
+        easyStaticGap: [2.2, 3.4],
+        hardStaticGap: [1.4, 2.2],
+        normalStaticGap: [3.0, 4.5]
+      }
     ],
+    rushBeginnerDistance: 1200,
+    rushEasyDistance: 800,
+    rushHardDistance: 450,
     rushNormalDistance: 1200,
-    rushHardDistance: 900,
-    rushChance: 0.18,
-    rushCooldown: 28,
-    rushPairGap: 2.4,
-    minimumArrivalGap: 1.9,
+    rushChance: 0.25,
+    rushCooldown: 18,
+    rushPairGap: 2.0,
+    minimumArrivalGap: 1.4,
     placementTolerance: 0.6
   },
 
   // Dynamic Moving Train Speed Progression Profiles
   TRAIN_SPEED_PROFILES: {
-    NORMAL: {
-      baseSpeed: 20.0,
-      earlySpeed: 22.0,     // 250m
-      mediumSpeed: 26.0,    // 750m
-      advancedSpeed: 30.0,  // 1600m
-      expertSpeed: 31.5,
-      maxSpeed: 32.0,
+    BEGINNER: {
+      baseSpeed: 23.0,
+      earlySpeed: 26.0,     // 250m
+      mediumSpeed: 30.0,    // 750m
+      advancedSpeed: 34.0,  // 1600m
+      expertSpeed: 35.5,
+      maxSpeed: 36.0,
       variationRange: 0.8,
-      minTimeGap: 4.0,
-      minTimeGapLate: 2.2,
+      minTimeGap: 3.5,
+      minTimeGapLate: 2.0,
+    },
+    EASY: {
+      baseSpeed: 28.0,
+      earlySpeed: 32.0,     // 250m
+      mediumSpeed: 37.0,    // 750m
+      advancedSpeed: 42.0,  // 1600m
+      expertSpeed: 44.5,
+      maxSpeed: 46.0,
+      variationRange: 1.0,
+      minTimeGap: 2.5,
+      minTimeGapLate: 1.6,
     },
     HARD: {
-      baseSpeed: 26.0,
-      earlySpeed: 28.0,
-      mediumSpeed: 33.0,
-      advancedSpeed: 38.0,
-      expertSpeed: 41.0,
-      maxSpeed: 42.0,
-      variationRange: 1.0,
-      minTimeGap: 2.8,
-      minTimeGapLate: 1.8,
+      baseSpeed: 34.0,
+      earlySpeed: 39.0,     // 200m
+      mediumSpeed: 45.0,    // 700m
+      advancedSpeed: 50.0,  // 1500m
+      expertSpeed: 53.0,
+      maxSpeed: 54.0,
+      variationRange: 1.2,
+      minTimeGap: 1.8,
+      minTimeGapLate: 1.2,
+    },
+    NORMAL: {
+      baseSpeed: 23.0,
+      earlySpeed: 26.0,
+      mediumSpeed: 30.0,
+      advancedSpeed: 34.0,
+      expertSpeed: 35.5,
+      maxSpeed: 36.0,
+      variationRange: 0.8,
+      minTimeGap: 3.5,
+      minTimeGapLate: 2.0,
     },
     SURVIVAL: {
-      baseSpeed: 12.5,
-      earlySpeed: 13.5,
-      mediumSpeed: 16.0,
-      advancedSpeed: 18.0,
-      expertSpeed: 20.0,
-      maxSpeed: 20.0,
+      baseSpeed: 14.0,
+      earlySpeed: 16.0,
+      mediumSpeed: 18.5,
+      advancedSpeed: 21.0,
+      expertSpeed: 23.0,
+      maxSpeed: 24.0,
       variationRange: 0.8,
       minTimeGap: 3.5,
       minTimeGapLate: 2.0,
     },
     TIME_TRIAL: {
-      baseSpeed: 12.0,
-      earlySpeed: 13.0,
-      mediumSpeed: 15.5,
-      advancedSpeed: 17.5,
-      expertSpeed: 19.0,
-      maxSpeed: 19.5,
+      baseSpeed: 14.0,
+      earlySpeed: 16.0,
+      mediumSpeed: 18.0,
+      advancedSpeed: 20.5,
+      expertSpeed: 22.0,
+      maxSpeed: 22.5,
       variationRange: 0.8,
       minTimeGap: 3.5,
       minTimeGapLate: 2.0,
     },
     COIN_RUSH: {
-      baseSpeed: 10.0,
-      earlySpeed: 11.0,
-      mediumSpeed: 13.0,
-      advancedSpeed: 15.0,
-      expertSpeed: 16.0,
-      maxSpeed: 16.5,
+      baseSpeed: 11.0,
+      earlySpeed: 12.5,
+      mediumSpeed: 14.5,
+      advancedSpeed: 16.5,
+      expertSpeed: 17.5,
+      maxSpeed: 18.0,
       variationRange: 0.6,
       minTimeGap: 4.5,
       minTimeGapLate: 2.5,
@@ -205,7 +289,7 @@ export const CONSTANTS = {
   TRAIN_SET_QUAD_LENGTH: 69.6,
   ROOFTOP_AC_HURDLE_HEIGHT: 0.65,
   ROOFTOP_VENT_HEIGHT: 0.50,
-  MOVING_TRAIN_SPEED: 20.0, // Velocity of oncoming train relative to track
+  MOVING_TRAIN_SPEED: 23.0, // Velocity of oncoming train relative to track
   MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Minimum distance for steady headlights and horn
   MOVING_TRAIN_WARNING_TIME: 2.0, // Seconds of warning at actual closing velocity
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)

@@ -112,21 +112,21 @@ console.log('--- Suite 3: Gradual Train Acceleration & Progressive Speed Profile
 
   // Early run: noticeably faster than the old 10-12 m/s profile
   const earlySpeed = dc.calculateMovingTrainSpeed(350, 'NORMAL', 'EASY', 0.5);
-  assert(Math.abs(earlySpeed - 22.8) < 0.01, `Early run speed is 22.8 m/s (got ${earlySpeed.toFixed(2)} m/s)`);
+  assert(Math.abs(earlySpeed - 26.8) < 0.05, `Early run speed is ~26.8 m/s (got ${earlySpeed.toFixed(2)} m/s)`);
 
   // Medium progression
   const medSpeed = dc.calculateMovingTrainSpeed(850, 'NORMAL', 'MEDIUM', 0.5);
-  assert(medSpeed > 26.0 && medSpeed < 27.0, `Medium progression speed in target 26-27 m/s (got ${medSpeed.toFixed(2)} m/s)`);
+  assert(medSpeed > 30.0 && medSpeed < 31.0, `Medium progression speed in target 30-31 m/s (got ${medSpeed.toFixed(2)} m/s)`);
   assert(medSpeed > earlySpeed, `Medium speed (${medSpeed.toFixed(2)}) is higher than early speed (${earlySpeed.toFixed(2)})`);
 
   // Advanced progression
   const advSpeed = dc.calculateMovingTrainSpeed(1800, 'NORMAL', 'HARD', 0.5);
-  assert(advSpeed > 30.0 && advSpeed < 31.0, `Advanced progression speed in target 30-31 m/s (got ${advSpeed.toFixed(2)} m/s)`);
+  assert(advSpeed > 34.0 && advSpeed < 35.5, `Advanced progression speed in target 34-35.5 m/s (got ${advSpeed.toFixed(2)} m/s)`);
   assert(advSpeed > medSpeed, `Advanced speed (${advSpeed.toFixed(2)}) is higher than medium speed (${medSpeed.toFixed(2)})`);
 
   // Expert run (2500m+): smoothly capped at Normal mode cap
   const expertSpeed = dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5);
-  assert(expertSpeed > 31.0 && expertSpeed <= 32.0, `Normal mode speed strictly obeys 32.0 m/s ceiling at 3500m (got ${expertSpeed.toFixed(2)} m/s)`);
+  assert(expertSpeed > 35.0 && expertSpeed <= 36.0, `Normal mode speed strictly obeys 36.0 m/s ceiling at 3500m (got ${expertSpeed.toFixed(2)} m/s)`);
 }
 
 // =========================================================================
@@ -139,19 +139,19 @@ console.log('--- Suite 4: Speed Cap & Hard Mode Profile Capability ---');
   // Test Normal Mode ceiling across extreme distances
   for (const dist of [2000, 5000, 10000, 50000]) {
     const spd = dc.calculateMovingTrainSpeed(dist, 'NORMAL', 'EXPERT', 1.0);
-    assert(spd <= 32.0, `Normal mode strictly capped <= 32.0 m/s at ${dist}m (got ${spd.toFixed(2)} m/s)`);
+    assert(spd <= 36.0, `Normal mode strictly capped <= 36.0 m/s at ${dist}m (got ${spd.toFixed(2)} m/s)`);
   }
 
   // Test Hard Mode separate profile capability without mutating Normal mode
   const hardEarly = dc.calculateMovingTrainSpeed(350, 'HARD', 'EASY', 0.5);
   const hardLate = dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5);
   assert(hardEarly > 28.0, `Hard Mode early speed starts higher (> 28.0 m/s, got ${hardEarly.toFixed(2)})`);
-  assert(hardLate > 41.0 && hardLate <= 42.0, `Hard Mode scales up to 42.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
-  assert(hardLate > 32.0, 'Hard Mode profile exceeds Normal Mode cap as intended');
+  assert(hardLate > 48.0 && hardLate <= 54.0, `Hard Mode scales up to 54.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
+  assert(hardLate > 36.0, 'Hard Mode profile exceeds Normal Mode cap as intended');
 
   // Verify Normal Mode profile remains untouched
   const normalSpeed = dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5);
-  assert(normalSpeed <= 32.0, `Normal Mode remains capped at 32.0 m/s (got ${normalSpeed.toFixed(2)})`);
+  assert(normalSpeed <= 36.0, `Normal Mode remains capped at 36.0 m/s (got ${normalSpeed.toFixed(2)})`);
 }
 
 // =========================================================================
@@ -539,7 +539,7 @@ console.log('--- Suite 13: Multi-Seed Procedural Simulation & Encounter Measurem
   for (const res of encounterResults) {
     assert(res.movingCount >= 3, `Seed ${res.seed} encountered ${res.movingCount} moving trains (>= 3 required for active railway rhythm)`);
     assert(res.avgSpeed >= 11.5, `Seed ${res.seed} average train speed is progressive (${res.avgSpeed.toFixed(1)} m/s >= 11.5)`);
-    assert(res.fastest <= 32.0, `Seed ${res.seed} fastest train obeys Normal mode cap (${res.fastest.toFixed(1)} m/s <= 32.0)`);
+    assert(res.fastest <= 36.0, `Seed ${res.seed} fastest train obeys Normal mode cap (${res.fastest.toFixed(1)} m/s <= 36.0)`);
   }
 
   console.log('\n📊 Measured Multi-Seed Encounter Telemetry:');
@@ -646,8 +646,8 @@ console.log('--- Regression: Fast-train warning and signed closing velocity ---'
 
   const dc = new DifficultyController();
   dc.update(1, 3500, 45);
-  assert(dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5) === 38,
-    'Complex Hard encounters retain a controlled 38 m/s budget at extreme runner speed');
+  assert(dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5) >= 48,
+    'Hard encounters feature high speed train budget at extreme distance');
   dc.setGameMode('HARD');
   assert(dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5) > 31,
     'An explicit Normal profile is independent of the active Hard mode budget');

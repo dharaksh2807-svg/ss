@@ -32,20 +32,16 @@ export class SpeedController {
     this.targetSpeed = this.profile.initialSpeed;
   }
 
-  private getProfileForMode(mode: GameMode): SpeedProfileConfig {
+  private getProfileForMode(mode: string): SpeedProfileConfig {
     const profiles = (CONSTANTS as any).SPEED_PROFILES;
+    const normalized = (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
+    if (profiles && profiles[normalized]) {
+      return { ...profiles[normalized] };
+    }
     if (profiles && profiles[mode]) {
       return { ...profiles[mode] };
     }
-    return {
-      initialSpeed: CONSTANTS.INITIAL_SPEED,
-      maxSpeed: CONSTANTS.MAX_SPEED,
-      earlyRampDistance: 300.0,
-      earlySpeedTarget: 24.5,
-      midRampDistance: 1200.0,
-      midSpeedTarget: 31.5,
-      asymptoticDistance: 3200.0
-    };
+    return { ...profiles.BEGINNER };
   }
 
   public setMode(mode: GameMode): void {

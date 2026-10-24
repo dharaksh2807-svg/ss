@@ -2287,12 +2287,12 @@ export class ObstacleFactory {
     group.add(markerMesh);
 
     // Forward headlight track illumination beam (cast onto rails ahead in +Z to telegraph lane occupancy)
-    const beamLength = 22.0;
+    const beamLength = 36.0;
     const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.98, beamLength);
     const beamMat = new THREE.MeshBasicMaterial({
       color: 0xfffae6,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.28,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide
