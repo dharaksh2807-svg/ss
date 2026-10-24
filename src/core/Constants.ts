@@ -107,26 +107,26 @@ export const CONSTANTS = {
   // Dynamic Moving Train Speed Progression Profiles
   TRAIN_SPEED_PROFILES: {
     NORMAL: {
-      baseSpeed: 11.0,      // Baseline train velocity
-      earlySpeed: 11.5,     // 0 - 250m early run (~10.5 - 12.0 m/s)
-      mediumSpeed: 13.5,    // 250 - 750m medium progression (~12.5 - 14.5 m/s)
-      advancedSpeed: 16.0,  // 750 - 1600m advanced progression (~15.0 - 17.0 m/s)
-      expertSpeed: 17.5,    // 1600m+ expert progression (~17.0 - 18.0 m/s)
-      maxSpeed: 18.0,       // Strict upper speed cap for Normal Mode
-      variationRange: 0.8,  // Controlled variation within safe bounds (+/- 0.8 m/s)
-      minTimeGap: 4.0,      // Minimum seconds between encounters in early run
-      minTimeGapLate: 2.2,  // Minimum seconds between encounters in late run
+      baseSpeed: 20.0,
+      earlySpeed: 22.0,     // 250m
+      mediumSpeed: 26.0,    // 750m
+      advancedSpeed: 30.0,  // 1600m
+      expertSpeed: 31.5,
+      maxSpeed: 32.0,
+      variationRange: 0.8,
+      minTimeGap: 4.0,
+      minTimeGapLate: 2.2,
     },
     HARD: {
-      baseSpeed: 14.0,      // Baseline train velocity
-      earlySpeed: 15.0,     // 0 - 250m early run (~14.0 - 16.0 m/s)
-      mediumSpeed: 18.0,    // 250 - 750m medium progression (~16.0 - 20.0 m/s)
-      advancedSpeed: 21.5,  // 750 - 1600m advanced progression (~20.0 - 23.5 m/s)
-      expertSpeed: 23.5,    // 1600m+ expert progression (~23.0 - 24.0 m/s)
-      maxSpeed: 24.0,       // Strict upper train speed cap for Hard Mode
-      variationRange: 1.0,  // Controlled variation within safe bounds (+/- 1.0 m/s)
-      minTimeGap: 2.8,      // Minimum seconds between encounters in early run
-      minTimeGapLate: 1.8,  // Minimum seconds between encounters in late run
+      baseSpeed: 26.0,
+      earlySpeed: 28.0,
+      mediumSpeed: 33.0,
+      advancedSpeed: 38.0,
+      expertSpeed: 41.0,
+      maxSpeed: 42.0,
+      variationRange: 1.0,
+      minTimeGap: 2.8,
+      minTimeGapLate: 1.8,
     },
     SURVIVAL: {
       baseSpeed: 12.5,
@@ -186,8 +186,9 @@ export const CONSTANTS = {
   TRAIN_SET_QUAD_LENGTH: 69.6,
   ROOFTOP_AC_HURDLE_HEIGHT: 0.65,
   ROOFTOP_VENT_HEIGHT: 0.50,
-  MOVING_TRAIN_SPEED: 11.0, // Velocity of oncoming train relative to track
-  MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Distance to flash headlights & sounding horn
+  MOVING_TRAIN_SPEED: 20.0, // Velocity of oncoming train relative to track
+  MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Minimum distance for steady headlights and horn
+  MOVING_TRAIN_WARNING_TIME: 2.0, // Seconds of warning at actual closing velocity
   LOW_BARRIER_HEIGHT: 1.1, // Must jump over (cannot slide under)
   MEDIUM_BARRIER_HEIGHT: 1.65, // Must peak jump or lane change (cannot slide under)
   HIGH_BARRIER_CLEARANCE: 1.40, // Must slide under (jumping hits overhead beam; raised to 1.40m for optimal readability)

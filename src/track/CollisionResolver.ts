@@ -23,7 +23,8 @@ export class CollisionResolver {
   public static resolveOutcome(
     obs: ObstacleInstance,
     player: Player,
-    chaser: ChaserModel | null
+    chaser: ChaserModel | null,
+    frontalImpact: boolean = false
   ): CollisionResolutionResult {
     const playerBox = player.collider;
     const playerPos = player.position;
@@ -143,7 +144,7 @@ export class CollisionResolver {
 
       // Contact with lower train body / front bumper
       const lethalBox = obs.bodyCollider || obs.collider;
-      const isFlankContact = player.position.z < lethalBox.max.z - 0.45;
+      const isFlankContact = !frontalImpact && player.position.z < lethalBox.max.z - 0.45;
       const overlapX = Math.min(playerBox.max.x, lethalBox.max.x) - Math.max(playerBox.min.x, lethalBox.min.x);
       const isGlance = player.isChangingLaneActive() && isFlankContact;
       const isFrontal = !isFlankContact;

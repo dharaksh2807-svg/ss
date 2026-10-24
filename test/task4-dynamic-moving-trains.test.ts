@@ -42,6 +42,8 @@ function createTestEnvironment() {
   const scene = new THREE.Scene();
   const trackManager = new TrackManager(scene);
   const player = new Player(scene);
+  player.reset();
+  trackManager.chunks.forEach((chunk) => chunk.clearDynamicItems());
   return { scene, trackManager, player };
 }
 
@@ -108,23 +110,23 @@ console.log('--- Suite 3: Gradual Train Acceleration & Progressive Speed Profile
   const dc = new DifficultyController();
   dc.setGameMode('NORMAL');
 
-  // Early run (240m - 500m): approximately 10 - 12 units/s
+  // Early run: noticeably faster than the old 10-12 m/s profile
   const earlySpeed = dc.calculateMovingTrainSpeed(350, 'NORMAL', 'EASY', 0.5);
-  assert(earlySpeed >= 10.0 && earlySpeed <= 12.5, `Early run speed in target 10-12.5 m/s (got ${earlySpeed.toFixed(2)} m/s)`);
+  assert(Math.abs(earlySpeed - 22.8) < 0.01, `Early run speed is 22.8 m/s (got ${earlySpeed.toFixed(2)} m/s)`);
 
-  // Medium run (500m - 1200m): approximately 12 - 15 units/s
+  // Medium progression
   const medSpeed = dc.calculateMovingTrainSpeed(850, 'NORMAL', 'MEDIUM', 0.5);
-  assert(medSpeed >= 12.0 && medSpeed <= 15.5, `Medium progression speed in target 12-15.5 m/s (got ${medSpeed.toFixed(2)} m/s)`);
+  assert(medSpeed > 26.0 && medSpeed < 27.0, `Medium progression speed in target 26-27 m/s (got ${medSpeed.toFixed(2)} m/s)`);
   assert(medSpeed > earlySpeed, `Medium speed (${medSpeed.toFixed(2)}) is higher than early speed (${earlySpeed.toFixed(2)})`);
 
-  // Advanced run (1200m - 2500m): approximately 15 - 18 units/s
+  // Advanced progression
   const advSpeed = dc.calculateMovingTrainSpeed(1800, 'NORMAL', 'HARD', 0.5);
-  assert(advSpeed >= 15.0 && advSpeed <= 18.0, `Advanced progression speed in target 15-18 m/s (got ${advSpeed.toFixed(2)} m/s)`);
+  assert(advSpeed > 30.0 && advSpeed < 31.0, `Advanced progression speed in target 30-31 m/s (got ${advSpeed.toFixed(2)} m/s)`);
   assert(advSpeed > medSpeed, `Advanced speed (${advSpeed.toFixed(2)}) is higher than medium speed (${medSpeed.toFixed(2)})`);
 
   // Expert run (2500m+): smoothly capped at Normal mode cap
   const expertSpeed = dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5);
-  assert(expertSpeed <= 18.0, `Normal mode speed strictly obeys 18.0 m/s ceiling at 3500m (got ${expertSpeed.toFixed(2)} m/s)`);
+  assert(expertSpeed > 31.0 && expertSpeed <= 32.0, `Normal mode speed strictly obeys 32.0 m/s ceiling at 3500m (got ${expertSpeed.toFixed(2)} m/s)`);
 }
 
 // =========================================================================
@@ -137,19 +139,19 @@ console.log('--- Suite 4: Speed Cap & Hard Mode Profile Capability ---');
   // Test Normal Mode ceiling across extreme distances
   for (const dist of [2000, 5000, 10000, 50000]) {
     const spd = dc.calculateMovingTrainSpeed(dist, 'NORMAL', 'EXPERT', 1.0);
-    assert(spd <= 18.0, `Normal mode strictly capped <= 18.0 m/s at ${dist}m (got ${spd.toFixed(2)} m/s)`);
+    assert(spd <= 32.0, `Normal mode strictly capped <= 32.0 m/s at ${dist}m (got ${spd.toFixed(2)} m/s)`);
   }
 
   // Test Hard Mode separate profile capability without mutating Normal mode
   const hardEarly = dc.calculateMovingTrainSpeed(350, 'HARD', 'EASY', 0.5);
   const hardLate = dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5);
-  assert(hardEarly >= 13.0, `Hard Mode early speed starts higher (>= 13.0 m/s, got ${hardEarly.toFixed(2)})`);
-  assert(hardLate >= 18.5 && hardLate <= 24.0, `Hard Mode scales up to 24.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
-  assert(hardLate > 18.0, 'Hard Mode profile exceeds Normal Mode cap as intended');
+  assert(hardEarly > 28.0, `Hard Mode early speed starts higher (> 28.0 m/s, got ${hardEarly.toFixed(2)})`);
+  assert(hardLate > 41.0 && hardLate <= 42.0, `Hard Mode scales up to 42.0 m/s (got ${hardLate.toFixed(2)} m/s)`);
+  assert(hardLate > 32.0, 'Hard Mode profile exceeds Normal Mode cap as intended');
 
   // Verify Normal Mode profile remains untouched
   const normalSpeed = dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5);
-  assert(normalSpeed <= 18.0, `Normal Mode remains capped at 18.0 m/s (got ${normalSpeed.toFixed(2)})`);
+  assert(normalSpeed <= 32.0, `Normal Mode remains capped at 32.0 m/s (got ${normalSpeed.toFixed(2)})`);
 }
 
 // =========================================================================
@@ -182,7 +184,9 @@ console.log('--- Suite 5: Real Collision at Low Speed & High Speed ---');
 
     // Advance simulation until collision
     for (let f = 0; f < 30; f++) {
+      player.previousPosition.copy(player.position);
       player.position.z -= player.speed * 0.033;
+      player.updateCollider();
       trackManager.update(player, 0.033, f * 0.033);
       if (crashed) break;
     }
@@ -213,11 +217,15 @@ console.log('--- Suite 5: Real Collision at Low Speed & High Speed ---');
     });
 
     // Large frame step (100ms dt) at 53 m/s closing speed: travels 5.3m in single frame
+    player.previousPosition.copy(player.position);
     player.position.z -= player.speed * 0.1;
+    player.updateCollider();
     trackManager.update(player, 0.1, 0.1);
 
     for (let f = 0; f < 20; f++) {
+      player.previousPosition.copy(player.position);
       player.position.z -= player.speed * 0.033;
+      player.updateCollider();
       trackManager.update(player, 0.033, 0.1 + f * 0.033);
       if (crashed) break;
     }
@@ -255,7 +263,9 @@ console.log('--- Suite 6: Adjacent Safe Lane Verification ---');
 
   // Run for 3 full seconds while train passes right by player
   for (let f = 0; f < 90; f++) {
+    player.previousPosition.copy(player.position);
     player.position.z -= player.speed * 0.033;
+    player.updateCollider();
     trackManager.update(player, 0.033, f * 0.033);
   }
 
@@ -525,7 +535,7 @@ console.log('--- Suite 13: Multi-Seed Procedural Simulation & Encounter Measurem
   for (const res of encounterResults) {
     assert(res.movingCount >= 3, `Seed ${res.seed} encountered ${res.movingCount} moving trains (>= 3 required for active railway rhythm)`);
     assert(res.avgSpeed >= 11.5, `Seed ${res.seed} average train speed is progressive (${res.avgSpeed.toFixed(1)} m/s >= 11.5)`);
-    assert(res.fastest <= 18.0, `Seed ${res.seed} fastest train obeys Normal mode cap (${res.fastest.toFixed(1)} m/s <= 18.0)`);
+    assert(res.fastest <= 32.0, `Seed ${res.seed} fastest train obeys Normal mode cap (${res.fastest.toFixed(1)} m/s <= 32.0)`);
   }
 
   console.log('\n📊 Measured Multi-Seed Encounter Telemetry:');
@@ -559,6 +569,172 @@ console.log('\n--- Suite 14: Developer Diagnostics Verification (PacingMetrics) 
   assert(report.lastRelativeClosingSpeed === 44.8, `Diagnostics tracks relative closing speed (${report.lastRelativeClosingSpeed} m/s)`);
   assert(report.currentDifficultyTier === 'HARD', `Diagnostics tracks difficulty tier: ${report.currentDifficultyTier}`);
   assert(report.unreachablePatternCount === 0, 'Diagnostics reports 0 unreachable patterns');
+}
+
+console.log('--- Regression: Continuous distant motion, uneven frames, and collider alignment ---');
+{
+  const { trackManager } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 1, zOffset: 260, length: 22,
+    hasRamp: true, hasExitRamp: true }], collectibles: [] }, -80, undefined, false, 32);
+  const train = chunk.obstacles[0];
+  const initialZ = train.group.position.z;
+  const initialWheel = train.wheelMeshes![0].rotation.x;
+  let elapsed = 0;
+  let aligned = true;
+  let steadyHeight = true;
+  assert(train.isMovingActive === true, 'Train is moving immediately at spawn, beyond the old 85m gate');
+  for (const dt of [0.008, 0.08, 0.016, 0.033, 0.05, 0.013, 0.08, 0.02]) {
+    const previousWorldZ = chunk.chunkZ + train.group.position.z;
+    elapsed += dt;
+    chunk.update(dt, elapsed * 19, -35 * elapsed, 35);
+    const z = chunk.chunkZ + train.group.position.z;
+    aligned &&= Math.abs(train.previousWorldZ! - previousWorldZ) < 1e-8 &&
+      Math.abs(train.collider.getCenter(new THREE.Vector3()).z - z) < 1e-8 &&
+      Math.abs(train.bodyCollider!.getCenter(new THREE.Vector3()).z - z) < 1e-8 &&
+      Math.abs(train.frontBumperCollider!.max.z - (z + 11.35)) < 1e-8 &&
+      Math.abs(train.roofCollider!.min.z - (z - 11.3)) < 1e-8 &&
+      Math.abs(train.rampEndZ! - (z + 11)) < 1e-8 &&
+      Math.abs(train.exitRampStartZ! - (z - 11)) < 1e-8;
+    steadyHeight &&= train.group.position.y === 0;
+  }
+  assert(Math.abs(train.group.position.z - initialZ - 32 * elapsed) < 1e-8,
+    'Uneven frame deltas integrate exactly once at 32 m/s, independent of animation time');
+  assert(aligned, 'Body, bumper, roof, both ramps, and previous position follow the mesh every frame');
+  assert(steadyHeight, 'Train body remains at collider height without rail-joint vibration');
+  assert(Math.abs(train.wheelMeshes![0].rotation.x - initialWheel - 32 * elapsed / 0.33) < 1e-8,
+    'Wheel rotation matches actual travel under uneven frame deltas');
+}
+
+console.log('--- Regression: Fast-train warning and signed closing velocity ---');
+{
+  for (const trainSpeed of [32, 42]) {
+    const { trackManager } = createTestEnvironment();
+    const chunk = trackManager.chunks[0];
+    chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 1, zOffset: 240,
+      length: 16, velocityZ: trainSpeed }], collectibles: [] }, 0);
+    let warning: any = null;
+    const off = EventBus.getInstance().on(EVENTS.TRAIN_HORN, (data: any) => { warning = data; });
+    let playerZ = 0;
+    for (let frame = 0; frame < 120 && !warning; frame++) {
+      const dt = [0.008, 0.08, 0.025][frame % 3];
+      playerZ -= 46 * dt;
+      chunk.update(dt, frame, playerZ, 46);
+    }
+    off();
+    assert(warning?.relativeSpeed === 46 + trainSpeed && warning.timeToImpact >= 1.9 && warning.timeToImpact <= 2.01,
+      `${trainSpeed} m/s train warns with at least 1.9s remaining at maximum runner speed`);
+  }
+  const { trackManager } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 1, zOffset: 60,
+    velocityZ: -20 }], collectibles: [] }, 0, undefined, false, 20);
+  let warning: any = null;
+  const off = EventBus.getInstance().on(EVENTS.TRAIN_HORN, (data: any) => { warning = data; });
+  chunk.update(0.08, 0.08, 0, 30);
+  off();
+  assert(chunk.obstacles[0].velocityZ === -20 && warning?.relativeSpeed === 10,
+    'Dynamic speed assignment preserves direction; same-direction closing speed subtracts train speed');
+  chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 1, zOffset: 60,
+    velocityZ: -42 }], collectibles: [] }, 0);
+  chunk.update(0.08, 0.08, 0, 30);
+  assert(!chunk.obstacles[0].telegraphed, 'A train pulling away emits no false approach warning');
+
+  const dc = new DifficultyController();
+  dc.update(1, 3500, 45);
+  assert(dc.calculateMovingTrainSpeed(3500, 'HARD', 'EXPERT', 0.5) === 38,
+    'Complex Hard encounters retain a controlled 38 m/s budget at extreme runner speed');
+  dc.setGameMode('HARD');
+  assert(dc.calculateMovingTrainSpeed(3500, 'NORMAL', 'EXPERT', 0.5) > 31,
+    'An explicit Normal profile is independent of the active Hard mode budget');
+}
+
+console.log('--- Regression: Warning lead time through procedural chunk recycling ---');
+{
+  for (const mode of ['NORMAL', 'HARD']) {
+    for (const seed of [1337, 777]) {
+      const { trackManager, player } = createTestEnvironment();
+      trackManager.setGameMode(mode);
+      trackManager.setDebugSeed(seed);
+      trackManager.reset();
+      player.setGameMode(mode);
+      player.speed = mode === 'HARD' ? 46 : 38;
+      player.isInvulnerable = () => true;
+      const windows: number[] = [];
+      const off = EventBus.getInstance().on(EVENTS.TRAIN_HORN, (data: any) => { windows.push(data.timeToImpact); });
+      let time = 0;
+      for (let frame = 0; player.distanceTraveled < 1800; frame++) {
+        const dt = [0.008, 0.08, 0.025][frame % 3];
+        time += dt;
+        player.previousPosition.copy(player.position);
+        player.position.z -= player.speed * dt;
+        player.distanceTraveled = -player.position.z;
+        player.updateCollider();
+        trackManager.update(player, dt, time);
+      }
+      off();
+      assert(windows.length >= 3 && Math.min(...windows) >= 1.9,
+        `${mode} seed ${seed}: ${windows.length} real train warnings, minimum ${Math.min(...windows).toFixed(2)}s lead time`);
+    }
+  }
+}
+
+console.log('--- Regression: Relative sweep and rooftop carry at increased speed ---');
+{
+  {
+    const { trackManager, player } = createTestEnvironment();
+    const chunk = trackManager.chunks[0];
+    chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 0, zOffset: 10,
+      length: 16, velocityZ: 42 }], collectibles: [] }, 0);
+    player.previousPosition.set(0, 0, 0);
+    player.position.set(0, 0, -46 * 0.08);
+    player.updateCollider();
+    player.isChangingLaneActive = () => true;
+    chunk.update(0.08, 0.08, player.position.z, 46);
+    let crashed = false;
+    const off = EventBus.getInstance().on(EVENTS.CRASH, () => { crashed = true; });
+    (trackManager as any).checkCollisions(player, 0.08);
+    off();
+    assert(crashed, 'Frontal impact during a lane change remains fatal at 88 m/s closing speed');
+  }
+  for (const [lane, trainSpeed, offset, shouldCrash] of [
+    [0, 42, 10, true], [1, 42, 10, false], [0, -42, 12, false]
+  ] as const) {
+    const { trackManager, player } = createTestEnvironment();
+    trackManager.chunks.forEach((chunk) => chunk.clearDynamicItems());
+    const chunk = trackManager.chunks[0];
+    chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane, zOffset: offset,
+      length: 16, velocityZ: trainSpeed }], collectibles: [] }, 0);
+    player.speed = 45;
+    player.previousPosition.set(0, 0, 0);
+    player.position.set(0, 0, -22.5);
+    player.updateCollider();
+    // Exaggerated stall crosses the entire train between collision checks.
+    chunk.update(0.5, 0.5, player.position.z, 45);
+    let crashed = false;
+    const off = EventBus.getInstance().on(EVENTS.CRASH, () => { crashed = true; });
+    (trackManager as any).checkCollisions(player, 0.5);
+    off();
+    assert(crashed === shouldCrash,
+      `Swept collision: lane ${lane}, train ${trainSpeed} m/s, crash=${shouldCrash}`);
+  }
+
+  const { trackManager, player } = createTestEnvironment();
+  trackManager.chunks.forEach((chunk) => chunk.clearDynamicItems());
+  const chunk = trackManager.chunks[0];
+  chunk.populate({ obstacles: [{ type: 'MOVING_TRAIN', lane: 0, zOffset: 40,
+    length: 16, velocityZ: 42 }], collectibles: [] }, 0);
+  const train = chunk.obstacles[0];
+  player.position.set(0, 4.35, -47.8);
+  player.previousPosition.copy(player.position);
+  player.resolveRoofLanding(4.35, train.id);
+  const startZ = player.position.z;
+  trackManager.update(player, 0.08, 0.08);
+  assert(player.getSupportSurface() === 'TRAIN_ROOF' && player.state === 'ON_TRAIN',
+    'A rider at the trailing roof edge stays supported through an 80ms frame');
+  assert(Math.abs(player.position.z - startZ - 42 * 0.08) < 1e-8 && player.position.y === 4.35,
+    'Existing roof rider receives the platform displacement exactly once');
+  assert(player.mesh.position.equals(player.position), 'Roof rider mesh follows authoritative platform carry in the same frame');
 }
 
 console.log(`\n================================================================`);

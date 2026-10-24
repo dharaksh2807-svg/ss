@@ -655,6 +655,18 @@ export class TrackManager {
   }
 
   private updateGroundHeight(player: Player, dt: number = 0.016): void {
+    // Carry an existing grounded rider before testing the platform's new bounds.
+    // Use actual displacement, so landing this frame never adds a second movement.
+    const previousSupport = this.findObstacleById(player.getActiveSupportObstacleId() || '');
+    if (!player.isJumping && previousSupport?.active && previousSupport.isMoving && previousSupport.previousWorldZ !== undefined) {
+      const supportChunk = this.chunks.find((chunk) => chunk.obstacles.includes(previousSupport));
+      if (supportChunk) {
+        player.position.z += supportChunk.chunkZ + previousSupport.group.position.z - previousSupport.previousWorldZ;
+        player.updateCollider();
+        player.mesh.position.copy(player.position);
+      }
+    }
+
     let targetGroundY: number = CONSTANTS.PLAYER_BASE_Y;
     let foundSupport = false;
     let supportedObstacleId: string | null = null;
@@ -802,15 +814,6 @@ export class TrackManager {
         player.state = supportType === 'RAMP' ? 'CLIMBING' : 'ON_TRAIN';
       }
 
-      // If traversing on a moving train roof, apply platform-relative support velocity
-      if (supportType === 'TRAIN_ROOF') {
-        const supportObs = this.findObstacleById(supportedObstacleId);
-        if (supportObs && supportObs.isMoving && supportObs.velocityZ) {
-          player.position.z += supportObs.velocityZ * dt;
-          player.updateCollider();
-        }
-      }
-
       if (!this.rampOnboardingChecked && (supportType === 'RAMP' || supportType === 'TRAIN_ROOF')) {
         this.rampOnboardingChecked = true;
         if (typeof localStorage !== 'undefined') {
@@ -892,6 +895,7 @@ export class TrackManager {
       }
     }
     const sweptCollectibleBox = this.sweptCollectibleBox;
+    const previousPlayerZ = this.previousPlayerZ;
     this.previousPlayerZ = player.position.z;
 
     const boardMagnetBonus = player.hoverboardManager ? player.hoverboardManager.getMagnetRadiusBonus() : 0;
@@ -939,31 +943,44 @@ export class TrackManager {
 
         // Continuous swept collision for fast-moving oncoming obstacles (prevents tunneling through player at high speeds or frame spikes)
         let hasSweptCollision = false;
-        if (!hasDirectCollision && obs.isMoving && obs.previousWorldZ !== undefined) {
+        let hasFrontalImpact = false;
+        if (obs.isMoving && obs.previousWorldZ !== undefined) {
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
           // Only check swept collision if player is at hazard height (not safely on roof or high airborne)
           if (player.position.y < roofY - 0.25 && player.state !== 'JETPACK' && player.getJetpackPhase() === 'NONE') {
-            const laneTolerance = CONSTANTS.LANE_WIDTH * 0.45; // ~1.44m from lane center
-            const isInTrainLane = Math.abs(player.position.x - obs.group.position.x) <= laneTolerance;
-            if (isInTrainLane) {
-              const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
-              const currentWorldZ = chunk.chunkZ + obs.group.position.z;
-              const trainMinZ = Math.min(obs.previousWorldZ, currentWorldZ) - halfD;
-              const trainMaxZ = Math.max(obs.previousWorldZ, currentWorldZ) + halfD;
-
-              const prevPZ = this.previousPlayerZ !== null ? this.previousPlayerZ : player.position.z;
-              const playerMinZ = Math.min(prevPZ, player.position.z) - 0.45;
-              const playerMaxZ = Math.max(prevPZ, player.position.z) + 0.45;
-
-              if (playerMinZ <= trainMaxZ && playerMaxZ >= trainMinZ) {
-                hasSweptCollision = true;
+            const trainDeltaZ = chunk.chunkZ + obs.group.position.z - obs.previousWorldZ;
+            // Sweep the runner relative to the moving body. Testing the two swept
+            // world bounds separately gives false hits for parallel motion.
+            let entry = 0;
+            let exit = 1;
+            let frontEntry = -Infinity;
+            for (const axis of ['x', 'y', 'z'] as const) {
+              const end = player.position[axis];
+              const start = (prevPos?.[axis] ?? (axis === 'z' ? previousPlayerZ ?? end : end))
+                + (axis === 'z' ? trainDeltaZ : 0);
+              const delta = end - start;
+              const min = lethalBox.min[axis] - (playerBox.max[axis] - end);
+              const max = lethalBox.max[axis] - (playerBox.min[axis] - end);
+              if (Math.abs(delta) < 1e-9) {
+                if (start < min || start > max) { exit = -1; break; }
+              } else {
+                const a = (min - start) / delta;
+                const b = (max - start) / delta;
+                if (axis === 'z' && delta < 0 && start >= max) frontEntry = b;
+                entry = Math.max(entry, Math.min(a, b));
+                exit = Math.min(exit, Math.max(a, b));
+                if (entry > exit) break;
               }
             }
+            hasSweptCollision = entry <= exit;
+            // Classify the first contact, rather than treating a frontal hit as a
+            // side glance after the runner has advanced inside the body this frame.
+            hasFrontalImpact = hasSweptCollision && frontEntry >= entry - 1e-8;
           }
         }
 
         if (hasDirectCollision || hasSweptCollision) {
-          const resolution = CollisionResolver.resolveOutcome(obs, player, this.chaser);
+          const resolution = CollisionResolver.resolveOutcome(obs, player, this.chaser, hasFrontalImpact);
           const { outcome, diagnostic, isGlance, isFlankContact } = resolution;
 
           if (outcome === 'SAFE_CONTACT' || outcome === 'VALID_ROOF_LANDING') {

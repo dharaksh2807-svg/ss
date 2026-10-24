@@ -1657,8 +1657,8 @@ export class TrackChunk {
         carriageGroupId,
         variant: group.userData.variant,
         isMoving,
-        isMovingActive: false,
-        velocityZ: isMoving ? (dynamicTrainSpeed !== undefined ? dynamicTrainSpeed : (obsData.velocityZ !== undefined ? obsData.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED)) : 0,
+        isMovingActive: isMoving,
+        velocityZ: isMoving ? (dynamicTrainSpeed !== undefined ? ((obsData.velocityZ ?? 1) < 0 ? -dynamicTrainSpeed : dynamicTrainSpeed) : (obsData.velocityZ !== undefined ? obsData.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED)) : 0,
         initialLocalZ: localZ,
         previousWorldZ: worldCenterZ,
         telegraphed: false,
@@ -1834,59 +1834,27 @@ export class TrackChunk {
         const currentLocalZ = obs.group.position.z;
         const currentWorldZ = this.chunkZ + currentLocalZ;
         const halfD = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
-        const isSameDirection = (obs.velocityZ || 0) < 0;
+        const trainSpeed = obs.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED;
+        const currentSpeed = playerSpeed ?? CONSTANTS.INITIAL_SPEED;
+        // Signed track velocity: runner travels toward -Z, oncoming train toward +Z.
+        const closingSpeed = Math.max(0, currentSpeed + trainSpeed);
 
-        // Front bumper is in +Z for oncoming trains (facing runner running down -Z),
-        // or in -Z for same-direction trains (leading the train down track)
-        const worldTrainFrontZ = isSameDirection ? currentWorldZ - halfD : currentWorldZ + halfD;
-        const worldTrainRearZ = isSameDirection ? currentWorldZ + halfD : currentWorldZ - halfD;
-
-        // Activation check: calculate dynamic activation distance based on true relative closing speed
-        const trainSpeed = obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED;
-        const currentSpeed = playerSpeed || CONSTANTS.INITIAL_SPEED;
-        const closingSpeed = isSameDirection ? Math.max(1, currentSpeed - trainSpeed) : (currentSpeed + trainSpeed);
-        const activationDist = Math.max(CONSTANTS.MOVING_TRAIN_ACTIVATION_DIST || 85.0, closingSpeed * 2.2);
-
-        const separation = isSameDirection
-          ? (playerZ - worldTrainRearZ) // Distance behind same-direction train
-          : (playerZ - worldTrainFrontZ); // Distance ahead to oncoming front
-
-        if (!obs.isMovingActive) {
-          if (!isSameDirection && separation <= activationDist && worldTrainFrontZ < playerZ) {
-            obs.isMovingActive = true;
-          } else if (isSameDirection && currentWorldZ < playerZ && (playerZ - currentWorldZ) <= activationDist) {
-            obs.isMovingActive = true;
-          }
-        }
-
-        // Has train passed completely behind the player?
-        // For oncoming train (+Z), rear bumper (currentWorldZ - halfD) passes behind player into positive territory (playerZ + 25.0)
-        // For same-direction train (-Z), front bumper passes behind if player overtakes it (currentWorldZ + halfD > playerZ + 25.0)
-        const hasPassedBehind = isSameDirection
-          ? (currentWorldZ + halfD > playerZ + 25.0)
-          : (worldTrainRearZ > playerZ + 25.0);
-
-        // Store previousWorldZ before advancing position for swept collision detection
+        // Moving trains travel from spawn, including beyond the old proximity gate.
+        // One authoritative displacement drives both the mesh and collision volumes.
+        obs.isMovingActive = true;
         obs.previousWorldZ = currentWorldZ;
+        const displacement = trainSpeed * dt;
+        obs.group.position.z += displacement;
 
-        // Continuous physical advance: once activated, train advances until completely passed behind the player!
-        if (obs.isMovingActive && !hasPassedBehind) {
-          const speed = obs.velocityZ !== undefined ? obs.velocityZ : CONSTANTS.MOVING_TRAIN_SPEED;
-          obs.group.position.z += speed * dt;
-
-          // Wheel and bogie roll animation based on linear speed: omega = v / r
-          if (obs.wheelMeshes && obs.wheelMeshes.length > 0) {
-            const wheelRadius = 0.33;
-            const rollAngle = (speed * dt) / wheelRadius;
-            for (const wheel of obs.wheelMeshes) {
-              wheel.rotation.x += rollAngle;
-            }
+        if (obs.wheelMeshes) {
+          const rollAngle = displacement / 0.33;
+          for (const wheel of obs.wheelMeshes) {
+            // Cylinders are mounted along parent X; retain their initial Z rotation.
+            wheel.rotation.x += rollAngle;
           }
-
-          // Subtle rail joint suspension sway / rumble (high-speed track vibration)
-          const rumbleOffset = Math.sin(animTime * 28.0) * 0.015;
-          obs.group.position.y = rumbleOffset;
         }
+        // Keep the roof/body on the rails; whole-train rumble desynchronized the mesh
+        // from the fixed-height colliders and made the silhouette visibly vibrate.
 
         // Recalculate collision volumes in world coordinates every frame
         const updatedLocalZ = obs.group.position.z;
@@ -1940,10 +1908,10 @@ export class TrackChunk {
         // Telegraph check: dynamic warning range based on true relative closing speed
         const updatedFrontZ = updatedWorldZ + halfD;
         const currentSeparation = playerZ - updatedFrontZ;
-        const dynamicTelegraphDist = Math.max(CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST || 65.0, closingSpeed * 1.8);
-        const timeToImpact = closingSpeed > 0 ? currentSeparation / closingSpeed : 999;
+        const dynamicTelegraphDist = Math.max(CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST || 65.0, closingSpeed * CONSTANTS.MOVING_TRAIN_WARNING_TIME);
+        const timeToImpact = closingSpeed > 0 ? currentSeparation / closingSpeed : Infinity;
 
-        if (currentSeparation <= dynamicTelegraphDist && updatedFrontZ < playerZ) {
+        if (closingSpeed > 0 && currentSeparation <= dynamicTelegraphDist && updatedFrontZ < playerZ) {
           if (!obs.telegraphed) {
             PacingMetrics.getInstance().recordMovingTrainEncounter(
               animTime,

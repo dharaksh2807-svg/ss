@@ -317,8 +317,7 @@ export class DifficultyController {
    * 1. Active game mode (NORMAL, HARD, SURVIVAL, etc.)
    * 2. Run distance & progression tier
    * 3. Optional controlled random variation within safe bounds
-   * In Normal Mode: Early 10.5-12, Medium 12.5-15, Advanced 15-18, strictly capped at 18.0 m/s.
-   * In Hard Mode: 13.0 - 22.0 m/s.
+   * Normal progresses from 20 to 32 m/s; Hard from 26 to 42 m/s.
    */
   public calculateMovingTrainSpeed(
     distanceOverride?: number,
@@ -328,18 +327,10 @@ export class DifficultyController {
   ): number {
     const dist = distanceOverride !== undefined ? Math.max(0, distanceOverride) : this.distanceTraveled;
     const mode = (modeOverride || this.gameMode || 'NORMAL').toUpperCase();
-    const profiles = (CONSTANTS as any).TRAIN_SPEED_PROFILES || {};
-    const profile = profiles[mode] || profiles.NORMAL || {
-      baseSpeed: 11.0,
-      earlySpeed: 11.5,
-      mediumSpeed: 13.5,
-      advancedSpeed: 16.0,
-      expertSpeed: 17.5,
-      maxSpeed: 18.0,
-      variationRange: 0.8
-    };
+    const profiles = CONSTANTS.TRAIN_SPEED_PROFILES;
+    const profile = profiles[mode as keyof typeof profiles] || profiles.NORMAL;
 
-    let targetSpeed = profile.baseSpeed;
+    let targetSpeed: number = profile.baseSpeed;
     if (dist <= 250.0) {
       // Stage 1: Opening / Early (0m to 250m)
       const t = dist / 250.0;
@@ -370,9 +361,9 @@ export class DifficultyController {
     // Difficulty budget control: If runner is at extreme Hard Mode velocity (> 40 m/s)
     // and pattern is already complex (EXPERT / HARD), prevent uncontrolled difficulty stacking
     // by keeping oncoming train speed at a controlled high threshold
-    if (this.gameMode === 'HARD' && (tierOverride === 'EXPERT' || tierOverride === 'ADVANCED' || tierOverride === 'HARD')) {
+    if (mode === 'HARD' && (tierOverride === 'EXPERT' || tierOverride === 'ADVANCED' || tierOverride === 'HARD')) {
       if (this.currentSpeed > 40.0) {
-        targetSpeed = Math.min(targetSpeed, 22.0);
+        targetSpeed = Math.min(targetSpeed, profile.advancedSpeed);
       }
     }
 

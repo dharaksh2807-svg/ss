@@ -130,7 +130,7 @@ export interface ObstacleInstance {
   accessibilityProfile?: TrainAccessibilityProfile; // Authoritative accessibility metadata
   // Dynamic moving train behavior
   isMoving?: boolean;
-  isMovingActive?: boolean; // Activated when approaching player
+  isMovingActive?: boolean; // Moving from spawn until removed
   velocityZ?: number;
   initialLocalZ?: number;
   previousWorldZ?: number;

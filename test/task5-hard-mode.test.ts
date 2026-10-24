@@ -114,10 +114,10 @@ console.log('\n--- Suite 3: Oncoming Train Speed Profiles ---');
   const normAdv = dc.calculateMovingTrainSpeed(1200, 'NORMAL');
   const normMax = dc.calculateMovingTrainSpeed(4000, 'NORMAL');
 
-  assert(normEarly >= 11.0 && normEarly <= 12.0, `Normal early train speed is ~11.0-12.0 m/s (actual: ${normEarly.toFixed(2)})`);
-  assert(normMed >= 12.5 && normMed <= 14.5, `Normal medium train speed is ~12.5-14.5 m/s (actual: ${normMed.toFixed(2)})`);
-  assert(normAdv >= 14.5 && normAdv <= 17.5, `Normal advanced train speed is ~14.5-17.5 m/s (actual: ${normAdv.toFixed(2)})`);
-  assert(normMax <= 18.0, `Normal train speed strictly caps at 18.0 m/s (actual: ${normMax.toFixed(2)})`);
+  assert(normEarly >= 20.0 && normEarly <= 22.0, `Normal early train speed is 20-22 m/s (actual: ${normEarly.toFixed(2)})`);
+  assert(normMed >= 22.0 && normMed <= 26.0, `Normal medium train speed is 22-26 m/s (actual: ${normMed.toFixed(2)})`);
+  assert(normAdv >= 26.0 && normAdv <= 30.0, `Normal advanced train speed is 26-30 m/s (actual: ${normAdv.toFixed(2)})`);
+  assert(normMax <= 32.0, `Normal train speed strictly caps at 32.0 m/s (actual: ${normMax.toFixed(2)})`);
 
   // Hard Mode train speeds
   const hardEarly = dc.calculateMovingTrainSpeed(150, 'HARD');
@@ -125,15 +125,15 @@ console.log('\n--- Suite 3: Oncoming Train Speed Profiles ---');
   const hardAdv = dc.calculateMovingTrainSpeed(1400, 'HARD');
   const hardMax = dc.calculateMovingTrainSpeed(4000, 'HARD');
 
-  assert(hardEarly >= 14.0 && hardEarly <= 16.0, `Hard early train speed is 14-16 m/s (actual: ${hardEarly.toFixed(2)})`);
-  assert(hardMed >= 16.0 && hardMed <= 20.0, `Hard medium train speed is 16-20 m/s (actual: ${hardMed.toFixed(2)})`);
-  assert(hardAdv >= 20.0 && hardAdv <= 24.0, `Hard advanced train speed is 20-24 m/s (actual: ${hardAdv.toFixed(2)})`);
-  assert(hardMax <= 24.0, `Hard train speed strictly caps at 24.0 m/s (actual: ${hardMax.toFixed(2)})`);
+  assert(hardEarly >= 26.0 && hardEarly <= 28.0, `Hard early train speed is 26-28 m/s (actual: ${hardEarly.toFixed(2)})`);
+  assert(hardMed >= 28.0 && hardMed <= 33.0, `Hard medium train speed is 28-33 m/s (actual: ${hardMed.toFixed(2)})`);
+  assert(hardAdv >= 33.0 && hardAdv <= 38.0, `Hard advanced train speed is 33-38 m/s (actual: ${hardAdv.toFixed(2)})`);
+  assert(hardMax <= 42.0, `Hard train speed strictly caps at 42.0 m/s (actual: ${hardMax.toFixed(2)})`);
 
   assert(hardEarly > normEarly, 'Hard early trains are faster than Normal early trains');
   assert(hardMed > normMed, 'Hard medium trains are faster than Normal medium trains');
   assert(hardAdv > normAdv, 'Hard advanced trains are faster than Normal advanced trains');
-  assert(hardMax > normMax, 'Hard max train speed is higher than Normal max train speed (24 vs 18 m/s)');
+  assert(hardMax > normMax, 'Hard max train speed is higher than Normal max train speed (42 vs 32 m/s)');
 }
 
 // =========================================================================
@@ -228,10 +228,9 @@ console.log('\n--- Suite 6: Physical Reachability & Fairness across Speeds ---')
   assert(res2.solvable, 'HARD_SLIDE_SWITCH_ROOF_RUN is solvable at top speed (46 m/s)');
 
   // Mathematical fairness check:
-  // At maximum closing speed (46 m/s runner + 24 m/s train = 70 m/s), telegraph distance is closingSpeed * 1.8 = 126m.
-  // Reaction time is 126m / 70 m/s = 1.80s, well above safe human threshold (0.55s).
-  const maxClosingSpeed = 46.0 + 24.0;
-  const telegraphDist = maxClosingSpeed * 1.8;
+  // At 88 m/s maximum closing speed, warning distance scales to 176m.
+  const maxClosingSpeed = 46.0 + 42.0;
+  const telegraphDist = maxClosingSpeed * CONSTANTS.MOVING_TRAIN_WARNING_TIME;
   const reactionWindow = telegraphDist / maxClosingSpeed;
   assert(reactionWindow >= 1.5, `Reaction window at top speed is ${reactionWindow.toFixed(2)}s (>= 1.5s human fairness target)`);
 }
