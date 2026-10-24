@@ -260,6 +260,65 @@ export class ReachabilityValidator {
   }
 
   /**
+   * Conservative ground-control witness over simultaneous world trajectories.
+   * Entire lane-change corridors and a bounded forward-speed range must clear;
+   * this proves an avoidance route without assuming instant jumps or lane snaps.
+   */
+  public static validateTrainWindow(
+    hazards: Array<{ min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number }; velocityZ: number }>,
+    playerZ: number, minimumSpeed: number, maximumSpeed: number, horizon: number,
+    initialLanes: readonly LaneIndex[] = CONSTANTS.LANE_INDICES
+  ): { solvable: boolean; witness: Array<{ time: number; lane: LaneIndex }> } {
+    const step = 0.06;
+    const switchTicks = Math.ceil(CONSTANTS.LANE_CHANGE_DURATION / step);
+    const reactionTicks = Math.ceil(CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME / step);
+    const ticks = Math.ceil(horizon / step);
+    const states = Array.from({ length: ticks + switchTicks + 1 }, () => new Map<LaneIndex, string>());
+    const parents = new Map<string, string>();
+    for (const lane of initialLanes) states[0].set(lane, '');
+    const clear = (from: LaneIndex, to: LaneIndex, start: number, end: number) => {
+      const minX = Math.min(CONSTANTS.LANES[from], CONSTANTS.LANES[to]) - CONSTANTS.PLAYER_WIDTH / 2 - 0.1;
+      const maxX = Math.max(CONSTANTS.LANES[from], CONSTANTS.LANES[to]) + CONSTANTS.PLAYER_WIDTH / 2 + 0.1;
+      for (const hazard of hazards) {
+        if (hazard.max.y <= CONSTANTS.PLAYER_BASE_Y || hazard.min.y >= CONSTANTS.PLAYER_BASE_Y + CONSTANTS.PLAYER_HEIGHT_RUN) continue;
+        if (hazard.max.x <= minX || hazard.min.x >= maxX) continue;
+        const positions = [playerZ - (minimumSpeed + hazard.velocityZ) * start,
+          playerZ - (minimumSpeed + hazard.velocityZ) * end,
+          playerZ - (maximumSpeed + hazard.velocityZ) * start,
+          playerZ - (maximumSpeed + hazard.velocityZ) * end];
+        const minZ = Math.min(...positions) - CONSTANTS.PLAYER_DEPTH / 2;
+        const maxZ = Math.max(...positions) + CONSTANTS.PLAYER_DEPTH / 2;
+        if (minZ < hazard.max.z && maxZ > hazard.min.z) return false;
+      }
+      return true;
+    };
+    for (let tick = 0; tick < ticks; tick++) {
+      for (const lane of states[tick].keys()) {
+        for (const next of CONSTANTS.LANE_INDICES) {
+          if (Math.abs(next - lane) > 1 || (tick < reactionTicks && next !== lane)) continue;
+          const end = Math.min(ticks, tick + (next === lane ? 1 : switchTicks));
+          if (!clear(lane, next, tick * step, end * step)) continue;
+          const key = `${end}:${next}`;
+          if (!states[end].has(next)) {
+            states[end].set(next, key);
+            parents.set(key, `${tick}:${lane}`);
+          }
+        }
+      }
+    }
+    const last = states[ticks].keys().next();
+    if (last.done) return { solvable: false, witness: [] };
+    const witness: Array<{ time: number; lane: LaneIndex }> = [];
+    let key = `${ticks}:${last.value}`;
+    while (key) {
+      const [tick, lane] = key.split(':').map(Number);
+      witness.push({ time: tick * step, lane: lane as LaneIndex });
+      key = parents.get(key) || '';
+    }
+    return { solvable: true, witness: witness.reverse() };
+  }
+
+  /**
    * Validates multi-chunk transition reachability between consecutive chunks:
    * Guarantees that at least one surviving exit lane of chunk A can reach
    * an entry lane of chunk B without unavoidable collision.

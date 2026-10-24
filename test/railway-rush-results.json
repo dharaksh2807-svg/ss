@@ -1,0 +1,1845 @@
+{
+  "baselineCommit": "e1ec591",
+  "definition": "A warned moving train front crosses the runner plane. Controlled ground runner uses the actual SpeedController; invulnerability prevents sampling termination; collectibles and support carry are excluded from this pacing measurement.",
+  "seedCount": 12,
+  "modeCount": 2,
+  "dtSeconds": 0.08,
+  "distanceWindows": [
+    0,
+    300,
+    1200,
+    2500,
+    4500
+  ],
+  "proofModel": "Conservative ground-control witness over simultaneous moving volumes; full lane-change corridors, reaction delay and forward-speed bounds are checked. This is not an optimal jump/slide/roof solver. Rooftop physics has separate integration tests.",
+  "measurementLimits": "Node CPU timing excludes GPU rendering. Sampling uses an invulnerable controlled ground runner and disables pickups and support carry to isolate pacing. Seed scenarios cover 0\u20134500m. Browser scenarios use real unprotected lane controls and staged later distances; software rendering was throttled, so hardware FPS is unverified.",
+  "before": {
+    "stages": [
+      {
+        "mode": "NORMAL",
+        "stages": [
+          {
+            "stage": "early",
+            "epm": 0,
+            "meanGap": null,
+            "maxGap": null,
+            "speedRange": [
+              null,
+              null
+            ]
+          },
+          {
+            "stage": "middle",
+            "epm": 2.8994845360825034,
+            "meanGap": 19.351111111110935,
+            "maxGap": 29.279999999999728,
+            "p95Gap": 29.279999999999728,
+            "speedRange": [
+              24.389931688532233,
+              27.89658253493116
+            ]
+          },
+          {
+            "stage": "advanced",
+            "epm": 3.1982942430704004,
+            "meanGap": 20.713333333332894,
+            "maxGap": 33.999999999999275,
+            "p95Gap": 33.999999999999275,
+            "speedRange": [
+              29.32069105580449,
+              31.987260031379474
+            ]
+          },
+          {
+            "stage": "expert",
+            "epm": 4.879879879879951,
+            "meanGap": 14.356923076922957,
+            "maxGap": 31.519999999999328,
+            "p95Gap": 25.75999999999945,
+            "speedRange": [
+              30.866780628386664,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "HARD",
+        "stages": [
+          {
+            "stage": "early",
+            "epm": 0,
+            "meanGap": null,
+            "maxGap": null,
+            "speedRange": [
+              null,
+              null
+            ]
+          },
+          {
+            "stage": "middle",
+            "epm": 4.583333333333364,
+            "meanGap": 14.414545454545333,
+            "maxGap": 20.31999999999992,
+            "p95Gap": 20.31999999999992,
+            "speedRange": [
+              30.28370147002861,
+              37.115939038367394
+            ]
+          },
+          {
+            "stage": "advanced",
+            "epm": 6.081081081081138,
+            "meanGap": 10.733333333333105,
+            "maxGap": 21.03999999999961,
+            "p95Gap": 21.03999999999961,
+            "speedRange": [
+              36.9064323647386,
+              40.78718403616324
+            ]
+          },
+          {
+            "stage": "expert",
+            "epm": 5.036630036630102,
+            "meanGap": 11.62181818181793,
+            "maxGap": 19.439999999999586,
+            "p95Gap": 15.839999999999662,
+            "speedRange": [
+              38,
+              42
+            ]
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "geometryAttempts": 525,
+      "geometryPlacements": 90,
+      "geometryRejections": 435,
+      "committedPlacements": 101,
+      "witnessedPlacements": 0,
+      "encounters": 98,
+      "intersections": 0,
+      "continuousPathConflicts": 0,
+      "lostBeforeEncounter": null,
+      "roofOpportunities": null
+    },
+    "maximumGapSeconds": 33.999999999999275,
+    "minimumWarningSeconds": 1.9203918460856688,
+    "cpuMilliseconds": {
+      "mean": 0.3366587997576212,
+      "worstRunP99": 11.575040999999942
+    },
+    "runs": [
+      {
+        "seed": 101,
+        "mode": "NORMAL",
+        "geometryAttempts": 41,
+        "geometryRejections": 34,
+        "committedPlacements": 8,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 17.51999999999998,
+        "minWarningSeconds": 1.9420552740407588,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          3,
+          1,
+          4
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          17.51999999999998,
+          22.15999999999953,
+          0.47999999999998977,
+          16.95999999999964,
+          31.519999999999328,
+          17.039999999999637,
+          14.879999999999683,
+          14.88000000000099
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3582591652892567,
+          "p95": 0.03787499999998545,
+          "p99": 11.575040999999942,
+          "max": 29.063249999999982
+        }
+      },
+      {
+        "seed": 238,
+        "mode": "NORMAL",
+        "geometryAttempts": 37,
+        "geometryRejections": 31,
+        "committedPlacements": 7,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 20.79999999999991,
+        "minWarningSeconds": 1.921230223474766,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          2,
+          2,
+          3
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          20.79999999999991,
+          21.67999999999954,
+          19.359999999999587,
+          20.23999999999957,
+          25.75999999999945,
+          21.039999999999694,
+          0.40000000000006253
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3019942780401411,
+          "p95": 0.022375000000010914,
+          "p99": 10.711499999999887,
+          "max": 16.28233299999988
+        }
+      },
+      {
+        "seed": 375,
+        "mode": "NORMAL",
+        "geometryAttempts": 43,
+        "geometryRejections": 36,
+        "committedPlacements": 7,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 20.71999999999991,
+        "minWarningSeconds": 1.923910665379489,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          20.71999999999991,
+          31.67999999999933,
+          18.479999999999606,
+          13.359999999999715,
+          17.199999999999633,
+          14.799999999999685,
+          14.960000000000235
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.28094214049586924,
+          "p95": 0.02104200000030687,
+          "p99": 10.233124999999973,
+          "max": 17.710625000000164
+        }
+      },
+      {
+        "seed": 512,
+        "mode": "NORMAL",
+        "geometryAttempts": 43,
+        "geometryRejections": 36,
+        "committedPlacements": 8,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 20.71999999999991,
+        "minWarningSeconds": 1.9203918460856688,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          2,
+          5
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          20.71999999999991,
+          29.19999999999938,
+          20.959999999999553,
+          15.43999999999967,
+          12.719999999999729,
+          0.3999999999999915,
+          14.799999999999685,
+          16.960000000000193
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.28553310861867137,
+          "p95": 0.02087500000016007,
+          "p99": 10.100875000000087,
+          "max": 16.81170800000018
+        }
+      },
+      {
+        "seed": 649,
+        "mode": "NORMAL",
+        "geometryAttempts": 45,
+        "geometryRejections": 37,
+        "committedPlacements": 9,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 20.79999999999991,
+        "minWarningSeconds": 1.9418658401066997,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          2,
+          6
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          20.79999999999991,
+          33.999999999999275,
+          18.31999999999961,
+          13.359999999999715,
+          12.799999999999727,
+          4.319999999999908,
+          14.879999999999683,
+          14.56000000000057,
+          0.40000000000006253
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.2898836900826448,
+          "p95": 0.021666999999979453,
+          "p99": 10.445917000000009,
+          "max": 16.428249999999935
+        }
+      },
+      {
+        "seed": 786,
+        "mode": "NORMAL",
+        "geometryAttempts": 45,
+        "geometryRejections": 37,
+        "committedPlacements": 8,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 29.279999999999728,
+        "minWarningSeconds": 1.9352275764697302,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          29.279999999999728,
+          20.559999999999565,
+          4.959999999999894,
+          13.839999999999705,
+          15.599999999999667,
+          15.119999999999678,
+          16.95999999999964,
+          19.1200000000009
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.29399114403778415,
+          "p95": 0.022707999999965978,
+          "p99": 9.873458000000028,
+          "max": 16.90587500000038
+        }
+      },
+      {
+        "seed": 923,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 37,
+        "committedPlacements": 9,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 13.60000000000001,
+        "minWarningSeconds": 1.9211990876118024,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          4,
+          3
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          13.60000000000001,
+          21.03999999999961,
+          14.959999999999681,
+          10.639999999999773,
+          0.3199999999999932,
+          15.43999999999967,
+          9.039999999999807,
+          13.679999999999708
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.37929482925017044,
+          "p95": 0.029166999999688414,
+          "p99": 11.014124999999694,
+          "max": 16.905291999999463
+        }
+      },
+      {
+        "seed": 1060,
+        "mode": "HARD",
+        "geometryAttempts": 44,
+        "geometryRejections": 37,
+        "committedPlacements": 9,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 20.31999999999992,
+        "minWarningSeconds": 1.9217874800455723,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          1,
+          4,
+          4
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          20.31999999999992,
+          19.999999999999577,
+          11.119999999999763,
+          12.319999999999737,
+          0.3199999999999932,
+          13.759999999999707,
+          0.3199999999999932,
+          11.919999999999746,
+          14.0799999999997
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3643757913882665,
+          "p95": 0.025209000000359083,
+          "p99": 10.08808399999998,
+          "max": 17.468457999999373
+        }
+      },
+      {
+        "seed": 1197,
+        "mode": "HARD",
+        "geometryAttempts": 48,
+        "geometryRejections": 40,
+        "committedPlacements": 9,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 15.920000000000012,
+        "minWarningSeconds": 1.9278306384719393,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          2,
+          3,
+          3
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          15.920000000000012,
+          16.719999999999647,
+          13.199999999999719,
+          10.79999999999977,
+          0.3199999999999932,
+          12.079999999999742,
+          12.479999999999734,
+          15.759999999999664
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3763276384558311,
+          "p95": 0.03312499999992724,
+          "p99": 10.436875000000327,
+          "max": 18.7837499999996
+        }
+      },
+      {
+        "seed": 1334,
+        "mode": "HARD",
+        "geometryAttempts": 48,
+        "geometryRejections": 39,
+        "committedPlacements": 11,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 17.999999999999968,
+        "minWarningSeconds": 1.9243907770971516,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          3,
+          3,
+          4
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          17.999999999999968,
+          0.3199999999999932,
+          14.399999999999697,
+          13.279999999999717,
+          1.7599999999999625,
+          10.719999999999771,
+          12.319999999999737,
+          0.3199999999999932,
+          12.15999999999974,
+          12.15999999999974
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.38895081069043425,
+          "p95": 0.03204199999981938,
+          "p99": 11.07537500000035,
+          "max": 17.979709000000184
+        }
+      },
+      {
+        "seed": 1471,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 37,
+        "committedPlacements": 8,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 13.60000000000001,
+        "minWarningSeconds": 1.9228331313916758,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          2,
+          2,
+          4
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          13.60000000000001,
+          13.119999999999772,
+          11.759999999999753,
+          14.639999999999688,
+          12.559999999999732,
+          15.839999999999662,
+          13.919999999999703,
+          10.479999999999777
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3792040534521154,
+          "p95": 0.02616699999998673,
+          "p99": 10.514874999999847,
+          "max": 15.500291999999718
+        }
+      },
+      {
+        "seed": 1608,
+        "mode": "HARD",
+        "geometryAttempts": 41,
+        "geometryRejections": 34,
+        "committedPlacements": 8,
+        "witnessedPlacements": 0,
+        "firstEncounterSeconds": 18.079999999999966,
+        "minWarningSeconds": 1.9250648273859945,
+        "expressEncounters": null,
+        "roofOpportunities": null,
+        "longestRoof": null,
+        "uniqueTemplates": [
+          null
+        ],
+        "lanes": [
+          null
+        ],
+        "stageEncounters": [
+          0,
+          2,
+          2,
+          4
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          18.079999999999966,
+          14.479999999999695,
+          15.119999999999678,
+          10.879999999999768,
+          15.759999999999664,
+          0.3199999999999932,
+          11.839999999999748,
+          19.439999999999586
+        ],
+        "rejectedPlacementReasons": null,
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.34114894729026946,
+          "p95": 0.023040999999466294,
+          "p99": 9.770290999999816,
+          "max": 11.524125000000822
+        }
+      }
+    ]
+  },
+  "after": {
+    "stages": [
+      {
+        "mode": "NORMAL",
+        "stages": [
+          {
+            "stage": "early",
+            "epm": 4.3859649122806985,
+            "meanGap": 8.746666666666671,
+            "maxGap": 9.840000000000007,
+            "p95Gap": 9.840000000000007,
+            "speedRange": [
+              22.260839890912173,
+              23.935244821384547
+            ],
+            "lanes": [
+              -1,
+              0
+            ]
+          },
+          {
+            "stage": "middle",
+            "epm": 7.731958762886675,
+            "meanGap": 7.586666666666546,
+            "maxGap": 9.43999999999997,
+            "p95Gap": 9.359999999999973,
+            "speedRange": [
+              22.260839890912173,
+              28.58085653738064
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          },
+          {
+            "stage": "advanced",
+            "epm": 11.727078891258135,
+            "meanGap": 5.623636363636245,
+            "maxGap": 7.679999999999836,
+            "p95Gap": 7.599999999999838,
+            "speedRange": [
+              27.988963750223903,
+              32
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          },
+          {
+            "stage": "expert",
+            "epm": 13.138138138138329,
+            "meanGap": 4.659428571428574,
+            "maxGap": 6.55999999999986,
+            "p95Gap": 6.479999999999862,
+            "speedRange": [
+              30.457398553365366,
+              32
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "HARD",
+        "stages": [
+          {
+            "stage": "early",
+            "epm": 5.725190839694653,
+            "meanGap": 6.826666666666671,
+            "maxGap": 7.760000000000005,
+            "p95Gap": 7.760000000000005,
+            "speedRange": [
+              28.15184737537056,
+              30.414081272669137
+            ],
+            "lanes": [
+              -1,
+              0
+            ]
+          },
+          {
+            "stage": "middle",
+            "epm": 10.000000000000068,
+            "meanGap": 6.126666666666587,
+            "maxGap": 7.200000000000006,
+            "p95Gap": 7.120000000000006,
+            "speedRange": [
+              28.15184737537056,
+              36.39722812027835
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          },
+          {
+            "stage": "advanced",
+            "epm": 12.162162162162277,
+            "meanGap": 5.068888888888782,
+            "maxGap": 5.919999999999877,
+            "p95Gap": 5.919999999999877,
+            "speedRange": [
+              35.41729362418546,
+              41.23892233786559
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          },
+          {
+            "stage": "expert",
+            "epm": 15.109890109890307,
+            "meanGap": 4.092121212121125,
+            "maxGap": 5.359999999999886,
+            "p95Gap": 5.2799999999998875,
+            "speedRange": [
+              38,
+              42
+            ],
+            "lanes": [
+              -1,
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "geometryAttempts": 594,
+      "geometryPlacements": 286,
+      "geometryRejections": 308,
+      "committedPlacements": 286,
+      "witnessedPlacements": 286,
+      "encounters": 276,
+      "intersections": 0,
+      "continuousPathConflicts": 0,
+      "lostBeforeEncounter": 0,
+      "roofOpportunities": 78
+    },
+    "maximumGapSeconds": 9.840000000000007,
+    "minimumWarningSeconds": 1.9195281205314014,
+    "cpuMilliseconds": {
+      "mean": 0.3698731397105998,
+      "worstRunP99": 11.792916999999989
+    },
+    "runs": [
+      {
+        "seed": 101,
+        "mode": "NORMAL",
+        "geometryAttempts": 53,
+        "geometryRejections": 29,
+        "committedPlacements": 24,
+        "witnessedPlacements": 24,
+        "firstEncounterSeconds": 8.160000000000005,
+        "minWarningSeconds": 1.9204425183498373,
+        "expressEncounters": 2,
+        "roofOpportunities": 6,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          7,
+          11
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          8.160000000000005,
+          9.359999999999973,
+          6.479999999999862,
+          5.519999999999882,
+          8.399999999999824,
+          7.03999999999985,
+          7.51999999999984,
+          7.1999999999998465,
+          6.719999999999857,
+          6.719999999999857,
+          2.2399999999999523,
+          6.719999999999857,
+          4.319999999999908,
+          4.319999999999908,
+          4.319999999999908,
+          4.23999999999991,
+          4.319999999999908,
+          6.319999999999865,
+          4.319999999999908,
+          4.159999999999911,
+          6.479999999999862,
+          4.080000000000069,
+          4.320000000000675
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 29,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.4511770177095628,
+          "p95": 0.08083299999998417,
+          "p99": 11.792916999999989,
+          "max": 76.49824999999998
+        }
+      },
+      {
+        "seed": 238,
+        "mode": "NORMAL",
+        "geometryAttempts": 53,
+        "geometryRejections": 29,
+        "committedPlacements": 24,
+        "witnessedPlacements": 24,
+        "firstEncounterSeconds": 8.320000000000006,
+        "minWarningSeconds": 1.9207577467971826,
+        "expressEncounters": 0,
+        "roofOpportunities": 5,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_TELEGRAPH"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          7,
+          11
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          8.320000000000006,
+          9.119999999999974,
+          6.6399999999998585,
+          8.15999999999983,
+          7.599999999999838,
+          7.51999999999984,
+          4.959999999999894,
+          4.879999999999896,
+          4.719999999999899,
+          6.799999999999855,
+          6.6399999999998585,
+          4.559999999999903,
+          4.319999999999908,
+          6.55999999999986,
+          6.479999999999862,
+          4.159999999999911,
+          6.479999999999862,
+          6.319999999999865,
+          4.319999999999908,
+          4.159999999999911,
+          4.319999999999908,
+          4.1600000000004655,
+          4.320000000000675
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 29,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3194374515938604,
+          "p95": 0.0284999999998945,
+          "p99": 8.244416999999885,
+          "max": 42.37866699999995
+        }
+      },
+      {
+        "seed": 375,
+        "mode": "NORMAL",
+        "geometryAttempts": 55,
+        "geometryRejections": 30,
+        "committedPlacements": 25,
+        "witnessedPlacements": 25,
+        "firstEncounterSeconds": 8.240000000000006,
+        "minWarningSeconds": 1.9275727182773827,
+        "expressEncounters": 4,
+        "roofOpportunities": 7,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          7,
+          12
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          8.240000000000006,
+          9.43999999999997,
+          6.319999999999865,
+          8.479999999999823,
+          7.359999999999843,
+          7.599999999999838,
+          7.359999999999843,
+          2.479999999999947,
+          6.799999999999855,
+          6.879999999999853,
+          4.4799999999999045,
+          4.399999999999906,
+          4.399999999999906,
+          6.55999999999986,
+          6.399999999999864,
+          2.0799999999999557,
+          4.399999999999906,
+          4.159999999999911,
+          4.319999999999908,
+          4.159999999999911,
+          4.319999999999908,
+          4.159999999999911,
+          4.320000000000093,
+          6.240000000000975
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 30,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.33104976741440173,
+          "p95": 0.02891700000009223,
+          "p99": 8.212750000000142,
+          "max": 47.59370800000033
+        }
+      },
+      {
+        "seed": 512,
+        "mode": "NORMAL",
+        "geometryAttempts": 62,
+        "geometryRejections": 37,
+        "committedPlacements": 25,
+        "witnessedPlacements": 25,
+        "firstEncounterSeconds": 9.680000000000007,
+        "minWarningSeconds": 1.9234608041353254,
+        "expressEncounters": 4,
+        "roofOpportunities": 4,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          8,
+          11
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          9.680000000000007,
+          7.91999999999997,
+          6.319999999999865,
+          8.479999999999823,
+          7.439999999999841,
+          7.599999999999838,
+          4.959999999999894,
+          2.479999999999947,
+          4.719999999999899,
+          6.719999999999857,
+          4.799999999999898,
+          4.319999999999908,
+          6.799999999999855,
+          4.159999999999911,
+          6.479999999999862,
+          4.319999999999908,
+          4.23999999999991,
+          4.319999999999908,
+          6.319999999999865,
+          6.319999999999865,
+          2.159999999999954,
+          4.23999999999991,
+          6.400000000000418,
+          4.080000000000638
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 37,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3671042561983446,
+          "p95": 0.030625000000327418,
+          "p99": 8.610374999999749,
+          "max": 56.64991699999973
+        }
+      },
+      {
+        "seed": 649,
+        "mode": "NORMAL",
+        "geometryAttempts": 55,
+        "geometryRejections": 30,
+        "committedPlacements": 25,
+        "witnessedPlacements": 25,
+        "firstEncounterSeconds": 9.840000000000007,
+        "minWarningSeconds": 1.9201280181540485,
+        "expressEncounters": 4,
+        "roofOpportunities": 4,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          7,
+          12
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          9.840000000000007,
+          7.839999999999968,
+          6.319999999999865,
+          8.479999999999823,
+          7.359999999999843,
+          7.599999999999838,
+          7.439999999999841,
+          4.719999999999899,
+          4.559999999999903,
+          6.959999999999852,
+          2.159999999999954,
+          6.719999999999857,
+          6.319999999999865,
+          4.319999999999908,
+          4.319999999999908,
+          6.479999999999862,
+          2.0799999999999557,
+          4.319999999999908,
+          4.23999999999991,
+          4.23999999999991,
+          4.23999999999991,
+          4.23999999999991,
+          4.24000000000008,
+          4.240000000000663
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 30,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.33474305194804915,
+          "p95": 0.027959000000009837,
+          "p99": 8.104832999999871,
+          "max": 53.30554099999972
+        }
+      },
+      {
+        "seed": 786,
+        "mode": "NORMAL",
+        "geometryAttempts": 48,
+        "geometryRejections": 21,
+        "committedPlacements": 27,
+        "witnessedPlacements": 27,
+        "firstEncounterSeconds": 8.240000000000006,
+        "minWarningSeconds": 1.9197225148701298,
+        "expressEncounters": 6,
+        "roofOpportunities": 7,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_TELEGRAPH"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          8,
+          13
+        ],
+        "stageSeconds": [
+          13.68000000000001,
+          31.03999999999969,
+          37.519999999999555,
+          53.27999999999922
+        ],
+        "gapSeconds": [
+          8.240000000000006,
+          6.1600000000000055,
+          6.639999999999892,
+          8.719999999999814,
+          7.519999999999843,
+          7.679999999999836,
+          5.039999999999893,
+          4.879999999999896,
+          4.799999999999898,
+          4.399999999999906,
+          4.799999999999898,
+          2.0799999999999557,
+          6.959999999999852,
+          6.319999999999865,
+          4.319999999999908,
+          6.479999999999862,
+          4.23999999999991,
+          2.2399999999999523,
+          6.319999999999865,
+          4.319999999999908,
+          4.159999999999911,
+          4.319999999999908,
+          4.159999999999911,
+          4.320000000000093,
+          2.0000000000003126,
+          4.320000000000675
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 21,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3198999817001216,
+          "p95": 0.029750000000603904,
+          "p99": 8.33745799999997,
+          "max": 41.03475000000071
+        }
+      },
+      {
+        "seed": 923,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 21,
+        "committedPlacements": 24,
+        "witnessedPlacements": 24,
+        "firstEncounterSeconds": 6.400000000000004,
+        "minWarningSeconds": 1.9281415170193372,
+        "expressEncounters": 4,
+        "roofOpportunities": 6,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_RIGHT_APPROACH"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          6,
+          12
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          6.400000000000004,
+          7.040000000000006,
+          5.119999999999946,
+          6.159999999999869,
+          5.999999999999872,
+          5.839999999999879,
+          5.759999999999877,
+          3.6799999999999216,
+          5.2799999999998875,
+          5.359999999999886,
+          5.359999999999886,
+          3.519999999999925,
+          3.519999999999925,
+          5.2799999999998875,
+          3.4399999999999267,
+          3.75999999999992,
+          3.4399999999999267,
+          3.519999999999925,
+          3.4399999999999267,
+          3.519999999999925,
+          3.519999999999925,
+          3.4399999999999267,
+          5.199999999999889
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 21,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.37480034818114494,
+          "p95": 0.02958299999954761,
+          "p99": 8.066624999999476,
+          "max": 50.65366699999959
+        }
+      },
+      {
+        "seed": 1060,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 22,
+        "committedPlacements": 23,
+        "witnessedPlacements": 23,
+        "firstEncounterSeconds": 7.760000000000005,
+        "minWarningSeconds": 1.9254110856214064,
+        "expressEncounters": 4,
+        "roofOpportunities": 7,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          6,
+          11
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          7.760000000000005,
+          5.760000000000005,
+          4.959999999999948,
+          6.319999999999865,
+          5.8399999999998755,
+          5.919999999999877,
+          3.839999999999918,
+          5.599999999999881,
+          5.359999999999886,
+          5.359999999999886,
+          5.439999999999884,
+          3.519999999999925,
+          5.2799999999998875,
+          5.2799999999998875,
+          3.3599999999999284,
+          3.6799999999999216,
+          3.27999999999993,
+          3.6799999999999216,
+          3.519999999999925,
+          5.199999999999889,
+          3.4399999999999267,
+          3.519999999999925
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 22,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.40695672234595837,
+          "p95": 0.03462500000023283,
+          "p99": 9.184249999999338,
+          "max": 48.129916999999296
+        }
+      },
+      {
+        "seed": 1197,
+        "mode": "HARD",
+        "geometryAttempts": 44,
+        "geometryRejections": 22,
+        "committedPlacements": 22,
+        "witnessedPlacements": 22,
+        "firstEncounterSeconds": 6.480000000000004,
+        "minWarningSeconds": 1.9195281205314014,
+        "expressEncounters": 2,
+        "roofOpportunities": 8,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          5,
+          12
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          6.480000000000004,
+          7.040000000000006,
+          6.799999999999908,
+          6.319999999999865,
+          5.999999999999876,
+          5.759999999999877,
+          5.679999999999879,
+          5.439999999999884,
+          5.439999999999884,
+          5.2799999999998875,
+          5.2799999999998875,
+          3.6799999999999216,
+          3.519999999999925,
+          3.519999999999925,
+          3.3599999999999284,
+          3.6799999999999216,
+          3.27999999999993,
+          3.6799999999999216,
+          3.3599999999999284,
+          5.2799999999998875,
+          5.119999999999891,
+          3.5999999999999233
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 22,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.38684970304381994,
+          "p95": 0.03650000000016007,
+          "p99": 8.137415999999575,
+          "max": 44.208708999999544
+        }
+      },
+      {
+        "seed": 1334,
+        "mode": "HARD",
+        "geometryAttempts": 44,
+        "geometryRejections": 22,
+        "committedPlacements": 22,
+        "witnessedPlacements": 22,
+        "firstEncounterSeconds": 7.520000000000005,
+        "minWarningSeconds": 1.920316909766866,
+        "expressEncounters": 4,
+        "roofOpportunities": 8,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          6,
+          11
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          7.520000000000005,
+          5.920000000000005,
+          4.879999999999951,
+          6.479999999999862,
+          5.919999999999874,
+          5.839999999999879,
+          3.839999999999918,
+          5.599999999999881,
+          5.2799999999998875,
+          3.75999999999992,
+          5.2799999999998875,
+          5.359999999999886,
+          3.519999999999925,
+          5.2799999999998875,
+          5.039999999999893,
+          3.75999999999992,
+          3.27999999999993,
+          3.6799999999999216,
+          5.039999999999893,
+          3.6799999999999216,
+          5.199999999999889,
+          3.4399999999999267
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 22,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3851098708240406,
+          "p95": 0.029624999999214197,
+          "p99": 8.498915999999554,
+          "max": 43.14966699999968
+        }
+      },
+      {
+        "seed": 1471,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 22,
+        "committedPlacements": 23,
+        "witnessedPlacements": 23,
+        "firstEncounterSeconds": 6.400000000000004,
+        "minWarningSeconds": 1.9222969642884884,
+        "expressEncounters": 4,
+        "roofOpportunities": 7,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_APPROACH"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          7,
+          10
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          6.400000000000004,
+          7.120000000000006,
+          6.879999999999907,
+          6.239999999999867,
+          5.999999999999876,
+          3.9999999999999147,
+          3.839999999999918,
+          5.679999999999879,
+          5.2799999999998875,
+          1.919999999999959,
+          5.2799999999998875,
+          5.119999999999891,
+          5.2799999999998875,
+          3.519999999999925,
+          5.2799999999998875,
+          5.2799999999998875,
+          3.4399999999999267,
+          3.6799999999999216,
+          3.519999999999925,
+          5.199999999999889,
+          3.4399999999999267,
+          5.2799999999998875
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 22,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.38346896585002,
+          "p95": 0.031792000000677945,
+          "p99": 8.346125000000029,
+          "max": 49.28112499999952
+        }
+      },
+      {
+        "seed": 1608,
+        "mode": "HARD",
+        "geometryAttempts": 45,
+        "geometryRejections": 23,
+        "committedPlacements": 22,
+        "witnessedPlacements": 22,
+        "firstEncounterSeconds": 6.400000000000004,
+        "minWarningSeconds": 1.9245660749010118,
+        "expressEncounters": 2,
+        "roofOpportunities": 9,
+        "longestRoof": 52.4,
+        "uniqueTemplates": [
+          "MOVING_TRAIN_LEFT_BYPASS",
+          "MOVING_TRAIN_SIDE_CHOICE",
+          "MOVING_TRAIN_TELEGRAPH",
+          "MOVING_TRAIN_RIGHT_APPROACH",
+          "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+          "MOVING_TRAIN_CENTER_STATIONARY_FLANK"
+        ],
+        "lanes": [
+          -1,
+          0,
+          1
+        ],
+        "stageEncounters": [
+          1,
+          4,
+          6,
+          10
+        ],
+        "stageSeconds": [
+          10.480000000000008,
+          23.99999999999984,
+          29.59999999999972,
+          43.679999999999424
+        ],
+        "gapSeconds": [
+          6.400000000000004,
+          7.200000000000006,
+          4.8799999999999475,
+          6.399999999999864,
+          5.759999999999877,
+          5.919999999999877,
+          3.839999999999918,
+          5.599999999999881,
+          5.359999999999886,
+          5.359999999999886,
+          5.2799999999998875,
+          5.2799999999998875,
+          3.519999999999925,
+          5.2799999999998875,
+          5.2799999999998875,
+          3.519999999999925,
+          5.2799999999998875,
+          3.5999999999999233,
+          3.4399999999999267,
+          3.4399999999999267,
+          3.519999999999925
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 23,
+          "patternTransition": 0,
+          "movingActionWindow": 0
+        },
+        "intersections": 0,
+        "pathConflicts": 0,
+        "frameCost": {
+          "mean": 0.3778805397178737,
+          "p95": 0.029833999999937078,
+          "p99": 8.305624999999964,
+          "max": 49.420250000000124
+        }
+      }
+    ]
+  },
+  "verification": {
+    "focusedChecks": 421,
+    "productionBuild": "passed (rechecked after physical exit-ramp correction)",
+    "browser": [
+      {
+        "fixture": "early",
+        "state": "PLAYING",
+        "distance": 307.6027056963012,
+        "encounters": 1,
+        "expressEncounters": 0
+      },
+      {
+        "fixture": "middle",
+        "state": "PLAYING",
+        "distance": 982.7192222866614,
+        "encounters": 1,
+        "expressEncounters": 0
+      },
+      {
+        "fixture": "advanced",
+        "state": "PLAYING",
+        "distance": 2140.4532052550653,
+        "encounters": 2,
+        "expressEncounters": 1
+      },
+      {
+        "fixture": "express",
+        "state": "PLAYING",
+        "distance": 3297.5513998171537,
+        "encounters": 3,
+        "expressEncounters": 2
+      }
+    ]
+  },
+  "counterNotes": "Geometry counters describe populate calls during the sample. Committed counts include initially streamed traffic. Null baseline fields were not instrumented. Rejection counts are candidate attempts, not encounters; templates may be retried in different lanes."
+}

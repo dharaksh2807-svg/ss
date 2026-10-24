@@ -147,8 +147,8 @@ console.log('\n--- Suite 4: Moving Train Frequency & Early Appearance ---');
   const dcHard = new DifficultyController();
   dcHard.setGameMode('HARD');
 
-  // Hard Mode allows moving trains earlier (at 100m)
-  assert(!dcNormal.canSpawnMovingTrain(100), 'Normal Mode forbids moving trains at 100m');
+  // Both modes now allow early scheduling after the protected opening.
+  assert(dcNormal.canSpawnMovingTrain(100), 'Normal Mode can schedule an early readable train after the opening');
   assert(dcHard.canSpawnMovingTrain(100), 'Hard Mode permits moving trains earlier at 100m');
 
   // Frequency spacing: record a spawn at 500m
@@ -156,9 +156,9 @@ console.log('\n--- Suite 4: Moving Train Frequency & Early Appearance ---');
   dcNormal.recordPatternSpawned(dummyPattern, 500, 25.0);
   dcHard.recordPatternSpawned(dummyPattern, 500, 18.0);
 
-  // Normal mode requires minGap 65m at 500m
-  assert(!dcNormal.canSpawnMovingTrain(555, 20.0, 27.5), 'Normal Mode rejects spacing under 65m (at 55m gap)');
-  // Hard mode allows tighter spacing (minGap 60m early, 50m mid)
+  // Physical spawn spacing and simulation-time cooldown remain enforced.
+  assert(!dcNormal.canSpawnMovingTrain(525, 20.0, 26.0), 'Normal Mode rejects physically compressed spawn spacing and cooldown');
+  // A sufficiently separated Hard Mode spawn remains eligible.
   assert(dcHard.canSpawnMovingTrain(562, 28.0, 21.0), 'Hard Mode allows tighter gap at 62m');
 }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
+import { SpeedController } from '../core/SpeedController';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { Player, SupportSurfaceType } from '../player/Player';
 import { ObstacleFactory, ObstacleInstance } from './ObstacleFactory';
@@ -34,7 +35,18 @@ export class TrackManager {
   private furthestZ: number = 0; // Leading edge of the track
   private chunkIndex: number = 0;
   private lastSpawnedPattern: TrackPattern | null = null;
-  private deferredMovingPattern: TrackPattern | null = null;
+  private get encounterDebugEnabled(): boolean { return !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV || this.isDebugSeed; }
+  private nextTrainArrival = 0;
+  private lastPlannedArrival = -Infinity;
+  private lastRushArrival = -Infinity;
+  private rushFollowup = false;
+  private trafficOrder: LaneIndex[] = [-1, 1, 0];
+  private lastTrainLane: LaneIndex | null = null;
+  private encounterPlayer: Player | undefined;
+  private observedTrains = new WeakSet<object>();
+  private warnedTrains = new WeakSet<object>();
+  private encounterMetrics = { attempts: 0, placements: 0, occupancyRejections: 0, reachabilityRejections: 0,
+    encounters: 0, warnings: 0, expressEncounters: 0, transitionRejections: 0, windowRejections: 0, lastEncounterTime: 0, gaps: [] as number[] };
   public cleanStreakCount: number = 0;
 
   // High-speed swept collision tracking to prevent tunneling past collectibles
@@ -224,7 +236,17 @@ export class TrackManager {
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
 
     this.furthestZ = 0;
-    this.deferredMovingPattern = null;
+    const first = this.getGameMode() === 'HARD' ? CONSTANTS.TRAIN_ENCOUNTER_PACING.firstHard : CONSTANTS.TRAIN_ENCOUNTER_PACING.firstNormal;
+    this.nextTrainArrival = first[0] + this.rng() * (first[1] - first[0]);
+    this.lastPlannedArrival = -Infinity;
+    this.lastRushArrival = -Infinity;
+    this.rushFollowup = false;
+    this.lastTrainLane = null;
+    this.encounterPlayer = undefined;
+    this.observedTrains = new WeakSet();
+    this.warnedTrains = new WeakSet();
+    this.encounterMetrics = { attempts: 0, placements: 0, occupancyRejections: 0, reachabilityRejections: 0,
+      encounters: 0, warnings: 0, expressEncounters: 0, transitionRejections: 0, windowRejections: 0, lastEncounterTime: 0, gaps: [] };
     this.chunkIndex = 0;
     this.elapsedTime = 0;
     this.cleanStreakCount = 0;
@@ -261,7 +283,7 @@ export class TrackManager {
       const dynamicTrainSpeed = hasMovingTrain
         ? this.difficultyController.calculateMovingTrainSpeed(encounterDist, this.difficultyController.getGameMode(), pattern.difficulty, this.rng())
         : undefined;
-      pattern = this.populateCompatibleChunk(chunk, pattern, this.furthestZ, initialTheme, false, dynamicTrainSpeed, this.chunks.slice(0, i), expectedSpeed);
+      pattern = this.populateCompatibleChunk(chunk, pattern, this.furthestZ, initialTheme, false, dynamicTrainSpeed, this.chunks.slice(0, i), (CONSTANTS.SPEED_PROFILES[this.getGameMode() as keyof typeof CONSTANTS.SPEED_PROFILES] || CONSTANTS.SPEED_PROFILES.NORMAL).initialSpeed);
       this.lastSpawnedPattern = pattern;
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       this.chunkIndex++;
@@ -280,7 +302,8 @@ export class TrackManager {
       this.recentPatterns = [];
       this.difficultyController.reset();
 
-      const openingPool = OBSTACLE_PATTERNS.filter((p) => p.isOpening);
+      const openingPool = OBSTACLE_PATTERNS.filter((p) => p.isOpening &&
+        CONSTANTS.LANE_INDICES.some((lane) => !p.obstacles.some((obs) => obs.lane === lane)));
       const chosenOpening = openingPool.length > 0
         ? openingPool[Math.floor(this.rng() * openingPool.length)]
         : OBSTACLE_PATTERNS[0];
@@ -437,51 +460,197 @@ export class TrackManager {
     PacingMetrics.getInstance().recordPattern(pattern.name, pattern.difficulty);
   }
 
+  private remapRailwayPattern(pattern: TrackPattern, lanes: readonly LaneIndex[]): TrackPattern {
+    const map = (lane: LaneIndex) => lanes[lane + 1];
+    return { ...pattern,
+      obstacles: pattern.obstacles.map((obs) => ({ ...obs, lane: map(obs.lane) })),
+      collectibles: pattern.collectibles.map((coin) => ({ ...coin, lane: map(coin.lane),
+        ...(coin.endLane !== undefined ? { endLane: map(coin.endLane) } : {}) })),
+      entryLanes: pattern.entryLanes?.map(map), exitLanes: pattern.exitLanes?.map(map) };
+  }
+
   private populateCompatibleChunk(
     chunk: TrackChunk, pattern: TrackPattern, worldZ: number, theme: EnvironmentTheme,
-    isTransition: boolean, trainSpeed: number | undefined, peers: readonly TrackChunk[], playerSpeed: number
+    isTransition: boolean, _trainSpeed: number | undefined, peers: readonly TrackChunk[], playerSpeed: number
   ): TrackPattern {
-    const requested = this.deferredMovingPattern || pattern;
-    const speed = requested === pattern ? trainSpeed : this.difficultyController.calculateMovingTrainSpeed(
-      Math.abs(worldZ), this.getGameMode(), requested.difficulty, this.rng()
-    );
-    const isFlightActive = this.aerialCoinManager?.isJetpackFlightActive() || false;
-    const allowed = (candidate: TrackPattern) =>
-      !(isFlightActive && (candidate.isTunnel || candidate.obstacles.some((obs) => obs.type === 'TUNNEL_ARCH'))) &&
-      (!this.lastSpawnedPattern || ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed));
-    const place = (candidate: TrackPattern, velocity?: number) => {
-      const previousCorridor = chunk.isAerialCorridor;
-      chunk.isAerialCorridor = isFlightActive && (!!candidate.isTunnel || theme.id === 'UNDERGROUND_METRO');
-      const accepted = chunk.populate(candidate, worldZ, theme, isTransition, velocity, peers);
-      if (!accepted) chunk.isAerialCorridor = previousCorridor;
-      return accepted;
+    const playerZ = this.encounterPlayer?.position.z ?? 0;
+    const distance = this.encounterPlayer?.distanceTraveled ?? 0;
+    const pacing = this.difficultyController.getTrainEncounterPacing(distance);
+    const runnerCurve = new SpeedController(this.getGameMode() as ConstructorParameters<typeof SpeedController>[0]);
+    const config = CONSTANTS.TRAIN_ENCOUNTER_PACING;
+    const forecast = (seconds: number, stopDistance = Infinity) => {
+      let d = distance, speed = playerSpeed, time = 0;
+      while (time < seconds && d < stopDistance) {
+        const dt = Math.min(0.1, seconds - time);
+        speed += (runnerCurve.evaluateCurve(d) - speed) * (1 - Math.exp(-CONSTANTS.SPEED_LERP * dt));
+        d += speed * dt;
+        time += dt;
+      }
+      return { distance: d, time };
     };
-    const requestedAllowed = allowed(requested);
-    if (requestedAllowed && place(requested, speed)) {
-      this.deferredMovingPattern = null;
-      this.commitPattern(requested, Math.abs(worldZ));
-      return requested;
+    const arrivalFor = (front: number, trainSpeed: number) => {
+      let separation = playerZ - front, speed = playerSpeed, d = distance, time = 0;
+      while (separation > 0.0001 && time < 30) {
+        const dt = Math.min(0.1, separation / Math.max(1, speed + trainSpeed));
+        speed += (runnerCurve.evaluateCurve(d) - speed) * (1 - Math.exp(-CONSTANTS.SPEED_LERP * dt));
+        separation -= (speed + trainSpeed) * dt;
+        d += speed * dt;
+        time += dt;
+      }
+      return this.elapsedTime + time;
+    };
+    const flight = this.aerialCoinManager?.isJetpackFlightActive() || false;
+    if (worldZ === 0) {
+      chunk.populate(pattern, worldZ, theme, isTransition, undefined, peers);
+      const clear = CONSTANTS.LANE_INDICES.filter((lane) => !pattern.obstacles.some((obs) => obs.lane === lane));
+      const first = clear[Math.floor(this.rng() * clear.length)] ?? 0;
+      this.trafficOrder = [first, ...this.shuffle(CONSTANTS.LANE_INDICES.filter((lane) => lane !== first))];
+      this.commitPattern(pattern, 0);
+      return pattern;
     }
-    if (requested.obstacles.some((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving)) {
-      this.deferredMovingPattern = requestedAllowed && chunk.placementConflictWithinPattern ? null : requested;
-    }
-    // Keep the deferred approach lanes clear using existing, reachable layouts.
-    // This is generation-time rescheduling; no encountered object is removed.
-    const reservedLanes = new Set(this.deferredMovingPattern?.obstacles
-      .filter((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving).map((obs) => obs.lane));
-    const recovery = OBSTACLE_PATTERNS.find((candidate) => candidate.name === 'SAFE_RECOVERY_CONNECTOR')!;
-    const candidates = [recovery, ...OBSTACLE_PATTERNS.filter((candidate) => !candidate.isOpening)];
-    for (const candidate of candidates) {
-      if (candidate.obstacles.some((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving || reservedLanes.has(obs.lane))) continue;
-      if (!allowed(candidate) || !place(candidate)) continue;
-      PacingMetrics.getInstance().recordFallback(requested.name, 'Deferred moving train until its solid approach corridor clears.');
+    // Reserve approach lanes before choosing ordinary obstacles, rather than
+    // waiting for an already blocked train to clear six streamed chunks.
+    const rotation = pacing.stage < 2 ? 0 : pacing.stage - 1;
+    const traffic = [this.trafficOrder[rotation % 3], this.trafficOrder[(rotation + 1) % 3]];
+    const permutations: LaneIndex[][] = [[-1, 0, 1], [-1, 1, 0], [0, -1, 1], [0, 1, -1], [1, -1, 0], [1, 0, -1]];
+    const moving = (candidate: TrackPattern) => candidate.obstacles.filter((obs) => obs.isMoving || obs.type === 'MOVING_TRAIN');
+    const rank = (candidate: TrackPattern) => ({ BEGINNER: 0, EASY: 0, INTERMEDIATE: 1, MEDIUM: 1, ADVANCED: 2, HARD: 2, EXPERT: 3 })[candidate.difficulty];
+    const pool = this.shuffle(OBSTACLE_PATTERNS.filter((candidate) => !candidate.isOpening &&
+      rank(candidate) <= pacing.stage && !(flight && (candidate.isTunnel || candidate.obstacles.some((obs) => obs.type === 'TUNNEL_ARCH')))));
+    const candidates = [pattern, ...pool].filter((candidate) => !candidate.isOpening && rank(candidate) <= pacing.stage);
+    const variation = this.rng();
+    const rawSpeed = this.difficultyController.calculateMovingTrainSpeed(Math.abs(worldZ), this.getGameMode(), pattern.difficulty, variation);
+    const nominalArrival = arrivalFor(worldZ - 32, rawSpeed);
+    const trainDue = nominalArrival >= this.nextTrainArrival - config.placementTolerance;
+    const rush = trainDue && (this.rushFollowup || (pacing.rushAllowed &&
+      nominalArrival - this.lastRushArrival >= config.rushCooldown && this.rng() < config.rushChance));
+    const layouts = candidates.flatMap((candidate) => permutations.map((lanes) => this.remapRailwayPattern(candidate, lanes)));
+    // Alternation is a preference; physical occupancy and the full action window
+    // remain hard gates, including when the next lane has not cleared yet.
+    const repetitionCost = (candidate: TrackPattern) =>
+      Number(moving(candidate)[0]?.lane === this.lastTrainLane) * 8 + this.recentPatterns.lastIndexOf(candidate.name) + 1;
+    layouts.sort((a, b) => repetitionCost(a) - repetitionCost(b));
+    const attempt = (candidate: TrackPattern, withTrain: boolean): TrackPattern | null => {
+      const trains = moving(candidate);
+      if (withTrain && this.encounterPlayer?.isChangingLaneActive()) return null;
+      if (withTrain ? trains.length !== 1 : trains.length !== 0) return null;
+      if (candidate.obstacles.some((obs) => !obs.isMoving && obs.type !== 'MOVING_TRAIN' && traffic.includes(obs.lane))) return null;
+      if (trains.some((obs) => !traffic.includes(obs.lane))) return null;
+      if (this.lastSpawnedPattern && !ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed)) {
+        if (this.encounterDebugEnabled) {
+          this.encounterMetrics.reachabilityRejections++;
+          this.encounterMetrics.transitionRejections++;
+        }
+        return null;
+      }
+      let speed = withTrain ? this.difficultyController.calculateMovingTrainSpeed(Math.abs(worldZ), this.getGameMode(), rush ? 'HARD' : candidate.difficulty, rush ? 1 : variation) : undefined;
+      if (speed !== undefined) {
+        // A lane's active express cohort shares one track velocity. Faster
+        // followers would eventually catch the leader, even far behind camera.
+        for (const peer of peers) for (const obs of peer.obstacles) {
+          if (peer !== chunk && obs.active && obs.isMoving && obs.lane === trains[0].lane && (obs.velocityZ ?? 0) > 0) speed = Math.min(speed, obs.velocityZ!);
+        }
+        const front = worldZ - trains[0].zOffset + (trains[0].length ?? CONSTANTS.TRAIN_LENGTH_SHORT) / 2 + 2.1;
+        const arrival = arrivalFor(front, speed);
+        if (arrival < this.nextTrainArrival - config.placementTolerance || arrival - this.lastPlannedArrival < config.minimumArrivalGap || arrival - this.elapsedTime < CONSTANTS.MOVING_TRAIN_WARNING_TIME + 0.3) return null;
+        if (this.encounterDebugEnabled) this.encounterMetrics.attempts++;
+      }
+      chunk.isAerialCorridor = flight && (!!candidate.isTunnel || theme.id === 'UNDERGROUND_METRO');
+      if (!chunk.populate(candidate, worldZ, theme, isTransition, speed, peers)) {
+        if (withTrain && this.encounterDebugEnabled) this.encounterMetrics.occupancyRejections++;
+        return null;
+      }
+      if (withTrain) {
+        const train = chunk.obstacles.find((obs) => obs.isMoving)!;
+        const front = chunk.chunkZ + train.group.position.z + (train.group.userData.trainFrontOffset ?? (train.length! / 2 + 2.1));
+        const arrival = arrivalFor(front, speed!);
+        const hazards = [chunk, ...peers.filter((peer) => peer !== chunk)].flatMap((peer) => peer.obstacles.filter((obs) => obs.active).map((obs) => {
+          const box = obs.collider.clone().expandByScalar(0.1);
+          if (obs.group.userData.isTrain) {
+            box.max.z = Math.max(box.max.z, peer.chunkZ + obs.group.position.z + (obs.group.userData.trainFrontOffset ?? obs.length! / 2 + 2.1));
+            box.min.z = Math.min(box.min.z, peer.chunkZ + obs.group.position.z - obs.length! / 2 - 0.55);
+          }
+          if (obs.rampCollider) box.union(obs.rampCollider);
+          if (obs.exitRampCollider) box.union(obs.exitRampCollider);
+          return { min: box.min, max: box.max, velocityZ: obs.isMoving ? obs.velocityZ! : 0 };
+        }));
+        const rear = chunk.chunkZ + train.group.position.z + train.group.userData.trainRearOffset;
+        const slowestTailClearance = (playerZ - rear + CONSTANTS.PLAYER_DEPTH / 2) / (playerSpeed + speed!);
+        const horizon = Math.max(arrival - this.elapsedTime + 1.2,
+          slowestTailClearance + CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME);
+        // An avoidance witness never stumbles. Forward speed is monotonic and
+        // bounded by the actual target curve at the furthest possible distance.
+        const maximumSpeed = Math.max(playerSpeed, runnerCurve.evaluateCurve(distance + Math.max(playerSpeed, runnerCurve.getMaxSpeed()) * horizon));
+        const player = this.encounterPlayer;
+        const entries = player && !player.isInvulnerable() ? [player.currentLane] : CONSTANTS.LANE_INDICES;
+        const proof = ReachabilityValidator.validateTrainWindow(hazards, playerZ, playerSpeed,
+          maximumSpeed, horizon, entries);
+        if (!proof.solvable) {
+          if (this.encounterDebugEnabled) { this.encounterMetrics.reachabilityRejections++; this.encounterMetrics.windowRejections++; }
+          return null;
+        }
+        train.group.userData.encounterCategory = rush ? 'EXPRESS_RUSH' : 'REGULAR';
+        train.group.userData.sourcePattern = candidate.name;
+        if (this.encounterDebugEnabled) {
+          train.group.userData.survivalWitness = proof.witness;
+          this.encounterMetrics.placements++;
+        }
+        this.lastTrainLane = train.lane;
+        this.lastPlannedArrival = arrival;
+        if (rush && !this.rushFollowup) {
+          this.lastRushArrival = arrival;
+          this.rushFollowup = true;
+          this.nextTrainArrival = arrival + config.rushPairGap;
+        } else {
+          this.rushFollowup = false;
+          const interval = pacing.minGap + this.rng() * (pacing.maxGap - pacing.minGap);
+          const nextPacing = this.difficultyController.getTrainEncounterPacing(forecast(arrival - this.elapsedTime + interval).distance);
+          if (nextPacing.stage > pacing.stage) {
+            const boundary = this.elapsedTime + forecast(arrival - this.elapsedTime + interval, config.stages[pacing.stage].end).time;
+            this.nextTrainArrival = Math.max(boundary + nextPacing.minGap * 0.25,
+              arrival + nextPacing.minGap + this.rng() * (nextPacing.maxGap - nextPacing.minGap));
+          } else this.nextTrainArrival = arrival + interval;
+        }
+      }
       this.commitPattern(candidate, Math.abs(worldZ));
       return candidate;
+    };
+    if (trainDue && !flight) for (const candidate of layouts) {
+      const accepted = attempt(candidate, true);
+      if (accepted) return accepted;
     }
-    throw new Error('No existing layout provides a clear moving-train corridor');
+    for (const candidate of layouts) {
+      const accepted = attempt(candidate, false);
+      if (accepted) return accepted;
+    }
+    // The existing recovery connector can always be mapped to the non-traffic lane.
+    const recovery = OBSTACLE_PATTERNS.find((candidate) => candidate.name === 'SAFE_RECOVERY_CONNECTOR')!;
+    for (const lanes of permutations) {
+      const accepted = attempt(this.remapRailwayPattern(recovery, lanes), false);
+      if (accepted) return accepted;
+    }
+    throw new Error('No reachable layout preserves the active railway corridors');
+  }
+
+  public getTrainEncounterMetrics() {
+    const gaps = this.encounterMetrics.gaps;
+    const trains = this.chunks.flatMap((chunk) => chunk.obstacles).filter((obs) => obs.active && obs.isMoving);
+    const playerZ = this.encounterPlayer?.position.z ?? 0;
+    return { ...this.encounterMetrics, gaps: [...gaps], distance: this.difficultyController.getState().distanceTraveled,
+      stage: this.difficultyController.getTrainEncounterPacing().stage,
+      runnerSpeed: this.encounterPlayer?.speed ?? CONSTANTS.INITIAL_SPEED,
+      nextPlannedArrival: this.nextTrainArrival,
+      activeTrains: trains.length,
+      relevantTrains: trains.filter((obs) => obs.collider.min.z < playerZ + CONSTANTS.DESPAWN_DISTANCE_BEHIND &&
+        obs.collider.max.z > playerZ - CONSTANTS.ACTIVE_CHUNKS * CONSTANTS.CHUNK_LENGTH).length,
+      movingTrainSpeeds: trains.map((obs) => obs.velocityZ),
+      rejectedPlacementReasons: { solidOccupancy: this.encounterMetrics.occupancyRejections,
+        patternTransition: this.encounterMetrics.transitionRejections, movingActionWindow: this.encounterMetrics.windowRejections },
+      averageGap: gaps.length ? gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length : 0 };
   }
 
   public update(player: Player, dt: number, time: number = 0): void {
+    this.encounterPlayer = player;
     this.elapsedTime += dt;
     // 0. Update difficulty controller pacing
     this.difficultyController.update(dt, player.distanceTraveled, player.speed);
@@ -593,6 +762,22 @@ export class TrackManager {
 
     // Validate every new layout at the same simulation instant, then advance once.
     for (const chunk of this.chunks) chunk.update(dt, time, player.position.z, player.speed);
+
+    if (this.encounterDebugEnabled) for (const current of this.chunks) for (const obs of current.obstacles) {
+      if (!obs.active || !obs.isMoving) continue;
+      if (obs.telegraphed && !this.warnedTrains.has(obs)) { this.warnedTrains.add(obs); this.encounterMetrics.warnings++; }
+      const front = current.chunkZ + obs.group.position.z + (obs.group.userData.trainFrontOffset ?? obs.length! / 2);
+      if (obs.telegraphed && front >= player.position.z && !this.observedTrains.has(obs)) {
+        this.observedTrains.add(obs);
+        if (this.encounterMetrics.encounters > 0) {
+          this.encounterMetrics.gaps.push(this.elapsedTime - this.encounterMetrics.lastEncounterTime);
+          if (this.encounterMetrics.gaps.length > 64) this.encounterMetrics.gaps.shift();
+        }
+        this.encounterMetrics.lastEncounterTime = this.elapsedTime;
+        this.encounterMetrics.encounters++;
+        if (obs.group.userData.encounterCategory === 'EXPRESS_RUSH') this.encounterMetrics.expressEncounters++;
+      }
+    }
 
     // 1.1 Determine whether player is currently enclosed inside a low tunnel
     let isPlayerInEnclosedTunnel = false;

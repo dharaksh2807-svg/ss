@@ -55,11 +55,11 @@ console.log('🧪 Starting Task 4: Dynamic Moving Trains, Progressive Train Spee
 console.log('--- Suite 1: Early Moving-Train Appearance & Distance Gating ---');
 {
   const dc = new DifficultyController();
-  // Moving trains disabled before 240m
+  // Streaming may schedule an early train after the protected first chunk.
   assert(!dc.canSpawnMovingTrain(0), 'Moving trains forbidden at start of run (0m)');
-  assert(!dc.canSpawnMovingTrain(150), 'Moving trains forbidden in opening introduction (150m)');
-  assert(!dc.canSpawnMovingTrain(239), 'Moving trains forbidden just before threshold (239m)');
-  assert(dc.canSpawnMovingTrain(240), 'Moving trains become eligible right at 240m');
+  assert(!dc.canSpawnMovingTrain(79), 'Moving trains forbidden before the first protected chunk ends');
+  assert(dc.canSpawnMovingTrain(80), 'Early scheduling begins after the protected opening chunk');
+  assert(dc.canSpawnMovingTrain(240), 'Moving trains remain eligible at 240m');
   assert(dc.canSpawnMovingTrain(400), 'Moving trains eligible in early-medium run (400m)');
 }
 
@@ -506,11 +506,15 @@ console.log('--- Suite 13: Multi-Seed Procedural Simulation & Encounter Measurem
 
     let movingTrainCount = 0;
     const speeds: number[] = [];
+    let selectionTime = 0;
 
     // Simulate 20 procedural chunks (from 240m to 1840m)
     for (let c = 0; c < 20; c++) {
       const dist = 240.0 + c * CONSTANTS.CHUNK_LENGTH;
       const playerSpeed = 18.0 + (dist / 2000.0) * 12.0; // Progressing 18 -> 30 m/s
+      selectionTime += CONSTANTS.CHUNK_LENGTH / playerSpeed;
+      (trackManager as any).elapsedTime = selectionTime;
+      trackManager.difficultyController.update(CONSTANTS.CHUNK_LENGTH / playerSpeed, dist, playerSpeed);
       const pattern = trackManager.selectPattern(c + 4, playerSpeed, dist);
 
       const hasMoving = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
@@ -666,6 +670,10 @@ console.log('--- Regression: Warning lead time through procedural chunk recyclin
       for (let frame = 0; player.distanceTraveled < 1800; frame++) {
         const dt = [0.008, 0.08, 0.025][frame % 3];
         time += dt;
+        // This test advances only track simulation, so exclude unadvanced pickup timers/support physics.
+        for (const current of trackManager.chunks) for (const col of current.collectibles) col.active = false;
+        player.setSupportSurface('GROUND', null);
+        player.position.y = CONSTANTS.PLAYER_BASE_Y;
         player.previousPosition.copy(player.position);
         player.position.z -= player.speed * dt;
         player.distanceTraveled = -player.position.z;

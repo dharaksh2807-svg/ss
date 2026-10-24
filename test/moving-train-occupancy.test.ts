@@ -44,7 +44,7 @@ check(place([train(), { type: 'TRAIN_RAMP', lane: 1, zOffset: 20, length: 22, ha
   'Adjacent stationary train, roof, and ramps remain valid');
 check(place([train(), { type: 'TRAIN', lane: 0, zOffset: 100, length: 22 }]),
   'A moving train already ahead of a stationary train can move away');
-check(!place([{ ...train(20, -42), length: 16 }, { type: 'LOW_BARRIER', lane: 0, zOffset: 9.7 }]),
+check(!place([{ ...train(20, -42), length: 16 }, { type: 'PILLAR', lane: 0, zOffset: 9.7 }]),
   'Reject a visible nose overlap beyond the nominal hull collider');
 check(place([train(40, 42), train(100, 42)]), 'Equal-speed moving trains retain safe headway');
 check(!place([train(40, 20), train(100, 42)]), 'Reject a faster train that would catch the leading train');

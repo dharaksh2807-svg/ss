@@ -104,6 +104,25 @@ export const CONSTANTS = {
     BREATHER_INTERVAL: 4, // Guaranteed breather opportunity every ~4-5 chunks
   },
 
+  // Encounter targets are arrival times, independent of chunk streaming lead distance.
+  TRAIN_ENCOUNTER_PACING: {
+    firstNormal: [7.0, 9.0],
+    firstHard: [6.0, 7.5],
+    stages: [
+      { end: 300, normalGap: [10, 14], hardGap: [9, 12] },
+      { end: 1200, normalGap: [4.8, 6.5], hardGap: [4.5, 6.0] },
+      { end: 2500, normalGap: [4.5, 6], hardGap: [4.2, 5.3] },
+      { end: Infinity, normalGap: [3.9, 5], hardGap: [3.5, 4.5] }
+    ],
+    rushNormalDistance: 1200,
+    rushHardDistance: 900,
+    rushChance: 0.18,
+    rushCooldown: 28,
+    rushPairGap: 2.4,
+    minimumArrivalGap: 1.9,
+    placementTolerance: 0.6
+  },
+
   // Dynamic Moving Train Speed Progression Profiles
   TRAIN_SPEED_PROFILES: {
     NORMAL: {

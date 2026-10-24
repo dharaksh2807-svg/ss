@@ -1430,7 +1430,35 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
       { type: 'COIN', lane: -1, zOffset: 12.4, yOffset: 0.60, count: 5, spacing: 1.8, isSlideGuidance: true, archetype: 'SLIDE_GUIDANCE' },
       { type: 'COIN', lane: 0, zOffset: 42.0, yOffset: 5.20, count: 6, spacing: 2.0, archetype: 'ROOFTOP_RUN' }
     ]
-  }
+  },
+  // Single-lane roof links leave the two scheduled traffic corridors clear.
+  {
+    name: 'RAILWAY_ROOF_LINK', difficulty: 'MEDIUM',
+    entryLanes: [-1, 0, 1], exitLanes: [-1, 0, 1], requiredActions: ['LANE_CHANGE'],
+    minReactionDist: 28,
+    safeRoutes: 'Climb the entry ramp, traverse the train roof, or use a clear adjacent lane.',
+    obstacles: [{ type: 'TRAIN_COMPOSITION', lane: 0, zOffset: 40, length: COMMUTER_TWIN_SET.totalLength,
+      composition: { ...COMMUTER_TWIN_SET, hasExitRamp: true,
+        carriages: COMMUTER_TWIN_SET.carriages.map((car, index) =>
+          index === COMMUTER_TWIN_SET.carriages.length - 1 ? { ...car, hasExitRamp: true } : car) },
+      hasRamp: true, hasExitRamp: true }],
+    collectibles: [{ type: 'COIN', lane: 0, zOffset: 27, count: 7, spacing: 3.6, yOffset: 5.2, archetype: 'TRAIN_ROOFTOP' }]
+  },
+  {
+    name: 'RAILWAY_LONG_ROOF_LINK', difficulty: 'HARD',
+    entryLanes: [-1, 0, 1], exitLanes: [-1, 0, 1], requiredActions: ['LANE_CHANGE', 'JUMP'],
+    minReactionDist: 28,
+    safeRoutes: 'Use the longer three-carriage roof route and exit ramp, or evade through an adjacent lane.',
+    obstacles: [{ type: 'TRAIN_COMPOSITION', lane: 0, zOffset: 40, length: METRO_TRIPLE_CONSIST.totalLength,
+      composition: { ...METRO_TRIPLE_CONSIST, hasExitRamp: true,
+        carriages: METRO_TRIPLE_CONSIST.carriages.map((car, index) =>
+          ({ ...car, localOffsetZ: car.localOffsetZ - (index > 0 ? 1 : 0),
+            hasExitRamp: index === METRO_TRIPLE_CONSIST.carriages.length - 1 })) },
+      hasRamp: true, hasExitRamp: true }],
+    collectibles: [{ type: 'COIN', lane: 0, zOffset: 20, count: 12, spacing: 3.8, yOffset: 5.2, archetype: 'TRAIN_ROOFTOP' }]
+  },
+
+
 ];
 
 /**

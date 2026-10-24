@@ -1642,6 +1642,12 @@ export class TrackChunk {
       const isMoving = obsData.type === 'MOVING_TRAIN' || !!obsData.isMoving;
       const accessibilityProfile = isTrain ? getTrainAccessibilityProfile(obsData.type, hasRamp, isMoving) : undefined;
       group.userData.accessibilityProfile = accessibilityProfile;
+      if (isMoving) {
+        const solids = ObstacleFactory.getSolidGeometryBounds(group, headlightBeam);
+        this.solidObstacleBounds.set(group, solids);
+        group.userData.trainFrontOffset = Math.max(...solids.map((box) => box.max.z));
+        group.userData.trainRearOffset = Math.min(...solids.map((box) => box.min.z));
+      }
 
       this.obstacles.push({
         id: obstacleId,
@@ -1943,7 +1949,7 @@ export class TrackChunk {
         obs.nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, updatedWorldZ + halfD + 0.6);
 
         // Telegraph check: dynamic warning range based on true relative closing speed
-        const updatedFrontZ = updatedWorldZ + halfD;
+        const updatedFrontZ = updatedWorldZ + (obs.group.userData.trainFrontOffset ?? halfD);
         const currentSeparation = playerZ - updatedFrontZ;
         const dynamicTelegraphDist = Math.max(CONSTANTS.MOVING_TRAIN_TELEGRAPH_DIST || 65.0, closingSpeed * CONSTANTS.MOVING_TRAIN_WARNING_TIME);
         const timeToImpact = closingSpeed > 0 ? currentSeparation / closingSpeed : Infinity;
@@ -2044,9 +2050,11 @@ export class TrackChunk {
         if (!a.obs.isMoving && !b.obs.isMoving) continue;
         const moving = a.obs.isMoving ? a : b;
         const other = a.obs.isMoving ? b : a;
-        // Per-part static bounds preserve holes in arches and valid overhead clearance.
-        const obstacles = other.obs.isMoving ? [other.envelope] : other.boxes;
-        if (obstacles.some((box) => TrackChunk.pathsIntersect(moving.envelope, moving.velocity, box, other.velocity))) {
+        // Broad envelopes include roof protrusions at chassis height. Only solid
+        // part pairs can reject a route; adjacent low barriers may clear the body.
+        if (!TrackChunk.pathsIntersect(moving.envelope, moving.velocity, other.envelope, other.velocity)) continue;
+        if (moving.boxes.some((part) => other.boxes.some((box) =>
+          TrackChunk.pathsIntersect(part, moving.velocity, box, other.velocity)))) {
           this.placementConflictWithinPattern = a.chunk === this && b.chunk === this;
           return true;
         }
@@ -2057,7 +2065,8 @@ export class TrackChunk {
         chunk.decorativeGroup.updateWorldMatrix(true, false);
         for (const local of chunk.solidSceneryBounds) {
           const box = local.clone().applyMatrix4(chunk.decorativeGroup.matrixWorld);
-          if (TrackChunk.pathsIntersect(a.envelope, a.velocity, box, 0)) return true;
+          if (TrackChunk.pathsIntersect(a.envelope, a.velocity, box, 0) &&
+              a.boxes.some((part) => TrackChunk.pathsIntersect(part, a.velocity, box, 0))) return true;
         }
       }
     }

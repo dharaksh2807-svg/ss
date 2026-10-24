@@ -446,6 +446,8 @@ console.log('--- Suite 11: Real Procedural Generation Encounter Verification ---
   let movingTrainCount = 0;
   for (let c = 0; c < 15; c++) {
     const dist = 240.0 + c * CONSTANTS.CHUNK_LENGTH;
+    (trackManager as any).elapsedTime = dist / 20;
+    trackManager.difficultyController.update(CONSTANTS.CHUNK_LENGTH / 20, dist, 20);
     const pattern = trackManager.selectPattern(c + 4, 20.0, dist);
     const hasMoving = pattern.obstacles.some(o => o.type === 'MOVING_TRAIN');
     if (hasMoving) {

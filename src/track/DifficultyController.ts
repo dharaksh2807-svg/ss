@@ -61,7 +61,7 @@ export class DifficultyController {
   public reset(): void {
     this.runDuration = 0;
     this.distanceTraveled = 0;
-    this.currentSpeed = CONSTANTS.INITIAL_SPEED;
+    this.currentSpeed = (CONSTANTS.SPEED_PROFILES[this.gameMode as keyof typeof CONSTANTS.SPEED_PROFILES] || CONSTANTS.SPEED_PROFILES.NORMAL).initialSpeed;
     this.consecutiveDifficultCount = 0;
     this.lastDifficultDistance = -999;
     this.lastMovingTrainDistance = -999;
@@ -393,52 +393,23 @@ export class DifficultyController {
    * Checks whether a moving train obstacle can fairly spawn at the given distance.
    * Guarantees fair telegraphing, minimum spacing, and time-based reaction windows.
    */
+  public getTrainEncounterPacing(distance: number = this.distanceTraveled) {
+    const config = CONSTANTS.TRAIN_ENCOUNTER_PACING;
+    const stage = config.stages.findIndex((entry) => distance < entry.end);
+    const hard = this.gameMode === 'HARD';
+    const [minGap, maxGap] = hard ? config.stages[stage].hardGap : config.stages[stage].normalGap;
+    return { stage, minGap, maxGap, minimumGap: config.minimumArrivalGap,
+      rushAllowed: distance >= (hard ? config.rushHardDistance : config.rushNormalDistance) };
+  }
+
   public canSpawnMovingTrain(atDistance: number, playerSpeed?: number, currentTime?: number): boolean {
-    // Opening introductory distance: Hard Mode introduces moving trains earlier (90m vs 240m)
-    const introDist = this.gameMode === 'HARD' ? 90.0 : 240.0;
-    if (atDistance < introDist) {
-      return false;
-    }
-
-    // Dynamic moving train gap based on game mode & stage
-    let minGap = 75.0;
-    if (this.gameMode === 'HARD') {
-      if (atDistance >= 2000.0) {
-        minGap = 40.0;
-      } else if (atDistance >= 800.0) {
-        minGap = 50.0;
-      } else {
-        minGap = 60.0;
-      }
-    } else {
-      if (atDistance >= 3000.0) {
-        minGap = 45.0;
-      } else if (atDistance >= 1500.0) {
-        minGap = 55.0;
-      } else if (atDistance >= 650.0) {
-        minGap = 65.0;
-      }
-    }
-
-    const distancePass = (atDistance - this.lastMovingTrainDistance) >= minGap;
-    if (!distancePass) {
-      return false;
-    }
-
-    // Time-based reaction spacing when time is tracked or inferrable from playerSpeed & distance
-    const effectiveTime = (currentTime !== undefined && currentTime > 0)
-      ? currentTime
-      : (playerSpeed !== undefined && playerSpeed > 0 && atDistance > 0 ? atDistance / playerSpeed : (currentTime !== undefined ? currentTime : undefined));
-
-    if (effectiveTime !== undefined && this.lastMovingTrainTime >= 0) {
-      const timeGap = effectiveTime - this.lastMovingTrainTime;
-      const minTime = this.gameMode === 'HARD'
-        ? (atDistance >= 1500.0 ? 1.8 : 2.5)
-        : (atDistance >= 1500.0 ? 2.2 : 3.5);
-      if (timeGap < minTime && timeGap >= 0) {
-        return false;
-      }
-    }
+    if (atDistance < 80) return false;
+    const pacing = this.getTrainEncounterPacing(atDistance);
+    const minGap = Math.max(40, (playerSpeed ?? this.currentSpeed) * 1.5);
+    if (atDistance - this.lastMovingTrainDistance < minGap) return false;
+    // Never compare spawn time with distance / current speed: acceleration changes that clock.
+    const time = currentTime ?? (this.runDuration > 0 ? this.runDuration : undefined);
+    if (time !== undefined && this.lastMovingTrainTime >= 0 && time - this.lastMovingTrainTime < pacing.minimumGap) return false;
 
     return true;
   }
@@ -462,10 +433,7 @@ export class DifficultyController {
     const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
     if (hasMovingTrain) {
       this.lastMovingTrainDistance = encounterDistance;
-      const effectiveTime = (atTime !== undefined && atTime > 0)
-        ? atTime
-        : (encounterDistance > 0 && this.currentSpeed > 0 ? encounterDistance / this.currentSpeed : (atTime !== undefined ? atTime : this.runDuration));
-      this.lastMovingTrainTime = effectiveTime;
+      this.lastMovingTrainTime = atTime ?? this.runDuration;
     }
   }
 
