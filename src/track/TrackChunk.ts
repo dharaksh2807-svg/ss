@@ -29,6 +29,9 @@ export class TrackChunk {
   public isAerialCorridor: boolean = false;
   public tunnelPortal: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE' = 'NONE';
   private playerInTunnel: boolean = false;
+  private solidObstacleBounds = new WeakMap<THREE.Object3D, THREE.Box3[]>();
+  private solidSceneryBounds: THREE.Box3[] = [];
+  public placementConflictWithinPattern: boolean = false;
 
   private static sharedMaterials: {
     // Core physical trackbed
@@ -1429,8 +1432,15 @@ export class TrackChunk {
     worldZ: number,
     theme: EnvironmentTheme | string = this.currentTheme,
     isTransition: boolean = false,
-    dynamicTrainSpeed?: number
-  ): void {
+    dynamicTrainSpeed?: number,
+    placementPeers: readonly TrackChunk[] = []
+  ): boolean {
+    const previous = {
+      chunkZ: this.chunkZ, theme: this.currentTheme, transition: this.isTransitionPortal,
+      tunnel: this.isTunnel, portal: this.tunnelPortal, playerInTunnel: this.playerInTunnel,
+      obstacles: this.obstacles, collectibles: this.collectibles, collision: this.chunkHadCollision,
+      scenery: [...this.decorativeGroup.children], bounds: this.solidSceneryBounds
+    };
     this.chunkZ = worldZ;
     this.group.position.z = worldZ;
 
@@ -1450,6 +1460,12 @@ export class TrackChunk {
       forcePortal: isTransition,
       detail: this.currentSceneryDetail
     });
+
+    // Cache only solid scenery near the rail corridor, excluding the track bed.
+    const corridorEdge = Math.max(...Object.values(CONSTANTS.LANES).map(Math.abs)) + CONSTANTS.TRAIN_WIDTH;
+    this.solidSceneryBounds = ObstacleFactory.getSolidGeometryBounds(this.decorativeGroup).filter((box) =>
+      box.max.y > 0.5 && box.min.x < corridorEdge && box.max.x > -corridorEdge
+    );
 
     // Clear previous dynamic items
     this.clearDynamicItems();
@@ -1667,11 +1683,31 @@ export class TrackChunk {
         headlightBeam
       });
 
-      PacingMetrics.getInstance().recordObstacle(
-        Math.abs(worldZ - obsData.zOffset) / Math.max(1, CONSTANTS.INITIAL_SPEED),
-        obsData.type,
-        worldZ - obsData.zOffset
-      );
+    }
+
+    // Reject the entire unpublished layout; never remove an encountered obstacle.
+    if (this.hasMovingTrainPathConflict(placementPeers)) {
+      this.clearDynamicItems();
+      this.decorativeGroup.clear();
+      this.decorativeGroup.add(...previous.scenery);
+      this.solidSceneryBounds = previous.bounds;
+      this.chunkZ = previous.chunkZ;
+      this.group.position.z = previous.chunkZ;
+      this.currentTheme = previous.theme;
+      this.isTransitionPortal = previous.transition;
+      this.isTunnel = previous.tunnel;
+      this.tunnelPortal = previous.portal;
+      this.playerInTunnel = previous.playerInTunnel;
+      this.chunkHadCollision = previous.collision;
+      this.obstacles = previous.obstacles;
+      this.collectibles = previous.collectibles;
+      for (const item of [...this.obstacles, ...this.collectibles]) this.group.add(item.group);
+      return false;
+    }
+
+    for (const obs of this.obstacles) {
+      const z = this.chunkZ + obs.group.position.z;
+      PacingMetrics.getInstance().recordObstacle(Math.abs(z) / Math.max(1, CONSTANTS.INITIAL_SPEED), obs.type, z);
     }
 
     // Spawn Collectibles from pattern
@@ -1809,6 +1845,7 @@ export class TrackChunk {
         animOffsetY: 0
       });
     }
+    return true;
   }
 
   public update(dt: number, time: number = 0, playerZ: number = 0, playerSpeed?: number): void {
@@ -1970,6 +2007,61 @@ export class TrackChunk {
       col.collider.min.set(worldX - r, worldY - r, worldZ - r);
       col.collider.max.set(worldX + r, worldY + r, worldZ + r);
     }
+  }
+
+  /** All-time linear occupancy check: no discrete frame sampling or speed-dependent gaps. */
+  private static pathsIntersect(a: THREE.Box3, aVelocity: number, b: THREE.Box3, bVelocity: number): boolean {
+    if (a.min.x >= b.max.x || a.max.x <= b.min.x || a.min.y >= b.max.y || a.max.y <= b.min.y) return false;
+    const relativeVelocity = aVelocity - bVelocity;
+    if (Math.abs(relativeVelocity) < 1e-8) return a.min.z < b.max.z && a.max.z > b.min.z;
+    const first = (b.min.z - a.max.z) / relativeVelocity;
+    const last = (b.max.z - a.min.z) / relativeVelocity;
+    return Math.max(first, last) > Math.max(0, Math.min(first, last));
+  }
+
+  /** Validate proposed objects against this chunk and every relevant loaded neighbor. */
+  public hasMovingTrainPathConflict(peers: readonly TrackChunk[] = []): boolean {
+    this.placementConflictWithinPattern = false;
+    const chunks = [this, ...peers.filter((chunk) => chunk !== this)];
+    if (!chunks.some((chunk) => chunk.obstacles.some((obs) => obs.active && obs.isMoving))) return false;
+    const entries = chunks.flatMap((chunk) => chunk.obstacles.filter((obs) => obs.active).map((obs) => {
+      let local = chunk.solidObstacleBounds.get(obs.group);
+      if (!local) {
+        local = ObstacleFactory.getSolidGeometryBounds(obs.group, obs.headlightBeam);
+        chunk.solidObstacleBounds.set(obs.group, local);
+      }
+      // Use the authoritative group transform, not the original pattern offset.
+      obs.group.updateWorldMatrix(true, false);
+      const boxes = local.map((box) => box.clone().applyMatrix4(obs.group.matrixWorld));
+      const envelope = boxes.reduce((bounds, box) => bounds.union(box), new THREE.Box3());
+      return { chunk, obs, boxes, envelope, velocity: obs.isMoving ? (obs.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED) : 0 };
+    }));
+    for (let i = 0; i < entries.length; i++) {
+      const a = entries[i];
+      for (let j = i + 1; j < entries.length; j++) {
+        const b = entries[j];
+        if (a.chunk !== this && b.chunk !== this) continue;
+        if (!a.obs.isMoving && !b.obs.isMoving) continue;
+        const moving = a.obs.isMoving ? a : b;
+        const other = a.obs.isMoving ? b : a;
+        // Per-part static bounds preserve holes in arches and valid overhead clearance.
+        const obstacles = other.obs.isMoving ? [other.envelope] : other.boxes;
+        if (obstacles.some((box) => TrackChunk.pathsIntersect(moving.envelope, moving.velocity, box, other.velocity))) {
+          this.placementConflictWithinPattern = a.chunk === this && b.chunk === this;
+          return true;
+        }
+      }
+      if (!a.obs.isMoving) continue;
+      for (const chunk of chunks) {
+        if (a.chunk !== this && chunk !== this) continue;
+        chunk.decorativeGroup.updateWorldMatrix(true, false);
+        for (const local of chunk.solidSceneryBounds) {
+          const box = local.clone().applyMatrix4(chunk.decorativeGroup.matrixWorld);
+          if (TrackChunk.pathsIntersect(a.envelope, a.velocity, box, 0)) return true;
+        }
+      }
+    }
+    return false;
   }
 
   public clearDynamicItems(): void {

@@ -2223,6 +2223,33 @@ export class ObstacleFactory {
   /**
    * Create High-Speed Moving Metro Train with Dynamic Flashing Headlights
    */
+  /** Solid mesh boxes in the root's local coordinates, for generation-time clearance checks. */
+  public static getSolidGeometryBounds(root: THREE.Object3D, excluded?: THREE.Object3D): THREE.Box3[] {
+    root.updateWorldMatrix(true, true);
+    const inverse = root.matrixWorld.clone().invert();
+    const boxes: THREE.Box3[] = [];
+    root.traverse((node) => {
+      if (!(node instanceof THREE.Mesh) || node === excluded) return;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      // Light beams, glow decals and flat decorative planes do not occupy solid space.
+      if (materials.every((material) => !material.depthWrite) || node.geometry.type === 'PlaneGeometry') return;
+      if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+      const geometryBox = node.geometry.boundingBox;
+      if (!geometryBox) return;
+      const local = new THREE.Matrix4().multiplyMatrices(inverse, node.matrixWorld);
+      if (node instanceof THREE.InstancedMesh) {
+        const instance = new THREE.Matrix4();
+        for (let i = 0; i < node.count; i++) {
+          node.getMatrixAt(i, instance);
+          boxes.push(geometryBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(local, instance)));
+        }
+      } else {
+        boxes.push(geometryBox.clone().applyMatrix4(local));
+      }
+    });
+    return boxes;
+  }
+
   public createMovingTrain(
     length: number = CONSTANTS.TRAIN_LENGTH_SHORT,
     colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_2

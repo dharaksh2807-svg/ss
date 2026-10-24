@@ -34,6 +34,7 @@ export class TrackManager {
   private furthestZ: number = 0; // Leading edge of the track
   private chunkIndex: number = 0;
   private lastSpawnedPattern: TrackPattern | null = null;
+  private deferredMovingPattern: TrackPattern | null = null;
   public cleanStreakCount: number = 0;
 
   // High-speed swept collision tracking to prevent tunneling past collectibles
@@ -223,6 +224,7 @@ export class TrackManager {
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
 
     this.furthestZ = 0;
+    this.deferredMovingPattern = null;
     this.chunkIndex = 0;
     this.elapsedTime = 0;
     this.cleanStreakCount = 0;
@@ -246,6 +248,7 @@ export class TrackManager {
       vfx.group.visible = false;
     }
 
+    for (const chunk of this.chunks) chunk.clearDynamicItems();
     for (let i = 0; i < this.chunks.length; i++) {
       const chunk = this.chunks[i];
       const encounterDist = i * CONSTANTS.CHUNK_LENGTH;
@@ -253,12 +256,12 @@ export class TrackManager {
         CONSTANTS.MAX_SPEED,
         CONSTANTS.INITIAL_SPEED + (encounterDist / 300.0) * (24.5 - CONSTANTS.INITIAL_SPEED)
       );
-      const pattern = this.selectPattern(i, expectedSpeed, encounterDist);
+      let pattern = this.selectPattern(i, expectedSpeed, encounterDist, false);
       const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
       const dynamicTrainSpeed = hasMovingTrain
         ? this.difficultyController.calculateMovingTrainSpeed(encounterDist, this.difficultyController.getGameMode(), pattern.difficulty, this.rng())
         : undefined;
-      chunk.populate(pattern, this.furthestZ, initialTheme, false, dynamicTrainSpeed);
+      pattern = this.populateCompatibleChunk(chunk, pattern, this.furthestZ, initialTheme, false, dynamicTrainSpeed, this.chunks.slice(0, i), expectedSpeed);
       this.lastSpawnedPattern = pattern;
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       this.chunkIndex++;
@@ -270,7 +273,7 @@ export class TrackManager {
    * Selects reusable patterns based on current distance-based difficulty tier,
    * with physical reachability validation ensuring no impassable chunk transitions.
    */
-  public selectPattern(index: number, playerSpeed: number = CONSTANTS.INITIAL_SPEED, distanceTraveled: number = 0): TrackPattern {
+  public selectPattern(index: number, playerSpeed: number = CONSTANTS.INITIAL_SPEED, distanceTraveled: number = 0, commit: boolean = true): TrackPattern {
     if (index === 0) {
       // Chunk 0: Reset run pacing state and select from opening templates
       this.lastSpawnedPattern = null;
@@ -282,6 +285,7 @@ export class TrackManager {
         ? openingPool[Math.floor(this.rng() * openingPool.length)]
         : OBSTACLE_PATTERNS[0];
 
+      if (!commit) return chosenOpening;
       this.difficultyController.recordPatternSpawned(chosenOpening, 0);
       this.lastSpawnedPattern = chosenOpening;
       this.recentPatterns = [chosenOpening.name];
@@ -418,22 +422,63 @@ export class TrackManager {
       );
     }
 
-    // Check for repetition detection
-    if (last1 && chosen.name === last1) {
-      PacingMetrics.getInstance().recordRepeatedPattern(chosen.name);
-    }
-
-    // Update recent patterns sliding window (keep last 5)
-    this.recentPatterns.push(chosen.name);
-    if (this.recentPatterns.length > 5) {
-      this.recentPatterns.shift();
-    }
-
-    this.difficultyController.recordPatternSpawned(chosen, distanceTraveled, this.elapsedTime);
-    this.lastSpawnedPattern = chosen;
-    PacingMetrics.getInstance().recordPattern(chosen.name, chosen.difficulty);
-
+    if (commit) this.commitPattern(chosen, distanceTraveled);
     return chosen;
+  }
+
+  private commitPattern(pattern: TrackPattern, distance: number): void {
+    if (this.recentPatterns[this.recentPatterns.length - 1] === pattern.name) {
+      PacingMetrics.getInstance().recordRepeatedPattern(pattern.name);
+    }
+    this.recentPatterns.push(pattern.name);
+    if (this.recentPatterns.length > 5) this.recentPatterns.shift();
+    this.difficultyController.recordPatternSpawned(pattern, distance, this.elapsedTime);
+    this.lastSpawnedPattern = pattern;
+    PacingMetrics.getInstance().recordPattern(pattern.name, pattern.difficulty);
+  }
+
+  private populateCompatibleChunk(
+    chunk: TrackChunk, pattern: TrackPattern, worldZ: number, theme: EnvironmentTheme,
+    isTransition: boolean, trainSpeed: number | undefined, peers: readonly TrackChunk[], playerSpeed: number
+  ): TrackPattern {
+    const requested = this.deferredMovingPattern || pattern;
+    const speed = requested === pattern ? trainSpeed : this.difficultyController.calculateMovingTrainSpeed(
+      Math.abs(worldZ), this.getGameMode(), requested.difficulty, this.rng()
+    );
+    const isFlightActive = this.aerialCoinManager?.isJetpackFlightActive() || false;
+    const allowed = (candidate: TrackPattern) =>
+      !(isFlightActive && (candidate.isTunnel || candidate.obstacles.some((obs) => obs.type === 'TUNNEL_ARCH'))) &&
+      (!this.lastSpawnedPattern || ReachabilityValidator.validateChunkTransition(this.lastSpawnedPattern, candidate, playerSpeed));
+    const place = (candidate: TrackPattern, velocity?: number) => {
+      const previousCorridor = chunk.isAerialCorridor;
+      chunk.isAerialCorridor = isFlightActive && (!!candidate.isTunnel || theme.id === 'UNDERGROUND_METRO');
+      const accepted = chunk.populate(candidate, worldZ, theme, isTransition, velocity, peers);
+      if (!accepted) chunk.isAerialCorridor = previousCorridor;
+      return accepted;
+    };
+    const requestedAllowed = allowed(requested);
+    if (requestedAllowed && place(requested, speed)) {
+      this.deferredMovingPattern = null;
+      this.commitPattern(requested, Math.abs(worldZ));
+      return requested;
+    }
+    if (requested.obstacles.some((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving)) {
+      this.deferredMovingPattern = requestedAllowed && chunk.placementConflictWithinPattern ? null : requested;
+    }
+    // Keep the deferred approach lanes clear using existing, reachable layouts.
+    // This is generation-time rescheduling; no encountered object is removed.
+    const reservedLanes = new Set(this.deferredMovingPattern?.obstacles
+      .filter((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving).map((obs) => obs.lane));
+    const recovery = OBSTACLE_PATTERNS.find((candidate) => candidate.name === 'SAFE_RECOVERY_CONNECTOR')!;
+    const candidates = [recovery, ...OBSTACLE_PATTERNS.filter((candidate) => !candidate.isOpening)];
+    for (const candidate of candidates) {
+      if (candidate.obstacles.some((obs) => obs.type === 'MOVING_TRAIN' || obs.isMoving || reservedLanes.has(obs.lane))) continue;
+      if (!allowed(candidate) || !place(candidate)) continue;
+      PacingMetrics.getInstance().recordFallback(requested.name, 'Deferred moving train until its solid approach corridor clears.');
+      this.commitPattern(candidate, Math.abs(worldZ));
+      return candidate;
+    }
+    throw new Error('No existing layout provides a clear moving-train corridor');
   }
 
   public update(player: Player, dt: number, time: number = 0): void {
@@ -535,23 +580,19 @@ export class TrackManager {
         }
 
         const encounterDist = Math.abs(this.furthestZ);
-        const pattern = this.selectPattern(this.chunkIndex++, player.speed, encounterDist);
-        if (isFlightActive && (pattern.isTunnel || chunkTheme.id === 'UNDERGROUND_METRO')) {
-          chunk.isAerialCorridor = true;
-        } else {
-          chunk.isAerialCorridor = false;
-        }
+        let pattern = this.selectPattern(this.chunkIndex++, player.speed, encounterDist, false);
         const hasMovingTrain = pattern.obstacles.some((o) => o.type === 'MOVING_TRAIN' || o.isMoving);
         const dynamicTrainSpeed = hasMovingTrain
           ? this.difficultyController.calculateMovingTrainSpeed(encounterDist, this.difficultyController.getGameMode(), pattern.difficulty, this.rng())
           : undefined;
-        chunk.populate(pattern, this.furthestZ, chunkTheme, spawnPortal, dynamicTrainSpeed);
+        pattern = this.populateCompatibleChunk(chunk, pattern, this.furthestZ, chunkTheme, spawnPortal, dynamicTrainSpeed, this.chunks, player.speed);
         this.lastSpawnedPattern = pattern;
         this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       }
-
-      chunk.update(dt, time, player.position.z, player.speed);
     }
+
+    // Validate every new layout at the same simulation instant, then advance once.
+    for (const chunk of this.chunks) chunk.update(dt, time, player.position.z, player.speed);
 
     // 1.1 Determine whether player is currently enclosed inside a low tunnel
     let isPlayerInEnclosedTunnel = false;

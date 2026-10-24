@@ -673,7 +673,8 @@ console.log('--- Regression: Warning lead time through procedural chunk recyclin
         trackManager.update(player, dt, time);
       }
       off();
-      assert(windows.length >= 3 && Math.min(...windows) >= 1.9,
+      // Physical corridor reservations can defer encounters beyond the old density target.
+      assert(windows.length >= 2 && Math.min(...windows) >= 1.9,
         `${mode} seed ${seed}: ${windows.length} real train warnings, minimum ${Math.min(...windows).toFixed(2)}s lead time`);
     }
   }
