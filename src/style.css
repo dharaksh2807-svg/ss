@@ -691,6 +691,7 @@ html, body {
   pointer-events: auto;
   padding: 20px;
   animation: fadeIn 0.2s ease-out;
+  z-index: 100;
 }
 
 @keyframes fadeIn {
@@ -704,6 +705,11 @@ html, body {
   padding: 32px 28px;
   text-align: center;
   position: relative;
+}
+
+.settings-card {
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* Branding Logo */

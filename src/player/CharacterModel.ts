@@ -5,6 +5,9 @@ import { GlbCharacterLoader, LoadedGlbCharacter } from '../characters/GlbCharact
 import { HoverboardId } from '../hoverboard/HoverboardCatalog';
 import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/HoverboardMeshBuilder';
 import { CONSTANTS } from '../core/Constants';
+import { EventBus, EVENTS } from '../core/EventBus';
+
+export type RunningStyle = 'CLASSIC' | 'REVERSE';
 
 export type JumpPhase = 'NONE' | 'TAKEOFF' | 'ASCENDING' | 'APEX' | 'DESCENDING' | 'FAST_DROP' | 'LANDING';
 
@@ -120,6 +123,10 @@ export class CharacterModel {
   // Active state machine tracker
   private activeLocomotionState: LocomotionState = 'RUN';
 
+  // Running style preference & visual orientation
+  private runningStyle: RunningStyle = 'CLASSIC';
+  private visualFacingAngle: number = 0;
+
   // GLB Character Support
   private glbInstance: LoadedGlbCharacter | null = null;
   private glbContainer: THREE.Group | null = null;
@@ -130,7 +137,50 @@ export class CharacterModel {
     this.currentCharacterId = characterId;
     this.currentOutfitId = outfitId || 'jax_classic';
 
+    if (typeof localStorage !== 'undefined') {
+      const savedStyle = localStorage.getItem('metro_running_style') as RunningStyle | null;
+      if (savedStyle === 'REVERSE' || savedStyle === 'CLASSIC') {
+        this.runningStyle = savedStyle;
+        if (savedStyle === 'REVERSE') {
+          this.visualFacingAngle = Math.PI;
+        }
+      }
+    }
+
+    EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, (style: RunningStyle) => {
+      this.setRunningStyle(style);
+    });
+
     this.rebuildModel(this.currentCharacterId, this.currentOutfitId);
+  }
+
+  public getRunningStyle(): RunningStyle {
+    return this.runningStyle;
+  }
+
+  public setRunningStyle(style: RunningStyle): void {
+    this.runningStyle = style === 'REVERSE' ? 'REVERSE' : 'CLASSIC';
+  }
+
+  public getVisualFacingAngle(): number {
+    return this.visualFacingAngle;
+  }
+
+  /**
+   * Determine if the current state permits facing toward the camera in reverse run style.
+   * Actions like sliding under hurdles, jetpack rocket flight, or impact tumble revert to forward facing.
+   */
+  public isReverseFacingAllowed(state: LocomotionState): boolean {
+    switch (state) {
+      case 'SLIDE_ENTRY':
+      case 'SLIDE_HOLD':
+      case 'SLIDE_RECOVER':
+      case 'JETPACK':
+      case 'CRASH':
+        return false;
+      default:
+        return true;
+    }
   }
 
   /**
@@ -444,6 +494,15 @@ export class CharacterModel {
     // Power-up visual FX updates
     this.updatePowerupVisuals(dt, hasSneakers);
 
+    // Visual facing direction logic (Reverse Run / Moonwalk support)
+    const isReverseAllowed = this.isReverseFacingAllowed(state);
+    const targetFacingAngle = (this.runningStyle === 'REVERSE' && isReverseAllowed) ? Math.PI : 0;
+    const facingLerpRate = 18.0;
+    this.visualFacingAngle += (targetFacingAngle - this.visualFacingAngle) * (1.0 - Math.exp(-facingLerpRate * dt));
+    if (Math.abs(targetFacingAngle - this.visualFacingAngle) < 0.005) {
+      this.visualFacingAngle = targetFacingAngle;
+    }
+
     // 2. Compute target joint transforms based on current locomotion state
     this.computeTargetPose(
       state,
@@ -577,7 +636,11 @@ export class CharacterModel {
       case 'RUN':
       case 'TRAIN_ROOF_RUN':
       case 'CLIMB':
-        this.computeRunTarget(t, speed, state);
+        if (this.runningStyle === 'REVERSE') {
+          this.computeReverseRunTarget(t, speed, state);
+        } else {
+          this.computeRunTarget(t, speed, state);
+        }
         break;
 
       case 'JUMP_TAKEOFF':
@@ -627,10 +690,76 @@ export class CharacterModel {
         break;
     }
 
-    // Apply lateral banking and weight transfer additively across any active locomotion state
-    this.targetRootRot.z += -bankAngle * 0.95;
-    this.targetRootRot.y += bankAngle * 0.22;
-    this.targetSpineRot.z += bankAngle * 0.35;
+    // Apply lateral banking and weight transfer additively across any active locomotion state.
+    // When facing toward the camera (Math.cos(visualFacingAngle) < 0), invert local roll
+    // so character naturally leans in the screen-space direction of the lane switch!
+    const bankSign = Math.cos(this.visualFacingAngle);
+    this.targetRootRot.z += -bankAngle * 0.95 * bankSign;
+    this.targetRootRot.y += this.visualFacingAngle + bankAngle * 0.22 * bankSign;
+    this.targetSpineRot.z += bankAngle * 0.35 * bankSign;
+  }
+
+  /**
+   * Biomechanical Backpedal Animation for Reverse Run Style.
+   * - Forefoot/ball-of-foot contact reaching backward along the track
+   * - High knee flexion (1.28 rads) during forward recovery to clear the ground cleanly (no moonwalk sliding)
+   * - Reciprocal arm pump with flexed elbows
+   * - Stable head gaze oriented level directly toward the player camera
+   */
+  private computeReverseRunTarget(t: number, speed: number, variant: 'RUN' | 'TRAIN_ROOF_RUN' | 'CLIMB'): void {
+    const sinT = Math.sin(t);
+    const cosT = Math.cos(t);
+
+    // 1. Pelvis harmonic vertical bob (2 bobs per full 2-step stride cycle)
+    const bob = -Math.cos(2.0 * t) * 0.040;
+    this.targetHipsPos.set(0, (this.baseHipsY - 0.02) + bob, 0);
+
+    // 2. Pelvis yaw & roll counter-rotation
+    this.targetHipsRot.set(0, sinT * 0.07, -sinT * 0.03);
+
+    // 3. Spine athletic forward balance lean & counter-twist
+    // In backpedaling, runner leans slightly forward toward camera for dynamic balance
+    let athleticLean = 0.12 + (speed / CONSTANTS.MAX_SPEED) * 0.06;
+    if (variant === 'TRAIN_ROOF_RUN') athleticLean += 0.03;
+    if (variant === 'CLIMB') athleticLean -= 0.08;
+
+    this.targetSpineRot.set(athleticLean, -sinT * 0.10, 0);
+
+    // 4. Head gaze stabilization (keeps eyes focused level on camera/player)
+    this.targetHeadRot.set(-athleticLean * 0.88, sinT * 0.08, sinT * 0.02);
+
+    // 5. Alternating Legs with Authentic Backpedal Kinesiology:
+    // Left Leg phase = t, Right Leg phase = t + Math.PI
+    // Leg reaches BACKWARD to catch the ground (sinT < 0), sweeps forward during stance,
+    // and during recovery (sinT > 0) knee flexes high (1.28 rads) to clear the ground without scuffing/moonwalking!
+    const leftLegSwing = sinT * 0.65;
+    const rightLegSwing = -sinT * 0.65;
+    this.targetLeftLegRot.set(leftLegSwing, 0, 0);
+    this.targetRightLegRot.set(rightLegSwing, 0, 0);
+
+    // High knee flexion during forward recovery stroke:
+    const leftRecovery = Math.max(0, sinT);
+    const rightRecovery = Math.max(0, -sinT);
+    this.targetLeftCalfRot.set(0.12 + Math.pow(leftRecovery, 1.2) * 1.28, 0, 0);
+    this.targetRightCalfRot.set(0.12 + Math.pow(rightRecovery, 1.2) * 1.28, 0, 0);
+
+    // Foot ankle flexion: forefoot planting reaching backward, rolling flat through stance
+    let leftAnklePitch = sinT * 0.16;
+    let rightAnklePitch = -sinT * 0.16;
+    if (variant === 'CLIMB') {
+      leftAnklePitch -= 0.18;
+      rightAnklePitch -= 0.18;
+    }
+    this.targetLeftSneakerRot.set(leftAnklePitch, 0, 0);
+    this.targetRightSneakerRot.set(rightAnklePitch, 0, 0);
+
+    // 6. Reciprocal Arm Sprint Pump with Bent Elbows
+    const armSwing = sinT * 0.60;
+    this.targetLeftArmRot.set(armSwing + 0.10, 0, -0.24);
+    this.targetRightArmRot.set(-armSwing + 0.10, 0, 0.24);
+
+    this.targetLeftForearmRot.set(-0.65 - Math.max(0, armSwing) * 0.45, 0, 0);
+    this.targetRightForearmRot.set(-0.65 - Math.max(0, -armSwing) * 0.45, 0, 0);
   }
 
   private computeRunTarget(t: number, speed: number, variant: 'RUN' | 'TRAIN_ROOF_RUN' | 'CLIMB'): void {

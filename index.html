@@ -474,6 +474,19 @@
                 <option value="CLASSIC">Classic Chase (Rear View)</option>
               </select>
             </div>
+            <div class="setting-row running-style-setting-row">
+              <div class="setting-label-block">
+                <label for="setting-running-style">Running Style</label>
+                <div class="setting-hint-text">Run backward while facing the camera. Gameplay controls stay the same.</div>
+              </div>
+              <div class="running-style-control-col" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                <select id="setting-running-style" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
+                  <option value="CLASSIC" selected>Classic (Default)</option>
+                  <option value="REVERSE">Reverse / Moonwalk</option>
+                </select>
+                <span id="setting-running-style-badge" class="quality-resolved-badge" style="background: rgba(0, 176, 255, 0.18); border-color: rgba(0, 176, 255, 0.4); color: #00e5ff; font-size: 0.65rem; padding: 2px 6px;">🏃 Rear Chase</span>
+              </div>
+            </div>
             <div class="setting-row checkbox-row">
               <div class="setting-label-block">
                 <label for="setting-facial-portrait">Character Facial Portrait</label>

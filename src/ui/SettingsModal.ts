@@ -14,6 +14,8 @@ export class SettingsModal {
   private introSelect: HTMLSelectElement | null;
   private cameraModeSelect: HTMLSelectElement | null;
   private facialPortraitCheckbox: HTMLInputElement | null;
+  private runningStyleSelect: HTMLSelectElement | null;
+  private runningStyleBadgeEl: HTMLElement | null;
   private resolvedBadgeEl: HTMLElement | null;
   private qualityDescEl: HTMLElement | null;
   private showFpsCheckbox: HTMLInputElement | null;
@@ -35,6 +37,8 @@ export class SettingsModal {
     this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
     this.cameraModeSelect = document.getElementById('setting-camera-mode') as HTMLSelectElement | null;
     this.facialPortraitCheckbox = document.getElementById('setting-facial-portrait') as HTMLInputElement | null;
+    this.runningStyleSelect = document.getElementById('setting-running-style') as HTMLSelectElement | null;
+    this.runningStyleBadgeEl = document.getElementById('setting-running-style-badge');
 
     this.resolvedBadgeEl = document.getElementById('setting-graphics-resolved-badge');
     this.qualityDescEl = document.getElementById('setting-graphics-desc');
@@ -45,6 +49,7 @@ export class SettingsModal {
     this.refreshAudioUI();
     this.refreshGraphicsUI();
     this.refreshCameraAndPortraitUI();
+    this.refreshRunningStyleUI();
   }
 
   private setupListeners(): void {
@@ -142,6 +147,18 @@ export class SettingsModal {
       });
     }
 
+    if (this.runningStyleSelect) {
+      const savedStyle = localStorage.getItem('metro_running_style') || 'CLASSIC';
+      this.runningStyleSelect.value = savedStyle;
+      this.updateRunningStyleBadge(savedStyle);
+      this.runningStyleSelect.addEventListener('change', () => {
+        const style = this.runningStyleSelect!.value;
+        localStorage.setItem('metro_running_style', style);
+        this.updateRunningStyleBadge(style);
+        EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, style);
+      });
+    }
+
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
 
     // Update badge when adaptive controller shifts quality in real time
@@ -161,6 +178,30 @@ export class SettingsModal {
     }
     if (this.facialPortraitCheckbox) {
       this.facialPortraitCheckbox.checked = localStorage.getItem('metro_portrait_enabled') !== 'false';
+    }
+  }
+
+  private refreshRunningStyleUI(): void {
+    if (this.runningStyleSelect) {
+      const style = localStorage.getItem('metro_running_style') || 'CLASSIC';
+      this.runningStyleSelect.value = style;
+      this.updateRunningStyleBadge(style);
+    }
+  }
+
+  private updateRunningStyleBadge(style: string): void {
+    if (this.runningStyleBadgeEl) {
+      if (style === 'REVERSE') {
+        this.runningStyleBadgeEl.textContent = '🕺 Facing Player';
+        this.runningStyleBadgeEl.style.color = '#ff9100';
+        this.runningStyleBadgeEl.style.borderColor = 'rgba(255, 145, 0, 0.4)';
+        this.runningStyleBadgeEl.style.background = 'rgba(255, 145, 0, 0.18)';
+      } else {
+        this.runningStyleBadgeEl.textContent = '🏃 Rear Chase';
+        this.runningStyleBadgeEl.style.color = '#00e5ff';
+        this.runningStyleBadgeEl.style.borderColor = 'rgba(0, 176, 255, 0.4)';
+        this.runningStyleBadgeEl.style.background = 'rgba(0, 176, 255, 0.18)';
+      }
     }
   }
 
@@ -222,6 +263,7 @@ export class SettingsModal {
     this.refreshAudioUI();
     this.refreshGraphicsUI();
     this.refreshCameraAndPortraitUI();
+    this.refreshRunningStyleUI();
     if (this.introSelect) {
       this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
     }
