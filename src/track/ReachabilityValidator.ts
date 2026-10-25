@@ -1,5 +1,6 @@
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { ObstacleType } from './ObstacleFactory';
+import { RooftopRoutePlan } from './RooftopRoutePlanner';
 
 export interface ValidatedObstacle {
   type: ObstacleType;
@@ -50,6 +51,9 @@ export class ReachabilityValidator {
     interface TrajectoryNode {
       lane: LaneIndex;
       onRoof: boolean;
+      supportRouteLegId?: string;
+      supportLane?: LaneIndex;
+      airborneFromRoof?: boolean;
       airborneTimer: number; // Seconds remaining in jump airtime
       slidingTimer: number;  // Seconds remaining in slide
       lateralCooldown: number; // Seconds until next lane change can occur
@@ -479,5 +483,119 @@ export class ReachabilityValidator {
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Validates deterministic multi-train rooftop route reachability,
+   * gap hops, lateral transfers, and closing speed time-to-impact against oncoming traffic.
+   */
+  public static validateRooftopRoute(
+    plan: RooftopRoutePlan,
+    playerSpeed: number = CONSTANTS.INITIAL_SPEED,
+    hazards?: Array<{ min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number }; velocityZ?: number }>,
+    gameMode: string = 'NORMAL'
+  ): ReachabilityResult {
+    const isHard = gameMode === 'HARD';
+    // Minimum destination landing window
+    const minLandingWindow = isHard
+      ? Math.max(10.0, playerSpeed * 0.45)
+      : Math.max(12.0, playerSpeed * 0.55);
+
+    // Minimum stabilization zone post-touchdown before subsequent maneuver
+    const minStabilizationDist = playerSpeed * 0.35;
+
+    for (let i = 0; i < plan.transfers.length; i++) {
+      const transfer = plan.transfers[i];
+
+      // 1. Lateral transfers must be strictly adjacent lanes
+      if (transfer.kind === 'LATERAL_JUMP') {
+        const laneDiff = Math.abs(transfer.targetLane - transfer.sourceLane);
+        if (laneDiff !== 1) {
+          return {
+            solvable: false,
+            reason: `Transfer ${transfer.id} requires jumping across ${laneDiff} lanes (only adjacent 1-lane transfers permitted)`
+          };
+        }
+
+        // Airtime must be within legal jump duration (0.60s)
+        if (transfer.requiredAirtime > CONSTANTS.JUMP_DURATION + 0.01) {
+          return {
+            solvable: false,
+            reason: `Transfer ${transfer.id} required airtime ${transfer.requiredAirtime.toFixed(2)}s exceeds jump duration ${CONSTANTS.JUMP_DURATION}s`
+          };
+        }
+
+        // Lane change duration (0.18s) must fit inside jump duration
+        if (CONSTANTS.LANE_CHANGE_DURATION > CONSTANTS.JUMP_DURATION) {
+          return {
+            solvable: false,
+            reason: `Lane change duration ${CONSTANTS.LANE_CHANGE_DURATION}s exceeds jump airtime`
+          };
+        }
+
+        // Target leg must exist
+        const targetLeg = plan.legs.find((leg) => leg.id === transfer.targetLegId);
+        if (!targetLeg) {
+          return {
+            solvable: false,
+            reason: `Target leg ${transfer.targetLegId} not found in plan`
+          };
+        }
+
+        // Destination landing target window check
+        const targetLength = targetLeg.length;
+        if (targetLength < minLandingWindow) {
+          return {
+            solvable: false,
+            reason: `Destination train length ${targetLength.toFixed(1)}m below required landing window ${minLandingWindow.toFixed(1)}m`
+          };
+        }
+
+        // Post-touchdown obstacle-free stabilization check
+        if (i < plan.transfers.length - 1) {
+          const nextTransfer = plan.transfers[i + 1];
+          const distBetweenTransfers = nextTransfer.windowStartZ - transfer.landingZ;
+          if (distBetweenTransfers < minStabilizationDist) {
+            return {
+              solvable: false,
+              reason: `Insufficient stabilization distance between transfers (${distBetweenTransfers.toFixed(1)}m < ${minStabilizationDist.toFixed(1)}m)`
+            };
+          }
+        }
+      } else if (transfer.kind === 'LONGITUDINAL_GAP_JUMP') {
+        // Gap hop must clear deliberate gap
+        const jumpAirDist = playerSpeed * CONSTANTS.JUMP_DURATION;
+        const gapDist = 3.5;
+        if (jumpAirDist < gapDist) {
+          return {
+            solvable: false,
+            reason: `Player speed ${playerSpeed}m/s yields jump distance ${jumpAirDist.toFixed(1)}m which cannot clear ${gapDist}m gap`
+          };
+        }
+      }
+
+      // Check oncoming traffic hazards during transfer window
+      if (hazards && hazards.length > 0) {
+        for (const hazard of hazards) {
+          if ((hazard.velocityZ ?? 0) > 0) {
+            // Oncoming moving train
+            const closingSpeed = playerSpeed + (hazard.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED);
+            const separation = hazard.max.z - transfer.landingZ;
+            if (separation > 0 && separation < closingSpeed * CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME) {
+              const timeToImpact = separation / closingSpeed;
+              return {
+                solvable: false,
+                reason: `Oncoming train hazard closing in ${timeToImpact.toFixed(2)}s on transfer target`
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      solvable: true,
+      minReactionTimeSeconds: minLandingWindow / playerSpeed
+    };
   }
 }

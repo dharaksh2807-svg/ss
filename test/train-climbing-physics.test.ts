@@ -758,6 +758,245 @@ console.log('\n--- Suite 20: Ramp Onboarding Cue Lifecycle & Persistence ---');
 }
 
 // =========================================================================
+// Suite 21: 9.8m Purpose-Built Rooftop Route Ramp Climbing & Physical Continuity
+// =========================================================================
+console.log('\n--- Suite 21: 9.8m Purpose-Built Rooftop Route Ramp ---');
+{
+  const { trackManager, player } = createEnv();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_9_8M_RAMP',
+    difficulty: 'MEDIUM',
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 30.0,
+        length: 37.2,
+        hasRamp: true,
+        rampLength: 9.8,
+        composition: {
+          id: 'TEST_98_RAMP_COMP',
+          name: '9.8m Ramp Test Consist',
+          tier: 'BEGINNER',
+          totalLength: 37.2,
+          gangwayLength: 1.2,
+          hasRamp: true,
+          hasExitRamp: false,
+          rampLength: 9.8,
+          carriages: [
+            { id: 'c0', type: 'LOCOMOTIVE_RAMP', length: 18.0, localOffsetZ: 9.6, hasRamp: true },
+            { id: 'c1', type: 'PASSENGER_COACH', length: 18.0, localOffsetZ: -9.6, hasRamp: false }
+          ],
+          rooftopObstacles: [],
+          expectedDuration: { at18ms: 2.5, at28ms: 1.8, at38ms: 1.3 },
+          exitType: 'SAFE_DROP'
+        }
+      }
+    ],
+    collectibles: []
+  }, 0);
+
+  const obs = chunk.obstacles[0];
+  assert(obs.rampCollider !== undefined, '9.8m ramp collider created');
+  const rampSpan = obs.rampCollider!.max.z - obs.rampCollider!.min.z;
+  assert(Math.abs(rampSpan - 9.8) < 0.1, `Ramp span is 9.8m (got ${rampSpan.toFixed(2)})`);
+
+  // Place player right before ramp toe
+  const rampToeZ = obs.rampCollider!.max.z;
+  player.position.set(0, CONSTANTS.PLAYER_BASE_Y, rampToeZ + 1.0);
+  player.speed = 18.0;
+
+  let lostSupport = false;
+  let reachedRoof = false;
+
+  // Step simulation up the ramp
+  for (let step = 0; step < 60; step++) {
+    player.update(1.0 / 60);
+    trackManager.update(player, 1.0 / 60, step / 60);
+
+    const surface = player.getSupportSurface();
+    const inRampRegion = player.position.z <= rampToeZ && player.position.z >= obs.rampCollider!.min.z;
+    if (inRampRegion && surface === 'GROUND') {
+      lostSupport = true;
+    }
+    if (surface === 'TRAIN_ROOF') {
+      reachedRoof = true;
+      break;
+    }
+  }
+
+  assert(!lostSupport, 'Zero frames of support loss on 9.8m ramp');
+  assert(reachedRoof, 'Player traversed onto TRAIN_ROOF via 9.8m ramp');
+  assert(Math.abs(player.position.y - 4.35) < 0.05, `Player reached 4.35m roof plane (got ${player.position.y.toFixed(2)})`);
+}
+
+// =========================================================================
+// Suite 22: Roof-to-Exit-Ramp Continuity
+// =========================================================================
+console.log('\n--- Suite 22: Roof-to-Exit-Ramp Continuity ---');
+{
+  const { trackManager, player } = createEnv();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_EXIT_RAMP',
+    difficulty: 'MEDIUM',
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 30.0,
+        length: 37.2,
+        hasRamp: false,
+        hasExitRamp: true,
+        rampLength: 9.8,
+        composition: {
+          id: 'TEST_EXIT_COMP',
+          name: 'Exit Ramp Test Consist',
+          tier: 'BEGINNER',
+          totalLength: 37.2,
+          gangwayLength: 1.2,
+          hasRamp: false,
+          hasExitRamp: true,
+          rampLength: 9.8,
+          carriages: [
+            { id: 'c0', type: 'PASSENGER_COACH', length: 18.0, localOffsetZ: 9.6, hasRamp: false },
+            { id: 'c1', type: 'LOCOMOTIVE_REAR_RAMP', length: 18.0, localOffsetZ: -9.6, hasExitRamp: true }
+          ],
+          rooftopObstacles: [],
+          expectedDuration: { at18ms: 2.5, at28ms: 1.8, at38ms: 1.3 },
+          exitType: 'END_RAMP'
+        }
+      }
+    ],
+    collectibles: []
+  }, 0);
+
+  const obs = chunk.obstacles[0];
+  assert(obs.exitRampCollider !== undefined, 'Exit ramp collider created on composition');
+
+  // Place player on roof running towards rear exit ramp
+  player.reset();
+  player.position.set(0, 4.35, -30.0);
+  player.setSupportSurface('TRAIN_ROOF', obs.id, obs.carriageGroupId);
+  player.speed = 18.0;
+
+  let hitExitRamp = false;
+  let returnedToGround = false;
+
+  for (let step = 0; step < 120; step++) {
+    player.update(1.0 / 60);
+    trackManager.update(player, 1.0 / 60, step / 60);
+
+    const surface = player.getSupportSurface();
+    if (surface === 'RAMP') {
+      hitExitRamp = true;
+    }
+    if (hitExitRamp && surface === 'GROUND' && Math.abs(player.position.y - CONSTANTS.PLAYER_BASE_Y) < 0.1) {
+      returnedToGround = true;
+      break;
+    }
+  }
+
+  assert(hitExitRamp, 'Transitioned from roof onto exit ramp (RAMP support)');
+  assert(returnedToGround, 'Gracefully descended exit ramp to GROUND support');
+  assert(player.state === 'RUN', `Player state returned to RUN (got ${player.state})`);
+}
+
+// =========================================================================
+// Suite 23: Locomotion & Animation Transitions (CLIMB -> TRAIN_ROOF_RUN)
+// =========================================================================
+console.log('\n--- Suite 23: Locomotion & Animation Transitions ---');
+{
+  const { trackManager, player } = createEnv();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_ANIM_TRANSITIONS',
+    difficulty: 'EASY',
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 30.0, length: 20.0, hasRamp: true }
+    ],
+    collectibles: []
+  }, 0);
+
+  const obs = chunk.obstacles[0];
+  player.reset();
+  // Place on ramp
+  player.position.set(0, 2.5, obs.rampCollider!.min.z + 4.0);
+  trackManager.update(player, 1.0 / 60, 0);
+  player.update(1.0 / 60);
+
+  const rampAnim = player.model.getActiveLocomotionState();
+  assert(rampAnim === 'CLIMB', `Ramp climbing activates CLIMB animation state (got ${rampAnim})`);
+
+  // Move onto roof
+  const centerZ = (obs.collider.min.z + obs.collider.max.z) * 0.5;
+  player.position.set(0, 4.35, centerZ);
+  trackManager.update(player, 1.0 / 60, 0.1);
+  player.update(1.0 / 60);
+
+  const roofAnim = player.model.getActiveLocomotionState();
+  assert(roofAnim === 'TRAIN_ROOF_RUN', `Roof running activates TRAIN_ROOF_RUN animation state (got ${roofAnim})`);
+}
+
+// =========================================================================
+// Suite 24: Multi-Chunk Rooftop Pin / Unpin Lifecycle
+// =========================================================================
+console.log('\n--- Suite 24: Multi-Chunk Rooftop Pin / Unpin Lifecycle ---');
+{
+  const { trackManager, player } = createEnv();
+  const chunk0 = trackManager.chunks[0];
+  chunk0.chunkZ = 0;
+  chunk0.clearDynamicItems();
+  chunk0.populate({
+    name: 'TEST_PIN_CHUNK',
+    difficulty: 'MEDIUM',
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 40.0,
+        length: 52.4,
+        carriageGroupId: 'pinned_route_consist'
+      }
+    ],
+    collectibles: []
+  }, 0);
+
+  const obs = chunk0.obstacles[0];
+  // Player is on train roof supported by this chunk's obstacle
+  player.reset();
+  player.position.set(0, 4.35, -40.0);
+  player.setSupportSurface('TRAIN_ROOF', obs.id, 'pinned_route_consist');
+
+  // Move player way ahead so chunk0 would normally despawn
+  player.position.z = -150.0;
+  trackManager.update(player, 1.0 / 60, 0);
+
+  // Assert chunk0 is NOT recycled because it supports player
+  const stillHasChunk0 = trackManager.chunks.some(c => c === chunk0 && c.chunkZ === 0);
+  assert(stillHasChunk0, 'Chunk supporting player is pinned and NOT recycled even when behind despawn threshold');
+
+  // Now release player from roof to ground
+  player.setSupportSurface('GROUND', null, null);
+  player.position.y = CONSTANTS.PLAYER_BASE_Y;
+  player.state = 'RUN';
+
+  // Run update again
+  trackManager.update(player, 1.0 / 60, 0.1);
+
+  // Now chunk0 can be safely recycled
+  const chunk0Recycled = !trackManager.chunks.some(c => c === chunk0 && c.chunkZ === 0);
+  assert(chunk0Recycled, 'Chunk is safely unpinned and recycled once player leaves rooftop support');
+}
+
+// =========================================================================
 // Summary
 // =========================================================================
 console.log('\n================================================================');

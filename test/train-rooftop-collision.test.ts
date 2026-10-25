@@ -6,6 +6,7 @@ import { CONSTANTS } from '../src/core/Constants';
 import { EventBus, EVENTS } from '../src/core/EventBus';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { CollectibleFactory } from '../src/track/CollectibleFactory';
+import { CollisionResolver } from '../src/track/CollisionResolver';
 
 // Polyfill localStorage for node environment
 if (typeof globalThis.localStorage === 'undefined') {
@@ -721,6 +722,243 @@ console.log('\n--- Test 20: Multi-Chunk Traversal & Coordinate Alignment in Chun
   assert(player.state === 'ON_TRAIN', `Player successfully climbed ramp in Chunk 1 (> 0m) onto roof! (got ${player.state})`);
   assert(player.getSupportSurface() === 'TRAIN_ROOF', 'Chunk 1 supportSurface is TRAIN_ROOF');
   assert(Math.abs(player.position.y - 4.35) < 0.05, `Chunk 1 roof height is 4.35m (got ${player.position.y})`);
+}
+
+// =========================================================================
+// Test 21: High-Speed Swept Roof Crossing
+// =========================================================================
+console.log('\n--- Test 21: High-Speed Swept Roof Crossing at 38 m/s ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_SWEPT_CROSSING',
+    difficulty: 'HARD',
+    obstacles: [{ type: 'TRAIN', lane: 0, zOffset: 30.0, length: 24.0 }],
+    collectibles: []
+  }, 0);
+
+  const obs = chunk.obstacles[0];
+  // Foot trajectory crossing roof plane Y=4.35 within 1 single frame at 38 m/s forward speed
+  player.reset();
+  player.speed = 38.0;
+  player.previousPosition.set(0, 4.90, -25.0);
+  player.position.set(0, 4.05, -30.0);
+  player.isJumping = true;
+  player.verticalVelocity = -8.0;
+  player.updateCollider();
+
+  const landed = trackManager.tryResolveSweptRoofLanding(player, obs);
+  assert(landed === true, 'High-speed vertical trajectory crossing resolved swept roof landing');
+  assert(player.getSupportSurface() === 'TRAIN_ROOF', 'Player established TRAIN_ROOF support');
+  assert(player.position.y === 4.35, 'Player foot pinned to 4.35m roof plane');
+}
+
+// =========================================================================
+// Test 22: Exact Per-Carriage Segment Landing
+// =========================================================================
+console.log('\n--- Test 22: Exact Per-Carriage Segment Landing ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_SEGMENT_LANDING',
+    difficulty: 'MEDIUM',
+    obstacles: [{
+      type: 'TRAIN_COMPOSITION',
+      lane: 0,
+      zOffset: 20.0,
+      length: 52.4,
+      composition: 'METRO_TRIPLE_CONSIST'
+    }],
+    collectibles: []
+  }, 0);
+
+  const compObs = chunk.obstacles[0];
+  assert(compObs.roofSegments !== undefined && compObs.roofSegments.length > 0, 'Composition contains per-carriage roof segments');
+
+  // Descend onto middle carriage
+  player.reset();
+  player.previousPosition.set(0, 4.80, -20.0);
+  player.position.set(0, 4.30, -20.0);
+  player.isJumping = true;
+  player.verticalVelocity = -4.0;
+  player.updateCollider();
+
+  const landed = trackManager.tryResolveSweptRoofLanding(player, compObs);
+  assert(landed === true, 'Landed on per-carriage roof segment');
+  assert(player.getActiveSupportObstacleId() === compObs.id, 'Support obstacle ID bound');
+}
+
+// =========================================================================
+// Test 23: Missing Support in Deliberate Unsupported Gaps
+// =========================================================================
+console.log('\n--- Test 23: Missing Support in Deliberate Unsupported Gaps ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_DELIBERATE_GAP',
+    difficulty: 'HARD',
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 10.0, length: 20.0, carriageGroupId: 'grp_gap_test' },
+      { type: 'TRAIN', lane: 0, zOffset: 34.0, length: 20.0, carriageGroupId: 'grp_gap_test' } // 4m gap
+    ],
+    collectibles: []
+  }, 0);
+
+  const train1 = chunk.obstacles[0];
+  // Train 1 ends at Z = -20.0m. Gap is between -20.0m and -24.0m.
+  // Player walking (not jumping) into the gap at Z = -22.0m:
+  player.reset();
+  player.position.set(0, 4.35, -22.0);
+  player.previousPosition.set(0, 4.35, -21.5);
+  player.isJumping = false;
+  player.setSupportSurface('TRAIN_ROOF', train1.id, 'grp_gap_test');
+  player.updateCollider();
+
+  (trackManager as any).updateGroundHeight(player, 0.016);
+  assert(player.getSupportSurface() === 'GROUND', 'Player lost roof support in deliberate gap');
+  assert(player.state === 'FALLING_FROM_TRAIN', 'Player transitioned to FALLING_FROM_TRAIN');
+}
+
+// =========================================================================
+// Test 24: Adjacent-Train Lateral Jump Landing
+// =========================================================================
+console.log('\n--- Test 24: Adjacent-Train Lateral Jump Landing ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_ADJACENT_SWITCH',
+    difficulty: 'MEDIUM',
+    obstacles: [
+      { type: 'TRAIN', lane: 0, zOffset: 10.0, length: 26.0, carriageGroupId: 'train_src' },
+      { type: 'TRAIN', lane: 1, zOffset: 24.0, length: 26.0, carriageGroupId: 'train_dst' }
+    ],
+    collectibles: []
+  }, 0);
+
+  const dstTrain = chunk.obstacles[1];
+  const dstX = CONSTANTS.LANES[1];
+
+  // Airborne from Lane 0 jumping across into Lane 1 destination train
+  player.reset();
+  player.position.set(dstX, 4.35, -26.0);
+  player.previousPosition.set(0, 5.0, -22.0);
+  player.isJumping = true;
+  player.verticalVelocity = -3.5;
+  player.updateCollider();
+
+  const landed = trackManager.tryResolveSweptRoofLanding(player, dstTrain);
+  assert(landed === true, 'Lateral jump into adjacent train roof resolves landing');
+  assert(player.getActiveSupportObstacleId() === dstTrain.id, 'Bound to destination train obstacle');
+  assert(player.getActiveSupportGroupId() === dstTrain.carriageGroupId, 'Bound to destination train group');
+}
+
+// =========================================================================
+// Test 25: Collision When Lateral Transfer Misses Destination Roof
+// =========================================================================
+console.log('\n--- Test 25: Collision When Lateral Transfer Misses ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_MISSED_TRANSFER',
+    difficulty: 'HARD',
+    obstacles: [
+      { type: 'TRAIN', lane: 1, zOffset: 30.0, length: 20.0 }
+    ],
+    collectibles: []
+  }, 0);
+
+  const dstTrain = chunk.obstacles[0];
+  // Player jumped too early/short, hitting train body below roof deck
+  player.reset();
+  player.position.set(CONSTANTS.LANES[1], 2.2, -20.0);
+  player.updateCollider();
+
+  const outcome = CollisionResolver.resolveOutcome(dstTrain, player, null, false);
+  assert(outcome.outcome === 'MAJOR_FATAL_HIT', 'Undershot lateral transfer causes fatal collision against train hull');
+}
+
+// =========================================================================
+// Test 26: No Same-Group Immunity Across Unsupported Space
+// =========================================================================
+console.log('\n--- Test 26: No Same-Group Immunity Across Unsupported Space ---');
+{
+  const { trackManager, player } = createTestEnvironment();
+  const chunk = trackManager.chunks[0];
+  chunk.chunkZ = 0;
+  chunk.clearDynamicItems();
+  chunk.populate({
+    name: 'TEST_NO_GROUP_IMMUNITY',
+    difficulty: 'HARD',
+    obstacles: [
+      {
+        type: 'TRAIN_COMPOSITION',
+        lane: 0,
+        zOffset: 20.0,
+        length: 52.4,
+        carriageGroupId: 'consist_grp_test'
+      }
+    ],
+    collectibles: []
+  }, 0);
+
+  const compObs = chunk.obstacles[0];
+  // Player has matching group ID but is positioned below roof surface (e.g. falling into unbridged gap)
+  player.reset();
+  player.position.set(0, 2.0, -20.0);
+  player.setSupportSurface('TRAIN_ROOF', compObs.id, 'consist_grp_test');
+  player.updateCollider();
+
+  const outcome = CollisionResolver.resolveOutcome(compObs, player, null, false);
+  assert(outcome.outcome === 'MAJOR_FATAL_HIT', 'Matching group ID alone does NOT grant infinite immunity across gaps');
+}
+
+// =========================================================================
+// Test 27: 30 / 60 / 120 FPS Equivalence for Swept Rooftop Landing
+// =========================================================================
+console.log('\n--- Test 27: 30 / 60 / 120 FPS Equivalence for Swept Landing ---');
+{
+  const fpsList = [30, 60, 120];
+  for (const fps of fpsList) {
+    const { trackManager, player } = createTestEnvironment();
+    const chunk = trackManager.chunks[0];
+    chunk.chunkZ = 0;
+    chunk.clearDynamicItems();
+    chunk.populate({
+      name: `TEST_FPS_${fps}`,
+      difficulty: 'MEDIUM',
+      obstacles: [{ type: 'TRAIN', lane: 0, zOffset: 20.0, length: 24.0 }],
+      collectibles: []
+    }, 0);
+
+    const obs = chunk.obstacles[0];
+    const dt = 1.0 / fps;
+
+    player.reset();
+    player.previousPosition.set(0, 4.35 + 8.0 * dt, -20.0);
+    player.position.set(0, 4.35 - 2.0 * dt, -20.0);
+    player.isJumping = true;
+    player.verticalVelocity = -5.0;
+    player.updateCollider();
+
+    const landed = trackManager.tryResolveSweptRoofLanding(player, obs);
+    assert(landed === true, `Swept landing succeeds at ${fps} FPS`);
+    assert(player.getSupportSurface() === 'TRAIN_ROOF', `TRAIN_ROOF support bound at ${fps} FPS`);
+  }
 }
 
 console.log(`\n=======================================================`);

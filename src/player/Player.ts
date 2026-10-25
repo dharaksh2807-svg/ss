@@ -295,6 +295,7 @@ export class Player {
     this.state = 'JUMP';
     this.supportSurface = 'GROUND';
     this.activeSupportObstacleId = null;
+    this.activeSupportGroupId = null;
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {

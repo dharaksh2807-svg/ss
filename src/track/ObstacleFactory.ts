@@ -105,6 +105,20 @@ export function getTrainAccessibilityProfile(
   };
 }
 
+export interface TrainRoofSegment {
+  id: string;
+  carriageId: string;
+  collider: THREE.Box3;
+  surfaceY: number;
+  kind: 'CARRIAGE' | 'GANGWAY';
+}
+
+export interface TrainBodySegment {
+  id: string;
+  carriageId: string;
+  collider: THREE.Box3;
+}
+
 export interface ObstacleInstance {
   id: string; // Unique obstacle instance identifier for binding active support
   group: THREE.Group;
@@ -153,6 +167,11 @@ export interface ObstacleInstance {
     collider: THREE.Box3;
     cleared?: boolean;
   }>;
+  // Per-carriage support geometry and route metadata
+  roofSegments?: TrainRoofSegment[];
+  bodySegments?: TrainBodySegment[];
+  routeGroupId?: string;
+  routeLegId?: string;
 }
 
 export class ObstacleFactory {
@@ -1996,9 +2015,10 @@ export class ObstacleFactory {
     w: number,
     h: number,
     bodyLength: number,
-    noseLength: number
+    noseLength: number,
+    customRampLength?: number
   ): void {
-    const rampLength = CONSTANTS.TRAIN_RAMP_LENGTH; // 8.0m
+    const rampLength = customRampLength || CONSTANTS.TRAIN_RAMP_LENGTH; // default 8.0m or composition-specific (e.g. 9.8m)
     const rampWidth = w * 0.86;
     const rampHeight = 4.35; // Matches the exact 4.35m catwalk top surface
 
@@ -2417,9 +2437,10 @@ export class ObstacleFactory {
     group: THREE.Group,
     w: number,
     h: number,
-    bodyLength: number
+    bodyLength: number,
+    customRampLength?: number
   ): void {
-    const rampLength = CONSTANTS.TRAIN_RAMP_LENGTH; // 8.0m
+    const rampLength = customRampLength || CONSTANTS.TRAIN_RAMP_LENGTH; // default 8.0m or composition-specific
     const rampWidth = w * 0.86;
     const rampHeight = 4.35;
 
@@ -2521,9 +2542,11 @@ export class ObstacleFactory {
 
       // Front / Rear end treatment
       const noseLength = variant === 'STREAMLINED_EXPRESS' ? 1.85 : (variant === 'CLASSIC_TRANSIT' ? 1.15 : 1.45);
+      const effectiveRampLen = comp.hasRamp ? (comp as any).rampLength || composition.rampLength || CONSTANTS.TRAIN_RAMP_LENGTH : undefined;
+      const effectiveExitRampLen = comp.hasExitRamp ? (comp as any).rampLength || composition.rampLength || CONSTANTS.TRAIN_RAMP_LENGTH : undefined;
       if (comp.hasRamp) {
         this.buildRampBulkhead(carriageGroup, w, h, comp.length, bodyMat, accentColor);
-        this.buildRamp(carriageGroup, w, h, comp.length, noseLength);
+        this.buildRamp(carriageGroup, w, h, comp.length, noseLength, effectiveRampLen);
       } else if (comp.type === 'LOCOMOTIVE_CAB') {
         this.buildFrontCab(carriageGroup, w, h, comp.length, noseLength, variant, bodyMat, carColor, accentColor);
       } else {
@@ -2535,7 +2558,7 @@ export class ObstacleFactory {
       }
 
       if (comp.hasExitRamp) {
-        this.buildExitRamp(carriageGroup, w, h, comp.length);
+        this.buildExitRamp(carriageGroup, w, h, comp.length, effectiveExitRampLen);
       } else if (comp.type === 'CABOOSE_END' || i === composition.carriages.length - 1) {
         this.buildRearJunction(carriageGroup, w, h, comp.length);
       } else {

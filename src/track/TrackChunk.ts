@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { CurvedShaderManager } from '../scene/CurvedShader';
-import { ObstacleFactory, ObstacleInstance, getTrainAccessibilityProfile } from './ObstacleFactory';
+import { ObstacleFactory, ObstacleInstance, TrainRoofSegment, TrainBodySegment, getTrainAccessibilityProfile } from './ObstacleFactory';
 import { CollectibleFactory, CollectibleInstance, CollectibleType } from './CollectibleFactory';
 import { TrackPattern } from './ObstaclePatterns';
 import { TextureGenerator } from '../scene/TextureGenerator';
@@ -10,7 +10,7 @@ import { PacingMetrics } from './PacingMetrics';
 import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME, NEON_INDUSTRIAL_THEME } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { SceneryFactory } from '../environment/SceneryFactory';
-import { TrainCompositionDef, getCompositionForDifficulty } from './TrainComposition';
+import { TrainCompositionDef, TRAIN_COMPOSITIONS, getCompositionForDifficulty } from './TrainComposition';
 
 export class TrackChunk {
   public group: THREE.Group;
@@ -1479,17 +1479,26 @@ export class TrackChunk {
       const laneX = CONSTANTS.LANES[obsData.lane as LaneIndex];
       const localZ = -obsData.zOffset;
       const isComposition = obsData.type === 'TRAIN_COMPOSITION' || !!obsData.composition;
+      let compDef: TrainCompositionDef | undefined;
+      if (isComposition) {
+        if (typeof obsData.composition === 'string') {
+          compDef = TRAIN_COMPOSITIONS[obsData.composition] || getCompositionForDifficulty('BEGINNER', 18);
+        } else if (obsData.composition && typeof obsData.composition === 'object') {
+          compDef = obsData.composition;
+        } else {
+          compDef = getCompositionForDifficulty('BEGINNER', 18);
+        }
+      }
       const isTrain = obsData.type === 'TRAIN' || obsData.type === 'MOVING_TRAIN' || obsData.type === 'TRAIN_RAMP' || isComposition;
-      const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP' || (isComposition && obsData.composition?.hasEntryRamp));
-      const hasExitRamp = !!(obsData.hasExitRamp || (isComposition && obsData.composition?.hasExitRamp));
-      const length = obsData.length || (isComposition ? (obsData.composition?.totalLength || CONSTANTS.TRAIN_SET_MEDIUM_LENGTH) : (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0));
+      const hasRamp = !!(obsData.hasRamp || obsData.type === 'TRAIN_RAMP' || (compDef && (compDef.hasRamp || (compDef as any).hasEntryRamp)));
+      const hasExitRamp = !!(obsData.hasExitRamp || (compDef && compDef.hasExitRamp));
+      const length = obsData.length || (isComposition ? (compDef?.totalLength || CONSTANTS.TRAIN_SET_MEDIUM_LENGTH) : (isTrain ? CONSTANTS.TRAIN_LENGTH_SHORT : 2.0));
       const carriageGroupId = obsData.carriageGroupId || (isComposition ? `train_set_${Math.round(worldZ)}_${obsData.lane}` : undefined);
       let headlights: THREE.Mesh[] | undefined;
       let wheelMeshes: THREE.Mesh[] | undefined;
       let headlightBeam: THREE.Mesh | undefined;
 
-      if (obsData.type === 'TRAIN_COMPOSITION' || (obsData.composition && isComposition)) {
-        const compDef: TrainCompositionDef = obsData.composition || getCompositionForDifficulty('BEGINNER', 18);
+      if (isComposition && compDef) {
         group = this.obstacleFactory.createTrainComposition(compDef);
       } else if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
         const colors = [
@@ -1571,20 +1580,19 @@ export class TrackChunk {
           new THREE.Vector3(laneX + halfW + 0.15, height + 1.2, worldCenterZ + halfD + 0.3)
         );
 
-        // 4. Sloped Ramp Collider
+        // 4. Sloped Ramp Collider (respects composition-specific ramp length)
+        const effectiveRampLen = compDef?.rampLength || obsData.rampLength || CONSTANTS.TRAIN_RAMP_LENGTH;
         if (hasRamp) {
-          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           rampCollider = new THREE.Box3(
             new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ + halfD),
-            new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ + halfD + rampD)
+            new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ + halfD + effectiveRampLen)
           );
         }
 
         // 5. Sloped Exit Ramp Collider
         if (hasExitRamp) {
-          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           exitRampCollider = new THREE.Box3(
-            new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ - halfD - rampD),
+            new THREE.Vector3(laneX - halfW * 0.92, 0, worldCenterZ - halfD - effectiveRampLen),
             new THREE.Vector3(laneX + halfW * 0.92, roofSurfaceY, worldCenterZ - halfD)
           );
         }
@@ -1639,7 +1647,7 @@ export class TrackChunk {
       nearMissBox.max.set(laneX + halfW + 0.6, height + 0.6, worldCenterZ + halfD + 0.6);
 
       const obstacleId = `chunk_${Math.round(worldZ)}_obs_${this.obstacles.length}_${obsData.type}_${obsData.lane}`;
-      const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
+      const effectiveRampLen = compDef?.rampLength || obsData.rampLength || CONSTANTS.TRAIN_RAMP_LENGTH;
       const isMoving = obsData.type === 'MOVING_TRAIN' || !!obsData.isMoving;
       const accessibilityProfile = isTrain ? getTrainAccessibilityProfile(obsData.type, hasRamp, isMoving) : undefined;
       group.userData.accessibilityProfile = accessibilityProfile;
@@ -1648,6 +1656,106 @@ export class TrackChunk {
         this.solidObstacleBounds.set(group, solids);
         group.userData.trainFrontOffset = Math.max(...solids.map((box) => box.max.z));
         group.userData.trainRearOffset = Math.min(...solids.map((box) => box.min.z));
+      }
+
+      // 6. Build per-carriage roof segments, gangways, body segments, and rooftop obstacles
+      const roofSegments: TrainRoofSegment[] = [];
+      const bodySegments: TrainBodySegment[] = [];
+      const rooftopObstacleColliders: Array<{
+        id: string;
+        type: 'ROOFTOP_AC_HURDLE' | 'ROOFTOP_VENT';
+        collider: THREE.Box3;
+        cleared?: boolean;
+      }> = [];
+
+      if (isComposition && compDef && compDef.carriages && compDef.carriages.length > 0) {
+        // Individual carriage hull and roof support segments
+        for (const car of compDef.carriages) {
+          const carWorldCenterZ = worldCenterZ + car.localOffsetZ;
+          const carHalfD = car.length * 0.5;
+
+          bodySegments.push({
+            id: `${obstacleId}_body_${car.id}`,
+            carriageId: car.id,
+            collider: new THREE.Box3(
+              new THREE.Vector3(laneX - halfW, 0, carWorldCenterZ - carHalfD),
+              new THREE.Vector3(laneX + halfW, height - 0.45, carWorldCenterZ + carHalfD)
+            )
+          });
+
+          const isFirstCar = car === compDef.carriages[0];
+          const isLastCar = car === compDef.carriages[compDef.carriages.length - 1];
+          const segMinZ = isLastCar ? Math.min(carWorldCenterZ - carHalfD, worldCenterZ - halfD) - 0.20 : carWorldCenterZ - carHalfD - 0.15;
+          const segMaxZ = isFirstCar ? Math.max(carWorldCenterZ + carHalfD, worldCenterZ + halfD) + 0.20 : carWorldCenterZ + carHalfD + 0.15;
+
+          roofSegments.push({
+            id: `${obstacleId}_roof_${car.id}`,
+            carriageId: car.id,
+            collider: new THREE.Box3(
+              new THREE.Vector3(laneX - halfW - 0.15, height - 0.45, segMinZ),
+              new THREE.Vector3(laneX + halfW + 0.15, height + 1.2, segMaxZ)
+            ),
+            surfaceY: 4.35,
+            kind: 'CARRIAGE'
+          });
+        }
+
+        // Gangway catwalk segments: ONLY for coupled carriages with gap <= 2.0m!
+        // Unbridged jump gaps (> 2.0m) intentionally receive NO support segment.
+        for (let i = 0; i < compDef.carriages.length - 1; i++) {
+          const c1 = compDef.carriages[i];
+          const c2 = compDef.carriages[i + 1];
+          const junctionZ = (c1.localOffsetZ - c1.length * 0.5 + c2.localOffsetZ + c2.length * 0.5) * 0.5;
+          const gap = Math.abs((c1.localOffsetZ - c1.length * 0.5) - (c2.localOffsetZ + c2.length * 0.5));
+
+          if (gap <= 2.0) {
+            const gangwayWorldCenterZ = worldCenterZ + junctionZ;
+            const gangwayHalfD = (gap + 0.2) * 0.5;
+            roofSegments.push({
+              id: `${obstacleId}_gangway_${i}`,
+              carriageId: `gangway_${i}`,
+              collider: new THREE.Box3(
+                new THREE.Vector3(laneX - 0.85 - 0.15, height - 0.45, gangwayWorldCenterZ - gangwayHalfD),
+                new THREE.Vector3(laneX + 0.85 + 0.15, height + 1.2, gangwayWorldCenterZ + gangwayHalfD)
+              ),
+              surfaceY: 4.35,
+              kind: 'GANGWAY'
+            });
+          }
+        }
+
+        // Authoritative rooftop equipment colliders
+        if (compDef.rooftopObstacles && compDef.rooftopObstacles.length > 0) {
+          for (const ro of compDef.rooftopObstacles) {
+            const roWorldZ = worldCenterZ + ro.localOffsetZ;
+            const roHalfW = (ro.width || (ro.type === 'ROOFTOP_AC_HURDLE' ? 1.6 : 1.4)) * 0.5;
+            const roHalfD = (ro.length || (ro.type === 'ROOFTOP_AC_HURDLE' ? 1.8 : 1.4)) * 0.5;
+            const roH = ro.height || (ro.type === 'ROOFTOP_AC_HURDLE' ? 0.65 : 0.50);
+
+            rooftopObstacleColliders.push({
+              id: `${obstacleId}_${ro.id}`,
+              type: ro.type,
+              collider: new THREE.Box3(
+                new THREE.Vector3(laneX - roHalfW, 4.35, roWorldZ - roHalfD),
+                new THREE.Vector3(laneX + roHalfW, 4.35 + roH, roWorldZ + roHalfD)
+              ),
+              cleared: false
+            });
+          }
+        }
+      } else if (isTrain && roofCollider && bodyCollider) {
+        bodySegments.push({
+          id: `${obstacleId}_body_main`,
+          carriageId: 'main',
+          collider: bodyCollider.clone()
+        });
+        roofSegments.push({
+          id: `${obstacleId}_roof_main`,
+          carriageId: 'main',
+          collider: roofCollider.clone(),
+          surfaceY: 4.35,
+          kind: 'CARRIAGE'
+        });
       }
 
       this.obstacles.push({
@@ -1662,10 +1770,10 @@ export class TrackChunk {
         rampCollider,
         exitRampCollider,
         roofSurfaceY,
-        rampStartZ: hasRamp ? worldCenterZ + halfD + rampD : undefined,
+        rampStartZ: hasRamp ? worldCenterZ + halfD + effectiveRampLen : undefined,
         rampEndZ: hasRamp ? worldCenterZ + halfD : undefined,
         exitRampStartZ: hasExitRamp ? worldCenterZ - halfD : undefined,
-        exitRampEndZ: hasExitRamp ? worldCenterZ - halfD - rampD : undefined,
+        exitRampEndZ: hasExitRamp ? worldCenterZ - halfD - effectiveRampLen : undefined,
         roofStartZ: isTrain ? worldCenterZ + halfD : undefined,
         roofEndZ: isTrain ? worldCenterZ - halfD : undefined,
         accessibilityProfile,
@@ -1687,7 +1795,12 @@ export class TrackChunk {
         telegraphed: false,
         headlights,
         wheelMeshes,
-        headlightBeam
+        headlightBeam,
+        roofSegments: roofSegments.length > 0 ? roofSegments : undefined,
+        bodySegments: bodySegments.length > 0 ? bodySegments : undefined,
+        rooftopObstacles: rooftopObstacleColliders.length > 0 ? rooftopObstacleColliders : undefined,
+        routeGroupId: obsData.routeGroupId,
+        routeLegId: obsData.routeLegId
       });
 
     }
@@ -1925,22 +2038,44 @@ export class TrackChunk {
           obs.roofCollider.max.set(laneX + halfW + 0.15, height + 1.2, updatedWorldZ + halfD + 0.3);
         }
 
+        const effectiveRampLen = obs.compositionDef?.rampLength || CONSTANTS.TRAIN_RAMP_LENGTH;
         if (obs.rampCollider) {
-          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
           obs.rampCollider.min.set(laneX - halfW * 0.92, 0, updatedWorldZ + halfD);
-          obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ + halfD + rampD);
-          obs.rampStartZ = updatedWorldZ + halfD + rampD;
+          obs.rampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ + halfD + effectiveRampLen);
+          obs.rampStartZ = updatedWorldZ + halfD + effectiveRampLen;
           obs.rampEndZ = updatedWorldZ + halfD;
         }
 
         if (obs.exitRampCollider) {
-          const rampD = CONSTANTS.TRAIN_RAMP_LENGTH;
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-          obs.exitRampCollider.min.set(laneX - halfW * 0.92, 0, updatedWorldZ - halfD - rampD);
+          obs.exitRampCollider.min.set(laneX - halfW * 0.92, 0, updatedWorldZ - halfD - effectiveRampLen);
           obs.exitRampCollider.max.set(laneX + halfW * 0.92, roofY, updatedWorldZ - halfD);
           obs.exitRampStartZ = updatedWorldZ - halfD;
-          obs.exitRampEndZ = updatedWorldZ - halfD - rampD;
+          obs.exitRampEndZ = updatedWorldZ - halfD - effectiveRampLen;
+        }
+
+        // Update moving carriage and gangway segments
+        if (obs.roofSegments) {
+          const deltaWorldZ = updatedWorldZ - (obs.previousWorldZ ?? updatedWorldZ);
+          for (const seg of obs.roofSegments) {
+            seg.collider.min.z += deltaWorldZ;
+            seg.collider.max.z += deltaWorldZ;
+          }
+        }
+        if (obs.bodySegments) {
+          const deltaWorldZ = updatedWorldZ - (obs.previousWorldZ ?? updatedWorldZ);
+          for (const seg of obs.bodySegments) {
+            seg.collider.min.z += deltaWorldZ;
+            seg.collider.max.z += deltaWorldZ;
+          }
+        }
+        if (obs.rooftopObstacles) {
+          const deltaWorldZ = updatedWorldZ - (obs.previousWorldZ ?? updatedWorldZ);
+          for (const ro of obs.rooftopObstacles) {
+            ro.collider.min.z += deltaWorldZ;
+            ro.collider.max.z += deltaWorldZ;
+          }
         }
 
         obs.roofStartZ = updatedWorldZ + halfD;
@@ -2081,6 +2216,11 @@ export class TrackChunk {
   public clearDynamicItems(): void {
     for (const obs of this.obstacles) {
       this.group.remove(obs.group);
+      obs.roofSegments = undefined;
+      obs.bodySegments = undefined;
+      obs.rooftopObstacles = undefined;
+      obs.routeGroupId = undefined;
+      obs.routeLegId = undefined;
     }
     this.obstacles = [];
 

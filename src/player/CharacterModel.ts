@@ -464,6 +464,8 @@ export class CharacterModel {
     else if (state === 'FAST_DROP') blendSpeed = 34.0;
     else if (state === 'SLIDE_ENTRY') blendSpeed = 32.0;
     else if (state === 'JUMP_LAND') blendSpeed = 28.0;
+    else if (state === 'TRAIN_ROOF_RUN') blendSpeed = 22.0; // 0.10-0.18s crossfade to rooftop running
+    else if (state === 'CLIMB') blendSpeed = 24.0; // 0.10-0.16s ramp incline posture blend
     else if (state === 'CRASH') blendSpeed = 16.0;
 
     const blendWeight = 1.0 - Math.exp(-blendSpeed * dt);

@@ -128,6 +128,10 @@ export class HUD {
       this.triggerCoinBump();
     });
 
+    bus.on('SHOW_TRAIN_SWITCH_CUE', () => {
+      this.showTrainSwitchCue();
+    });
+
     this.pauseBtn.addEventListener('click', () => {
       bus.emit(EVENTS.GAME_PAUSE);
     });
@@ -707,6 +711,31 @@ export class HUD {
         }
       }, 400);
     }, 2800);
+  }
+
+  public showTrainSwitchCue(): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (localStorage.getItem('metro_runner_train_switch_seen')) return;
+        localStorage.setItem('metro_runner_train_switch_seen', 'true');
+      } catch (_) {}
+    }
+    if (!this.toastContainerEl) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'train-switch-cue-toast glassmorphic slide-down-anim';
+    toast.style.cssText = 'position:fixed;top:18%;left:50%;transform:translateX(-50%);background:rgba(10,25,47,0.85);backdrop-filter:blur(8px);border:1px solid rgba(0,229,255,0.4);border-radius:12px;padding:10px 20px;color:#fff;font-family:sans-serif;font-weight:bold;font-size:16px;letter-spacing:1px;box-shadow:0 8px 32px rgba(0,229,255,0.25);z-index:9999;pointer-events:none;display:flex;align-items:center;gap:10px;';
+    toast.innerHTML = `<span>🚆</span><span>JUMP + ← / →  SWITCH TRAIN</span>`;
+
+    this.toastContainerEl.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => {
+        if (toast.parentElement) toast.parentElement.removeChild(toast);
+      }, 400);
+    }, 2500);
   }
 
   public triggerCoinBump(): void {

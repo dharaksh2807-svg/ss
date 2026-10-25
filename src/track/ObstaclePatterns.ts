@@ -27,6 +27,8 @@ export interface PatternObstacle {
   variant?: number;
   composition?: string | TrainCompositionDef;
   carriageGroupId?: string;
+  routeGroupId?: string;
+  routeLegId?: string;
 }
 
 export interface TrackPattern {

@@ -333,7 +333,7 @@ export class CameraController {
         targetCamY += 0.35;
         targetCamOffsetZ += 0.65;
         targetLookAheadZ -= 3.5;
-        targetLookY += 0.20;
+        targetLookY += 0.30;
       }
 
       // Subtle dynamic camera dip during slide for enhanced tactile action feedback
