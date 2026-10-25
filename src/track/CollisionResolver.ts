@@ -263,7 +263,7 @@ export class CollisionResolver {
       }
 
       // 1. Low jump hurdle: cleared by jump (cannot slide under)
-      if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
+      if (obs.type === 'LOW_BARRIER' && player.isJumping && (player.position.y >= CONSTANTS.LOW_BARRIER_HEIGHT || player.position.y >= 1.45)) {
         return {
           outcome: 'SAFE_CONTACT',
           diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),

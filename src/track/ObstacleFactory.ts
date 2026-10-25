@@ -199,10 +199,15 @@ export class ObstacleFactory {
 
   constructor() {
     this.lowBarrierMats = [0, 1, 2].map(v => {
+      const tex = TextureGenerator.getLowHurdleTexture(v);
       const mat = new THREE.MeshStandardMaterial({
-        map: TextureGenerator.getLowHurdleTexture(v),
-        roughness: 0.36,
-        metalness: 0.28
+        map: tex,
+        roughness: 0.32,
+        metalness: 0.18,
+        // High visibility in dark environments: subtle emissive map to ensure chevrons remain vivid in dark tunnels and night city
+        emissive: v === 0 ? new THREE.Color(0x3d3200) : (v === 1 ? new THREE.Color(0x3a1900) : new THREE.Color(0x3a0000)),
+        emissiveMap: tex,
+        emissiveIntensity: 0.45
       });
       this.curvedManager.applyCurvature(mat);
       return mat;
@@ -386,7 +391,8 @@ export class ObstacleFactory {
 
   /**
    * Create High-Detail Low Barrier (Jump Hurdle)
-   * Height: ~1.18m (Target 1.10m plank, with beacon caps at 1.18m).
+   * Authoritative Solid Blocking Height: CONSTANTS.LOW_BARRIER_HEIGHT (1.45m).
+   * Total mesh height with decorative beacons: ~1.58m - 1.60m.
    * Requires jump over or lane change. Cannot slide under (solid to ground).
    * 3 Distinct Visual Variants:
    * 0 = Standard Striped Rail Hurdle (A-frame legs with cast iron shoes, dual hazard rails, amber beacons)
@@ -400,83 +406,84 @@ export class ObstacleFactory {
     const laneW = CONSTANTS.LANE_WIDTH * 0.88; // ~3.16m
     const barrierMat = this.lowBarrierMats[v];
 
+    // Authoritative geometry definition:
+    // Top of solid warning beam sits at exactly CONSTANTS.LOW_BARRIER_HEIGHT (1.45m)
+    // to match physical collider bounds with millimeter precision across all 3 variants.
+    const solidBlockingHeight = CONSTANTS.LOW_BARRIER_HEIGHT; // 1.45m
+    const barH = 0.70; // 0.70m tall primary warning face for instant recognition
+    const barY = solidBlockingHeight - barH * 0.5; // 1.10m center (top at 1.45m, bottom at 0.75m)
+
     if (v === 0) {
       // Variant 0: Standard Striped Rail Hurdle (A-frame legs, dual rails, amber beacons)
-      // Vertical height increased by ~35% (1.39m -> 1.88m) for enhanced camera recognition
-      const STRIPED_BARRIER_HEIGHT_SCALE = 1.35;
-
-      // 1. Primary cross plank (Yellow/Black chevrons, extended proportionally upward)
-      const barH = 0.52 * STRIPED_BARRIER_HEIGHT_SCALE; // 0.70m
-      const barY = 0.52 + barH * 0.5; // 0.87m (ground clearance preserved, bottom remains at 0.52m)
-      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.20);
+      // 1. Primary cross plank (Yellow/Black chevrons, top at exact solidBlockingHeight 1.45m)
+      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.22);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
       bar.castShadow = true;
       group.add(bar);
 
       // Top & Bottom high-visibility reflective trims
-      const topTrim = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.04, 0.22), this.reflectiveTrimMat);
+      const topTrim = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.04, 0.24), this.reflectiveTrimMat);
       topTrim.position.set(0, barY + barH * 0.5 - 0.02, 0);
       group.add(topTrim);
 
-      const btmTrim = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.04, 0.22), this.reflectiveTrimMat);
+      const btmTrim = new THREE.Mesh(new THREE.BoxGeometry(laneW, 0.04, 0.24), this.reflectiveTrimMat);
       btmTrim.position.set(0, barY - barH * 0.5 + 0.02, 0);
       group.add(btmTrim);
 
       // 2. Lower solid steel ground rail (solid to ground, prevents slide under)
-      const lowerBar = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.94, 0.24, 0.16), this.barrierCastIronMat);
-      lowerBar.position.set(0, 0.20, 0);
+      const lowerBar = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.94, 0.38, 0.18), this.barrierCastIronMat);
+      lowerBar.position.set(0, 0.22, 0);
       lowerBar.castShadow = true;
       group.add(lowerBar);
 
-      // 3. Heavy-duty cast-iron A-Frame support legs (extended proportionally upward to 1.62m)
-      const legHeight = 1.20 * STRIPED_BARRIER_HEIGHT_SCALE; // 1.62m
-      const legGeo = new THREE.BoxGeometry(0.12, legHeight, 0.12);
-      const footGeo = new THREE.BoxGeometry(0.24, 0.06, 0.72);
-      const legCenterY = 0.60 * STRIPED_BARRIER_HEIGHT_SCALE; // 0.81m
+      // 3. Heavy-duty cast-iron A-Frame support legs (grounded at 0.00m, supporting beam up to 1.48m)
+      const legHeight = 1.48;
+      const legGeo = new THREE.BoxGeometry(0.14, legHeight, 0.14);
+      const footGeo = new THREE.BoxGeometry(0.26, 0.08, 0.76);
+      const legCenterY = legHeight * 0.5; // 0.74m
 
       [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
         // Slanted A-frame legs
         const legFront = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legFront.rotation.z = xPos < 0 ? 0.05 : -0.05;
-        legFront.rotation.x = 0.18;
+        legFront.rotation.x = 0.16;
         legFront.position.set(xPos, legCenterY, 0);
         legFront.castShadow = true;
         group.add(legFront);
 
         const legRear = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legRear.rotation.z = xPos < 0 ? 0.05 : -0.05;
-        legRear.rotation.x = -0.18;
+        legRear.rotation.x = -0.16;
         legRear.position.set(xPos, legCenterY, 0);
         legRear.castShadow = true;
         group.add(legRear);
 
-        // Cast iron ground foot
+        // Cast iron ground foot resting on track
         const foot = new THREE.Mesh(footGeo, this.barrierCastIronMat);
-        foot.position.set(xPos, 0.03, 0);
+        foot.position.set(xPos, 0.04, 0);
         foot.castShadow = true;
         group.add(foot);
 
         // Side clamp bracket with hex bolts
-        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.28, 0.26), this.barrierCastIronMat);
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.36, 0.28), this.barrierCastIronMat);
         bracket.position.set(xPos, barY, 0);
         group.add(bracket);
 
-        // Top amber strobe caution beacon
+        // Top amber strobe caution beacon (decorative light mounted atop uprights)
         const beaconBase = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.06, 12), this.barrierCastIronMat);
-        beaconBase.position.set(xPos, 1.27 * STRIPED_BARRIER_HEIGHT_SCALE, 0);
+        beaconBase.position.set(xPos, 1.48, 0);
         group.add(beaconBase);
 
         const beaconLens = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), this.beaconAmberMat);
-        beaconLens.position.set(xPos, 1.35 * STRIPED_BARRIER_HEIGHT_SCALE, 0);
+        beaconLens.position.set(xPos, 1.54, 0);
         group.add(beaconLens);
       });
 
     } else if (v === 1) {
       // Variant 1: Heavy Track Maintenance Gate (Box uprights, orange/white chevrons, counterweight footings)
-      const barH = 0.54;
-      const barY = 0.80;
-      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.22);
+      // 1. Primary cross plank (Orange/White chevrons, top at exact solidBlockingHeight 1.45m)
+      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.24);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
       bar.castShadow = true;
@@ -486,28 +493,28 @@ export class ObstacleFactory {
       const pipeGeo = new THREE.CylinderGeometry(0.04, 0.04, laneW * 0.98, 10);
       const pipeTop = new THREE.Mesh(pipeGeo, this.barrierCastIronMat);
       pipeTop.rotation.z = Math.PI / 2;
-      pipeTop.position.set(0, barY + barH * 0.5 - 0.04, 0.12);
+      pipeTop.position.set(0, barY + barH * 0.5 - 0.05, 0.13);
       group.add(pipeTop);
 
       const pipeBtm = new THREE.Mesh(pipeGeo, this.barrierCastIronMat);
       pipeBtm.rotation.z = Math.PI / 2;
-      pipeBtm.position.set(0, barY - barH * 0.5 + 0.04, 0.12);
+      pipeBtm.position.set(0, barY - barH * 0.5 + 0.05, 0.13);
       group.add(pipeBtm);
 
       // Lower anti-crawl steel skirt plate (solid to ground)
-      const skirtGeo = new THREE.BoxGeometry(laneW * 0.94, 0.26, 0.14);
+      const skirtGeo = new THREE.BoxGeometry(laneW * 0.94, 0.40, 0.16);
       const skirt = new THREE.Mesh(skirtGeo, this.barrierCastIronMat);
-      skirt.position.set(0, 0.20, 0);
+      skirt.position.set(0, 0.23, 0);
       skirt.castShadow = true;
       group.add(skirt);
 
-      // Heavy rectangular tubular steel upright posts
-      const postGeo = new THREE.BoxGeometry(0.16, 1.27, 0.16);
-      const weightBaseGeo = new THREE.BoxGeometry(0.32, 0.08, 0.70);
+      // Heavy rectangular tubular steel upright posts (grounded at 0.00m, reaching 1.46m)
+      const postGeo = new THREE.BoxGeometry(0.18, 1.46, 0.18);
+      const weightBaseGeo = new THREE.BoxGeometry(0.34, 0.08, 0.72);
 
       [-laneW * 0.46, laneW * 0.46].forEach((xPos) => {
         const post = new THREE.Mesh(postGeo, this.barrierCastIronMat);
-        post.position.set(xPos, 0.64, 0);
+        post.position.set(xPos, 0.73, 0);
         post.castShadow = true;
         group.add(post);
 
@@ -516,66 +523,65 @@ export class ObstacleFactory {
         weightBase.castShadow = true;
         group.add(weightBase);
 
-        // Flasher cap & amber lens
+        // Flasher cap & amber lens (decorative light atop uprights)
         const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.05, 12), this.barrierCastIronMat);
-        cap.position.set(xPos, 1.29, 0);
+        cap.position.set(xPos, 1.48, 0);
         group.add(cap);
 
         const flasher = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.09, 12), this.beaconAmberMat);
-        flasher.position.set(xPos, 1.35, 0);
+        flasher.position.set(xPos, 1.55, 0);
         group.add(flasher);
       });
 
       // Central reflective warning plate
-      const badge = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 0.25), this.hazardYellowMat);
+      const badge = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.28, 0.27), this.hazardYellowMat);
       badge.position.set(0, barY, 0.01);
       group.add(badge);
 
     } else {
       // Variant 2: Buffer Stop Style Barrier (Cross-braced X trestle legs, red/white chevrons)
-      const barH = 0.56;
-      const barY = 0.77;
-      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.24);
+      // 1. Primary cross plank (Red/White chevrons, top at exact solidBlockingHeight 1.45m)
+      const barGeo = new THREE.BoxGeometry(laneW, barH, 0.26);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
       bar.castShadow = true;
       group.add(bar);
 
-      // Lower timber/steel sleeper rail
-      const sleeperRail = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.96, 0.24, 0.18), this.barrierCastIronMat);
-      sleeperRail.position.set(0, 0.20, 0);
+      // Lower timber/steel sleeper rail (solid to ground)
+      const sleeperRail = new THREE.Mesh(new THREE.BoxGeometry(laneW * 0.96, 0.38, 0.20), this.barrierCastIronMat);
+      sleeperRail.position.set(0, 0.22, 0);
       sleeperRail.castShadow = true;
       group.add(sleeperRail);
 
-      // X-Braced trestle side supports
-      const strutGeo = new THREE.BoxGeometry(0.12, 1.25, 0.12);
-      const trestleFootGeo = new THREE.BoxGeometry(0.28, 0.06, 0.76);
+      // X-Braced trestle side supports (grounded at 0.00m, supporting beam up to 1.48m)
+      const strutGeo = new THREE.BoxGeometry(0.14, 1.48, 0.14);
+      const trestleFootGeo = new THREE.BoxGeometry(0.30, 0.08, 0.78);
 
       [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
         const strut1 = new THREE.Mesh(strutGeo, this.barrierCastIronMat);
-        strut1.rotation.x = 0.30;
-        strut1.position.set(xPos, 0.59, 0);
+        strut1.rotation.x = 0.20;
+        strut1.position.set(xPos, 0.73, 0);
         strut1.castShadow = true;
         group.add(strut1);
 
         const strut2 = new THREE.Mesh(strutGeo, this.barrierCastIronMat);
-        strut2.rotation.x = -0.30;
-        strut2.position.set(xPos, 0.59, 0);
+        strut2.rotation.x = -0.20;
+        strut2.position.set(xPos, 0.73, 0);
         strut2.castShadow = true;
         group.add(strut2);
 
         const foot = new THREE.Mesh(trestleFootGeo, this.barrierCastIronMat);
-        foot.position.set(xPos, 0.03, 0);
+        foot.position.set(xPos, 0.04, 0);
         foot.castShadow = true;
         group.add(foot);
 
-        // Railway lantern lamp on top
+        // Railway lantern lamp on top (decorative light atop uprights)
         const lanternHousing = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), this.barrierCastIronMat);
-        lanternHousing.position.set(xPos, 1.25, 0);
+        lanternHousing.position.set(xPos, 1.48, 0);
         group.add(lanternHousing);
 
         const lanternLens = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), this.beaconRedMat);
-        lanternLens.position.set(xPos, 1.33, 0);
+        lanternLens.position.set(xPos, 1.54, 0);
         group.add(lanternLens);
       });
     }

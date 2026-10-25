@@ -292,7 +292,7 @@ export const CONSTANTS = {
   MOVING_TRAIN_SPEED: 23.0, // Velocity of oncoming train relative to track
   MOVING_TRAIN_TELEGRAPH_DIST: 65.0, // Minimum distance for steady headlights and horn
   MOVING_TRAIN_WARNING_TIME: 2.0, // Seconds of warning at actual closing velocity
-  LOW_BARRIER_HEIGHT: 1.30, // Must jump over (cannot slide under; raised ~18% for high-speed visibility)
+  LOW_BARRIER_HEIGHT: 1.45, // Authoritative solid blocking height (~1.45m; cleared by normal jump, blocks slide)
   MEDIUM_BARRIER_HEIGHT: 1.65, // Must peak jump or lane change (cannot slide under)
   HIGH_BARRIER_CLEARANCE: 1.40, // Must slide under (jumping hits overhead beam; raised to 1.40m for optimal readability)
   HIGH_BARRIER_HEIGHT: 4.05, // Substantial train-height overhead gantry (train height is 4.2m)

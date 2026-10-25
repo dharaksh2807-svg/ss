@@ -1303,7 +1303,7 @@ export class TrackManager {
 
           if (outcome === 'SAFE_CONTACT' || outcome === 'VALID_ROOF_LANDING') {
             // Check for precision jump / slide reward if applicable
-            if (obs.type === 'LOW_BARRIER' && player.isJumping && player.position.y > CONSTANTS.LOW_BARRIER_HEIGHT + 0.15) {
+            if (obs.type === 'LOW_BARRIER' && player.isJumping && (player.position.y >= CONSTANTS.LOW_BARRIER_HEIGHT || player.position.y >= 1.45)) {
               if (player.distanceTraveled - player.lastJumpDist < 8.0) {
                 this.eventBus.emit(EVENTS.PRECISION_ACTION, 'JUMP');
               }
