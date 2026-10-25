@@ -253,4 +253,57 @@ console.log('\n--- Test 7: Runtime Switching Back to Classic ---');
   assert(model.getVisualFacingAngle() < 0.05, `Model smoothly returned to 0 (classic rear chase: ${model.getVisualFacingAngle().toFixed(4)})`);
 }
 
-console.log(`\n🎉 All ${passed}/${total} Reverse Run unit & kinematics tests passed successfully!`);
+// =========================================================================
+// Test 8: Per-Runner View Selection, Independence & Persistence
+// =========================================================================
+console.log('\n--- Test 8: Per-Runner View Selection, Independence & Persistence ---');
+{
+  localStorage.clear();
+
+  // 1. Initial state without per-character override falls back to global default (CLASSIC)
+  assert(CharacterModel.getRunningStyleForCharacter('char_jax') === 'CLASSIC', 'Default style for Jax is CLASSIC');
+  assert(CharacterModel.getRunningStyleForCharacter('char_luna') === 'CLASSIC', 'Default style for Luna is CLASSIC');
+  assert(CharacterModel.getRunningStyleForCharacter('char_modi') === 'CLASSIC', 'Default style for Modi is CLASSIC');
+
+  // 2. Set Jax to Front View (REVERSE) from the runner section
+  CharacterModel.setRunningStyleForCharacter('char_jax', 'REVERSE');
+  assert(CharacterModel.getRunningStyleForCharacter('char_jax') === 'REVERSE', 'Jax is now set to Front View (REVERSE)');
+  assert(CharacterModel.getRunningStyleForCharacter('char_luna') === 'CLASSIC', 'Luna remains unaffected (CLASSIC Rear View)');
+  assert(CharacterModel.getRunningStyleForCharacter('char_modi') === 'CLASSIC', 'Modi remains unaffected (CLASSIC Rear View)');
+
+  // 3. Set Luna explicitly to Rear View (CLASSIC)
+  CharacterModel.setRunningStyleForCharacter('char_luna', 'CLASSIC');
+  assert(CharacterModel.getRunningStyleForCharacter('char_luna') === 'CLASSIC', 'Luna explicitly set to Rear View (CLASSIC)');
+
+  // 4. Set Modi to Front View (REVERSE)
+  CharacterModel.setRunningStyleForCharacter('char_modi', 'REVERSE');
+  assert(CharacterModel.getRunningStyleForCharacter('char_modi') === 'REVERSE', 'Modi set to Front View (REVERSE)');
+
+  // 5. Instantiating CharacterModel for Jax adopts REVERSE
+  const modelJax = new CharacterModel('char_jax');
+  assert(modelJax.getRunningStyle() === 'REVERSE', 'New CharacterModel for Jax initializes with REVERSE');
+  assert(modelJax.getVisualFacingAngle() === Math.PI, 'Jax initial visual facing angle is Math.PI (front facing)');
+
+  // 6. Instantiating CharacterModel for Luna adopts CLASSIC
+  const modelLuna = new CharacterModel('char_luna');
+  assert(modelLuna.getRunningStyle() === 'CLASSIC', 'New CharacterModel for Luna initializes with CLASSIC');
+  assert(modelLuna.getVisualFacingAngle() === 0, 'Luna initial visual facing angle is 0 (rear facing)');
+
+  // 7. Dynamic model character swapping applies each runner\'s preferred view
+  const dynamicModel = new CharacterModel('char_jax');
+  assert(dynamicModel.getRunningStyle() === 'REVERSE', 'Dynamic model starts as Jax with REVERSE');
+
+  dynamicModel.applyCharacter('char_luna');
+  assert(dynamicModel.getRunningStyle() === 'CLASSIC', 'Swapping to Luna applies Luna\'s CLASSIC style');
+  assert(dynamicModel.getVisualFacingAngle() === 0, 'Luna facing angle reset to 0');
+
+  dynamicModel.applyCharacter('char_modi');
+  assert(dynamicModel.getRunningStyle() === 'REVERSE', 'Swapping to Modi applies Modi\'s REVERSE style');
+  assert(dynamicModel.getVisualFacingAngle() === Math.PI, 'Modi facing angle set to Math.PI');
+
+  // 8. Fallback to global setting if no per-character setting exists for Cruz
+  localStorage.setItem('metro_running_style', 'REVERSE');
+  assert(CharacterModel.getRunningStyleForCharacter('char_cruz') === 'REVERSE', 'Cruz inherits global REVERSE setting when not explicitly overridden');
+}
+
+console.log(`\n🎉 All ${passed}/${total} Reverse Run & Per-Runner View tests passed successfully!`);

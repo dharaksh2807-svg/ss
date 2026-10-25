@@ -132,18 +132,36 @@ export class CharacterModel {
   private glbContainer: THREE.Group | null = null;
   private currentGlbClip: string = '';
 
+  public static getRunningStyleForCharacter(characterId: string): RunningStyle {
+    if (typeof localStorage !== 'undefined') {
+      const perChar = localStorage.getItem(`metro_running_style_${characterId}`) as RunningStyle | null;
+      if (perChar === 'REVERSE' || perChar === 'CLASSIC') {
+        return perChar;
+      }
+      const globalStyle = localStorage.getItem('metro_running_style') as RunningStyle | null;
+      if (globalStyle === 'REVERSE' || globalStyle === 'CLASSIC') {
+        return globalStyle;
+      }
+    }
+    return 'CLASSIC';
+  }
+
+  public static setRunningStyleForCharacter(characterId: string, style: RunningStyle): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`metro_running_style_${characterId}`, style);
+    }
+  }
+
   constructor(characterId: CharacterId = 'char_jax', outfitId?: string) {
     this.mesh = new THREE.Group();
     this.currentCharacterId = characterId;
     this.currentOutfitId = outfitId || 'jax_classic';
 
     if (typeof localStorage !== 'undefined') {
-      const savedStyle = localStorage.getItem('metro_running_style') as RunningStyle | null;
-      if (savedStyle === 'REVERSE' || savedStyle === 'CLASSIC') {
-        this.runningStyle = savedStyle;
-        if (savedStyle === 'REVERSE') {
-          this.visualFacingAngle = Math.PI;
-        }
+      const resolvedStyle = CharacterModel.getRunningStyleForCharacter(this.currentCharacterId);
+      this.runningStyle = resolvedStyle;
+      if (resolvedStyle === 'REVERSE') {
+        this.visualFacingAngle = Math.PI;
       }
     }
 
@@ -191,6 +209,16 @@ export class CharacterModel {
     this.currentCharacterId = characterId;
     if (nextOutfit) {
       this.currentOutfitId = nextOutfit;
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      const resolvedStyle = CharacterModel.getRunningStyleForCharacter(this.currentCharacterId);
+      this.runningStyle = resolvedStyle;
+      if (resolvedStyle === 'REVERSE') {
+        this.visualFacingAngle = Math.PI;
+      } else {
+        this.visualFacingAngle = 0;
+      }
     }
 
     // Preserve active powerup states

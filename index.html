@@ -316,6 +316,33 @@
                 </div>
               </div>
 
+              <!-- Runner Gameplay View Style Selector (Per-Runner) -->
+              <div class="runner-view-section">
+                <div class="section-label-row">
+                  <div class="section-label">RUNNER GAMEPLAY VIEW</div>
+                  <span id="char-view-style-badge" class="view-style-badge classic">🏃 REAR CHASE (DEFAULT)</span>
+                </div>
+                <div class="runner-view-toggle-bar">
+                  <button type="button" id="char-view-rear-btn" class="runner-view-btn active" data-style="CLASSIC" title="Classic rear chase view — runner faces forward along railway">
+                    <span class="view-btn-icon">🏃</span>
+                    <span class="view-btn-content">
+                      <span class="view-btn-title">Rear View</span>
+                      <span class="view-btn-sub">Default / Chase</span>
+                    </span>
+                  </button>
+                  <button type="button" id="char-view-front-btn" class="runner-view-btn" data-style="REVERSE" title="Front view / Reverse run — runner faces camera to showcase outfit & face">
+                    <span class="view-btn-icon">🕺</span>
+                    <span class="view-btn-content">
+                      <span class="view-btn-title">Front View</span>
+                      <span class="view-btn-sub">Face Player (Moonwalk)</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="runner-view-hint">
+                  Choose default rear chase or front view facing the camera for this runner. Gameplay controls stay the same.
+                </div>
+              </div>
+
               <div class="showroom-action-footer">
                 <button id="char-action-btn" class="btn btn-action equip">
                   ⚡ EQUIP RUNNER
@@ -481,10 +508,10 @@
               </div>
               <div class="running-style-control-col" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                 <select id="setting-running-style" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
-                  <option value="CLASSIC" selected>Classic (Default)</option>
-                  <option value="REVERSE">Reverse / Moonwalk</option>
+                  <option value="CLASSIC" selected>Classic (Default / Rear View)</option>
+                  <option value="REVERSE">Reverse / Moonwalk (Front View)</option>
                 </select>
-                <span id="setting-running-style-badge" class="quality-resolved-badge" style="background: rgba(0, 176, 255, 0.18); border-color: rgba(0, 176, 255, 0.4); color: #00e5ff; font-size: 0.65rem; padding: 2px 6px;">🏃 Rear Chase</span>
+                <span id="setting-running-style-badge" class="quality-resolved-badge" style="background: rgba(0, 176, 255, 0.18); border-color: rgba(0, 176, 255, 0.4); color: #00e5ff; font-size: 0.65rem; padding: 2px 6px;">🏃 Rear Chase (Default)</span>
               </div>
             </div>
             <div class="setting-row checkbox-row">

@@ -1,6 +1,8 @@
 import { SoundManager } from '../audio/SoundManager';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { GraphicsManager, GraphicsPreset, QualityConfig } from '../scene/GraphicsManager';
+import { CharacterModel, RunningStyle } from '../player/CharacterModel';
+import { ProgressionManager } from '../progression/ProgressionManager';
 
 export class SettingsModal {
   private element: HTMLElement;
@@ -152,14 +154,21 @@ export class SettingsModal {
       this.runningStyleSelect.value = savedStyle;
       this.updateRunningStyleBadge(savedStyle);
       this.runningStyleSelect.addEventListener('change', () => {
-        const style = this.runningStyleSelect!.value;
+        const style = this.runningStyleSelect!.value as RunningStyle;
         localStorage.setItem('metro_running_style', style);
+        const equippedChar = ProgressionManager.getInstance().getSelectedCharacter();
+        CharacterModel.setRunningStyleForCharacter(equippedChar, style);
         this.updateRunningStyleBadge(style);
         EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, style);
       });
     }
 
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
+
+    // Sync running style when changed from Runner section or external components
+    EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, () => {
+      this.refreshRunningStyleUI();
+    });
 
     // Update badge when adaptive controller shifts quality in real time
     EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
@@ -192,12 +201,12 @@ export class SettingsModal {
   private updateRunningStyleBadge(style: string): void {
     if (this.runningStyleBadgeEl) {
       if (style === 'REVERSE') {
-        this.runningStyleBadgeEl.textContent = '🕺 Facing Player';
+        this.runningStyleBadgeEl.textContent = '🕺 Facing Player (Front)';
         this.runningStyleBadgeEl.style.color = '#ff9100';
         this.runningStyleBadgeEl.style.borderColor = 'rgba(255, 145, 0, 0.4)';
         this.runningStyleBadgeEl.style.background = 'rgba(255, 145, 0, 0.18)';
       } else {
-        this.runningStyleBadgeEl.textContent = '🏃 Rear Chase';
+        this.runningStyleBadgeEl.textContent = '🏃 Rear Chase (Default)';
         this.runningStyleBadgeEl.style.color = '#00e5ff';
         this.runningStyleBadgeEl.style.borderColor = 'rgba(0, 176, 255, 0.4)';
         this.runningStyleBadgeEl.style.background = 'rgba(0, 176, 255, 0.18)';
