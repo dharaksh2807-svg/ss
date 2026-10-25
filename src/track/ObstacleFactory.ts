@@ -402,9 +402,12 @@ export class ObstacleFactory {
 
     if (v === 0) {
       // Variant 0: Standard Striped Rail Hurdle (A-frame legs, dual rails, amber beacons)
-      // 1. Primary cross plank (Yellow/Black chevrons)
-      const barH = 0.52;
-      const barY = 0.78;
+      // Vertical height increased by ~35% (1.39m -> 1.88m) for enhanced camera recognition
+      const STRIPED_BARRIER_HEIGHT_SCALE = 1.35;
+
+      // 1. Primary cross plank (Yellow/Black chevrons, extended proportionally upward)
+      const barH = 0.52 * STRIPED_BARRIER_HEIGHT_SCALE; // 0.70m
+      const barY = 0.52 + barH * 0.5; // 0.87m (ground clearance preserved, bottom remains at 0.52m)
       const barGeo = new THREE.BoxGeometry(laneW, barH, 0.20);
       const bar = new THREE.Mesh(barGeo, barrierMat);
       bar.position.set(0, barY, 0);
@@ -426,23 +429,25 @@ export class ObstacleFactory {
       lowerBar.castShadow = true;
       group.add(lowerBar);
 
-      // 3. Heavy-duty cast-iron A-Frame support legs
-      const legGeo = new THREE.BoxGeometry(0.12, 1.20, 0.12);
+      // 3. Heavy-duty cast-iron A-Frame support legs (extended proportionally upward to 1.62m)
+      const legHeight = 1.20 * STRIPED_BARRIER_HEIGHT_SCALE; // 1.62m
+      const legGeo = new THREE.BoxGeometry(0.12, legHeight, 0.12);
       const footGeo = new THREE.BoxGeometry(0.24, 0.06, 0.72);
+      const legCenterY = 0.60 * STRIPED_BARRIER_HEIGHT_SCALE; // 0.81m
 
       [-laneW * 0.45, laneW * 0.45].forEach((xPos) => {
         // Slanted A-frame legs
         const legFront = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legFront.rotation.z = xPos < 0 ? 0.05 : -0.05;
         legFront.rotation.x = 0.18;
-        legFront.position.set(xPos, 0.60, 0);
+        legFront.position.set(xPos, legCenterY, 0);
         legFront.castShadow = true;
         group.add(legFront);
 
         const legRear = new THREE.Mesh(legGeo, this.barrierCastIronMat);
         legRear.rotation.z = xPos < 0 ? 0.05 : -0.05;
         legRear.rotation.x = -0.18;
-        legRear.position.set(xPos, 0.60, 0);
+        legRear.position.set(xPos, legCenterY, 0);
         legRear.castShadow = true;
         group.add(legRear);
 
@@ -459,11 +464,11 @@ export class ObstacleFactory {
 
         // Top amber strobe caution beacon
         const beaconBase = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.06, 12), this.barrierCastIronMat);
-        beaconBase.position.set(xPos, 1.27, 0);
+        beaconBase.position.set(xPos, 1.27 * STRIPED_BARRIER_HEIGHT_SCALE, 0);
         group.add(beaconBase);
 
         const beaconLens = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), this.beaconAmberMat);
-        beaconLens.position.set(xPos, 1.33, 0);
+        beaconLens.position.set(xPos, 1.35 * STRIPED_BARRIER_HEIGHT_SCALE, 0);
         group.add(beaconLens);
       });
 
