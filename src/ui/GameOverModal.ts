@@ -2,11 +2,13 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { GameMode } from '../progression/ProgressionTypes';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
 
 export class GameOverModal {
   private element: HTMLElement;
   private progression = ProgressionManager.getInstance();
   private countUpInterval: any = null;
+  private onReplayCallback: (() => void) | null = null;
 
   constructor() {
     let el = document.getElementById('game-over-modal');
@@ -92,6 +94,26 @@ export class GameOverModal {
           </div>
         </div>
 
+        <!-- Crash Analysis & Instant Replay Card -->
+        <div id="game-over-crash-card" class="game-over-crash-card hidden">
+          <div class="crash-card-header">
+            <span id="game-over-crash-icon" class="crash-card-icon">💥</span>
+            <div class="crash-card-titles">
+              <span class="crash-card-tag">CRASH ANALYSIS</span>
+              <h3 id="game-over-crash-title" class="crash-card-headline">FATAL COLLISION</h3>
+            </div>
+          </div>
+          <p id="game-over-crash-desc" class="crash-card-desc">Collision on the rails.</p>
+          <div class="crash-card-tip-box">
+            <span class="tip-bulb">💡</span>
+            <span id="game-over-crash-tip" class="crash-card-tip">Stay centered and switch lanes early!</span>
+          </div>
+          <button id="game-over-replay-btn" class="arcade-btn replay-action-btn" aria-label="Watch Instant Slow-Motion Replay">
+            <span class="btn-icon">📹</span>
+            <span>WATCH INSTANT REPLAY (SLOW-MO)</span>
+          </button>
+        </div>
+
         <!-- Completed Missions Claim Area -->
         <div id="game-over-missions-container" class="game-over-rewards-area custom-scroll">
           <!-- Dynamically populated completed missions / rewards -->
@@ -157,6 +179,15 @@ export class GameOverModal {
       this.hide();
       EventBus.getInstance().emit('OPEN_CHARACTERS', 'START');
     });
+
+    const replayBtn = this.element.querySelector('#game-over-replay-btn');
+    replayBtn?.addEventListener('click', () => {
+      if (this.onReplayCallback) {
+        this.onReplayCallback();
+      } else {
+        EventBus.getInstance().emit('REQUEST_INSTANT_REPLAY');
+      }
+    });
   }
 
   public show(
@@ -164,8 +195,10 @@ export class GameOverModal {
     coins: number,
     distanceMeters: number,
     mode: GameMode = 'NORMAL',
-    modeResult?: { title?: string; subtitle?: string; bonusCoins?: number }
+    modeResult?: { title?: string; subtitle?: string; bonusCoins?: number },
+    onReplay?: () => void
   ): void {
+    this.onReplayCallback = onReplay || null;
     let highScore = 0;
     let isNewRecord = false;
     const stats = this.progression.getState().lifetimeStats;
@@ -338,6 +371,38 @@ export class GameOverModal {
 
     // Render Claimable Missions Section
     this.renderCompletedMissions();
+
+    // Populate Crash Analysis Card & Instant Replay Action
+    const crashCard = this.element.querySelector('#game-over-crash-card') as HTMLElement;
+    const crashAnalysis = CrashReplayManager.getInstance().getActiveAnalysis();
+    const isSpecialVictory = modeResult?.title === 'VAULT CLEARED! 🪙' || modeResult?.title === "TIME'S UP! ⏱️";
+
+    if (crashCard && crashAnalysis && !isSpecialVictory) {
+      const expl = crashAnalysis.explanation;
+      const iconEl = crashCard.querySelector('#game-over-crash-icon');
+      const titleEl = crashCard.querySelector('#game-over-crash-title');
+      const descEl = crashCard.querySelector('#game-over-crash-desc');
+      const tipEl = crashCard.querySelector('#game-over-crash-tip');
+      const replayBtn = crashCard.querySelector('#game-over-replay-btn') as HTMLElement;
+
+      if (iconEl) iconEl.textContent = expl.icon;
+      if (titleEl) titleEl.textContent = expl.headline;
+      if (descEl) descEl.textContent = expl.explanation;
+      if (tipEl) tipEl.textContent = expl.proTip;
+
+      // Show replay button only if sufficient replay data is available
+      if (replayBtn) {
+        if (CrashReplayManager.getInstance().hasReplayData()) {
+          replayBtn.style.display = 'flex';
+        } else {
+          replayBtn.style.display = 'none';
+        }
+      }
+
+      crashCard.classList.remove('hidden');
+    } else if (crashCard) {
+      crashCard.classList.add('hidden');
+    }
 
     this.element.classList.remove('hidden');
     this.element.focus();

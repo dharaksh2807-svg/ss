@@ -468,7 +468,7 @@ export class HUD {
     }
 
     // Adapt layout style when 3 or more are active simultaneously
-    this.powerupContainer.classList.toggle('powerup-multi-3', activeKeys.size >= 3);
+    this.powerupContainer?.classList?.toggle?.('powerup-multi-3', activeKeys.size >= 3);
   }
 
   public showFeedbackBadge(text: string, type: 'streak' | 'precision' | 'nearmiss' = 'precision'): void {
@@ -545,7 +545,7 @@ export class HUD {
     }
     this.activePowerupDOMs.clear();
     this.powerupContainer.innerHTML = '';
-    this.powerupContainer.classList.remove('powerup-multi-3');
+    this.powerupContainer?.classList?.remove?.('powerup-multi-3');
     if (this.pickupToastEl) {
       this.pickupToastEl.classList.add('hidden');
     }

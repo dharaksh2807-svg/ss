@@ -19,6 +19,7 @@ import { EnvironmentManager, EnvironmentId, EnvironmentTheme } from '../environm
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { RooftopRoutePlanner, RooftopRoutePlan, RooftopRouteArchetype } from './RooftopRoutePlanner';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -1499,6 +1500,16 @@ export class TrackManager {
               if (this.chaser) {
                 this.chaser.setChaseState('CAPTURE');
               }
+              CrashReplayManager.getInstance().recordFatalCrash({
+                reason: 'CHASER_CAPTURE',
+                obstacle: obs,
+                diagnostic,
+                player,
+                chaser: this.chaser,
+                isFrontal: false,
+                isFlankContact: isFlankContact,
+                isGlance: isGlance
+              });
               player.crash('CHASER_CAPTURE');
               return;
 
@@ -1514,6 +1525,17 @@ export class TrackManager {
               if (!fatal) {
                 obs.active = false;
                 chunk.group.remove(obs.group);
+              } else {
+                CrashReplayManager.getInstance().recordFatalCrash({
+                  reason: fatalReason,
+                  obstacle: obs,
+                  diagnostic,
+                  player,
+                  chaser: this.chaser,
+                  isFrontal: resolution.isFrontal,
+                  isFlankContact,
+                  isGlance
+                });
               }
               return;
           }

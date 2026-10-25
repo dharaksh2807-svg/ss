@@ -965,4 +965,8 @@ export class Player {
   public getSlideProgress(): number {
     return this.isSliding ? 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION) : 0;
   }
+
+  public getCharacterModel(): CharacterModel {
+    return this.model;
+  }
 }

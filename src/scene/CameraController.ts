@@ -14,7 +14,7 @@ export class CameraController {
   private landingDipOffset = 0;
 
   // Camera Preferences: 'CLASSIC' (rear chase) or 'CHARACTER_FOCUS' (expressive 3/4 side profile)
-  private cameraMode: CameraMode = 'CHARACTER_FOCUS';
+  private cameraMode: CameraMode = 'CLASSIC';
   private currentLateralOffset: number = 0;
   private targetLateralOffset: number = 0;
 
@@ -38,11 +38,11 @@ export class CameraController {
       ? window.innerWidth / window.innerHeight
       : 16 / 9;
 
-    // Near plane set to 0.22 to prevent near-clipping on adjacent trains and overhead structures
+    // Near plane set to 0.2 to prevent near-clipping on adjacent trains and overhead structures
     this.camera = new THREE.PerspectiveCamera(
       CONSTANTS.CAMERA_FOV,
       aspect,
-      0.22,
+      0.2,
       600
     );
 

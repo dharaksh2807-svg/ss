@@ -7,6 +7,7 @@ import { WorldScene } from '../scene/WorldScene';
 import { CameraController } from '../scene/CameraController';
 import { Player } from '../player/Player';
 import { TrackManager } from '../track/TrackManager';
+import { ObstacleInstance } from '../track/ObstacleFactory';
 import { HUD } from '../ui/HUD';
 import { StartScreen } from '../ui/StartScreen';
 import { PauseModal } from '../ui/PauseModal';
@@ -38,8 +39,10 @@ import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/Env
 import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
 import { ReviveManager } from '../revive/ReviveManager';
 import { ReviveModal } from '../ui/ReviveModal';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { ReplayHUD } from '../ui/ReplayHUD';
 
-export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER';
+export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -71,6 +74,8 @@ export class Game {
   private devTestArena: DevTestArena;
   private reviveManager: ReviveManager;
   private reviveModal: ReviveModal;
+  private replayHUD: ReplayHUD;
+  private crashReplayManager: CrashReplayManager = CrashReplayManager.getInstance();
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -128,6 +133,7 @@ export class Game {
     this.environmentSelectModal = new EnvironmentSelectModal();
     this.reviveManager = ReviveManager.getInstance();
     this.reviveModal = new ReviveModal();
+    this.replayHUD = new ReplayHUD();
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
@@ -304,6 +310,10 @@ export class Game {
       this.handleFatalCrash(reason || 'CRASH');
     });
 
+    bus.on('REQUEST_INSTANT_REPLAY', () => {
+      this.startInstantReplay();
+    });
+
     // Environment District & Transitions
     bus.on('ENVIRONMENT_PREFERENCE_CHANGED', (pref: string) => {
       if (this.lifecycleState === 'MENU') {
@@ -397,6 +407,8 @@ export class Game {
     this.openingSequence.start(isRetry);
 
     this.reviveManager.resetRun();
+    this.crashReplayManager.reset();
+    this.replayHUD.hide();
     this.reviveModal.hide();
     this.startScreen.hide();
     this.pauseModal.hide();
@@ -637,7 +649,8 @@ export class Game {
         this.coinsCount,
         this.player.distanceTraveled,
         this.activeGameMode,
-        resultMeta
+        resultMeta,
+        () => this.startInstantReplay()
       );
     }, 1100);
   }
@@ -719,11 +732,36 @@ export class Game {
 
         // 7. Update lighting target to center around player and update speed lines
         this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
+
+        // 8. Record replay snapshot into bounded circular buffer
+        const nearbyObstacles: ObstacleInstance[] = [];
+        for (let i = 0; i < this.trackManager.chunks.length; i++) {
+          const chunk = this.trackManager.chunks[i];
+          for (let j = 0; j < chunk.obstacles.length; j++) {
+            if (chunk.obstacles[j].active) {
+              nearbyObstacles.push(chunk.obstacles[j]);
+            }
+          }
+        }
+        this.crashReplayManager.recordFrame(
+          this.player,
+          this.cameraController,
+          nearbyObstacles,
+          this.chaser,
+          now / 1000
+        );
       }
     } else if (this.lifecycleState === 'GAMEOVER') {
       // Update tumble animation
       this.player.update(dt);
       this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
+    } else if (this.lifecycleState === 'REPLAY') {
+      this.crashReplayManager.updatePlayback(effectiveDt, this.player, this.cameraController, this.chaser);
+      this.replayHUD.update(
+        this.crashReplayManager.getPlaybackProgress(),
+        this.crashReplayManager.getPlaybackElapsed(),
+        this.crashReplayManager.getPlaybackDuration()
+      );
     } else if (this.lifecycleState === 'MENU') {
       // Idle scene: slow gentle hover & subtle sway facing camera
       this.player.position.y = CONSTANTS.PLAYER_BASE_Y + Math.sin(now * 0.003) * 0.08;
@@ -732,15 +770,17 @@ export class Game {
     }
 
     // Camera follow update with dynamic speed-based FOV and coordinated elevation tracking
-    this.cameraController.update(
-      this.player.position,
-      dt,
-      now / 1000,
-      this.player.speed,
-      this.player.groundY,
-      this.player.isSliding,
-      this.player.isTunnelEnclosed
-    );
+    if (this.lifecycleState !== 'REPLAY') {
+      this.cameraController.update(
+        this.player.position,
+        dt,
+        now / 1000,
+        this.player.speed,
+        this.player.groundY,
+        this.player.isSliding,
+        this.player.isTunnelEnclosed
+      );
+    }
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();
@@ -1009,11 +1049,22 @@ export class Game {
   }
 
   private handleFatalCrash(reason: string): void {
-    if (this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'REVIVE_OFFER') return;
+    if (this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'REVIVE_OFFER' || this.lifecycleState === 'REPLAY') return;
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       return;
     }
+
+    // Ensure fatal crash analysis is recorded if not already recorded directly from TrackManager
+    if (!this.crashReplayManager.getActiveAnalysis()) {
+      this.crashReplayManager.recordFatalCrash({
+        reason,
+        player: this.player,
+        chaser: this.chaser
+      });
+    }
+
+    const explanation = this.crashReplayManager.getActiveExplanation();
 
     if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
       this.lifecycleState = 'REVIVE_OFFER';
@@ -1026,7 +1077,8 @@ export class Game {
         this.score,
         this.coinsCount,
         () => this.onReviveAccepted(),
-        () => this.onReviveDeclined(reason)
+        () => this.onReviveDeclined(reason),
+        explanation
       );
     } else {
       this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
@@ -1039,6 +1091,9 @@ export class Game {
       this.handleGameOver('CRASH');
       return;
     }
+
+    // 0. Reset crash replay state for fresh clean run life
+    this.crashReplayManager.reset();
 
     // 1. Safe track respawn & obstacle clearance
     const safeLane = this.trackManager.prepareSafeReviveRespawn(this.player);
@@ -1064,5 +1119,49 @@ export class Game {
   private onReviveDeclined(reason: string = 'CRASH'): void {
     this.reviveManager.cancelOffer();
     this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
+  }
+
+  public startInstantReplay(): void {
+    if (!this.crashReplayManager.hasReplayData()) return;
+    const explanation = this.crashReplayManager.getActiveExplanation();
+    if (!explanation) return;
+
+    this.lifecycleState = 'REPLAY';
+    this.gameOverModal.hide();
+    this.crashReplayManager.startPlayback(this.player, this.cameraController);
+    this.replayHUD.show(
+      explanation,
+      () => this.exitInstantReplay(),
+      () => this.replayAgain()
+    );
+  }
+
+  public exitInstantReplay(): void {
+    if (this.lifecycleState !== 'REPLAY') return;
+    this.crashReplayManager.stopPlayback(this.player, this.cameraController);
+    this.replayHUD.hide();
+    this.lifecycleState = 'GAMEOVER';
+    this.gameOverModal.show(
+      this.score,
+      this.coinsCount,
+      this.player.distanceTraveled,
+      this.activeGameMode,
+      undefined,
+      () => this.startInstantReplay()
+    );
+  }
+
+  public replayAgain(): void {
+    if (this.lifecycleState !== 'REPLAY') return;
+    this.crashReplayManager.startPlayback(this.player, this.cameraController);
+    this.replayHUD.update(0, 0, this.crashReplayManager.getPlaybackDuration());
+  }
+
+  public getCrashReplayManager(): CrashReplayManager {
+    return this.crashReplayManager;
+  }
+
+  public getReplayHUD(): ReplayHUD {
+    return this.replayHUD;
   }
 }
