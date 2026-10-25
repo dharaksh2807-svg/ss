@@ -110,7 +110,7 @@ export class ShopModal {
   public hide(): void {
     if (this.element.classList.contains('hidden')) return;
     this.element.classList.add('hidden');
-    const prev = this.previousScreen;
+    const prev = this.previousScreen || 'START';
     this.previousScreen = null;
     if (prev === 'START') {
       this.eventBus.emit('GO_TO_MENU');
@@ -184,16 +184,52 @@ export class ShopModal {
     const coins = this.upgradeManager.getCoins();
     const isModiUnlocked = this.progression.isCharacterUnlocked('char_modi');
     const isModiEquipped = this.progression.getSelectedCharacter() === 'char_modi';
+    const isRahulUnlocked = this.progression.isCharacterUnlocked('char_rahul_gandhi');
+    const isRahulEquipped = this.progression.getSelectedCharacter() === 'char_rahul_gandhi';
 
     container.innerHTML = `
-      <!-- Legendary Character Spotlight Banner -->
+      <!-- Legendary Character Spotlight Banner: Rahul Gandhi -->
+      <div class="featured-hero-banner legendary-featured-banner rahul-featured-banner">
+        <div class="featured-glow-fx emerald-shimmer"></div>
+        <div class="featured-char-portrait">
+          <img src="/characters/rahul_gandhi/three_quarter.png" alt="Rahul Gandhi" class="featured-hero-img" />
+        </div>
+        <div class="featured-info">
+          <span class="badge-pill legendary-pill">👑 NEW PLAYABLE RUNNER</span>
+          <h3 class="featured-title">RAHUL GANDHI</h3>
+          <p class="featured-desc">The Determined Sprinter: Signature crisp white shirt, navy trousers, and sports shoes with authentic 3D animations.</p>
+          <div class="featured-pricing">
+            <span class="new-price gold-price">100,000 🪙</span>
+            <span class="discount-badge gold-badge">5 FREE TRIALS</span>
+          </div>
+          <div class="trial-counter-pill">Free Trials Remaining: ${this.progression.getRahulTrialsRemaining()}/5</div>
+        </div>
+        <div class="featured-banner-actions">
+          ${isRahulEquipped 
+            ? `<button class="arcade-btn btn-equipped" disabled>${isRahulUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${this.progression.getRahulTrialsRemaining()} LEFT)`}</button>`
+            : isRahulUnlocked
+            ? `<button class="arcade-btn btn-primary" data-equip-char="char_rahul_gandhi">⚡ EQUIP</button>`
+            : (this.progression.getRahulTrialsRemaining() > 0)
+            ? `<button class="arcade-btn btn-primary" data-trial-char="char_rahul_gandhi">⚡ TRY FREE</button>
+               <button class="arcade-btn ${coins >= 100000 ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="char_rahul_gandhi">
+                 UNLOCK — 100,000 🪙
+               </button>`
+            : `<button class="arcade-btn ${coins >= 100000 ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="char_rahul_gandhi">
+                UNLOCK — 100,000 🪙
+              </button>`
+          }
+          <button class="arcade-btn btn-ghost" data-view-char="char_rahul_gandhi">🔍 3D PREVIEW</button>
+        </div>
+      </div>
+
+      <!-- Legendary Character Spotlight Banner: Narendra Modi -->
       <div class="featured-hero-banner legendary-featured-banner">
         <div class="featured-glow-fx gold-shimmer"></div>
         <div class="featured-char-portrait">
           <img src="/characters/modi/three_quarter.png" alt="Narendra Modi" class="featured-hero-img" />
         </div>
         <div class="featured-info">
-          <span class="badge-pill legendary-pill">👑 NEW LEGENDARY RUNNER</span>
+          <span class="badge-pill legendary-pill">👑 LEGENDARY RUNNER</span>
           <h3 class="featured-title">NARENDRA MODI</h3>
           <p class="featured-desc">The Statesman Runner: Traditional tailored kurta, midnight-navy waistcoat, and agile runners with full 3D skeletal animations.</p>
           <div class="featured-pricing">
@@ -430,6 +466,7 @@ export class ShopModal {
       const cost = char.unlock.cost || 0;
       const canAfford = coins >= cost;
       const isLegendary = char.rarity === 'LEGENDARY';
+      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
 
       const card = document.createElement('div');
 
@@ -450,19 +487,20 @@ export class ShopModal {
             </div>
             <div class="item-sub legendary-sub">${char.title}</div>
             <div class="item-bio-snippet">${char.bio}</div>
+            ${!isUnlocked && freeRuns > 0 ? `<div class="trial-counter-pill">Free Trials Remaining: ${freeRuns}/5</div>` : ''}
           </div>
           <div class="item-action-area legendary-action-area">
             ${isEquipped 
-              ? `<button class="arcade-btn btn-equipped" disabled>${isUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${this.progression.getModiFreeRuns()} LEFT)`}</button>`
+              ? `<button class="arcade-btn btn-equipped" disabled>${isUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${freeRuns} LEFT)`}</button>`
               : isUnlocked
               ? `<button class="arcade-btn btn-primary" data-equip-char="${char.id}">⚡ EQUIP</button>`
-              : (char.id === 'char_modi' && this.progression.getModiFreeRuns() > 0)
-              ? `<button class="arcade-btn btn-primary" data-trial-char="${char.id}">⚡ FREE RUN (${this.progression.getModiFreeRuns()} LEFT)</button>
+              : (freeRuns > 0)
+              ? `<button class="arcade-btn btn-primary" data-trial-char="${char.id}">⚡ TRY FREE</button>
                  <button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
-                   ${cost.toLocaleString()} 🪙 BUY
+                   UNLOCK — ${cost.toLocaleString()} 🪙
                  </button>`
               : `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
-                  ${cost.toLocaleString()} 🪙 BUY
+                  UNLOCK — ${cost.toLocaleString()} 🪙
                 </button>`
             }
             <button class="arcade-btn btn-secondary" data-view-char="${char.id}">🔍 3D PREVIEW</button>

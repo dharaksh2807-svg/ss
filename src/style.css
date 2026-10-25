@@ -5765,14 +5765,19 @@ kbd {
   margin-top: 14px;
 }
 
-/* Featured Spotlight Banner for Legendary Narendra Modi */
+/* Featured Spotlight Banner for Legendary Narendra Modi & Rahul Gandhi */
 .legendary-featured-banner {
   background: linear-gradient(135deg, rgba(40, 28, 14, 0.95) 0%, rgba(20, 22, 38, 0.95) 60%, rgba(14, 28, 48, 0.95) 100%) !important;
   border: 1.5px solid rgba(255, 180, 0, 0.5) !important;
   box-shadow: 0 10px 36px rgba(255, 170, 0, 0.18), inset 0 1px 0 rgba(255, 220, 100, 0.3) !important;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  padding: 16px 20px !important;
+}
+
+.legendary-featured-banner .featured-title {
+  font-size: 1.4rem !important;
 }
 
 .featured-char-portrait {
@@ -5815,6 +5820,42 @@ kbd {
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* Featured Spotlight Banner for Legendary Rahul Gandhi */
+.rahul-featured-banner {
+  background: linear-gradient(135deg, rgba(14, 30, 48, 0.95) 0%, rgba(18, 38, 32, 0.95) 50%, rgba(20, 24, 40, 0.95) 100%) !important;
+  border: 1.5px solid rgba(46, 204, 113, 0.5) !important;
+  box-shadow: 0 10px 36px rgba(46, 204, 113, 0.18), inset 0 1px 0 rgba(100, 255, 180, 0.3) !important;
+}
+
+.emerald-shimmer {
+  background: radial-gradient(circle, rgba(46, 204, 113, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.trial-counter-pill {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(33, 150, 243, 0.15);
+  color: #64b5f6;
+  border: 1px solid rgba(33, 150, 243, 0.35);
+  text-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
+.trial-tag-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.4);
 }
 
 /* 3D Showroom View Angle Buttons Bar */

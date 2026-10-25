@@ -333,7 +333,7 @@ export class CharacterSelectModal {
         const pauseModalEl = document.getElementById('pause-modal');
         if (pauseModalEl) pauseModalEl.classList.remove('hidden');
       } else if (this.previousScreen === 'SHOP') {
-        EventBus.getInstance().emit('OPEN_SHOP');
+        EventBus.getInstance().emit('OPEN_SHOP', 'START');
       }
     }
   }
@@ -500,15 +500,15 @@ export class CharacterSelectModal {
 
     if (!isCharUnlocked) {
       // Character is locked
-      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
-      if (modiFreeRuns > 0) {
+      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
+      if (freeRuns > 0) {
         if (char.id === equippedCharId) {
-          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${modiFreeRuns} LEFT)`;
+          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${freeRuns} LEFT)`;
           this.actionBtn.className = 'btn btn-action equipped';
           this.actionBtn.disabled = true;
           return;
         }
-        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${modiFreeRuns} LEFT)`;
+        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${freeRuns} LEFT)`;
         this.actionBtn.className = 'btn btn-action equip';
         this.actionBtn.disabled = false;
         return;
@@ -559,8 +559,8 @@ export class CharacterSelectModal {
     const isOutfitUnlocked = this.progression.isOutfitUnlocked(char.id, selectedOutfit.id);
 
     if (!isCharUnlocked) {
-      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
-      if (modiFreeRuns > 0) {
+      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
+      if (freeRuns > 0) {
         const res = this.progression.equipCharacter(char.id, selectedOutfit.id);
         if (res.success) {
           this.updateCharacterView();

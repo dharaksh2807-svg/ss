@@ -56,6 +56,10 @@ export class ProgressionManager {
     return ProgressionManager.instance;
   }
 
+  public load(): void {
+    this.state = this.loadState();
+  }
+
   public resetAll(): void {
     this.state = this.getDefaultState();
     this.saveState();
@@ -155,6 +159,8 @@ export class ProgressionManager {
       selectedBoard: 'board_urban_glide',
       hoverboardCharges: 5,
       modiFreeRuns: 5,
+      rahulTrialsRemaining: 5,
+      rahulFreeRuns: 5,
       keys: 3,
       headstartBoosters: 2,
       scoreBoosters: 2
@@ -234,6 +240,12 @@ export class ProgressionManager {
             }
             if (parsed.modiFreeRuns === undefined) {
               parsed.modiFreeRuns = 5;
+            }
+            if (parsed.rahulTrialsRemaining === undefined) {
+              parsed.rahulTrialsRemaining = parsed.rahulFreeRuns ?? 5;
+            }
+            if (parsed.rahulFreeRuns === undefined) {
+              parsed.rahulFreeRuns = parsed.rahulTrialsRemaining;
             }
             if (!parsed.unlockedBoards || parsed.unlockedBoards.includes('board_default')) {
               parsed.unlockedBoards = Array.from(new Set(['board_urban_glide', ...(parsed.unlockedBoards || [])]))
@@ -403,6 +415,7 @@ export class ProgressionManager {
   }
 
   private onRunStarted(): void {
+    if (this.runActive) return;
     this.runActive = true;
     this.runDistance = 0;
     this.runCoins = 0;
@@ -422,6 +435,16 @@ export class ProgressionManager {
 
     this.state.lifetimeStats.totalRuns++;
     this.updateAchievement('ach_runs', this.state.lifetimeStats.totalRuns);
+
+    // Free trial run deduction for Rahul Gandhi when gameplay starts while not permanently owned
+    const selectedChar = this.normalizeCharacterId(this.state.selectedCharacter);
+    if (selectedChar === 'char_rahul_gandhi' && !this.isCharacterUnlocked('char_rahul_gandhi')) {
+      const current = this.getRahulTrialsRemaining();
+      const remaining = Math.max(0, current - 1);
+      this.state.rahulTrialsRemaining = remaining;
+      this.state.rahulFreeRuns = remaining;
+    }
+
     this.saveState();
   }
 
@@ -476,6 +499,15 @@ export class ProgressionManager {
       const remaining = Math.max(0, current - 1);
       this.state.modiFreeRuns = remaining;
       if (remaining === 0) {
+        this.state.selectedCharacter = 'char_jax';
+        this.eventBus.emit('CHARACTER_EQUIPPED', { charId: 'char_jax', outfitId: 'jax_classic' });
+      }
+    }
+
+    // Revert selection for Rahul Gandhi if all trials are exhausted and not permanently owned
+    const finishedChar = this.normalizeCharacterId(this.state.selectedCharacter);
+    if (finishedChar === 'char_rahul_gandhi' && !this.isCharacterUnlocked('char_rahul_gandhi')) {
+      if (this.getRahulTrialsRemaining() <= 0) {
         this.state.selectedCharacter = 'char_jax';
         this.eventBus.emit('CHARACTER_EQUIPPED', { charId: 'char_jax', outfitId: 'jax_classic' });
       }
@@ -783,66 +815,88 @@ export class ProgressionManager {
     return this.state.selectedCharacter || 'char_jax';
   }
 
+  public normalizeCharacterId(charId: string): string {
+    if (!charId) return 'char_jax';
+    if (charId === 'rahul_gandhi' || charId === 'char_rahul_gandhi') return 'char_rahul_gandhi';
+    if (charId === 'modi' || charId === 'char_modi') return 'char_modi';
+    return charId;
+  }
+
   public isCharacterUnlocked(charId: string): boolean {
-    if (charId === 'char_jax') return true;
-    return this.state.unlockedCharacters.includes(charId);
+    const norm = this.normalizeCharacterId(charId);
+    if (norm === 'char_jax') return true;
+    return this.state.unlockedCharacters.includes(norm) || this.state.unlockedCharacters.includes(charId);
   }
 
   public unlockCharacter(charId: string): boolean {
-    if (!this.state.unlockedCharacters.includes(charId)) {
+    const norm = this.normalizeCharacterId(charId);
+    let changed = false;
+    if (!this.state.unlockedCharacters.includes(norm)) {
+      this.state.unlockedCharacters.push(norm);
+      changed = true;
+    }
+    if (charId !== norm && !this.state.unlockedCharacters.includes(charId)) {
       this.state.unlockedCharacters.push(charId);
+      changed = true;
+    }
+
+    if (changed) {
       // Auto-unlock default outfit for this character
-      const charDef = getCharacterById(charId);
+      const charDef = getCharacterById(norm);
       if (charDef) {
-        if (!this.state.unlockedOutfits[charId]) {
-          this.state.unlockedOutfits[charId] = [];
+        if (!this.state.unlockedOutfits[norm]) {
+          this.state.unlockedOutfits[norm] = [];
         }
-        if (!this.state.unlockedOutfits[charId].includes(charDef.defaultOutfitId)) {
-          this.state.unlockedOutfits[charId].push(charDef.defaultOutfitId);
+        if (!this.state.unlockedOutfits[norm].includes(charDef.defaultOutfitId)) {
+          this.state.unlockedOutfits[norm].push(charDef.defaultOutfitId);
         }
-        this.state.selectedOutfits[charId] = charDef.defaultOutfitId;
+        this.state.selectedOutfits[norm] = charDef.defaultOutfitId;
       }
       this.saveState();
-      this.eventBus.emit('CHARACTER_UNLOCKED', charId);
+      this.eventBus.emit('CHARACTER_UNLOCKED', norm);
       return true;
     }
     return false;
   }
 
   public getUnlockedOutfits(charId: string): string[] {
-    const list = this.state.unlockedOutfits[charId];
+    const norm = this.normalizeCharacterId(charId);
+    const list = this.state.unlockedOutfits[norm];
     if (!list || list.length === 0) {
-      const charDef = getCharacterById(charId);
+      const charDef = getCharacterById(norm);
       return charDef ? [charDef.defaultOutfitId] : ['jax_classic'];
     }
     return [...list];
   }
 
   public getSelectedOutfit(charId: string): string {
-    if (this.state.selectedOutfits[charId]) {
-      return this.state.selectedOutfits[charId];
+    const norm = this.normalizeCharacterId(charId);
+    if (this.state.selectedOutfits[norm]) {
+      return this.state.selectedOutfits[norm];
     }
-    const charDef = getCharacterById(charId);
+    const charDef = getCharacterById(norm);
     return charDef ? charDef.defaultOutfitId : 'jax_classic';
   }
 
   public isOutfitUnlocked(charId: string, outfitId: string): boolean {
-    const charDef = getCharacterById(charId);
+    const norm = this.normalizeCharacterId(charId);
+    const charDef = getCharacterById(norm);
     if (charDef && charDef.defaultOutfitId === outfitId) {
-      return this.isCharacterUnlocked(charId);
+      return this.isCharacterUnlocked(norm);
     }
-    const list = this.state.unlockedOutfits[charId] || [];
+    const list = this.state.unlockedOutfits[norm] || [];
     return list.includes(outfitId);
   }
 
   public unlockOutfit(charId: string, outfitId: string): boolean {
-    if (!this.state.unlockedOutfits[charId]) {
-      this.state.unlockedOutfits[charId] = [];
+    const norm = this.normalizeCharacterId(charId);
+    if (!this.state.unlockedOutfits[norm]) {
+      this.state.unlockedOutfits[norm] = [];
     }
-    if (!this.state.unlockedOutfits[charId].includes(outfitId)) {
-      this.state.unlockedOutfits[charId].push(outfitId);
+    if (!this.state.unlockedOutfits[norm].includes(outfitId)) {
+      this.state.unlockedOutfits[norm].push(outfitId);
       this.saveState();
-      this.eventBus.emit('OUTFIT_UNLOCKED', { charId, outfitId });
+      this.eventBus.emit('OUTFIT_UNLOCKED', { charId: norm, outfitId });
       return true;
     }
     return false;
@@ -857,54 +911,87 @@ export class ProgressionManager {
     this.saveState();
   }
 
+  public getRahulTrialsRemaining(): number {
+    return this.state.rahulTrialsRemaining ?? 5;
+  }
+
+  public getRahulFreeRuns(): number {
+    return this.getRahulTrialsRemaining();
+  }
+
+  public setRahulTrialsRemaining(count: number): void {
+    const clamped = Math.max(0, count);
+    this.state.rahulTrialsRemaining = clamped;
+    this.state.rahulFreeRuns = clamped;
+    this.saveState();
+  }
+
+  public setRahulFreeRuns(count: number): void {
+    this.setRahulTrialsRemaining(count);
+  }
+
+  public getCharacterFreeRuns(charId: string): number {
+    const norm = this.normalizeCharacterId(charId);
+    if (norm === 'char_modi') {
+      return this.getModiFreeRuns();
+    }
+    if (norm === 'char_rahul_gandhi') {
+      return this.getRahulTrialsRemaining();
+    }
+    return 0;
+  }
+
   public equipCharacter(charId: string, outfitId?: string): { success: boolean; message: string } {
-    const isUnlocked = this.isCharacterUnlocked(charId);
-    const hasFreeRuns = charId === 'char_modi' && this.getModiFreeRuns() > 0;
+    const norm = this.normalizeCharacterId(charId);
+    const isUnlocked = this.isCharacterUnlocked(norm);
+    const freeRuns = this.getCharacterFreeRuns(norm);
+    const hasFreeRuns = freeRuns > 0;
     if (!isUnlocked && !hasFreeRuns) {
       return { success: false, message: 'Character is locked' };
     }
 
-    const charDef = getCharacterById(charId);
+    const charDef = getCharacterById(norm);
     if (!charDef) {
       return { success: false, message: 'Character not found' };
     }
 
-    const targetOutfit = outfitId || this.getSelectedOutfit(charId) || charDef.defaultOutfitId;
+    const targetOutfit = outfitId || this.getSelectedOutfit(norm) || charDef.defaultOutfitId;
     if (!isUnlocked && hasFreeRuns) {
-      this.state.selectedCharacter = charId;
+      this.state.selectedCharacter = norm;
       if (!this.state.selectedOutfits) this.state.selectedOutfits = {};
-      this.state.selectedOutfits[charId] = targetOutfit;
+      this.state.selectedOutfits[norm] = targetOutfit;
       this.saveState();
 
-      this.eventBus.emit('CHARACTER_EQUIPPED', { charId, outfitId: targetOutfit });
-      return { success: true, message: `Equipped ${charDef.name}! (${this.getModiFreeRuns()} free runs remaining)` };
+      this.eventBus.emit('CHARACTER_EQUIPPED', { charId: norm, outfitId: targetOutfit });
+      return { success: true, message: `Equipped ${charDef.name}! (${freeRuns} free runs remaining)` };
     }
 
-    if (!this.isOutfitUnlocked(charId, targetOutfit)) {
+    if (!this.isOutfitUnlocked(norm, targetOutfit)) {
       return { success: false, message: 'Outfit is locked' };
     }
 
-    this.state.selectedCharacter = charId;
-    this.state.selectedOutfits[charId] = targetOutfit;
+    this.state.selectedCharacter = norm;
+    this.state.selectedOutfits[norm] = targetOutfit;
     this.saveState();
 
-    this.eventBus.emit('CHARACTER_EQUIPPED', { charId, outfitId: targetOutfit });
+    this.eventBus.emit('CHARACTER_EQUIPPED', { charId: norm, outfitId: targetOutfit });
     return { success: true, message: `Equipped ${charDef.name}!` };
   }
 
   public purchaseCharacter(charId: string): { success: boolean; message: string } {
-    if (this.isCharacterUnlocked(charId)) {
+    const norm = this.normalizeCharacterId(charId);
+    if (this.isCharacterUnlocked(norm)) {
       return { success: false, message: 'Character already owned' };
     }
 
-    const charDef = getCharacterById(charId);
+    const charDef = getCharacterById(norm);
     if (!charDef) {
       return { success: false, message: 'Character not found' };
     }
 
     if (charDef.unlock.type === 'FREE') {
-      this.unlockCharacter(charId);
-      this.equipCharacter(charId);
+      this.unlockCharacter(norm);
+      this.equipCharacter(norm);
       return { success: true, message: `Unlocked ${charDef.name}!` };
     }
 
@@ -921,8 +1008,8 @@ export class ProgressionManager {
         return { success: false, message: 'Transaction failed' };
       }
 
-      this.unlockCharacter(charId);
-      this.equipCharacter(charId);
+      this.unlockCharacter(norm);
+      this.equipCharacter(norm);
       return { success: true, message: `Purchased and equipped ${charDef.name}!` };
     }
 

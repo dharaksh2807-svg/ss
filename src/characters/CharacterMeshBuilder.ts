@@ -531,6 +531,30 @@ export class CharacterMeshBuilder {
       const pocketSquare = new THREE.Mesh(pocketSquareGeo, mats.accentMat);
       pocketSquare.position.set(-0.11, height * 0.72, -topRadius * 0.98);
       spineGroup.add(pocketSquare);
+    } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
+      // RAHUL GANDHI: Signature White Polo Shirt with open collar placket
+      const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.07, 16, 1, true);
+      const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+      collar.position.set(0, height * 0.96, 0);
+      spineGroup.add(collar);
+
+      // Button placket down chest
+      const placketGeo = new THREE.BoxGeometry(0.045, height * 0.45, 0.015);
+      const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
+      placket.position.set(0, height * 0.72, -topRadius * 0.98);
+      spineGroup.add(placket);
+
+      // White collar tips
+      const tipGeo = new THREE.ConeGeometry(0.04, 0.09, 3);
+      tipGeo.rotateZ(0.4);
+      const tipL = new THREE.Mesh(tipGeo, mats.primaryMat);
+      tipL.position.set(-0.08, height * 0.92, -topRadius * 0.99);
+      spineGroup.add(tipL);
+
+      const tipR = new THREE.Mesh(tipGeo, mats.primaryMat);
+      tipR.rotation.z = -0.4;
+      tipR.position.set(0.08, height * 0.92, -topRadius * 0.99);
+      spineGroup.add(tipR);
     }
   }
 
@@ -849,6 +873,39 @@ export class CharacterMeshBuilder {
       const templeR = new THREE.Mesh(templeGeo, glassMat);
       templeR.position.set(0.13, 0.04, -0.13);
       headGroup.add(templeR);
+    } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
+      // RAHUL GANDHI: Swept dark wavy hair and trimmed dark beard
+      const hairDomeGeo = new THREE.SphereGeometry(0.265, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62);
+      hairDomeGeo.scale(1.0, 1.12, 1.05);
+      const hairDome = new THREE.Mesh(hairDomeGeo, mats.hairOrHelmetMat);
+      hairDome.position.set(0, 0.07, 0.01);
+      hairDome.castShadow = true;
+      headGroup.add(hairDome);
+
+      // Swept hair strands
+      const strandGeo = new THREE.ConeGeometry(0.042, 0.13, 6);
+      for (let s = -2; s <= 2; s++) {
+        const strand = new THREE.Mesh(strandGeo, mats.hairOrHelmetMat);
+        strand.rotation.x = -Math.PI * 0.68;
+        strand.rotation.z = s * 0.16;
+        strand.position.set(s * 0.055, 0.15, -0.21);
+        headGroup.add(strand);
+      }
+
+      // Sculpted trimmed dark beard along jawline
+      const beardGeo = new THREE.SphereGeometry(0.175, 14, 10, -Math.PI * 0.5, Math.PI, Math.PI * 0.38, Math.PI * 0.62);
+      beardGeo.scale(1.08, 1.0, 1.12);
+      const beardMesh = new THREE.Mesh(beardGeo, mats.hairOrHelmetMat);
+      beardMesh.position.set(0, -0.09, -0.05);
+      beardMesh.castShadow = true;
+      headGroup.add(beardMesh);
+
+      // Trimmed mustache
+      const mustacheGeo = new THREE.CylinderGeometry(0.022, 0.03, 0.13, 8);
+      mustacheGeo.rotateZ(Math.PI / 2);
+      const mustache = new THREE.Mesh(mustacheGeo, mats.hairOrHelmetMat);
+      mustache.position.set(0, -0.08, -0.23);
+      headGroup.add(mustache);
     }
   }
 
@@ -1087,6 +1144,17 @@ export class CharacterMeshBuilder {
       const strip = new THREE.Mesh(stripGeo, mats.accentMat);
       strip.position.set(0, 0.06, 0.06);
       pack.add(strip);
+    } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
+      // RAHUL GANDHI: Athletic compact sports runner pack
+      const bagGeo = new THREE.BoxGeometry(0.28, 0.34, 0.10);
+      const bag = new THREE.Mesh(bagGeo, mats.secondaryMat);
+      bag.castShadow = true;
+      pack.add(bag);
+
+      const stripeGeo = new THREE.BoxGeometry(0.04, 0.28, 0.015);
+      const stripe = new THREE.Mesh(stripeGeo, mats.primaryMat);
+      stripe.position.set(0, 0, 0.055);
+      pack.add(stripe);
     }
 
     return pack;

@@ -348,6 +348,16 @@ export class Game {
   }
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
+    // Verify eligibility for trial character: block run with Rahul Gandhi if 0 trials remain and unowned
+    const selectedChar = this.progression.getSelectedCharacter();
+    const normalizedChar = this.progression.normalizeCharacterId(selectedChar);
+    if (normalizedChar === 'char_rahul_gandhi' && !this.progression.isCharacterUnlocked('char_rahul_gandhi')) {
+      if (this.progression.getRahulTrialsRemaining() <= 0) {
+        this.progression.equipCharacter('char_jax', 'jax_classic');
+        this.player.applyCharacter('char_jax', 'jax_classic');
+      }
+    }
+
     this.activeGameMode = mode;
     this.progression.setActiveGameMode(mode);
 
