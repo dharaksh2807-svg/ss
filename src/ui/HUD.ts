@@ -9,6 +9,7 @@ import { getPowerupIconSvg } from './IconCatalog';
 import { FirstUseGuidance } from './FirstUseGuidance';
 import { UpgradeManager, UpgradablePowerup } from '../player/UpgradeManager';
 import { CharacterPortraitRenderer } from './CharacterPortraitRenderer';
+import { SettingsManager } from '../settings/SettingsManager';
 
 interface PowerupDOMItem {
   key: string;
@@ -223,6 +224,24 @@ export class HUD {
       this.fpsCounterEl.classList.remove('hidden');
     }
 
+    bus.on(EVENTS.STUMBLE, () => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue('⚠️ GUARD IN PURSUIT! REGAIN SPEED!', 'warning');
+      }
+    });
+
+    bus.on(EVENTS.CHASER_STUMBLE_REACTION, () => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue('⚠️ INSPECTOR CLOSING IN!', 'danger');
+      }
+    });
+
+    bus.on('HAZARD_ALERT', (text: string) => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue(text, 'warning');
+      }
+    });
+
     bus.on('FPS_DISPLAY_TOGGLED', (enabled: boolean) => {
       this.fpsCounterEl?.classList.toggle('hidden', !enabled);
     });
@@ -342,8 +361,9 @@ export class HUD {
       activeKeys.add('HOVERBOARD');
       const remaining = this.hoverboardManager.getRemaining();
       const pct = Math.max(0, Math.min(100, this.hoverboardManager.getProgress() * 100));
-      const isExpiring = remaining <= 3.0;
-      const isCritical = remaining <= 1.0;
+      const powerupAlerts = SettingsManager.getInstance().getState().powerupAlerts;
+      const isExpiring = powerupAlerts ? remaining <= 3.5 : remaining <= 2.5;
+      const isCritical = powerupAlerts ? remaining <= 1.8 : remaining <= 1.0;
       const timerDisplay = formatTimer(remaining);
 
       let item = this.activePowerupDOMs.get('HOVERBOARD');
@@ -397,8 +417,9 @@ export class HUD {
     for (const p of active) {
       activeKeys.add(p.type);
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
-      const isExpiring = p.remaining <= 3.0;
-      const isCritical = p.remaining <= 1.0;
+      const powerupAlerts = SettingsManager.getInstance().getState().powerupAlerts;
+      const isExpiring = powerupAlerts ? p.remaining <= 3.5 : p.remaining <= 2.5;
+      const isCritical = powerupAlerts ? p.remaining <= 1.8 : p.remaining <= 1.0;
       const timerDisplay = formatTimer(p.remaining);
 
       let item = this.activePowerupDOMs.get(p.type);
@@ -754,6 +775,22 @@ export class HUD {
       }
       this.bumpTimeout = null;
     }, 220);
+  }
+
+  public showVisualHazardCue(message: string, severity: 'warning' | 'danger' = 'warning'): void {
+    let cueEl = document.getElementById('hud-hazard-cue');
+    if (!cueEl) {
+      cueEl = document.createElement('div');
+      cueEl.id = 'hud-hazard-cue';
+      cueEl.className = 'hud-hazard-cue';
+      this.container.appendChild(cueEl);
+    }
+    cueEl.textContent = message;
+    cueEl.className = `hud-hazard-cue active hazard-${severity}`;
+
+    setTimeout(() => {
+      cueEl?.classList.remove('active');
+    }, 2400);
   }
 
   public getScore(): number {

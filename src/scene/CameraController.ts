@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
+import { SettingsManager } from '../settings/SettingsManager';
 
 export type CameraMode = 'CLASSIC' | 'CHARACTER_FOCUS';
 
 export class CameraController {
   public camera: THREE.PerspectiveCamera;
+  private settingsManager = SettingsManager.getInstance();
   private targetPosition = new THREE.Vector3();
   private currentPosition = new THREE.Vector3();
   public lookTarget = new THREE.Vector3();
@@ -214,7 +216,13 @@ export class CameraController {
   }
 
   public addShake(trauma: number): void {
-    this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma);
+    const shakeMult = this.settingsManager.getCameraShakeMultiplier();
+    if (shakeMult <= 0) {
+      this.shakeTrauma = 0;
+      this.shakeOffset.set(0, 0, 0);
+      return;
+    }
+    this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma * shakeMult);
   }
 
   public update(
@@ -254,8 +262,9 @@ export class CameraController {
       }
 
       // Cinematic front-quarter framing in the subway lobby
-      const sway = Math.sin(timeSec * 0.45) * 0.12;
-      const bob = Math.cos(timeSec * 0.35) * 0.04;
+      const motionScale = this.settingsManager.getCameraMotionMultiplier();
+      const sway = Math.sin(timeSec * 0.45) * 0.12 * motionScale;
+      const bob = Math.cos(timeSec * 0.35) * 0.04 * motionScale;
 
       if (isPortrait) {
         // Step back further and higher to comfortably frame full runner in mobile portrait
@@ -299,9 +308,10 @@ export class CameraController {
     // Character Focus Lateral Composition:
     // Provides an expressive 3/4 side profile view revealing facial profile, hair/cap, and outfit details.
     // Safety fallback: smoothly return to center chase in narrow tunnels, on train roofs, or in jetpack flight.
+    const motionScale = this.settingsManager.getCameraMotionMultiplier();
     const isUnsafeForOffset = isTunnelEnclosed || groundY >= 4.0 || isJetpackFlight || this.shakeTrauma > 0.35;
     if (isCharFocus && !isUnsafeForOffset) {
-      this.targetLateralOffset = isPortrait ? 0.58 : 0.70;
+      this.targetLateralOffset = (isPortrait ? 0.58 : 0.70) * motionScale;
     } else {
       this.targetLateralOffset = 0;
     }
@@ -310,14 +320,15 @@ export class CameraController {
     const lateralBlendRate = 6.0;
     this.currentLateralOffset += (this.targetLateralOffset - this.currentLateralOffset) * (1.0 - Math.exp(-lateralBlendRate * dt));
 
+    const distanceOffset = this.settingsManager.getCameraDistanceOffset();
     let targetCamY: number;
-    let targetCamOffsetZ = isCharFocus && !isJetpackFlight ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+    let targetCamOffsetZ = (isCharFocus && !isJetpackFlight ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z) + distanceOffset;
     let targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z;
     let targetLookY: number;
 
     if (isJetpackFlight) {
       targetCamY = playerPos.y + 2.4;
-      targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8; // Step back slightly for wide sky vista
+      targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8 + distanceOffset; // Step back slightly for wide sky vista
       targetLookY = playerPos.y + 0.6;
       targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 6.0; // Look 24m ahead along flight path
     } else {
@@ -365,9 +376,10 @@ export class CameraController {
     this.currentPosition.y += (this.targetPosition.y - this.currentPosition.y) * lerpY;
     this.currentPosition.z = this.targetPosition.z; // Exact forward distance lock
 
-    // Process camera shake with non-linear decay
-    if (this.shakeTrauma > 0.001) {
-      const shakeAmt = this.shakeTrauma * this.shakeTrauma;
+    // Process camera shake with non-linear decay scaled by comfort settings
+    const shakeScale = this.settingsManager.getCameraShakeMultiplier();
+    if (this.shakeTrauma > 0.001 && shakeScale > 0) {
+      const shakeAmt = this.shakeTrauma * this.shakeTrauma * shakeScale;
       this.shakeOffset.set(
         (Math.random() * 2 - 1) * shakeAmt * 0.40,
         (Math.random() * 2 - 1) * shakeAmt * 0.30,
@@ -376,6 +388,7 @@ export class CameraController {
       this.shakeTrauma = Math.max(0, this.shakeTrauma - CONSTANTS.CAMERA_SHAKE_DECAY * dt);
     } else {
       this.shakeOffset.set(0, 0, 0);
+      if (shakeScale <= 0) this.shakeTrauma = 0;
     }
 
     this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
