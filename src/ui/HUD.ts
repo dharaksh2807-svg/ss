@@ -55,6 +55,14 @@ export class HUD {
   private completedCelebrationTimer: number = 0;
   private completedMissionInfo: { title: string; rewardCoins: number } | null = null;
 
+  // Premium Skill Combo & Style Widget Elements
+  private comboWidgetEl: HTMLElement | null = null;
+  private comboCountEl: HTMLElement | null = null;
+  private comboTierEl: HTMLElement | null = null;
+  private comboEventEl: HTMLElement | null = null;
+  private comboTimerFillEl: HTMLElement | null = null;
+  private comboBrokenTimeout: number | null = null;
+
   constructor(private powerupManager: PowerupManager) {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
@@ -69,6 +77,12 @@ export class HUD {
 
     this.boardBtn = document.getElementById('hud-board-btn') as HTMLButtonElement;
     this.boardChargesBadge = document.getElementById('hud-board-charges');
+
+    this.comboWidgetEl = document.getElementById('hud-skill-combo');
+    this.comboCountEl = document.getElementById('hud-combo-count');
+    this.comboTierEl = document.getElementById('hud-combo-tier');
+    this.comboEventEl = document.getElementById('hud-combo-event');
+    this.comboTimerFillEl = document.getElementById('hud-combo-timer-fill');
 
     if (this.boardBtn) {
       this.boardBtn.addEventListener('click', (e) => {
@@ -245,6 +259,102 @@ export class HUD {
     bus.on('FPS_DISPLAY_TOGGLED', (enabled: boolean) => {
       this.fpsCounterEl?.classList.toggle('hidden', !enabled);
     });
+
+    // Skill Combo & Style System Event Handlers
+    bus.on(EVENTS.SKILL_EVENT, (payload: any) => {
+      this.handleSkillEvent(payload);
+    });
+
+    bus.on(EVENTS.COMBO_UPDATED, (data: any) => {
+      this.updateComboDisplay(data);
+    });
+
+    bus.on(EVENTS.COMBO_MILESTONE, (data: any) => {
+      this.handleComboMilestone(data);
+    });
+
+    bus.on(EVENTS.COMBO_BROKEN, (data: any) => {
+      this.handleComboBroken(data);
+    });
+
+    bus.on(EVENTS.COMBO_EXPIRED, () => {
+      this.handleComboExpired();
+    });
+  }
+
+  private handleSkillEvent(payload: any): void {
+    if (!this.comboWidgetEl) return;
+    if (this.comboBrokenTimeout) {
+      clearTimeout(this.comboBrokenTimeout);
+      this.comboBrokenTimeout = null;
+    }
+    this.comboWidgetEl.classList.remove('hidden', 'combo-broken-flash');
+    if (this.comboCountEl) this.comboCountEl.textContent = `COMBO ×${payload.combo}`;
+    if (this.comboTierEl) {
+      this.comboTierEl.textContent = payload.tierLabel || payload.tier;
+      this.comboTierEl.style.color = payload.color || '#00f0ff';
+      this.comboTierEl.style.borderColor = payload.color || '#00f0ff';
+    }
+    if (this.comboEventEl) {
+      this.comboEventEl.textContent = payload.label;
+    }
+    if (this.comboTimerFillEl) {
+      this.comboTimerFillEl.style.width = '100%';
+    }
+
+    if (!SettingsManager.getInstance().isReducedMotion()) {
+      this.comboWidgetEl.classList.remove('animate-combo-punch');
+      void this.comboWidgetEl.offsetWidth; // Force reflow
+      this.comboWidgetEl.classList.add('animate-combo-punch');
+    }
+  }
+
+  private updateComboDisplay(data: any): void {
+    if (!this.comboWidgetEl) return;
+    if (data.combo > 0) {
+      this.comboWidgetEl.classList.remove('hidden');
+      if (this.comboCountEl) this.comboCountEl.textContent = `COMBO ×${data.combo}`;
+      if (this.comboTierEl) {
+        this.comboTierEl.textContent = data.tierLabel || data.tier;
+        this.comboTierEl.style.color = data.color || '#00f0ff';
+        this.comboTierEl.style.borderColor = data.color || '#00f0ff';
+      }
+      if (this.comboTimerFillEl) {
+        this.comboTimerFillEl.style.width = `${Math.round(data.ratio * 100)}%`;
+      }
+    } else if (!this.comboBrokenTimeout) {
+      this.comboWidgetEl.classList.add('hidden');
+    }
+  }
+
+  private handleComboMilestone(data: any): void {
+    if (!this.comboWidgetEl) return;
+    if (!SettingsManager.getInstance().isReducedMotion()) {
+      this.comboWidgetEl.classList.add('milestone-shimmer');
+      setTimeout(() => {
+        this.comboWidgetEl?.classList.remove('milestone-shimmer');
+      }, 700);
+    }
+    this.showFeedbackBadge(`${data.label} MILESTONE! 👑`, 'streak');
+  }
+
+  private handleComboBroken(data: any): void {
+    if (!this.comboWidgetEl) return;
+    this.comboWidgetEl.classList.add('combo-broken-flash');
+    if (this.comboEventEl) {
+      this.comboEventEl.textContent = `COMBO BROKEN (${data.reason || 'HIT'})`;
+    }
+    if (this.comboBrokenTimeout) clearTimeout(this.comboBrokenTimeout);
+    this.comboBrokenTimeout = window.setTimeout(() => {
+      this.comboWidgetEl?.classList.remove('combo-broken-flash');
+      this.comboWidgetEl?.classList.add('hidden');
+      this.comboBrokenTimeout = null;
+    }, 450);
+  }
+
+  private handleComboExpired(): void {
+    if (!this.comboWidgetEl) return;
+    this.comboWidgetEl.classList.add('hidden');
   }
 
   public setMultiplier(val: number): void {

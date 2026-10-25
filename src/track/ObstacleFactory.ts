@@ -138,6 +138,11 @@ export interface ObstacleInstance {
   nearMissTriggered: boolean;
   active: boolean;
   passed?: boolean;
+  hadCollision?: boolean; // Authoritatively flags whether this obstacle caused a stumble or collision
+  nearMissCandidate?: boolean; // Player was in near miss zone without direct contact
+  nearMissScored?: boolean; // Near miss has been scored for this encounter lifecycle
+  playerEncounterLane?: LaneIndex; // Player lane when first entering encounter horizon
+  skillScoredActions?: Set<string>; // Deduplication set tracking awarded skill events for this obstacle
   hasRamp?: boolean;
   length?: number;
   variant?: TrainVariant;

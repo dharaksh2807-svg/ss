@@ -349,6 +349,29 @@ export const CONSTANTS = {
   COIN_SCORE_VALUE: 50,
   NEAR_MISS_SCORE: 100,
 
+  // Premium Skill Combo & Style System
+  SKILL_COMBO: {
+    WINDOW_DURATION: 4.0, // Seconds of simulation time before combo decay
+    TIERS: [
+      { minCombo: 1, name: 'NORMAL', label: 'NORMAL', multiplier: 1.0, color: '#00f0ff' },
+      { minCombo: 3, name: 'MOMENTUM', label: 'MOMENTUM ⚡', multiplier: 1.25, color: '#facc15' },
+      { minCombo: 5, name: 'GREAT', label: 'GREAT 🔥', multiplier: 1.50, color: '#fb923c' },
+      { minCombo: 8, name: 'EXCELLENT', label: 'EXCELLENT 💥', multiplier: 1.75, color: '#ec4899' },
+      { minCombo: 12, name: 'MASTERFUL', label: 'MASTERFUL 👑', multiplier: 2.00, color: '#c084fc' }
+    ],
+    BASE_SCORES: {
+      PERFECT_JUMP: 150,
+      PERFECT_SLIDE: 150,
+      CLEAN_LANE_DODGE: 100,
+      NEAR_MISS: 150,
+      ROOFTOP_LANDING: 100,
+      ROOFTOP_GAP_JUMP: 250,
+      CLEAN_OBSTACLE_CHAIN: 200
+    },
+    MAX_EVENT_SCORE: 500, // Explicit anti-exploit cap per event
+    MAX_RUN_STYLE_BONUS: 100000 // Anti-exploit cap for run total style contribution
+  },
+
   // Colors Palette (Vibrant Stylized Arcade)
   COLORS: {
     SKY_TOP: 0x0288d1, // Rich vibrant azure sky blue

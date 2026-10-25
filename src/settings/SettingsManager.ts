@@ -381,6 +381,10 @@ export class SettingsManager {
     return this.state.speedLines;
   }
 
+  public isReducedMotion(): boolean {
+    return !!this.state.reducedMotion;
+  }
+
   // --- DOM & Class Side Effects ---
 
   public applyGlobalSideEffects(): void {

@@ -7220,4 +7220,262 @@ input:focus-visible {
   box-shadow: 0 6px 22px rgba(239, 68, 68, 0.65);
 }
 
+/* =========================================================================
+   Task 1: Premium Skill Combo, Perfect Dodge & Style Score System
+   ========================================================================= */
+
+/* Compact Arcade Skill Combo HUD Widget */
+.hud-skill-combo-widget {
+  position: absolute;
+  top: 136px;
+  left: 24px;
+  width: 175px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(0, 240, 255, 0.15);
+  z-index: 90;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hud-skill-combo-widget.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.95);
+}
+
+.combo-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.combo-count-badge {
+  font-family: var(--font-display, 'Impact', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  background: linear-gradient(135deg, #ffffff 30%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+.combo-tier-badge {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid #00f0ff;
+  color: #00f0ff;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: rgba(0, 240, 255, 0.12);
+  white-space: nowrap;
+}
+
+.combo-event-pill {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 4px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combo-timer-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.combo-timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #38bdf8, #00f0ff);
+  border-radius: 2px;
+  transition: width 0.05s linear;
+}
+
+/* Micro-animations */
+@keyframes comboPunch {
+  0% { transform: scale(1.0); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1.0); }
+}
+
+.animate-combo-punch {
+  animation: comboPunch 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes milestoneShimmer {
+  0% { box-shadow: 0 0 8px rgba(250, 204, 21, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(250, 204, 21, 0.9), 0 0 40px rgba(251, 146, 60, 0.6); }
+  100% { box-shadow: 0 0 8px rgba(250, 204, 21, 0.4); }
+}
+
+.milestone-shimmer {
+  border-color: #facc15 !important;
+  animation: milestoneShimmer 0.65s ease;
+}
+
+.combo-broken-flash {
+  background: rgba(239, 68, 68, 0.92) !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.7) !important;
+  transition: none !important;
+}
+
+/* High Contrast & Reduced Motion support */
+.high-contrast-mode .hud-skill-combo-widget {
+  background: #000000 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: none !important;
+}
+
+.high-contrast-mode .combo-count-badge {
+  background: none !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.high-contrast-mode .combo-tier-badge {
+  border: 1px solid #ffffff !important;
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+.high-contrast-mode .combo-timer-fill {
+  background: #ffffff !important;
+}
+
+.reduced-motion-mode .hud-skill-combo-widget,
+.reduced-motion-mode .animate-combo-punch,
+.reduced-motion-mode .milestone-shimmer {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Game Over Results Screen Style & Skill Breakdown Card */
+.game-over-style-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.style-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.style-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.style-card-icon {
+  font-size: 1.05rem;
+}
+
+.style-card-headline {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #e2e8f0;
+  text-transform: uppercase;
+}
+
+.style-card-total-badge {
+  font-family: var(--font-display, 'Impact', sans-serif);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #38bdf8;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.style-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.style-stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.style-pill-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.style-pill-val {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .hud-skill-combo-widget {
+    top: 112px;
+    left: 16px;
+    width: 145px;
+    padding: 6px 10px;
+  }
+
+  .combo-count-badge {
+    font-size: 1.0rem;
+  }
+
+  .combo-tier-badge {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .combo-event-pill {
+    font-size: 0.68rem;
+  }
+
+  .style-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
 

@@ -38,6 +38,7 @@ import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/EnvironmentalEncounterDirector';
 import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
 import { ReviveManager } from '../revive/ReviveManager';
+import { SkillComboManager } from './SkillComboManager';
 import { ReviveModal } from '../ui/ReviveModal';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { ReplayHUD } from '../ui/ReplayHUD';
@@ -281,6 +282,13 @@ export class Game {
       if (this.activeGameMode === 'TIME_TRIAL') {
         this.timeTrialRemaining += seconds;
         this.hud.setTimeTrialTime(this.timeTrialRemaining);
+      }
+    });
+
+    bus.on(EVENTS.SKILL_EVENT, (payload: any) => {
+      if (payload && payload.finalPoints > 0) {
+        this.score += payload.finalPoints;
+        bus.emit(EVENTS.SCORE_UPDATED, this.score);
       }
     });
 
@@ -726,6 +734,9 @@ export class Game {
         // 5. Update score based on forward distance
         this.score += this.player.speed * dt * CONSTANTS.SCORE_PER_METER * this.scoreMultiplier;
         EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
+
+        // Update skill combo decay & telemetry
+        SkillComboManager.getInstance().update(dt);
 
         // 6. Update HUD UI & live portrait reaction state
         this.hud.update(dt, this.player.isSliding, this.player.isJumping, this.player.speed);

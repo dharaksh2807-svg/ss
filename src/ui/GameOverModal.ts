@@ -3,6 +3,7 @@ import { GameMode } from '../progression/ProgressionTypes';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { SkillComboManager } from '../core/SkillComboManager';
 
 export class GameOverModal {
   private element: HTMLElement;
@@ -91,6 +92,39 @@ export class GameOverModal {
           <div class="stat-box">
             <span class="stat-label">DISTANCE TRAVELED</span>
             <span id="game-over-distance" class="stat-value">0 m</span>
+          </div>
+        </div>
+
+        <!-- Style & Skill Combo Breakdown Card (Requirement J) -->
+        <div id="game-over-style-card" class="game-over-style-card">
+          <div class="style-card-header">
+            <div class="style-card-title-group">
+              <span class="style-card-icon">⚡</span>
+              <span class="style-card-headline">SKILL & STYLE TELEMETRY</span>
+            </div>
+            <div class="style-card-total-badge" id="game-over-style-total">+0 STYLE PTS</div>
+          </div>
+          <div class="style-card-grid">
+            <div class="style-stat-pill">
+              <span class="style-pill-label">MAX COMBO</span>
+              <span class="style-pill-val" id="go-stat-max-combo">×0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">PERFECT JUMPS</span>
+              <span class="style-pill-val" id="go-stat-perfect-jumps">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">PERFECT SLIDES</span>
+              <span class="style-pill-val" id="go-stat-perfect-slides">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">NEAR MISSES</span>
+              <span class="style-pill-val" id="go-stat-near-misses">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">ROOFTOP MOVES</span>
+              <span class="style-pill-val" id="go-stat-rooftop">0</span>
+            </div>
           </div>
         </div>
 
@@ -315,6 +349,26 @@ export class GameOverModal {
       coinsEl.textContent = coins.toLocaleString();
     }
     if (distEl) distEl.textContent = `${Math.floor(distanceMeters).toLocaleString()} m`;
+
+    // Populate Style & Skill Combo Telemetry
+    const styleStats = SkillComboManager.getInstance().getStats();
+    const styleTotalEl = this.element.querySelector('#game-over-style-total');
+    if (styleTotalEl) styleTotalEl.textContent = `+${styleStats.totalStylePoints.toLocaleString()} STYLE PTS`;
+
+    const maxComboEl = this.element.querySelector('#go-stat-max-combo');
+    if (maxComboEl) maxComboEl.textContent = `×${styleStats.bestCombo}`;
+
+    const perfJumpsEl = this.element.querySelector('#go-stat-perfect-jumps');
+    if (perfJumpsEl) perfJumpsEl.textContent = `${styleStats.perfectJumps}`;
+
+    const perfSlidesEl = this.element.querySelector('#go-stat-perfect-slides');
+    if (perfSlidesEl) perfSlidesEl.textContent = `${styleStats.perfectSlides}`;
+
+    const nearMissesEl = this.element.querySelector('#go-stat-near-misses');
+    if (nearMissesEl) nearMissesEl.textContent = `${styleStats.nearMisses}`;
+
+    const rooftopEl = this.element.querySelector('#go-stat-rooftop');
+    if (rooftopEl) rooftopEl.textContent = `${styleStats.totalRooftopManeuvers}`;
 
     // Count-up animation for final score
     const scoreEl = this.element.querySelector('#game-over-score') as HTMLElement;

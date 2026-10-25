@@ -20,6 +20,7 @@ import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { RooftopRoutePlanner, RooftopRoutePlan, RooftopRouteArchetype } from './RooftopRoutePlanner';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { SkillComboManager } from '../core/SkillComboManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -1396,18 +1397,29 @@ export class TrackManager {
       for (const obs of chunk.obstacles) {
         if (!obs.active) continue;
 
-        // Near-miss check (Passes within close margin without touching)
-        if (!obs.nearMissTriggered && obs.nearMissBox.intersectsBox(playerBox)) {
-          if (!obs.collider.intersectsBox(playerBox)) {
-            obs.nearMissTriggered = true;
-            this.eventBus.emit(EVENTS.NEAR_MISS);
-          }
+        // Record approach encounter lane for lane dodge detection
+        if (obs.playerEncounterLane === undefined && player.position.z > obs.collider.max.z && player.position.z <= obs.collider.max.z + 25.0) {
+          obs.playerEncounterLane = player.currentLane;
         }
 
         // Direct obstacle collision check
         const lethalBox = (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP')
           ? (obs.bodyCollider || obs.collider)
           : obs.collider;
+
+        // Near-miss candidate registration (Passes within close margin without touching)
+        if (!obs.nearMissTriggered && !obs.nearMissScored && !obs.hadCollision) {
+          if (obs.nearMissBox.intersectsBox(playerBox) && !lethalBox.intersectsBox(playerBox)) {
+            obs.nearMissCandidate = true;
+            // Confirm near miss if player has safely cleared the front impact threshold
+            if (player.position.z < lethalBox.max.z - 0.4 && player.state !== 'JETPACK' && player.position.y <= 4.5) {
+              obs.nearMissTriggered = true;
+              obs.nearMissScored = true;
+              this.eventBus.emit(EVENTS.NEAR_MISS);
+              SkillComboManager.getInstance().recordSkillEvent('NEAR_MISS', obs.id);
+            }
+          }
+        }
 
         let hasDirectCollision = lethalBox.intersectsBox(playerBox);
 
@@ -1454,18 +1466,14 @@ export class TrackManager {
           const { outcome, diagnostic, isGlance, isFlankContact } = resolution;
 
           if (outcome === 'SAFE_CONTACT' || outcome === 'VALID_ROOF_LANDING') {
-            // Check for precision jump / slide reward if applicable
-            if (obs.type === 'LOW_BARRIER' && player.isJumping && (player.position.y >= CONSTANTS.LOW_BARRIER_HEIGHT || player.position.y >= 1.45)) {
-              if (player.distanceTraveled - player.lastJumpDist < 8.0) {
-                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'JUMP');
-              }
-            } else if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && player.isSliding) {
-              if (player.distanceTraveled - player.lastSlideDist < 8.0) {
-                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
-              }
-            }
+            // Safe contact / roof landing
             continue;
           }
+
+          // Authoritative non-safe collision occurred
+          obs.hadCollision = true;
+          obs.nearMissCandidate = false;
+          chunk.chunkHadCollision = true;
 
           // Authoritative collision outcome recorded & emitted
           this.recordCollisionDiagnostic(diagnostic);
@@ -1544,8 +1552,47 @@ export class TrackManager {
         // Clean obstacle dodge check when player safely passes past the obstacle
         if (!obs.passed && playerBox.max.z < obs.collider.min.z) {
           obs.passed = true;
-          if (obs.active && !chunk.chunkHadCollision) {
+          if (obs.active && !chunk.chunkHadCollision && !obs.hadCollision) {
             this.eventBus.emit(EVENTS.OBSTACLE_DODGED, obs.type);
+
+            // Authoritative Skill Event Evaluations (Supressed during passive high-altitude jetpack flight)
+            if (player.state !== 'JETPACK' && player.getJetpackPhase() === 'NONE' && player.position.y <= 4.5) {
+              const comboMgr = SkillComboManager.getInstance();
+              const laneX = CONSTANTS.LANES[obs.lane];
+              const isInObstacleLane = player.currentLane === obs.lane || Math.abs(player.position.x - laneX) < 1.4;
+
+              // 1. PERFECT_JUMP (clearing hurdle safely)
+              if ((obs.type === 'LOW_BARRIER' || obs.type === 'ROOFTOP_AC_HURDLE' || obs.type === 'ROOFTOP_VENT') && isInObstacleLane) {
+                const hurdleHeight = obs.collider.max.y;
+                const wasJumpingOver = (player.isJumping || player.distanceTraveled - player.lastJumpDist < 12.0) &&
+                                       (player.position.y >= hurdleHeight - 0.25 || player.position.y >= 1.40);
+                if (wasJumpingOver) {
+                  comboMgr.recordSkillEvent('PERFECT_JUMP', obs.id);
+                }
+              }
+              // 2. PERFECT_SLIDE (clearing overhead barrier safely)
+              else if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && isInObstacleLane) {
+                const wasSlidingUnder = player.isSliding || (player.distanceTraveled - player.lastSlideDist < 12.0);
+                if (wasSlidingUnder) {
+                  comboMgr.recordSkillEvent('PERFECT_SLIDE', obs.id);
+                }
+              }
+              // 3. CLEAN_LANE_DODGE (evading oncoming obstacle by changing lane cleanly)
+              else if (obs.playerEncounterLane !== undefined && obs.playerEncounterLane === obs.lane && player.currentLane !== obs.lane) {
+                comboMgr.recordSkillEvent('CLEAN_LANE_DODGE', obs.id);
+              }
+
+              // 4. NEAR_MISS (Confirm candidate near miss on safe clearance)
+              if (obs.nearMissCandidate && !obs.nearMissScored) {
+                obs.nearMissScored = true;
+                obs.nearMissTriggered = true;
+                this.eventBus.emit(EVENTS.NEAR_MISS);
+                comboMgr.recordSkillEvent('NEAR_MISS', obs.id);
+              }
+
+              // 5. Clean Obstacle Chain
+              comboMgr.registerObstacleClearance();
+            }
           }
         }
       }

@@ -11,6 +11,7 @@ import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUAR
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { SceneryFactory } from '../environment/SceneryFactory';
 import { TrainCompositionDef, TRAIN_COMPOSITIONS, getCompositionForDifficulty } from './TrainComposition';
+import { SkillComboManager } from '../core/SkillComboManager';
 
 export class TrackChunk {
   public group: THREE.Group;
@@ -2215,6 +2216,7 @@ export class TrackChunk {
 
   public clearDynamicItems(): void {
     for (const obs of this.obstacles) {
+      SkillComboManager.getInstance().clearScoredObstacle(obs.id);
       this.group.remove(obs.group);
       obs.roofSegments = undefined;
       obs.bodySegments = undefined;

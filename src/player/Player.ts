@@ -8,6 +8,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 import { ChaserModel } from '../characters/ChaserModel';
+import { SkillComboManager } from '../core/SkillComboManager';
 
 import { SpeedController } from '../core/SpeedController';
 import { PacingMetrics } from '../track/PacingMetrics';
@@ -57,6 +58,13 @@ export class Player {
   public supportSurface: SupportSurfaceType = 'GROUND';
   public activeSupportObstacleId: string | null = null;
   public readonly jetpackAltitude: number = 9.0;
+
+  // Rooftop Maneuver Tracking for Style System
+  public jumpTakeoffSurface: SupportSurfaceType = 'GROUND';
+  public jumpTakeoffObstacleId: string | null = null;
+  public jumpTakeoffGroupId: string | null = null;
+  public jumpTakeoffPosZ: number = 0;
+  public lastBoardedRoofObstacleId: string | null = null;
 
   // Lateral lane transition
   private isChangingLane: boolean = false;
@@ -169,6 +177,11 @@ export class Player {
     this.lastSlideDist = -999;
     this.supportSurface = 'GROUND';
     this.activeSupportObstacleId = null;
+    this.jumpTakeoffSurface = 'GROUND';
+    this.jumpTakeoffObstacleId = null;
+    this.jumpTakeoffGroupId = null;
+    this.jumpTakeoffPosZ = 0;
+    this.lastBoardedRoofObstacleId = null;
     this.previousPosition.copy(this.position);
     this.state = 'RUN';
     this.jetpackPhase = 'NONE';
@@ -293,6 +306,13 @@ export class Player {
     this.wasFastDropLand = false;
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
+
+    // Record takeoff origin for gap jump & rooftop maneuver detection
+    this.jumpTakeoffSurface = this.supportSurface;
+    this.jumpTakeoffObstacleId = this.activeSupportObstacleId;
+    this.jumpTakeoffGroupId = this.activeSupportGroupId;
+    this.jumpTakeoffPosZ = this.position.z;
+
     this.supportSurface = 'GROUND';
     this.activeSupportObstacleId = null;
     this.activeSupportGroupId = null;
@@ -590,12 +610,27 @@ export class Player {
             if (!this.isSliding) {
               this.state = 'ON_TRAIN';
             }
+            const activeObsId = this.activeSupportObstacleId;
+            if (this.jumpTakeoffSurface === 'TRAIN_ROOF' && this.jumpTakeoffObstacleId) {
+              if ((activeObsId && activeObsId !== this.jumpTakeoffObstacleId) ||
+                  Math.abs(this.position.z - this.jumpTakeoffPosZ) >= 3.5) {
+                SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_GAP_JUMP', activeObsId || undefined);
+                this.lastBoardedRoofObstacleId = activeObsId;
+              }
+            } else if (activeObsId && activeObsId !== this.lastBoardedRoofObstacleId) {
+              this.lastBoardedRoofObstacleId = activeObsId;
+              SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_LANDING', activeObsId);
+            }
           } else {
             this.supportSurface = 'GROUND';
+            this.lastBoardedRoofObstacleId = null;
             if (!this.isSliding) {
               this.state = 'RUN';
             }
           }
+          this.jumpTakeoffSurface = 'GROUND';
+          this.jumpTakeoffObstacleId = null;
+          this.jumpTakeoffGroupId = null;
           this.eventBus.emit(EVENTS.LAND, {
             isFastDrop: fastDrop,
             surface: this.supportSurface,
@@ -760,6 +795,22 @@ export class Player {
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
     }
+
+    // Authoritative Style Combo Scoring for Rooftop Maneuvers
+    if (this.jumpTakeoffSurface === 'TRAIN_ROOF' && this.jumpTakeoffObstacleId) {
+      if ((obstacleId && obstacleId !== this.jumpTakeoffObstacleId) ||
+          (groupId && groupId !== this.jumpTakeoffGroupId) ||
+          Math.abs(this.position.z - this.jumpTakeoffPosZ) >= 3.5) {
+        SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_GAP_JUMP', obstacleId || undefined);
+        this.lastBoardedRoofObstacleId = obstacleId || null;
+      }
+    } else if (obstacleId && obstacleId !== this.lastBoardedRoofObstacleId) {
+      this.lastBoardedRoofObstacleId = obstacleId;
+      SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_LANDING', obstacleId);
+    }
+    this.jumpTakeoffSurface = 'GROUND';
+    this.jumpTakeoffObstacleId = null;
+    this.jumpTakeoffGroupId = null;
     this.eventBus.emit(EVENTS.LAND, {
       isFastDrop: fastDrop,
       surface: this.supportSurface,
