@@ -104,16 +104,40 @@ export class BugSnapshotManager {
         this.recentInputs.shift();
       }
     });
+  }
 
-    // Dev shortcut for manual bug snapshot (F9 or Ctrl+Shift+B)
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.code === 'F9' || (e.code === 'KeyB' && e.ctrlKey && e.shiftKey)) {
-          e.preventDefault();
-          this.captureManualSnapshot('Triggered by tester shortcut (F9 / Ctrl+Shift+B)');
-        }
-      });
+  /**
+   * Authoritative debugging preference: auto-open crash report modal.
+   * Default: false (silent background recording during gameplay).
+   */
+  public getAutoOpenCrashReport(): boolean {
+    if (typeof window !== 'undefined' && (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ !== undefined) {
+      return (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ === true;
     }
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return window.localStorage.getItem('metro_debug_auto_open_crash_report') === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  public setAutoOpenCrashReport(enabled: boolean): void {
+    if (typeof window !== 'undefined') {
+      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = enabled;
+      try {
+        if (enabled) {
+          window.localStorage.setItem('metro_debug_auto_open_crash_report', 'true');
+        } else {
+          window.localStorage.removeItem('metro_debug_auto_open_crash_report');
+        }
+      } catch {
+        // Storage access may be restricted
+      }
+    }
+    this.eventBus.emit('SET_AUTO_OPEN_CRASH_REPORT', enabled);
   }
 
   /**

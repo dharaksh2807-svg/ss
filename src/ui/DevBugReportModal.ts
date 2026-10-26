@@ -1,16 +1,19 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { BugSnapshotManager } from '../debug/BugSnapshotManager';
 import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
 import { DebugVisualizer } from '../debug/DebugVisualizer';
 
 export class DevBugReportModal {
+  private static readonly STORAGE_KEY = 'metro_debug_auto_open_crash_report';
   private element: HTMLElement;
   private currentSnapshot: BugSnapshotPackage | null = null;
+  private autoOpenCrashReport: boolean = false;
   private snapshotManager = BugSnapshotManager.getInstance();
   private visualizer = DebugVisualizer.getInstance();
   private eventBus = EventBus.getInstance();
 
   constructor() {
+    this.autoOpenCrashReport = this.loadAutoOpenPreference();
     let el = document.getElementById('dev-bug-report-modal');
     if (!el) {
       el = document.createElement('div');
@@ -22,30 +25,80 @@ export class DevBugReportModal {
     this.setupListeners();
   }
 
+  private loadAutoOpenPreference(): boolean {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return window.localStorage.getItem(DevBugReportModal.STORAGE_KEY) === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  public getAutoOpenCrashReport(): boolean {
+    return this.autoOpenCrashReport;
+  }
+
+  public setAutoOpenCrashReport(enabled: boolean): void {
+    this.autoOpenCrashReport = enabled;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        if (enabled) {
+          window.localStorage.setItem(DevBugReportModal.STORAGE_KEY, 'true');
+        } else {
+          window.localStorage.removeItem(DevBugReportModal.STORAGE_KEY);
+        }
+      } catch {
+        // Storage access might be restricted in some environments
+      }
+    }
+    if (typeof window !== 'undefined') {
+      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = enabled;
+    }
+  }
+
   private setupListeners(): void {
     this.eventBus.on('BUG_SNAPSHOT_CAPTURED', (snapshot: BugSnapshotPackage) => {
+      // Store latest snapshot data silently in background
       this.currentSnapshot = snapshot;
-      this.render();
-      this.show();
+
+      // CRITICAL ROOT FIX: Diagnostics capture silently in the background.
+      // Do NOT auto-open the technical report modal unless a developer explicitly enabled this preference.
+      if (this.autoOpenCrashReport) {
+        this.render();
+        this.show();
+      }
     });
 
     this.eventBus.on('OPEN_BUG_REPORT_MODAL', () => {
       this.openLatest();
     });
 
+    this.eventBus.on('SET_AUTO_OPEN_CRASH_REPORT', (enabled: boolean) => {
+      this.autoOpenCrashReport = enabled;
+    });
+
+    // Lifecycle cleanups: modal must never persist into a new run or menu
+    this.eventBus.on(EVENTS.GAME_START, () => this.hide());
+    this.eventBus.on('GAME_RESTART', () => this.hide());
+    this.eventBus.on('GO_TO_MENU', () => this.hide());
+
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.code === 'Escape' && !this.element.classList.contains('hidden')) {
+          e.preventDefault();
+          e.stopPropagation();
           this.hide();
         }
       });
     }
   }
 
-  public openLatest(): void {
+  public openLatest(forceFreshManual: boolean = false): void {
     let snap = this.snapshotManager.getLatestSnapshot();
-    if (!snap) {
-      // Capture a fresh manual snapshot if none exists yet
+    if (!snap || forceFreshManual) {
+      // Capture a fresh manual snapshot if none exists yet or if explicitly requested (e.g. F9 during active play)
       snap = this.snapshotManager.captureManualSnapshot('Tester opened bug report modal');
     }
     this.currentSnapshot = snap;
@@ -173,9 +226,12 @@ export class DevBugReportModal {
           </button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <button id="dev-bug-screenshot-btn" class="arcade-btn btn-secondary" style="font-size: 12px; padding: 10px; border-color: rgba(0, 229, 255, 0.4); color: #7dd3fc;">
             📸 DOWNLOAD SCREENSHOT ARTIFACT
+          </button>
+          <button id="dev-bug-autoopen-toggle-btn" class="arcade-btn btn-secondary" style="font-size: 11px; padding: 10px; border-color: ${this.autoOpenCrashReport ? '#ff1744' : 'rgba(255,255,255,0.2)'}; color: ${this.autoOpenCrashReport ? '#ff80ab' : '#94a3b8'};">
+            ⚡ AUTO-POPUP: ${this.autoOpenCrashReport ? 'ON (DEV ONLY)' : 'OFF (DEFAULT)'}
           </button>
         </div>
       </div>
@@ -187,6 +243,14 @@ export class DevBugReportModal {
   private bindActionEvents(): void {
     const closeBtn = this.element.querySelector('#dev-bug-close-btn');
     closeBtn?.addEventListener('click', () => this.hide());
+
+    const autoOpenBtn = this.element.querySelector('#dev-bug-autoopen-toggle-btn');
+    autoOpenBtn?.addEventListener('click', () => {
+      const next = !this.autoOpenCrashReport;
+      this.setAutoOpenCrashReport(next);
+      this.render();
+      this.showFeedback(`⚡ Auto-popup on crash toggled ${next ? 'ON (dev testing only)' : 'OFF (default gameplay)'}`);
+    });
 
     const copyBtn = this.element.querySelector('#dev-bug-copy-ai-btn');
     copyBtn?.addEventListener('click', () => {

@@ -332,17 +332,14 @@ export class Game {
       this.startReproduction(snapshot);
     });
 
-    bus.on('OPEN_BUG_REPORT_MODAL', () => {
-      this.devBugReportModal.openLatest();
-    });
-
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.code === 'F8') {
         e.preventDefault();
         this.debugVisualizer.toggle();
       } else if (e.code === 'F9' || (e.code === 'KeyB' && e.ctrlKey && e.shiftKey)) {
         e.preventDefault();
-        this.devBugReportModal.openLatest();
+        const isActivelyRunning = this.lifecycleState === 'PLAYING';
+        this.devBugReportModal.openLatest(isActivelyRunning);
       }
     });
 
@@ -608,6 +605,7 @@ export class Game {
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
+    this.devBugReportModal.hide();
     this.shopModal.hide();
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
@@ -672,6 +670,7 @@ export class Game {
     this.reviveModal.hide();
     this.reviveManager.resetRun();
     this.gameOverModal.hide();
+    this.devBugReportModal.hide();
     this.shopModal.hide();
     this.missionsModal.hide();
     this.eventSelectModal.hide();
