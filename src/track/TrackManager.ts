@@ -22,6 +22,7 @@ import { RooftopRoutePlanner, RooftopRoutePlan, RooftopRouteArchetype } from './
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { SkillComboManager } from '../core/SkillComboManager';
 import { DailyChallengeManager } from '../core/DailyChallengeManager';
+import { SecretRouteDirector } from './SecretRouteDirector';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -157,6 +158,7 @@ export class TrackManager {
     this.recentPatterns = [];
     this.difficultyController.reset();
     EnvironmentDirector.getInstance().setRunSeed(seed, isDebug);
+    SecretRouteDirector.getInstance().setRunSeed(seed);
   }
 
   public setDebugSeed(seed: number): void {
@@ -260,6 +262,8 @@ export class TrackManager {
       this.currentSeed = this.runSeed;
     }
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
+    SecretRouteDirector.getInstance().resetRunState();
+    SecretRouteDirector.getInstance().setRunSeed(this.currentSeed);
 
     this.furthestZ = 0;
     const mode = this.getGameMode();
@@ -585,6 +589,24 @@ export class TrackManager {
 
         this.commitPattern(rooftopPattern, worldZ);
         return rooftopPattern;
+      }
+    }
+
+    // Deterministic Secret Railway Route Encounter Scheduling
+    if (!this.activeRooftopPlan && !isTransition) {
+      const mode = this.getGameMode();
+      const secretPattern = SecretRouteDirector.getInstance().tryScheduleSecretRoute(
+        chunk,
+        worldZ,
+        theme,
+        isTransition,
+        playerSpeed,
+        mode,
+        flight
+      );
+      if (secretPattern) {
+        this.commitPattern(secretPattern, Math.abs(worldZ));
+        return secretPattern;
       }
     }
     // Reserve approach lanes before choosing ordinary obstacles, rather than

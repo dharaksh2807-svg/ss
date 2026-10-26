@@ -46,6 +46,7 @@ import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { ReplayHUD } from '../ui/ReplayHUD';
 import { PhotoModeController } from '../scene/PhotoModeController';
 import { PhotoModeModal } from '../ui/PhotoModeModal';
+import { SecretRouteDirector } from '../track/SecretRouteDirector';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
@@ -295,6 +296,7 @@ export class Game {
 
     bus.on(EVENTS.COIN_COLLECTED, () => {
       this.coinsCount++;
+      SecretRouteDirector.getInstance().onCoinCollected();
       const bonus = CONSTANTS.COIN_SCORE_VALUE * this.scoreMultiplier;
       this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
@@ -304,6 +306,20 @@ export class Game {
       if (this.activeGameMode === 'COIN_RUSH' && this.coinsCount >= 150) {
         this.handleGameOver('COIN_RUSH_VICTORY');
       }
+    });
+
+    // Secret Railway Route Event Handlers
+    bus.on(EVENTS.SECRET_ROUTE_DISCOVERED, (data: any) => {
+      this.hud.showFeedbackBadge(`🌟 SECRET AHEAD: ${data.name.toUpperCase()}`, 'streak');
+    });
+
+    bus.on(EVENTS.SECRET_ROUTE_ENTERED, (data: any) => {
+      const extra = data.isFirstDiscovery ? ` (+${data.firstDiscoveryCoins} COINS!)` : '';
+      this.hud.showFeedbackBadge(`🚀 DISCOVERED: ${data.name.toUpperCase()}${extra}`, 'precision');
+    });
+
+    bus.on(EVENTS.SECRET_ROUTE_COMPLETED, (data: any) => {
+      this.hud.showFeedbackBadge(`🏆 COMPLETED: ${data.name.toUpperCase()}!`, 'streak');
     });
 
     bus.on('CHRONO_ORB_COLLECTED', (seconds: number = 5) => {
@@ -891,6 +907,11 @@ export class Game {
       this.player.position.z,
       this.player.groundY
     );
+
+    // Update Secret Railway Routes Director
+    if (this.lifecycleState === 'PLAYING') {
+      SecretRouteDirector.getInstance().update(this.player, effectiveDt);
+    }
 
     // Update dynamic audio soundscape (speed-synchronized footsteps, loops, spatial rail rumble, adaptive music)
     this.soundManager.update(effectiveDt, this.player, this.trackManager, this.lifecycleState);
