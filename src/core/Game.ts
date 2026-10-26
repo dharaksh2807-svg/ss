@@ -47,6 +47,7 @@ import { ReplayHUD } from '../ui/ReplayHUD';
 import { PhotoModeController } from '../scene/PhotoModeController';
 import { PhotoModeModal } from '../ui/PhotoModeModal';
 import { SecretRouteDirector } from '../track/SecretRouteDirector';
+import { JunctionDirector } from '../track/JunctionDirector';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
@@ -297,6 +298,7 @@ export class Game {
     bus.on(EVENTS.COIN_COLLECTED, () => {
       this.coinsCount++;
       SecretRouteDirector.getInstance().onCoinCollected();
+      JunctionDirector.getInstance().onCoinCollected();
       const bonus = CONSTANTS.COIN_SCORE_VALUE * this.scoreMultiplier;
       this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
@@ -320,6 +322,34 @@ export class Game {
 
     bus.on(EVENTS.SECRET_ROUTE_COMPLETED, (data: any) => {
       this.hud.showFeedbackBadge(`🏆 COMPLETED: ${data.name.toUpperCase()}!`, 'streak');
+    });
+
+    // Branching Railway Junction Event Handlers
+    bus.on(EVENTS.JUNCTION_APPROACHING, (data: any) => {
+      this.hud.showFeedbackBadge(`🔀 JUNCTION: CHOOSE ROUTE (LEFT: METRO / RIGHT: INDUSTRIAL)`, 'streak');
+    });
+
+    bus.on(EVENTS.JUNCTION_COMMITTED, (data: any) => {
+      this.hud.showFeedbackBadge(`🛤 ROUTE COMMITTED: ${data.chosenRouteName.toUpperCase()}!`, 'precision');
+      if (data.themeId) {
+        this.trackManager.setEnvironment(data.themeId);
+        const theme = this.worldScene ? EnvironmentManager.getInstance().getTheme(data.themeId) : null;
+        if (theme) {
+          this.worldScene.applyEnvironment(theme);
+        }
+      }
+    });
+
+    bus.on(EVENTS.JUNCTION_COMPLETED, (data: any) => {
+      if (data.scoreBonus) {
+        this.score += data.scoreBonus;
+        bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      }
+      if (data.firstDiscoveryBonus && data.firstDiscoveryBonus > 0) {
+        this.coinsCount += data.firstDiscoveryBonus;
+        bus.emit(EVENTS.COIN_COLLECTED);
+      }
+      this.hud.showFeedbackBadge(`🏆 ROUTE COMPLETED: ${data.routeName.toUpperCase()} (+${data.scoreBonus} PTS)!`, 'streak');
     });
 
     bus.on('CHRONO_ORB_COLLECTED', (seconds: number = 5) => {
@@ -908,9 +938,10 @@ export class Game {
       this.player.groundY
     );
 
-    // Update Secret Railway Routes Director
+    // Update Secret Railway Routes & Branching Junctions
     if (this.lifecycleState === 'PLAYING') {
       SecretRouteDirector.getInstance().update(this.player, effectiveDt);
+      JunctionDirector.getInstance().update(this.player, effectiveDt);
     }
 
     // Update dynamic audio soundscape (speed-synchronized footsteps, loops, spatial rail rumble, adaptive music)

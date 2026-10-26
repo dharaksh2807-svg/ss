@@ -23,6 +23,7 @@ import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { SkillComboManager } from '../core/SkillComboManager';
 import { DailyChallengeManager } from '../core/DailyChallengeManager';
 import { SecretRouteDirector } from './SecretRouteDirector';
+import { JunctionDirector } from './JunctionDirector';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -159,6 +160,7 @@ export class TrackManager {
     this.difficultyController.reset();
     EnvironmentDirector.getInstance().setRunSeed(seed, isDebug);
     SecretRouteDirector.getInstance().setRunSeed(seed);
+    JunctionDirector.getInstance().setRunSeed(seed);
   }
 
   public setDebugSeed(seed: number): void {
@@ -264,6 +266,8 @@ export class TrackManager {
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
     SecretRouteDirector.getInstance().resetRunState();
     SecretRouteDirector.getInstance().setRunSeed(this.currentSeed);
+    JunctionDirector.getInstance().resetRunState();
+    JunctionDirector.getInstance().setRunSeed(this.currentSeed);
 
     this.furthestZ = 0;
     const mode = this.getGameMode();
@@ -609,6 +613,79 @@ export class TrackManager {
         return secretPattern;
       }
     }
+
+    // Advanced Branching Railway Junction Scheduling
+    if (!this.activeRooftopPlan && !isTransition) {
+      const scheduledJunction = JunctionDirector.getInstance().tryScheduleJunction(
+        chunk,
+        worldZ,
+        isTransition,
+        Boolean(this.activeRooftopPlan)
+      );
+      if (scheduledJunction) {
+        const forkPattern: TrackPattern = {
+          name: 'RAILWAY_JUNCTION_FORK',
+          difficulty: 'EASY',
+          obstacles: [
+            { type: 'LOW_BARRIER', lane: -1, zOffset: 24.0 },
+            { type: 'LOW_BARRIER', lane: 1, zOffset: 64.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: -1, zOffset: 12.0, count: 5, spacing: 3.2 },
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 5, spacing: 3.2 },
+            { type: 'COIN', lane: 1, zOffset: 20.0, count: 6, spacing: 3.0 }
+          ]
+        };
+        chunk.populate(forkPattern, worldZ, theme, false);
+        this.commitPattern(forkPattern, Math.abs(worldZ));
+        return forkPattern;
+      }
+    }
+
+    // Active Junction Route Branch Chunk Population
+    const activeJunction = JunctionDirector.getInstance().getActiveJunction();
+    if (activeJunction && activeJunction.state === 'BRANCH_ACTIVE' && activeJunction.remainingBranchChunks > 0 && !isTransition) {
+      JunctionDirector.getInstance().onChunkGeneratedForBranch();
+      const committedRoute = activeJunction.committedRoute;
+      const branchStep = 3 - activeJunction.remainingBranchChunks;
+
+      if (committedRoute === 'ROUTE_B_INDUSTRIAL_OVERPASS') {
+        const industrialTheme = this.envManager.getTheme('NEON_INDUSTRIAL');
+        const industrialPattern: TrackPattern = {
+          name: `INDUSTRIAL_OVERPASS_BRANCH_${branchStep}`,
+          difficulty: 'HARD',
+          obstacles: [
+            { type: 'TRAIN_RAMP', lane: 0, zOffset: 16.0, hasRamp: true, length: CONSTANTS.TRAIN_SET_TRIPLE_LENGTH },
+            { type: 'MOVING_TRAIN', lane: -1, zOffset: 42.0, velocityZ: 20.0, length: 22.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 12, spacing: 2.2, yOffset: 5.2 },
+            { type: 'MULTIPLIER', lane: 0, zOffset: 48.0, yOffset: 5.2 },
+            { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.4 }
+          ]
+        };
+        chunk.populate(industrialPattern, worldZ, industrialTheme, false);
+        this.commitPattern(industrialPattern, Math.abs(worldZ));
+        return industrialPattern;
+      } else if (committedRoute === 'ROUTE_A_MAIN_METRO') {
+        const metroTheme = this.envManager.getTheme('MODERN_METRO');
+        const mainlinePattern: TrackPattern = {
+          name: `MAIN_METRO_BRANCH_${branchStep}`,
+          difficulty: 'EASY',
+          obstacles: [
+            { type: 'LOW_BARRIER', lane: -1, zOffset: 28.0 },
+            { type: 'TRAIN', lane: 1, zOffset: 32.0, length: 22.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 8, spacing: 3.2 },
+            { type: 'SNEAKERS', lane: 0, zOffset: 52.0 }
+          ]
+        };
+        chunk.populate(mainlinePattern, worldZ, metroTheme, false);
+        this.commitPattern(mainlinePattern, Math.abs(worldZ));
+        return mainlinePattern;
+      }
+    }
     // Reserve approach lanes before choosing ordinary obstacles, rather than
     // waiting for an already blocked train to clear six streamed chunks.
     const rotation = pacing.stage < 2 ? 0 : pacing.stage - 1;
@@ -924,6 +1001,11 @@ export class TrackManager {
           this.activeEnvironment = selectionPref as EnvironmentId;
           this.targetEnvironment = this.activeEnvironment;
           chunkTheme = this.envManager.getTheme(this.activeEnvironment);
+        }
+
+        const juncState = JunctionDirector.getInstance().getActiveJunction();
+        if (juncState && juncState.state === 'BRANCH_ACTIVE' && juncState.committedTheme) {
+          chunkTheme = this.envManager.getTheme(juncState.committedTheme);
         }
 
         const encounterDist = Math.abs(this.furthestZ);
