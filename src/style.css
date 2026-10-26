@@ -8000,3 +8000,726 @@ input:focus-visible {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   TASK 3: PREMIUM CINEMATIC PHOTO STUDIO & SCREENSHOT CAPTURE STYLES
+   ========================================================================== */
+
+.photo-mode-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.photo-mode-container.hidden {
+  display: none !important;
+}
+
+/* Vignette Preview Overlay */
+.photo-vignette-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1001;
+  transition: background 0.12s ease;
+}
+
+/* Rule of Thirds Cinematic Grid */
+.photo-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1002;
+}
+
+.grid-line {
+  position: absolute;
+  background: rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 4px rgba(0, 229, 255, 0.3);
+}
+
+.grid-line-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.grid-line-h.h1 { top: 33.333%; }
+.grid-line-h.h2 { top: 66.666%; }
+
+.grid-line-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.grid-line-v.v1 { left: 33.333%; }
+.grid-line-v.v2 { left: 66.666%; }
+
+/* Live Watermark Preview */
+.photo-watermark-box {
+  position: absolute;
+  bottom: 28px;
+  left: 28px;
+  pointer-events: none;
+  z-index: 1003;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(10, 15, 26, 0.82);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.2s ease;
+}
+
+.wm-accent-bar {
+  width: 4px;
+  height: 44px;
+  background: #00e5ff;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+}
+
+.wm-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wm-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+}
+
+.wm-subtitle {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffbe0b;
+}
+
+.wm-badge {
+  font-family: monospace;
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Shutter Flash Animation */
+.photo-shutter-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  pointer-events: none;
+  z-index: 2000;
+  opacity: 0;
+}
+
+.shutter-flash-active {
+  animation: photoFlash 0.36s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes photoFlash {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+/* Floating Unhide Hint */
+.photo-hidden-hint {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 1010;
+  padding: 10px 22px;
+  background: rgba(13, 20, 36, 0.88);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-radius: 9999px;
+  color: #00e5ff;
+  font-family: var(--font-display, sans-serif);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.photo-hidden-hint:hover {
+  transform: translateX(-50%) scale(1.04);
+  background: rgba(13, 20, 36, 0.96);
+  border-color: #00e5ff;
+}
+
+.photo-hidden-hint kbd {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Primary Glassmorphic Controls Panel */
+.photo-controls-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(840px, 94vw);
+  max-height: 82vh;
+  background: rgba(12, 18, 32, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  border-radius: 20px;
+  padding: 18px 22px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.75), 0 0 35px rgba(0, 229, 255, 0.12);
+  pointer-events: auto;
+  z-index: 1005;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.photo-controls-panel.controls-hidden {
+  transform: translate(-50%, 120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Header Bar */
+.photo-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+}
+
+.photo-title-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-title-pill .camera-icon {
+  font-size: 1.3rem;
+}
+
+.photo-title-text {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+}
+
+.photo-badge {
+  background: linear-gradient(135deg, #00e5ff, #7c4dff);
+  color: #080d1a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+.photo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-tool-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 6px 12px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s ease;
+}
+
+.photo-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(0, 229, 255, 0.4);
+}
+
+.photo-tool-btn.active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  color: #00e5ff;
+}
+
+.photo-tool-btn.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Presets Ribbon */
+.photo-presets-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ribbon-label {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.presets-scroll-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.presets-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+.preset-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.14s ease;
+}
+
+.preset-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #fff;
+}
+
+.preset-pill.active {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(124, 77, 255, 0.35));
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+}
+
+/* Tabs */
+.photo-tab-bar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.photo-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.14s ease;
+}
+
+.photo-tab-btn:hover {
+  color: #fff;
+}
+
+.photo-tab-btn.active {
+  color: #00e5ff;
+  border-bottom-color: #00e5ff;
+}
+
+/* Tab Contents & Sliders */
+.photo-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-label-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slider-label {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.slider-value {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #00e5ff;
+}
+
+.photo-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+}
+
+.photo-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.photo-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.photo-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00e5ff;
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+  cursor: pointer;
+}
+
+/* Button Chips Grid */
+.button-group-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button-group-row.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.btn-chip {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s ease;
+}
+
+.btn-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(0, 229, 255, 0.35);
+}
+
+.btn-chip.active {
+  background: rgba(0, 229, 255, 0.22);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+}
+
+/* Toggle Checkbox */
+.toggle-row {
+  margin-top: 4px;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.toggle-container input {
+  display: none;
+}
+
+.toggle-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.toggle-container input:checked + .toggle-mark {
+  background: #00e5ff;
+  border-color: #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.toggle-container input:checked + .toggle-mark::after {
+  content: "✓";
+  color: #080d1a;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.toggle-text {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Pose info note */
+.pose-info-box {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+}
+
+/* Shutter Bar */
+.photo-shutter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+}
+
+.touch-hint {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+}
+
+.shutter-capture-btn {
+  background: linear-gradient(135deg, #00e5ff, #00b4d8);
+  border: none;
+  border-radius: 14px;
+  padding: 12px 28px;
+  color: #070d18;
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.45);
+  transition: all 0.14s ease;
+}
+
+.shutter-capture-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 26px rgba(0, 229, 255, 0.65);
+}
+
+.shutter-capture-btn:active {
+  transform: translateY(1px);
+}
+
+.shutter-icon {
+  font-size: 1.3rem;
+}
+
+.shutter-shortcut {
+  background: rgba(7, 13, 24, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* Screenshot Preview Modal */
+.photo-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 2010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.photo-preview-backdrop.hidden {
+  display: none !important;
+}
+
+.photo-preview-card {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.photo-preview-thumb-container {
+  position: relative;
+  width: 100%;
+  max-height: 52vh;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.photo-preview-img {
+  width: 100%;
+  height: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+  display: block;
+}
+
+.photo-preview-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #00e5ff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.photo-preview-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Mobile Responsiveness for Photo Studio */
+@media (max-width: 640px) {
+  .photo-controls-panel {
+    width: 96vw;
+    bottom: 10px;
+    padding: 14px;
+    max-height: 78vh;
+  }
+
+  .photo-title-text {
+    font-size: 1.05rem;
+  }
+
+  .photo-header-actions {
+    gap: 4px;
+  }
+
+  .photo-tool-btn {
+    padding: 5px 8px;
+    font-size: 0.70rem;
+  }
+
+  .button-group-row.grid-3col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .photo-shutter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .shutter-capture-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .touch-hint {
+    text-align: center;
+  }
+
+  .photo-watermark-box {
+    bottom: 16px;
+    left: 16px;
+    padding: 6px 12px;
+    transform: scale(0.85);
+    transform-origin: bottom left;
+  }
+}
+

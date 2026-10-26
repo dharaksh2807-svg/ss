@@ -11,6 +11,8 @@ export type RunningStyle = 'CLASSIC' | 'REVERSE';
 
 export type JumpPhase = 'NONE' | 'TAKEOFF' | 'ASCENDING' | 'APEX' | 'DESCENDING' | 'FAST_DROP' | 'LANDING';
 
+export type PresentationPose = 'DEFAULT' | 'IDLE' | 'RUN' | 'JUMP' | 'VICTORY' | 'HOVERBOARD';
+
 export type LocomotionState = 
   | 'IDLE'
   | 'RUN'
@@ -27,6 +29,7 @@ export type LocomotionState =
   | 'TRAIN_ROOF_RUN'
   | 'JETPACK'
   | 'HOVERBOARD'
+  | 'VICTORY'
   | 'STUMBLE'
   | 'CRASH';
 
@@ -79,6 +82,7 @@ export class CharacterModel {
   // Animation clocks & state
   private animTime: number = 0;
   private isSuperSneakers: boolean = false;
+  private presentationPose: PresentationPose = 'DEFAULT';
 
   // Base articulation rest offsets
   private baseHipsY: number = 0.95;
@@ -182,6 +186,24 @@ export class CharacterModel {
 
   public getVisualFacingAngle(): number {
     return this.visualFacingAngle;
+  }
+
+  public setPresentationPose(pose: PresentationPose): void {
+    this.presentationPose = pose;
+    if (pose === 'HOVERBOARD' && this.hoverboardGroup) {
+      this.hoverboardGroup.visible = true;
+    }
+  }
+
+  public getPresentationPose(): PresentationPose {
+    return this.presentationPose;
+  }
+
+  public clearPresentationPose(): void {
+    this.presentationPose = 'DEFAULT';
+    if (this.hoverboardGroup) {
+      this.hoverboardGroup.visible = this.isHoverboard;
+    }
   }
 
   /**
@@ -448,6 +470,27 @@ export class CharacterModel {
       locState = 'RUN';
     }
 
+    // Presentation pose override for Photo Mode
+    if (this.presentationPose !== 'DEFAULT') {
+      switch (this.presentationPose) {
+        case 'IDLE':
+          locState = 'IDLE';
+          break;
+        case 'RUN':
+          locState = 'RUN';
+          break;
+        case 'JUMP':
+          locState = 'JUMP_APEX';
+          break;
+        case 'HOVERBOARD':
+          locState = 'HOVERBOARD';
+          break;
+        case 'VICTORY':
+          locState = 'VICTORY';
+          break;
+      }
+    }
+
     this.activeLocomotionState = locState;
 
     this.updateLocomotion(
@@ -491,6 +534,16 @@ export class CharacterModel {
       else locState = 'JUMP_DESCEND';
     }
 
+    if (this.presentationPose !== 'DEFAULT') {
+      switch (this.presentationPose) {
+        case 'IDLE': locState = 'IDLE'; break;
+        case 'RUN': locState = 'RUN'; break;
+        case 'JUMP': locState = 'JUMP_APEX'; break;
+        case 'HOVERBOARD': locState = 'HOVERBOARD'; break;
+        case 'VICTORY': locState = 'VICTORY'; break;
+      }
+    }
+
     this.activeLocomotionState = locState;
     this.updateLocomotion(dt, locState, CONSTANTS.INITIAL_SPEED, hasHoverboard, hasSneakers, bankAngle, jumpProgress, slideProgress, 0);
   }
@@ -507,6 +560,10 @@ export class CharacterModel {
     landingProgress: number,
     isFastDropLand: boolean = false
   ): void {
+    if (this.presentationPose === 'HOVERBOARD') {
+      hasHoverboard = true;
+    }
+
     // 1. Advance animation clock with speed-dependent cadence
     // Stride cadence scales smoothly with forward speed, eliminating foot sliding!
     const cadence = state === 'RUN' || state === 'TRAIN_ROOF_RUN' || state === 'CLIMB'
@@ -610,6 +667,9 @@ export class CharacterModel {
         case 'HOVERBOARD':
           targetClip = 'idle';
           break;
+        case 'VICTORY':
+          targetClip = 'idle';
+          break;
         case 'JETPACK':
           targetClip = 'jump_air';
           break;
@@ -707,6 +767,10 @@ export class CharacterModel {
 
       case 'HOVERBOARD':
         this.computeHoverboardTarget(t, dt);
+        break;
+
+      case 'VICTORY':
+        this.computeVictoryTarget(dt);
         break;
 
       case 'STUMBLE':
@@ -1072,6 +1136,32 @@ export class CharacterModel {
     this.targetRootPos.set(0, -0.60, 0);
     this.targetLeftArmRot.set(0.5, 0, -0.8);
     this.targetRightArmRot.set(0.5, 0, 0.8);
+  }
+
+  private computeVictoryTarget(dt: number): void {
+    const t = this.animTime * 0.4;
+    const breath = Math.sin(t) * 0.02;
+
+    // Confident champion stance: upright chest, slight proud tilt
+    this.targetRootPos.set(0, 0.04, 0);
+    this.targetHipsPos.set(0, this.baseHipsY + breath * 0.5, 0);
+    this.targetHipsRot.set(0, 0.12, 0);
+    this.targetSpineRot.set(-0.06, 0.06, 0);
+    this.targetHeadRot.set(-0.10, -0.12, 0.04);
+
+    // Athletic wide grounded stance
+    this.targetLeftLegRot.set(-0.08, 0, -0.18);
+    this.targetLeftCalfRot.set(0.16, 0, 0);
+    this.targetRightLegRot.set(0.12, 0, 0.18);
+    this.targetRightCalfRot.set(0.14, 0, 0);
+
+    // Right arm triumphantly raised high in victory pump
+    this.targetRightArmRot.set(-2.40, 0, 0.35);
+    this.targetRightForearmRot.set(-0.70, 0, 0);
+
+    // Left arm confident on the hip
+    this.targetLeftArmRot.set(0.32, 0, -0.52);
+    this.targetLeftForearmRot.set(-1.18, 0, 0);
   }
 
   private computeIdleTarget(dt: number): void {

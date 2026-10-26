@@ -44,6 +44,8 @@ import { ReviveModal } from '../ui/ReviveModal';
 import { DailyChallengeModal } from '../ui/DailyChallengeModal';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { ReplayHUD } from '../ui/ReplayHUD';
+import { PhotoModeController } from '../scene/PhotoModeController';
+import { PhotoModeModal } from '../ui/PhotoModeModal';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
@@ -79,6 +81,8 @@ export class Game {
   private reviveModal: ReviveModal;
   private dailyChallengeModal: DailyChallengeModal;
   private replayHUD: ReplayHUD;
+  private photoModeController: PhotoModeController;
+  private photoModeModal: PhotoModeModal;
   private crashReplayManager: CrashReplayManager = CrashReplayManager.getInstance();
 
   private progression: ProgressionManager;
@@ -139,6 +143,10 @@ export class Game {
     this.reviveModal = new ReviveModal();
     this.dailyChallengeModal = new DailyChallengeModal();
     this.replayHUD = new ReplayHUD();
+    this.photoModeController = PhotoModeController.getInstance();
+    this.photoModeController.init(this.cameraController, this.worldScene);
+    this.photoModeModal = new PhotoModeModal();
+    this.photoModeModal.init(this.worldScene);
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
@@ -246,6 +254,22 @@ export class Game {
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
     bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode, true));
     bus.on('GO_TO_MENU', () => this.goToMenu());
+
+    bus.on(EVENTS.PHOTO_MODE_ENTER, () => {
+      if (this.lifecycleState === 'PLAYING') {
+        this.pause();
+      }
+      this.pauseModal.hide();
+      this.hud.hide();
+      this.photoModeModal.show(this.player);
+    });
+
+    bus.on(EVENTS.PHOTO_MODE_EXIT, () => {
+      this.photoModeModal.hide();
+      if (this.lifecycleState === 'PAUSED') {
+        this.pauseModal.show();
+      }
+    });
 
     bus.on(EVENTS.STUMBLE, () => {
       this.chaser.onMinorStumble();
@@ -453,6 +477,7 @@ export class Game {
     this.profileModal.hide();
     this.dailyRewardModal.hide();
     this.dailyChallengeModal.hide(false);
+    this.photoModeModal.hide();
     this.environmentSelectModal.hide();
     this.practiceModal.hide(false);
     this.practiceController.exit();
@@ -518,6 +543,7 @@ export class Game {
     this.environmentSelectModal.hide();
     this.practiceModal.hide();
     this.practiceController.exit();
+    this.photoModeModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
@@ -731,6 +757,13 @@ export class Game {
         this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
         return;
       }
+    }
+
+    // Dedicated Photo Studio Render Frame
+    if (this.photoModeModal && this.photoModeModal.isPhotoStudioOpen()) {
+      this.photoModeController.update(this.player);
+      this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+      return;
     }
 
     const effectiveDt = dt * (this.devTestArena ? this.devTestArena.getTimeScale() : 1.0);

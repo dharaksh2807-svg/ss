@@ -35,6 +35,12 @@ export class CameraController {
   private gameOverTargetPos = new THREE.Vector3();
   private gameOverLookTarget = new THREE.Vector3();
 
+  // Dedicated Photo Mode camera state
+  private isPhotoMode: boolean = false;
+  private photoPos = new THREE.Vector3();
+  private photoLookTarget = new THREE.Vector3();
+  private savedFov: number = CONSTANTS.CAMERA_FOV;
+
   constructor() {
     const aspect = typeof window !== 'undefined' && window.innerHeight > 0
       ? window.innerWidth / window.innerHeight
@@ -129,6 +135,43 @@ export class CameraController {
 
   public getGameOverMode(): boolean {
     return this.isGameOverMode;
+  }
+
+  public enterPhotoMode(playerPos: THREE.Vector3): void {
+    this.isPhotoMode = true;
+    this.savedFov = this.camera.fov;
+    this.photoPos.copy(this.camera.position);
+    this.photoLookTarget.copy(this.lookTarget);
+  }
+
+  public exitPhotoMode(): void {
+    this.isPhotoMode = false;
+    this.camera.fov = this.savedFov;
+    this.camera.updateProjectionMatrix();
+  }
+
+  public isPhotoModeActive(): boolean {
+    return this.isPhotoMode;
+  }
+
+  public setPhotoCameraTransform(pos: THREE.Vector3, lookAt: THREE.Vector3, fov?: number): void {
+    if (!this.isPhotoMode) return;
+    this.photoPos.copy(pos);
+    this.photoLookTarget.copy(lookAt);
+    this.camera.position.copy(this.photoPos);
+    this.camera.lookAt(this.photoLookTarget);
+    if (fov !== undefined && Math.abs(this.camera.fov - fov) > 0.05) {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  public getPhotoCameraTransform(): { position: THREE.Vector3; lookAt: THREE.Vector3; fov: number } {
+    return {
+      position: this.camera.position.clone(),
+      lookAt: this.photoLookTarget.clone(),
+      fov: this.camera.fov
+    };
   }
 
   public updateIntro(progress: number, playerPos: THREE.Vector3, dt: number): void {
@@ -234,7 +277,7 @@ export class CameraController {
     isSliding: boolean = false,
     isTunnelEnclosed: boolean = false
   ): void {
-    if (this.isIntroMode) {
+    if (this.isIntroMode || this.isPhotoMode) {
       return;
     }
 
@@ -407,6 +450,7 @@ export class CameraController {
     this.shakeTrauma = 0;
     this.landingDipOffset = 0;
     this.isGameOverMode = false;
+    this.isPhotoMode = false;
     const isPortrait = this.camera.aspect < 1.0;
     this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();

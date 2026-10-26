@@ -5,6 +5,7 @@ import { PacingMetrics } from './track/PacingMetrics';
 
 import { SkillComboManager } from './core/SkillComboManager';
 import { DailyChallengeManager } from './core/DailyChallengeManager';
+import { PhotoModeController } from './scene/PhotoModeController';
 
 // Expose on window for runtime testing and scripts
 (window as any).__METRO_BUS__ = EventBus.getInstance();
@@ -12,6 +13,7 @@ import { DailyChallengeManager } from './core/DailyChallengeManager';
 (window as any).__PACING_METRICS__ = PacingMetrics.getInstance();
 (window as any).__SKILL_COMBO__ = SkillComboManager.getInstance();
 (window as any).__DAILY_CHALLENGE__ = DailyChallengeManager.getInstance();
+(window as any).__PHOTO_MODE__ = PhotoModeController.getInstance();
 
 // Initialize the game once DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
