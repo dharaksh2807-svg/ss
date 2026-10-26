@@ -21,6 +21,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { RooftopRoutePlanner, RooftopRoutePlan, RooftopRouteArchetype } from './RooftopRoutePlanner';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { SkillComboManager } from '../core/SkillComboManager';
+import { DailyChallengeManager } from '../core/DailyChallengeManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -139,6 +140,12 @@ export class TrackManager {
 
   public getGameMode(): string {
     const mode = this.difficultyController.getGameMode();
+    if (mode === 'DAILY_CHALLENGE') {
+      try {
+        const active = DailyChallengeManager.getInstance().getActiveChallenge();
+        if (active) return active.difficulty.toUpperCase();
+      } catch (_) {}
+    }
     return (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
   }
 
@@ -282,6 +289,15 @@ export class TrackManager {
     this.rampOnboardingChecked = false;
     this.difficultyController.reset();
     this.jetpackRecollectedPending = false;
+    this.nextRooftopAllowedZ = 110;
+    this.activeRooftopPlan = null;
+    this.forcedDebugArchetype = null;
+    this.forcedDebugSeed = null;
+    this.rooftopStartTime = 0;
+    this.rooftopMeasuredDuration = 0;
+    this.supportLossCount = 0;
+    this.lastSupportLossReason = 'NONE';
+    this.lastMovingDisplacement = 0;
     if (this.aerialCoinManager) {
       this.aerialCoinManager.reset();
     }

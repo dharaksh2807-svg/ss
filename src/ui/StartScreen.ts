@@ -5,6 +5,7 @@ import { DailyRewardManager } from '../progression/DailyRewardManager';
 import { getCharacterById } from '../characters/CharacterCatalog';
 import { getHoverboardById } from '../hoverboard/HoverboardCatalog';
 import { EnvironmentManager } from '../environment/EnvironmentConfig';
+import { DailyChallengeManager } from '../core/DailyChallengeManager';
 
 export class StartScreen {
   private element: HTMLElement;
@@ -145,6 +146,15 @@ export class StartScreen {
 
         <!-- Right Side Challenge Modes & Environment Widget -->
         <aside class="lobby-side-rail right-rail">
+          <div class="lobby-card-widget daily-challenge-widget" id="lobby-daily-challenge-btn" role="button" tabindex="0" title="Open Daily Seeded Challenge">
+            <span class="widget-icon pulse-icon">📅</span>
+            <div class="widget-text">
+              <span class="widget-label">DAILY CHALLENGE</span>
+              <span class="widget-val highlight-gold" id="lobby-dc-title-snippet">SEEDED RUN</span>
+              <span class="widget-sub" id="lobby-dc-sub-snippet">Global track • Share code</span>
+            </div>
+          </div>
+
           <div class="lobby-card-widget event-widget" id="lobby-event-snippet" role="button" tabindex="0" title="Open Event Modes">
             <span class="widget-icon">⚡</span>
             <div class="widget-text">
@@ -363,6 +373,14 @@ export class StartScreen {
       });
     }
 
+    const dailyChallengeBtn = document.getElementById('lobby-daily-challenge-btn');
+    if (dailyChallengeBtn) {
+      dailyChallengeBtn.addEventListener('click', () => {
+        this.hide();
+        this.eventBus.emit(EVENTS.OPEN_DAILY_CHALLENGE, 'START');
+      });
+    }
+
     const eventSnippet = document.getElementById('lobby-event-snippet');
     if (eventSnippet) {
       eventSnippet.addEventListener('click', () => {
@@ -519,6 +537,27 @@ export class StartScreen {
         envTitleEl.className = 'widget-val highlight-cyan';
         envSubEl.textContent = 'Vaulted caverns & tile murals';
       }
+    }
+
+    // 7. Daily Challenge Snippet
+    try {
+      const dcManager = DailyChallengeManager.getInstance();
+      const todayChallenge = dcManager.getTodayChallenge();
+      const record = dcManager.getTodayRecord();
+      const dcTitleEl = document.getElementById('lobby-dc-title-snippet');
+      const dcSubEl = document.getElementById('lobby-dc-sub-snippet');
+      if (dcTitleEl) {
+        dcTitleEl.textContent = todayChallenge.title.toUpperCase();
+      }
+      if (dcSubEl) {
+        if (record && record.bestScore > 0) {
+          dcSubEl.textContent = `BEST: ${record.bestScore.toLocaleString()} pts (${record.attempts} run${record.attempts > 1 ? 's' : ''})`;
+        } else {
+          dcSubEl.textContent = `${todayChallenge.difficulty} • Unbeaten Track`;
+        }
+      }
+    } catch (e) {
+      // safe fallback
     }
   }
 

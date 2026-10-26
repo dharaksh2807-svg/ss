@@ -1,5 +1,6 @@
 import { CONSTANTS } from '../core/Constants';
 import { PatternDifficulty, TrackPattern } from './ObstaclePatterns';
+import { DailyChallengeManager } from '../core/DailyChallengeManager';
 
 export interface DifficultyBudget {
   tier: PatternDifficulty;
@@ -61,7 +62,14 @@ export class DifficultyController {
   public reset(): void {
     this.runDuration = 0;
     this.distanceTraveled = 0;
-    this.currentSpeed = (CONSTANTS.SPEED_PROFILES[this.gameMode as keyof typeof CONSTANTS.SPEED_PROFILES] || CONSTANTS.SPEED_PROFILES.NORMAL).initialSpeed;
+    let modeKey = this.gameMode;
+    if (modeKey === 'DAILY_CHALLENGE') {
+      try {
+        const active = DailyChallengeManager.getInstance().getActiveChallenge();
+        if (active) modeKey = active.difficulty;
+      } catch (_) {}
+    }
+    this.currentSpeed = (CONSTANTS.SPEED_PROFILES[modeKey as keyof typeof CONSTANTS.SPEED_PROFILES] || CONSTANTS.SPEED_PROFILES.NORMAL).initialSpeed;
     this.consecutiveDifficultCount = 0;
     this.lastDifficultDistance = -999;
     this.lastMovingTrainDistance = -999;

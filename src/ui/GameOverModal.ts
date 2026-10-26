@@ -128,6 +128,17 @@ export class GameOverModal {
           </div>
         </div>
 
+        <!-- Shareable Challenge Course Code Card (Task 2 Requirement J) -->
+        <div id="game-over-share-card" class="game-over-share-card hidden">
+          <div class="go-share-header">
+            <span class="go-share-label">SHARE THIS SEEDED COURSE</span>
+            <code id="go-share-code-text" class="go-share-code">MTR1-DST-HRD-00000000-00</code>
+          </div>
+          <button id="go-copy-code-btn" class="arcade-btn btn-secondary go-copy-btn" title="Copy challenge code">
+            <span id="go-copy-btn-text">📋 COPY CHALLENGE CODE</span>
+          </button>
+        </div>
+
         <!-- Crash Analysis & Instant Replay Card -->
         <div id="game-over-crash-card" class="game-over-crash-card hidden">
           <div class="crash-card-header">
@@ -158,7 +169,7 @@ export class GameOverModal {
           <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow" style="width: 100%; margin-bottom: 12px;">
             <span class="play-btn-content">
               <span class="play-icon">🔄</span>
-              <span class="play-text">PLAY AGAIN</span>
+              <span id="game-over-retry-text" class="play-text">PLAY AGAIN</span>
             </span>
           </button>
 
@@ -184,6 +195,20 @@ export class GameOverModal {
   }
 
   private bindEvents(): void {
+    const copyBtn = this.element.querySelector('#go-copy-code-btn');
+    copyBtn?.addEventListener('click', () => {
+      const codeEl = this.element.querySelector('#go-share-code-text');
+      const text = codeEl?.textContent || '';
+      if (text && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+      const btnText = this.element.querySelector('#go-copy-btn-text');
+      if (btnText) btnText.textContent = '✓ COPIED!';
+      setTimeout(() => {
+        if (btnText) btnText.textContent = '📋 COPY CHALLENGE CODE';
+      }, 2500);
+    });
+
     const retryBtn = this.element.querySelector('#game-over-retry-btn');
     retryBtn?.addEventListener('click', () => {
       this.hide();
@@ -229,7 +254,14 @@ export class GameOverModal {
     coins: number,
     distanceMeters: number,
     mode: GameMode = 'NORMAL',
-    modeResult?: { title?: string; subtitle?: string; bonusCoins?: number },
+    modeResult?: {
+      title?: string;
+      subtitle?: string;
+      bonusCoins?: number;
+      challenge?: any;
+      challengeRecord?: any;
+      isNewRecord?: boolean;
+    },
     onReplay?: () => void
   ): void {
     this.onReplayCallback = onReplay || null;
@@ -237,7 +269,10 @@ export class GameOverModal {
     let isNewRecord = false;
     const stats = this.progression.getState().lifetimeStats;
 
-    if (mode === 'HARD') {
+    if (mode === 'DAILY_CHALLENGE') {
+      highScore = modeResult?.challengeRecord?.bestScore || 0;
+      isNewRecord = modeResult?.isNewRecord || (score > highScore);
+    } else if (mode === 'HARD') {
       highScore = stats.hardModeHighScore || 0;
       if (score > highScore) {
         highScore = Math.floor(score);
@@ -273,7 +308,13 @@ export class GameOverModal {
     const modeBadge = this.element.querySelector('#game-over-mode-badge') as HTMLElement;
 
     if (modeBadge) {
-      if (mode === 'HARD') {
+      if (mode === 'DAILY_CHALLENGE') {
+        const cName = modeResult?.challenge?.name || 'SEEDED COURSE';
+        const cDiff = modeResult?.challenge?.difficulty || '';
+        modeBadge.className = 'game-over-mode-pill mode-daily-pill';
+        modeBadge.innerHTML = `📅 DAILY CHALLENGE • ${cName.toUpperCase()}${cDiff ? ` (${cDiff})` : ''}`;
+        modeBadge.style.display = 'inline-block';
+      } else if (mode === 'HARD') {
         modeBadge.className = 'game-over-mode-pill mode-hard-pill';
         modeBadge.innerHTML = '🔥 HARD MODE • EXPRESS';
         modeBadge.style.display = 'inline-block';
@@ -295,7 +336,9 @@ export class GameOverModal {
     if (isNewRecord) {
       recordBadge?.classList.remove('hidden');
       if (recordBadge) {
-        if (mode === 'HARD') {
+        if (mode === 'DAILY_CHALLENGE') {
+          recordBadge.innerHTML = `<span>🏆 NEW CHALLENGE RECORD! 🏆</span>`;
+        } else if (mode === 'HARD') {
           recordBadge.innerHTML = `<span>🔥 NEW HARD MODE RECORD! 🔥</span>`;
         } else if (mode === 'EASY') {
           recordBadge.innerHTML = `<span>⚡ NEW EASY MODE RECORD! ⚡</span>`;
@@ -333,7 +376,46 @@ export class GameOverModal {
     // Static stats
     const highLabelEl = this.element.querySelector('#game-over-high-label') as HTMLElement;
     if (highLabelEl) {
-      highLabelEl.textContent = mode === 'HARD' ? 'HARD MODE BEST' : 'ALL-TIME BEST';
+      if (mode === 'DAILY_CHALLENGE') {
+        highLabelEl.textContent = 'CHALLENGE BEST';
+      } else if (mode === 'HARD') {
+        highLabelEl.textContent = 'HARD MODE BEST';
+      } else {
+        highLabelEl.textContent = 'ALL-TIME BEST';
+      }
+    }
+
+    // Shareable Course Code & Retry Button
+    const shareCard = this.element.querySelector('#game-over-share-card') as HTMLElement;
+    const retryText = this.element.querySelector('#game-over-retry-text') as HTMLElement;
+
+    if (mode === 'DAILY_CHALLENGE' && modeResult?.challenge?.shareCode) {
+      shareCard?.classList.remove('hidden');
+      const shareCodeEl = this.element.querySelector('#go-share-code-text');
+      if (shareCodeEl) shareCodeEl.textContent = modeResult.challenge.shareCode;
+      if (retryText) retryText.textContent = 'RETRY THIS COURSE 🔄';
+    } else {
+      shareCard?.classList.add('hidden');
+      if (retryText) retryText.textContent = 'PLAY AGAIN 🔄';
+    }
+
+    // First completion bonus banner
+    if (modeResult && modeResult.bonusCoins && modeResult.bonusCoins > 0) {
+      const missionsContainer = this.element.querySelector('#game-over-missions-container');
+      if (missionsContainer) {
+        missionsContainer.innerHTML = `
+          <div class="go-reward-card pulse-glow">
+            <div class="reward-card-left">
+              <span class="reward-icon">🎁</span>
+              <div class="reward-meta">
+                <span class="reward-title">Daily Challenge Completion Reward!</span>
+                <span class="reward-desc">First successful completion of today's seeded railway course</span>
+              </div>
+            </div>
+            <div class="reward-val highlight-gold">+${modeResult.bonusCoins} 🪙</div>
+          </div>
+        `;
+      }
     }
     const highEl = this.element.querySelector('#game-over-high-score') as HTMLElement;
     if (highEl) {

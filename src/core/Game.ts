@@ -39,7 +39,9 @@ import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/Env
 import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
 import { ReviveManager } from '../revive/ReviveManager';
 import { SkillComboManager } from './SkillComboManager';
+import { DailyChallengeManager } from './DailyChallengeManager';
 import { ReviveModal } from '../ui/ReviveModal';
+import { DailyChallengeModal } from '../ui/DailyChallengeModal';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { ReplayHUD } from '../ui/ReplayHUD';
 
@@ -75,6 +77,7 @@ export class Game {
   private devTestArena: DevTestArena;
   private reviveManager: ReviveManager;
   private reviveModal: ReviveModal;
+  private dailyChallengeModal: DailyChallengeModal;
   private replayHUD: ReplayHUD;
   private crashReplayManager: CrashReplayManager = CrashReplayManager.getInstance();
 
@@ -134,6 +137,7 @@ export class Game {
     this.environmentSelectModal = new EnvironmentSelectModal();
     this.reviveManager = ReviveManager.getInstance();
     this.reviveModal = new ReviveModal();
+    this.dailyChallengeModal = new DailyChallengeModal();
     this.replayHUD = new ReplayHUD();
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
@@ -389,7 +393,15 @@ export class Game {
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
     this.trackManager.setGameMode(this.activeGameMode);
-    // In normal play, generate fresh seed; in debug replay mode, preserve seed
+    // In normal play, generate fresh seed; in debug or daily challenge mode, preserve seed
+    if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const challenge = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
+      dailyMgr.setActiveChallenge(challenge);
+      this.trackManager.setSeed(challenge.seed, true);
+    } else if (this.trackManager.isDebugMode()) {
+      this.trackManager.clearDebugSeed();
+    }
     this.trackManager.reset(!this.trackManager.isDebugMode());
     const startEnvId = this.trackManager.getActiveEnvironment();
     const startTheme = EnvironmentManager.getInstance().getTheme(startEnvId);
@@ -405,6 +417,18 @@ export class Game {
     } else if (this.activeGameMode === 'SURVIVAL') {
       // Survival starts fast at 25 m/s immediately!
       this.player.speed = 25.0;
+    } else if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const active = DailyChallengeManager.getInstance().getActiveChallenge();
+      if (active?.difficulty === 'HARD') {
+        this.player.speed = 24.0;
+        this.scoreMultiplier = 1.25;
+      } else if (active?.difficulty === 'EASY') {
+        this.player.speed = 22.0;
+        this.scoreMultiplier = 1.15;
+      } else {
+        this.player.speed = 19.0;
+        this.scoreMultiplier = 1.0;
+      }
     }
 
     this.cameraController.setLobbyMode(false);
@@ -428,6 +452,7 @@ export class Game {
     this.hoverboardSelectModal.hide(false);
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.dailyChallengeModal.hide(false);
     this.environmentSelectModal.hide();
     this.practiceModal.hide(false);
     this.practiceController.exit();
@@ -572,7 +597,14 @@ export class Game {
     EventBus.getInstance().emit(EVENTS.GAME_OVER);
 
     // Calculate Mode-Specific Results & Bonus Rewards
-    let resultMeta: { title: string; subtitle?: string; bonusCoins?: number } = {
+    let resultMeta: {
+      title: string;
+      subtitle?: string;
+      bonusCoins?: number;
+      challenge?: any;
+      challengeRecord?: any;
+      isNewRecord?: boolean;
+    } = {
       title: 'RUN OVER!'
     };
 
@@ -646,6 +678,24 @@ export class Game {
       resultMeta = {
         title: isNewBest ? 'NEW HARD RECORD! ⚡' : 'HARD SPRINT ENDED! ⚡',
         subtitle: `${dist.toLocaleString()}m sprinted at up to 46 m/s`
+      };
+    } else if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const comboStats = SkillComboManager.getInstance().getStats();
+      const res = dailyMgr.recordRunResult(
+        this.score,
+        Math.floor(this.player.distanceTraveled),
+        this.coinsCount,
+        comboStats.bestCombo
+      );
+      const challenge = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
+      resultMeta = {
+        title: res.isNewRecord ? 'NEW DAILY RECORD! 🏆' : 'DAILY CHALLENGE FINISHED! 🏆',
+        subtitle: `${challenge.name} (${challenge.difficulty}) • ${challenge.objectiveText}`,
+        bonusCoins: res.rewardGranted > 0 ? res.rewardGranted : undefined,
+        challenge,
+        challengeRecord: res.record,
+        isNewRecord: res.isNewRecord
       };
     }
 
