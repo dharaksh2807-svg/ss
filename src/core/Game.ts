@@ -48,6 +48,11 @@ import { PhotoModeController } from '../scene/PhotoModeController';
 import { PhotoModeModal } from '../ui/PhotoModeModal';
 import { SecretRouteDirector } from '../track/SecretRouteDirector';
 import { JunctionDirector } from '../track/JunctionDirector';
+import { BugSnapshotManager } from '../debug/BugSnapshotManager';
+import { BugReproductionLoader } from '../debug/BugReproductionLoader';
+import { DebugVisualizer } from '../debug/DebugVisualizer';
+import { DevBugReportModal } from '../ui/DevBugReportModal';
+import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
@@ -86,6 +91,10 @@ export class Game {
   private photoModeController: PhotoModeController;
   private photoModeModal: PhotoModeModal;
   private crashReplayManager: CrashReplayManager = CrashReplayManager.getInstance();
+  private bugSnapshotManager: BugSnapshotManager = BugSnapshotManager.getInstance();
+  private bugReproductionLoader: BugReproductionLoader = BugReproductionLoader.getInstance();
+  private debugVisualizer: DebugVisualizer = DebugVisualizer.getInstance();
+  private devBugReportModal: DevBugReportModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -175,6 +184,8 @@ export class Game {
       }
     );
     this.devTestArena.attachToWindow(this);
+    this.debugVisualizer.init(this.worldScene.scene);
+    this.devBugReportModal = new DevBugReportModal();
     // Apply saved graphics quality preset
     const graphics = GraphicsManager.getInstance();
     const config = graphics.getActiveConfig();
@@ -298,6 +309,24 @@ export class Game {
       }
     });
 
+    bus.on('REPRODUCE_BUG_SNAPSHOT', (snapshot: BugSnapshotPackage) => {
+      this.startReproduction(snapshot);
+    });
+
+    bus.on('OPEN_BUG_REPORT_MODAL', () => {
+      this.devBugReportModal.openLatest();
+    });
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.code === 'F8') {
+        e.preventDefault();
+        this.debugVisualizer.toggle();
+      } else if (e.code === 'F9' || (e.code === 'KeyB' && e.ctrlKey && e.shiftKey)) {
+        e.preventDefault();
+        this.devBugReportModal.openLatest();
+      }
+    });
+
     bus.on(EVENTS.STUMBLE, () => {
       this.chaser.onMinorStumble();
     });
@@ -321,6 +350,9 @@ export class Game {
     });
 
     bus.on(EVENTS.COIN_COLLECTED, () => {
+      if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA' || this.bugReproductionLoader.isRunning()) {
+        return;
+      }
       this.coinsCount++;
       SecretRouteDirector.getInstance().onCoinCollected();
       JunctionDirector.getInstance().onCoinCollected();
@@ -513,6 +545,15 @@ export class Game {
     this.locomotionVFX.reset();
     this.chaser.reset();
     this.cameraController.reset(this.player.position);
+
+    // Initialize Bug Snapshot Context for current run
+    this.bugSnapshotManager.reset();
+    this.bugSnapshotManager.setRunContext({
+      seed: this.trackManager.getRunSeed(),
+      gameMode: this.activeGameMode,
+      difficulty: this.trackManager.getDifficultyLabel(),
+      activeEnvironment: this.trackManager.getActiveEnvironment()
+    });
 
     // Apply Mode-Specific Initial Conditions
     if (this.activeGameMode === 'HARD') {
@@ -899,6 +940,11 @@ export class Game {
 
     const effectiveDt = dt * (this.devTestArena ? this.devTestArena.getTimeScale() : 1.0);
 
+    // Update Bug Reproduction sandbox playback if active
+    if (this.bugReproductionLoader.isRunning()) {
+      this.bugReproductionLoader.update(effectiveDt, this.player);
+    }
+
     if (this.lifecycleState === 'PLAYING') {
       if (this.activeGameMode === 'PRACTICE') {
         this.player.update(effectiveDt);
@@ -975,6 +1021,19 @@ export class Game {
           this.chaser,
           now / 1000
         );
+
+        // Record bug snapshot frame and run automated failure invariant monitors
+        this.bugSnapshotManager.recordFrame({
+          player: this.player,
+          cameraController: this.cameraController,
+          nearbyObstacles,
+          nowTime: now / 1000
+        });
+
+        const activeChunk = this.trackManager.chunks.find(
+          c => this.player.position.z >= c.chunkZ - CONSTANTS.CHUNK_LENGTH && this.player.position.z <= c.chunkZ
+        );
+        this.bugSnapshotManager.runInvariantChecks(this.player, nearbyObstacles, activeChunk);
       }
     } else if (this.lifecycleState === 'GAMEOVER') {
       // Update tumble animation
@@ -1041,7 +1100,8 @@ export class Game {
   }
 
   private updateCollisionDebugVisuals(): void {
-    const isDebug = typeof window !== 'undefined' && !!(window as any).__DEBUG_COLLIDERS__;
+    const isDebug = typeof window !== 'undefined' && (!!(window as any).__DEBUG_COLLIDERS__ || this.debugVisualizer.getIsEnabled());
+    this.debugVisualizer.setEnabled(isDebug);
     if (!isDebug) {
       if (this.debugGroup.children.length > 0) {
         while (this.debugGroup.children.length > 0) {
@@ -1054,92 +1114,8 @@ export class Game {
       return;
     }
 
-    // Clear previous frame debug boxes
-    while (this.debugGroup.children.length > 0) {
-      this.debugGroup.remove(this.debugGroup.children[0]);
-    }
-
-    // 1. Player Bounding Box (Lime Green)
-    const pHelper = new THREE.Box3Helper(this.player.collider, new THREE.Color(0x00ff00));
-    this.debugGroup.add(pHelper);
-
-    // 2. Active Obstacle Collision Zones
-    for (const chunk of this.trackManager.chunks) {
-      for (const obs of chunk.obstacles) {
-        if (!obs.active) continue;
-        if (Math.abs(obs.collider.min.z - this.player.position.z) > 80) continue;
-
-        if (obs.bodyCollider) {
-          // Red for lethal lower hull
-          this.debugGroup.add(new THREE.Box3Helper(obs.bodyCollider, new THREE.Color(0xff1744)));
-        }
-        if (obs.frontBumperCollider) {
-          // Orange for front bumper
-          this.debugGroup.add(new THREE.Box3Helper(obs.frontBumperCollider, new THREE.Color(0xff9100)));
-        }
-        if (obs.roofCollider) {
-          // Cyan for traversable rooftop & landing capture zone
-          this.debugGroup.add(new THREE.Box3Helper(obs.roofCollider, new THREE.Color(0x00e5ff)));
-        }
-        if (obs.rampCollider) {
-          // Yellow for sloped climbable ramp
-          this.debugGroup.add(new THREE.Box3Helper(obs.rampCollider, new THREE.Color(0xffea00)));
-
-          // Green line showing exact mathematical support slope from ground to roof
-          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-          const laneX = CONSTANTS.LANES[obs.lane];
-          const slopeGeo = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(laneX, 0.05, obs.rampCollider.max.z),
-            new THREE.Vector3(laneX, roofY, obs.rampCollider.min.z)
-          ]);
-          const slopeLine = new THREE.Line(slopeGeo, new THREE.LineBasicMaterial({ color: 0x00ff88 }));
-          this.debugGroup.add(slopeLine);
-        }
-        if (!obs.bodyCollider && !obs.roofCollider) {
-          // Standard barriers (magenta)
-          this.debugGroup.add(new THREE.Box3Helper(obs.collider, new THREE.Color(0xe91e63)));
-        }
-      }
-    }
-
-    // 3. Player Feet Marker (Magenta cross indicator at exact foot plane)
-    const feetGeo = new THREE.SphereGeometry(0.12, 8, 8);
-    const feetMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
-    const feetMarker = new THREE.Mesh(feetGeo, feetMat);
-    feetMarker.position.set(this.player.position.x, this.player.position.y, this.player.position.z);
-    this.debugGroup.add(feetMarker);
-
-    // 4. Telemetry HUD Overlay
-    if (!this.debugOverlayEl && typeof document !== 'undefined') {
-      this.debugOverlayEl = document.createElement('div');
-      this.debugOverlayEl.id = 'collision-debug-overlay';
-      this.debugOverlayEl.style.position = 'fixed';
-      this.debugOverlayEl.style.bottom = '12px';
-      this.debugOverlayEl.style.left = '12px';
-      this.debugOverlayEl.style.zIndex = '99999';
-      this.debugOverlayEl.style.background = 'rgba(10, 14, 23, 0.92)';
-      this.debugOverlayEl.style.border = '1px solid #00e5ff';
-      this.debugOverlayEl.style.padding = '8px 12px';
-      this.debugOverlayEl.style.borderRadius = '6px';
-      this.debugOverlayEl.style.fontFamily = 'monospace';
-      this.debugOverlayEl.style.fontSize = '12px';
-      this.debugOverlayEl.style.color = '#e0f7fa';
-      this.debugOverlayEl.style.pointerEvents = 'none';
-      document.body.appendChild(this.debugOverlayEl);
-    }
-
-    if (this.debugOverlayEl) {
-      this.debugOverlayEl.style.display = 'block';
-      const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
-      this.debugOverlayEl.innerHTML = `
-        <div style="font-weight:bold;color:#00e5ff;margin-bottom:4px;">[COLLISION DIAGNOSTICS & SCENARIO]</div>
-        <div>STATE: <span style="color:#ffd600;">${this.player.state}</span> | SURFACE: <span style="color:#00e676;">${this.player.getSupportSurface()}</span></div>
-        <div>SUPPORT ID: <span style="color:#00e5ff;">${this.player.getActiveSupportObstacleId() || 'NONE (GROUND)'}</span></div>
-        <div>POS: Y=${this.player.position.y.toFixed(2)} (GroundY=${this.player.groundY.toFixed(2)}) | Vy=${this.player.verticalVelocity.toFixed(1)}</div>
-        <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)} (Lane=${this.player.currentLane})</div>
-        <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification}) ObsID=${lastDiag.obstacleId || 'N/A'}` : 'NONE'}</div>
-      `;
-    }
+    const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
+    this.debugVisualizer.update(this.player, this.trackManager, lastDiag);
   }
 
   private updateWorldGenDiagnostics(dt: number): void {
@@ -1295,6 +1271,11 @@ export class Game {
       });
     }
 
+    this.bugSnapshotManager.recordFatalCollision({
+      reason,
+      player: this.player
+    });
+
     const explanation = this.crashReplayManager.getActiveExplanation();
 
     if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
@@ -1394,5 +1375,58 @@ export class Game {
 
   public getReplayHUD(): ReplayHUD {
     return this.replayHUD;
+  }
+
+  /**
+   * Deterministic Bug Reproduction Sandbox
+   * STRICT GUARANTEE: Does NOT mutate player high scores, wallet coins, or career progression!
+   */
+  public startReproduction(snapshot: BugSnapshotPackage): void {
+    // Sandbox mode: isolate economics & mission progress
+    this.activeGameMode = 'ARENA';
+    this.progression.setActiveGameMode('ARENA');
+    this.lifecycleState = 'PLAYING';
+    this.cameraController.setLobbyMode(false);
+    this.cameraController.reset(this.player.position);
+    this.player.mesh.rotation.y = 0;
+    this.openingSequence.skip();
+    this.startScreen.hide();
+    this.pauseModal.hide();
+    this.gameOverModal.hide();
+    this.hud.show();
+    this.inputManager.setEnabled(true);
+
+    this.bugReproductionLoader.loadSnapshot(
+      snapshot,
+      this.player,
+      this.trackManager,
+      this.cameraController,
+      (verified, reason) => {
+        console.log(`[Bug Reproduction] Verification: ${verified}, Reason: ${reason}`);
+        const msg = verified
+          ? `✅ REPRO VERIFIED: ${reason}`
+          : `⚠️ REPRO INCONCLUSIVE: ${reason}`;
+        this.hud.showFeedbackBadge(msg, verified ? 'precision' : 'streak');
+        setTimeout(() => {
+          this.devBugReportModal.openLatest();
+        }, 1200);
+      }
+    );
+  }
+
+  public getBugSnapshotManager(): BugSnapshotManager {
+    return this.bugSnapshotManager;
+  }
+
+  public getBugReproductionLoader(): BugReproductionLoader {
+    return this.bugReproductionLoader;
+  }
+
+  public getDebugVisualizer(): DebugVisualizer {
+    return this.debugVisualizer;
+  }
+
+  public getDevBugReportModal(): DevBugReportModal {
+    return this.devBugReportModal;
   }
 }

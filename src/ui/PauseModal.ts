@@ -59,6 +59,9 @@ export class PauseModal {
             <button id="pause-settings-btn" class="arcade-btn btn-secondary">
               <span class="btn-icon">⚙️</span> AUDIO SETTINGS
             </button>
+            <button id="pause-bug-report-btn" class="arcade-btn btn-secondary" style="border-color: rgba(239, 68, 68, 0.6); color: #fca5a5;">
+              <span class="btn-icon">🐛</span> BUG REPORT [F9]
+            </button>
             <button id="pause-menu-btn" class="arcade-btn btn-danger">
               <span class="btn-icon">🏠</span> RETURN HOME
             </button>
@@ -93,6 +96,11 @@ export class PauseModal {
     const settingsBtn = this.element.querySelector('#pause-settings-btn');
     settingsBtn?.addEventListener('click', () => {
       EventBus.getInstance().emit('OPEN_SETTINGS');
+    });
+
+    const bugReportBtn = this.element.querySelector('#pause-bug-report-btn');
+    bugReportBtn?.addEventListener('click', () => {
+      EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
     });
 
     const menuBtn = this.element.querySelector('#pause-menu-btn');

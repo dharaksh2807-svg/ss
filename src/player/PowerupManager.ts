@@ -123,6 +123,10 @@ export class PowerupManager {
     return this.isJetpackPaused;
   }
 
+  public isActive(type: PowerupType): boolean {
+    return this.activePowerups.has(type);
+  }
+
   // --- Super Sneakers ---
   public isSuperSneakersActive(): boolean {
     return this.activePowerups.has('SNEAKERS');

@@ -24,6 +24,7 @@ import { SkillComboManager } from '../core/SkillComboManager';
 import { DailyChallengeManager } from '../core/DailyChallengeManager';
 import { SecretRouteDirector } from './SecretRouteDirector';
 import { JunctionDirector } from './JunctionDirector';
+import { BugSnapshotManager } from '../debug/BugSnapshotManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -149,6 +150,10 @@ export class TrackManager {
       } catch (_) {}
     }
     return (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
+  }
+
+  public getDifficultyLabel(): string {
+    return this.difficultyController.getCurrentTier();
   }
 
   public setSeed(seed: number, isDebug: boolean = true): void {
@@ -1638,6 +1643,15 @@ export class TrackManager {
                 isFlankContact: isFlankContact,
                 isGlance: isGlance
               });
+              BugSnapshotManager.getInstance().recordFatalCollision({
+                reason: 'CHASER_CAPTURE',
+                player,
+                obstacle: obs,
+                diagnostic,
+                isFrontal: false,
+                isFlankContact,
+                isGlance
+              });
               player.crash('CHASER_CAPTURE');
               return;
 
@@ -1660,6 +1674,15 @@ export class TrackManager {
                   diagnostic,
                   player,
                   chaser: this.chaser,
+                  isFrontal: resolution.isFrontal,
+                  isFlankContact,
+                  isGlance
+                });
+                BugSnapshotManager.getInstance().recordFatalCollision({
+                  reason: fatalReason,
+                  player,
+                  obstacle: obs,
+                  diagnostic,
                   isFrontal: resolution.isFrontal,
                   isFlankContact,
                   isGlance

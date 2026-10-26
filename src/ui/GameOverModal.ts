@@ -159,6 +159,10 @@ export class GameOverModal {
             <span class="btn-icon">📹</span>
             <span>WATCH INSTANT REPLAY (SLOW-MO)</span>
           </button>
+          <button id="game-over-bug-report-btn" class="arcade-btn bug-report-action-btn" style="width: 100%; margin-top: 8px; background: rgba(239, 68, 68, 0.18); border: 1.5px solid rgba(239, 68, 68, 0.7); color: #fca5a5; font-size: 0.95rem; font-weight: 700; letter-spacing: 1px;" aria-label="Open Developer Bug Diagnostics">
+            <span class="btn-icon">🐛</span>
+            <span>CAPTURE BUG REPORT [F9]</span>
+          </button>
         </div>
 
         <!-- Completed Missions Claim Area -->
@@ -278,6 +282,11 @@ export class GameOverModal {
       } else {
         EventBus.getInstance().emit('REQUEST_INSTANT_REPLAY');
       }
+    });
+
+    const bugReportBtn = this.element.querySelector('#game-over-bug-report-btn');
+    bugReportBtn?.addEventListener('click', () => {
+      EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
     });
   }
 
