@@ -459,6 +459,7 @@
               <button type="button" class="settings-tab-btn" data-tab="tab-camera" role="tab" aria-selected="false" id="tab-btn-camera">🎥 Camera</button>
               <button type="button" class="settings-tab-btn" data-tab="tab-accessibility" role="tab" aria-selected="false" id="tab-btn-accessibility">👁️ Accessibility</button>
               <button type="button" class="settings-tab-btn" data-tab="tab-audio" role="tab" aria-selected="false" id="tab-btn-audio">🔊 Audio & More</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-backup" role="tab" aria-selected="false" id="tab-btn-backup">💾 Data & Backup</button>
             </div>
           </div>
 
@@ -839,6 +840,73 @@
                   <div class="setting-hint-text">Live animated 3D portrait showing character reactions during runs.</div>
                 </div>
                 <input type="checkbox" id="setting-facial-portrait" class="arcade-checkbox" checked />
+              </div>
+            </div>
+
+            <!-- TAB 6: DATA & BACKUP (Requirement G) -->
+            <div id="tab-backup" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-backup">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">PROGRESSION BACKUP & RESTORE</span>
+                <p class="settings-section-help">Create local file backups to protect your coins, characters, upgrades, and high scores from browser cache clearing. No account or external service required.</p>
+              </div>
+
+              <!-- Last Backup & Profile Status Card -->
+              <div class="backup-status-card" id="backup-status-card">
+                <div class="backup-status-row">
+                  <span class="backup-status-label">Last Exported Backup:</span>
+                  <span class="backup-status-val" id="backup-last-time">Never exported</span>
+                </div>
+                <div class="backup-profile-summary" id="backup-profile-summary">
+                  <span class="profile-chip">🪙 <strong id="chip-coins">0</strong> Coins</span>
+                  <span class="profile-chip">🔑 <strong id="chip-keys">3</strong> Keys</span>
+                  <span class="profile-chip">🏃 <strong id="chip-chars">1</strong> Characters</span>
+                  <span class="profile-chip">🏆 <strong id="chip-score">0</strong> Best Score</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="backup-action-grid">
+                <button type="button" id="btn-export-save" class="arcade-btn btn-primary" title="Export and download your game save as a JSON file">
+                  <span class="btn-icon">📥</span> EXPORT BACKUP (.JSON)
+                </button>
+                <button type="button" id="btn-trigger-import-save" class="arcade-btn btn-secondary" title="Select a previously exported JSON backup file to restore">
+                  <span class="btn-icon">📤</span> IMPORT BACKUP
+                </button>
+                <input type="file" id="input-import-file" accept=".json,application/json" style="display: none;" />
+              </div>
+
+              <!-- Live Status & Feedback Alert Banner -->
+              <div id="backup-feedback-banner" class="backup-feedback-banner hidden" role="alert" aria-live="polite">
+                <span id="backup-feedback-icon" class="feedback-icon">ℹ️</span>
+                <span id="backup-feedback-text">Backup status message</span>
+              </div>
+
+              <!-- Import Preview & Confirmation Card (Hidden until valid file chosen) -->
+              <div id="import-preview-card" class="import-preview-card hidden">
+                <div class="preview-header">
+                  <span class="preview-title">⚠️ RESTORE PROGRESSION PREVIEW</span>
+                  <span class="preview-date" id="preview-date-text">Exported: 2026-10-26</span>
+                </div>
+                <p class="preview-warning">
+                  Restoring will replace your current game data with the backup file below. A safety rollback snapshot will be created automatically before applying.
+                </p>
+
+                <div class="preview-diff-grid" id="preview-diff-grid">
+                  <!-- Dynamically filled with comparisons -->
+                </div>
+
+                <div class="preview-confirm-actions">
+                  <button type="button" id="btn-cancel-import" class="btn btn-secondary-compact">CANCEL</button>
+                  <button type="button" id="btn-confirm-import" class="btn btn-primary btn-gold pulse-glow">
+                    ✓ CONFIRM & RESTORE PROGRESS
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fairness and Security Notice (Requirement H) -->
+              <div class="backup-security-note">
+                <span class="note-icon">🔒</span>
+                <span class="note-text">Local backups are stored directly on your device. Metro Runner 3D never uploads your saves to external servers or cloud accounts.</span>
               </div>
             </div>
           </div>

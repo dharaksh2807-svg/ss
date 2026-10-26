@@ -3,6 +3,9 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { GraphicsManager, GraphicsPreset, QualityConfig } from '../scene/GraphicsManager';
 import { CharacterModel, RunningStyle } from '../player/CharacterModel';
 import { ProgressionManager } from '../progression/ProgressionManager';
+import { UpgradeManager } from '../player/UpgradeManager';
+import { SaveBackupManager } from '../persistence/SaveBackupManager';
+import { SaveBackupPackage } from '../persistence/SaveBackupTypes';
 import {
   SettingsManager,
   InputAction,
@@ -23,6 +26,26 @@ export class SettingsModal {
   private resetAllBtn: HTMLButtonElement | null = null;
   private settingsManager: SettingsManager;
   private graphicsManager: GraphicsManager;
+  private backupManager = SaveBackupManager.getInstance();
+
+  // Backup & Restore UI
+  private btnExportSave: HTMLButtonElement | null = null;
+  private btnTriggerImportSave: HTMLButtonElement | null = null;
+  private inputImportFile: HTMLInputElement | null = null;
+  private backupLastTime: HTMLElement | null = null;
+  private chipCoins: HTMLElement | null = null;
+  private chipKeys: HTMLElement | null = null;
+  private chipChars: HTMLElement | null = null;
+  private chipScore: HTMLElement | null = null;
+  private backupFeedbackBanner: HTMLElement | null = null;
+  private backupFeedbackIcon: HTMLElement | null = null;
+  private backupFeedbackText: HTMLElement | null = null;
+  private importPreviewCard: HTMLElement | null = null;
+  private previewDateText: HTMLElement | null = null;
+  private previewDiffGrid: HTMLElement | null = null;
+  private btnCancelImport: HTMLButtonElement | null = null;
+  private btnConfirmImport: HTMLButtonElement | null = null;
+  private pendingPackageToRestore: SaveBackupPackage | null = null;
 
   // Tabs
   private tabButtons: NodeListOf<HTMLButtonElement>;
@@ -133,6 +156,24 @@ export class SettingsModal {
     this.showFpsCheckbox = document.getElementById('setting-show-fps') as HTMLInputElement | null;
     this.presetButtons = this.element.querySelectorAll('.preset-segment-btn');
 
+    // Backup & Restore Elements
+    this.btnExportSave = document.getElementById('btn-export-save') as HTMLButtonElement | null;
+    this.btnTriggerImportSave = document.getElementById('btn-trigger-import-save') as HTMLButtonElement | null;
+    this.inputImportFile = document.getElementById('input-import-file') as HTMLInputElement | null;
+    this.backupLastTime = document.getElementById('backup-last-time');
+    this.chipCoins = document.getElementById('chip-coins');
+    this.chipKeys = document.getElementById('chip-keys');
+    this.chipChars = document.getElementById('chip-chars');
+    this.chipScore = document.getElementById('chip-score');
+    this.backupFeedbackBanner = document.getElementById('backup-feedback-banner');
+    this.backupFeedbackIcon = document.getElementById('backup-feedback-icon');
+    this.backupFeedbackText = document.getElementById('backup-feedback-text');
+    this.importPreviewCard = document.getElementById('import-preview-card');
+    this.previewDateText = document.getElementById('preview-date-text');
+    this.previewDiffGrid = document.getElementById('preview-diff-grid');
+    this.btnCancelImport = document.getElementById('btn-cancel-import') as HTMLButtonElement | null;
+    this.btnConfirmImport = document.getElementById('btn-confirm-import') as HTMLButtonElement | null;
+
     this.setupListeners();
     this.refreshAllUI();
   }
@@ -170,6 +211,9 @@ export class SettingsModal {
 
     // 5. Audio & Graphics Listeners
     this.setupAudioAndGraphicsSettings();
+
+    // 6. Backup & Restore Listeners
+    this.setupBackupRestore();
 
     // External EventBus Sync
     EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
@@ -757,8 +801,182 @@ export class SettingsModal {
     this.refreshAudioUI();
     this.refreshGraphicsUI();
     this.refreshRunningStyleUI();
+    this.refreshBackupUI();
     if (this.introSelect) {
       this.introSelect.value = localStorage.getItem('metro_opening_cinematic') || 'FIRST_ONLY';
+    }
+  }
+
+  // --- BACKUP & RESTORE ---
+
+  private setupBackupRestore(): void {
+    if (this.btnExportSave) {
+      this.btnExportSave.addEventListener('click', () => {
+        try {
+          const res = this.backupManager.downloadBackupFile();
+          this.refreshBackupUI();
+          this.showBackupFeedback(`✓ Exported ${res.filename} successfully. Keep it in a safe place!`, 'success');
+        } catch (e: any) {
+          this.showBackupFeedback(`❌ Export failed: ${e.message || 'Unknown error'}`, 'error');
+        }
+      });
+    }
+
+    if (this.btnTriggerImportSave && this.inputImportFile) {
+      this.btnTriggerImportSave.addEventListener('click', () => {
+        this.inputImportFile?.click();
+      });
+
+      this.inputImportFile.addEventListener('change', (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const content = reader.result as string;
+          const validation = this.backupManager.parseAndValidateSave(content, file.name, file.size);
+
+          if (!validation.valid || !validation.package) {
+            this.pendingPackageToRestore = null;
+            if (this.importPreviewCard) this.importPreviewCard.classList.add('hidden');
+            const errStr = validation.errors.join(' ') || 'Save file is invalid or corrupted.';
+            this.showBackupFeedback(`❌ Import rejected: ${errStr}`, 'error');
+            return;
+          }
+
+          this.pendingPackageToRestore = validation.package;
+          this.renderImportPreview(validation.package, validation.warnings);
+          this.showBackupFeedback(
+            `Save backup file verified. Review comparison below and confirm restoration.`,
+            'info'
+          );
+        };
+        reader.onerror = () => {
+          this.showBackupFeedback('❌ Failed to read selected backup file.', 'error');
+        };
+        reader.readAsText(file);
+        target.value = '';
+      });
+    }
+
+    if (this.btnCancelImport) {
+      this.btnCancelImport.addEventListener('click', () => {
+        this.pendingPackageToRestore = null;
+        if (this.importPreviewCard) this.importPreviewCard.classList.add('hidden');
+        this.showBackupFeedback('Import cancelled. Current progress untouched.', 'info');
+      });
+    }
+
+    if (this.btnConfirmImport) {
+      this.btnConfirmImport.addEventListener('click', () => {
+        this.handleConfirmRestore();
+      });
+    }
+  }
+
+  private renderImportPreview(pkg: SaveBackupPackage, warnings: string[]): void {
+    if (!this.importPreviewCard || !this.previewDiffGrid) return;
+
+    const preview = this.backupManager.generatePreview(pkg);
+
+    if (this.previewDateText) {
+      const d = new Date(preview.timestamp);
+      const dateStr = isNaN(d.getTime()) ? preview.timestamp : d.toLocaleString();
+      this.previewDateText.textContent = `Backup Date: ${dateStr} (v${preview.backupVersion})`;
+    }
+
+    const coinsDiff = preview.backupCoins - preview.currentCoins;
+    const coinsDiffClass = coinsDiff >= 0 ? 'pos' : 'neg';
+    const coinsDiffText = coinsDiff >= 0 ? `+${coinsDiff.toLocaleString()}` : `${coinsDiff.toLocaleString()}`;
+
+    const scoreDiff = preview.backupScore - preview.currentScore;
+    const scoreDiffClass = scoreDiff >= 0 ? 'pos' : 'neg';
+    const scoreDiffText = scoreDiff >= 0 ? `+${scoreDiff.toLocaleString()}` : `${scoreDiff.toLocaleString()}`;
+
+    this.previewDiffGrid.innerHTML = `
+      <div class="diff-box">
+        <span class="diff-label">COINS</span>
+        <span class="diff-value">🪙 ${preview.backupCoins.toLocaleString()}</span>
+        <span class="diff-delta ${coinsDiffClass}">${coinsDiffText} vs Current</span>
+      </div>
+      <div class="diff-box">
+        <span class="diff-label">KEYS</span>
+        <span class="diff-value">🔑 ${preview.backupKeys}</span>
+        <span class="diff-delta">Current: ${preview.currentKeys}</span>
+      </div>
+      <div class="diff-box">
+        <span class="diff-label">CHARACTERS</span>
+        <span class="diff-value">🏃 ${preview.backupCharsCount} Unlocked</span>
+        <span class="diff-delta">Current: ${preview.currentCharsCount}</span>
+      </div>
+      <div class="diff-box">
+        <span class="diff-label">HIGH SCORE</span>
+        <span class="diff-value">🏆 ${preview.backupScore.toLocaleString()}</span>
+        <span class="diff-delta ${scoreDiffClass}">${scoreDiffText}</span>
+      </div>
+      <div class="diff-box">
+        <span class="diff-label">UPGRADES</span>
+        <span class="diff-value">⚡ ${preview.upgradesCount} Configured</span>
+        <span class="diff-delta">Settings Included: ${preview.hasSettings ? 'Yes' : 'No'}</span>
+      </div>
+    `;
+
+    this.importPreviewCard.classList.remove('hidden');
+    setTimeout(() => {
+      this.importPreviewCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+
+  private handleConfirmRestore(): void {
+    if (!this.pendingPackageToRestore) return;
+
+    const res = this.backupManager.restoreSave(this.pendingPackageToRestore);
+    if (res.success) {
+      this.pendingPackageToRestore = null;
+      if (this.importPreviewCard) this.importPreviewCard.classList.add('hidden');
+      this.refreshAllUI();
+      this.showBackupFeedback('✓ Progress successfully restored from backup! (Rollback snapshot preserved)', 'success');
+    } else {
+      this.showBackupFeedback(`❌ Restoration failed and was rolled back: ${res.error}`, 'error');
+    }
+  }
+
+  private showBackupFeedback(msg: string, type: 'success' | 'error' | 'info'): void {
+    if (!this.backupFeedbackBanner || !this.backupFeedbackText || !this.backupFeedbackIcon) return;
+
+    this.backupFeedbackBanner.className = `backup-feedback-banner feedback-${type}`;
+    this.backupFeedbackText.textContent = msg;
+
+    if (type === 'success') {
+      this.backupFeedbackIcon.textContent = '✓';
+    } else if (type === 'error') {
+      this.backupFeedbackIcon.textContent = '❌';
+    } else {
+      this.backupFeedbackIcon.textContent = 'ℹ️';
+    }
+
+    this.backupFeedbackBanner.classList.remove('hidden');
+  }
+
+  private refreshBackupUI(): void {
+    const progressionMgr = ProgressionManager.getInstance();
+    const upgradeMgr = UpgradeManager.getInstance();
+
+    const state = progressionMgr.getState();
+    const coins = upgradeMgr.getCoins();
+    const keys = progressionMgr.getKeys();
+    const charsCount = state.unlockedCharacters?.length || 1;
+    const bestScore = state.lifetimeStats?.bestScore || 0;
+
+    if (this.chipCoins) this.chipCoins.textContent = coins.toLocaleString();
+    if (this.chipKeys) this.chipKeys.textContent = keys.toString();
+    if (this.chipChars) this.chipChars.textContent = charsCount.toString();
+    if (this.chipScore) this.chipScore.textContent = bestScore.toLocaleString();
+
+    if (this.backupLastTime) {
+      const info = this.backupManager.getLastBackupInfo();
+      this.backupLastTime.textContent = info.formatted;
     }
   }
 

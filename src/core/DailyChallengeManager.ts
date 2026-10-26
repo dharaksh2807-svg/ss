@@ -358,6 +358,15 @@ export class DailyChallengeManager {
     }
   }
 
+  public getAllRecords(): Record<string, ChallengeRecord> {
+    return { ...this.records };
+  }
+
+  public importRecords(records: Record<string, ChallengeRecord>): void {
+    this.records = { ...records };
+    this.saveRecords();
+  }
+
   /**
    * Retrieves record for a specific challenge date or ID.
    */

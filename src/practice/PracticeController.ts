@@ -195,13 +195,28 @@ export class PracticeController {
   // ---------------------------------------------------------------------------
   // Medal Persistence (Isolated from progression economy)
   // ---------------------------------------------------------------------------
-  public getMedals(): Record<string, PracticeMedal> {
+  public static getStoredMedals(): Record<string, PracticeMedal> {
     try {
+      if (typeof localStorage === 'undefined') return {};
       const stored = localStorage.getItem('metro_practice_medals');
       return stored ? JSON.parse(stored) : {};
     } catch {
       return {};
     }
+  }
+
+  public static setStoredMedals(medals: Record<string, PracticeMedal>): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('metro_practice_medals', JSON.stringify(medals));
+      }
+    } catch (e) {
+      console.warn('Failed to persist practice medals:', e);
+    }
+  }
+
+  public getMedals(): Record<string, PracticeMedal> {
+    return PracticeController.getStoredMedals();
   }
 
   public getMedal(moduleId: string): PracticeMedal {
@@ -226,6 +241,14 @@ export class PracticeController {
       }
     } catch (e) {
       console.warn('Failed to persist practice medal:', e);
+    }
+  }
+
+  public importMedals(medals: Record<string, PracticeMedal>): void {
+    try {
+      localStorage.setItem('metro_practice_medals', JSON.stringify(medals));
+    } catch (e) {
+      console.warn('Failed to import practice medals:', e);
     }
   }
 

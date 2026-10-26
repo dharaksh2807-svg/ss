@@ -96,6 +96,19 @@ export class DailyRewardManager {
     }
   }
 
+  public getState(): DailyRewardState {
+    return { ...this.state };
+  }
+
+  public importState(newState: DailyRewardState): void {
+    this.state = {
+      currentDayIndex: Math.max(0, Math.min(6, newState.currentDayIndex || 0)),
+      lastClaimDate: newState.lastClaimDate || null,
+      totalClaimsCount: Math.max(0, newState.totalClaimsCount || 0)
+    };
+    this.saveState();
+  }
+
   /**
    * Check if today's reward is available to claim
    */

@@ -310,6 +310,42 @@ export class ProgressionManager {
     return this.state;
   }
 
+  public importState(newState: ProgressionState): void {
+    const defaultState = this.getDefaultState();
+    this.state = {
+      ...defaultState,
+      ...newState,
+      lifetimeStats: {
+        ...defaultState.lifetimeStats,
+        ...(newState.lifetimeStats || {})
+      },
+      unlockedOutfits: {
+        ...defaultState.unlockedOutfits,
+        ...(newState.unlockedOutfits || {})
+      },
+      selectedOutfits: {
+        ...defaultState.selectedOutfits,
+        ...(newState.selectedOutfits || {})
+      },
+      achievements: {
+        ...defaultState.achievements,
+        ...(newState.achievements || {})
+      }
+    };
+
+    if (!Array.isArray(this.state.activeMissions) || this.state.activeMissions.length === 0) {
+      this.state.activeMissions = getMissionsForSet(this.state.currentMissionSet || 1);
+    }
+    if (!Array.isArray(this.state.dailyChallenges) || this.state.dailyChallenges.length === 0) {
+      this.state.dailyChallenges = generateDailyChallenges(this.state.dailyDate);
+    }
+
+    this.saveState();
+    this.eventBus.emit('PROGRESSION_RESTORED', this.state);
+    this.eventBus.emit('KEYS_UPDATED', this.state.keys ?? 3);
+    this.eventBus.emit('WALLET_UPDATED', this.state.lifetimeStats?.totalCoins ?? 0);
+  }
+
   public getActiveMissions(): Mission[] {
     return this.state.activeMissions;
   }

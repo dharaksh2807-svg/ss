@@ -164,6 +164,23 @@ export class UpgradeManager {
     return this.levels[type] || 1;
   }
 
+  public getAllLevels(): Record<UpgradablePowerup, number> {
+    return { ...this.levels };
+  }
+
+  public importData(coins: number, levels?: Partial<Record<UpgradablePowerup, number>>): void {
+    this.totalCoins = Math.max(0, coins);
+    if (levels) {
+      for (const key of Object.keys(this.levels) as UpgradablePowerup[]) {
+        if (typeof levels[key] === 'number') {
+          this.levels[key] = Math.max(1, Math.min(5, Math.floor(levels[key]!)));
+        }
+      }
+    }
+    this.save();
+    this.eventBus.emit('WALLET_UPDATED', this.totalCoins);
+  }
+
   public getUpgradeCost(type: UpgradablePowerup): number | null {
     const currentLvl = this.getLevel(type);
     if (currentLvl >= 5) return null; // Max level reached

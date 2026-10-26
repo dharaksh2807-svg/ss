@@ -556,6 +556,21 @@ export class SettingsManager {
     }
   }
 
+  public importState(newState: Partial<SettingsState>): void {
+    const defaults = this.getDefaultState();
+    this.state = {
+      ...defaults,
+      ...newState,
+      keyBindings: {
+        ...defaults.keyBindings,
+        ...(newState.keyBindings || {})
+      }
+    };
+    this.saveState();
+    this.applyGlobalSideEffects();
+    this.eventBus.emit('SETTINGS_CHANGED', this.state);
+  }
+
   private formatKeyCode(code: string): string {
     return code.trim();
   }

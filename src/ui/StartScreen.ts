@@ -501,7 +501,7 @@ export class StartScreen {
     }
 
     // 5. Active Mission
-    const activeMissions = this.progression.getActiveMissions();
+    const activeMissions = this.progression.getActiveMissions() || [];
     const currentMission = activeMissions.find((m) => !m.completed) || activeMissions[0];
     const missionTitleEl = document.getElementById('lobby-mission-title');
     const missionBarEl = document.getElementById('lobby-mission-bar');
