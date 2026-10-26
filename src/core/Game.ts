@@ -107,6 +107,11 @@ export class Game {
   // Performance telemetry tracker
   private frameTimes: number[] = [];
 
+  // Fast Retry & Game Over delay handling (Task 2)
+  private isRestartInProgress: boolean = false;
+  private gameOverTimeoutId: number | null = null;
+  private lastResultMeta: any = null;
+
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     this.worldScene = new WorldScene(this.canvas);
@@ -254,8 +259,28 @@ export class Game {
     bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode, false));
     bus.on(EVENTS.GAME_PAUSE, () => this.pause());
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
-    bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode, true));
+    bus.on(EVENTS.GAME_RESTART, () => this.quickRestart());
+    bus.on('SKIP_GAME_OVER_DELAY', () => this.skipGameOverDelay());
     bus.on('GO_TO_MENU', () => this.goToMenu());
+
+    // Instant crash tumble skip / quick restart via keyboard or tap during collision reaction
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId !== null) {
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          this.quickRestart();
+        } else if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          this.skipGameOverDelay();
+        }
+      }
+    });
+
+    window.addEventListener('pointerdown', () => {
+      if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId !== null) {
+        this.skipGameOverDelay();
+      }
+    });
 
     bus.on(EVENTS.PHOTO_MODE_ENTER, () => {
       if (this.lifecycleState === 'PLAYING') {
@@ -440,6 +465,13 @@ export class Game {
   }
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
+    if (this.isRestartInProgress && !isRetry) return;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+
     // Verify eligibility for trial character: block run with Rahul Gandhi if 0 trials remain and unowned
     const selectedChar = this.progression.getSelectedCharacter();
     const normalizedChar = this.progression.normalizeCharacterId(selectedChar);
@@ -469,7 +501,8 @@ export class Game {
       const challenge = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
       dailyMgr.setActiveChallenge(challenge);
       this.trackManager.setSeed(challenge.seed, true);
-    } else if (this.trackManager.isDebugMode()) {
+    } else if (!isRetry && this.trackManager.isDebugMode()) {
+      // Retain fixed seed when retrying an explicitly seeded challenge; clear debug seed on fresh run from lobby
       this.trackManager.clearDebugSeed();
     }
     this.trackManager.reset(!this.trackManager.isDebugMode());
@@ -642,8 +675,16 @@ export class Game {
     this.inputManager.setEnabled(true);
   }
 
-  private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' | 'CHASER_CAPTURE' = 'CRASH'): void {
+  private handleGameOver(
+    reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' | 'CHASER_CAPTURE' = 'CRASH',
+    immediate: boolean = false
+  ): void {
     if (this.lifecycleState === 'GAMEOVER') return;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
@@ -771,8 +812,10 @@ export class Game {
       };
     }
 
-    // Show Game Over modal after brief collision reaction
-    setTimeout(() => {
+    this.lastResultMeta = resultMeta;
+
+    const showModal = () => {
+      this.gameOverTimeoutId = null;
       this.hud.hide();
       this.gameOverModal.show(
         this.score,
@@ -782,7 +825,49 @@ export class Game {
         resultMeta,
         () => this.startInstantReplay()
       );
-    }, 1100);
+    };
+
+    if (immediate) {
+      showModal();
+    } else {
+      this.gameOverTimeoutId = window.setTimeout(showModal, 1100);
+    }
+  }
+
+  public skipGameOverDelay(): void {
+    if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+      this.hud.hide();
+      this.gameOverModal.show(
+        this.score,
+        this.coinsCount,
+        this.player.distanceTraveled,
+        this.activeGameMode,
+        this.lastResultMeta,
+        () => this.startInstantReplay()
+      );
+    }
+  }
+
+  public quickRestart(): void {
+    if (this.isRestartInProgress) return;
+    this.isRestartInProgress = true;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+
+    this.reviveModal.hide();
+    this.reviveManager.cancelOffer();
+    this.gameOverModal.hide();
+
+    this.startRun(this.activeGameMode, true);
+
+    requestAnimationFrame(() => {
+      this.isRestartInProgress = false;
+    });
   }
 
   private gameLoop(now: number): void {
@@ -1264,7 +1349,7 @@ export class Game {
 
   private onReviveDeclined(reason: string = 'CRASH'): void {
     this.reviveManager.cancelOffer();
-    this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
+    this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
   }
 
   public startInstantReplay(): void {

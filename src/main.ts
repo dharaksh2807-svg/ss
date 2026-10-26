@@ -10,6 +10,7 @@ import { SecretRouteDirector } from './track/SecretRouteDirector';
 import { JunctionDirector } from './track/JunctionDirector';
 
 // Expose on window for runtime testing and scripts
+(window as any).EventBus = EventBus;
 (window as any).__METRO_BUS__ = EventBus.getInstance();
 (window as any).__METRO_EVENTS__ = EVENTS;
 (window as any).__PACING_METRICS__ = PacingMetrics.getInstance();
@@ -24,6 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
   try {
     const game = new Game();
     (window as any).__METRO_GAME__ = game;
+    (window as any).game = game;
     console.log('🎮 Metro Runner 3D initialized successfully!');
   } catch (err) {
     console.error('Failed to initialize Metro Runner 3D:', err);

@@ -4,12 +4,14 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { SkillComboManager } from '../core/SkillComboManager';
+import { ReviveManager } from '../revive/ReviveManager';
 
 export class GameOverModal {
   private element: HTMLElement;
   private progression = ProgressionManager.getInstance();
   private countUpInterval: any = null;
   private onReplayCallback: (() => void) | null = null;
+  private isRestarting: boolean = false;
 
   constructor() {
     let el = document.getElementById('game-over-modal');
@@ -164,18 +166,25 @@ export class GameOverModal {
           <!-- Dynamically populated completed missions / rewards -->
         </div>
 
+        <!-- Revive Telemetry Badge (Requirement F) -->
+        <div id="game-over-revive-badge" class="game-over-revive-pill">
+          <span class="revive-pill-icon">🔑</span>
+          <span id="game-over-revive-text">REVIVES: 0 / 3 USED • KEYS PRESERVED</span>
+        </div>
+
         <!-- Action Buttons -->
         <div class="game-over-actions-flow">
-          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow" style="width: 100%; margin-bottom: 12px;">
+          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Quick Retry (Press R or Space)">
             <span class="play-btn-content">
               <span class="play-icon">🔄</span>
-              <span id="game-over-retry-text" class="play-text">PLAY AGAIN</span>
+              <span id="game-over-retry-text" class="play-text">QUICK RETRY</span>
+              <span class="retry-key-badge"><kbd>R</kbd></span>
             </span>
           </button>
 
           <div class="game-over-nav-row">
-            <button id="game-over-menu-btn" class="arcade-btn btn-secondary">
-              <span class="btn-icon">🏠</span> LOBBY
+            <button id="game-over-menu-btn" class="arcade-btn btn-secondary" aria-label="Return to Lobby (Press ESC)">
+              <span class="btn-icon">🏠</span> LOBBY <span class="nav-key-badge"><kbd>ESC</kbd></span>
             </button>
             <button id="game-over-shop-btn" class="arcade-btn btn-gold">
               <span class="btn-icon">🛒</span> SHOP
@@ -210,9 +219,32 @@ export class GameOverModal {
     });
 
     const retryBtn = this.element.querySelector('#game-over-retry-btn');
-    retryBtn?.addEventListener('click', () => {
-      this.hide();
-      EventBus.getInstance().emit(EVENTS.GAME_RESTART);
+    retryBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.handleRetry();
+    });
+
+    // Keyboard shortcuts for results screen: R / Space / Enter to retry, ESC to Lobby
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (this.element.classList.contains('hidden')) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleRetry();
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        const active = document.activeElement;
+        if (!active || active === document.body || active === this.element || active.id === 'game-over-retry-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleRetry();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hide();
+        EventBus.getInstance().emit('GO_TO_MENU');
+      }
     });
 
     const menuBtn = this.element.querySelector('#game-over-menu-btn');
@@ -247,6 +279,28 @@ export class GameOverModal {
         EventBus.getInstance().emit('REQUEST_INSTANT_REPLAY');
       }
     });
+  }
+
+  public handleRetry(): void {
+    if (this.isRestarting) return;
+    this.isRestarting = true;
+
+    const retryBtn = this.element.querySelector('#game-over-retry-btn') as HTMLButtonElement;
+    if (retryBtn) {
+      retryBtn.disabled = true;
+      retryBtn.classList.add('btn-processing');
+    }
+
+    this.hide();
+    EventBus.getInstance().emit(EVENTS.GAME_RESTART);
+
+    setTimeout(() => {
+      this.isRestarting = false;
+      if (retryBtn) {
+        retryBtn.disabled = false;
+        retryBtn.classList.remove('btn-processing');
+      }
+    }, 400);
   }
 
   public show(
@@ -393,10 +447,31 @@ export class GameOverModal {
       shareCard?.classList.remove('hidden');
       const shareCodeEl = this.element.querySelector('#go-share-code-text');
       if (shareCodeEl) shareCodeEl.textContent = modeResult.challenge.shareCode;
-      if (retryText) retryText.textContent = 'RETRY THIS COURSE 🔄';
+      if (retryText) retryText.textContent = 'RETRY COURSE';
     } else {
       shareCard?.classList.add('hidden');
-      if (retryText) retryText.textContent = 'PLAY AGAIN 🔄';
+      if (retryText) retryText.textContent = 'QUICK RETRY';
+    }
+
+    // Revive Telemetry Display (Requirement F)
+    const reviveMgr = ReviveManager.getInstance();
+    const revivesUsed = reviveMgr.getRevivesUsed();
+    const maxRevives = reviveMgr.getMaxRevives();
+    const reviveBadge = this.element.querySelector('#game-over-revive-badge');
+    const reviveTextEl = this.element.querySelector('#game-over-revive-text');
+    if (reviveTextEl) {
+      if (mode === 'PRACTICE' || mode === 'ARENA') {
+        if (reviveBadge) (reviveBadge as HTMLElement).style.display = 'none';
+      } else {
+        if (reviveBadge) (reviveBadge as HTMLElement).style.display = 'flex';
+        if (revivesUsed === 0) {
+          reviveTextEl.textContent = `REVIVES: 0 / ${maxRevives} USED • KEYS PRESERVED`;
+        } else if (revivesUsed >= maxRevives) {
+          reviveTextEl.textContent = `REVIVES: ${revivesUsed} / ${maxRevives} EXPENDED • RETRY IS FREE`;
+        } else {
+          reviveTextEl.textContent = `REVIVES: ${revivesUsed} / ${maxRevives} USED • RETRY IS FREE`;
+        }
+      }
     }
 
     // First completion bonus banner
