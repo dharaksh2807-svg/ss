@@ -156,18 +156,18 @@ export const OBSTACLE_PATTERNS: TrackPattern[] = [
     entryLanes: [-1, 0, 1],
     exitLanes: [-1, 0, 1],
     requiredActions: ['LANE_CHANGE'],
-    safeRoutes: 'Stationary train blocks center lane 0 at z=35m; smooth lane-switch coin trails lead safely into flanking lanes -1 and 1; low hurdle in lane 1 at z=64m',
-    minReactionDist: 35.0,
+    safeRoutes: 'Stationary train blocks center lane 0 with front bumper at z=47m; smooth lane-switch coin trails lead safely into flanking lanes -1 and 1 starting at z=18m; low hurdle in lane 1 at z=72m',
+    minReactionDist: 47.0,
     obstacles: [
-      { type: 'TRAIN', lane: 0, zOffset: 35.0, length: 22.0 },
-      { type: 'LOW_BARRIER', lane: 1, zOffset: 64.0 }
+      { type: 'TRAIN', lane: 0, zOffset: 58.0, length: 22.0 },
+      { type: 'LOW_BARRIER', lane: 1, zOffset: 72.0 }
     ],
     collectibles: [
       { type: 'COIN', lane: 0, zOffset: 6.0, count: 5, spacing: 2.0, archetype: 'STRAIGHT_TRAIL' },
-      { type: 'COIN', lane: 0, endLane: -1, zOffset: 25.0, count: 4, spacing: 2.0, archetype: 'LANE_SWITCH' },
-      { type: 'COIN', lane: -1, zOffset: 34.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
-      { type: 'COIN', lane: 1, zOffset: 28.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
-      { type: 'COIN', lane: 1, zOffset: 61.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
+      { type: 'COIN', lane: 0, endLane: -1, zOffset: 18.0, count: 5, spacing: 2.0, archetype: 'LANE_SWITCH' },
+      { type: 'COIN', lane: -1, zOffset: 28.0, count: 9, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 24.0, count: 8, spacing: 2.2, archetype: 'STRAIGHT_TRAIL' },
+      { type: 'COIN', lane: 1, zOffset: 69.3, yOffset: 2.35, count: 4, spacing: 1.8, isArc: true, archetype: 'JUMP_ARC' }
     ]
   },
 

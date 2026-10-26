@@ -21,6 +21,7 @@ export class TrackChunk {
   public obstacles: ObstacleInstance[] = [];
   public collectibles: CollectibleInstance[] = [];
   public chunkHadCollision: boolean = false;
+  public patternName: string = '';
   public decorativeGroup: THREE.Group;
 
   // Environment and theme state
@@ -1453,6 +1454,7 @@ export class TrackChunk {
     this.isTunnel = !!pattern?.isTunnel;
     this.tunnelPortal = pattern?.tunnelPortal || 'NONE';
     this.playerInTunnel = false;
+    this.patternName = pattern?.name || '';
 
     // Dynamically regenerate modular scenery for recycled position and assigned district
     const director = EnvironmentDirector.getInstance();

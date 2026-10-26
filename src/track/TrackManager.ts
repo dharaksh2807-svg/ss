@@ -359,8 +359,21 @@ export class TrackManager {
 
       const openingPool = OBSTACLE_PATTERNS.filter((p) => p.isOpening &&
         CONSTANTS.LANE_INDICES.some((lane) => !p.obstacles.some((obs) => obs.lane === lane)));
-      const chosenOpening = openingPool.length > 0
-        ? openingPool[Math.floor(this.rng() * openingPool.length)]
+
+      // Filter opening candidates that are physically reachable and offer fair reaction time from starting lane 0
+      const safeOpenings = openingPool.filter((p) => {
+        const val = ReachabilityValidator.validatePattern(p as any, playerSpeed, [0]);
+        if (!val.solvable) return false;
+        // Require adequate human reaction window (>= 1.5s) for any obstacle in the starting lane
+        if (val.minReactionTimeSeconds !== undefined && val.minReactionTimeSeconds < 1.5) {
+          return false;
+        }
+        return true;
+      });
+
+      const candidates = safeOpenings.length > 0 ? safeOpenings : openingPool;
+      const chosenOpening = candidates.length > 0
+        ? candidates[Math.floor(this.rng() * candidates.length)]
         : OBSTACLE_PATTERNS[0];
 
       if (!commit) return chosenOpening;

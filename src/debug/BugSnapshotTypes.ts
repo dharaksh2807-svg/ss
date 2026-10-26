@@ -126,6 +126,7 @@ export interface SnapshotRunContext {
   activeEnvironment: string;
   activeDistrict?: string;
   score: number;
+  generatorVersion?: string;
 }
 
 /**
@@ -163,4 +164,5 @@ export interface BugSnapshotPackage {
   inputs: Array<{ time: number; action: InputAction }>;
   reproducibility: SnapshotReproducibility;
   screenshotBase64?: string;
+  screenshotStatus?: 'CAPTURED' | 'FAILED' | 'UNAVAILABLE_HEADLESS';
 }

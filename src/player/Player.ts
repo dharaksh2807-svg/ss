@@ -939,6 +939,10 @@ export class Player {
     return this.isChangingLane;
   }
 
+  public getQueuedLaneChange(): -1 | 1 | null {
+    return this.queuedLaneChange;
+  }
+
   public getJetpackPhase(): JetpackPhase {
     return this.jetpackPhase;
   }

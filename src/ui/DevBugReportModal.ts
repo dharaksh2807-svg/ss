@@ -211,8 +211,12 @@ export class DevBugReportModal {
     const screenshotBtn = this.element.querySelector('#dev-bug-screenshot-btn');
     screenshotBtn?.addEventListener('click', () => {
       if (!this.currentSnapshot) return;
-      this.snapshotManager.downloadScreenshot(this.currentSnapshot);
-      this.showFeedback('📸 Screenshot image downloaded!');
+      const success = this.snapshotManager.downloadScreenshot(this.currentSnapshot);
+      if (success) {
+        this.showFeedback('📸 Screenshot image downloaded!');
+      } else {
+        this.showFeedback('⚠️ Screenshot unavailable or could not be captured');
+      }
     });
 
     const reproBtn = this.element.querySelector('#dev-bug-reproduce-btn');

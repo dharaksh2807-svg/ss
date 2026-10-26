@@ -103,14 +103,16 @@ export class ReachabilityValidator {
           const obstaclesAtLocation = pattern.obstacles.filter((obs) => {
             if (obs.lane !== targetLane) return false;
 
-            let obsStart = obs.zOffset;
-            let obsEnd = obsStart + (obs.length || 2.0);
+            const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
+            const halfLength = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
+            let obsStart = isTrain ? Math.max(0, obs.zOffset - halfLength) : obs.zOffset;
+            let obsEnd = isTrain ? (obs.zOffset + halfLength) : (obs.zOffset + (obs.length || 2.0));
 
             // If moving train, calculate adjusted position at timeElapsed
             if (obs.type === 'MOVING_TRAIN' || obs.isMoving) {
               const advanceDist = (obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED) * timeElapsed;
-              obsStart = Math.max(0, obs.zOffset - advanceDist);
-              obsEnd = obsStart + (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT);
+              obsStart = Math.max(0, (obs.zOffset - halfLength) - advanceDist);
+              obsEnd = Math.max(0, (obs.zOffset + halfLength) - advanceDist);
             }
 
             return z >= obsStart && z <= obsEnd;
@@ -130,7 +132,9 @@ export class ReachabilityValidator {
             for (const obs of obstaclesAtLocation) {
               if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
                 const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
-                if (hasRamp && z <= obs.zOffset + CONSTANTS.TRAIN_RAMP_LENGTH) {
+                const halfLength = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+                const rampStart = Math.max(0, obs.zOffset - halfLength);
+                if (hasRamp && z >= rampStart && z <= rampStart + CONSTANTS.TRAIN_RAMP_LENGTH) {
                   // Running up ramp onto roof is safe!
                   climbedRoof = true;
                   continue;
@@ -256,9 +260,24 @@ export class ReachabilityValidator {
 
     const survivingExitLanes = Array.from(new Set(currentNodes.map((n) => n.lane)));
 
+    let minEntryObstacleDist = Infinity;
+    for (const obs of pattern.obstacles) {
+      if (initialLanes.includes(obs.lane)) {
+        const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
+        const halfLen = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
+        const frontZ = Math.max(0, obs.zOffset - halfLen);
+        if (frontZ < minEntryObstacleDist) {
+          minEntryObstacleDist = frontZ;
+        }
+      }
+    }
+    const actualReactionDist = Number.isFinite(minEntryObstacleDist)
+      ? Math.min(pattern.minReactionDist ?? minEntryObstacleDist, minEntryObstacleDist)
+      : (pattern.minReactionDist || 25.0);
+
     return {
       solvable: true,
-      minReactionTimeSeconds: (pattern.minReactionDist || 25.0) / speed,
+      minReactionTimeSeconds: actualReactionDist / speed,
       survivingExitLanes
     };
   }

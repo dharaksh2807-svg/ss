@@ -22,8 +22,13 @@ import {
   SnapshotReproducibility
 } from './BugSnapshotTypes';
 
+export type ScreenshotCaptureHandler = () => string | undefined;
+
 export class BugSnapshotManager {
   private static instance: BugSnapshotManager | null = null;
+
+  // Dedicated screenshot capture hook registered by game renderer
+  private captureHandler: ScreenshotCaptureHandler | null = null;
 
   // Rolling circular buffer
   private buffer: Array<BugSnapshotFrame | null> = new Array(MAX_SNAPSHOT_FRAMES).fill(null);
@@ -68,6 +73,10 @@ export class BugSnapshotManager {
       BugSnapshotManager.instance = new BugSnapshotManager();
     }
     return BugSnapshotManager.instance;
+  }
+
+  public setCaptureHandler(handler: ScreenshotCaptureHandler | null): void {
+    this.captureHandler = handler;
   }
 
   public setRunContext(context: {
@@ -118,6 +127,8 @@ export class BugSnapshotManager {
     this.recentInputs = [];
     this.lastCapturedInput = null;
     this.prevFrameState = null;
+    this.latestSnapshot = null;
+    this.lastAutoSnapshotTime = 0;
   }
 
   /**
@@ -472,8 +483,20 @@ export class BugSnapshotManager {
     isFrontal?: boolean;
     isFlankContact?: boolean;
     isGlance?: boolean;
+    cameraController?: CameraController;
+    nearbyObstacles?: ObstacleInstance[];
   }): BugSnapshotPackage {
-    const { reason, player, obstacle, diagnostic, isFrontal = true, isFlankContact = false, isGlance = false } = params;
+    const {
+      reason,
+      player,
+      obstacle,
+      diagnostic,
+      isFrontal = true,
+      isFlankContact = false,
+      isGlance = false,
+      cameraController,
+      nearbyObstacles = []
+    } = params;
 
     const now = typeof performance !== 'undefined' ? performance.now() / 1000 : Date.now() / 1000;
     if (
@@ -486,23 +509,163 @@ export class BugSnapshotManager {
       return this.latestSnapshot;
     }
 
+    // Determine obstacle geometry details
+    const obsZ = obstacle ? obstacle.group.position.z : (diagnostic?.contactPosition?.z ?? player.position.z);
+    const obsLen = obstacle?.length || CONSTANTS.TRAIN_LENGTH_SHORT;
+    const halfLen = obsLen / 2;
+    const nearZ = obstacle ? obstacle.collider.max.z : (diagnostic?.contactPosition?.z ?? player.position.z);
+    const farZ = obstacle ? obstacle.collider.min.z : (diagnostic?.contactPosition?.z ?? player.position.z);
+    const distToFrontBumper = Math.max(0, Math.abs(player.position.z - nearZ));
+    const relSpeed = player.speed + Math.abs(obstacle?.velocityZ || 0);
+    const timeToImpact = relSpeed > 0 ? Math.round((distToFrontBumper / relSpeed) * 1000) / 1000 : 0;
+
+    const queuedLaneChange = player.getQueuedLaneChange ? player.getQueuedLaneChange() : null;
+
     const details: Record<string, any> = {
       obstacleId: obstacle?.id || diagnostic?.obstacleId || 'N/A',
       obstacleType: obstacle?.type || diagnostic?.collisionType || reason,
+      collisionClassification: diagnostic?.collisionType || (isFrontal ? 'MAJOR_FATAL_HIT' : 'SIDE_FLANK_COLLISION'),
       playerLane: player.currentLane,
-      playerSpeed: player.speed,
+      playerPosition: {
+        x: Math.round(player.position.x * 1000) / 1000,
+        y: Math.round(player.position.y * 1000) / 1000,
+        z: Math.round(player.position.z * 1000) / 1000
+      },
+      playerVelocity: {
+        vx: 0,
+        vy: Math.round(player.verticalVelocity * 100) / 100,
+        vz: Math.round(-player.speed * 100) / 100,
+        speed: Math.round(player.speed * 100) / 100
+      },
+      obstaclePosition: obstacle ? {
+        x: Math.round(obstacle.group.position.x * 1000) / 1000,
+        y: Math.round(obstacle.group.position.y * 1000) / 1000,
+        z: Math.round(obstacle.group.position.z * 1000) / 1000
+      } : null,
+      obstacleVelocity: obstacle ? {
+        vx: 0,
+        vy: 0,
+        vz: Math.round((obstacle.velocityZ || 0) * 100) / 100
+      } : null,
+      obstacleBounds: obstacle ? {
+        centerZ: Math.round(((nearZ + farZ) / 2) * 100) / 100,
+        nearZ: Math.round(nearZ * 100) / 100,
+        farZ: Math.round(farZ * 100) / 100,
+        hasRamp: obstacle.hasRamp || false
+      } : null,
+      timeToImpact,
+      contactPosition: diagnostic?.contactPosition
+        ? {
+            x: Math.round(diagnostic.contactPosition.x * 1000) / 1000,
+            y: Math.round(diagnostic.contactPosition.y * 1000) / 1000,
+            z: Math.round(diagnostic.contactPosition.z * 1000) / 1000
+          }
+        : {
+            x: Math.round(player.position.x * 1000) / 1000,
+            y: Math.round(player.position.y * 1000) / 1000,
+            z: Math.round(player.position.z * 1000) / 1000
+          },
       playerState: player.state,
       supportSurface: player.supportSurface,
       isFrontal,
       isFlankContact,
       isGlance,
-      contactPosition: diagnostic?.contactPosition || { x: player.position.x, y: player.position.y, z: player.position.z }
+      queuedLaneChange,
+      simTime: Math.round(this.totalFramesRecorded * (1 / 60) * 1000) / 1000
     };
+
+    // Ensure the collision event itself is recorded as the final frame in the rolling buffer
+    const lastFrame = this.count > 0 ? this.buffer[(this.head - 1 + MAX_SNAPSHOT_FRAMES) % MAX_SNAPSHOT_FRAMES] : null;
+    if (!lastFrame || lastFrame.player.state !== 'CRASH') {
+      const activeObs = nearbyObstacles.length > 0 ? nearbyObstacles : (obstacle ? [obstacle] : []);
+      const obsSnapshots: SnapshotObstacle[] = [];
+      for (const obs of activeObs) {
+        if (!obs.active && obs !== obstacle) continue;
+        const size = new THREE.Vector3();
+        obs.collider.getSize(size);
+        obsSnapshots.push({
+          id: obs.id,
+          type: obs.type,
+          lane: obs.lane,
+          x: obs.group.position.x,
+          y: obs.group.position.y,
+          z: obs.group.position.z,
+          width: Math.round(size.x * 100) / 100,
+          height: Math.round(size.y * 100) / 100,
+          depth: Math.round(size.z * 100) / 100,
+          velocityZ: obs.velocityZ,
+          active: obs.active,
+          hasRamp: obs.hasRamp,
+          roofSurfaceY: obs.roofSurfaceY,
+          meshZ: obs.group.position.z,
+          colliderMinZ: obs.collider.min.z,
+          colliderMaxZ: obs.collider.max.z
+        });
+      }
+
+      const camTransform = cameraController ? {
+        posX: Math.round(cameraController.camera.position.x * 100) / 100,
+        posY: Math.round(cameraController.camera.position.y * 100) / 100,
+        posZ: Math.round(cameraController.camera.position.z * 100) / 100,
+        fov: cameraController.camera.fov
+      } : (lastFrame?.camera || { posX: 0, posY: 4, posZ: 6, fov: 60 });
+
+      const impactFrame: BugSnapshotFrame = {
+        frameIndex: this.totalFramesRecorded,
+        timestamp: Math.round(now * 1000) / 1000,
+        simTime: Math.round(this.totalFramesRecorded * (1 / 60) * 1000) / 1000,
+        distance: Math.round(player.distanceTraveled * 10) / 10,
+        player: {
+          lane: player.currentLane,
+          targetLane: player.targetLane,
+          x: Math.round(player.position.x * 1000) / 1000,
+          y: Math.round(player.position.y * 1000) / 1000,
+          z: Math.round(player.position.z * 1000) / 1000,
+          vx: 0,
+          vy: Math.round(player.verticalVelocity * 100) / 100,
+          vz: Math.round(-player.speed * 100) / 100,
+          speed: Math.round(player.speed * 100) / 100,
+          state: 'CRASH',
+          groundY: Math.round(player.groundY * 100) / 100,
+          supportSurface: player.supportSurface,
+          activeSupportObstacleId: player.activeSupportObstacleId,
+          isJumping: player.isJumping,
+          isSliding: player.isSliding,
+          isFastDropping: player.isFastDropping,
+          jumpPhase: String(player.jumpPhase),
+          jetpackPhase: player.state === 'JETPACK' ? 'ACTIVE' : 'NONE'
+        },
+        powerups: {
+          hasShield: player.powerups ? player.powerups.hasShieldActive() : false,
+          hasHoverboard: player.hoverboardManager ? player.hoverboardManager.isBoardActive() : false,
+          hasSneakers: player.powerups ? player.powerups.isActive('SNEAKERS') : false,
+          hasMagnet: player.powerups ? player.powerups.isActive('MAGNET') : false,
+          hasJetpack: player.powerups ? player.powerups.isActive('JETPACK') : false,
+          isInvulnerable: player.isInvulnerable()
+        },
+        camera: camTransform,
+        nearbyObstacles: obsSnapshots,
+        recentInput: this.lastCapturedInput,
+        collisionDiagnostic: diagnostic,
+        chunkId: obstacle?.id ? obstacle.id.split('_')[0] + '_' + obstacle.id.split('_')[1] : undefined
+      };
+
+      this.buffer[this.head] = impactFrame;
+      this.head = (this.head + 1) % MAX_SNAPSHOT_FRAMES;
+      if (this.count < MAX_SNAPSHOT_FRAMES) {
+        this.count++;
+      }
+      this.totalFramesRecorded++;
+    }
+
+    // Capture screenshot synchronously at the impact moment
+    const screenshot = this.safeCaptureCanvasScreenshot();
 
     return this.triggerAutoSnapshot(
       'FATAL_COLLISION',
       `Fatal collision encountered: ${reason} (Obstacle: ${details.obstacleType}, Lane: ${player.currentLane})`,
-      details
+      details,
+      screenshot
     );
   }
 
@@ -513,15 +676,19 @@ export class BugSnapshotManager {
   private triggerAutoSnapshot(
     type: BugTriggerType,
     observedFailure: string,
-    details: Record<string, any>
+    details: Record<string, any>,
+    screenshotBase64?: string
   ): BugSnapshotPackage {
     this.lastAutoSnapshotTime = typeof performance !== 'undefined' ? performance.now() / 1000 : Date.now() / 1000;
-    const pkg = this.buildSnapshotPackage({
-      type,
-      reason: observedFailure,
-      details,
-      observedFailure
-    });
+    const pkg = this.buildSnapshotPackage(
+      {
+        type,
+        reason: observedFailure,
+        details,
+        observedFailure
+      },
+      screenshotBase64
+    );
 
     this.latestSnapshot = pkg;
     this.snapshotHistory.push(pkg);
@@ -540,6 +707,7 @@ export class BugSnapshotManager {
     reason: string = 'Manual tester diagnostic capture',
     screenshotBase64?: string
   ): BugSnapshotPackage {
+    const screenshot = screenshotBase64 || this.safeCaptureCanvasScreenshot();
     const pkg = this.buildSnapshotPackage(
       {
         type: 'MANUAL_TRIGGER',
@@ -547,7 +715,7 @@ export class BugSnapshotManager {
         details: { manualCapture: true },
         observedFailure: reason
       },
-      screenshotBase64
+      screenshot
     );
 
     this.latestSnapshot = pkg;
@@ -632,12 +800,25 @@ export class BugSnapshotManager {
       speed: lastFrame ? lastFrame.player.speed : CONSTANTS.INITIAL_SPEED,
       activeEnvironment: this.activeEnvironment,
       activeDistrict: this.activeDistrict,
-      score: lastFrame ? Math.floor(lastFrame.distance * 10) : 0
+      score: lastFrame ? Math.floor(lastFrame.distance * 10) : 0,
+      generatorVersion: '1.0.0-reachability-v2'
     };
 
     // Filter inputs that fall within the snapshot interval
     const firstTimestamp = chronologicalFrames[0]?.timestamp || 0;
-    const relevantInputs = this.recentInputs.filter(inp => inp.time >= firstTimestamp - 0.5);
+    let relevantInputs = this.recentInputs.filter(inp => inp.time >= firstTimestamp - 0.5);
+    if (relevantInputs.length === 0 && this.recentInputs.length > 0) {
+      relevantInputs = this.recentInputs.slice(-10);
+    }
+
+    let screenshotStatus: 'CAPTURED' | 'FAILED' | 'UNAVAILABLE_HEADLESS';
+    if (screenshotBase64 && screenshotBase64.startsWith('data:image/') && screenshotBase64.length > 200) {
+      screenshotStatus = 'CAPTURED';
+    } else if (typeof document === 'undefined') {
+      screenshotStatus = 'UNAVAILABLE_HEADLESS';
+    } else {
+      screenshotStatus = 'FAILED';
+    }
 
     const reproducibility: SnapshotReproducibility = {
       isReplayable: this.runSeed > 0 && chronologicalFrames.length > 0,
@@ -658,7 +839,8 @@ export class BugSnapshotManager {
       frames: chronologicalFrames,
       inputs: relevantInputs,
       reproducibility,
-      screenshotBase64
+      screenshotBase64,
+      screenshotStatus
     };
   }
 
@@ -686,6 +868,7 @@ export class BugSnapshotManager {
     const { trigger, runContext, frames, inputs, reproducibility, isoDate, gameVersion } = snapshot;
     const lastFrame = frames[frames.length - 1];
     const p = lastFrame ? lastFrame.player : null;
+    const d = trigger.details || {};
 
     const nearbyObsList = lastFrame && lastFrame.nearbyObstacles.length > 0
       ? lastFrame.nearbyObstacles
@@ -702,7 +885,7 @@ export class BugSnapshotManager {
           .slice(-8)
           .map(i => `  - \`${i.action}\` at ${i.time.toFixed(3)}s`)
           .join('\n')
-      : '  - None';
+      : `  - None (0 player input actions occurred prior to failure point at ${p ? p.z.toFixed(1) : '0'}m, simTime: ${lastFrame ? lastFrame.simTime.toFixed(3) : '0'}s)`;
 
     return [
       `### 🐛 METRO RUNNER 3D — GAMEPLAY BUG SNAPSHOT REPORT`,
@@ -712,11 +895,16 @@ export class BugSnapshotManager {
       `- **Trigger:** \`${trigger.type}\``,
       `- **Observed Failure:** ${trigger.observedFailure}`,
       `- **Reason:** ${trigger.reason}`,
+      d.obstacleId ? `- **Impact Obstacle ID:** \`${d.obstacleId}\` [${d.obstacleType || 'UNKNOWN'}]` : '',
+      d.collisionClassification ? `- **Collision Classification:** \`${d.collisionClassification}\` (Frontal: ${d.isFrontal ?? true})` : '',
+      d.contactPosition ? `- **Contact Point:** X=${d.contactPosition.x?.toFixed(2)}, Y=${d.contactPosition.y?.toFixed(2)}, Z=${d.contactPosition.z?.toFixed(2)}m` : '',
+      d.timeToImpact !== undefined ? `- **Time To Impact:** ${d.timeToImpact.toFixed(3)}s` : '',
       ``,
       `#### 🎮 RUN CONFIGURATION & STATE`,
       `- **Deterministic Seed:** \`${runContext.seed}\``,
       `- **Game Mode:** ${runContext.gameMode} (${runContext.difficulty})`,
       `- **Distance:** ${runContext.distance.toFixed(1)}m | **Speed:** ${runContext.speed.toFixed(1)} m/s`,
+      `- **Generator Version:** \`${runContext.generatorVersion || '1.0.0-reachability-v2'}\``,
       `- **Environment / District:** ${runContext.activeEnvironment} / ${runContext.activeDistrict || 'DEFAULT'}`,
       ``,
       `#### 🏃 PLAYER KINEMATICS AT FAILURE POINT`,
@@ -725,8 +913,9 @@ export class BugSnapshotManager {
         `- **Lane:** ${p.lane} (Target: ${p.targetLane})`,
         `- **State:** \`${p.state}\` | **Support Surface:** \`${p.supportSurface}\` (ActiveSupport: ${p.activeSupportObstacleId || 'GROUND'})`,
         `- **Airborne:** Jump=${p.isJumping} (Phase: ${p.jumpPhase}) | Slide=${p.isSliding} | FastDrop=${p.isFastDropping}`,
-        `- **Vertical Velocity (Vy):** ${p.vy.toFixed(2)} m/s`
-      ].join('\n') : '- No frame kinematics available',
+        `- **Vertical Velocity (Vy):** ${p.vy.toFixed(2)} m/s`,
+        d.queuedLaneChange ? `- **Pending Queued Input:** \`${d.queuedLaneChange}\`` : ''
+      ].filter(Boolean).join('\n') : '- No frame kinematics available',
       ``,
       `#### 🛡️ ACTIVE POWERUPS & PROTECTION`,
       lastFrame ? [
@@ -742,13 +931,17 @@ export class BugSnapshotManager {
       `#### 🕹️ RECENT INPUT ACTIONS`,
       recentInputsList,
       ``,
+      `#### 📸 SCREENSHOT ARTIFACT`,
+      `- **Capture Status:** \`${snapshot.screenshotStatus || (snapshot.screenshotBase64 ? 'CAPTURED' : 'UNAVAILABLE')}\``,
+      `- **Payload Size:** ${snapshot.screenshotBase64 ? `${Math.round(snapshot.screenshotBase64.length / 1024)} KB` : '0 KB (None)'}`,
+      ``,
       `#### 🔁 REPRODUCIBILITY ASSESSMENT`,
       `- **Replayable:** ${reproducibility.isReplayable ? 'YES (Deterministic Sandbox)' : 'NO (Diagnostic Only)'}`,
       `- **Confidence:** ${reproducibility.confidence}`,
       `- **Notes:** ${reproducibility.notes}`,
       ``,
       `> ℹ️ *Tip: Paste this summary directly to an AI agent to reconstruct or debug collision and physics invariants.*`
-    ].join('\n');
+    ].filter(line => line !== null && line !== undefined).join('\n');
   }
 
   /**
@@ -785,10 +978,16 @@ export class BugSnapshotManager {
   /**
    * Downloads the optional screenshot artifact as a separate image file
    */
-  public downloadScreenshot(snapshot: BugSnapshotPackage): void {
-    if (typeof document === 'undefined') return;
-    const dataUrl = snapshot.screenshotBase64 || this.safeCaptureCanvasScreenshot();
-    if (!dataUrl) return;
+  public downloadScreenshot(snapshot: BugSnapshotPackage): boolean {
+    if (typeof document === 'undefined') return false;
+    let dataUrl = snapshot.screenshotBase64;
+    if (!dataUrl) {
+      dataUrl = this.safeCaptureCanvasScreenshot();
+    }
+    if (!dataUrl || dataUrl.length < 200 || !dataUrl.startsWith('data:image/')) {
+      console.warn('Screenshot download skipped: no valid screenshot image payload available.');
+      return false;
+    }
 
     const link = document.createElement('a');
     const timestampStr = new Date(snapshot.exportTimestamp)
@@ -801,17 +1000,45 @@ export class BugSnapshotManager {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    return true;
   }
 
   /**
-   * Safely captures current canvas render as a base64 image without halting execution
+   * Safely captures current canvas render as a base64 image without halting execution.
+   * If a captureHandler is registered by the game, it executes a synchronous render
+   * immediately before reading canvas.toDataURL(), avoiding the blank/black buffer
+   * clearing inherent to default WebGL preserveDrawingBuffer: false.
    */
-  public safeCaptureCanvasScreenshot(renderer?: THREE.WebGLRenderer): string | undefined {
-    if (typeof document === 'undefined') return undefined;
+  public safeCaptureCanvasScreenshot(
+    renderer?: THREE.WebGLRenderer,
+    scene?: THREE.Scene,
+    camera?: THREE.Camera
+  ): string | undefined {
     try {
+      if (this.captureHandler) {
+        const handlerResult = this.captureHandler();
+        if (handlerResult && handlerResult.startsWith('data:image/') && handlerResult.length > 200) {
+          return handlerResult;
+        }
+      }
+
+      if (typeof document === 'undefined') return undefined;
+
+      // If renderer, scene, and camera are passed directly, render immediately before read
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        const canvas = renderer.domElement;
+        if (canvas && typeof canvas.toDataURL === 'function') {
+          return canvas.toDataURL('image/jpeg', 0.85);
+        }
+      }
+
       const canvas = renderer ? renderer.domElement : document.querySelector('canvas');
       if (canvas && typeof canvas.toDataURL === 'function') {
-        return canvas.toDataURL('image/jpeg', 0.85);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        if (dataUrl && dataUrl.startsWith('data:image/') && dataUrl.length > 200) {
+          return dataUrl;
+        }
       }
     } catch (e) {
       console.warn('Screenshot capture skipped or restricted:', e);

@@ -238,6 +238,25 @@ export class Game {
     // Attach development scenario runner to window
     TrainScenarioRunner.getInstance().attachToWindow(this);
 
+    // Register synchronous screenshot capture hook for bug snapshots
+    this.bugSnapshotManager.setCaptureHandler(() => {
+      try {
+        if (this.worldScene?.renderer && this.worldScene?.scene && this.cameraController?.camera) {
+          this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+          const canvas = this.worldScene.renderer.domElement;
+          if (canvas && typeof canvas.toDataURL === 'function') {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            if (dataUrl && dataUrl.startsWith('data:image/') && dataUrl.length > 200) {
+              return dataUrl;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Screenshot capture failed in game handler:', err);
+      }
+      return undefined;
+    });
+
     // Start requestAnimationFrame loop
     this.lastTime = performance.now();
     requestAnimationFrame(this.gameLoop.bind(this));
@@ -1271,9 +1290,21 @@ export class Game {
       });
     }
 
+    const nearbyObstacles: ObstacleInstance[] = [];
+    for (let i = 0; i < this.trackManager.chunks.length; i++) {
+      const chunk = this.trackManager.chunks[i];
+      for (let j = 0; j < chunk.obstacles.length; j++) {
+        if (chunk.obstacles[j].active) {
+          nearbyObstacles.push(chunk.obstacles[j]);
+        }
+      }
+    }
+
     this.bugSnapshotManager.recordFatalCollision({
       reason,
-      player: this.player
+      player: this.player,
+      cameraController: this.cameraController,
+      nearbyObstacles
     });
 
     const explanation = this.crashReplayManager.getActiveExplanation();
