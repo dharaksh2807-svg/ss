@@ -406,3 +406,53 @@ export type LaneIndex = -1 | 0 | 1; // -1: Left, 0: Center, 1: Right
 export function getLaneX(lane: LaneIndex): number {
   return lane * CONSTANTS.LANE_WIDTH;
 }
+
+/**
+ * Determines whether the current execution context is an authorized developer environment.
+ * Ensures developer-facing diagnostics (wireframes, bug snapshot reports, debug buttons)
+ * remain accessible on deliberate developer request while strictly isolated from normal gameplay.
+ */
+export function isDeveloperMode(): boolean {
+  const g = typeof window !== 'undefined' ? (window as any) : (globalThis as any);
+
+  // 1. Explicit in-memory developer override (allows tests & sessions to toggle mode)
+  if (typeof (globalThis as any).__IS_DEV__ === 'boolean') {
+    return (globalThis as any).__IS_DEV__;
+  }
+  if (typeof g.__IS_DEV__ === 'boolean') {
+    return g.__IS_DEV__;
+  }
+
+  // 2. Vite development mode
+  try {
+    if (Boolean((import.meta as any)?.env?.DEV)) {
+      return true;
+    }
+  } catch {}
+
+  // 3. Explicit URL developer query parameter (?dev=1, ?debug=1, ?test=1)
+  try {
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('dev') || params.has('debug') || params.has('test') || params.has('arena')) {
+        return true;
+      }
+    }
+  } catch {}
+
+  // 4. Local development hostnames
+  try {
+    if (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return true;
+    }
+  } catch {}
+
+  // 5. Node.js runtime / unit test environment (when running in tsx / node without a browser hostname)
+  const proc = (globalThis as any).process;
+  if (proc && proc.env && (!g.location?.hostname || proc.env.NODE_ENV === 'test')) {
+    return true;
+  }
+
+  return false;
+}
+

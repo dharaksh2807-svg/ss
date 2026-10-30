@@ -1,4 +1,5 @@
 import { EventBus, EVENTS } from '../core/EventBus';
+import { isDeveloperMode } from '../core/Constants';
 
 export class PauseModal {
   private element: HTMLElement;
@@ -59,7 +60,7 @@ export class PauseModal {
             <button id="pause-settings-btn" class="arcade-btn btn-secondary">
               <span class="btn-icon">⚙️</span> AUDIO SETTINGS
             </button>
-            <button id="pause-bug-report-btn" class="arcade-btn btn-secondary" style="border-color: rgba(239, 68, 68, 0.6); color: #fca5a5;">
+            <button id="pause-bug-report-btn" class="arcade-btn btn-secondary" style="border-color: rgba(239, 68, 68, 0.6); color: #fca5a5; display: none;">
               <span class="btn-icon">🐛</span> BUG REPORT [F9]
             </button>
             <button id="pause-menu-btn" class="arcade-btn btn-danger">
@@ -100,7 +101,9 @@ export class PauseModal {
 
     const bugReportBtn = this.element.querySelector('#pause-bug-report-btn');
     bugReportBtn?.addEventListener('click', () => {
-      EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
+      if (isDeveloperMode()) {
+        EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
+      }
     });
 
     const menuBtn = this.element.querySelector('#pause-menu-btn');
@@ -115,6 +118,10 @@ export class PauseModal {
   }
 
   public show(): void {
+    const bugReportBtn = this.element.querySelector('#pause-bug-report-btn') as HTMLElement;
+    if (bugReportBtn) {
+      bugReportBtn.style.display = isDeveloperMode() ? 'flex' : 'none';
+    }
     this.element.classList.remove('hidden');
     this.element.focus();
   }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS, LaneIndex } from '../core/Constants';
+import { CONSTANTS, LaneIndex, isDeveloperMode } from '../core/Constants';
 import { Player } from '../player/Player';
 import { CameraController } from '../scene/CameraController';
 import { ObstacleInstance, ObstacleType } from '../track/ObstacleFactory';
@@ -109,35 +109,28 @@ export class BugSnapshotManager {
   /**
    * Authoritative debugging preference: auto-open crash report modal.
    * Default: false (silent background recording during gameplay).
+   * Legacy localStorage values are actively purged to prevent auto-popups for ordinary players.
    */
   public getAutoOpenCrashReport(): boolean {
+    if (!isDeveloperMode()) {
+      return false;
+    }
     if (typeof window !== 'undefined' && (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ !== undefined) {
       return (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ === true;
-    }
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        return window.localStorage.getItem('metro_debug_auto_open_crash_report') === 'true';
-      } catch {
-        return false;
-      }
     }
     return false;
   }
 
   public setAutoOpenCrashReport(enabled: boolean): void {
+    const targetState = enabled && isDeveloperMode();
     if (typeof window !== 'undefined') {
-      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = enabled;
+      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = targetState;
       try {
-        if (enabled) {
-          window.localStorage.setItem('metro_debug_auto_open_crash_report', 'true');
-        } else {
-          window.localStorage.removeItem('metro_debug_auto_open_crash_report');
-        }
+        window.localStorage.removeItem('metro_debug_auto_open_crash_report');
       } catch {
         // Storage access may be restricted
       }
     }
-    this.eventBus.emit('SET_AUTO_OPEN_CRASH_REPORT', enabled);
   }
 
   /**

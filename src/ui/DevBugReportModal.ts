@@ -2,6 +2,7 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { BugSnapshotManager } from '../debug/BugSnapshotManager';
 import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
 import { DebugVisualizer } from '../debug/DebugVisualizer';
+import { isDeveloperMode } from '../core/Constants';
 
 export class DevBugReportModal {
   private static readonly STORAGE_KEY = 'metro_debug_auto_open_crash_report';
@@ -13,6 +14,7 @@ export class DevBugReportModal {
   private eventBus = EventBus.getInstance();
 
   constructor() {
+    this.purgeLegacyAutoOpenPreference();
     this.autoOpenCrashReport = this.loadAutoOpenPreference();
     let el = document.getElementById('dev-bug-report-modal');
     if (!el) {
@@ -25,13 +27,28 @@ export class DevBugReportModal {
     this.setupListeners();
   }
 
-  private loadAutoOpenPreference(): boolean {
+  /**
+   * Proactively purges legacy localStorage auto-open keys so that old developer
+   * testing preferences never unexpectedly reactivate technical popups in normal gameplay.
+   */
+  private purgeLegacyAutoOpenPreference(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        return window.localStorage.getItem(DevBugReportModal.STORAGE_KEY) === 'true';
+        window.localStorage.removeItem(DevBugReportModal.STORAGE_KEY);
       } catch {
-        return false;
+        // Ignore restricted storage environments
       }
+    }
+  }
+
+  private loadAutoOpenPreference(): boolean {
+    // Ordinary gameplay must NEVER auto-open technical developer reports
+    if (!isDeveloperMode()) {
+      return false;
+    }
+    // Only check transient in-memory window setting during an active developer session
+    if (typeof window !== 'undefined' && (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ === true) {
+      return true;
     }
     return false;
   }
@@ -41,21 +58,16 @@ export class DevBugReportModal {
   }
 
   public setAutoOpenCrashReport(enabled: boolean): void {
-    this.autoOpenCrashReport = enabled;
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        if (enabled) {
-          window.localStorage.setItem(DevBugReportModal.STORAGE_KEY, 'true');
-        } else {
-          window.localStorage.removeItem(DevBugReportModal.STORAGE_KEY);
-        }
-      } catch {
-        // Storage access might be restricted in some environments
-      }
+    const target = enabled && isDeveloperMode();
+    if (this.autoOpenCrashReport === target) {
+      return;
     }
+    this.autoOpenCrashReport = target;
+    this.purgeLegacyAutoOpenPreference();
     if (typeof window !== 'undefined') {
-      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = enabled;
+      (window as any).__DEV_AUTO_OPEN_CRASH_REPORT__ = target;
     }
+    this.snapshotManager.setAutoOpenCrashReport(target);
   }
 
   private setupListeners(): void {
@@ -63,26 +75,38 @@ export class DevBugReportModal {
       // Store latest snapshot data silently in background
       this.currentSnapshot = snapshot;
 
-      // CRITICAL ROOT FIX: Diagnostics capture silently in the background.
-      // Do NOT auto-open the technical report modal unless a developer explicitly enabled this preference.
-      if (this.autoOpenCrashReport) {
+      // CRITICAL: Diagnostics capture silently in the background.
+      // Do NOT auto-open the technical report modal unless an authorized developer
+      // explicitly enabled this preference during the current dev session.
+      if (this.autoOpenCrashReport && isDeveloperMode()) {
         this.render();
         this.show();
       }
     });
 
     this.eventBus.on('OPEN_BUG_REPORT_MODAL', () => {
-      this.openLatest();
+      if (isDeveloperMode()) {
+        this.openLatest();
+      }
     });
 
     this.eventBus.on('SET_AUTO_OPEN_CRASH_REPORT', (enabled: boolean) => {
-      this.autoOpenCrashReport = enabled;
+      this.setAutoOpenCrashReport(enabled);
     });
 
     // Lifecycle cleanups: modal must never persist into a new run or menu
-    this.eventBus.on(EVENTS.GAME_START, () => this.hide());
-    this.eventBus.on('GAME_RESTART', () => this.hide());
-    this.eventBus.on('GO_TO_MENU', () => this.hide());
+    this.eventBus.on(EVENTS.GAME_START, () => {
+      this.autoOpenCrashReport = false;
+      this.hide();
+    });
+    this.eventBus.on('GAME_RESTART', () => {
+      this.autoOpenCrashReport = false;
+      this.hide();
+    });
+    this.eventBus.on('GO_TO_MENU', () => {
+      this.autoOpenCrashReport = false;
+      this.hide();
+    });
 
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -96,6 +120,9 @@ export class DevBugReportModal {
   }
 
   public openLatest(forceFreshManual: boolean = false): void {
+    if (!isDeveloperMode()) {
+      return;
+    }
     let snap = this.snapshotManager.getLatestSnapshot();
     if (!snap || forceFreshManual) {
       // Capture a fresh manual snapshot if none exists yet or if explicitly requested (e.g. F9 during active play)
@@ -107,11 +134,23 @@ export class DevBugReportModal {
   }
 
   public show(): void {
+    if (!isDeveloperMode()) {
+      this.element.classList.add('hidden');
+      return;
+    }
     this.element.classList.remove('hidden');
   }
 
   public hide(): void {
     this.element.classList.add('hidden');
+    // Blur any active element inside the modal to return focus cleanly
+    if (
+      typeof document !== 'undefined' &&
+      typeof this.element.contains === 'function' &&
+      this.element.contains(document.activeElement)
+    ) {
+      (document.activeElement as HTMLElement)?.blur?.();
+    }
   }
 
   private render(): void {
@@ -231,7 +270,7 @@ export class DevBugReportModal {
             📸 DOWNLOAD SCREENSHOT ARTIFACT
           </button>
           <button id="dev-bug-autoopen-toggle-btn" class="arcade-btn btn-secondary" style="font-size: 11px; padding: 10px; border-color: ${this.autoOpenCrashReport ? '#ff1744' : 'rgba(255,255,255,0.2)'}; color: ${this.autoOpenCrashReport ? '#ff80ab' : '#94a3b8'};">
-            ⚡ AUTO-POPUP: ${this.autoOpenCrashReport ? 'ON (DEV ONLY)' : 'OFF (DEFAULT)'}
+            ⚡ AUTO-POPUP: ${this.autoOpenCrashReport ? 'ON (DEV SESSION ONLY)' : 'OFF (DEFAULT)'}
           </button>
         </div>
       </div>
@@ -249,7 +288,7 @@ export class DevBugReportModal {
       const next = !this.autoOpenCrashReport;
       this.setAutoOpenCrashReport(next);
       this.render();
-      this.showFeedback(`⚡ Auto-popup on crash toggled ${next ? 'ON (dev testing only)' : 'OFF (default gameplay)'}`);
+      this.showFeedback(`⚡ Auto-popup on crash toggled ${next ? 'ON (dev testing session only)' : 'OFF (default gameplay)'}`);
     });
 
     const copyBtn = this.element.querySelector('#dev-bug-copy-ai-btn');

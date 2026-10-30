@@ -5,6 +5,7 @@ import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog'
 import { CrashReplayManager } from '../replay/CrashReplayManager';
 import { SkillComboManager } from '../core/SkillComboManager';
 import { ReviveManager } from '../revive/ReviveManager';
+import { isDeveloperMode } from '../core/Constants';
 
 export class GameOverModal {
   private element: HTMLElement;
@@ -159,9 +160,9 @@ export class GameOverModal {
             <span class="btn-icon">📹</span>
             <span>WATCH INSTANT REPLAY (SLOW-MO)</span>
           </button>
-          <button id="game-over-bug-report-btn" class="arcade-btn bug-report-action-btn" style="width: 100%; margin-top: 8px; background: rgba(239, 68, 68, 0.18); border: 1.5px solid rgba(239, 68, 68, 0.7); color: #fca5a5; font-size: 0.95rem; font-weight: 700; letter-spacing: 1px;" aria-label="Open Developer Bug Diagnostics">
-            <span class="btn-icon">🐛</span>
-            <span>CAPTURE BUG REPORT [F9]</span>
+          <button id="game-over-bug-report-btn" class="dev-crash-btn hidden" style="display: none; width: auto; margin-top: 6px; padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 6px; cursor: pointer; align-self: flex-start;" aria-label="Open Developer Bug Diagnostics">
+            <span class="btn-icon">🛠️</span>
+            <span>Debug Crash [F9]</span>
           </button>
         </div>
 
@@ -286,7 +287,9 @@ export class GameOverModal {
 
     const bugReportBtn = this.element.querySelector('#game-over-bug-report-btn');
     bugReportBtn?.addEventListener('click', () => {
-      EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
+      if (isDeveloperMode()) {
+        EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
+      }
     });
   }
 
@@ -616,6 +619,18 @@ export class GameOverModal {
           replayBtn.style.display = 'flex';
         } else {
           replayBtn.style.display = 'none';
+        }
+      }
+
+      // Developer-only Diagnostics Action (strictly hidden from ordinary players in normal gameplay)
+      const bugReportBtn = crashCard.querySelector('#game-over-bug-report-btn') as HTMLElement;
+      if (bugReportBtn) {
+        if (isDeveloperMode()) {
+          bugReportBtn.classList.remove('hidden');
+          bugReportBtn.style.display = 'inline-flex';
+        } else {
+          bugReportBtn.classList.add('hidden');
+          bugReportBtn.style.display = 'none';
         }
       }
 

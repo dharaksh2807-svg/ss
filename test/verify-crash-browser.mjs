@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const ARTIFACT_DIR = '/Users/dharaksh/.gemini/antigravity-ide/brain/1cf6ae4f-526f-40c9-8ade-a398a16f956f';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || '/Users/dharaksh/.gemini/antigravity/brain/fee7f8eb-9699-4c14-9bfd-a6b8025326b1';
 if (!fs.existsSync(ARTIFACT_DIR)) {
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 }

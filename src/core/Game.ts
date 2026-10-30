@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS } from './Constants';
+import { CONSTANTS, isDeveloperMode } from './Constants';
 import { EventBus, EVENTS } from './EventBus';
 import { InputManager } from './InputManager';
 import { SoundManager } from '../audio/SoundManager';
@@ -339,9 +339,11 @@ export class Game {
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.code === 'F8') {
+        if (!isDeveloperMode()) return;
         e.preventDefault();
         this.debugVisualizer.toggle();
       } else if (e.code === 'F9' || (e.code === 'KeyB' && e.ctrlKey && e.shiftKey)) {
+        if (!isDeveloperMode()) return;
         e.preventDefault();
         const isActivelyRunning = this.lifecycleState === 'PLAYING';
         this.devBugReportModal.openLatest(isActivelyRunning);
@@ -616,6 +618,7 @@ export class Game {
     this.pauseModal.hide();
     this.gameOverModal.hide();
     this.devBugReportModal.hide();
+    this.devBugReportModal.setAutoOpenCrashReport(false);
     this.shopModal.hide();
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
@@ -681,6 +684,7 @@ export class Game {
     this.reviveManager.resetRun();
     this.gameOverModal.hide();
     this.devBugReportModal.hide();
+    this.devBugReportModal.setAutoOpenCrashReport(false);
     this.shopModal.hide();
     this.missionsModal.hide();
     this.eventSelectModal.hide();
@@ -762,6 +766,7 @@ export class Game {
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
+    this.devBugReportModal.hide();
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       // In Practice & Arena modes, collision results are handled directly by PracticeController / DevTestArena
@@ -966,6 +971,7 @@ export class Game {
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
+    this.devBugReportModal.hide();
     this.gameOverModal.hide();
 
     this.startRun(this.activeGameMode, true);
@@ -1341,6 +1347,7 @@ export class Game {
     // 1. Authoritative transition to DYING lifecycle state
     this.lifecycleState = 'DYING';
     this.inputManager.setEnabled(false);
+    this.devBugReportModal.hide();
 
     // 2. Chaser capture reaction & camera framing
     this.chaser.triggerCaughtReaction();
@@ -1519,7 +1526,9 @@ export class Game {
           : `⚠️ REPRO INCONCLUSIVE: ${reason}`;
         this.hud.showFeedbackBadge(msg, verified ? 'precision' : 'streak');
         setTimeout(() => {
-          this.devBugReportModal.openLatest();
+          if (isDeveloperMode()) {
+            this.devBugReportModal.openLatest();
+          }
         }, 1200);
       }
     );
