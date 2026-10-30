@@ -295,7 +295,8 @@ export class ReachabilityValidator {
     const step = 0.06;
     const switchTicks = Math.ceil(CONSTANTS.LANE_CHANGE_DURATION / step);
     const reactionTicks = Math.ceil(CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME / step);
-    const ticks = Math.ceil(horizon / step);
+    const validHorizon = Math.max(0.1, Number.isFinite(horizon) ? horizon : 0.1);
+    const ticks = Math.max(1, Math.ceil(validHorizon / step));
     const states = Array.from({ length: ticks + switchTicks + 1 }, () => new Map<LaneIndex, string>());
     const parents = new Map<string, string>();
     for (const lane of initialLanes) states[0].set(lane, '');

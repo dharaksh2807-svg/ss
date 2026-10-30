@@ -807,7 +807,7 @@ export class TrackManager {
         }));
         const rear = Math.min(...formation.map((obs) => chunk.chunkZ + obs.group.position.z + (obs.group.userData.trainRearOffset ?? -obs.length! / 2 - CONSTANTS.TRAIN_RAMP_LENGTH)));
         const slowestTailClearance = (playerZ - rear + CONSTANTS.PLAYER_DEPTH / 2) / (playerSpeed + (speed ?? 0));
-        const horizon = Math.max(arrival - this.elapsedTime + 1.2,
+        const horizon = Math.max(0.5, arrival - this.elapsedTime + 1.2,
           slowestTailClearance + CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME);
         // An avoidance witness never stumbles. Forward speed is monotonic and
         // bounded by the actual target curve at the furthest possible distance.
