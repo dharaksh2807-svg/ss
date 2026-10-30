@@ -388,7 +388,7 @@ export class SettingsManager {
   // --- DOM & Class Side Effects ---
 
   public applyGlobalSideEffects(): void {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || !document.body) return;
 
     // 1. Reduced Motion
     if (this.state.reducedMotion) {
