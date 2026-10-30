@@ -841,6 +841,10 @@ export class Player {
     this.reviveGraceTimer = Math.max(this.reviveGraceTimer, duration);
   }
 
+  public clearReviveGrace(): void {
+    this.reviveGraceTimer = 0;
+  }
+
   public getReviveGraceTimeRemaining(): number {
     return this.reviveGraceTimer;
   }

@@ -1418,6 +1418,8 @@ export class Game {
       this.deathTimeoutId = null;
     }
 
+    this.reviveModal.hide();
+
     // 0. Reset crash replay state for fresh clean run life
     this.crashReplayManager.reset();
 
