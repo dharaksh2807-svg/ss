@@ -466,7 +466,7 @@ export class GameOverModal {
       if (retryText) retryText.textContent = 'RETRY COURSE';
     } else {
       shareCard?.classList.add('hidden');
-      if (retryText) retryText.textContent = 'QUICK RETRY';
+      if (retryText) retryText.textContent = 'PLAY AGAIN';
     }
 
     // Revive Telemetry Display (Requirement F)
