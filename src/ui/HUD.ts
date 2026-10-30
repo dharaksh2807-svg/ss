@@ -85,16 +85,17 @@ export class HUD {
     this.comboTimerFillEl = document.getElementById('hud-combo-timer-fill');
 
     if (this.boardBtn) {
-      this.boardBtn.addEventListener('click', (e) => {
+      let lastBoardTriggerTime = 0;
+      const triggerHoverboard = (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
+        const now = performance.now();
+        if (now - lastBoardTriggerTime < 250) return; // Prevent duplicate activation from overlapping pointerdown & click
+        lastBoardTriggerTime = now;
         this.hoverboardManager.activate();
-      });
-      this.boardBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.hoverboardManager.activate();
-      });
+      };
+      this.boardBtn.addEventListener('pointerdown', triggerHoverboard);
+      this.boardBtn.addEventListener('click', triggerHoverboard);
     }
 
     // Create mode badge container if not present

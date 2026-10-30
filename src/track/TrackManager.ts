@@ -1485,9 +1485,10 @@ export class TrackManager {
     }
 
     const playerBox = player.collider;
-    // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
+    // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 54m/s)
     this.sweptCollectibleBox.copy(playerBox);
     const prevPos = player.previousPosition;
+    const bottomTol = player.isJumping ? 1.6 : 0.25;
     if (prevPos) {
       const halfW = CONSTANTS.PLAYER_WIDTH * 0.5 + 0.45;
       const halfD = CONSTANTS.PLAYER_DEPTH * 0.5 + 0.45;
@@ -1495,7 +1496,7 @@ export class TrackManager {
 
       this.sweptCollectibleBox.min.set(
         Math.min(playerBox.min.x, prevPos.x - halfW),
-        Math.min(playerBox.min.y, prevPos.y - 0.25),
+        Math.min(playerBox.min.y - bottomTol, prevPos.y - bottomTol),
         Math.min(playerBox.min.z, prevPos.z - halfD)
       );
       this.sweptCollectibleBox.max.set(
@@ -1796,10 +1797,12 @@ export class TrackManager {
           chunk.chunkZ + col.group.position.z
         );
 
-        // Ground coins are not collected from far above while high in jetpack flight
+        // Ground coins are not collected from far above while high in jetpack flight or on train roofs
         const isGroundCollectible = colWorldPos.y < 3.0;
-        const isPlayerHighInFlight = player.position.y > 3.2;
-        if (isPlayerHighInFlight && isGroundCollectible) {
+        const isHighAltitude = (player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE')
+          ? player.position.y > 5.0
+          : (player.supportSurface === 'TRAIN_ROOF' && player.position.y > 4.0);
+        if (isHighAltitude && isGroundCollectible && !col.isMagnetized) {
           continue;
         }
 
@@ -1826,16 +1829,26 @@ export class TrackManager {
         }
 
         // Collection check: full 3D swept box, 3D trajectory segment test, and proximity
-        const prevChestPos = prevPos ? prevPos.clone() : playerChestPos.clone();
-        if (prevPos) prevChestPos.y += 0.5;
+        // For jumping players, clamp closest vertical point to player's body column so jump arc coins are reliably swept
+        const clampedPlayerY = player.isJumping
+          ? THREE.MathUtils.clamp(colWorldPos.y, player.groundY, player.position.y + CONSTANTS.PLAYER_HEIGHT_RUN)
+          : playerChestPos.y;
+        const playerBodyPoint = new THREE.Vector3(player.position.x, clampedPlayerY, player.position.z);
+
+        const prevClampedY = (player.isJumping && prevPos)
+          ? THREE.MathUtils.clamp(colWorldPos.y, player.groundY, prevPos.y + CONSTANTS.PLAYER_HEIGHT_RUN)
+          : (prevPos ? prevPos.y + 0.5 : playerChestPos.y);
+        const prevBodyPoint = prevPos
+          ? new THREE.Vector3(prevPos.x, prevClampedY, prevPos.z)
+          : playerBodyPoint.clone();
 
         const distSqToSegment = this.distToSegmentSquared(
           colWorldPos.x, colWorldPos.y, colWorldPos.z,
-          prevChestPos.x, prevChestPos.y, prevChestPos.z,
-          playerChestPos.x, playerChestPos.y, playerChestPos.z
+          prevBodyPoint.x, prevBodyPoint.y, prevBodyPoint.z,
+          playerBodyPoint.x, playerBodyPoint.y, playerBodyPoint.z
         );
         const pickupRadius = CONSTANTS.COIN_PICKUP_RADIUS || 1.1;
-        const distToCurrent = colWorldPos.distanceTo(playerChestPos);
+        const distToCurrent = colWorldPos.distanceTo(playerBodyPoint);
 
         const isCollected = col.collider.intersectsBox(sweptCollectibleBox) ||
           distSqToSegment <= pickupRadius * pickupRadius ||

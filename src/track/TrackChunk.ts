@@ -2166,9 +2166,11 @@ export class TrackChunk {
           : Math.sin(animTime * 3.0 + (col.initialLocalZ || col.group.position.z) * 0.25) * 0.05;
         col.animOffsetY = bob;
         col.group.position.y = (col.baseY ?? 0.85) + bob;
-        const rotSpeed = col.type === 'COIN' ? CONSTANTS.COIN_ROTATION_SPEED : 1.5;
-        col.group.rotation.y += rotSpeed * dt;
       }
+
+      // Continuous 3D rotation maintains arcade polish (even when magnetized)
+      const rotSpeed = col.type === 'COIN' ? CONSTANTS.COIN_ROTATION_SPEED : 1.5;
+      col.group.rotation.y += rotSpeed * dt;
 
       // Synchronize world-space collider with authoritative rendering position
       const worldX = col.group.position.x;

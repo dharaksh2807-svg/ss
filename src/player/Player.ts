@@ -381,10 +381,16 @@ export class Player {
   public update(dt: number): void {
     if (this.state === 'IDLE') return;
 
+    if (this.state === 'CRASH') {
+      this.model.updateAnimation(this.state, 0, 0, this.groundY, dt);
+      this.mesh.position.copy(this.position);
+      return;
+    }
+
     // Cache position for swept / continuous collision detection
     this.previousPosition.copy(this.position);
 
-    // Powerups & Hoverboard status & visual accessories
+    // Powerups & Hoverboard status & visual accessories (frozen during crash/death)
     this.powerups.update(dt);
     this.hoverboardManager.update(dt);
 
@@ -399,12 +405,6 @@ export class Player {
     this.model.setShieldVisible(this.powerups.hasShieldActive());
     this.model.setMagnetVisible(this.powerups.isMagnetActive() || (isBoardActive && this.hoverboardManager.getMagnetRadiusBonus() > 0));
     this.model.setInvulnerable(this.isInvulnerable());
-
-    if (this.state === 'CRASH') {
-      this.model.updateAnimation(this.state, 0, 0, this.groundY, dt);
-      this.mesh.position.copy(this.position);
-      return;
-    }
 
     // Handle stumble timer decay
     if (this.isStumbling) {
@@ -475,6 +475,7 @@ export class Player {
           this.isFastDropping = false;
           this.isSliding = false;
           this.pendingSlideOnLanding = false;
+          this.queuedLaneChange = null;
           this.jetpackStartY = this.position.y;
           this.jetpackTakeoffTimer = 0;
           this.flightAnimTime = 0;
@@ -491,6 +492,7 @@ export class Player {
         this.isFastDropping = false;
         this.isSliding = false;
         this.pendingSlideOnLanding = false;
+        this.queuedLaneChange = null;
         this.jetpackStartY = this.position.y;
         this.jetpackTakeoffTimer = 0;
         this.flightAnimTime = 0;
