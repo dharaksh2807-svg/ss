@@ -72,18 +72,72 @@ export class CollisionResolver {
     if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
       const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
       const isSupportingThisTrain = player.getActiveSupportObstacleId() === obs.id ||
-        (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId);
+        (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId) ||
+        (Boolean(obs.routeGroupId) && player.getActiveSupportGroupId() === obs.routeGroupId);
+
+      // Check authoritative rooftop equipment collisions first (AC units, vents)
+      if (obs.rooftopObstacles && obs.rooftopObstacles.length > 0 && (player.getSupportSurface() === 'TRAIN_ROOF' || player.position.y >= roofY - 0.2)) {
+        for (const ro of obs.rooftopObstacles) {
+          if (ro.cleared) continue;
+          if (playerBox.intersectsBox(ro.collider)) {
+            // Jump clearing check: jumping high enough over the rooftop obstacle
+            if (player.isJumping && player.position.y >= ro.collider.max.y - 0.15) {
+              ro.cleared = true;
+              continue;
+            }
+            if (hasShield || hasHoverboard) {
+              return {
+                outcome: 'PROTECTED_HIT',
+                diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'PROTECTED_HIT'),
+                isGlance: false,
+                overlapX: 0,
+                isFrontal: true,
+                isFlankContact: false
+              };
+            }
+            return {
+              outcome: 'MAJOR_FATAL_HIT',
+              diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'MAJOR_FATAL_HIT'),
+              isGlance: false,
+              overlapX: 0,
+              isFrontal: true,
+              isFlankContact: false
+            };
+          }
+        }
+      }
 
       // Safe Priority 1: Traversing on top of this train roof
+      // Tightened: matching group ID alone does NOT provide immunity across unsupported gaps!
+      // Must physically overlap a valid carriage roof or gangway segment.
       if (isSupportingThisTrain && (player.getSupportSurface() === 'TRAIN_ROOF' || player.state === 'ON_TRAIN')) {
-        return {
-          outcome: 'SAFE_CONTACT',
-          diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
-          isGlance: false,
-          overlapX: 0,
-          isFrontal: false,
-          isFlankContact: false
-        };
+        if (player.position.y >= roofY - 0.25) {
+          if (obs.roofSegments && obs.roofSegments.length > 0) {
+            const onValidSegment = obs.roofSegments.some(seg => {
+              return playerBox.min.x <= seg.collider.max.x && playerBox.max.x >= seg.collider.min.x &&
+                     playerBox.min.z <= seg.collider.max.z && playerBox.max.z >= seg.collider.min.z;
+            });
+            if (onValidSegment) {
+              return {
+                outcome: 'SAFE_CONTACT',
+                diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+                isGlance: false,
+                overlapX: 0,
+                isFrontal: false,
+                isFlankContact: false
+              };
+            }
+          } else {
+            return {
+              outcome: 'SAFE_CONTACT',
+              diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'SAFE_CONTACT'),
+              isGlance: false,
+              overlapX: 0,
+              isFrontal: false,
+              isFlankContact: false
+            };
+          }
+        }
       }
 
       // Safe Priority 2: Climbing incline ramp on this train
@@ -99,15 +153,30 @@ export class CollisionResolver {
       }
 
       // Safe Priority 3: Clear height or landing descending onto roof
+      // Tightened: for modular trains with real gaps, landing must intersect an authoritative roof segment!
       if (player.position.y >= roofY - 0.25) {
-        return {
-          outcome: 'VALID_ROOF_LANDING',
-          diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'VALID_ROOF_LANDING'),
-          isGlance: false,
-          overlapX: 0,
-          isFrontal: false,
-          isFlankContact: false
-        };
+        if (obs.roofSegments && obs.roofSegments.length > 0) {
+          const onValidSegment = obs.roofSegments.some(seg => playerBox.intersectsBox(seg.collider));
+          if (onValidSegment) {
+            return {
+              outcome: 'VALID_ROOF_LANDING',
+              diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'VALID_ROOF_LANDING'),
+              isGlance: false,
+              overlapX: 0,
+              isFrontal: false,
+              isFlankContact: false
+            };
+          }
+        } else {
+          return {
+            outcome: 'VALID_ROOF_LANDING',
+            diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'VALID_ROOF_LANDING'),
+            isGlance: false,
+            overlapX: 0,
+            isFrontal: false,
+            isFlankContact: false
+          };
+        }
       }
 
       // Safe Priority 4: Ramp entry approach

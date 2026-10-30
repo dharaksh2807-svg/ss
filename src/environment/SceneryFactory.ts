@@ -175,9 +175,11 @@ export class SceneryFactory {
     curved.applyCurvature(modernSteelMat);
 
     const modernNeonMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+    curved.applyCurvature(modernNeonMat);
     const modernSignMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getModernMetroSignTexture('METRO CENTRAL', 'LINE 1')
     });
+    curved.applyCurvature(modernSignMat);
 
     const solarPanelMat = new THREE.MeshStandardMaterial({
       color: 0x152238,
@@ -201,6 +203,7 @@ export class SceneryFactory {
     curved.applyCurvature(insulatorMat);
 
     const cableMat = new THREE.MeshBasicMaterial({ color: 0x263238 });
+    curved.applyCurvature(cableMat);
 
     const graffitiMat1 = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getGraffitiDecal(0),
@@ -254,6 +257,7 @@ export class SceneryFactory {
     curved.applyCurvature(castIronMat);
 
     const gasLampMat = new THREE.MeshBasicMaterial({ color: 0xffe082 });
+    curved.applyCurvature(gasLampMat);
 
     const slateRoofMat = new THREE.MeshStandardMaterial({
       color: 0x37474f,
@@ -265,6 +269,7 @@ export class SceneryFactory {
     const historicSignMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getHistoricSignTexture('GRAND CENTRAL')
     });
+    curved.applyCurvature(historicSignMat);
 
     const earthenwareInsulatorMat = new THREE.MeshStandardMaterial({
       color: 0x8d6e63,
@@ -274,6 +279,7 @@ export class SceneryFactory {
     curved.applyCurvature(earthenwareInsulatorMat);
 
     const copperCableMat = new THREE.MeshBasicMaterial({ color: 0x4e342e });
+    curved.applyCurvature(copperCableMat);
 
     // 3. Neon Industrial Materials
     const industrialSteelMat = new THREE.MeshStandardMaterial({
@@ -313,10 +319,13 @@ export class SceneryFactory {
     curved.applyCurvature(industrialPipeMat);
 
     const hazardStripeMat = new THREE.MeshBasicMaterial({ color: 0xffab00 });
+    curved.applyCurvature(hazardStripeMat);
     const sodiumLampMat = new THREE.MeshBasicMaterial({ color: 0xff8f00 });
+    curved.applyCurvature(sodiumLampMat);
     const industrialSignMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getModernMetroSignTexture('FREIGHT YARD', 'TERMINAL 4')
     });
+    curved.applyCurvature(industrialSignMat);
 
     // 4. Subway Tunnel & Underground Metro Materials
     const tunnelTileMat = new THREE.MeshStandardMaterial({
@@ -341,6 +350,7 @@ export class SceneryFactory {
     curved.applyCurvature(tunnelRibMat);
 
     const tunnelLampMat = new THREE.MeshBasicMaterial({ color: 0xffd54f });
+    curved.applyCurvature(tunnelLampMat);
 
     // Modern Metro Enhanced Materials
     const modernCurtainGlassMat = new THREE.MeshStandardMaterial({
@@ -403,6 +413,7 @@ export class SceneryFactory {
     curved.applyCurvature(historicWaterTankWoodMat);
 
     const historicClockFaceMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    curved.applyCurvature(historicClockFaceMat);
 
     // Underground Metro System Enhanced Materials
     const subwayTileMuralMat1 = new THREE.MeshStandardMaterial({
@@ -436,6 +447,7 @@ export class SceneryFactory {
     const subwayBillboardMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getSubwayStationBillboardTexture()
     });
+    curved.applyCurvature(subwayBillboardMat);
 
     const subwayDuctMat = new THREE.MeshStandardMaterial({
       color: 0x64748b,
@@ -445,8 +457,21 @@ export class SceneryFactory {
     curved.applyCurvature(subwayDuctMat);
 
     const subwaySignalGreenMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    curved.applyCurvature(subwaySignalGreenMat);
     const subwaySignalAmberMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+    curved.applyCurvature(subwaySignalAmberMat);
     const subwaySignalRedMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    curved.applyCurvature(subwaySignalRedMat);
+
+    const grandStationSignMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getGrandStationSignTexture()
+    });
+    curved.applyCurvature(grandStationSignMat);
+
+    const hazardChevronMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getIndustrialWarningChevronTexture()
+    });
+    curved.applyCurvature(hazardChevronMat);
 
     this.sharedMaterials = {
       curbMat,
@@ -502,9 +527,7 @@ export class SceneryFactory {
       subwaySignalGreenMat,
       subwaySignalAmberMat,
       subwaySignalRedMat,
-      grandStationSignMat: new THREE.MeshBasicMaterial({
-        map: TextureGenerator.getGrandStationSignTexture()
-      }),
+      grandStationSignMat,
       spaceFrameGlassMat: (() => {
         const m = new THREE.MeshStandardMaterial({
           map: TextureGenerator.getModernSpaceFrameGlassTexture(),
@@ -525,9 +548,7 @@ export class SceneryFactory {
         curved.applyCurvature(m);
         return m;
       })(),
-      hazardChevronMat: new THREE.MeshBasicMaterial({
-        map: TextureGenerator.getIndustrialWarningChevronTexture()
-      }),
+      hazardChevronMat,
       waterfrontRipplesMat: (() => {
         const m = new THREE.MeshStandardMaterial({
           map: TextureGenerator.getWaterfrontRipplesTexture(),
@@ -724,6 +745,7 @@ export class SceneryFactory {
       const lampHeadGeo = new THREE.BoxGeometry(0.8, 0.12, 0.3);
       const lampLightGeo = new THREE.PlaneGeometry(0.7, 0.24);
       const ledMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+      CurvedShaderManager.getInstance().applyCurvature(ledMat);
 
       for (let z = 12; z < chunkLength; z += 26) {
         [-wallX, wallX].forEach((wx) => {
@@ -804,7 +826,7 @@ export class SceneryFactory {
         sig.position.set(laneX, poleHeight - 0.70, 0.12);
         gantryGroup.add(sig);
 
-        const greenLens = new THREE.Mesh(new THREE.CircleGeometry(0.08, 10), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
+        const greenLens = new THREE.Mesh(new THREE.CircleGeometry(0.08, 10), mats.subwaySignalGreenMat);
         greenLens.position.set(laneX, poleHeight - 0.65, 0.25);
         gantryGroup.add(greenLens);
       });
@@ -814,7 +836,10 @@ export class SceneryFactory {
 
     // Overhead catenary contact wires elevated at 10.7m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-      const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, chunkLength, 6), mats.cableMat);
+      const cable = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, chunkLength, 6, Math.round(chunkLength / 2.0)),
+        mats.cableMat
+      );
       cable.rotation.x = Math.PI / 2;
       cable.position.set(laneX, poleHeight - 0.50, -chunkLength * 0.5);
       group.add(cable);
@@ -901,7 +926,7 @@ export class SceneryFactory {
             pad.position.y = bH + pentH + 0.3;
             bGroup.add(pad);
 
-            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff1744 }));
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), mats.subwaySignalRedMat);
             beacon.position.set(0, bH + pentH + 0.6, 0);
             bGroup.add(beacon);
 
@@ -1030,7 +1055,7 @@ export class SceneryFactory {
             spire.position.set(0, bH + 4.75, 0);
             bGroup.add(spire);
 
-            const redLight = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff1744 }));
+            const redLight = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), mats.subwaySignalRedMat);
             redLight.position.set(0, bH + 9.6, 0);
             bGroup.add(redLight);
           }
@@ -1714,7 +1739,7 @@ export class SceneryFactory {
 
     // Red portal warning beacons
     [-spanW * 0.5, spanW * 0.5].forEach((bx) => {
-      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff1744 }));
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), mats.subwaySignalRedMat);
       beacon.position.set(bx, portalH + 2.8, portalZ + 2.3);
       portalGroup.add(beacon);
     });
@@ -1944,8 +1969,8 @@ export class SceneryFactory {
 
       // Tactile warning strip on platform edge (safety yellow band)
       const warningStrip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.04, chunkLength),
-        new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+        new THREE.BoxGeometry(0.08, 0.04, chunkLength, 1, 1, Math.round(chunkLength / 2.0)),
+        mats.hazardStripeMat
       );
       warningStrip.position.set(platX - platW * 0.5 + 0.04, platH + 0.02, -chunkLength * 0.5);
       undergroundGroup.add(warningStrip);
@@ -2061,10 +2086,9 @@ export class SceneryFactory {
     portal.add(hazard);
 
     // Red illuminated portal clearance warning beacons
-    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
     const beaconGeo = new THREE.SphereGeometry(0.25, 8, 8);
     [-spanW * 0.42, spanW * 0.42].forEach((bx) => {
-      const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+      const beacon = new THREE.Mesh(beaconGeo, mats.subwaySignalRedMat);
       beacon.position.set(bx, ceilingH + 0.6, type === 'ENTRY' ? 2.0 : -2.0);
       portal.add(beacon);
     });
@@ -2895,6 +2919,7 @@ export class SceneryFactory {
     const birdGeo = new THREE.ConeGeometry(0.35, 1.2, 4);
     birdGeo.rotateX(Math.PI / 2);
     const birdMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+    CurvedShaderManager.getInstance().applyCurvature(birdMat);
 
     for (let i = 0; i < 6; i++) {
       const bird = new THREE.Mesh(birdGeo, birdMat);
@@ -2927,6 +2952,7 @@ export class SceneryFactory {
         transparent: true,
         opacity: 0.35
       });
+      CurvedShaderManager.getInstance().applyCurvature(haloMat);
       const halo = new THREE.Mesh(haloGeo, haloMat);
       halo.position.set(0, 8.2, z);
       haloGroup.add(halo);

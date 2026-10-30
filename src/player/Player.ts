@@ -8,6 +8,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { CharacterId } from '../characters/CharacterCatalog';
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 import { ChaserModel } from '../characters/ChaserModel';
+import { SkillComboManager } from '../core/SkillComboManager';
 
 import { SpeedController } from '../core/SpeedController';
 import { PacingMetrics } from '../track/PacingMetrics';
@@ -57,6 +58,13 @@ export class Player {
   public supportSurface: SupportSurfaceType = 'GROUND';
   public activeSupportObstacleId: string | null = null;
   public readonly jetpackAltitude: number = 9.0;
+
+  // Rooftop Maneuver Tracking for Style System
+  public jumpTakeoffSurface: SupportSurfaceType = 'GROUND';
+  public jumpTakeoffObstacleId: string | null = null;
+  public jumpTakeoffGroupId: string | null = null;
+  public jumpTakeoffPosZ: number = 0;
+  public lastBoardedRoofObstacleId: string | null = null;
 
   // Lateral lane transition
   private isChangingLane: boolean = false;
@@ -169,6 +177,11 @@ export class Player {
     this.lastSlideDist = -999;
     this.supportSurface = 'GROUND';
     this.activeSupportObstacleId = null;
+    this.jumpTakeoffSurface = 'GROUND';
+    this.jumpTakeoffObstacleId = null;
+    this.jumpTakeoffGroupId = null;
+    this.jumpTakeoffPosZ = 0;
+    this.lastBoardedRoofObstacleId = null;
     this.previousPosition.copy(this.position);
     this.state = 'RUN';
     this.jetpackPhase = 'NONE';
@@ -242,6 +255,8 @@ export class Player {
   }
 
   private changeLane(direction: -1 | 1): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
+
     if (this.isChangingLane) {
       // Buffer the next lane switch ONLY if destination from target is within bounds [-1, 1]
       const potentialNextLane = this.targetLane + direction;
@@ -274,6 +289,7 @@ export class Player {
   }
 
   public jump(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
     if (this.isJumping) return;
     if (this.isUnderOverheadObstacle) return; // Cannot jump upright into overhead barrier!
 
@@ -293,8 +309,16 @@ export class Player {
     this.wasFastDropLand = false;
     this.lastJumpDist = this.distanceTraveled;
     this.state = 'JUMP';
+
+    // Record takeoff origin for gap jump & rooftop maneuver detection
+    this.jumpTakeoffSurface = this.supportSurface;
+    this.jumpTakeoffObstacleId = this.activeSupportObstacleId;
+    this.jumpTakeoffGroupId = this.activeSupportGroupId;
+    this.jumpTakeoffPosZ = this.position.z;
+
     this.supportSurface = 'GROUND';
     this.activeSupportObstacleId = null;
+    this.activeSupportGroupId = null;
 
     let jumpVelocity = CONSTANTS.JUMP_INITIAL_VELOCITY;
     if (this.powerups.isSuperSneakersActive()) {
@@ -310,6 +334,7 @@ export class Player {
   }
 
   public slide(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
     if (this.isJumping || this.position.y > this.groundY + 0.05) {
       // Record intended slide upon landing and engage fast-drop descent immediately
       this.pendingSlideOnLanding = true;
@@ -356,10 +381,16 @@ export class Player {
   public update(dt: number): void {
     if (this.state === 'IDLE') return;
 
+    if (this.state === 'CRASH') {
+      this.model.updateAnimation(this.state, 0, 0, this.groundY, dt);
+      this.mesh.position.copy(this.position);
+      return;
+    }
+
     // Cache position for swept / continuous collision detection
     this.previousPosition.copy(this.position);
 
-    // Powerups & Hoverboard status & visual accessories
+    // Powerups & Hoverboard status & visual accessories (frozen during crash/death)
     this.powerups.update(dt);
     this.hoverboardManager.update(dt);
 
@@ -374,11 +405,6 @@ export class Player {
     this.model.setShieldVisible(this.powerups.hasShieldActive());
     this.model.setMagnetVisible(this.powerups.isMagnetActive() || (isBoardActive && this.hoverboardManager.getMagnetRadiusBonus() > 0));
     this.model.setInvulnerable(this.isInvulnerable());
-
-    if (this.state === 'CRASH') {
-      this.model.updateAnimation(this.state, this.speed, 0, this.groundY, dt);
-      return;
-    }
 
     // Handle stumble timer decay
     if (this.isStumbling) {
@@ -449,6 +475,7 @@ export class Player {
           this.isFastDropping = false;
           this.isSliding = false;
           this.pendingSlideOnLanding = false;
+          this.queuedLaneChange = null;
           this.jetpackStartY = this.position.y;
           this.jetpackTakeoffTimer = 0;
           this.flightAnimTime = 0;
@@ -465,6 +492,7 @@ export class Player {
         this.isFastDropping = false;
         this.isSliding = false;
         this.pendingSlideOnLanding = false;
+        this.queuedLaneChange = null;
         this.jetpackStartY = this.position.y;
         this.jetpackTakeoffTimer = 0;
         this.flightAnimTime = 0;
@@ -589,12 +617,27 @@ export class Player {
             if (!this.isSliding) {
               this.state = 'ON_TRAIN';
             }
+            const activeObsId = this.activeSupportObstacleId;
+            if (this.jumpTakeoffSurface === 'TRAIN_ROOF' && this.jumpTakeoffObstacleId) {
+              if ((activeObsId && activeObsId !== this.jumpTakeoffObstacleId) ||
+                  Math.abs(this.position.z - this.jumpTakeoffPosZ) >= 3.5) {
+                SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_GAP_JUMP', activeObsId || undefined);
+                this.lastBoardedRoofObstacleId = activeObsId;
+              }
+            } else if (activeObsId && activeObsId !== this.lastBoardedRoofObstacleId) {
+              this.lastBoardedRoofObstacleId = activeObsId;
+              SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_LANDING', activeObsId);
+            }
           } else {
             this.supportSurface = 'GROUND';
+            this.lastBoardedRoofObstacleId = null;
             if (!this.isSliding) {
               this.state = 'RUN';
             }
           }
+          this.jumpTakeoffSurface = 'GROUND';
+          this.jumpTakeoffObstacleId = null;
+          this.jumpTakeoffGroupId = null;
           this.eventBus.emit(EVENTS.LAND, {
             isFastDrop: fastDrop,
             surface: this.supportSurface,
@@ -759,6 +802,22 @@ export class Player {
     if (!this.isSliding) {
       this.state = 'ON_TRAIN';
     }
+
+    // Authoritative Style Combo Scoring for Rooftop Maneuvers
+    if (this.jumpTakeoffSurface === 'TRAIN_ROOF' && this.jumpTakeoffObstacleId) {
+      if ((obstacleId && obstacleId !== this.jumpTakeoffObstacleId) ||
+          (groupId && groupId !== this.jumpTakeoffGroupId) ||
+          Math.abs(this.position.z - this.jumpTakeoffPosZ) >= 3.5) {
+        SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_GAP_JUMP', obstacleId || undefined);
+        this.lastBoardedRoofObstacleId = obstacleId || null;
+      }
+    } else if (obstacleId && obstacleId !== this.lastBoardedRoofObstacleId) {
+      this.lastBoardedRoofObstacleId = obstacleId;
+      SkillComboManager.getInstance().recordSkillEvent('ROOFTOP_LANDING', obstacleId);
+    }
+    this.jumpTakeoffSurface = 'GROUND';
+    this.jumpTakeoffObstacleId = null;
+    this.jumpTakeoffGroupId = null;
     this.eventBus.emit(EVENTS.LAND, {
       isFastDrop: fastDrop,
       surface: this.supportSurface,
@@ -782,6 +841,10 @@ export class Player {
 
   public activateReviveGrace(duration: number = 2.0): void {
     this.reviveGraceTimer = Math.max(this.reviveGraceTimer, duration);
+  }
+
+  public clearReviveGrace(): void {
+    this.reviveGraceTimer = 0;
   }
 
   public getReviveGraceTimeRemaining(): number {
@@ -820,26 +883,47 @@ export class Player {
     this.eventBus.emit(EVENTS.REVIVE_EXECUTED, { position: this.position, lane: this.currentLane });
   }
 
+  public isDead(): boolean {
+    return this.state === 'CRASH';
+  }
+
   public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
-    // 0. Active invulnerability protection (intro, powerups, crash grace, or revive grace)
+    // 0. Idempotent death transition guard: only the first valid fatal impact initiates death
+    if (this.state === 'CRASH') {
+      return false;
+    }
+
+    // 1. Active invulnerability protection (intro, powerups, crash grace, or revive grace)
     if (this.isInvulnerable()) {
       return false; // Ignored during grace period
     }
 
-    // 1. Protective Shield absorbs collision (does not advance guard capture state)
+    // 2. Protective Shield absorbs collision (does not advance guard capture state)
     if (this.powerups.consumeShield()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by shield!
     }
 
-    // 2. Hoverboard absorbs collision (breaks board without advancing guard to capture)
+    // 3. Hoverboard absorbs collision (breaks board without advancing guard to capture)
     if (this.hoverboardManager.breakBoard()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by hoverboard!
     }
 
+    // Authoritative fatal crash initiated: stop all movement & input forces
+    this.speed = 0;
+    this.isChangingLane = false;
+    this.queuedLaneChange = null;
+    this.bankingAngle = 0;
+    this.isJumping = false;
+    this.isSliding = false;
+    this.slideTimer = 0;
     this.pendingSlideOnLanding = false;
     this.isFastDropping = false;
+    this.verticalVelocity = 0;
+    this.mesh.position.copy(this.position);
+    this.updateCollider();
+
     this.state = 'CRASH';
     this.eventBus.emit(EVENTS.CRASH, reason);
     return true; // Fatal crash
@@ -885,6 +969,10 @@ export class Player {
 
   public isChangingLaneActive(): boolean {
     return this.isChangingLane;
+  }
+
+  public getQueuedLaneChange(): -1 | 1 | null {
+    return this.queuedLaneChange;
   }
 
   public getJetpackPhase(): JetpackPhase {
@@ -963,5 +1051,9 @@ export class Player {
 
   public getSlideProgress(): number {
     return this.isSliding ? 1.0 - Math.max(0, this.slideTimer / CONSTANTS.SLIDE_DURATION) : 0;
+  }
+
+  public getCharacterModel(): CharacterModel {
+    return this.model;
   }
 }

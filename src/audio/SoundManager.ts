@@ -360,6 +360,11 @@ export class SoundManager {
     );
     this.unsubscribers.push(bus.on(EVENTS.CHASER_WHISTLE, () => this.playWhistle()));
 
+    // Skill Combo & Style Arcade Audio
+    this.unsubscribers.push(bus.on(EVENTS.SKILL_EVENT, (payload?: any) => this.playSkillAction(payload?.type)));
+    this.unsubscribers.push(bus.on(EVENTS.COMBO_MILESTONE, (payload?: any) => this.playComboMilestone(payload?.tier)));
+    this.unsubscribers.push(bus.on(EVENTS.COMBO_BROKEN, () => this.playComboBreak()));
+
     // Rewards & UI Progression Feedback
     this.unsubscribers.push(bus.on(EVENTS.MISSION_COMPLETED, () => this.playMissionComplete()));
     this.unsubscribers.push(bus.on(EVENTS.DAILY_COMPLETED, () => this.playMissionComplete()));
@@ -1863,6 +1868,129 @@ export class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.16);
+  }
+
+  public playSkillAction(type?: string): void {
+    if (!this.ctx || !this.sfxGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+
+    try {
+      if (type === 'PERFECT_JUMP') {
+        // Crystalline upward shimmer
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.14);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'PERFECT_SLIDE') {
+        // Sleek dynamic filter whoosh
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(540, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.16);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.17);
+      } else if (type === 'ROOFTOP_LANDING' || type === 'ROOFTOP_GAP_JUMP') {
+        // Solid metallic catwalk clank (dual frequency)
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc1.type = 'triangle';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(320, now);
+        osc1.frequency.exponentialRampToValueAtTime(180, now + 0.16);
+        osc2.frequency.setValueAtTime(1150, now);
+        osc2.frequency.exponentialRampToValueAtTime(580, now + 0.12);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.sfxGain);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.18);
+        osc2.stop(now + 0.18);
+      } else if (type === 'CLEAN_LANE_DODGE') {
+        // Swift air slice chirp
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(700, now);
+        osc.frequency.exponentialRampToValueAtTime(950, now + 0.12);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      } else if (type === 'CLEAN_OBSTACLE_CHAIN') {
+        // Double bright chime
+        [0, 0.08].forEach((delay, idx) => {
+          const osc = this.ctx!.createOscillator();
+          const gain = this.ctx!.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(idx === 0 ? 880 : 1175, now + delay);
+          gain.gain.setValueAtTime(0.18, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.14);
+          osc.connect(gain);
+          gain.connect(this.sfxGain!);
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.14);
+        });
+      }
+    } catch (_) {}
+  }
+
+  public playComboMilestone(tier?: string): void {
+    if (!this.ctx || !this.sfxGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    try {
+      // Ascending 3-note celebratory arcade arpeggio: C5 (523Hz), E5 (659Hz), G5 (784Hz)
+      const freqs = [523.25, 659.25, 783.99];
+      freqs.forEach((freq, idx) => {
+        const delay = idx * 0.055;
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + delay);
+        gain.gain.setValueAtTime(0.18, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.18);
+        osc.connect(gain);
+        gain.connect(this.sfxGain!);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.18);
+      });
+    } catch (_) {}
+  }
+
+  public playComboBreak(): void {
+    if (!this.ctx || !this.sfxGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    try {
+      // Soft descending muted buzz
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } catch (_) {}
   }
 
   public playWhistle(): void {

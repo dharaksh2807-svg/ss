@@ -59,6 +59,18 @@
           </div>
         </div>
 
+        <!-- Premium Skill Combo & Style Meter Widget (Upper-Left Below Portrait) -->
+        <div id="hud-skill-combo" class="hud-skill-combo-widget hidden" role="status" aria-live="polite">
+          <div class="combo-main-row">
+            <div class="combo-count-badge" id="hud-combo-count">COMBO ×0</div>
+            <div class="combo-tier-badge" id="hud-combo-tier">NORMAL</div>
+          </div>
+          <div class="combo-event-pill" id="hud-combo-event">STYLE READY</div>
+          <div class="combo-timer-track">
+            <div class="combo-timer-fill" id="hud-combo-timer-fill"></div>
+          </div>
+        </div>
+
         <!-- Top Right: Score & Pause Button -->
         <div class="hud-stats-right">
           <div class="hud-score-badge">
@@ -86,11 +98,16 @@
         </button>
 
         <!-- Mobile Touch Controls Bar (visible on touch devices) -->
-        <div id="touch-controls" class="touch-controls-bar">
-          <button id="touch-left-btn" class="touch-btn" aria-label="Move Left">◀</button>
-          <button id="touch-down-btn" class="touch-btn" aria-label="Slide / Fast Drop">▼</button>
-          <button id="touch-up-btn" class="touch-btn" aria-label="Jump">▲</button>
-          <button id="touch-right-btn" class="touch-btn" aria-label="Move Right">▶</button>
+        <div id="touch-controls" class="touch-controls-bar touch-layout-center">
+          <div class="touch-cluster touch-cluster-left">
+            <button id="touch-left-btn" class="touch-btn" aria-label="Move Left">◀</button>
+            <button id="touch-right-btn" class="touch-btn" aria-label="Move Right">▶</button>
+          </div>
+          <div class="touch-cluster touch-cluster-right">
+            <button id="touch-down-btn" class="touch-btn" aria-label="Slide / Fast Drop">▼</button>
+            <button id="touch-up-btn" class="touch-btn" aria-label="Jump">▲</button>
+            <button id="touch-board-btn" class="touch-btn" aria-label="Deploy Hoverboard">🛹</button>
+          </div>
         </div>
       </div>
 
@@ -316,6 +333,33 @@
                 </div>
               </div>
 
+              <!-- Runner Gameplay View Style Selector (Per-Runner) -->
+              <div class="runner-view-section">
+                <div class="section-label-row">
+                  <div class="section-label">RUNNER GAMEPLAY VIEW</div>
+                  <span id="char-view-style-badge" class="view-style-badge classic">🏃 REAR CHASE (DEFAULT)</span>
+                </div>
+                <div class="runner-view-toggle-bar">
+                  <button type="button" id="char-view-rear-btn" class="runner-view-btn active" data-style="CLASSIC" title="Classic rear chase view — runner faces forward along railway">
+                    <span class="view-btn-icon">🏃</span>
+                    <span class="view-btn-content">
+                      <span class="view-btn-title">Rear View</span>
+                      <span class="view-btn-sub">Default / Chase</span>
+                    </span>
+                  </button>
+                  <button type="button" id="char-view-front-btn" class="runner-view-btn" data-style="REVERSE" title="Front view / Reverse run — runner faces camera to showcase outfit & face">
+                    <span class="view-btn-icon">🕺</span>
+                    <span class="view-btn-content">
+                      <span class="view-btn-title">Front View</span>
+                      <span class="view-btn-sub">Face Player (Moonwalk)</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="runner-view-hint">
+                  Choose default rear chase or front view facing the camera for this runner. Gameplay controls stay the same.
+                </div>
+              </div>
+
               <div class="showroom-action-footer">
                 <button id="char-action-btn" class="btn btn-action equip">
                   ⚡ EQUIP RUNNER
@@ -405,86 +449,473 @@
       </div>
 
       <!-- Settings Modal -->
-      <div id="settings-modal" class="screen-overlay hidden">
+      <div id="settings-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <div class="modal-card glassmorphic settings-card">
-          <h2 class="modal-title">SETTINGS</h2>
-
-          <div class="settings-group">
-            <div class="setting-row">
-              <label for="setting-master-vol">Master Volume</label>
-              <input id="setting-master-vol" type="range" min="0" max="1" step="0.05" value="0.8" />
-            </div>
-            <div class="setting-row">
-              <label for="setting-music-vol">Music Volume</label>
-              <input id="setting-music-vol" type="range" min="0" max="1" step="0.05" value="0.4" />
-            </div>
-            <div class="setting-row">
-              <label for="setting-sfx-vol">SFX Volume</label>
-              <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.05" value="0.85" />
-            </div>
-            <div class="setting-row checkbox-row">
-              <label for="setting-audio-mute">Mute All Audio</label>
-              <input type="checkbox" id="setting-audio-mute" class="arcade-checkbox" />
-            </div>
-            <div class="setting-row checkbox-row audio-intensity-row">
-              <div class="setting-label-block">
-                <label for="setting-reduced-intensity">Reduced Audio Intensity</label>
-                <div class="setting-hint-text">Compresses dynamic range & softens harsh frequencies for sensory comfort.</div>
-              </div>
-              <input type="checkbox" id="setting-reduced-intensity" class="arcade-checkbox" />
-            </div>
-            <div class="setting-row graphics-setting-container">
-              <div class="setting-label-row">
-                <label>Graphics Quality</label>
-                <span id="setting-graphics-resolved-badge" class="quality-resolved-badge">Auto (High)</span>
-              </div>
-              <div class="graphics-preset-segmented" id="graphics-preset-selector">
-                <button type="button" class="preset-segment-btn" data-preset="AUTO">AUTO</button>
-                <button type="button" class="preset-segment-btn" data-preset="LOW">LOW</button>
-                <button type="button" class="preset-segment-btn" data-preset="MEDIUM">MEDIUM</button>
-                <button type="button" class="preset-segment-btn" data-preset="HIGH">HIGH</button>
-              </div>
-              <div id="setting-graphics-desc" class="quality-tradeoff-desc">
-                Automatically adjusts rendering quality based on hardware capabilities and live framerate.
-              </div>
-              <!-- Hidden select for programmatic/test compatibility -->
-              <select id="setting-graphics-quality" class="arcade-select" style="display: none;">
-                <option value="AUTO">Auto</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
-              </select>
-            </div>
-            <div class="setting-row checkbox-row">
-              <label for="setting-show-fps">Show FPS & Frame Times</label>
-              <input type="checkbox" id="setting-show-fps" class="arcade-checkbox" />
-            </div>
-            <div class="setting-row">
-              <label for="setting-opening-cinematic">Opening Sequence</label>
-              <select id="setting-opening-cinematic" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
-                <option value="FIRST_ONLY" selected>Skip on Retry (Default)</option>
-                <option value="ALWAYS">Always Play</option>
-                <option value="DISABLED">Disable Intro</option>
-              </select>
-            </div>
-            <div class="setting-row">
-              <label for="setting-camera-mode">Gameplay Camera</label>
-              <select id="setting-camera-mode" class="arcade-select" style="background: rgba(18,24,38,0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; outline: none;">
-                <option value="CHARACTER_FOCUS" selected>Character Focus (3/4 Profile)</option>
-                <option value="CLASSIC">Classic Chase (Rear View)</option>
-              </select>
-            </div>
-            <div class="setting-row checkbox-row">
-              <div class="setting-label-block">
-                <label for="setting-facial-portrait">Character Facial Portrait</label>
-                <div class="setting-hint-text">Live animated 3D portrait showing character reactions during runs.</div>
-              </div>
-              <input type="checkbox" id="setting-facial-portrait" class="arcade-checkbox" checked />
+          <div class="settings-modal-header">
+            <h2 id="settings-title" class="modal-title">SETTINGS</h2>
+            <div class="settings-tabs-nav" role="tablist" aria-label="Settings Categories">
+              <button type="button" class="settings-tab-btn active" data-tab="tab-controls" role="tab" aria-selected="true" id="tab-btn-controls">🎮 Controls</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-touch" role="tab" aria-selected="false" id="tab-btn-touch">📱 Touch</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-camera" role="tab" aria-selected="false" id="tab-btn-camera">🎥 Camera</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-accessibility" role="tab" aria-selected="false" id="tab-btn-accessibility">👁️ Accessibility</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-audio" role="tab" aria-selected="false" id="tab-btn-audio">🔊 Audio & More</button>
+              <button type="button" class="settings-tab-btn" data-tab="tab-backup" role="tab" aria-selected="false" id="tab-btn-backup">💾 Data & Backup</button>
             </div>
           </div>
 
-          <div class="modal-buttons">
-            <button id="settings-close-btn" class="btn btn-primary">
+          <div class="settings-tab-content-area">
+            <!-- TAB 1: CONTROLS -->
+            <div id="tab-controls" class="settings-tab-pane active" role="tabpanel" aria-labelledby="tab-btn-controls">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">KEYBOARD CUSTOMIZATION</span>
+                <p class="settings-section-help">Click any key slot to rebind. Duplicate keys are automatically detected and resolved to prevent conflicting commands.</p>
+              </div>
+
+              <!-- Rebinding listener banner (shown when waiting for a key press) -->
+              <div id="key-rebind-banner" class="key-rebind-banner hidden" role="alert" aria-live="assertive">
+                <span class="rebind-pulse-dot"></span>
+                <span id="key-rebind-message">Press any key to assign to <strong>Move Left</strong>... (ESC to cancel)</span>
+              </div>
+
+              <!-- Conflict warning banner -->
+              <div id="key-conflict-warning" class="key-conflict-warning hidden" role="alert" aria-live="polite">
+                <span class="conflict-icon">⚠️</span>
+                <span id="key-conflict-message">Binding conflict detected and automatically resolved.</span>
+              </div>
+
+              <div class="keybindings-list" id="keybindings-list">
+                <div class="keybinding-card" data-action="LEFT">
+                  <div class="binding-info">
+                    <span class="action-icon">◀</span>
+                    <div class="action-text">
+                      <span class="action-title">Move Left</span>
+                      <span class="action-desc">Switch to the left adjacent lane</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="LEFT" data-slot="0" title="Primary key for Move Left">←</button>
+                    <button type="button" class="key-badge-btn" data-action="LEFT" data-slot="1" title="Alternate key for Move Left">A</button>
+                  </div>
+                </div>
+
+                <div class="keybinding-card" data-action="RIGHT">
+                  <div class="binding-info">
+                    <span class="action-icon">▶</span>
+                    <div class="action-text">
+                      <span class="action-title">Move Right</span>
+                      <span class="action-desc">Switch to the right adjacent lane</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="RIGHT" data-slot="0" title="Primary key for Move Right">→</button>
+                    <button type="button" class="key-badge-btn" data-action="RIGHT" data-slot="1" title="Alternate key for Move Right">D</button>
+                  </div>
+                </div>
+
+                <div class="keybinding-card" data-action="UP">
+                  <div class="binding-info">
+                    <span class="action-icon">▲</span>
+                    <div class="action-text">
+                      <span class="action-title">Jump</span>
+                      <span class="action-desc">Leap over barriers, fences, and low trains</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="UP" data-slot="0" title="Primary key for Jump">↑</button>
+                    <button type="button" class="key-badge-btn" data-action="UP" data-slot="1" title="Alternate key for Jump">W</button>
+                    <button type="button" class="key-badge-btn" data-action="UP" data-slot="2" title="Quick jump key">SPACE</button>
+                  </div>
+                </div>
+
+                <div class="keybinding-card" data-action="DOWN">
+                  <div class="binding-info">
+                    <span class="action-icon">▼</span>
+                    <div class="action-text">
+                      <span class="action-title">Slide / Fast Drop</span>
+                      <span class="action-desc">Slide under barriers or quickly descend to ground</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="DOWN" data-slot="0" title="Primary key for Slide">↓</button>
+                    <button type="button" class="key-badge-btn" data-action="DOWN" data-slot="1" title="Alternate key for Slide">S</button>
+                  </div>
+                </div>
+
+                <div class="keybinding-card" data-action="ACTION">
+                  <div class="binding-info">
+                    <span class="action-icon">🛹</span>
+                    <div class="action-text">
+                      <span class="action-title">Hoverboard</span>
+                      <span class="action-desc">Deploy protective hoverboard shield</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="ACTION" data-slot="0" title="Primary key for Hoverboard">E</button>
+                    <button type="button" class="key-badge-btn" data-action="ACTION" data-slot="1" title="Alternate key for Hoverboard">B</button>
+                  </div>
+                </div>
+
+                <div class="keybinding-card" data-action="PAUSE">
+                  <div class="binding-info">
+                    <span class="action-icon">⏸</span>
+                    <div class="action-text">
+                      <span class="action-title">Pause Game</span>
+                      <span class="action-desc">Open pause menu during active run</span>
+                    </div>
+                  </div>
+                  <div class="binding-slots">
+                    <button type="button" class="key-badge-btn" data-action="PAUSE" data-slot="0" title="Primary key for Pause">ESC</button>
+                    <button type="button" class="key-badge-btn" data-action="PAUSE" data-slot="1" title="Alternate key for Pause">P</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="controls-action-footer">
+                <button type="button" id="btn-reset-keybindings" class="btn btn-secondary-compact">
+                  ↺ Reset Keyboard Defaults
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 2: TOUCH & SWIPE -->
+            <div id="tab-touch" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-touch">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">MOBILE SWIPE SENSITIVITY</span>
+                <p class="settings-section-help">Tune gesture responsiveness for your touchscreen. Direction locking prevents diagonal misfires.</p>
+              </div>
+
+              <div class="setting-row">
+                <label>Swipe Sensitivity Preset</label>
+                <div class="segmented-control" id="swipe-sensitivity-selector">
+                  <button type="button" class="segment-btn" data-preset="LOW">Low (42px)</button>
+                  <button type="button" class="segment-btn active" data-preset="NORMAL">Normal (26px)</button>
+                  <button type="button" class="segment-btn" data-preset="HIGH">High (16px)</button>
+                </div>
+                <div id="swipe-sensitivity-desc" class="setting-hint-text">Normal (26px): Balanced response suitable for most phone and tablet screens.</div>
+              </div>
+
+              <div class="feature-badge-box">
+                <span class="badge-icon">🔒</span>
+                <div class="badge-content">
+                  <strong>Smart 1.25x Direction Locking Active</strong>
+                  <span>Prevents accidental diagonal swipes and guarantees 1 deliberate swipe = 1 adjacent lane change.</span>
+                </div>
+              </div>
+
+              <div class="settings-section-divider"></div>
+
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">ON-SCREEN TOUCH BUTTONS</span>
+                <p class="settings-section-help">Configure position, size, and visibility of virtual buttons.</p>
+              </div>
+
+              <div class="setting-row">
+                <label for="setting-touch-mode">Touch Buttons Display</label>
+                <select id="setting-touch-mode" class="arcade-select">
+                  <option value="AUTO" selected>Auto (Touch Screens Only)</option>
+                  <option value="ALWAYS">Always Visible (Even on Desktop)</option>
+                  <option value="DISABLED">Disabled (Swipe Gestures Only)</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <label>Button Layout Preset</label>
+                <div class="segmented-control" id="touch-layout-selector">
+                  <button type="button" class="segment-btn active" data-layout="BOTTOM_CENTER">Center</button>
+                  <button type="button" class="segment-btn" data-layout="SPLIT_THUMB">Split-Thumb</button>
+                  <button type="button" class="segment-btn" data-layout="BOTTOM_WIDE">Wide</button>
+                </div>
+                <div class="setting-hint-text">Split-Thumb places Left/Right under your left thumb and Jump/Slide/Board under your right thumb.</div>
+              </div>
+
+              <div class="setting-row-flex">
+                <div class="setting-col-half">
+                  <label>Button Size</label>
+                  <div class="segmented-control" id="touch-size-selector">
+                    <button type="button" class="segment-btn active" data-size="NORMAL">Normal (58px)</button>
+                    <button type="button" class="segment-btn" data-size="LARGE">Large (70px)</button>
+                  </div>
+                </div>
+                <div class="setting-col-half">
+                  <label>Opacity</label>
+                  <div class="segmented-control" id="touch-opacity-selector">
+                    <button type="button" class="segment-btn" data-opacity="30">30%</button>
+                    <button type="button" class="segment-btn active" data-opacity="60">60%</button>
+                    <button type="button" class="segment-btn" data-opacity="90">90%</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: CAMERA & COMFORT -->
+            <div id="tab-camera" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-camera">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">CAMERA COMFORT & MOTION</span>
+                <p class="settings-section-help">Adjust visual intensity and camera dynamics to minimize motion discomfort.</p>
+              </div>
+
+              <div class="setting-row">
+                <label>Camera Impact Shake</label>
+                <div class="segmented-control" id="camera-shake-selector">
+                  <button type="button" class="segment-btn" data-shake="OFF">Off</button>
+                  <button type="button" class="segment-btn" data-shake="LOW">Low (40%)</button>
+                  <button type="button" class="segment-btn active" data-shake="NORMAL">Normal (100%)</button>
+                </div>
+                <div class="setting-hint-text">Reduces or disables camera vibration when landing hard or colliding.</div>
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-speed-lines">Speed-Line Visual Effects</label>
+                  <div class="setting-hint-text">Peripheral wind streaks during high-speed runs and Jetpack flights.</div>
+                </div>
+                <input type="checkbox" id="setting-speed-lines" class="arcade-checkbox" checked />
+              </div>
+
+              <div class="setting-row">
+                <label>Camera Sway & Motion</label>
+                <div class="segmented-control" id="camera-motion-selector">
+                  <button type="button" class="segment-btn" data-motion="REDUCED">Reduced Motion</button>
+                  <button type="button" class="segment-btn active" data-motion="NORMAL">Normal</button>
+                </div>
+                <div class="setting-hint-text">Reduced motion provides a steady, stable camera anchor without aggressive tilt.</div>
+              </div>
+
+              <div class="setting-row">
+                <label>Camera Distance Offset</label>
+                <div class="segmented-control" id="camera-distance-selector">
+                  <button type="button" class="segment-btn" data-dist="CLOSE">Close (-0.4m)</button>
+                  <button type="button" class="segment-btn active" data-dist="DEFAULT">Default (5.6m)</button>
+                  <button type="button" class="segment-btn" data-dist="FAR">Far (+0.6m)</button>
+                </div>
+                <div class="setting-hint-text">Adjusts chase distance within a safe range that maintains full track visibility.</div>
+              </div>
+
+              <div class="setting-row">
+                <label for="setting-camera-mode">Gameplay Perspective</label>
+                <select id="setting-camera-mode" class="arcade-select">
+                  <option value="CHARACTER_FOCUS" selected>Character Focus (3/4 Profile)</option>
+                  <option value="CLASSIC">Classic Chase (Rear View)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- TAB 4: ACCESSIBILITY -->
+            <div id="tab-accessibility" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-accessibility">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">ACCESSIBILITY & ASSISTIVE CUES</span>
+                <p class="settings-section-help">Visual, auditory, and cognitive enhancements designed for all players. Core gameplay rules and collision hitboxes remain identical.</p>
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-reduced-motion">Reduced Motion Mode</label>
+                  <div class="setting-hint-text">Disables camera shake, speed lines, and rapid UI zoom animations for motion-sensitive players.</div>
+                </div>
+                <input type="checkbox" id="setting-reduced-motion" class="arcade-checkbox" />
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-high-contrast">High-Contrast Obstacle Indicators</label>
+                  <div class="setting-hint-text">Adds high-visibility luminous outlines to trains, barriers, and overhead obstacles for enhanced track readability.</div>
+                </div>
+                <input type="checkbox" id="setting-high-contrast" class="arcade-checkbox" />
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-visual-hazards">Non-Audio Visual Hazard Cues</label>
+                  <div class="setting-hint-text">Displays distinct on-screen warning indicators for approaching trains, barrier hazards, and Inspector pursuit.</div>
+                </div>
+                <input type="checkbox" id="setting-visual-hazards" class="arcade-checkbox" checked />
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-powerup-alerts">Critical Power-up Expiration Alerts</label>
+                  <div class="setting-hint-text">Distinct 3-second flashing countdown alerts before Jetpack, Magnet, or 2x Multiplier expire.</div>
+                </div>
+                <input type="checkbox" id="setting-powerup-alerts" class="arcade-checkbox" checked />
+              </div>
+
+              <div class="fairness-guarantee-card">
+                <span class="fairness-icon">🛡️</span>
+                <div class="fairness-text">
+                  <strong>Fair Play Physics Guarantee</strong>
+                  <span>Accessibility settings improve readability and comfort. Obstacle collision hitboxes, run speeds, and lane timings are strictly identical across all settings.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 5: AUDIO & MORE -->
+            <div id="tab-audio" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-audio">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">AUDIO & SOUND LEVELS</span>
+              </div>
+
+              <div class="setting-row">
+                <label for="setting-master-vol">Master Volume</label>
+                <input id="setting-master-vol" type="range" min="0" max="1" step="0.05" value="0.8" />
+              </div>
+              <div class="setting-row">
+                <label for="setting-music-vol">Music Volume</label>
+                <input id="setting-music-vol" type="range" min="0" max="1" step="0.05" value="0.4" />
+              </div>
+              <div class="setting-row">
+                <label for="setting-sfx-vol">SFX Volume</label>
+                <input id="setting-sfx-vol" type="range" min="0" max="1" step="0.05" value="0.85" />
+              </div>
+              <div class="setting-row checkbox-row">
+                <label for="setting-audio-mute">Mute All Audio</label>
+                <input type="checkbox" id="setting-audio-mute" class="arcade-checkbox" />
+              </div>
+              <div class="setting-row checkbox-row audio-intensity-row">
+                <div class="setting-label-block">
+                  <label for="setting-reduced-intensity">Reduced Audio Intensity</label>
+                  <div class="setting-hint-text">Compresses dynamic range & softens harsh frequencies for sensory comfort.</div>
+                </div>
+                <input type="checkbox" id="setting-reduced-intensity" class="arcade-checkbox" />
+              </div>
+
+              <div class="settings-section-divider"></div>
+
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">GRAPHICS & PRESENTATION</span>
+              </div>
+
+              <div class="setting-row graphics-setting-container">
+                <div class="setting-label-row">
+                  <label>Graphics Quality</label>
+                  <span id="setting-graphics-resolved-badge" class="quality-resolved-badge">Auto (High)</span>
+                </div>
+                <div class="graphics-preset-segmented" id="graphics-preset-selector">
+                  <button type="button" class="preset-segment-btn" data-preset="AUTO">AUTO</button>
+                  <button type="button" class="preset-segment-btn" data-preset="LOW">LOW</button>
+                  <button type="button" class="preset-segment-btn" data-preset="MEDIUM">MEDIUM</button>
+                  <button type="button" class="preset-segment-btn" data-preset="HIGH">HIGH</button>
+                </div>
+                <div id="setting-graphics-desc" class="quality-tradeoff-desc">
+                  Automatically adjusts rendering quality based on hardware capabilities and live framerate.
+                </div>
+                <select id="setting-graphics-quality" class="arcade-select" style="display: none;">
+                  <option value="AUTO">Auto</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <label for="setting-show-fps">Show FPS & Frame Times</label>
+                <input type="checkbox" id="setting-show-fps" class="arcade-checkbox" />
+              </div>
+
+              <div class="setting-row">
+                <label for="setting-opening-cinematic">Opening Sequence</label>
+                <select id="setting-opening-cinematic" class="arcade-select">
+                  <option value="FIRST_ONLY" selected>Skip on Retry (Default)</option>
+                  <option value="ALWAYS">Always Play</option>
+                  <option value="DISABLED">Disable Intro</option>
+                </select>
+              </div>
+
+              <div class="setting-row running-style-setting-row">
+                <div class="setting-label-block">
+                  <label for="setting-running-style">Running Style</label>
+                  <div class="setting-hint-text">Run backward while facing the camera. Gameplay controls stay the same.</div>
+                </div>
+                <div class="running-style-control-col">
+                  <select id="setting-running-style" class="arcade-select">
+                    <option value="CLASSIC" selected>Classic (Default / Rear View)</option>
+                    <option value="REVERSE">Reverse / Moonwalk (Front View)</option>
+                  </select>
+                  <span id="setting-running-style-badge" class="quality-resolved-badge">🏃 Rear Chase (Default)</span>
+                </div>
+              </div>
+
+              <div class="setting-row checkbox-row">
+                <div class="setting-label-block">
+                  <label for="setting-facial-portrait">Character Facial Portrait</label>
+                  <div class="setting-hint-text">Live animated 3D portrait showing character reactions during runs.</div>
+                </div>
+                <input type="checkbox" id="setting-facial-portrait" class="arcade-checkbox" checked />
+              </div>
+            </div>
+
+            <!-- TAB 6: DATA & BACKUP (Requirement G) -->
+            <div id="tab-backup" class="settings-tab-pane" role="tabpanel" aria-labelledby="tab-btn-backup">
+              <div class="settings-section-header">
+                <span class="settings-section-subtitle">PROGRESSION BACKUP & RESTORE</span>
+                <p class="settings-section-help">Create local file backups to protect your coins, characters, upgrades, and high scores from browser cache clearing. No account or external service required.</p>
+              </div>
+
+              <!-- Last Backup & Profile Status Card -->
+              <div class="backup-status-card" id="backup-status-card">
+                <div class="backup-status-row">
+                  <span class="backup-status-label">Last Exported Backup:</span>
+                  <span class="backup-status-val" id="backup-last-time">Never exported</span>
+                </div>
+                <div class="backup-profile-summary" id="backup-profile-summary">
+                  <span class="profile-chip">🪙 <strong id="chip-coins">0</strong> Coins</span>
+                  <span class="profile-chip">🔑 <strong id="chip-keys">3</strong> Keys</span>
+                  <span class="profile-chip">🏃 <strong id="chip-chars">1</strong> Characters</span>
+                  <span class="profile-chip">🏆 <strong id="chip-score">0</strong> Best Score</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="backup-action-grid">
+                <button type="button" id="btn-export-save" class="arcade-btn btn-primary" title="Export and download your game save as a JSON file">
+                  <span class="btn-icon">📥</span> EXPORT BACKUP (.JSON)
+                </button>
+                <button type="button" id="btn-trigger-import-save" class="arcade-btn btn-secondary" title="Select a previously exported JSON backup file to restore">
+                  <span class="btn-icon">📤</span> IMPORT BACKUP
+                </button>
+                <input type="file" id="input-import-file" accept=".json,application/json" style="display: none;" />
+              </div>
+
+              <!-- Live Status & Feedback Alert Banner -->
+              <div id="backup-feedback-banner" class="backup-feedback-banner hidden" role="alert" aria-live="polite">
+                <span id="backup-feedback-icon" class="feedback-icon">ℹ️</span>
+                <span id="backup-feedback-text">Backup status message</span>
+              </div>
+
+              <!-- Import Preview & Confirmation Card (Hidden until valid file chosen) -->
+              <div id="import-preview-card" class="import-preview-card hidden">
+                <div class="preview-header">
+                  <span class="preview-title">⚠️ RESTORE PROGRESSION PREVIEW</span>
+                  <span class="preview-date" id="preview-date-text">Exported: 2026-10-26</span>
+                </div>
+                <p class="preview-warning">
+                  Restoring will replace your current game data with the backup file below. A safety rollback snapshot will be created automatically before applying.
+                </p>
+
+                <div class="preview-diff-grid" id="preview-diff-grid">
+                  <!-- Dynamically filled with comparisons -->
+                </div>
+
+                <div class="preview-confirm-actions">
+                  <button type="button" id="btn-cancel-import" class="btn btn-secondary-compact">CANCEL</button>
+                  <button type="button" id="btn-confirm-import" class="btn btn-primary btn-gold pulse-glow">
+                    ✓ CONFIRM & RESTORE PROGRESS
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fairness and Security Notice (Requirement H) -->
+              <div class="backup-security-note">
+                <span class="note-icon">🔒</span>
+                <span class="note-text">Local backups are stored directly on your device. Metro Runner 3D never uploads your saves to external servers or cloud accounts.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-buttons settings-footer-actions">
+            <button type="button" id="settings-reset-all-btn" class="btn btn-secondary-compact" title="Reset all settings to factory defaults">
+              ↺ Reset All Defaults
+            </button>
+            <button type="button" id="settings-close-btn" class="btn btn-primary">
               DONE
             </button>
           </div>
@@ -494,27 +925,5 @@
 
     <!-- Script entry point -->
     <script type="module" src="/src/main.ts"></script>
-    <script>
-      // Wire mobile touch control buttons directly to EventBus
-      window.addEventListener('DOMContentLoaded', () => {
-        const setupBtn = (id, action) => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.addEventListener('pointerdown', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (window.__METRO_BUS__) {
-                window.__METRO_BUS__.emit('INPUT_ACTION', action);
-              }
-            }, { passive: false });
-          }
-        };
-
-        setupBtn('touch-left-btn', 'LEFT');
-        setupBtn('touch-right-btn', 'RIGHT');
-        setupBtn('touch-up-btn', 'UP');
-        setupBtn('touch-down-btn', 'DOWN');
-      });
-    </script>
   </body>
 </html>

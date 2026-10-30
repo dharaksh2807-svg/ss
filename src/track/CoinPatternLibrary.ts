@@ -391,6 +391,56 @@ export class CoinPatternLibrary {
   }
 
   /**
+   * Create Lateral Train Switch Arc: Diagonal airborne coin arc curving smoothly from source train
+   * to target train in adjacent lane. Communicates "jump + left/right" transfer.
+   */
+  public static createLateralRoofSwitch(
+    sourceLane: LaneIndex,
+    targetLane: LaneIndex,
+    takeoffZ: number,
+    count: number = 5,
+    spacing: number = 2.4
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane: sourceLane,
+      endLane: targetLane,
+      zOffset: Math.round(takeoffZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y + CONSTANTS.JUMP_HEIGHT * 0.85,
+      startYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      endYOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      count,
+      spacing,
+      isArc: true,
+      archetype: 'TRAIN_ROOFTOP',
+      supportSurface: 'TRAIN_ROOF',
+      landingSurface: 'TRAIN_ROOF',
+      jumpType: 'NORMAL'
+    };
+  }
+
+  /**
+   * Create Exit Ramp Descent Trail: Coins following the descending physical ramp down to ground level
+   */
+  public static createExitRampDescent(
+    lane: LaneIndex,
+    exitRampZ: number,
+    count: number = 4,
+    spacing: number = 2.0
+  ): PatternCollectible {
+    return {
+      type: 'COIN',
+      lane,
+      zOffset: Math.round(exitRampZ * 10) / 10,
+      yOffset: CONSTANTS.COIN_ROOFTOP_Y,
+      endYOffset: CONSTANTS.COIN_GROUND_Y,
+      count,
+      spacing,
+      archetype: 'TRAIN_ROOFTOP'
+    };
+  }
+
+  /**
    * Create Post-Rooftop Reward Trail: Rewarding coin cluster on railway ground following successful roof traversal
    */
   public static createPostRooftopReward(

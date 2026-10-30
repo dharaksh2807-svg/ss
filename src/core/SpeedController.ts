@@ -1,5 +1,6 @@
 import { CONSTANTS } from './Constants';
 import { GameMode } from '../progression/ProgressionTypes';
+import { DailyChallengeManager } from './DailyChallengeManager';
 
 export interface SpeedProfileConfig {
   initialSpeed: number;
@@ -34,6 +35,17 @@ export class SpeedController {
 
   private getProfileForMode(mode: string): SpeedProfileConfig {
     const profiles = (CONSTANTS as any).SPEED_PROFILES;
+    if (mode === 'DAILY_CHALLENGE') {
+      try {
+        const active = DailyChallengeManager.getInstance().getActiveChallenge();
+        const diff = active ? active.difficulty : 'BEGINNER';
+        if (profiles && profiles[diff]) {
+          return { ...profiles[diff] };
+        }
+      } catch (_) {
+        // Fallback for test environments
+      }
+    }
     const normalized = (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
     if (profiles && profiles[normalized]) {
       return { ...profiles[normalized] };

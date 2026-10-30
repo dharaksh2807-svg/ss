@@ -2,6 +2,7 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { GAME_MODES } from '../progression/MissionCatalog';
 import { GameMode } from '../progression/ProgressionTypes';
+import { DailyChallengeManager } from '../core/DailyChallengeManager';
 
 export class EventSelectModal {
   private element: HTMLElement;
@@ -26,6 +27,18 @@ export class EventSelectModal {
             <p class="tab-subtitle">Pick a challenge operation with specialized rules, modifiers, and rewards!</p>
           </div>
 
+          <div class="daily-challenge-promo-card glassmorphic-sub" id="events-dc-banner" role="button" tabindex="0">
+            <div class="dc-promo-left">
+              <span class="dc-promo-icon">📅</span>
+              <div class="dc-promo-info">
+                <span class="dc-promo-badge">OFFICIAL DAILY SEED</span>
+                <h4 class="dc-promo-title" id="events-dc-banner-title">TODAY'S SEEDED TRACK</h4>
+                <p class="dc-promo-desc">Deterministic layout for all players worldwide. Share challenge codes with friends!</p>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm dc-promo-btn" id="events-dc-banner-btn">OPEN DAILY</button>
+          </div>
+
           <div class="event-modes-grid" id="event-modes-list"></div>
 
           <div class="modal-buttons" style="margin-top: 20px;">
@@ -48,6 +61,18 @@ export class EventSelectModal {
       this.hide();
     });
 
+    const openDc = () => {
+      const prev = this.previousScreen;
+      this.hide(false);
+      EventBus.getInstance().emit(EVENTS.OPEN_DAILY_CHALLENGE, prev || 'START');
+    };
+
+    document.getElementById('events-dc-banner')?.addEventListener('click', openDc);
+    document.getElementById('events-dc-banner-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDc();
+    });
+
     launchBtn.addEventListener('click', () => {
       this.launchSelectedMode();
     });
@@ -61,6 +86,11 @@ export class EventSelectModal {
 
   public show(): void {
     this.selectedMode = this.progression.getActiveGameMode();
+    try {
+      const today = DailyChallengeManager.getInstance().getTodayChallenge();
+      const bannerTitle = document.getElementById('events-dc-banner-title');
+      if (bannerTitle) bannerTitle.textContent = `TODAY: ${today.title.toUpperCase()}`;
+    } catch (e) {}
     this.render();
     this.element.classList.remove('hidden');
   }

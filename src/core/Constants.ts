@@ -349,6 +349,29 @@ export const CONSTANTS = {
   COIN_SCORE_VALUE: 50,
   NEAR_MISS_SCORE: 100,
 
+  // Premium Skill Combo & Style System
+  SKILL_COMBO: {
+    WINDOW_DURATION: 4.0, // Seconds of simulation time before combo decay
+    TIERS: [
+      { minCombo: 1, name: 'NORMAL', label: 'NORMAL', multiplier: 1.0, color: '#00f0ff' },
+      { minCombo: 3, name: 'MOMENTUM', label: 'MOMENTUM ⚡', multiplier: 1.25, color: '#facc15' },
+      { minCombo: 5, name: 'GREAT', label: 'GREAT 🔥', multiplier: 1.50, color: '#fb923c' },
+      { minCombo: 8, name: 'EXCELLENT', label: 'EXCELLENT 💥', multiplier: 1.75, color: '#ec4899' },
+      { minCombo: 12, name: 'MASTERFUL', label: 'MASTERFUL 👑', multiplier: 2.00, color: '#c084fc' }
+    ],
+    BASE_SCORES: {
+      PERFECT_JUMP: 150,
+      PERFECT_SLIDE: 150,
+      CLEAN_LANE_DODGE: 100,
+      NEAR_MISS: 150,
+      ROOFTOP_LANDING: 100,
+      ROOFTOP_GAP_JUMP: 250,
+      CLEAN_OBSTACLE_CHAIN: 200
+    },
+    MAX_EVENT_SCORE: 500, // Explicit anti-exploit cap per event
+    MAX_RUN_STYLE_BONUS: 100000 // Anti-exploit cap for run total style contribution
+  },
+
   // Colors Palette (Vibrant Stylized Arcade)
   COLORS: {
     SKY_TOP: 0x0288d1, // Rich vibrant azure sky blue
@@ -383,3 +406,53 @@ export type LaneIndex = -1 | 0 | 1; // -1: Left, 0: Center, 1: Right
 export function getLaneX(lane: LaneIndex): number {
   return lane * CONSTANTS.LANE_WIDTH;
 }
+
+/**
+ * Determines whether the current execution context is an authorized developer environment.
+ * Ensures developer-facing diagnostics (wireframes, bug snapshot reports, debug buttons)
+ * remain accessible on deliberate developer request while strictly isolated from normal gameplay.
+ */
+export function isDeveloperMode(): boolean {
+  const g = typeof window !== 'undefined' ? (window as any) : (globalThis as any);
+
+  // 1. Explicit in-memory developer override (allows tests & sessions to toggle mode)
+  if (typeof (globalThis as any).__IS_DEV__ === 'boolean') {
+    return (globalThis as any).__IS_DEV__;
+  }
+  if (typeof g.__IS_DEV__ === 'boolean') {
+    return g.__IS_DEV__;
+  }
+
+  // 2. Vite development mode
+  try {
+    if (Boolean((import.meta as any)?.env?.DEV)) {
+      return true;
+    }
+  } catch {}
+
+  // 3. Explicit URL developer query parameter (?dev=1, ?debug=1, ?test=1)
+  try {
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('dev') || params.has('debug') || params.has('test') || params.has('arena')) {
+        return true;
+      }
+    }
+  } catch {}
+
+  // 4. Local development hostnames
+  try {
+    if (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return true;
+    }
+  } catch {}
+
+  // 5. Node.js runtime / unit test environment (when running in tsx / node without a browser hostname)
+  const proc = (globalThis as any).process;
+  if (proc && proc.env && (!g.location?.hostname || proc.env.NODE_ENV === 'test')) {
+    return true;
+  }
+
+  return false;
+}
+

@@ -5,8 +5,13 @@ import { GlbCharacterLoader, LoadedGlbCharacter } from '../characters/GlbCharact
 import { HoverboardId } from '../hoverboard/HoverboardCatalog';
 import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/HoverboardMeshBuilder';
 import { CONSTANTS } from '../core/Constants';
+import { EventBus, EVENTS } from '../core/EventBus';
+
+export type RunningStyle = 'CLASSIC' | 'REVERSE';
 
 export type JumpPhase = 'NONE' | 'TAKEOFF' | 'ASCENDING' | 'APEX' | 'DESCENDING' | 'FAST_DROP' | 'LANDING';
+
+export type PresentationPose = 'DEFAULT' | 'IDLE' | 'RUN' | 'JUMP' | 'VICTORY' | 'HOVERBOARD';
 
 export type LocomotionState = 
   | 'IDLE'
@@ -24,6 +29,7 @@ export type LocomotionState =
   | 'TRAIN_ROOF_RUN'
   | 'JETPACK'
   | 'HOVERBOARD'
+  | 'VICTORY'
   | 'STUMBLE'
   | 'CRASH';
 
@@ -76,6 +82,7 @@ export class CharacterModel {
   // Animation clocks & state
   private animTime: number = 0;
   private isSuperSneakers: boolean = false;
+  private presentationPose: PresentationPose = 'DEFAULT';
 
   // Base articulation rest offsets
   private baseHipsY: number = 0.95;
@@ -120,17 +127,100 @@ export class CharacterModel {
   // Active state machine tracker
   private activeLocomotionState: LocomotionState = 'RUN';
 
+  // Running style preference & visual orientation
+  private runningStyle: RunningStyle = 'CLASSIC';
+  private visualFacingAngle: number = 0;
+
   // GLB Character Support
   private glbInstance: LoadedGlbCharacter | null = null;
   private glbContainer: THREE.Group | null = null;
   private currentGlbClip: string = '';
+
+  public static getRunningStyleForCharacter(characterId: string): RunningStyle {
+    if (typeof localStorage !== 'undefined') {
+      const perChar = localStorage.getItem(`metro_running_style_${characterId}`) as RunningStyle | null;
+      if (perChar === 'REVERSE' || perChar === 'CLASSIC') {
+        return perChar;
+      }
+      const globalStyle = localStorage.getItem('metro_running_style') as RunningStyle | null;
+      if (globalStyle === 'REVERSE' || globalStyle === 'CLASSIC') {
+        return globalStyle;
+      }
+    }
+    return 'CLASSIC';
+  }
+
+  public static setRunningStyleForCharacter(characterId: string, style: RunningStyle): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`metro_running_style_${characterId}`, style);
+    }
+  }
 
   constructor(characterId: CharacterId = 'char_jax', outfitId?: string) {
     this.mesh = new THREE.Group();
     this.currentCharacterId = characterId;
     this.currentOutfitId = outfitId || 'jax_classic';
 
+    if (typeof localStorage !== 'undefined') {
+      const resolvedStyle = CharacterModel.getRunningStyleForCharacter(this.currentCharacterId);
+      this.runningStyle = resolvedStyle;
+      if (resolvedStyle === 'REVERSE') {
+        this.visualFacingAngle = Math.PI;
+      }
+    }
+
+    EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, (style: RunningStyle) => {
+      this.setRunningStyle(style);
+    });
+
     this.rebuildModel(this.currentCharacterId, this.currentOutfitId);
+  }
+
+  public getRunningStyle(): RunningStyle {
+    return this.runningStyle;
+  }
+
+  public setRunningStyle(style: RunningStyle): void {
+    this.runningStyle = style === 'REVERSE' ? 'REVERSE' : 'CLASSIC';
+  }
+
+  public getVisualFacingAngle(): number {
+    return this.visualFacingAngle;
+  }
+
+  public setPresentationPose(pose: PresentationPose): void {
+    this.presentationPose = pose;
+    if (pose === 'HOVERBOARD' && this.hoverboardGroup) {
+      this.hoverboardGroup.visible = true;
+    }
+  }
+
+  public getPresentationPose(): PresentationPose {
+    return this.presentationPose;
+  }
+
+  public clearPresentationPose(): void {
+    this.presentationPose = 'DEFAULT';
+    if (this.hoverboardGroup) {
+      this.hoverboardGroup.visible = this.isHoverboard;
+    }
+  }
+
+  /**
+   * Determine if the current state permits facing toward the camera in reverse run style.
+   * Actions like sliding under hurdles, jetpack rocket flight, or impact tumble revert to forward facing.
+   */
+  public isReverseFacingAllowed(state: LocomotionState): boolean {
+    switch (state) {
+      case 'SLIDE_ENTRY':
+      case 'SLIDE_HOLD':
+      case 'SLIDE_RECOVER':
+      case 'JETPACK':
+      case 'CRASH':
+        return false;
+      default:
+        return true;
+    }
   }
 
   /**
@@ -141,6 +231,16 @@ export class CharacterModel {
     this.currentCharacterId = characterId;
     if (nextOutfit) {
       this.currentOutfitId = nextOutfit;
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      const resolvedStyle = CharacterModel.getRunningStyleForCharacter(this.currentCharacterId);
+      this.runningStyle = resolvedStyle;
+      if (resolvedStyle === 'REVERSE') {
+        this.visualFacingAngle = Math.PI;
+      } else {
+        this.visualFacingAngle = 0;
+      }
     }
 
     // Preserve active powerup states
@@ -370,6 +470,27 @@ export class CharacterModel {
       locState = 'RUN';
     }
 
+    // Presentation pose override for Photo Mode
+    if (this.presentationPose !== 'DEFAULT') {
+      switch (this.presentationPose) {
+        case 'IDLE':
+          locState = 'IDLE';
+          break;
+        case 'RUN':
+          locState = 'RUN';
+          break;
+        case 'JUMP':
+          locState = 'JUMP_APEX';
+          break;
+        case 'HOVERBOARD':
+          locState = 'HOVERBOARD';
+          break;
+        case 'VICTORY':
+          locState = 'VICTORY';
+          break;
+      }
+    }
+
     this.activeLocomotionState = locState;
 
     this.updateLocomotion(
@@ -413,6 +534,16 @@ export class CharacterModel {
       else locState = 'JUMP_DESCEND';
     }
 
+    if (this.presentationPose !== 'DEFAULT') {
+      switch (this.presentationPose) {
+        case 'IDLE': locState = 'IDLE'; break;
+        case 'RUN': locState = 'RUN'; break;
+        case 'JUMP': locState = 'JUMP_APEX'; break;
+        case 'HOVERBOARD': locState = 'HOVERBOARD'; break;
+        case 'VICTORY': locState = 'VICTORY'; break;
+      }
+    }
+
     this.activeLocomotionState = locState;
     this.updateLocomotion(dt, locState, CONSTANTS.INITIAL_SPEED, hasHoverboard, hasSneakers, bankAngle, jumpProgress, slideProgress, 0);
   }
@@ -429,6 +560,10 @@ export class CharacterModel {
     landingProgress: number,
     isFastDropLand: boolean = false
   ): void {
+    if (this.presentationPose === 'HOVERBOARD') {
+      hasHoverboard = true;
+    }
+
     // 1. Advance animation clock with speed-dependent cadence
     // Stride cadence scales smoothly with forward speed, eliminating foot sliding!
     const cadence = state === 'RUN' || state === 'TRAIN_ROOF_RUN' || state === 'CLIMB'
@@ -443,6 +578,15 @@ export class CharacterModel {
 
     // Power-up visual FX updates
     this.updatePowerupVisuals(dt, hasSneakers);
+
+    // Visual facing direction logic (Reverse Run / Moonwalk support)
+    const isReverseAllowed = this.isReverseFacingAllowed(state);
+    const targetFacingAngle = (this.runningStyle === 'REVERSE' && isReverseAllowed) ? Math.PI : 0;
+    const facingLerpRate = 18.0;
+    this.visualFacingAngle += (targetFacingAngle - this.visualFacingAngle) * (1.0 - Math.exp(-facingLerpRate * dt));
+    if (Math.abs(targetFacingAngle - this.visualFacingAngle) < 0.005) {
+      this.visualFacingAngle = targetFacingAngle;
+    }
 
     // 2. Compute target joint transforms based on current locomotion state
     this.computeTargetPose(
@@ -464,6 +608,8 @@ export class CharacterModel {
     else if (state === 'FAST_DROP') blendSpeed = 34.0;
     else if (state === 'SLIDE_ENTRY') blendSpeed = 32.0;
     else if (state === 'JUMP_LAND') blendSpeed = 28.0;
+    else if (state === 'TRAIN_ROOF_RUN') blendSpeed = 22.0; // 0.10-0.18s crossfade to rooftop running
+    else if (state === 'CLIMB') blendSpeed = 24.0; // 0.10-0.16s ramp incline posture blend
     else if (state === 'CRASH') blendSpeed = 16.0;
 
     const blendWeight = 1.0 - Math.exp(-blendSpeed * dt);
@@ -521,6 +667,9 @@ export class CharacterModel {
         case 'HOVERBOARD':
           targetClip = 'idle';
           break;
+        case 'VICTORY':
+          targetClip = 'idle';
+          break;
         case 'JETPACK':
           targetClip = 'jump_air';
           break;
@@ -575,7 +724,11 @@ export class CharacterModel {
       case 'RUN':
       case 'TRAIN_ROOF_RUN':
       case 'CLIMB':
-        this.computeRunTarget(t, speed, state);
+        if (this.runningStyle === 'REVERSE') {
+          this.computeReverseRunTarget(t, speed, state);
+        } else {
+          this.computeRunTarget(t, speed, state);
+        }
         break;
 
       case 'JUMP_TAKEOFF':
@@ -616,6 +769,10 @@ export class CharacterModel {
         this.computeHoverboardTarget(t, dt);
         break;
 
+      case 'VICTORY':
+        this.computeVictoryTarget(dt);
+        break;
+
       case 'STUMBLE':
         this.computeStumbleTarget();
         break;
@@ -625,10 +782,76 @@ export class CharacterModel {
         break;
     }
 
-    // Apply lateral banking and weight transfer additively across any active locomotion state
-    this.targetRootRot.z += -bankAngle * 0.95;
-    this.targetRootRot.y += bankAngle * 0.22;
-    this.targetSpineRot.z += bankAngle * 0.35;
+    // Apply lateral banking and weight transfer additively across any active locomotion state.
+    // When facing toward the camera (Math.cos(visualFacingAngle) < 0), invert local roll
+    // so character naturally leans in the screen-space direction of the lane switch!
+    const bankSign = Math.cos(this.visualFacingAngle);
+    this.targetRootRot.z += -bankAngle * 0.95 * bankSign;
+    this.targetRootRot.y += this.visualFacingAngle + bankAngle * 0.22 * bankSign;
+    this.targetSpineRot.z += bankAngle * 0.35 * bankSign;
+  }
+
+  /**
+   * Biomechanical Backpedal Animation for Reverse Run Style.
+   * - Forefoot/ball-of-foot contact reaching backward along the track
+   * - High knee flexion (1.28 rads) during forward recovery to clear the ground cleanly (no moonwalk sliding)
+   * - Reciprocal arm pump with flexed elbows
+   * - Stable head gaze oriented level directly toward the player camera
+   */
+  private computeReverseRunTarget(t: number, speed: number, variant: 'RUN' | 'TRAIN_ROOF_RUN' | 'CLIMB'): void {
+    const sinT = Math.sin(t);
+    const cosT = Math.cos(t);
+
+    // 1. Pelvis harmonic vertical bob (2 bobs per full 2-step stride cycle)
+    const bob = -Math.cos(2.0 * t) * 0.040;
+    this.targetHipsPos.set(0, (this.baseHipsY - 0.02) + bob, 0);
+
+    // 2. Pelvis yaw & roll counter-rotation
+    this.targetHipsRot.set(0, sinT * 0.07, -sinT * 0.03);
+
+    // 3. Spine athletic forward balance lean & counter-twist
+    // In backpedaling, runner leans slightly forward toward camera for dynamic balance
+    let athleticLean = 0.12 + (speed / CONSTANTS.MAX_SPEED) * 0.06;
+    if (variant === 'TRAIN_ROOF_RUN') athleticLean += 0.03;
+    if (variant === 'CLIMB') athleticLean -= 0.08;
+
+    this.targetSpineRot.set(athleticLean, -sinT * 0.10, 0);
+
+    // 4. Head gaze stabilization (keeps eyes focused level on camera/player)
+    this.targetHeadRot.set(-athleticLean * 0.88, sinT * 0.08, sinT * 0.02);
+
+    // 5. Alternating Legs with Authentic Backpedal Kinesiology:
+    // Left Leg phase = t, Right Leg phase = t + Math.PI
+    // Leg reaches BACKWARD to catch the ground (sinT < 0), sweeps forward during stance,
+    // and during recovery (sinT > 0) knee flexes high (1.28 rads) to clear the ground without scuffing/moonwalking!
+    const leftLegSwing = sinT * 0.65;
+    const rightLegSwing = -sinT * 0.65;
+    this.targetLeftLegRot.set(leftLegSwing, 0, 0);
+    this.targetRightLegRot.set(rightLegSwing, 0, 0);
+
+    // High knee flexion during forward recovery stroke:
+    const leftRecovery = Math.max(0, sinT);
+    const rightRecovery = Math.max(0, -sinT);
+    this.targetLeftCalfRot.set(0.12 + Math.pow(leftRecovery, 1.2) * 1.28, 0, 0);
+    this.targetRightCalfRot.set(0.12 + Math.pow(rightRecovery, 1.2) * 1.28, 0, 0);
+
+    // Foot ankle flexion: forefoot planting reaching backward, rolling flat through stance
+    let leftAnklePitch = sinT * 0.16;
+    let rightAnklePitch = -sinT * 0.16;
+    if (variant === 'CLIMB') {
+      leftAnklePitch -= 0.18;
+      rightAnklePitch -= 0.18;
+    }
+    this.targetLeftSneakerRot.set(leftAnklePitch, 0, 0);
+    this.targetRightSneakerRot.set(rightAnklePitch, 0, 0);
+
+    // 6. Reciprocal Arm Sprint Pump with Bent Elbows
+    const armSwing = sinT * 0.60;
+    this.targetLeftArmRot.set(armSwing + 0.10, 0, -0.24);
+    this.targetRightArmRot.set(-armSwing + 0.10, 0, 0.24);
+
+    this.targetLeftForearmRot.set(-0.65 - Math.max(0, armSwing) * 0.45, 0, 0);
+    this.targetRightForearmRot.set(-0.65 - Math.max(0, -armSwing) * 0.45, 0, 0);
   }
 
   private computeRunTarget(t: number, speed: number, variant: 'RUN' | 'TRAIN_ROOF_RUN' | 'CLIMB'): void {
@@ -915,6 +1138,32 @@ export class CharacterModel {
     this.targetRightArmRot.set(0.5, 0, 0.8);
   }
 
+  private computeVictoryTarget(dt: number): void {
+    const t = this.animTime * 0.4;
+    const breath = Math.sin(t) * 0.02;
+
+    // Confident champion stance: upright chest, slight proud tilt
+    this.targetRootPos.set(0, 0.04, 0);
+    this.targetHipsPos.set(0, this.baseHipsY + breath * 0.5, 0);
+    this.targetHipsRot.set(0, 0.12, 0);
+    this.targetSpineRot.set(-0.06, 0.06, 0);
+    this.targetHeadRot.set(-0.10, -0.12, 0.04);
+
+    // Athletic wide grounded stance
+    this.targetLeftLegRot.set(-0.08, 0, -0.18);
+    this.targetLeftCalfRot.set(0.16, 0, 0);
+    this.targetRightLegRot.set(0.12, 0, 0.18);
+    this.targetRightCalfRot.set(0.14, 0, 0);
+
+    // Right arm triumphantly raised high in victory pump
+    this.targetRightArmRot.set(-2.40, 0, 0.35);
+    this.targetRightForearmRot.set(-0.70, 0, 0);
+
+    // Left arm confident on the hip
+    this.targetLeftArmRot.set(0.32, 0, -0.52);
+    this.targetLeftForearmRot.set(-1.18, 0, 0);
+  }
+
   private computeIdleTarget(dt: number): void {
     const t = this.animTime * 0.35;
     const breath = Math.sin(t) * 0.025;
@@ -1074,7 +1323,10 @@ export class CharacterModel {
     if (!this.glbInstance) return;
     if (this.currentGlbClip === name) return;
 
-    const action = this.glbInstance.actions.get(name);
+    let action = this.glbInstance.actions.get(name);
+    if (!action && name === 'defeat') {
+      action = this.glbInstance.actions.get('stumble') || this.glbInstance.actions.get('idle');
+    }
     if (!action) return;
 
     const prevAction = this.currentGlbClip ? this.glbInstance.actions.get(this.currentGlbClip) : null;

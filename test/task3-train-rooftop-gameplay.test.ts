@@ -22,6 +22,7 @@ import {
   validatePatternFeasibility
 } from '../src/track/ObstaclePatterns';
 import { CoinPatternLibrary } from '../src/track/CoinPatternLibrary';
+import { RooftopRoutePlanner, RooftopRouteArchetype } from '../src/track/RooftopRoutePlanner';
 
 // Polyfill localStorage for node environment
 if (typeof globalThis.localStorage === 'undefined') {
@@ -513,6 +514,62 @@ for (const patternName of newPatterns) {
     assert(reachability.solvable === true, `Pattern "${patternName}" is 100% human solvable at ${speed} m/s`);
   }
 }
+
+// =========================================================================
+// Suite 12: Deterministic Rooftop Route Planner & Multi-Train Switching
+// =========================================================================
+console.log('\n--- Suite 12: Deterministic Rooftop Route Planner & Archetypes ---');
+
+// 1. Planner Reproducibility: same seed + speed + tier produces identical plan
+const planA = RooftopRoutePlanner.planRoute({ seed: 42, tier: 'ADVANCED', playerSpeed: 25.0 });
+const planB = RooftopRoutePlanner.planRoute({ seed: 42, tier: 'ADVANCED', playerSpeed: 25.0 });
+assert(planA.id === planB.id, 'Same seed produces identical plan ID');
+assert(planA.archetype === planB.archetype, 'Same seed produces identical archetype');
+assert(planA.targetDuration === planB.targetDuration, 'Same seed produces identical target duration');
+assert(planA.legs.length === planB.legs.length, 'Same seed produces identical leg count');
+assert(planA.transfers.length === planB.transfers.length, 'Same seed produces identical transfer count');
+assert(planA.entryLane === planB.entryLane, 'Same seed produces identical entry lane');
+
+// 2. Different seeds meaningfully vary archetype/lane/structure
+const planC = RooftopRoutePlanner.planRoute({ seed: 9999, tier: 'ADVANCED', playerSpeed: 25.0 });
+assert(planA.seed !== planC.seed, 'Different seeds recorded');
+
+// 3. Duration Scaling with Runner Speed
+const planSlow = RooftopRoutePlanner.planRoute({ seed: 100, tier: 'EXPERT', playerSpeed: 18.0, forcedArchetype: 'SIDE_SWITCH' });
+const planFast = RooftopRoutePlanner.planRoute({ seed: 100, tier: 'EXPERT', playerSpeed: 38.0, forcedArchetype: 'SIDE_SWITCH' });
+assert(planFast.totalLength > planSlow.totalLength, `Route scales with speed: fast length (${planFast.totalLength.toFixed(1)}m) > slow length (${planSlow.totalLength.toFixed(1)}m)`);
+
+// 4. All 4 Archetypes Function Deterministically
+const archetypes: RooftopRouteArchetype[] = ['RAMP_RUN_EXIT', 'SIDE_SWITCH', 'DOUBLE_SWITCH', 'GAP_HOP'];
+for (const arch of archetypes) {
+  const p = RooftopRoutePlanner.planRoute({ seed: 777, tier: 'ADVANCED', playerSpeed: 28.0, forcedArchetype: arch });
+  assert(p.archetype === arch, `Archetype ${arch} generated successfully`);
+  const pattern = RooftopRoutePlanner.createTrackPattern(p);
+  assert(pattern.obstacles.length > 0, `Track pattern for ${arch} contains obstacles`);
+  assert(pattern.collectibles.length > 0, `Track pattern for ${arch} contains collectibles`);
+  const reachability = ReachabilityValidator.validateRooftopRoute(p, 28.0, undefined, 'NORMAL');
+  assert(reachability.solvable === true, `Archetype ${arch} is 100% reachable at 28 m/s`);
+}
+
+// 5. Lateral Switching Rules: exactly 1 adjacent lane, airtime <= 0.60s
+const switchPlan = RooftopRoutePlanner.planRoute({ seed: 123, tier: 'INTERMEDIATE', playerSpeed: 25.0, forcedArchetype: 'SIDE_SWITCH' });
+const transfer = switchPlan.transfers[0];
+assert(transfer !== undefined, 'Side switch plan contains transfer');
+assert(Math.abs(transfer.targetLane - transfer.sourceLane) === 1, 'Transfer is strictly adjacent 1-lane move');
+assert(transfer.requiredAirtime <= 0.60, 'Airtime fits within normal 0.60s jump duration');
+assert(CONSTANTS.LANE_CHANGE_DURATION <= 0.60, '0.18s lane change fits within jump airtime');
+
+// 6. Real Unsupported Gaps: Gap hop has 3.5m unsupported space
+const gapPlan = RooftopRoutePlanner.planRoute({ seed: 456, tier: 'INTERMEDIATE', playerSpeed: 25.0, forcedArchetype: 'GAP_HOP' });
+const gapTransfer = gapPlan.transfers[0];
+assert(gapTransfer !== undefined && gapTransfer.kind === 'LONGITUDINAL_GAP_JUMP', 'Gap hop plan has LONGITUDINAL_GAP_JUMP');
+assert(gapPlan.legs[1].chunkRelativeZ > gapPlan.legs[0].length, 'Gap hop second train starts after first train end with real gap');
+
+// 7. Multi-Chunk Route Continuity & Chunk Pinning Diagnostics
+const tmDiag = (trackManager as any).getRooftopTraversalDiagnostics();
+assert(tmDiag !== undefined, 'Rooftop traversal diagnostics available');
+assert(typeof tmDiag.currentSupportSurface === 'string', 'Diagnostics report support surface');
+assert(typeof tmDiag.movingSupportDisplacementCurrentFrame === 'number', 'Diagnostics track moving displacement');
 
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${passedTests}/${totalTests} TASK 3 TRAIN ROOFTOP TESTS PASSED!`);

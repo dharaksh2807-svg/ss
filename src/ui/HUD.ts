@@ -9,6 +9,7 @@ import { getPowerupIconSvg } from './IconCatalog';
 import { FirstUseGuidance } from './FirstUseGuidance';
 import { UpgradeManager, UpgradablePowerup } from '../player/UpgradeManager';
 import { CharacterPortraitRenderer } from './CharacterPortraitRenderer';
+import { SettingsManager } from '../settings/SettingsManager';
 
 interface PowerupDOMItem {
   key: string;
@@ -54,6 +55,14 @@ export class HUD {
   private completedCelebrationTimer: number = 0;
   private completedMissionInfo: { title: string; rewardCoins: number } | null = null;
 
+  // Premium Skill Combo & Style Widget Elements
+  private comboWidgetEl: HTMLElement | null = null;
+  private comboCountEl: HTMLElement | null = null;
+  private comboTierEl: HTMLElement | null = null;
+  private comboEventEl: HTMLElement | null = null;
+  private comboTimerFillEl: HTMLElement | null = null;
+  private comboBrokenTimeout: number | null = null;
+
   constructor(private powerupManager: PowerupManager) {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
@@ -69,17 +78,24 @@ export class HUD {
     this.boardBtn = document.getElementById('hud-board-btn') as HTMLButtonElement;
     this.boardChargesBadge = document.getElementById('hud-board-charges');
 
+    this.comboWidgetEl = document.getElementById('hud-skill-combo');
+    this.comboCountEl = document.getElementById('hud-combo-count');
+    this.comboTierEl = document.getElementById('hud-combo-tier');
+    this.comboEventEl = document.getElementById('hud-combo-event');
+    this.comboTimerFillEl = document.getElementById('hud-combo-timer-fill');
+
     if (this.boardBtn) {
-      this.boardBtn.addEventListener('click', (e) => {
+      let lastBoardTriggerTime = 0;
+      const triggerHoverboard = (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
+        const now = performance.now();
+        if (now - lastBoardTriggerTime < 250) return; // Prevent duplicate activation from overlapping pointerdown & click
+        lastBoardTriggerTime = now;
         this.hoverboardManager.activate();
-      });
-      this.boardBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.hoverboardManager.activate();
-      });
+      };
+      this.boardBtn.addEventListener('pointerdown', triggerHoverboard);
+      this.boardBtn.addEventListener('click', triggerHoverboard);
     }
 
     // Create mode badge container if not present
@@ -126,6 +142,10 @@ export class HUD {
       this.coins++;
       this.coinEl.textContent = this.coins.toLocaleString();
       this.triggerCoinBump();
+    });
+
+    bus.on('SHOW_TRAIN_SWITCH_CUE', () => {
+      this.showTrainSwitchCue();
     });
 
     this.pauseBtn.addEventListener('click', () => {
@@ -219,9 +239,123 @@ export class HUD {
       this.fpsCounterEl.classList.remove('hidden');
     }
 
+    bus.on(EVENTS.STUMBLE, () => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue('⚠️ GUARD IN PURSUIT! REGAIN SPEED!', 'warning');
+      }
+    });
+
+    bus.on(EVENTS.CHASER_STUMBLE_REACTION, () => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue('⚠️ INSPECTOR CLOSING IN!', 'danger');
+      }
+    });
+
+    bus.on('HAZARD_ALERT', (text: string) => {
+      if (SettingsManager.getInstance().getState().visualHazardCues) {
+        this.showVisualHazardCue(text, 'warning');
+      }
+    });
+
     bus.on('FPS_DISPLAY_TOGGLED', (enabled: boolean) => {
       this.fpsCounterEl?.classList.toggle('hidden', !enabled);
     });
+
+    // Skill Combo & Style System Event Handlers
+    bus.on(EVENTS.SKILL_EVENT, (payload: any) => {
+      this.handleSkillEvent(payload);
+    });
+
+    bus.on(EVENTS.COMBO_UPDATED, (data: any) => {
+      this.updateComboDisplay(data);
+    });
+
+    bus.on(EVENTS.COMBO_MILESTONE, (data: any) => {
+      this.handleComboMilestone(data);
+    });
+
+    bus.on(EVENTS.COMBO_BROKEN, (data: any) => {
+      this.handleComboBroken(data);
+    });
+
+    bus.on(EVENTS.COMBO_EXPIRED, () => {
+      this.handleComboExpired();
+    });
+  }
+
+  private handleSkillEvent(payload: any): void {
+    if (!this.comboWidgetEl) return;
+    if (this.comboBrokenTimeout) {
+      clearTimeout(this.comboBrokenTimeout);
+      this.comboBrokenTimeout = null;
+    }
+    this.comboWidgetEl.classList.remove('hidden', 'combo-broken-flash');
+    if (this.comboCountEl) this.comboCountEl.textContent = `COMBO ×${payload.combo}`;
+    if (this.comboTierEl) {
+      this.comboTierEl.textContent = payload.tierLabel || payload.tier;
+      this.comboTierEl.style.color = payload.color || '#00f0ff';
+      this.comboTierEl.style.borderColor = payload.color || '#00f0ff';
+    }
+    if (this.comboEventEl) {
+      this.comboEventEl.textContent = payload.label;
+    }
+    if (this.comboTimerFillEl) {
+      this.comboTimerFillEl.style.width = '100%';
+    }
+
+    if (!SettingsManager.getInstance().isReducedMotion()) {
+      this.comboWidgetEl.classList.remove('animate-combo-punch');
+      void this.comboWidgetEl.offsetWidth; // Force reflow
+      this.comboWidgetEl.classList.add('animate-combo-punch');
+    }
+  }
+
+  private updateComboDisplay(data: any): void {
+    if (!this.comboWidgetEl) return;
+    if (data.combo > 0) {
+      this.comboWidgetEl.classList.remove('hidden');
+      if (this.comboCountEl) this.comboCountEl.textContent = `COMBO ×${data.combo}`;
+      if (this.comboTierEl) {
+        this.comboTierEl.textContent = data.tierLabel || data.tier;
+        this.comboTierEl.style.color = data.color || '#00f0ff';
+        this.comboTierEl.style.borderColor = data.color || '#00f0ff';
+      }
+      if (this.comboTimerFillEl) {
+        this.comboTimerFillEl.style.width = `${Math.round(data.ratio * 100)}%`;
+      }
+    } else if (!this.comboBrokenTimeout) {
+      this.comboWidgetEl.classList.add('hidden');
+    }
+  }
+
+  private handleComboMilestone(data: any): void {
+    if (!this.comboWidgetEl) return;
+    if (!SettingsManager.getInstance().isReducedMotion()) {
+      this.comboWidgetEl.classList.add('milestone-shimmer');
+      setTimeout(() => {
+        this.comboWidgetEl?.classList.remove('milestone-shimmer');
+      }, 700);
+    }
+    this.showFeedbackBadge(`${data.label} MILESTONE! 👑`, 'streak');
+  }
+
+  private handleComboBroken(data: any): void {
+    if (!this.comboWidgetEl) return;
+    this.comboWidgetEl.classList.add('combo-broken-flash');
+    if (this.comboEventEl) {
+      this.comboEventEl.textContent = `COMBO BROKEN (${data.reason || 'HIT'})`;
+    }
+    if (this.comboBrokenTimeout) clearTimeout(this.comboBrokenTimeout);
+    this.comboBrokenTimeout = window.setTimeout(() => {
+      this.comboWidgetEl?.classList.remove('combo-broken-flash');
+      this.comboWidgetEl?.classList.add('hidden');
+      this.comboBrokenTimeout = null;
+    }, 450);
+  }
+
+  private handleComboExpired(): void {
+    if (!this.comboWidgetEl) return;
+    this.comboWidgetEl.classList.add('hidden');
   }
 
   public setMultiplier(val: number): void {
@@ -338,8 +472,9 @@ export class HUD {
       activeKeys.add('HOVERBOARD');
       const remaining = this.hoverboardManager.getRemaining();
       const pct = Math.max(0, Math.min(100, this.hoverboardManager.getProgress() * 100));
-      const isExpiring = remaining <= 3.0;
-      const isCritical = remaining <= 1.0;
+      const powerupAlerts = SettingsManager.getInstance().getState().powerupAlerts;
+      const isExpiring = powerupAlerts ? remaining <= 3.5 : remaining <= 2.5;
+      const isCritical = powerupAlerts ? remaining <= 1.8 : remaining <= 1.0;
       const timerDisplay = formatTimer(remaining);
 
       let item = this.activePowerupDOMs.get('HOVERBOARD');
@@ -393,8 +528,9 @@ export class HUD {
     for (const p of active) {
       activeKeys.add(p.type);
       const pct = Math.max(0, Math.min(100, (p.remaining / p.duration) * 100));
-      const isExpiring = p.remaining <= 3.0;
-      const isCritical = p.remaining <= 1.0;
+      const powerupAlerts = SettingsManager.getInstance().getState().powerupAlerts;
+      const isExpiring = powerupAlerts ? p.remaining <= 3.5 : p.remaining <= 2.5;
+      const isCritical = powerupAlerts ? p.remaining <= 1.8 : p.remaining <= 1.0;
       const timerDisplay = formatTimer(p.remaining);
 
       let item = this.activePowerupDOMs.get(p.type);
@@ -464,11 +600,24 @@ export class HUD {
     }
 
     // Adapt layout style when 3 or more are active simultaneously
-    this.powerupContainer.classList.toggle('powerup-multi-3', activeKeys.size >= 3);
+    this.powerupContainer?.classList?.toggle?.('powerup-multi-3', activeKeys.size >= 3);
+  }
+
+  public clearFeedbackBadges(): void {
+    if (this.feedbackStack) {
+      this.feedbackStack.innerHTML = '';
+    }
   }
 
   public showFeedbackBadge(text: string, type: 'streak' | 'precision' | 'nearmiss' = 'precision'): void {
     if (!this.feedbackStack) return;
+
+    // Deduplication guard: ignore duplicate toast notifications if already showing
+    for (let i = 0; i < this.feedbackStack.children.length; i++) {
+      if (this.feedbackStack.children[i].textContent === text) {
+        return;
+      }
+    }
 
     // Limit active visible badges to at most 3 to never clutter the screen
     while (this.feedbackStack.children.length >= 3) {
@@ -541,7 +690,7 @@ export class HUD {
     }
     this.activePowerupDOMs.clear();
     this.powerupContainer.innerHTML = '';
-    this.powerupContainer.classList.remove('powerup-multi-3');
+    this.powerupContainer?.classList?.remove?.('powerup-multi-3');
     if (this.pickupToastEl) {
       this.pickupToastEl.classList.add('hidden');
     }
@@ -709,6 +858,31 @@ export class HUD {
     }, 2800);
   }
 
+  public showTrainSwitchCue(): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (localStorage.getItem('metro_runner_train_switch_seen')) return;
+        localStorage.setItem('metro_runner_train_switch_seen', 'true');
+      } catch (_) {}
+    }
+    if (!this.toastContainerEl) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'train-switch-cue-toast glassmorphic slide-down-anim';
+    toast.style.cssText = 'position:fixed;top:18%;left:50%;transform:translateX(-50%);background:rgba(10,25,47,0.85);backdrop-filter:blur(8px);border:1px solid rgba(0,229,255,0.4);border-radius:12px;padding:10px 20px;color:#fff;font-family:sans-serif;font-weight:bold;font-size:16px;letter-spacing:1px;box-shadow:0 8px 32px rgba(0,229,255,0.25);z-index:9999;pointer-events:none;display:flex;align-items:center;gap:10px;';
+    toast.innerHTML = `<span>🚆</span><span>JUMP + ← / →  SWITCH TRAIN</span>`;
+
+    this.toastContainerEl.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => {
+        if (toast.parentElement) toast.parentElement.removeChild(toast);
+      }, 400);
+    }, 2500);
+  }
+
   public triggerCoinBump(): void {
     if (!this.coinBadgeEl) return;
     this.coinBadgeEl.classList.remove('coin-pulse');
@@ -725,6 +899,22 @@ export class HUD {
       }
       this.bumpTimeout = null;
     }, 220);
+  }
+
+  public showVisualHazardCue(message: string, severity: 'warning' | 'danger' = 'warning'): void {
+    let cueEl = document.getElementById('hud-hazard-cue');
+    if (!cueEl) {
+      cueEl = document.createElement('div');
+      cueEl.id = 'hud-hazard-cue';
+      cueEl.className = 'hud-hazard-cue';
+      this.container.appendChild(cueEl);
+    }
+    cueEl.textContent = message;
+    cueEl.className = `hud-hazard-cue active hazard-${severity}`;
+
+    setTimeout(() => {
+      cueEl?.classList.remove('active');
+    }, 2400);
   }
 
   public getScore(): number {

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS } from './Constants';
+import { CONSTANTS, isDeveloperMode } from './Constants';
 import { EventBus, EVENTS } from './EventBus';
 import { InputManager } from './InputManager';
 import { SoundManager } from '../audio/SoundManager';
@@ -7,6 +7,7 @@ import { WorldScene } from '../scene/WorldScene';
 import { CameraController } from '../scene/CameraController';
 import { Player } from '../player/Player';
 import { TrackManager } from '../track/TrackManager';
+import { ObstacleInstance } from '../track/ObstacleFactory';
 import { HUD } from '../ui/HUD';
 import { StartScreen } from '../ui/StartScreen';
 import { PauseModal } from '../ui/PauseModal';
@@ -37,9 +38,23 @@ import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/EnvironmentalEncounterDirector';
 import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
 import { ReviveManager } from '../revive/ReviveManager';
+import { SkillComboManager } from './SkillComboManager';
+import { DailyChallengeManager } from './DailyChallengeManager';
 import { ReviveModal } from '../ui/ReviveModal';
+import { DailyChallengeModal } from '../ui/DailyChallengeModal';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { ReplayHUD } from '../ui/ReplayHUD';
+import { PhotoModeController } from '../scene/PhotoModeController';
+import { PhotoModeModal } from '../ui/PhotoModeModal';
+import { SecretRouteDirector } from '../track/SecretRouteDirector';
+import { JunctionDirector } from '../track/JunctionDirector';
+import { BugSnapshotManager } from '../debug/BugSnapshotManager';
+import { BugReproductionLoader } from '../debug/BugReproductionLoader';
+import { DebugVisualizer } from '../debug/DebugVisualizer';
+import { DevBugReportModal } from '../ui/DevBugReportModal';
+import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
 
-export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER';
+export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'DYING' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -71,6 +86,15 @@ export class Game {
   private devTestArena: DevTestArena;
   private reviveManager: ReviveManager;
   private reviveModal: ReviveModal;
+  private dailyChallengeModal: DailyChallengeModal;
+  private replayHUD: ReplayHUD;
+  private photoModeController: PhotoModeController;
+  private photoModeModal: PhotoModeModal;
+  private crashReplayManager: CrashReplayManager = CrashReplayManager.getInstance();
+  private bugSnapshotManager: BugSnapshotManager = BugSnapshotManager.getInstance();
+  private bugReproductionLoader: BugReproductionLoader = BugReproductionLoader.getInstance();
+  private debugVisualizer: DebugVisualizer = DebugVisualizer.getInstance();
+  private devBugReportModal: DevBugReportModal;
 
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
@@ -91,6 +115,12 @@ export class Game {
 
   // Performance telemetry tracker
   private frameTimes: number[] = [];
+
+  // Fast Retry & Game Over delay handling (Task 2)
+  private isRestartInProgress: boolean = false;
+  private deathTimeoutId: number | null = null;
+  private gameOverTimeoutId: number | null = null;
+  private lastResultMeta: any = null;
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -128,6 +158,12 @@ export class Game {
     this.environmentSelectModal = new EnvironmentSelectModal();
     this.reviveManager = ReviveManager.getInstance();
     this.reviveModal = new ReviveModal();
+    this.dailyChallengeModal = new DailyChallengeModal();
+    this.replayHUD = new ReplayHUD();
+    this.photoModeController = PhotoModeController.getInstance();
+    this.photoModeController.init(this.cameraController, this.worldScene);
+    this.photoModeModal = new PhotoModeModal();
+    this.photoModeModal.init(this.worldScene);
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
@@ -149,6 +185,8 @@ export class Game {
       }
     );
     this.devTestArena.attachToWindow(this);
+    this.debugVisualizer.init(this.worldScene.scene);
+    this.devBugReportModal = new DevBugReportModal();
     // Apply saved graphics quality preset
     const graphics = GraphicsManager.getInstance();
     const config = graphics.getActiveConfig();
@@ -201,6 +239,25 @@ export class Game {
     // Attach development scenario runner to window
     TrainScenarioRunner.getInstance().attachToWindow(this);
 
+    // Register synchronous screenshot capture hook for bug snapshots
+    this.bugSnapshotManager.setCaptureHandler(() => {
+      try {
+        if (this.worldScene?.renderer && this.worldScene?.scene && this.cameraController?.camera) {
+          this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+          const canvas = this.worldScene.renderer.domElement;
+          if (canvas && typeof canvas.toDataURL === 'function') {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            if (dataUrl && dataUrl.startsWith('data:image/') && dataUrl.length > 200) {
+              return dataUrl;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Screenshot capture failed in game handler:', err);
+      }
+      return undefined;
+    });
+
     // Start requestAnimationFrame loop
     this.lastTime = performance.now();
     requestAnimationFrame(this.gameLoop.bind(this));
@@ -233,8 +290,65 @@ export class Game {
     bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode, false));
     bus.on(EVENTS.GAME_PAUSE, () => this.pause());
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
-    bus.on(EVENTS.GAME_RESTART, () => this.startRun(this.activeGameMode, true));
+    bus.on(EVENTS.GAME_RESTART, () => this.quickRestart());
+    bus.on('SKIP_GAME_OVER_DELAY', () => this.skipDeathOrGameOverDelay());
     bus.on('GO_TO_MENU', () => this.goToMenu());
+
+    // Instant crash tumble skip / quick restart via keyboard or tap during collision reaction
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const isDeadOrGameOver = this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'DYING';
+      const hasActiveDelay = this.gameOverTimeoutId !== null || this.deathTimeoutId !== null;
+      if (isDeadOrGameOver && hasActiveDelay) {
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          this.quickRestart();
+        } else if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          this.skipDeathOrGameOverDelay();
+        }
+      }
+    });
+
+    window.addEventListener('pointerdown', () => {
+      const isDeadOrGameOver = this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'DYING';
+      const hasActiveDelay = this.gameOverTimeoutId !== null || this.deathTimeoutId !== null;
+      if (isDeadOrGameOver && hasActiveDelay) {
+        this.skipDeathOrGameOverDelay();
+      }
+    });
+
+    bus.on(EVENTS.PHOTO_MODE_ENTER, () => {
+      if (this.lifecycleState === 'PLAYING') {
+        this.pause();
+      }
+      this.pauseModal.hide();
+      this.hud.hide();
+      this.photoModeModal.show(this.player);
+    });
+
+    bus.on(EVENTS.PHOTO_MODE_EXIT, () => {
+      this.photoModeModal.hide();
+      if (this.lifecycleState === 'PAUSED') {
+        this.pauseModal.show();
+      }
+    });
+
+    bus.on('REPRODUCE_BUG_SNAPSHOT', (snapshot: BugSnapshotPackage) => {
+      this.startReproduction(snapshot);
+    });
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.code === 'F8') {
+        if (!isDeveloperMode()) return;
+        e.preventDefault();
+        this.debugVisualizer.toggle();
+      } else if (e.code === 'F9' || (e.code === 'KeyB' && e.ctrlKey && e.shiftKey)) {
+        if (!isDeveloperMode()) return;
+        e.preventDefault();
+        const isActivelyRunning = this.lifecycleState === 'PLAYING';
+        this.devBugReportModal.openLatest(isActivelyRunning);
+      }
+    });
 
     bus.on(EVENTS.STUMBLE, () => {
       this.chaser.onMinorStumble();
@@ -259,7 +373,12 @@ export class Game {
     });
 
     bus.on(EVENTS.COIN_COLLECTED, () => {
+      if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA' || this.bugReproductionLoader.isRunning()) {
+        return;
+      }
       this.coinsCount++;
+      SecretRouteDirector.getInstance().onCoinCollected();
+      JunctionDirector.getInstance().onCoinCollected();
       const bonus = CONSTANTS.COIN_SCORE_VALUE * this.scoreMultiplier;
       this.score += bonus;
       bus.emit(EVENTS.SCORE_UPDATED, this.score);
@@ -271,10 +390,59 @@ export class Game {
       }
     });
 
+    // Secret Railway Route Event Handlers
+    bus.on(EVENTS.SECRET_ROUTE_DISCOVERED, (data: any) => {
+      this.hud.showFeedbackBadge(`🌟 SECRET AHEAD: ${data.name.toUpperCase()}`, 'streak');
+    });
+
+    bus.on(EVENTS.SECRET_ROUTE_ENTERED, (data: any) => {
+      const extra = data.isFirstDiscovery ? ` (+${data.firstDiscoveryCoins} COINS!)` : '';
+      this.hud.showFeedbackBadge(`🚀 DISCOVERED: ${data.name.toUpperCase()}${extra}`, 'precision');
+    });
+
+    bus.on(EVENTS.SECRET_ROUTE_COMPLETED, (data: any) => {
+      this.hud.showFeedbackBadge(`🏆 COMPLETED: ${data.name.toUpperCase()}!`, 'streak');
+    });
+
+    // Branching Railway Junction Event Handlers
+    bus.on(EVENTS.JUNCTION_APPROACHING, (data: any) => {
+      this.hud.showFeedbackBadge(`🔀 JUNCTION: CHOOSE ROUTE (LEFT: METRO / RIGHT: INDUSTRIAL)`, 'streak');
+    });
+
+    bus.on(EVENTS.JUNCTION_COMMITTED, (data: any) => {
+      this.hud.showFeedbackBadge(`🛤 ROUTE COMMITTED: ${data.chosenRouteName.toUpperCase()}!`, 'precision');
+      if (data.themeId) {
+        this.trackManager.setEnvironment(data.themeId);
+        const theme = this.worldScene ? EnvironmentManager.getInstance().getTheme(data.themeId) : null;
+        if (theme) {
+          this.worldScene.applyEnvironment(theme);
+        }
+      }
+    });
+
+    bus.on(EVENTS.JUNCTION_COMPLETED, (data: any) => {
+      if (data.scoreBonus) {
+        this.score += data.scoreBonus;
+        bus.emit(EVENTS.SCORE_UPDATED, this.score);
+      }
+      if (data.firstDiscoveryBonus && data.firstDiscoveryBonus > 0) {
+        this.coinsCount += data.firstDiscoveryBonus;
+        bus.emit(EVENTS.COIN_COLLECTED);
+      }
+      this.hud.showFeedbackBadge(`🏆 ROUTE COMPLETED: ${data.routeName.toUpperCase()} (+${data.scoreBonus} PTS)!`, 'streak');
+    });
+
     bus.on('CHRONO_ORB_COLLECTED', (seconds: number = 5) => {
       if (this.activeGameMode === 'TIME_TRIAL') {
         this.timeTrialRemaining += seconds;
         this.hud.setTimeTrialTime(this.timeTrialRemaining);
+      }
+    });
+
+    bus.on(EVENTS.SKILL_EVENT, (payload: any) => {
+      if (payload && payload.finalPoints > 0) {
+        this.score += payload.finalPoints;
+        bus.emit(EVENTS.SCORE_UPDATED, this.score);
       }
     });
 
@@ -302,6 +470,10 @@ export class Game {
 
     bus.on(EVENTS.CRASH, (reason?: string) => {
       this.handleFatalCrash(reason || 'CRASH');
+    });
+
+    bus.on('REQUEST_INSTANT_REPLAY', () => {
+      this.startInstantReplay();
     });
 
     // Environment District & Transitions
@@ -348,6 +520,28 @@ export class Game {
   }
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
+    if (this.isRestartInProgress && !isRetry) return;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
+
+    // Verify eligibility for trial character: block run with Rahul Gandhi if 0 trials remain and unowned
+    const selectedChar = this.progression.getSelectedCharacter();
+    const normalizedChar = this.progression.normalizeCharacterId(selectedChar);
+    if (normalizedChar === 'char_rahul_gandhi' && !this.progression.isCharacterUnlocked('char_rahul_gandhi')) {
+      if (this.progression.getRahulTrialsRemaining() <= 0) {
+        this.progression.equipCharacter('char_jax', 'jax_classic');
+        this.player.applyCharacter('char_jax', 'jax_classic');
+      }
+    }
+
     this.activeGameMode = mode;
     this.progression.setActiveGameMode(mode);
 
@@ -361,7 +555,16 @@ export class Game {
     this.player.reset();
     this.player.setGameMode(this.activeGameMode);
     this.trackManager.setGameMode(this.activeGameMode);
-    // In normal play, generate fresh seed; in debug replay mode, preserve seed
+    // In normal play, generate fresh seed; in debug or daily challenge mode, preserve seed
+    if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const challenge = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
+      dailyMgr.setActiveChallenge(challenge);
+      this.trackManager.setSeed(challenge.seed, true);
+    } else if (!isRetry && this.trackManager.isDebugMode()) {
+      // Retain fixed seed when retrying an explicitly seeded challenge; clear debug seed on fresh run from lobby
+      this.trackManager.clearDebugSeed();
+    }
     this.trackManager.reset(!this.trackManager.isDebugMode());
     const startEnvId = this.trackManager.getActiveEnvironment();
     const startTheme = EnvironmentManager.getInstance().getTheme(startEnvId);
@@ -371,12 +574,33 @@ export class Game {
     this.chaser.reset();
     this.cameraController.reset(this.player.position);
 
+    // Initialize Bug Snapshot Context for current run
+    this.bugSnapshotManager.reset();
+    this.bugSnapshotManager.setRunContext({
+      seed: this.trackManager.getRunSeed(),
+      gameMode: this.activeGameMode,
+      difficulty: this.trackManager.getDifficultyLabel(),
+      activeEnvironment: this.trackManager.getActiveEnvironment()
+    });
+
     // Apply Mode-Specific Initial Conditions
     if (this.activeGameMode === 'HARD') {
       this.player.speed = 24.0;
     } else if (this.activeGameMode === 'SURVIVAL') {
       // Survival starts fast at 25 m/s immediately!
       this.player.speed = 25.0;
+    } else if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const active = DailyChallengeManager.getInstance().getActiveChallenge();
+      if (active?.difficulty === 'HARD') {
+        this.player.speed = 24.0;
+        this.scoreMultiplier = 1.25;
+      } else if (active?.difficulty === 'EASY') {
+        this.player.speed = 22.0;
+        this.scoreMultiplier = 1.15;
+      } else {
+        this.player.speed = 19.0;
+        this.scoreMultiplier = 1.0;
+      }
     }
 
     this.cameraController.setLobbyMode(false);
@@ -387,10 +611,14 @@ export class Game {
     this.openingSequence.start(isRetry);
 
     this.reviveManager.resetRun();
+    this.crashReplayManager.reset();
+    this.replayHUD.hide();
     this.reviveModal.hide();
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
+    this.devBugReportModal.hide();
+    this.devBugReportModal.setAutoOpenCrashReport(false);
     this.shopModal.hide();
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
@@ -398,6 +626,8 @@ export class Game {
     this.hoverboardSelectModal.hide(false);
     this.profileModal.hide();
     this.dailyRewardModal.hide();
+    this.dailyChallengeModal.hide(false);
+    this.photoModeModal.hide();
     this.environmentSelectModal.hide();
     this.practiceModal.hide(false);
     this.practiceController.exit();
@@ -453,6 +683,8 @@ export class Game {
     this.reviveModal.hide();
     this.reviveManager.resetRun();
     this.gameOverModal.hide();
+    this.devBugReportModal.hide();
+    this.devBugReportModal.setAutoOpenCrashReport(false);
     this.shopModal.hide();
     this.missionsModal.hide();
     this.eventSelectModal.hide();
@@ -463,6 +695,7 @@ export class Game {
     this.environmentSelectModal.hide();
     this.practiceModal.hide();
     this.practiceController.exit();
+    this.photoModeModal.hide();
     this.startScreen.show();
     this.player.reset();
     this.trackManager.reset();
@@ -515,11 +748,25 @@ export class Game {
     this.inputManager.setEnabled(true);
   }
 
-  private handleGameOver(reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' | 'CHASER_CAPTURE' = 'CRASH'): void {
+  private handleGameOver(
+    reason: 'CRASH' | 'TIME_TRIAL_COMPLETE' | 'COIN_RUSH_VICTORY' | 'CHASER_CAPTURE' = 'CRASH',
+    immediate: boolean = false
+  ): void {
     if (this.lifecycleState === 'GAMEOVER') return;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
+    this.devBugReportModal.hide();
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       // In Practice & Arena modes, collision results are handled directly by PracticeController / DevTestArena
@@ -542,7 +789,14 @@ export class Game {
     EventBus.getInstance().emit(EVENTS.GAME_OVER);
 
     // Calculate Mode-Specific Results & Bonus Rewards
-    let resultMeta: { title: string; subtitle?: string; bonusCoins?: number } = {
+    let resultMeta: {
+      title: string;
+      subtitle?: string;
+      bonusCoins?: number;
+      challenge?: any;
+      challengeRecord?: any;
+      isNewRecord?: boolean;
+    } = {
       title: 'RUN OVER!'
     };
 
@@ -617,19 +871,114 @@ export class Game {
         title: isNewBest ? 'NEW HARD RECORD! ⚡' : 'HARD SPRINT ENDED! ⚡',
         subtitle: `${dist.toLocaleString()}m sprinted at up to 46 m/s`
       };
+    } else if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const comboStats = SkillComboManager.getInstance().getStats();
+      const res = dailyMgr.recordRunResult(
+        this.score,
+        Math.floor(this.player.distanceTraveled),
+        this.coinsCount,
+        comboStats.bestCombo
+      );
+      const challenge = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
+      resultMeta = {
+        title: res.isNewRecord ? 'NEW DAILY RECORD! 🏆' : 'DAILY CHALLENGE FINISHED! 🏆',
+        subtitle: `${challenge.name} (${challenge.difficulty}) • ${challenge.objectiveText}`,
+        bonusCoins: res.rewardGranted > 0 ? res.rewardGranted : undefined,
+        challenge,
+        challengeRecord: res.record,
+        isNewRecord: res.isNewRecord
+      };
     }
 
-    // Show Game Over modal after brief collision reaction
-    setTimeout(() => {
+    this.lastResultMeta = resultMeta;
+
+    const showModal = () => {
+      this.gameOverTimeoutId = null;
       this.hud.hide();
       this.gameOverModal.show(
         this.score,
         this.coinsCount,
         this.player.distanceTraveled,
         this.activeGameMode,
-        resultMeta
+        resultMeta,
+        () => this.startInstantReplay()
       );
-    }, 1100);
+    };
+
+    if (immediate) {
+      showModal();
+    } else {
+      this.gameOverTimeoutId = window.setTimeout(showModal, 1100);
+    }
+  }
+
+  public skipDeathOrGameOverDelay(): void {
+    if (this.lifecycleState === 'DYING' && this.deathTimeoutId !== null) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+      const reason = this.crashReplayManager.getActiveAnalysis()?.metadata?.reason || 'CRASH';
+      const explanation = this.crashReplayManager.getActiveExplanation();
+      if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
+        this.lifecycleState = 'REVIVE_OFFER';
+        this.reviveManager.beginOffer();
+        const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+        this.reviveModal.show(
+          offerState,
+          this.score,
+          this.coinsCount,
+          () => this.onReviveAccepted(),
+          () => this.onReviveDeclined(reason),
+          explanation
+        );
+      } else {
+        this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
+      }
+      return;
+    }
+    this.skipGameOverDelay();
+  }
+
+  public skipGameOverDelay(): void {
+    if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+      this.hud.hide();
+      this.gameOverModal.show(
+        this.score,
+        this.coinsCount,
+        this.player.distanceTraveled,
+        this.activeGameMode,
+        this.lastResultMeta,
+        () => this.startInstantReplay()
+      );
+    }
+  }
+
+  public quickRestart(): void {
+    if (this.isRestartInProgress) return;
+    this.isRestartInProgress = true;
+
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
+
+    this.reviveModal.hide();
+    this.reviveManager.cancelOffer();
+    this.devBugReportModal.hide();
+    this.gameOverModal.hide();
+
+    this.startRun(this.activeGameMode, true);
+
+    requestAnimationFrame(() => {
+      this.isRestartInProgress = false;
+    });
   }
 
   private gameLoop(now: number): void {
@@ -652,7 +1001,19 @@ export class Game {
       }
     }
 
+    // Dedicated Photo Studio Render Frame
+    if (this.photoModeModal && this.photoModeModal.isPhotoStudioOpen()) {
+      this.photoModeController.update(this.player);
+      this.worldScene.renderer.render(this.worldScene.scene, this.cameraController.camera);
+      return;
+    }
+
     const effectiveDt = dt * (this.devTestArena ? this.devTestArena.getTimeScale() : 1.0);
+
+    // Update Bug Reproduction sandbox playback if active
+    if (this.bugReproductionLoader.isRunning()) {
+      this.bugReproductionLoader.update(effectiveDt, this.player);
+    }
 
     if (this.lifecycleState === 'PLAYING') {
       if (this.activeGameMode === 'PRACTICE') {
@@ -704,16 +1065,62 @@ export class Game {
         this.score += this.player.speed * dt * CONSTANTS.SCORE_PER_METER * this.scoreMultiplier;
         EventBus.getInstance().emit(EVENTS.SCORE_UPDATED, this.score);
 
+        // Update skill combo decay & telemetry
+        SkillComboManager.getInstance().update(dt);
+
         // 6. Update HUD UI & live portrait reaction state
         this.hud.update(dt, this.player.isSliding, this.player.isJumping, this.player.speed);
 
         // 7. Update lighting target to center around player and update speed lines
         this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
+
+        // 8. Record replay snapshot into bounded circular buffer
+        const nearbyObstacles: ObstacleInstance[] = [];
+        for (let i = 0; i < this.trackManager.chunks.length; i++) {
+          const chunk = this.trackManager.chunks[i];
+          for (let j = 0; j < chunk.obstacles.length; j++) {
+            if (chunk.obstacles[j].active) {
+              nearbyObstacles.push(chunk.obstacles[j]);
+            }
+          }
+        }
+        this.crashReplayManager.recordFrame(
+          this.player,
+          this.cameraController,
+          nearbyObstacles,
+          this.chaser,
+          now / 1000
+        );
+
+        // Record bug snapshot frame and run automated failure invariant monitors
+        this.bugSnapshotManager.recordFrame({
+          player: this.player,
+          cameraController: this.cameraController,
+          nearbyObstacles,
+          nowTime: now / 1000
+        });
+
+        const activeChunk = this.trackManager.chunks.find(
+          c => this.player.position.z >= c.chunkZ - CONSTANTS.CHUNK_LENGTH && this.player.position.z <= c.chunkZ
+        );
+        this.bugSnapshotManager.runInvariantChecks(this.player, nearbyObstacles, activeChunk);
       }
-    } else if (this.lifecycleState === 'GAMEOVER') {
-      // Update tumble animation
+    } else if (this.lifecycleState === 'DYING' || this.lifecycleState === 'GAMEOVER') {
+      // Gameplay world simulation (movement, track, collision, score) is FROZEN
+      // Presentation and animation updates continue smoothly!
       this.player.update(dt);
       this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
+      this.locomotionVFX.update(dt, this.player);
+    } else if (this.lifecycleState === 'REVIVE_OFFER') {
+      this.player.update(dt);
+      this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
+    } else if (this.lifecycleState === 'REPLAY') {
+      this.crashReplayManager.updatePlayback(effectiveDt, this.player, this.cameraController, this.chaser);
+      this.replayHUD.update(
+        this.crashReplayManager.getPlaybackProgress(),
+        this.crashReplayManager.getPlaybackElapsed(),
+        this.crashReplayManager.getPlaybackDuration()
+      );
     } else if (this.lifecycleState === 'MENU') {
       // Idle scene: slow gentle hover & subtle sway facing camera
       this.player.position.y = CONSTANTS.PLAYER_BASE_Y + Math.sin(now * 0.003) * 0.08;
@@ -722,15 +1129,17 @@ export class Game {
     }
 
     // Camera follow update with dynamic speed-based FOV and coordinated elevation tracking
-    this.cameraController.update(
-      this.player.position,
-      dt,
-      now / 1000,
-      this.player.speed,
-      this.player.groundY,
-      this.player.isSliding,
-      this.player.isTunnelEnclosed
-    );
+    if (this.lifecycleState !== 'REPLAY') {
+      this.cameraController.update(
+        this.player.position,
+        dt,
+        now / 1000,
+        this.player.speed,
+        this.player.groundY,
+        this.player.isSliding,
+        this.player.isTunnelEnclosed
+      );
+    }
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)
     this.updateCollisionDebugVisuals();
@@ -748,6 +1157,12 @@ export class Game {
       this.player.groundY
     );
 
+    // Update Secret Railway Routes & Branching Junctions
+    if (this.lifecycleState === 'PLAYING') {
+      SecretRouteDirector.getInstance().update(this.player, effectiveDt);
+      JunctionDirector.getInstance().update(this.player, effectiveDt);
+    }
+
     // Update dynamic audio soundscape (speed-synchronized footsteps, loops, spatial rail rumble, adaptive music)
     this.soundManager.update(effectiveDt, this.player, this.trackManager, this.lifecycleState);
 
@@ -760,7 +1175,8 @@ export class Game {
   }
 
   private updateCollisionDebugVisuals(): void {
-    const isDebug = typeof window !== 'undefined' && !!(window as any).__DEBUG_COLLIDERS__;
+    const isDebug = typeof window !== 'undefined' && (!!(window as any).__DEBUG_COLLIDERS__ || this.debugVisualizer.getIsEnabled());
+    this.debugVisualizer.setEnabled(isDebug);
     if (!isDebug) {
       if (this.debugGroup.children.length > 0) {
         while (this.debugGroup.children.length > 0) {
@@ -773,92 +1189,8 @@ export class Game {
       return;
     }
 
-    // Clear previous frame debug boxes
-    while (this.debugGroup.children.length > 0) {
-      this.debugGroup.remove(this.debugGroup.children[0]);
-    }
-
-    // 1. Player Bounding Box (Lime Green)
-    const pHelper = new THREE.Box3Helper(this.player.collider, new THREE.Color(0x00ff00));
-    this.debugGroup.add(pHelper);
-
-    // 2. Active Obstacle Collision Zones
-    for (const chunk of this.trackManager.chunks) {
-      for (const obs of chunk.obstacles) {
-        if (!obs.active) continue;
-        if (Math.abs(obs.collider.min.z - this.player.position.z) > 80) continue;
-
-        if (obs.bodyCollider) {
-          // Red for lethal lower hull
-          this.debugGroup.add(new THREE.Box3Helper(obs.bodyCollider, new THREE.Color(0xff1744)));
-        }
-        if (obs.frontBumperCollider) {
-          // Orange for front bumper
-          this.debugGroup.add(new THREE.Box3Helper(obs.frontBumperCollider, new THREE.Color(0xff9100)));
-        }
-        if (obs.roofCollider) {
-          // Cyan for traversable rooftop & landing capture zone
-          this.debugGroup.add(new THREE.Box3Helper(obs.roofCollider, new THREE.Color(0x00e5ff)));
-        }
-        if (obs.rampCollider) {
-          // Yellow for sloped climbable ramp
-          this.debugGroup.add(new THREE.Box3Helper(obs.rampCollider, new THREE.Color(0xffea00)));
-
-          // Green line showing exact mathematical support slope from ground to roof
-          const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
-          const laneX = CONSTANTS.LANES[obs.lane];
-          const slopeGeo = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(laneX, 0.05, obs.rampCollider.max.z),
-            new THREE.Vector3(laneX, roofY, obs.rampCollider.min.z)
-          ]);
-          const slopeLine = new THREE.Line(slopeGeo, new THREE.LineBasicMaterial({ color: 0x00ff88 }));
-          this.debugGroup.add(slopeLine);
-        }
-        if (!obs.bodyCollider && !obs.roofCollider) {
-          // Standard barriers (magenta)
-          this.debugGroup.add(new THREE.Box3Helper(obs.collider, new THREE.Color(0xe91e63)));
-        }
-      }
-    }
-
-    // 3. Player Feet Marker (Magenta cross indicator at exact foot plane)
-    const feetGeo = new THREE.SphereGeometry(0.12, 8, 8);
-    const feetMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
-    const feetMarker = new THREE.Mesh(feetGeo, feetMat);
-    feetMarker.position.set(this.player.position.x, this.player.position.y, this.player.position.z);
-    this.debugGroup.add(feetMarker);
-
-    // 4. Telemetry HUD Overlay
-    if (!this.debugOverlayEl && typeof document !== 'undefined') {
-      this.debugOverlayEl = document.createElement('div');
-      this.debugOverlayEl.id = 'collision-debug-overlay';
-      this.debugOverlayEl.style.position = 'fixed';
-      this.debugOverlayEl.style.bottom = '12px';
-      this.debugOverlayEl.style.left = '12px';
-      this.debugOverlayEl.style.zIndex = '99999';
-      this.debugOverlayEl.style.background = 'rgba(10, 14, 23, 0.92)';
-      this.debugOverlayEl.style.border = '1px solid #00e5ff';
-      this.debugOverlayEl.style.padding = '8px 12px';
-      this.debugOverlayEl.style.borderRadius = '6px';
-      this.debugOverlayEl.style.fontFamily = 'monospace';
-      this.debugOverlayEl.style.fontSize = '12px';
-      this.debugOverlayEl.style.color = '#e0f7fa';
-      this.debugOverlayEl.style.pointerEvents = 'none';
-      document.body.appendChild(this.debugOverlayEl);
-    }
-
-    if (this.debugOverlayEl) {
-      this.debugOverlayEl.style.display = 'block';
-      const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
-      this.debugOverlayEl.innerHTML = `
-        <div style="font-weight:bold;color:#00e5ff;margin-bottom:4px;">[COLLISION DIAGNOSTICS & SCENARIO]</div>
-        <div>STATE: <span style="color:#ffd600;">${this.player.state}</span> | SURFACE: <span style="color:#00e676;">${this.player.getSupportSurface()}</span></div>
-        <div>SUPPORT ID: <span style="color:#00e5ff;">${this.player.getActiveSupportObstacleId() || 'NONE (GROUND)'}</span></div>
-        <div>POS: Y=${this.player.position.y.toFixed(2)} (GroundY=${this.player.groundY.toFixed(2)}) | Vy=${this.player.verticalVelocity.toFixed(1)}</div>
-        <div>SPEED: ${this.player.speed.toFixed(1)} m/s | Z=${this.player.position.z.toFixed(1)} (Lane=${this.player.currentLane})</div>
-        <div style="font-size:10px;color:#90a4ae;margin-top:4px;">LAST EVENT: ${lastDiag ? `${lastDiag.collidingObject} (${lastDiag.classification}) ObsID=${lastDiag.obstacleId || 'N/A'}` : 'NONE'}</div>
-      `;
-    }
+    const lastDiag = (window as any).__LAST_COLLISION_DIAGNOSTIC__;
+    this.debugVisualizer.update(this.player, this.trackManager, lastDiag);
   }
 
   private updateWorldGenDiagnostics(dt: number): void {
@@ -999,36 +1331,97 @@ export class Game {
   }
 
   private handleFatalCrash(reason: string): void {
-    if (this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'REVIVE_OFFER') return;
+    if (
+      this.lifecycleState === 'DYING' ||
+      this.lifecycleState === 'GAMEOVER' ||
+      this.lifecycleState === 'REVIVE_OFFER' ||
+      this.lifecycleState === 'REPLAY'
+    ) {
+      return;
+    }
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       return;
     }
 
-    if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
-      this.lifecycleState = 'REVIVE_OFFER';
-      this.inputManager.setEnabled(false);
-      this.reviveManager.beginOffer();
-      const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+    // 1. Authoritative transition to DYING lifecycle state
+    this.lifecycleState = 'DYING';
+    this.inputManager.setEnabled(false);
+    this.devBugReportModal.hide();
 
-      this.reviveModal.show(
-        offerState,
-        this.score,
-        this.coinsCount,
-        () => this.onReviveAccepted(),
-        () => this.onReviveDeclined(reason)
-      );
-    } else {
-      this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
+    // 2. Chaser capture reaction & camera framing
+    this.chaser.triggerCaughtReaction();
+    this.cameraController.setGameOverMode(true, this.player.position);
+
+    // 3. Ensure fatal crash analysis is recorded if not already recorded directly from TrackManager
+    if (!this.crashReplayManager.getActiveAnalysis()) {
+      this.crashReplayManager.recordFatalCrash({
+        reason,
+        player: this.player,
+        chaser: this.chaser
+      });
     }
+
+    const nearbyObstacles: ObstacleInstance[] = [];
+    for (let i = 0; i < this.trackManager.chunks.length; i++) {
+      const chunk = this.trackManager.chunks[i];
+      for (let j = 0; j < chunk.obstacles.length; j++) {
+        if (chunk.obstacles[j].active) {
+          nearbyObstacles.push(chunk.obstacles[j]);
+        }
+      }
+    }
+
+    this.bugSnapshotManager.recordFatalCollision({
+      reason,
+      player: this.player,
+      cameraController: this.cameraController,
+      nearbyObstacles
+    });
+
+    const explanation = this.crashReplayManager.getActiveExplanation();
+
+    // 4. Smooth death animation presentation window before Revive offer or Game Over screen
+    const deathDurationMs = 1200;
+    this.deathTimeoutId = window.setTimeout(() => {
+      this.deathTimeoutId = null;
+      if (this.lifecycleState !== 'DYING') return;
+
+      if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
+        this.lifecycleState = 'REVIVE_OFFER';
+        this.reviveManager.beginOffer();
+        const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+
+        this.reviveModal.show(
+          offerState,
+          this.score,
+          this.coinsCount,
+          () => this.onReviveAccepted(),
+          () => this.onReviveDeclined(reason),
+          explanation
+        );
+      } else {
+        this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
+      }
+    }, deathDurationMs);
   }
 
   private onReviveAccepted(): void {
     const result = this.reviveManager.executeRevive();
     if (!result.success) {
-      this.handleGameOver('CRASH');
+      this.handleGameOver('CRASH', true);
       return;
     }
+
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+
+    this.reviveModal.hide();
+
+    // 0. Reset crash replay state for fresh clean run life
+    this.crashReplayManager.reset();
 
     // 1. Safe track respawn & obstacle clearance
     const safeLane = this.trackManager.prepareSafeReviveRespawn(this.player);
@@ -1039,10 +1432,14 @@ export class Game {
     // 3. Reset Chaser distance to 14m standby behind runner
     this.chaser.reset();
 
+    // Restore camera
+    this.cameraController.setGameOverMode(false, this.player.position);
+
     // 4. Play audio feedback
     this.soundManager.playReviveSound();
 
     // 5. Show celebratory HUD badge
+    this.hud.clearFeedbackBadges();
     this.hud.showFeedbackBadge(`SAVED! 🔑 -${result.keysSpent}`, 'precision');
 
     // 6. Resume game simulation
@@ -1053,6 +1450,105 @@ export class Game {
 
   private onReviveDeclined(reason: string = 'CRASH'): void {
     this.reviveManager.cancelOffer();
-    this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
+    this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
+  }
+
+  public startInstantReplay(): void {
+    if (!this.crashReplayManager.hasReplayData()) return;
+    const explanation = this.crashReplayManager.getActiveExplanation();
+    if (!explanation) return;
+
+    this.lifecycleState = 'REPLAY';
+    this.gameOverModal.hide();
+    this.crashReplayManager.startPlayback(this.player, this.cameraController);
+    this.replayHUD.show(
+      explanation,
+      () => this.exitInstantReplay(),
+      () => this.replayAgain()
+    );
+  }
+
+  public exitInstantReplay(): void {
+    if (this.lifecycleState !== 'REPLAY') return;
+    this.crashReplayManager.stopPlayback(this.player, this.cameraController);
+    this.replayHUD.hide();
+    this.lifecycleState = 'GAMEOVER';
+    this.gameOverModal.show(
+      this.score,
+      this.coinsCount,
+      this.player.distanceTraveled,
+      this.activeGameMode,
+      undefined,
+      () => this.startInstantReplay()
+    );
+  }
+
+  public replayAgain(): void {
+    if (this.lifecycleState !== 'REPLAY') return;
+    this.crashReplayManager.startPlayback(this.player, this.cameraController);
+    this.replayHUD.update(0, 0, this.crashReplayManager.getPlaybackDuration());
+  }
+
+  public getCrashReplayManager(): CrashReplayManager {
+    return this.crashReplayManager;
+  }
+
+  public getReplayHUD(): ReplayHUD {
+    return this.replayHUD;
+  }
+
+  /**
+   * Deterministic Bug Reproduction Sandbox
+   * STRICT GUARANTEE: Does NOT mutate player high scores, wallet coins, or career progression!
+   */
+  public startReproduction(snapshot: BugSnapshotPackage): void {
+    // Sandbox mode: isolate economics & mission progress
+    this.activeGameMode = 'ARENA';
+    this.progression.setActiveGameMode('ARENA');
+    this.lifecycleState = 'PLAYING';
+    this.cameraController.setLobbyMode(false);
+    this.cameraController.reset(this.player.position);
+    this.player.mesh.rotation.y = 0;
+    this.openingSequence.skip();
+    this.startScreen.hide();
+    this.pauseModal.hide();
+    this.gameOverModal.hide();
+    this.hud.show();
+    this.inputManager.setEnabled(true);
+
+    this.bugReproductionLoader.loadSnapshot(
+      snapshot,
+      this.player,
+      this.trackManager,
+      this.cameraController,
+      (verified, reason) => {
+        console.log(`[Bug Reproduction] Verification: ${verified}, Reason: ${reason}`);
+        const msg = verified
+          ? `✅ REPRO VERIFIED: ${reason}`
+          : `⚠️ REPRO INCONCLUSIVE: ${reason}`;
+        this.hud.showFeedbackBadge(msg, verified ? 'precision' : 'streak');
+        setTimeout(() => {
+          if (isDeveloperMode()) {
+            this.devBugReportModal.openLatest();
+          }
+        }, 1200);
+      }
+    );
+  }
+
+  public getBugSnapshotManager(): BugSnapshotManager {
+    return this.bugSnapshotManager;
+  }
+
+  public getBugReproductionLoader(): BugReproductionLoader {
+    return this.bugReproductionLoader;
+  }
+
+  public getDebugVisualizer(): DebugVisualizer {
+    return this.debugVisualizer;
+  }
+
+  public getDevBugReportModal(): DevBugReportModal {
+    return this.devBugReportModal;
   }
 }

@@ -16,6 +16,7 @@ export class CurvedShaderManager {
    * Modifies a standard Three.js material to bend vertices dynamically in view space.
    */
   public applyCurvature(material: THREE.Material): THREE.Material {
+    material.customProgramCacheKey = () => 'curved_shader';
     material.onBeforeCompile = (shader) => {
       shader.uniforms.uBend = { value: this.uBend };
 

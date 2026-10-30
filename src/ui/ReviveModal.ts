@@ -2,6 +2,7 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getCharacterById } from '../characters/CharacterCatalog';
 import { ReviveOfferState } from '../revive/ReviveManager';
+import { CrashReplayManager, DeathExplanation } from '../replay/CrashReplayManager';
 
 export class ReviveModal {
   private element: HTMLElement;
@@ -16,6 +17,8 @@ export class ReviveModal {
   private runnerNameEl: HTMLElement | null = null;
   private runnerAvatarEl: HTMLElement | null = null;
   private reviveCounterEl: HTMLElement | null = null;
+  private alertTextEl: HTMLElement | null = null;
+  private alertIconEl: HTMLElement | null = null;
 
   private totalDuration: number = 5.0;
   private remainingTime: number = 5.0;
@@ -50,8 +53,8 @@ export class ReviveModal {
       <div class="modal-card arcade-modal-card revive-modal-card animate-pop" role="dialog" aria-modal="true" aria-labelledby="revive-main-title">
         <!-- Top Emergency Badge -->
         <div class="revive-alert-banner">
-          <span class="pulse-icon">💥</span>
-          <span class="revive-alert-text">FATAL CRASH!</span>
+          <span class="pulse-icon" id="revive-alert-icon">💥</span>
+          <span class="revive-alert-text" id="revive-alert-text">FATAL CRASH!</span>
           <span class="pulse-icon">💥</span>
         </div>
 
@@ -152,6 +155,8 @@ export class ReviveModal {
     this.runnerNameEl = document.getElementById('revive-runner-name');
     this.runnerAvatarEl = document.getElementById('revive-runner-avatar');
     this.reviveCounterEl = document.getElementById('revive-attempt-val');
+    this.alertTextEl = document.getElementById('revive-alert-text');
+    this.alertIconEl = document.getElementById('revive-alert-icon');
   }
 
   private setupListeners(): void {
@@ -198,7 +203,8 @@ export class ReviveModal {
     score: number,
     coins: number,
     onRevive: () => void,
-    onEndRun: () => void
+    onEndRun: () => void,
+    deathExplanation?: DeathExplanation | null
   ): void {
     this.onReviveCallback = onRevive;
     this.onEndRunCallback = onEndRun;
@@ -206,6 +212,16 @@ export class ReviveModal {
     this.totalDuration = 5.0;
     this.remainingTime = 5.0;
     this.isTimerPaused = false;
+
+    // 0. Update Fatal Crash Reason Alert Banner
+    const explanation = deathExplanation || CrashReplayManager.getInstance().getActiveExplanation();
+    if (explanation) {
+      if (this.alertIconEl) this.alertIconEl.textContent = explanation.icon;
+      if (this.alertTextEl) this.alertTextEl.textContent = `${explanation.headline} — ${explanation.explanation}`;
+    } else {
+      if (this.alertIconEl) this.alertIconEl.textContent = '💥';
+      if (this.alertTextEl) this.alertTextEl.textContent = 'FATAL CRASH!';
+    }
 
     // 1. Update Telemetry
     if (this.scoreValEl) {

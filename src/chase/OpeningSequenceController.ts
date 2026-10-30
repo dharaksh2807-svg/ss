@@ -52,7 +52,7 @@ export class OpeningSequenceController {
 
     window.addEventListener('keydown', (e) => {
       if (!this.isIntroActive) return;
-      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape' || e.code === 'KeyR') {
         e.preventDefault();
         this.skip();
       }
@@ -62,6 +62,11 @@ export class OpeningSequenceController {
       if (!this.isIntroActive) return;
       this.skip();
     }, { passive: true });
+
+    window.addEventListener('click', () => {
+      if (!this.isIntroActive) return;
+      this.skip();
+    });
   }
 
   public getPreference(): IntroPreference {
@@ -82,7 +87,7 @@ export class OpeningSequenceController {
   public shouldPlayIntro(isRetry: boolean = false): boolean {
     const pref = this.getPreference();
     if (pref === 'DISABLED') return false;
-    if (pref === 'FIRST_ONLY' && isRetry) return false;
+    if (isRetry && pref !== 'ALWAYS') return false;
     return true;
   }
 

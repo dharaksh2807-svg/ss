@@ -1,0 +1,162 @@
+[
+  {
+    "name": "idle",
+    "duration_seconds": 2.4,
+    "loop": true,
+    "root_motion": "in_place",
+    "animated_channels": 7,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "run",
+    "duration_seconds": 0.72,
+    "loop": true,
+    "root_motion": "in_place",
+    "animated_channels": 11,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "run_fast",
+    "duration_seconds": 0.55,
+    "loop": true,
+    "root_motion": "in_place",
+    "animated_channels": 11,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "jump_start",
+    "duration_seconds": 0.38,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 8,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "jump_air",
+    "duration_seconds": 0.55,
+    "loop": true,
+    "root_motion": "in_place",
+    "animated_channels": 10,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "jump_land",
+    "duration_seconds": 0.38,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 8,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "slide",
+    "duration_seconds": 0.8,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 10,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "lane_left",
+    "duration_seconds": 0.42,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 5,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "lane_right",
+    "duration_seconds": 0.42,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 5,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "stumble",
+    "duration_seconds": 0.67,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 6,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "defeat",
+    "duration_seconds": 1.15,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 11,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "revive",
+    "duration_seconds": 1.0,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 10,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "smirk",
+    "duration_seconds": 1.2,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 5,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "shrug",
+    "duration_seconds": 1.4,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 11,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "taunt",
+    "duration_seconds": 1.6,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 7,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "celebrate",
+    "duration_seconds": 1.7,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 10,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "coin_celebrate",
+    "duration_seconds": 1.25,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 4,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "selection_intro",
+    "duration_seconds": 1.7,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 6,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "selection_idle",
+    "duration_seconds": 3.0,
+    "loop": true,
+    "root_motion": "in_place",
+    "animated_channels": 8,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  },
+  {
+    "name": "funny_emote",
+    "duration_seconds": 1.6,
+    "loop": false,
+    "root_motion": "in_place",
+    "animated_channels": 10,
+    "notes": "procedural keyframe prototype; requires in-engine visual review"
+  }
+]

@@ -25,6 +25,9 @@ export class CharacterSelectModal {
   private outfitListEl: HTMLElement;
   private walletCoinsEl: HTMLElement;
   private characterTabsEl: HTMLElement;
+  private viewRearBtn: HTMLButtonElement | null = null;
+  private viewFrontBtn: HTMLButtonElement | null = null;
+  private viewStyleBadgeEl: HTMLElement | null = null;
 
   // 3D Turntable Scene
   private renderer!: THREE.WebGLRenderer;
@@ -70,6 +73,9 @@ export class CharacterSelectModal {
     this.outfitListEl = document.getElementById('char-outfit-list')!;
     this.walletCoinsEl = document.getElementById('char-wallet-coins')!;
     this.characterTabsEl = document.getElementById('char-tabs')!;
+    this.viewRearBtn = document.getElementById('char-view-rear-btn') as HTMLButtonElement | null;
+    this.viewFrontBtn = document.getElementById('char-view-front-btn') as HTMLButtonElement | null;
+    this.viewStyleBadgeEl = document.getElementById('char-view-style-badge');
 
     this.characters = getAllCharacters();
     this.progression = ProgressionManager.getInstance();
@@ -200,6 +206,22 @@ export class CharacterSelectModal {
         }
         this.idleTimeWithoutInteraction = 0;
       });
+    });
+
+    if (this.viewRearBtn) {
+      this.viewRearBtn.addEventListener('click', () => this.handleRunningStyleChange('CLASSIC'));
+    }
+
+    if (this.viewFrontBtn) {
+      this.viewFrontBtn.addEventListener('click', () => this.handleRunningStyleChange('REVERSE'));
+    }
+
+    bus.on(EVENTS.RUNNING_STYLE_CHANGED, (style: any) => {
+      const char = this.characters[this.currentCharacterIndex];
+      const equippedChar = this.progression.getSelectedCharacter();
+      if (char && char.id === equippedChar) {
+        this.updateRunningStyleUI(style);
+      }
     });
 
     if (this.closeBtn) {
@@ -333,7 +355,7 @@ export class CharacterSelectModal {
         const pauseModalEl = document.getElementById('pause-modal');
         if (pauseModalEl) pauseModalEl.classList.remove('hidden');
       } else if (this.previousScreen === 'SHOP') {
-        EventBus.getInstance().emit('OPEN_SHOP');
+        EventBus.getInstance().emit('OPEN_SHOP', 'START');
       }
     }
   }
@@ -427,8 +449,60 @@ export class CharacterSelectModal {
     // Update 3D Preview Model
     this.updatePreviewModel(char.id, this.selectedOutfitId);
 
+    // Update Running Style UI for currently inspected character
+    const charStyle = CharacterModel.getRunningStyleForCharacter(char.id);
+    this.updateRunningStyleUI(charStyle);
+
     // Update Action Button
     this.updateActionButton(char);
+  }
+
+  private handleRunningStyleChange(style: 'CLASSIC' | 'REVERSE'): void {
+    const char = this.characters[this.currentCharacterIndex];
+    if (!char) return;
+
+    CharacterModel.setRunningStyleForCharacter(char.id, style);
+    this.updateRunningStyleUI(style);
+
+    const equippedChar = this.progression.getSelectedCharacter();
+    if (char.id === equippedChar) {
+      localStorage.setItem('metro_running_style', style);
+      EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, style);
+    }
+
+    // In turntable, orient smoothly to show the character
+    if (style === 'REVERSE') {
+      this.turntableTargetRotationY = Math.PI;
+    } else {
+      this.turntableTargetRotationY = Math.PI;
+    }
+    this.idleTimeWithoutInteraction = 0;
+  }
+
+  private updateRunningStyleUI(style: 'CLASSIC' | 'REVERSE'): void {
+    if (this.viewRearBtn) {
+      if (style === 'CLASSIC') {
+        this.viewRearBtn.classList.add('active');
+      } else {
+        this.viewRearBtn.classList.remove('active');
+      }
+    }
+    if (this.viewFrontBtn) {
+      if (style === 'REVERSE') {
+        this.viewFrontBtn.classList.add('active');
+      } else {
+        this.viewFrontBtn.classList.remove('active');
+      }
+    }
+    if (this.viewStyleBadgeEl) {
+      if (style === 'REVERSE') {
+        this.viewStyleBadgeEl.textContent = '🕺 FRONT VIEW (MOONWALK)';
+        this.viewStyleBadgeEl.className = 'view-style-badge reverse';
+      } else {
+        this.viewStyleBadgeEl.textContent = '🏃 REAR CHASE (DEFAULT)';
+        this.viewStyleBadgeEl.className = 'view-style-badge classic';
+      }
+    }
   }
 
   private renderOutfitsList(char: CharacterDefinition): void {
@@ -500,15 +574,15 @@ export class CharacterSelectModal {
 
     if (!isCharUnlocked) {
       // Character is locked
-      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
-      if (modiFreeRuns > 0) {
+      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
+      if (freeRuns > 0) {
         if (char.id === equippedCharId) {
-          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${modiFreeRuns} LEFT)`;
+          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${freeRuns} LEFT)`;
           this.actionBtn.className = 'btn btn-action equipped';
           this.actionBtn.disabled = true;
           return;
         }
-        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${modiFreeRuns} LEFT)`;
+        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${freeRuns} LEFT)`;
         this.actionBtn.className = 'btn btn-action equip';
         this.actionBtn.disabled = false;
         return;
@@ -559,10 +633,13 @@ export class CharacterSelectModal {
     const isOutfitUnlocked = this.progression.isOutfitUnlocked(char.id, selectedOutfit.id);
 
     if (!isCharUnlocked) {
-      const modiFreeRuns = char.id === 'char_modi' ? this.progression.getModiFreeRuns() : 0;
-      if (modiFreeRuns > 0) {
+      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
+      if (freeRuns > 0) {
         const res = this.progression.equipCharacter(char.id, selectedOutfit.id);
         if (res.success) {
+          const charStyle = CharacterModel.getRunningStyleForCharacter(char.id);
+          localStorage.setItem('metro_running_style', charStyle);
+          EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, charStyle);
           this.updateCharacterView();
         }
         return;
@@ -589,6 +666,9 @@ export class CharacterSelectModal {
 
     // Equip
     this.progression.equipCharacter(char.id, selectedOutfit.id);
+    const charStyle = CharacterModel.getRunningStyleForCharacter(char.id);
+    localStorage.setItem('metro_running_style', charStyle);
+    EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, charStyle);
     this.renderCharacterTabs();
     this.updateCharacterView();
   }

@@ -393,6 +393,10 @@ export class ChaserModel {
   }
 
   public setChaseState(state: ChaseState): void {
+    if (state !== 'RESET' && this.chaseState === state) {
+      return;
+    }
+
     this.chaseState = state;
     this.isWhistleBlownThisEvent = false;
 
@@ -483,11 +487,15 @@ export class ChaserModel {
   }
 
   public onMinorStumble(): { wasClose: boolean; captured: boolean } {
+    if (this.chaseState === 'CAPTURE') {
+      return { wasClose: true, captured: true };
+    }
+
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (this.lastStumbleTimestamp > 0 && now - this.lastStumbleTimestamp < 120) {
       return {
         wasClose: this.isCatchUpMode(),
-        captured: this.chaseState === 'CAPTURE'
+        captured: false
       };
     }
     this.lastStumbleTimestamp = now;
@@ -541,6 +549,7 @@ export class ChaserModel {
   }
 
   public triggerCaughtReaction(): void {
+    if (this.chaseState === 'CAPTURE') return;
     this.setChaseState('CAPTURE');
   }
 

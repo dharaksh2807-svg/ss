@@ -1,5 +1,6 @@
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { ObstacleType } from './ObstacleFactory';
+import { RooftopRoutePlan } from './RooftopRoutePlanner';
 
 export interface ValidatedObstacle {
   type: ObstacleType;
@@ -50,6 +51,9 @@ export class ReachabilityValidator {
     interface TrajectoryNode {
       lane: LaneIndex;
       onRoof: boolean;
+      supportRouteLegId?: string;
+      supportLane?: LaneIndex;
+      airborneFromRoof?: boolean;
       airborneTimer: number; // Seconds remaining in jump airtime
       slidingTimer: number;  // Seconds remaining in slide
       lateralCooldown: number; // Seconds until next lane change can occur
@@ -99,14 +103,16 @@ export class ReachabilityValidator {
           const obstaclesAtLocation = pattern.obstacles.filter((obs) => {
             if (obs.lane !== targetLane) return false;
 
-            let obsStart = obs.zOffset;
-            let obsEnd = obsStart + (obs.length || 2.0);
+            const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
+            const halfLength = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
+            let obsStart = isTrain ? Math.max(0, obs.zOffset - halfLength) : obs.zOffset;
+            let obsEnd = isTrain ? (obs.zOffset + halfLength) : (obs.zOffset + (obs.length || 2.0));
 
             // If moving train, calculate adjusted position at timeElapsed
             if (obs.type === 'MOVING_TRAIN' || obs.isMoving) {
               const advanceDist = (obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED) * timeElapsed;
-              obsStart = Math.max(0, obs.zOffset - advanceDist);
-              obsEnd = obsStart + (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT);
+              obsStart = Math.max(0, (obs.zOffset - halfLength) - advanceDist);
+              obsEnd = Math.max(0, (obs.zOffset + halfLength) - advanceDist);
             }
 
             return z >= obsStart && z <= obsEnd;
@@ -126,7 +132,9 @@ export class ReachabilityValidator {
             for (const obs of obstaclesAtLocation) {
               if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
                 const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
-                if (hasRamp && z <= obs.zOffset + CONSTANTS.TRAIN_RAMP_LENGTH) {
+                const halfLength = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+                const rampStart = Math.max(0, obs.zOffset - halfLength);
+                if (hasRamp && z >= rampStart && z <= rampStart + CONSTANTS.TRAIN_RAMP_LENGTH) {
                   // Running up ramp onto roof is safe!
                   climbedRoof = true;
                   continue;
@@ -252,9 +260,24 @@ export class ReachabilityValidator {
 
     const survivingExitLanes = Array.from(new Set(currentNodes.map((n) => n.lane)));
 
+    let minEntryObstacleDist = Infinity;
+    for (const obs of pattern.obstacles) {
+      if (initialLanes.includes(obs.lane)) {
+        const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
+        const halfLen = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
+        const frontZ = Math.max(0, obs.zOffset - halfLen);
+        if (frontZ < minEntryObstacleDist) {
+          minEntryObstacleDist = frontZ;
+        }
+      }
+    }
+    const actualReactionDist = Number.isFinite(minEntryObstacleDist)
+      ? Math.min(pattern.minReactionDist ?? minEntryObstacleDist, minEntryObstacleDist)
+      : (pattern.minReactionDist || 25.0);
+
     return {
       solvable: true,
-      minReactionTimeSeconds: (pattern.minReactionDist || 25.0) / speed,
+      minReactionTimeSeconds: actualReactionDist / speed,
       survivingExitLanes
     };
   }
@@ -272,7 +295,8 @@ export class ReachabilityValidator {
     const step = 0.06;
     const switchTicks = Math.ceil(CONSTANTS.LANE_CHANGE_DURATION / step);
     const reactionTicks = Math.ceil(CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME / step);
-    const ticks = Math.ceil(horizon / step);
+    const validHorizon = Math.max(0.1, Number.isFinite(horizon) ? horizon : 0.1);
+    const ticks = Math.max(1, Math.ceil(validHorizon / step));
     const states = Array.from({ length: ticks + switchTicks + 1 }, () => new Map<LaneIndex, string>());
     const parents = new Map<string, string>();
     for (const lane of initialLanes) states[0].set(lane, '');
@@ -479,5 +503,119 @@ export class ReachabilityValidator {
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Validates deterministic multi-train rooftop route reachability,
+   * gap hops, lateral transfers, and closing speed time-to-impact against oncoming traffic.
+   */
+  public static validateRooftopRoute(
+    plan: RooftopRoutePlan,
+    playerSpeed: number = CONSTANTS.INITIAL_SPEED,
+    hazards?: Array<{ min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number }; velocityZ?: number }>,
+    gameMode: string = 'NORMAL'
+  ): ReachabilityResult {
+    const isHard = gameMode === 'HARD';
+    // Minimum destination landing window
+    const minLandingWindow = isHard
+      ? Math.max(10.0, playerSpeed * 0.45)
+      : Math.max(12.0, playerSpeed * 0.55);
+
+    // Minimum stabilization zone post-touchdown before subsequent maneuver
+    const minStabilizationDist = playerSpeed * 0.35;
+
+    for (let i = 0; i < plan.transfers.length; i++) {
+      const transfer = plan.transfers[i];
+
+      // 1. Lateral transfers must be strictly adjacent lanes
+      if (transfer.kind === 'LATERAL_JUMP') {
+        const laneDiff = Math.abs(transfer.targetLane - transfer.sourceLane);
+        if (laneDiff !== 1) {
+          return {
+            solvable: false,
+            reason: `Transfer ${transfer.id} requires jumping across ${laneDiff} lanes (only adjacent 1-lane transfers permitted)`
+          };
+        }
+
+        // Airtime must be within legal jump duration (0.60s)
+        if (transfer.requiredAirtime > CONSTANTS.JUMP_DURATION + 0.01) {
+          return {
+            solvable: false,
+            reason: `Transfer ${transfer.id} required airtime ${transfer.requiredAirtime.toFixed(2)}s exceeds jump duration ${CONSTANTS.JUMP_DURATION}s`
+          };
+        }
+
+        // Lane change duration (0.18s) must fit inside jump duration
+        if (CONSTANTS.LANE_CHANGE_DURATION > CONSTANTS.JUMP_DURATION) {
+          return {
+            solvable: false,
+            reason: `Lane change duration ${CONSTANTS.LANE_CHANGE_DURATION}s exceeds jump airtime`
+          };
+        }
+
+        // Target leg must exist
+        const targetLeg = plan.legs.find((leg) => leg.id === transfer.targetLegId);
+        if (!targetLeg) {
+          return {
+            solvable: false,
+            reason: `Target leg ${transfer.targetLegId} not found in plan`
+          };
+        }
+
+        // Destination landing target window check
+        const targetLength = targetLeg.length;
+        if (targetLength < minLandingWindow) {
+          return {
+            solvable: false,
+            reason: `Destination train length ${targetLength.toFixed(1)}m below required landing window ${minLandingWindow.toFixed(1)}m`
+          };
+        }
+
+        // Post-touchdown obstacle-free stabilization check
+        if (i < plan.transfers.length - 1) {
+          const nextTransfer = plan.transfers[i + 1];
+          const distBetweenTransfers = nextTransfer.windowStartZ - transfer.landingZ;
+          if (distBetweenTransfers < minStabilizationDist) {
+            return {
+              solvable: false,
+              reason: `Insufficient stabilization distance between transfers (${distBetweenTransfers.toFixed(1)}m < ${minStabilizationDist.toFixed(1)}m)`
+            };
+          }
+        }
+      } else if (transfer.kind === 'LONGITUDINAL_GAP_JUMP') {
+        // Gap hop must clear deliberate gap
+        const jumpAirDist = playerSpeed * CONSTANTS.JUMP_DURATION;
+        const gapDist = 3.5;
+        if (jumpAirDist < gapDist) {
+          return {
+            solvable: false,
+            reason: `Player speed ${playerSpeed}m/s yields jump distance ${jumpAirDist.toFixed(1)}m which cannot clear ${gapDist}m gap`
+          };
+        }
+      }
+
+      // Check oncoming traffic hazards during transfer window
+      if (hazards && hazards.length > 0) {
+        for (const hazard of hazards) {
+          if ((hazard.velocityZ ?? 0) > 0) {
+            // Oncoming moving train
+            const closingSpeed = playerSpeed + (hazard.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED);
+            const separation = hazard.max.z - transfer.landingZ;
+            if (separation > 0 && separation < closingSpeed * CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME) {
+              const timeToImpact = separation / closingSpeed;
+              return {
+                solvable: false,
+                reason: `Oncoming train hazard closing in ${timeToImpact.toFixed(2)}s on transfer target`
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      solvable: true,
+      minReactionTimeSeconds: minLandingWindow / playerSpeed
+    };
   }
 }

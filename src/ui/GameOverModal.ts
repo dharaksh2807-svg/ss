@@ -2,11 +2,17 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { GameMode } from '../progression/ProgressionTypes';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { SkillComboManager } from '../core/SkillComboManager';
+import { ReviveManager } from '../revive/ReviveManager';
+import { isDeveloperMode } from '../core/Constants';
 
 export class GameOverModal {
   private element: HTMLElement;
   private progression = ProgressionManager.getInstance();
   private countUpInterval: any = null;
+  private onReplayCallback: (() => void) | null = null;
+  private isRestarting: boolean = false;
 
   constructor() {
     let el = document.getElementById('game-over-modal');
@@ -92,23 +98,98 @@ export class GameOverModal {
           </div>
         </div>
 
+        <!-- Style & Skill Combo Breakdown Card (Requirement J) -->
+        <div id="game-over-style-card" class="game-over-style-card">
+          <div class="style-card-header">
+            <div class="style-card-title-group">
+              <span class="style-card-icon">⚡</span>
+              <span class="style-card-headline">SKILL & STYLE TELEMETRY</span>
+            </div>
+            <div class="style-card-total-badge" id="game-over-style-total">+0 STYLE PTS</div>
+          </div>
+          <div class="style-card-grid">
+            <div class="style-stat-pill">
+              <span class="style-pill-label">MAX COMBO</span>
+              <span class="style-pill-val" id="go-stat-max-combo">×0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">PERFECT JUMPS</span>
+              <span class="style-pill-val" id="go-stat-perfect-jumps">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">PERFECT SLIDES</span>
+              <span class="style-pill-val" id="go-stat-perfect-slides">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">NEAR MISSES</span>
+              <span class="style-pill-val" id="go-stat-near-misses">0</span>
+            </div>
+            <div class="style-stat-pill">
+              <span class="style-pill-label">ROOFTOP MOVES</span>
+              <span class="style-pill-val" id="go-stat-rooftop">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shareable Challenge Course Code Card (Task 2 Requirement J) -->
+        <div id="game-over-share-card" class="game-over-share-card hidden">
+          <div class="go-share-header">
+            <span class="go-share-label">SHARE THIS SEEDED COURSE</span>
+            <code id="go-share-code-text" class="go-share-code">MTR1-DST-HRD-00000000-00</code>
+          </div>
+          <button id="go-copy-code-btn" class="arcade-btn btn-secondary go-copy-btn" title="Copy challenge code">
+            <span id="go-copy-btn-text">📋 COPY CHALLENGE CODE</span>
+          </button>
+        </div>
+
+        <!-- Crash Analysis & Instant Replay Card -->
+        <div id="game-over-crash-card" class="game-over-crash-card hidden">
+          <div class="crash-card-header">
+            <span id="game-over-crash-icon" class="crash-card-icon">💥</span>
+            <div class="crash-card-titles">
+              <span class="crash-card-tag">CRASH ANALYSIS</span>
+              <h3 id="game-over-crash-title" class="crash-card-headline">FATAL COLLISION</h3>
+            </div>
+          </div>
+          <p id="game-over-crash-desc" class="crash-card-desc">Collision on the rails.</p>
+          <div class="crash-card-tip-box">
+            <span class="tip-bulb">💡</span>
+            <span id="game-over-crash-tip" class="crash-card-tip">Stay centered and switch lanes early!</span>
+          </div>
+          <button id="game-over-replay-btn" class="arcade-btn replay-action-btn" aria-label="Watch Instant Slow-Motion Replay">
+            <span class="btn-icon">📹</span>
+            <span>WATCH INSTANT REPLAY (SLOW-MO)</span>
+          </button>
+          <button id="game-over-bug-report-btn" class="dev-crash-btn hidden" style="display: none; width: auto; margin-top: 6px; padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 6px; cursor: pointer; align-self: flex-start;" aria-label="Open Developer Bug Diagnostics">
+            <span class="btn-icon">🛠️</span>
+            <span>Debug Crash [F9]</span>
+          </button>
+        </div>
+
         <!-- Completed Missions Claim Area -->
         <div id="game-over-missions-container" class="game-over-rewards-area custom-scroll">
           <!-- Dynamically populated completed missions / rewards -->
         </div>
 
+        <!-- Revive Telemetry Badge (Requirement F) -->
+        <div id="game-over-revive-badge" class="game-over-revive-pill">
+          <span class="revive-pill-icon">🔑</span>
+          <span id="game-over-revive-text">REVIVES: 0 / 3 USED • KEYS PRESERVED</span>
+        </div>
+
         <!-- Action Buttons -->
         <div class="game-over-actions-flow">
-          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow" style="width: 100%; margin-bottom: 12px;">
+          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Quick Retry (Press R or Space)">
             <span class="play-btn-content">
               <span class="play-icon">🔄</span>
-              <span class="play-text">PLAY AGAIN</span>
+              <span id="game-over-retry-text" class="play-text">QUICK RETRY</span>
+              <span class="retry-key-badge"><kbd>R</kbd></span>
             </span>
           </button>
 
           <div class="game-over-nav-row">
-            <button id="game-over-menu-btn" class="arcade-btn btn-secondary">
-              <span class="btn-icon">🏠</span> LOBBY
+            <button id="game-over-menu-btn" class="arcade-btn btn-secondary" aria-label="Return to Lobby (Press ESC)">
+              <span class="btn-icon">🏠</span> LOBBY <span class="nav-key-badge"><kbd>ESC</kbd></span>
             </button>
             <button id="game-over-shop-btn" class="arcade-btn btn-gold">
               <span class="btn-icon">🛒</span> SHOP
@@ -128,10 +209,47 @@ export class GameOverModal {
   }
 
   private bindEvents(): void {
+    const copyBtn = this.element.querySelector('#go-copy-code-btn');
+    copyBtn?.addEventListener('click', () => {
+      const codeEl = this.element.querySelector('#go-share-code-text');
+      const text = codeEl?.textContent || '';
+      if (text && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+      const btnText = this.element.querySelector('#go-copy-btn-text');
+      if (btnText) btnText.textContent = '✓ COPIED!';
+      setTimeout(() => {
+        if (btnText) btnText.textContent = '📋 COPY CHALLENGE CODE';
+      }, 2500);
+    });
+
     const retryBtn = this.element.querySelector('#game-over-retry-btn');
-    retryBtn?.addEventListener('click', () => {
-      this.hide();
-      EventBus.getInstance().emit(EVENTS.GAME_RESTART);
+    retryBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.handleRetry();
+    });
+
+    // Keyboard shortcuts for results screen: R / Space / Enter to retry, ESC to Lobby
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (this.element.classList.contains('hidden')) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleRetry();
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        const active = document.activeElement;
+        if (!active || active === document.body || active === this.element || active.id === 'game-over-retry-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleRetry();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hide();
+        EventBus.getInstance().emit('GO_TO_MENU');
+      }
     });
 
     const menuBtn = this.element.querySelector('#game-over-menu-btn');
@@ -157,6 +275,44 @@ export class GameOverModal {
       this.hide();
       EventBus.getInstance().emit('OPEN_CHARACTERS', 'START');
     });
+
+    const replayBtn = this.element.querySelector('#game-over-replay-btn');
+    replayBtn?.addEventListener('click', () => {
+      if (this.onReplayCallback) {
+        this.onReplayCallback();
+      } else {
+        EventBus.getInstance().emit('REQUEST_INSTANT_REPLAY');
+      }
+    });
+
+    const bugReportBtn = this.element.querySelector('#game-over-bug-report-btn');
+    bugReportBtn?.addEventListener('click', () => {
+      if (isDeveloperMode()) {
+        EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
+      }
+    });
+  }
+
+  public handleRetry(): void {
+    if (this.isRestarting) return;
+    this.isRestarting = true;
+
+    const retryBtn = this.element.querySelector('#game-over-retry-btn') as HTMLButtonElement;
+    if (retryBtn) {
+      retryBtn.disabled = true;
+      retryBtn.classList.add('btn-processing');
+    }
+
+    this.hide();
+    EventBus.getInstance().emit(EVENTS.GAME_RESTART);
+
+    setTimeout(() => {
+      this.isRestarting = false;
+      if (retryBtn) {
+        retryBtn.disabled = false;
+        retryBtn.classList.remove('btn-processing');
+      }
+    }, 400);
   }
 
   public show(
@@ -164,13 +320,25 @@ export class GameOverModal {
     coins: number,
     distanceMeters: number,
     mode: GameMode = 'NORMAL',
-    modeResult?: { title?: string; subtitle?: string; bonusCoins?: number }
+    modeResult?: {
+      title?: string;
+      subtitle?: string;
+      bonusCoins?: number;
+      challenge?: any;
+      challengeRecord?: any;
+      isNewRecord?: boolean;
+    },
+    onReplay?: () => void
   ): void {
+    this.onReplayCallback = onReplay || null;
     let highScore = 0;
     let isNewRecord = false;
     const stats = this.progression.getState().lifetimeStats;
 
-    if (mode === 'HARD') {
+    if (mode === 'DAILY_CHALLENGE') {
+      highScore = modeResult?.challengeRecord?.bestScore || 0;
+      isNewRecord = modeResult?.isNewRecord || (score > highScore);
+    } else if (mode === 'HARD') {
       highScore = stats.hardModeHighScore || 0;
       if (score > highScore) {
         highScore = Math.floor(score);
@@ -206,7 +374,13 @@ export class GameOverModal {
     const modeBadge = this.element.querySelector('#game-over-mode-badge') as HTMLElement;
 
     if (modeBadge) {
-      if (mode === 'HARD') {
+      if (mode === 'DAILY_CHALLENGE') {
+        const cName = modeResult?.challenge?.name || 'SEEDED COURSE';
+        const cDiff = modeResult?.challenge?.difficulty || '';
+        modeBadge.className = 'game-over-mode-pill mode-daily-pill';
+        modeBadge.innerHTML = `📅 DAILY CHALLENGE • ${cName.toUpperCase()}${cDiff ? ` (${cDiff})` : ''}`;
+        modeBadge.style.display = 'inline-block';
+      } else if (mode === 'HARD') {
         modeBadge.className = 'game-over-mode-pill mode-hard-pill';
         modeBadge.innerHTML = '🔥 HARD MODE • EXPRESS';
         modeBadge.style.display = 'inline-block';
@@ -228,7 +402,9 @@ export class GameOverModal {
     if (isNewRecord) {
       recordBadge?.classList.remove('hidden');
       if (recordBadge) {
-        if (mode === 'HARD') {
+        if (mode === 'DAILY_CHALLENGE') {
+          recordBadge.innerHTML = `<span>🏆 NEW CHALLENGE RECORD! 🏆</span>`;
+        } else if (mode === 'HARD') {
           recordBadge.innerHTML = `<span>🔥 NEW HARD MODE RECORD! 🔥</span>`;
         } else if (mode === 'EASY') {
           recordBadge.innerHTML = `<span>⚡ NEW EASY MODE RECORD! ⚡</span>`;
@@ -266,7 +442,67 @@ export class GameOverModal {
     // Static stats
     const highLabelEl = this.element.querySelector('#game-over-high-label') as HTMLElement;
     if (highLabelEl) {
-      highLabelEl.textContent = mode === 'HARD' ? 'HARD MODE BEST' : 'ALL-TIME BEST';
+      if (mode === 'DAILY_CHALLENGE') {
+        highLabelEl.textContent = 'CHALLENGE BEST';
+      } else if (mode === 'HARD') {
+        highLabelEl.textContent = 'HARD MODE BEST';
+      } else {
+        highLabelEl.textContent = 'ALL-TIME BEST';
+      }
+    }
+
+    // Shareable Course Code & Retry Button
+    const shareCard = this.element.querySelector('#game-over-share-card') as HTMLElement;
+    const retryText = this.element.querySelector('#game-over-retry-text') as HTMLElement;
+
+    if (mode === 'DAILY_CHALLENGE' && modeResult?.challenge?.shareCode) {
+      shareCard?.classList.remove('hidden');
+      const shareCodeEl = this.element.querySelector('#go-share-code-text');
+      if (shareCodeEl) shareCodeEl.textContent = modeResult.challenge.shareCode;
+      if (retryText) retryText.textContent = 'RETRY COURSE';
+    } else {
+      shareCard?.classList.add('hidden');
+      if (retryText) retryText.textContent = 'QUICK RETRY';
+    }
+
+    // Revive Telemetry Display (Requirement F)
+    const reviveMgr = ReviveManager.getInstance();
+    const revivesUsed = reviveMgr.getRevivesUsed();
+    const maxRevives = reviveMgr.getMaxRevives();
+    const reviveBadge = this.element.querySelector('#game-over-revive-badge');
+    const reviveTextEl = this.element.querySelector('#game-over-revive-text');
+    if (reviveTextEl) {
+      if (mode === 'PRACTICE' || mode === 'ARENA') {
+        if (reviveBadge) (reviveBadge as HTMLElement).style.display = 'none';
+      } else {
+        if (reviveBadge) (reviveBadge as HTMLElement).style.display = 'flex';
+        if (revivesUsed === 0) {
+          reviveTextEl.textContent = `REVIVES: 0 / ${maxRevives} USED • KEYS PRESERVED`;
+        } else if (revivesUsed >= maxRevives) {
+          reviveTextEl.textContent = `REVIVES: ${revivesUsed} / ${maxRevives} EXPENDED • RETRY IS FREE`;
+        } else {
+          reviveTextEl.textContent = `REVIVES: ${revivesUsed} / ${maxRevives} USED • RETRY IS FREE`;
+        }
+      }
+    }
+
+    // First completion bonus banner
+    if (modeResult && modeResult.bonusCoins && modeResult.bonusCoins > 0) {
+      const missionsContainer = this.element.querySelector('#game-over-missions-container');
+      if (missionsContainer) {
+        missionsContainer.innerHTML = `
+          <div class="go-reward-card pulse-glow">
+            <div class="reward-card-left">
+              <span class="reward-icon">🎁</span>
+              <div class="reward-meta">
+                <span class="reward-title">Daily Challenge Completion Reward!</span>
+                <span class="reward-desc">First successful completion of today's seeded railway course</span>
+              </div>
+            </div>
+            <div class="reward-val highlight-gold">+${modeResult.bonusCoins} 🪙</div>
+          </div>
+        `;
+      }
     }
     const highEl = this.element.querySelector('#game-over-high-score') as HTMLElement;
     if (highEl) {
@@ -282,6 +518,26 @@ export class GameOverModal {
       coinsEl.textContent = coins.toLocaleString();
     }
     if (distEl) distEl.textContent = `${Math.floor(distanceMeters).toLocaleString()} m`;
+
+    // Populate Style & Skill Combo Telemetry
+    const styleStats = SkillComboManager.getInstance().getStats();
+    const styleTotalEl = this.element.querySelector('#game-over-style-total');
+    if (styleTotalEl) styleTotalEl.textContent = `+${styleStats.totalStylePoints.toLocaleString()} STYLE PTS`;
+
+    const maxComboEl = this.element.querySelector('#go-stat-max-combo');
+    if (maxComboEl) maxComboEl.textContent = `×${styleStats.bestCombo}`;
+
+    const perfJumpsEl = this.element.querySelector('#go-stat-perfect-jumps');
+    if (perfJumpsEl) perfJumpsEl.textContent = `${styleStats.perfectJumps}`;
+
+    const perfSlidesEl = this.element.querySelector('#go-stat-perfect-slides');
+    if (perfSlidesEl) perfSlidesEl.textContent = `${styleStats.perfectSlides}`;
+
+    const nearMissesEl = this.element.querySelector('#go-stat-near-misses');
+    if (nearMissesEl) nearMissesEl.textContent = `${styleStats.nearMisses}`;
+
+    const rooftopEl = this.element.querySelector('#go-stat-rooftop');
+    if (rooftopEl) rooftopEl.textContent = `${styleStats.totalRooftopManeuvers}`;
 
     // Count-up animation for final score
     const scoreEl = this.element.querySelector('#game-over-score') as HTMLElement;
@@ -338,6 +594,50 @@ export class GameOverModal {
 
     // Render Claimable Missions Section
     this.renderCompletedMissions();
+
+    // Populate Crash Analysis Card & Instant Replay Action
+    const crashCard = this.element.querySelector('#game-over-crash-card') as HTMLElement;
+    const crashAnalysis = CrashReplayManager.getInstance().getActiveAnalysis();
+    const isSpecialVictory = modeResult?.title === 'VAULT CLEARED! 🪙' || modeResult?.title === "TIME'S UP! ⏱️";
+
+    if (crashCard && crashAnalysis && !isSpecialVictory) {
+      const expl = crashAnalysis.explanation;
+      const iconEl = crashCard.querySelector('#game-over-crash-icon');
+      const titleEl = crashCard.querySelector('#game-over-crash-title');
+      const descEl = crashCard.querySelector('#game-over-crash-desc');
+      const tipEl = crashCard.querySelector('#game-over-crash-tip');
+      const replayBtn = crashCard.querySelector('#game-over-replay-btn') as HTMLElement;
+
+      if (iconEl) iconEl.textContent = expl.icon;
+      if (titleEl) titleEl.textContent = expl.headline;
+      if (descEl) descEl.textContent = expl.explanation;
+      if (tipEl) tipEl.textContent = expl.proTip;
+
+      // Show replay button only if sufficient replay data is available
+      if (replayBtn) {
+        if (CrashReplayManager.getInstance().hasReplayData()) {
+          replayBtn.style.display = 'flex';
+        } else {
+          replayBtn.style.display = 'none';
+        }
+      }
+
+      // Developer-only Diagnostics Action (strictly hidden from ordinary players in normal gameplay)
+      const bugReportBtn = crashCard.querySelector('#game-over-bug-report-btn') as HTMLElement;
+      if (bugReportBtn) {
+        if (isDeveloperMode()) {
+          bugReportBtn.classList.remove('hidden');
+          bugReportBtn.style.display = 'inline-flex';
+        } else {
+          bugReportBtn.classList.add('hidden');
+          bugReportBtn.style.display = 'none';
+        }
+      }
+
+      crashCard.classList.remove('hidden');
+    } else if (crashCard) {
+      crashCard.classList.add('hidden');
+    }
 
     this.element.classList.remove('hidden');
     this.element.focus();

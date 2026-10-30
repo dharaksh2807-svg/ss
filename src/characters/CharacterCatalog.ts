@@ -1,4 +1,4 @@
-export type CharacterId = 'char_jax' | 'char_luna' | 'char_cruz' | 'char_nova' | 'char_modi';
+export type CharacterId = 'char_jax' | 'char_luna' | 'char_cruz' | 'char_nova' | 'char_modi' | 'char_rahul_gandhi' | 'rahul_gandhi';
 
 export type CharacterRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
@@ -39,6 +39,8 @@ export interface OutfitDefinition {
     hasLuminousTrims?: boolean;
     hasSpectacles?: boolean;
     hasKurtaWaistcoat?: boolean;
+    hasWhitePoloNavyPants?: boolean;
+    hasBeard?: boolean;
   };
 }
 
@@ -501,11 +503,67 @@ export const CHARACTER_CATALOG: CharacterDefinition[] = [
         }
       }
     ]
+  },
+  // --- CHARACTER 6: RAHUL GANDHI (LEGENDARY) ---
+  {
+    id: 'char_rahul_gandhi',
+    name: 'Rahul Gandhi',
+    title: 'The Determined Sprinter',
+    personality: 'Dynamic, resilient leader in signature white polo shirt and navy trousers, sprinting through the metropolitan metro grid with relentless energy.',
+    bio: 'An iconic runner known for endurance, athletic drive, and determination across the subway tracks. Outfitted in his crisp white polo shirt, tailored navy trousers, trimmed beard, and sports running sneakers.',
+    silhouetteDescription: 'Athletic runner featuring swept dark hair, trimmed beard, crisp white shirt, tailored navy trousers, and sports shoes.',
+    portraitIcon: '🏃',
+    previewImage: '/characters/rahul_gandhi/three_quarter.png',
+    thumbnailImage: '/characters/rahul_gandhi/hero.png',
+    gender: 'MALE',
+    rarity: 'LEGENDARY',
+    isGlb: true,
+    glbPath: '/characters/rahul_gandhi/character.glb',
+    proportions: {
+      height: 1.0,
+      shoulderWidth: 0.36,
+      torsoWidth: 0.30,
+      legLength: 0.85,
+      armScale: 1.0
+    },
+    unlock: {
+      type: 'COINS',
+      cost: 100000,
+      description: 'Unlock for 100,000 Coins'
+    },
+    defaultOutfitId: 'rahul_classic',
+    outfits: [
+      {
+        id: 'rahul_classic',
+        name: 'Signature White & Navy',
+        tagline: 'Signature White Shirt & Navy Trousers',
+        description: 'Crisp white shirt, tailored navy trousers, trimmed dark beard, and sports running sneakers.',
+        icon: '🏃',
+        previewImage: '/characters/rahul_gandhi/front.png',
+        unlock: { type: 'FREE', description: 'Default Look with Rahul Gandhi' },
+        colors: {
+          primary: 0xffffff,     // Crisp white shirt
+          secondary: 0x1a2e40,   // Navy trousers
+          pants: 0x1a2e40,       // Navy trousers
+          accent: 0x2288cc,
+          hairOrHelmet: 0x222222,// Dark hair & beard
+          skin: 0xd9a27c,        // Natural skin tone
+          details: 0x333333
+        },
+        features: {
+          hasWhitePoloNavyPants: true,
+          hasBeard: true
+        }
+      }
+    ]
   }
 ];
 
 export function getCharacterById(id: string): CharacterDefinition | undefined {
-  return CHARACTER_CATALOG.find((c) => c.id === id);
+  if (!id) return undefined;
+  return CHARACTER_CATALOG.find(
+    (c) => c.id === id || c.id === `char_${id}` || (id.startsWith('char_') && c.id === id.replace('char_', ''))
+  );
 }
 
 export function getOutfitById(charId: string, outfitId: string): OutfitDefinition | undefined {

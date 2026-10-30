@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { GraphicsManager, QualityConfig, GraphicsPreset, ResolvedQuality } from './GraphicsManager';
 import { EventBus } from '../core/EventBus';
+import { SettingsManager } from '../settings/SettingsManager';
 import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
 import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
 
@@ -558,11 +559,15 @@ export class WorldScene {
 
     // Subtle high-speed motion lines opacity
     if (this.speedLinesMesh) {
-      this.speedLinesMesh.position.z = playerZ;
-      const speedThreshold = 21.0;
-      const maxSpd = 52.0;
-      const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (maxSpd - speedThreshold)));
-      (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.52;
+      const isEnabled = SettingsManager.getInstance().isSpeedLinesEnabled();
+      this.speedLinesMesh.visible = isEnabled;
+      if (isEnabled) {
+        this.speedLinesMesh.position.z = playerZ;
+        const speedThreshold = 21.0;
+        const maxSpd = 52.0;
+        const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (maxSpd - speedThreshold)));
+        (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.52;
+      }
     }
 
     // Atmospheric rain particles tracking & animation

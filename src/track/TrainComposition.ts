@@ -318,3 +318,13 @@ export const COMMUTER_TWIN_SET = TRAIN_COMPOSITIONS.COMMUTER_TWIN_SET;
 export const METRO_TRIPLE_CONSIST = TRAIN_COMPOSITIONS.METRO_TRIPLE_CONSIST;
 export const EXPRESS_QUAD_CONSIST = TRAIN_COMPOSITIONS.EXPRESS_QUAD_CONSIST;
 export const DUAL_TRAIN_GAP_HOP = TRAIN_COMPOSITIONS.DUAL_TRAIN_GAP_HOP;
+
+export type {
+  RooftopRouteArchetype,
+  RooftopRouteLeg,
+  RooftopTransfer,
+  RooftopRoutePlan,
+  RooftopPlannerOptions
+} from './RooftopRoutePlanner';
+
+export { RooftopRoutePlanner } from './RooftopRoutePlanner';

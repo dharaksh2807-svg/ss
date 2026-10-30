@@ -18,6 +18,13 @@ import { CollisionDiagnostic, CollisionOutcome } from './CollisionTypes';
 import { EnvironmentManager, EnvironmentId, EnvironmentTheme } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { ProgressionManager } from '../progression/ProgressionManager';
+import { RooftopRoutePlanner, RooftopRoutePlan, RooftopRouteArchetype } from './RooftopRoutePlanner';
+import { CrashReplayManager } from '../replay/CrashReplayManager';
+import { SkillComboManager } from '../core/SkillComboManager';
+import { DailyChallengeManager } from '../core/DailyChallengeManager';
+import { SecretRouteDirector } from './SecretRouteDirector';
+import { JunctionDirector } from './JunctionDirector';
+import { BugSnapshotManager } from '../debug/BugSnapshotManager';
 
 export class TrackManager {
   public chunks: TrackChunk[] = [];
@@ -69,6 +76,17 @@ export class TrackManager {
   private collisionDiagnostics: CollisionDiagnostic[] = [];
   private jetpackRecollectedPending: boolean = false;
   private elapsedTime: number = 0;
+
+  // Multi-Train Rooftop Traversal & Switching state
+  private activeRooftopPlan: RooftopRoutePlan | null = null;
+  private forcedDebugArchetype: RooftopRouteArchetype | null = null;
+  private forcedDebugSeed: number | null = null;
+  private rooftopStartTime: number = 0;
+  private rooftopMeasuredDuration: number = 0;
+  private supportLossCount: number = 0;
+  private lastSupportLossReason: string = 'NONE';
+  private lastMovingDisplacement: number = 0;
+  private nextRooftopAllowedZ: number = 110;
 
   constructor(private scene: THREE.Scene, chaser?: ChaserModel) {
     if (chaser) {
@@ -125,7 +143,17 @@ export class TrackManager {
 
   public getGameMode(): string {
     const mode = this.difficultyController.getGameMode();
+    if (mode === 'DAILY_CHALLENGE') {
+      try {
+        const active = DailyChallengeManager.getInstance().getActiveChallenge();
+        if (active) return active.difficulty.toUpperCase();
+      } catch (_) {}
+    }
     return (mode === 'NORMAL' ? 'BEGINNER' : mode).toUpperCase();
+  }
+
+  public getDifficultyLabel(): string {
+    return this.difficultyController.getCurrentTier();
   }
 
   public setSeed(seed: number, isDebug: boolean = true): void {
@@ -136,6 +164,8 @@ export class TrackManager {
     this.recentPatterns = [];
     this.difficultyController.reset();
     EnvironmentDirector.getInstance().setRunSeed(seed, isDebug);
+    SecretRouteDirector.getInstance().setRunSeed(seed);
+    JunctionDirector.getInstance().setRunSeed(seed);
   }
 
   public setDebugSeed(seed: number): void {
@@ -239,6 +269,10 @@ export class TrackManager {
       this.currentSeed = this.runSeed;
     }
     EnvironmentDirector.getInstance().setRunSeed(this.currentSeed, this.isDebugSeed);
+    SecretRouteDirector.getInstance().resetRunState();
+    SecretRouteDirector.getInstance().setRunSeed(this.currentSeed);
+    JunctionDirector.getInstance().resetRunState();
+    JunctionDirector.getInstance().setRunSeed(this.currentSeed);
 
     this.furthestZ = 0;
     const mode = this.getGameMode();
@@ -268,6 +302,15 @@ export class TrackManager {
     this.rampOnboardingChecked = false;
     this.difficultyController.reset();
     this.jetpackRecollectedPending = false;
+    this.nextRooftopAllowedZ = 110;
+    this.activeRooftopPlan = null;
+    this.forcedDebugArchetype = null;
+    this.forcedDebugSeed = null;
+    this.rooftopStartTime = 0;
+    this.rooftopMeasuredDuration = 0;
+    this.supportLossCount = 0;
+    this.lastSupportLossReason = 'NONE';
+    this.lastMovingDisplacement = 0;
     if (this.aerialCoinManager) {
       this.aerialCoinManager.reset();
     }
@@ -316,8 +359,21 @@ export class TrackManager {
 
       const openingPool = OBSTACLE_PATTERNS.filter((p) => p.isOpening &&
         CONSTANTS.LANE_INDICES.some((lane) => !p.obstacles.some((obs) => obs.lane === lane)));
-      const chosenOpening = openingPool.length > 0
-        ? openingPool[Math.floor(this.rng() * openingPool.length)]
+
+      // Filter opening candidates that are physically reachable and offer fair reaction time from starting lane 0
+      const safeOpenings = openingPool.filter((p) => {
+        const val = ReachabilityValidator.validatePattern(p as any, playerSpeed, [0]);
+        if (!val.solvable) return false;
+        // Require adequate human reaction window (>= 1.5s) for any obstacle in the starting lane
+        if (val.minReactionTimeSeconds !== undefined && val.minReactionTimeSeconds < 1.5) {
+          return false;
+        }
+        return true;
+      });
+
+      const candidates = safeOpenings.length > 0 ? safeOpenings : openingPool;
+      const chosenOpening = candidates.length > 0
+        ? candidates[Math.floor(this.rng() * candidates.length)]
         : OBSTACLE_PATTERNS[0];
 
       if (!commit) return chosenOpening;
@@ -523,6 +579,131 @@ export class TrackManager {
       this.commitPattern(pattern, 0);
       return pattern;
     }
+
+    // Deterministic Multi-Train Rooftop Route Encounter Scheduling
+    if (this.forcedDebugArchetype || (Math.abs(worldZ) >= this.nextRooftopAllowedZ && !flight)) {
+      const mode = this.getGameMode();
+      const tier = pacing.stage <= 0 ? 'BEGINNER' : (pacing.stage === 1 ? 'INTERMEDIATE' : (pacing.stage === 2 ? 'ADVANCED' : 'EXPERT'));
+      const seed = this.forcedDebugSeed !== null ? this.forcedDebugSeed : (Math.abs(Math.round(worldZ * 31 + this.currentSeed)) % 2147483647);
+
+      const plan = RooftopRoutePlanner.planRoute({
+        seed,
+        tier,
+        playerSpeed,
+        gameMode: mode,
+        forcedArchetype: this.forcedDebugArchetype || undefined
+      });
+
+      this.forcedDebugArchetype = null;
+      this.forcedDebugSeed = null;
+
+      const rooftopPattern = RooftopRoutePlanner.createTrackPattern(plan);
+      const proof = ReachabilityValidator.validateRooftopRoute(plan, playerSpeed, undefined, mode);
+
+      if (proof.solvable && chunk.populate(rooftopPattern, worldZ, theme, isTransition, undefined, peers)) {
+        this.activeRooftopPlan = plan;
+        this.rooftopStartTime = this.elapsedTime;
+        this.nextRooftopAllowedZ = Math.abs(worldZ) + plan.totalLength + (mode === 'HARD' ? 140.0 : 160.0);
+
+        if (plan.archetype === 'SIDE_SWITCH' || plan.archetype === 'DOUBLE_SWITCH') {
+          this.eventBus.emit('SHOW_TRAIN_SWITCH_CUE');
+        }
+
+        this.commitPattern(rooftopPattern, worldZ);
+        return rooftopPattern;
+      }
+    }
+
+    // Deterministic Secret Railway Route Encounter Scheduling
+    if (!this.activeRooftopPlan && !isTransition) {
+      const mode = this.getGameMode();
+      const secretPattern = SecretRouteDirector.getInstance().tryScheduleSecretRoute(
+        chunk,
+        worldZ,
+        theme,
+        isTransition,
+        playerSpeed,
+        mode,
+        flight
+      );
+      if (secretPattern) {
+        this.commitPattern(secretPattern, Math.abs(worldZ));
+        return secretPattern;
+      }
+    }
+
+    // Advanced Branching Railway Junction Scheduling
+    if (!this.activeRooftopPlan && !isTransition) {
+      const scheduledJunction = JunctionDirector.getInstance().tryScheduleJunction(
+        chunk,
+        worldZ,
+        isTransition,
+        Boolean(this.activeRooftopPlan)
+      );
+      if (scheduledJunction) {
+        const forkPattern: TrackPattern = {
+          name: 'RAILWAY_JUNCTION_FORK',
+          difficulty: 'EASY',
+          obstacles: [
+            { type: 'LOW_BARRIER', lane: -1, zOffset: 24.0 },
+            { type: 'LOW_BARRIER', lane: 1, zOffset: 64.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: -1, zOffset: 12.0, count: 5, spacing: 3.2 },
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 5, spacing: 3.2 },
+            { type: 'COIN', lane: 1, zOffset: 20.0, count: 6, spacing: 3.0 }
+          ]
+        };
+        chunk.populate(forkPattern, worldZ, theme, false);
+        this.commitPattern(forkPattern, Math.abs(worldZ));
+        return forkPattern;
+      }
+    }
+
+    // Active Junction Route Branch Chunk Population
+    const activeJunction = JunctionDirector.getInstance().getActiveJunction();
+    if (activeJunction && activeJunction.state === 'BRANCH_ACTIVE' && activeJunction.remainingBranchChunks > 0 && !isTransition) {
+      JunctionDirector.getInstance().onChunkGeneratedForBranch();
+      const committedRoute = activeJunction.committedRoute;
+      const branchStep = 3 - activeJunction.remainingBranchChunks;
+
+      if (committedRoute === 'ROUTE_B_INDUSTRIAL_OVERPASS') {
+        const industrialTheme = this.envManager.getTheme('NEON_INDUSTRIAL');
+        const industrialPattern: TrackPattern = {
+          name: `INDUSTRIAL_OVERPASS_BRANCH_${branchStep}`,
+          difficulty: 'HARD',
+          obstacles: [
+            { type: 'TRAIN_RAMP', lane: 0, zOffset: 16.0, hasRamp: true, length: CONSTANTS.TRAIN_SET_TRIPLE_LENGTH },
+            { type: 'MOVING_TRAIN', lane: -1, zOffset: 42.0, velocityZ: 20.0, length: 22.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 12, spacing: 2.2, yOffset: 5.2 },
+            { type: 'MULTIPLIER', lane: 0, zOffset: 48.0, yOffset: 5.2 },
+            { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.4 }
+          ]
+        };
+        chunk.populate(industrialPattern, worldZ, industrialTheme, false);
+        this.commitPattern(industrialPattern, Math.abs(worldZ));
+        return industrialPattern;
+      } else if (committedRoute === 'ROUTE_A_MAIN_METRO') {
+        const metroTheme = this.envManager.getTheme('MODERN_METRO');
+        const mainlinePattern: TrackPattern = {
+          name: `MAIN_METRO_BRANCH_${branchStep}`,
+          difficulty: 'EASY',
+          obstacles: [
+            { type: 'LOW_BARRIER', lane: -1, zOffset: 28.0 },
+            { type: 'TRAIN', lane: 1, zOffset: 32.0, length: 22.0 }
+          ],
+          collectibles: [
+            { type: 'COIN', lane: 0, zOffset: 16.0, count: 8, spacing: 3.2 },
+            { type: 'SNEAKERS', lane: 0, zOffset: 52.0 }
+          ]
+        };
+        chunk.populate(mainlinePattern, worldZ, metroTheme, false);
+        this.commitPattern(mainlinePattern, Math.abs(worldZ));
+        return mainlinePattern;
+      }
+    }
     // Reserve approach lanes before choosing ordinary obstacles, rather than
     // waiting for an already blocked train to clear six streamed chunks.
     const rotation = pacing.stage < 2 ? 0 : pacing.stage - 1;
@@ -626,7 +807,7 @@ export class TrackManager {
         }));
         const rear = Math.min(...formation.map((obs) => chunk.chunkZ + obs.group.position.z + (obs.group.userData.trainRearOffset ?? -obs.length! / 2 - CONSTANTS.TRAIN_RAMP_LENGTH)));
         const slowestTailClearance = (playerZ - rear + CONSTANTS.PLAYER_DEPTH / 2) / (playerSpeed + (speed ?? 0));
-        const horizon = Math.max(arrival - this.elapsedTime + 1.2,
+        const horizon = Math.max(0.5, arrival - this.elapsedTime + 1.2,
           slowestTailClearance + CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME);
         // An avoidance witness never stumbles. Forward speed is monotonic and
         // bounded by the actual target curve at the furthest possible distance.
@@ -780,11 +961,19 @@ export class TrackManager {
         // Guard: Never recycle a chunk while the player is currently supported on its train/ramp/roof
         const isSupportingPlayer = chunk.obstacles.some(
           (o) => o.id === player.getActiveSupportObstacleId() ||
-                 (Boolean(o.carriageGroupId) && o.carriageGroupId === player.getActiveSupportGroupId())
+                 (Boolean(o.carriageGroupId) && o.carriageGroupId === player.getActiveSupportGroupId()) ||
+                 (Boolean(o.routeGroupId) && o.routeGroupId === this.activeRooftopPlan?.id && player.getSupportSurface() !== 'GROUND')
         );
         const isPlayerPhysicallyInChunk = player.position.z <= chunk.chunkZ + 2.0 && player.position.z >= chunkEndZ - 2.0;
         if (isSupportingPlayer || (player.getSupportSurface() !== 'GROUND' && isPlayerPhysicallyInChunk)) {
           continue;
+        }
+
+        if (this.encounterDebugEnabled) {
+          const wouldBreakSupport = chunk.obstacles.some((o) => o.id === player.getActiveSupportObstacleId());
+          if (wouldBreakSupport) {
+            console.warn('[TrackManager] Guard assertion failed: Chunk about to be reused contains player active support obstacle!');
+          }
         }
 
         // Clean-section streak check when recycling chunk
@@ -830,6 +1019,11 @@ export class TrackManager {
           this.activeEnvironment = selectionPref as EnvironmentId;
           this.targetEnvironment = this.activeEnvironment;
           chunkTheme = this.envManager.getTheme(this.activeEnvironment);
+        }
+
+        const juncState = JunctionDirector.getInstance().getActiveJunction();
+        if (juncState && juncState.state === 'BRANCH_ACTIVE' && juncState.committedTheme) {
+          chunkTheme = this.envManager.getTheme(juncState.committedTheme);
         }
 
         const encounterDist = Math.abs(this.furthestZ);
@@ -970,16 +1164,105 @@ export class TrackManager {
         }
       }
     }
+  }  /**
+   * Swept continuous collision detection & exact per-segment roof landing resolution.
+   * Evaluates player's foot/pivot trajectory across the frame against real carriage/gangway segments.
+   */
+  public tryResolveSweptRoofLanding(player: Player, obs: ObstacleInstance): boolean {
+    if (!obs.active) return false;
+
+    const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
+    const p0 = player.previousPosition;
+    const p1 = player.position;
+
+    // Require descending vertical motion or a descending jump phase.
+    const isDescending = player.verticalVelocity <= 0.1 || p1.y <= p0.y || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN';
+    if (!isDescending) return false;
+
+    // Do not accept ascending contact as a landing
+    if (player.verticalVelocity > 0.1 && p1.y > p0.y && p1.y < roofY) {
+      return false;
+    }
+
+    // Determine whether the player's foot/pivot trajectory crossed the roof plane during the frame
+    const crossedPlane = p0.y >= roofY - 0.10 && p1.y <= roofY + 0.15;
+    const withinCaptureWindow = (player.isJumping || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN') &&
+      p1.y >= roofY - 0.55 && p1.y <= roofY + 0.85;
+
+    if (!crossedPlane && !withinCaptureWindow) return false;
+
+    // Solve interpolation crossing point
+    let crossX = p1.x;
+    let crossZ = p1.z;
+    let t = 1.0;
+
+    const dy = p0.y - p1.y;
+    if (dy > 1e-4 && p0.y >= roofY - 0.05) {
+      t = Math.max(0, Math.min(1, (p0.y - roofY) / dy));
+      crossX = p0.x + t * (p1.x - p0.x);
+      crossZ = p0.z + t * (p1.z - p0.z);
+    }
+
+    // For a moving train, evaluate the roof segment in the correct previous/current relative frame
+    if (obs.isMoving && obs.previousWorldZ !== undefined) {
+      const chunk = this.chunks.find((c) => c.obstacles.includes(obs));
+      const currentTrainZ = (chunk ? chunk.chunkZ : 0) + obs.group.position.z;
+      const trainDeltaZ = currentTrainZ - obs.previousWorldZ;
+      crossZ += (1 - t) * trainDeltaZ;
+    }
+
+    // Permit only a small edge tolerance (roughly 0.10-0.20m) to prevent floating-point edge misses
+    const tolX = 0.18;
+    const tolZ = 0.18;
+
+    let hitValidSegment = false;
+    if (obs.roofSegments && obs.roofSegments.length > 0) {
+      for (const seg of obs.roofSegments) {
+        if (
+          crossX >= seg.collider.min.x - tolX &&
+          crossX <= seg.collider.max.x + tolX &&
+          crossZ >= seg.collider.min.z - tolZ &&
+          crossZ <= seg.collider.max.z + tolZ
+        ) {
+          hitValidSegment = true;
+          break;
+        }
+      }
+    } else if (obs.roofCollider) {
+      if (
+        crossX >= obs.roofCollider.min.x - tolX &&
+        crossX <= obs.roofCollider.max.x + tolX &&
+        crossZ >= obs.roofCollider.min.z - tolZ &&
+        crossZ <= obs.roofCollider.max.z + tolZ
+      ) {
+        hitValidSegment = true;
+      }
+    }
+
+    if (hitValidSegment) {
+      const targetGroupId = obs.carriageGroupId || obs.routeGroupId || null;
+      player.resolveRoofLanding(roofY, obs.id, targetGroupId);
+      return true;
+    }
+
+    return false;
   }
 
   private updateGroundHeight(player: Player, dt: number = 0.016): void {
+    if (player.state === 'CRASH') {
+      return;
+    }
+
     // Carry an existing grounded rider before testing the platform's new bounds.
     // Use actual displacement, so landing this frame never adds a second movement.
     const previousSupport = this.findObstacleById(player.getActiveSupportObstacleId() || '');
+    this.lastMovingDisplacement = 0;
     if (!player.isJumping && previousSupport?.active && previousSupport.isMoving && previousSupport.previousWorldZ !== undefined) {
       const supportChunk = this.chunks.find((chunk) => chunk.obstacles.includes(previousSupport));
       if (supportChunk) {
-        player.position.z += supportChunk.chunkZ + previousSupport.group.position.z - previousSupport.previousWorldZ;
+        const deltaZ = supportChunk.chunkZ + previousSupport.group.position.z - previousSupport.previousWorldZ;
+        player.position.z += deltaZ;
+        this.lastMovingDisplacement = deltaZ;
         player.updateCollider();
         player.mesh.position.copy(player.position);
       }
@@ -1017,7 +1300,7 @@ export class TrackManager {
               targetGroundY = calculatedHeight;
               foundSupport = true;
               supportedObstacleId = obs.id;
-              supportedGroupId = obs.carriageGroupId || null;
+              supportedGroupId = obs.carriageGroupId || obs.routeGroupId || null;
               // If reached top edge (t >= 0.98), promote to TRAIN_ROOF smoothly
               supportType = t >= 0.98 ? 'TRAIN_ROOF' : 'RAMP';
               if (t >= 0.98) {
@@ -1056,7 +1339,7 @@ export class TrackManager {
               targetGroundY = calculatedHeight;
               foundSupport = true;
               supportedObstacleId = obs.id;
-              supportedGroupId = obs.carriageGroupId || null;
+              supportedGroupId = obs.carriageGroupId || obs.routeGroupId || null;
               // If reached bottom edge (t >= 0.98), promote to GROUND smoothly
               supportType = t >= 0.98 ? 'GROUND' : 'RAMP';
               if (t >= 0.98) {
@@ -1074,50 +1357,54 @@ export class TrackManager {
 
         // 3. Check if player is on top of or descending onto a train roof
         if (obs.roofCollider) {
-          const minX = obs.roofCollider.min.x;
-          const maxX = obs.roofCollider.max.x;
-          const minZ = obs.roofCollider.min.z;
-          // Generous forward overlap (0.35m) to capture smooth handoff directly from the ramp top
-          const maxZ = obs.roofCollider.max.z + 0.35;
           const roofY = obs.roofSurfaceY || (CONSTANTS.TRAIN_HEIGHT + 0.15);
 
-          const inRoofHorizontal =
-            player.position.x >= minX && player.position.x <= maxX &&
-            player.position.z >= minZ && player.position.z <= maxZ;
-
-          if (inRoofHorizontal) {
-            const prevFeetY = player.previousPosition.y;
-            const currFeetY = player.position.y;
-            const isDescending = player.verticalVelocity <= 0.1 || currFeetY <= prevFeetY;
-            const isSupportedByThisTrain = player.getActiveSupportObstacleId() === obs.id ||
-              (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId);
-
-            // Swept continuous collision detection & landing capture window
-            const crossedPlane = prevFeetY >= roofY - 0.45 && currFeetY <= roofY + 0.55;
-            const withinCaptureWindow = currFeetY >= roofY - 0.55 && currFeetY <= roofY + 0.85;
-
-            if (player.isJumping || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN') {
-              if (isDescending && (crossedPlane || withinCaptureWindow)) {
-                // Valid roof landing!
-                player.resolveRoofLanding(roofY, obs.id, obs.carriageGroupId);
-                targetGroundY = roofY;
-                foundSupport = true;
-                supportedObstacleId = obs.id;
-                supportedGroupId = obs.carriageGroupId || null;
-                supportType = 'TRAIN_ROOF';
-                break;
-              }
-            } else if (currFeetY >= roofY - 0.55 || isSupportedByThisTrain) {
-              // Smooth rooftop traversal or direct handoff from ramp
+          if (player.isJumping || player.state === 'FALLING' || player.state === 'FALLING_FROM_TRAIN') {
+            // Swept continuous collision detection & landing capture on real carriage/gangway segments
+            if (this.tryResolveSweptRoofLanding(player, obs)) {
               targetGroundY = roofY;
               foundSupport = true;
               supportedObstacleId = obs.id;
-              supportedGroupId = obs.carriageGroupId || null;
+              supportedGroupId = obs.carriageGroupId || obs.routeGroupId || null;
               supportType = 'TRAIN_ROOF';
-
-              player.position.y = roofY;
-              player.updateCollider();
               break;
+            }
+          } else {
+            // Running/grounded on roof: check if player is physically within a valid carriage or gangway segment
+            let inValidSegment = false;
+            if (obs.roofSegments && obs.roofSegments.length > 0) {
+              inValidSegment = obs.roofSegments.some((seg) =>
+                player.position.x >= seg.collider.min.x - 0.18 &&
+                player.position.x <= seg.collider.max.x + 0.18 &&
+                player.position.z >= seg.collider.min.z - 0.18 &&
+                player.position.z <= seg.collider.max.z + 0.18
+              );
+            } else {
+              const minX = obs.roofCollider.min.x;
+              const maxX = obs.roofCollider.max.x;
+              const minZ = obs.roofCollider.min.z;
+              const maxZ = obs.roofCollider.max.z + 0.35;
+              inValidSegment =
+                player.position.x >= minX && player.position.x <= maxX &&
+                player.position.z >= minZ && player.position.z <= maxZ;
+            }
+
+            if (inValidSegment) {
+              const isSupportedByThisTrain = player.getActiveSupportObstacleId() === obs.id ||
+                (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId) ||
+                (Boolean(obs.routeGroupId) && player.getActiveSupportGroupId() === obs.routeGroupId);
+
+              if (player.position.y >= roofY - 0.55 || isSupportedByThisTrain) {
+                targetGroundY = roofY;
+                foundSupport = true;
+                supportedObstacleId = obs.id;
+                supportedGroupId = obs.carriageGroupId || obs.routeGroupId || null;
+                supportType = 'TRAIN_ROOF';
+
+                player.position.y = roofY;
+                player.updateCollider();
+                break;
+              }
             }
           }
         }
@@ -1129,7 +1416,10 @@ export class TrackManager {
       player.setGroundHeight(targetGroundY);
       player.setSupportSurface(supportType, supportedObstacleId, supportedGroupId);
       if (player.state !== 'SLIDE' && player.state !== 'JETPACK') {
-        player.state = supportType === 'RAMP' ? 'CLIMBING' : 'ON_TRAIN';
+        player.state = supportType === 'RAMP' ? 'CLIMBING' : (supportType === 'GROUND' ? 'RUN' : 'ON_TRAIN');
+      }
+      if (supportType === 'TRAIN_ROOF') {
+        this.rooftopMeasuredDuration += dt;
       }
 
       if (!this.rampOnboardingChecked && (supportType === 'RAMP' || supportType === 'TRAIN_ROOF')) {
@@ -1144,13 +1434,18 @@ export class TrackManager {
       targetGroundY = CONSTANTS.PLAYER_BASE_Y;
       const prevSurface = player.getSupportSurface();
       if ((prevSurface === 'TRAIN_ROOF' || prevSurface === 'RAMP') && !player.isJumping && player.position.y > targetGroundY + 0.15) {
-        // Stepped off train roof or ramp into open air
+        // Stepped off train roof or ramp into open air (e.g. unbridged jump gap)
+        this.supportLossCount++;
+        this.lastSupportLossReason = 'UNSUPPORTED_ROOF_GAP';
         player.setSupportSurface('GROUND', null);
         player.isJumping = true;
         player.state = 'FALLING_FROM_TRAIN';
         player.verticalVelocity = Math.min(player.verticalVelocity, -2.0);
       } else {
         player.setSupportSurface('GROUND', null);
+        if (player.state === 'ON_TRAIN' || player.state === 'CLIMBING') {
+          player.state = 'RUN';
+        }
       }
       player.setGroundHeight(targetGroundY);
     }
@@ -1185,10 +1480,15 @@ export class TrackManager {
   }
 
   private checkCollisions(player: Player, dt: number): void {
+    if (player.state === 'CRASH') {
+      return;
+    }
+
     const playerBox = player.collider;
-    // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
+    // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 54m/s)
     this.sweptCollectibleBox.copy(playerBox);
     const prevPos = player.previousPosition;
+    const bottomTol = player.isJumping ? 1.6 : 0.25;
     if (prevPos) {
       const halfW = CONSTANTS.PLAYER_WIDTH * 0.5 + 0.45;
       const halfD = CONSTANTS.PLAYER_DEPTH * 0.5 + 0.45;
@@ -1196,7 +1496,7 @@ export class TrackManager {
 
       this.sweptCollectibleBox.min.set(
         Math.min(playerBox.min.x, prevPos.x - halfW),
-        Math.min(playerBox.min.y, prevPos.y - 0.25),
+        Math.min(playerBox.min.y - bottomTol, prevPos.y - bottomTol),
         Math.min(playerBox.min.z, prevPos.z - halfD)
       );
       this.sweptCollectibleBox.max.set(
@@ -1244,18 +1544,29 @@ export class TrackManager {
       for (const obs of chunk.obstacles) {
         if (!obs.active) continue;
 
-        // Near-miss check (Passes within close margin without touching)
-        if (!obs.nearMissTriggered && obs.nearMissBox.intersectsBox(playerBox)) {
-          if (!obs.collider.intersectsBox(playerBox)) {
-            obs.nearMissTriggered = true;
-            this.eventBus.emit(EVENTS.NEAR_MISS);
-          }
+        // Record approach encounter lane for lane dodge detection
+        if (obs.playerEncounterLane === undefined && player.position.z > obs.collider.max.z && player.position.z <= obs.collider.max.z + 25.0) {
+          obs.playerEncounterLane = player.currentLane;
         }
 
         // Direct obstacle collision check
         const lethalBox = (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP')
           ? (obs.bodyCollider || obs.collider)
           : obs.collider;
+
+        // Near-miss candidate registration (Passes within close margin without touching)
+        if (!obs.nearMissTriggered && !obs.nearMissScored && !obs.hadCollision) {
+          if (obs.nearMissBox.intersectsBox(playerBox) && !lethalBox.intersectsBox(playerBox)) {
+            obs.nearMissCandidate = true;
+            // Confirm near miss if player has safely cleared the front impact threshold
+            if (player.position.z < lethalBox.max.z - 0.4 && player.state !== 'JETPACK' && player.position.y <= 4.5) {
+              obs.nearMissTriggered = true;
+              obs.nearMissScored = true;
+              this.eventBus.emit(EVENTS.NEAR_MISS);
+              SkillComboManager.getInstance().recordSkillEvent('NEAR_MISS', obs.id);
+            }
+          }
+        }
 
         let hasDirectCollision = lethalBox.intersectsBox(playerBox);
 
@@ -1302,18 +1613,14 @@ export class TrackManager {
           const { outcome, diagnostic, isGlance, isFlankContact } = resolution;
 
           if (outcome === 'SAFE_CONTACT' || outcome === 'VALID_ROOF_LANDING') {
-            // Check for precision jump / slide reward if applicable
-            if (obs.type === 'LOW_BARRIER' && player.isJumping && (player.position.y >= CONSTANTS.LOW_BARRIER_HEIGHT || player.position.y >= 1.45)) {
-              if (player.distanceTraveled - player.lastJumpDist < 8.0) {
-                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'JUMP');
-              }
-            } else if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && player.isSliding) {
-              if (player.distanceTraveled - player.lastSlideDist < 8.0) {
-                this.eventBus.emit(EVENTS.PRECISION_ACTION, 'SLIDE');
-              }
-            }
+            // Safe contact / roof landing
             continue;
           }
+
+          // Authoritative non-safe collision occurred
+          obs.hadCollision = true;
+          obs.nearMissCandidate = false;
+          chunk.chunkHadCollision = true;
 
           // Authoritative collision outcome recorded & emitted
           this.recordCollisionDiagnostic(diagnostic);
@@ -1339,7 +1646,29 @@ export class TrackManager {
                 player.stumble();
               }
               if (this.chaser) {
-                this.chaser.onMinorStumble();
+                const stumbleRes = this.chaser.onMinorStumble();
+                if (stumbleRes.captured) {
+                  CrashReplayManager.getInstance().recordFatalCrash({
+                    reason: 'CHASER_CAPTURE',
+                    obstacle: obs,
+                    diagnostic,
+                    player,
+                    chaser: this.chaser,
+                    isFrontal: false,
+                    isFlankContact,
+                    isGlance
+                  });
+                  BugSnapshotManager.getInstance().recordFatalCollision({
+                    reason: 'CHASER_CAPTURE',
+                    player,
+                    obstacle: obs,
+                    diagnostic,
+                    isFrontal: false,
+                    isFlankContact,
+                    isGlance
+                  });
+                  player.crash('CHASER_CAPTURE');
+                }
               }
               return;
 
@@ -1348,6 +1677,25 @@ export class TrackManager {
               if (this.chaser) {
                 this.chaser.setChaseState('CAPTURE');
               }
+              CrashReplayManager.getInstance().recordFatalCrash({
+                reason: 'CHASER_CAPTURE',
+                obstacle: obs,
+                diagnostic,
+                player,
+                chaser: this.chaser,
+                isFrontal: false,
+                isFlankContact: isFlankContact,
+                isGlance: isGlance
+              });
+              BugSnapshotManager.getInstance().recordFatalCollision({
+                reason: 'CHASER_CAPTURE',
+                player,
+                obstacle: obs,
+                diagnostic,
+                isFrontal: false,
+                isFlankContact,
+                isGlance
+              });
               player.crash('CHASER_CAPTURE');
               return;
 
@@ -1363,6 +1711,26 @@ export class TrackManager {
               if (!fatal) {
                 obs.active = false;
                 chunk.group.remove(obs.group);
+              } else {
+                CrashReplayManager.getInstance().recordFatalCrash({
+                  reason: fatalReason,
+                  obstacle: obs,
+                  diagnostic,
+                  player,
+                  chaser: this.chaser,
+                  isFrontal: resolution.isFrontal,
+                  isFlankContact,
+                  isGlance
+                });
+                BugSnapshotManager.getInstance().recordFatalCollision({
+                  reason: fatalReason,
+                  player,
+                  obstacle: obs,
+                  diagnostic,
+                  isFrontal: resolution.isFrontal,
+                  isFlankContact,
+                  isGlance
+                });
               }
               return;
           }
@@ -1371,8 +1739,47 @@ export class TrackManager {
         // Clean obstacle dodge check when player safely passes past the obstacle
         if (!obs.passed && playerBox.max.z < obs.collider.min.z) {
           obs.passed = true;
-          if (obs.active && !chunk.chunkHadCollision) {
+          if (obs.active && !chunk.chunkHadCollision && !obs.hadCollision) {
             this.eventBus.emit(EVENTS.OBSTACLE_DODGED, obs.type);
+
+            // Authoritative Skill Event Evaluations (Supressed during passive high-altitude jetpack flight)
+            if (player.state !== 'JETPACK' && player.getJetpackPhase() === 'NONE' && player.position.y <= 4.5) {
+              const comboMgr = SkillComboManager.getInstance();
+              const laneX = CONSTANTS.LANES[obs.lane];
+              const isInObstacleLane = player.currentLane === obs.lane || Math.abs(player.position.x - laneX) < 1.4;
+
+              // 1. PERFECT_JUMP (clearing hurdle safely)
+              if ((obs.type === 'LOW_BARRIER' || obs.type === 'ROOFTOP_AC_HURDLE' || obs.type === 'ROOFTOP_VENT') && isInObstacleLane) {
+                const hurdleHeight = obs.collider.max.y;
+                const wasJumpingOver = (player.isJumping || player.distanceTraveled - player.lastJumpDist < 12.0) &&
+                                       (player.position.y >= hurdleHeight - 0.25 || player.position.y >= 1.40);
+                if (wasJumpingOver) {
+                  comboMgr.recordSkillEvent('PERFECT_JUMP', obs.id);
+                }
+              }
+              // 2. PERFECT_SLIDE (clearing overhead barrier safely)
+              else if ((obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') && isInObstacleLane) {
+                const wasSlidingUnder = player.isSliding || (player.distanceTraveled - player.lastSlideDist < 12.0);
+                if (wasSlidingUnder) {
+                  comboMgr.recordSkillEvent('PERFECT_SLIDE', obs.id);
+                }
+              }
+              // 3. CLEAN_LANE_DODGE (evading oncoming obstacle by changing lane cleanly)
+              else if (obs.playerEncounterLane !== undefined && obs.playerEncounterLane === obs.lane && player.currentLane !== obs.lane) {
+                comboMgr.recordSkillEvent('CLEAN_LANE_DODGE', obs.id);
+              }
+
+              // 4. NEAR_MISS (Confirm candidate near miss on safe clearance)
+              if (obs.nearMissCandidate && !obs.nearMissScored) {
+                obs.nearMissScored = true;
+                obs.nearMissTriggered = true;
+                this.eventBus.emit(EVENTS.NEAR_MISS);
+                comboMgr.recordSkillEvent('NEAR_MISS', obs.id);
+              }
+
+              // 5. Clean Obstacle Chain
+              comboMgr.registerObstacleClearance();
+            }
           }
         }
       }
@@ -1390,10 +1797,12 @@ export class TrackManager {
           chunk.chunkZ + col.group.position.z
         );
 
-        // Ground coins are not collected from far above while high in jetpack flight
+        // Ground coins are not collected from far above while high in jetpack flight or on train roofs
         const isGroundCollectible = colWorldPos.y < 3.0;
-        const isPlayerHighInFlight = player.position.y > 3.2;
-        if (isPlayerHighInFlight && isGroundCollectible) {
+        const isHighAltitude = (player.state === 'JETPACK' || player.getJetpackPhase() !== 'NONE')
+          ? player.position.y > 5.0
+          : (player.supportSurface === 'TRAIN_ROOF' && player.position.y > 4.0);
+        if (isHighAltitude && isGroundCollectible && !col.isMagnetized) {
           continue;
         }
 
@@ -1420,16 +1829,26 @@ export class TrackManager {
         }
 
         // Collection check: full 3D swept box, 3D trajectory segment test, and proximity
-        const prevChestPos = prevPos ? prevPos.clone() : playerChestPos.clone();
-        if (prevPos) prevChestPos.y += 0.5;
+        // For jumping players, clamp closest vertical point to player's body column so jump arc coins are reliably swept
+        const clampedPlayerY = player.isJumping
+          ? THREE.MathUtils.clamp(colWorldPos.y, player.groundY, player.position.y + CONSTANTS.PLAYER_HEIGHT_RUN)
+          : playerChestPos.y;
+        const playerBodyPoint = new THREE.Vector3(player.position.x, clampedPlayerY, player.position.z);
+
+        const prevClampedY = (player.isJumping && prevPos)
+          ? THREE.MathUtils.clamp(colWorldPos.y, player.groundY, prevPos.y + CONSTANTS.PLAYER_HEIGHT_RUN)
+          : (prevPos ? prevPos.y + 0.5 : playerChestPos.y);
+        const prevBodyPoint = prevPos
+          ? new THREE.Vector3(prevPos.x, prevClampedY, prevPos.z)
+          : playerBodyPoint.clone();
 
         const distSqToSegment = this.distToSegmentSquared(
           colWorldPos.x, colWorldPos.y, colWorldPos.z,
-          prevChestPos.x, prevChestPos.y, prevChestPos.z,
-          playerChestPos.x, playerChestPos.y, playerChestPos.z
+          prevBodyPoint.x, prevBodyPoint.y, prevBodyPoint.z,
+          playerBodyPoint.x, playerBodyPoint.y, playerBodyPoint.z
         );
         const pickupRadius = CONSTANTS.COIN_PICKUP_RADIUS || 1.1;
-        const distToCurrent = colWorldPos.distanceTo(playerChestPos);
+        const distToCurrent = colWorldPos.distanceTo(playerBodyPoint);
 
         const isCollected = col.collider.intersectsBox(sweptCollectibleBox) ||
           distSqToSegment <= pickupRadius * pickupRadius ||
@@ -1690,6 +2109,64 @@ export class TrackManager {
 
     this.previousPlayerZ = playerZ;
     return chosenLane;
+  }
+
+  /**
+   * Compact diagnostics object for developer inspection & testing of rooftop traversal
+   */
+  public getRooftopTraversalDiagnostics(): Record<string, unknown> {
+    const player = this.encounterPlayer;
+    const currentSupport = player ? this.findObstacleById(player.getActiveSupportObstacleId() || '') : null;
+    const plan = this.activeRooftopPlan;
+    const nextTransfer = plan?.transfers[0];
+
+    const pinnedChunkIds = this.chunks
+      .filter((c) => {
+        if (!player) return false;
+        const chunkEndZ = c.chunkZ - CONSTANTS.CHUNK_LENGTH;
+        const isSupporting = c.obstacles.some(
+          (o) => o.id === player.getActiveSupportObstacleId() ||
+                 (Boolean(o.carriageGroupId) && o.carriageGroupId === player.getActiveSupportGroupId()) ||
+                 (Boolean(o.routeGroupId) && o.routeGroupId === plan?.id && player.getSupportSurface() !== 'GROUND')
+        );
+        const isPlayerIn = player.position.z <= c.chunkZ + 2.0 && player.position.z >= chunkEndZ - 2.0;
+        return isSupporting || (player.getSupportSurface() !== 'GROUND' && isPlayerIn);
+      })
+      .map((c) => c.chunkZ);
+
+    return {
+      currentSupportSurface: player ? player.getSupportSurface() : 'GROUND',
+      currentSupportObstacleId: player ? player.getActiveSupportObstacleId() : null,
+      currentSupportGroupId: player ? player.getActiveSupportGroupId() : null,
+      activeRooftopRouteId: plan ? plan.id : null,
+      routeSeed: plan ? plan.seed : null,
+      routeArchetype: plan ? plan.archetype : null,
+      difficultyTier: plan ? plan.tier : null,
+      currentRouteLeg: currentSupport?.routeLegId || null,
+      currentLane: player ? player.currentLane : 0,
+      targetLane: nextTransfer ? nextTransfer.targetLane : (player ? player.currentLane : 0),
+      playerSpeed: player ? player.speed : 0,
+      targetRooftopDuration: plan ? plan.targetDuration : 0,
+      measuredRooftopDuration: this.rooftopMeasuredDuration,
+      activeRoofSegmentIds: currentSupport?.roofSegments?.map((s) => s.id) || [],
+      nextTransferType: nextTransfer ? nextTransfer.kind : null,
+      nextTransferWindowStart: nextTransfer ? nextTransfer.windowStartZ : null,
+      nextTransferWindowEnd: nextTransfer ? nextTransfer.windowEndZ : null,
+      predictedLandingLocation: nextTransfer ? { lane: nextTransfer.targetLane, z: nextTransfer.landingZ } : null,
+      validatorResult: plan && player ? ReachabilityValidator.validateRooftopRoute(plan, player.speed, undefined, this.getGameMode()) : null,
+      supportLossCount: this.supportLossCount,
+      lastSupportLossReason: this.lastSupportLossReason,
+      movingSupportDisplacementCurrentFrame: this.lastMovingDisplacement,
+      pinnedChunkIds
+    };
+  }
+
+  /**
+   * Forces a deterministic rooftop route archetype and seed for debugging and unit testing
+   */
+  public setDebugRooftopRoute(archetype: RooftopRouteArchetype, seed: number): void {
+    this.forcedDebugArchetype = archetype;
+    this.forcedDebugSeed = seed;
   }
 }
 
