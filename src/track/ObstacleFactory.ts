@@ -215,6 +215,7 @@ export class ObstacleFactory {
   private beaconAmberMat: THREE.MeshBasicMaterial;
   private beaconRedMat: THREE.MeshBasicMaterial;
   private beaconCyanMat: THREE.MeshBasicMaterial;
+  private beaconGreenMat: THREE.MeshBasicMaterial;
   private reflectiveTrimMat: THREE.MeshBasicMaterial;
   private hazardYellowMat: THREE.MeshBasicMaterial;
   private trainSpawnCounter = 0;
@@ -292,10 +293,17 @@ export class ObstacleFactory {
     this.curvedManager.applyCurvature(this.gantryTrussSteelMat);
 
     this.beaconAmberMat = new THREE.MeshBasicMaterial({ color: 0xffab00 });
+    this.curvedManager.applyCurvature(this.beaconAmberMat);
     this.beaconRedMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    this.curvedManager.applyCurvature(this.beaconRedMat);
     this.beaconCyanMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+    this.curvedManager.applyCurvature(this.beaconCyanMat);
+    this.beaconGreenMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
+    this.curvedManager.applyCurvature(this.beaconGreenMat);
     this.reflectiveTrimMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    this.curvedManager.applyCurvature(this.reflectiveTrimMat);
     this.hazardYellowMat = new THREE.MeshBasicMaterial({ color: 0xffd600 });
+    this.curvedManager.applyCurvature(this.hazardYellowMat);
 
     this.trainRoofMat = new THREE.MeshStandardMaterial({
       color: 0x475569,
@@ -370,22 +378,27 @@ export class ObstacleFactory {
     this.trainHeadlightMat = new THREE.MeshBasicMaterial({
       color: 0xfffae6
     });
+    this.curvedManager.applyCurvature(this.trainHeadlightMat);
 
     this.trainTaillightMat = new THREE.MeshBasicMaterial({
       color: 0xff1744
     });
+    this.curvedManager.applyCurvature(this.trainTaillightMat);
 
     this.trainDestNeoMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getDestinationSignTexture('METRO 01', 'EXPRESS // DOWNTOWN', 0xffb300)
     });
+    this.curvedManager.applyCurvature(this.trainDestNeoMat);
 
     this.trainDestClassicMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getDestinationSignTexture('LOCAL 4', '42 ST // BROADWAY', 0x00e5ff)
     });
+    this.curvedManager.applyCurvature(this.trainDestClassicMat);
 
     this.trainDestExpressMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getDestinationSignTexture('AERO 08', 'CENTRAL AIRPORT', 0x76ff03)
     });
+    this.curvedManager.applyCurvature(this.trainDestExpressMat);
 
     this.rampPlateMat = new THREE.MeshStandardMaterial({
       map: TextureGenerator.getDiamondPlateTexture(),
@@ -404,6 +417,7 @@ export class ObstacleFactory {
     this.rampReflectorMat = new THREE.MeshBasicMaterial({
       color: 0xffab00 // High-intensity amber corner reflector
     });
+    this.curvedManager.applyCurvature(this.rampReflectorMat);
 
     this.rampTransitionMat = new THREE.MeshStandardMaterial({
       color: 0x78909c, // Steel transition plate
@@ -647,7 +661,7 @@ export class ObstacleFactory {
 
       const beaconLens = new THREE.Mesh(
         new THREE.SphereGeometry(0.08, 10, 8),
-        new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+        this.beaconCyanMat
       );
       beaconLens.position.set(xPos, h + 0.12, 0);
       group.add(beaconLens);
@@ -678,6 +692,7 @@ export class ObstacleFactory {
 
     // 5. Central reflective safety badge plate
     const badgeMat = new THREE.MeshBasicMaterial({ color: 0xff6d00 });
+    this.curvedManager.applyCurvature(badgeMat);
     const badge = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.24, 0.26), badgeMat);
     badge.position.set(0, h - 0.24, 0.02);
     group.add(badge);
@@ -807,7 +822,7 @@ export class ObstacleFactory {
         ambAspect.position.set(sx, clearance + girderH + 0.45, 0.31);
         group.add(ambAspect);
 
-        const grnAspect = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
+        const grnAspect = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), this.beaconGreenMat);
         grnAspect.position.set(sx, clearance + girderH + 0.30, 0.31);
         group.add(grnAspect);
       });
@@ -847,7 +862,7 @@ export class ObstacleFactory {
         lamp.position.set(lx, clearance + 0.18, 0.25);
         group.add(lamp);
 
-        const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfffae6 }));
+        const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), this.trainHeadlightMat);
         lampBulb.position.set(lx, clearance + 0.12, 0.28);
         group.add(lampBulb);
       });
@@ -939,7 +954,7 @@ export class ObstacleFactory {
     group.add(collar2);
 
     // 4. Eye-level high-visibility reflective caution bands with red warning reflectors
-    const reflectorMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    const reflectorMat = this.beaconRedMat;
     const reflectorBandGeo = new THREE.CylinderGeometry(w * 0.47, w * 0.47, 0.28, 12);
     const reflectorBand = new THREE.Mesh(reflectorBandGeo, this.mediumBarrierMat);
     reflectorBand.position.set(0, 1.45, 0);
@@ -1104,6 +1119,8 @@ export class ObstacleFactory {
 
     const frameMat = variant === 'CLASSIC_TRANSIT' ? this.trainChromeMat : this.trainWindowFrameMat;
 
+    const bodySegs = Math.max(4, Math.floor(bodyLength / 2.5));
+
     // Accent waistline stripe for Modern Metro
     if (variant === 'MODERN_METRO') {
       const stripeMat = new THREE.MeshStandardMaterial({
@@ -1114,12 +1131,12 @@ export class ObstacleFactory {
       this.curvedManager.applyCurvature(stripeMat);
 
       [-1, 1].forEach((side) => {
-        const stripeGeo = new THREE.BoxGeometry(0.04, 0.16, bodyLength * 0.96);
+        const stripeGeo = new THREE.BoxGeometry(0.04, 0.16, bodyLength * 0.96, 1, 1, bodySegs);
         const stripe = new THREE.Mesh(stripeGeo, stripeMat);
         stripe.position.set(side * (halfW + 0.01), 1.8, 0);
         group.add(stripe);
 
-        const pinGeo = new THREE.BoxGeometry(0.04, 0.04, bodyLength * 0.96);
+        const pinGeo = new THREE.BoxGeometry(0.04, 0.04, bodyLength * 0.96, 1, 1, bodySegs);
         const pin = new THREE.Mesh(pinGeo, this.trainChromeMat);
         pin.position.set(side * (halfW + 0.01), 1.95, 0);
         group.add(pin);
@@ -1129,13 +1146,13 @@ export class ObstacleFactory {
     // Classic Subway: Corrugated Stainless Steel Fluting Panels
     if (variant === 'CLASSIC_TRANSIT') {
       [-1, 1].forEach((side) => {
-        const flutingGeo = new THREE.BoxGeometry(0.04, 1.45, bodyLength * 0.96);
+        const flutingGeo = new THREE.BoxGeometry(0.04, 1.45, bodyLength * 0.96, 1, 1, bodySegs);
         const fluting = new THREE.Mesh(flutingGeo, this.trainStainlessFlutingMat);
         fluting.position.set(side * (halfW + 0.01), 1.3, 0);
         fluting.castShadow = true;
         group.add(fluting);
 
-        const moldingGeo = new THREE.BoxGeometry(0.06, 0.08, bodyLength * 0.96);
+        const moldingGeo = new THREE.BoxGeometry(0.06, 0.08, bodyLength * 0.96, 1, 1, bodySegs);
         const molding = new THREE.Mesh(moldingGeo, this.trainChromeMat);
         molding.position.set(side * (halfW + 0.01), 2.05, 0);
         group.add(molding);
@@ -1145,7 +1162,7 @@ export class ObstacleFactory {
     // Streamlined Express: Low-profile aerodynamic skirt covers
     if (variant === 'STREAMLINED_EXPRESS') {
       [-1, 1].forEach((side) => {
-        const skirtGeo = new THREE.BoxGeometry(0.05, 0.42, bodyLength * 0.95);
+        const skirtGeo = new THREE.BoxGeometry(0.05, 0.42, bodyLength * 0.95, 1, 1, bodySegs);
         const skirt = new THREE.Mesh(skirtGeo, this.trainChassisMat);
         skirt.position.set(side * (halfW - 0.02), 0.52, 0);
         group.add(skirt);
@@ -1156,7 +1173,7 @@ export class ObstacleFactory {
           metalness: 0.8
         });
         this.curvedManager.applyCurvature(speedMat);
-        const lineGeo = new THREE.BoxGeometry(0.04, 0.08, bodyLength * 0.98);
+        const lineGeo = new THREE.BoxGeometry(0.04, 0.08, bodyLength * 0.98, 1, 1, bodySegs);
         const line = new THREE.Mesh(lineGeo, speedMat);
         line.position.set(side * (halfW + 0.01), 3.4, 0);
         group.add(line);
@@ -1218,8 +1235,7 @@ export class ObstacleFactory {
 
           // Overhead amber door status indicator LED
           const ledGeo = new THREE.SphereGeometry(0.04, 8, 8);
-          const ledMat = new THREE.MeshBasicMaterial({ color: 0xff9100 });
-          const led = new THREE.Mesh(ledGeo, ledMat);
+          const led = new THREE.Mesh(ledGeo, this.beaconAmberMat);
           led.position.set(side * (halfW + 0.04), 2.9, doorZ);
           group.add(led);
 
@@ -1311,8 +1327,7 @@ export class ObstacleFactory {
       // Twin driver illuminated HUD gauges
       [-0.24, 0.24].forEach((gx) => {
         const gaugeGeo = new THREE.CircleGeometry(0.045, 12);
-        const gaugeMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
-        const gauge = new THREE.Mesh(gaugeGeo, gaugeMat);
+        const gauge = new THREE.Mesh(gaugeGeo, this.beaconCyanMat);
         gauge.position.set(gx, 2.30, frontZ + 0.58);
         gauge.rotation.x = -0.35;
         group.add(gauge);
@@ -1368,8 +1383,7 @@ export class ObstacleFactory {
       // Roof corner amber clearance marker LEDs
       [-halfW * 0.78, halfW * 0.78].forEach((mx) => {
         const markerGeo = new THREE.SphereGeometry(0.045, 8, 8);
-        const markerMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-        const marker = new THREE.Mesh(markerGeo, markerMat);
+        const marker = new THREE.Mesh(markerGeo, this.beaconAmberMat);
         marker.position.set(mx, 4.15, frontZ + metroNoseLen * 0.55);
         group.add(marker);
       });
@@ -1566,6 +1580,7 @@ export class ObstacleFactory {
       [-0.26, 0.26].forEach((cx, idx) => {
         const screenGeo = new THREE.PlaneGeometry(0.18, 0.11);
         const screenMat = new THREE.MeshBasicMaterial({ color: idx === 0 ? 0x00e5ff : 0x76ff03 });
+        this.curvedManager.applyCurvature(screenMat);
         const screen = new THREE.Mesh(screenGeo, screenMat);
         screen.position.set(cx, 2.32, frontZ + 0.62);
         screen.rotation.x = -0.42;
@@ -1622,8 +1637,7 @@ export class ObstacleFactory {
 
         // Cyan DRL accent brow strip
         const drlGeo = new THREE.BoxGeometry(0.48, 0.03, 0.06);
-        const drlMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
-        const drl = new THREE.Mesh(drlGeo, drlMat);
+        const drl = new THREE.Mesh(drlGeo, this.beaconCyanMat);
         drl.position.set(hx, 1.25, tipZ + 0.01);
         group.add(drl);
       });
@@ -1705,10 +1719,12 @@ export class ObstacleFactory {
     bodyLength: number,
     variant: TrainVariant
   ): void {
+    const bodySegs = Math.max(4, Math.floor(bodyLength / 2.5));
+
     // 1. Central Walkable Anti-Slip Runway Catwalk (Exacting Y = 4.35m top surface)
     // Thickness = 0.14m, centered at Y = 4.28m, so top face is exactly at 4.35m!
     const catwalkWidth = 1.7;
-    const catwalkGeo = new THREE.BoxGeometry(catwalkWidth, 0.14, bodyLength * 0.98);
+    const catwalkGeo = new THREE.BoxGeometry(catwalkWidth, 0.14, bodyLength * 0.98, 1, 1, bodySegs);
     const catwalk = new THREE.Mesh(catwalkGeo, this.trainWalkwayMat);
     catwalk.position.set(0, 4.28, 0);
     catwalk.receiveShadow = true;
@@ -1716,7 +1732,7 @@ export class ObstacleFactory {
 
     // Yellow safety edge boundaries along catwalk sides
     [-catwalkWidth * 0.5, catwalkWidth * 0.5].forEach((cx) => {
-      const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, bodyLength * 0.98);
+      const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, bodyLength * 0.98, 1, 1, bodySegs);
       const edge = new THREE.Mesh(edgeGeo, this.barrierMat);
       edge.position.set(cx, 4.28, 0);
       group.add(edge);
@@ -1780,7 +1796,7 @@ export class ObstacleFactory {
 
       // Exposed electrical conduit pipes along roof
       [-catwalkWidth * 0.58, catwalkWidth * 0.58].forEach((px) => {
-        const pipeGeo = new THREE.CylinderGeometry(0.04, 0.04, bodyLength * 0.92, 6);
+        const pipeGeo = new THREE.CylinderGeometry(0.04, 0.04, bodyLength * 0.92, 6, bodySegs);
         const pipe = new THREE.Mesh(pipeGeo, this.trainChromeMat);
         pipe.rotation.x = Math.PI / 2;
         pipe.position.set(px, 4.38, 0);
@@ -1804,7 +1820,7 @@ export class ObstacleFactory {
     } else {
       // STREAMLINED_EXPRESS: Continuous Streamlined Roof Fairing
       [-1, 1].forEach((side) => {
-        const fairingGeo = new THREE.BoxGeometry(w * 0.28, 0.26, bodyLength * 0.96);
+        const fairingGeo = new THREE.BoxGeometry(w * 0.28, 0.26, bodyLength * 0.96, 1, 1, bodySegs);
         const fairing = new THREE.Mesh(fairingGeo, this.trainRoofMat);
         fairing.position.set(side * (w * 0.35), 4.41, 0);
         fairing.castShadow = true;
@@ -2031,13 +2047,14 @@ export class ObstacleFactory {
     const rampZCenter = halfD + rampLength * 0.5;
     const slantLength = Math.sqrt(rampLength * rampLength + rampHeight * rampHeight);
     const rampAngle = Math.atan2(rampHeight, rampLength);
+    const slantSegs = Math.max(4, Math.floor(slantLength / 2.0));
 
     // 1. Walkway Deck: Exactly connects (Z = halfD + rampLength, Y = 0) to (Z = halfD, Y = 4.35)
     // Box dimensions: [rampWidth, 0.22, slantLength]
     // Rotated by rampAngle around X:
     // At -slantLength/2: Z = rampZCenter - (slant/2)*cos(theta) = halfD; Y = rampHeight/2 + (slant/2)*sin(theta) = 4.35m
     // At +slantLength/2: Z = rampZCenter + (slant/2)*cos(theta) = halfD + rampLength; Y = rampHeight/2 - (slant/2)*sin(theta) = 0.0m
-    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength);
+    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength, 1, 1, slantSegs);
     const rampMesh = new THREE.Mesh(rampGeo, this.trainWalkwayMat);
     rampMesh.rotation.x = rampAngle;
     rampMesh.position.set(0, rampHeight * 0.5, rampZCenter);
@@ -2046,7 +2063,7 @@ export class ObstacleFactory {
     group.add(rampMesh);
 
     // 2. High-Visibility Side Hazard Warning Skirts running full slant length
-    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength);
+    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength, 1, 1, slantSegs);
     [-rampWidth * 0.51, rampWidth * 0.51].forEach((sx) => {
       const skirt = new THREE.Mesh(skirtGeo, this.barrierMat);
       skirt.rotation.x = rampAngle;
@@ -2055,7 +2072,7 @@ export class ObstacleFactory {
       group.add(skirt);
 
       // Elevated Tubular Steel Safety Guide-Rails along top of skirts
-      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8);
+      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8, slantSegs);
       const rail = new THREE.Mesh(railGeo, this.trainChromeMat);
       rail.rotation.x = rampAngle + Math.PI / 2;
       rail.position.set(sx, rampHeight * 0.5 + 0.42, rampZCenter);
@@ -2064,7 +2081,7 @@ export class ObstacleFactory {
 
     // 3. Longitudinal Structural I-Beam Stringers under left & right deck edges
     [-rampWidth * 0.42, rampWidth * 0.42].forEach((bx) => {
-      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength);
+      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength, 1, 1, slantSegs);
       const stringer = new THREE.Mesh(stringerGeo, this.rampTrussMat);
       stringer.rotation.x = rampAngle;
       stringer.position.set(bx, rampHeight * 0.5 - 0.14, rampZCenter);
@@ -2203,8 +2220,7 @@ export class ObstacleFactory {
     group.add(beaconBase);
 
     const beaconGeo = new THREE.SphereGeometry(0.09, 10, 8);
-    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff9100 });
-    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+    const beacon = new THREE.Mesh(beaconGeo, this.beaconAmberMat);
     beacon.position.set(0, h + 0.14, 0);
     group.add(beacon);
 
@@ -2248,8 +2264,7 @@ export class ObstacleFactory {
 
     // 4. Center flashing red clearance warning lamp
     const lampGeo = new THREE.SphereGeometry(0.12, 10, 8);
-    const lampMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
-    const lamp = new THREE.Mesh(lampGeo, lampMat);
+    const lamp = new THREE.Mesh(lampGeo, this.beaconRedMat);
     lamp.position.set(0, clearance + trussH * 0.5, 0.35);
     group.add(lamp);
 
@@ -2324,7 +2339,7 @@ export class ObstacleFactory {
 
     // Forward headlight track illumination beam (cast onto rails ahead in +Z to telegraph lane occupancy)
     const beamLength = 36.0;
-    const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.98, beamLength);
+    const beamGeo = new THREE.PlaneGeometry(CONSTANTS.TRAIN_WIDTH * 0.98, beamLength, 1, Math.round(beamLength / 2.0));
     const beamMat = new THREE.MeshBasicMaterial({
       color: 0xfffae6,
       transparent: true,
@@ -2425,8 +2440,7 @@ export class ObstacleFactory {
     // Amber perimeter clearance reflectors
     [-width * 0.48, width * 0.48].forEach((rx) => {
       const refGeo = new THREE.SphereGeometry(0.04, 8, 8);
-      const refMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-      const ref = new THREE.Mesh(refGeo, refMat);
+      const ref = new THREE.Mesh(refGeo, this.beaconAmberMat);
       ref.position.set(rx, 4.35 + height * 0.4, 0);
       group.add(ref);
     });
@@ -2453,9 +2467,10 @@ export class ObstacleFactory {
     const rampZCenter = -halfD - rampLength * 0.5;
     const slantLength = Math.sqrt(rampLength * rampLength + rampHeight * rampHeight);
     const rampAngle = Math.atan2(rampHeight, rampLength);
+    const slantSegs = Math.max(4, Math.floor(slantLength / 2.0));
 
     // 1. Walkway Deck sloping down towards -Z
-    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength);
+    const rampGeo = new THREE.BoxGeometry(rampWidth, 0.22, slantLength, 1, 1, slantSegs);
     const rampMesh = new THREE.Mesh(rampGeo, this.trainWalkwayMat);
     rampMesh.rotation.x = -rampAngle;
     rampMesh.position.set(0, rampHeight * 0.5, rampZCenter);
@@ -2464,7 +2479,7 @@ export class ObstacleFactory {
     group.add(rampMesh);
 
     // 2. Hazard Skirts and Guide Rails
-    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength);
+    const skirtGeo = new THREE.BoxGeometry(0.14, 0.45, slantLength, 1, 1, slantSegs);
     [-rampWidth * 0.51, rampWidth * 0.51].forEach((sx) => {
       const skirt = new THREE.Mesh(skirtGeo, this.barrierMat);
       skirt.rotation.x = -rampAngle;
@@ -2472,7 +2487,7 @@ export class ObstacleFactory {
       skirt.castShadow = true;
       group.add(skirt);
 
-      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8);
+      const railGeo = new THREE.CylinderGeometry(0.04, 0.04, slantLength * 0.98, 8, slantSegs);
       const rail = new THREE.Mesh(railGeo, this.trainChromeMat);
       rail.rotation.x = -rampAngle + Math.PI / 2;
       rail.position.set(sx, rampHeight * 0.5 + 0.42, rampZCenter);
@@ -2481,7 +2496,7 @@ export class ObstacleFactory {
 
     // 3. Longitudinal I-Beams
     [-rampWidth * 0.42, rampWidth * 0.42].forEach((bx) => {
-      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength);
+      const stringerGeo = new THREE.BoxGeometry(0.12, 0.24, slantLength, 1, 1, slantSegs);
       const stringer = new THREE.Mesh(stringerGeo, this.rampTrussMat);
       stringer.rotation.x = -rampAngle;
       stringer.position.set(bx, rampHeight * 0.5 - 0.14, rampZCenter);

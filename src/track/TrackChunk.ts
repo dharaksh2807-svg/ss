@@ -189,10 +189,12 @@ export class TrackChunk {
     const modernNeonMat = new THREE.MeshBasicMaterial({
       color: 0x00e5ff
     });
+    curved.applyCurvature(modernNeonMat);
 
     const modernSignMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getModernMetroSignTexture('METRO CENTRAL', 'LINE 1')
     });
+    curved.applyCurvature(modernSignMat);
 
     const solarPanelMat = new THREE.MeshStandardMaterial({
       color: 0x152238,
@@ -218,6 +220,7 @@ export class TrackChunk {
     const cableMat = new THREE.MeshBasicMaterial({
       color: 0x263238
     });
+    curved.applyCurvature(cableMat);
 
     const graffitiMat1 = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getGraffitiDecal(0),
@@ -273,6 +276,7 @@ export class TrackChunk {
     const gasLampMat = new THREE.MeshBasicMaterial({
       color: 0xffe082
     });
+    curved.applyCurvature(gasLampMat);
 
     const slateRoofMat = new THREE.MeshStandardMaterial({
       color: 0x37474f,
@@ -284,6 +288,7 @@ export class TrackChunk {
     const historicSignMat = new THREE.MeshBasicMaterial({
       map: TextureGenerator.getHistoricSignTexture('GRAND CENTRAL')
     });
+    curved.applyCurvature(historicSignMat);
 
     const earthenwareInsulatorMat = new THREE.MeshStandardMaterial({
       color: 0x8d6e63,
@@ -295,6 +300,7 @@ export class TrackChunk {
     const copperCableMat = new THREE.MeshBasicMaterial({
       color: 0x4e342e
     });
+    curved.applyCurvature(copperCableMat);
 
     // 4. Subway Tunnel Architecture Materials
     const tunnelTileMat = new THREE.MeshStandardMaterial({
@@ -321,6 +327,7 @@ export class TrackChunk {
     const tunnelLampMat = new THREE.MeshBasicMaterial({
       color: 0xffd54f
     });
+    curved.applyCurvature(tunnelLampMat);
 
     TrackChunk.sharedMaterials = {
       ballastMat,
@@ -362,8 +369,10 @@ export class TrackChunk {
     const mats = TrackChunk.sharedMaterials!;
     const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8; // 13.6m
 
+    const chunkSegs = Math.round(this.length / 2.0);
+
     // 1. Ballast Roadbed Base (High-detail crushed stone)
-    const roadbedGeo = new THREE.BoxGeometry(roadbedWidth, 0.45, this.length);
+    const roadbedGeo = new THREE.BoxGeometry(roadbedWidth, 0.45, this.length, 1, 1, chunkSegs);
     const roadbed = new THREE.Mesh(roadbedGeo, mats.ballastMat);
     roadbed.position.set(0, -0.22, -this.length * 0.5);
     roadbed.receiveShadow = true;
@@ -372,7 +381,7 @@ export class TrackChunk {
     // 2. Concrete Trackside Retaining Curbs
     const curbWidth = 0.5;
     const curbHeight = 0.55;
-    const curbGeo = new THREE.BoxGeometry(curbWidth, curbHeight, this.length);
+    const curbGeo = new THREE.BoxGeometry(curbWidth, curbHeight, this.length, 1, 1, chunkSegs);
 
     const leftCurb = new THREE.Mesh(curbGeo, mats.curbMat);
     leftCurb.position.set(-roadbedWidth * 0.5 - curbWidth * 0.5, 0.05, -this.length * 0.5);
@@ -391,10 +400,10 @@ export class TrackChunk {
     const railHeadW = 0.12;
     const railHeadH = 0.18;
 
-    if (!TrackChunk.sleeperGeo) {
+    if (!TrackChunk.railGeo) {
       TrackChunk.sleeperGeo = new THREE.BoxGeometry(CONSTANTS.LANE_WIDTH * 0.82, 0.16, 0.36);
       TrackChunk.tiePlateGeo = new THREE.BoxGeometry(0.24, 0.04, 0.38);
-      TrackChunk.railGeo = new THREE.BoxGeometry(railHeadW, railHeadH, this.length);
+      TrackChunk.railGeo = new THREE.BoxGeometry(railHeadW, railHeadH, this.length, 1, 1, chunkSegs);
     }
 
     const totalSleepers = sleeperCount * CONSTANTS.LANE_POSITIONS.length;
@@ -486,7 +495,7 @@ export class TrackChunk {
     const wallH = 6.4;
     const wallThick = 0.6;
     const ceilingH = CONSTANTS.TUNNEL_CEILING_HEIGHT; // 7.6m
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallH, this.length);
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallH, this.length, 1, 1, Math.round(this.length / 2.0));
 
     // 1. Continuous Left & Right Tunnel Walls with Subway Ceramic Tiling
     const leftWall = new THREE.Mesh(wallGeo, mats.tunnelTileMat);
@@ -505,11 +514,12 @@ export class TrackChunk {
     // Spans from Left Wall (-wallX) to Right Wall (+wallX), crowning at ceilingH (7.6m)
     const spanW = wallX * 2.0;
     const ceilingThick = 0.45;
+    const chunkSegs = Math.round(this.length / 2.0);
     
     // Center horizontal crown slab
     const crownW = spanW * 0.65;
     const crownSlab = new THREE.Mesh(
-      new THREE.BoxGeometry(crownW, ceilingThick, this.length),
+      new THREE.BoxGeometry(crownW, ceilingThick, this.length, 1, 1, chunkSegs),
       mats.tunnelCeilingMat
     );
     crownSlab.position.set(0, ceilingH, -this.length * 0.5);
@@ -520,7 +530,7 @@ export class TrackChunk {
     const haunchW = (spanW - crownW) * 0.5 + 0.35;
     const haunchAngle = 0.38;
     const leftHaunch = new THREE.Mesh(
-      new THREE.BoxGeometry(haunchW, ceilingThick, this.length),
+      new THREE.BoxGeometry(haunchW, ceilingThick, this.length, 1, 1, chunkSegs),
       mats.tunnelCeilingMat
     );
     leftHaunch.rotation.z = -haunchAngle;
@@ -528,7 +538,7 @@ export class TrackChunk {
     tunnelGroup.add(leftHaunch);
 
     const rightHaunch = new THREE.Mesh(
-      new THREE.BoxGeometry(haunchW, ceilingThick, this.length),
+      new THREE.BoxGeometry(haunchW, ceilingThick, this.length, 1, 1, chunkSegs),
       mats.tunnelCeilingMat
     );
     rightHaunch.rotation.z = haunchAngle;
@@ -639,10 +649,12 @@ export class TrackChunk {
     portal.add(sign);
 
     // Twin flashing red portal marker beacons
+    const portalBeaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    CurvedShaderManager.getInstance().applyCurvature(portalBeaconMat);
     [-wallX - 0.5, wallX + 0.5].forEach((bx) => {
       const beacon = new THREE.Mesh(
         new THREE.SphereGeometry(0.18, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xff1744 })
+        portalBeaconMat
       );
       beacon.position.set(bx, portalH + 1.5, type === 'ENTRY' ? 1.4 : -1.4);
       portal.add(beacon);
@@ -656,10 +668,11 @@ export class TrackChunk {
    */
   private buildModernMetroScenery(roadbedWidth: number, curbWidth: number): void {
     const mats = TrackChunk.sharedMaterials!;
+    const chunkSegs = Math.round(this.length / 2.0);
     const wallHeight = 2.4;
     const wallThick = 0.6;
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length);
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length, 1, 1, chunkSegs);
 
     // Left & Right smooth concrete retaining walls
     const leftWall = new THREE.Mesh(wallGeo, mats.modernConcreteMat);
@@ -675,7 +688,7 @@ export class TrackChunk {
     this.decorativeGroup.add(rightWall);
 
     // Sleek top coping cap
-    const capGeo = new THREE.BoxGeometry(wallThick + 0.15, 0.18, this.length);
+    const capGeo = new THREE.BoxGeometry(wallThick + 0.15, 0.18, this.length, 1, 1, chunkSegs);
     const leftCap = new THREE.Mesh(capGeo, mats.curbMat);
     leftCap.position.set(-wallX, wallHeight + 0.09, -this.length * 0.5);
     this.decorativeGroup.add(leftCap);
@@ -685,7 +698,7 @@ export class TrackChunk {
     this.decorativeGroup.add(rightCap);
 
     // Neon cyan accent strip running along wall top
-    const neonGeo = new THREE.BoxGeometry(0.06, 0.06, this.length);
+    const neonGeo = new THREE.BoxGeometry(0.06, 0.06, this.length, 1, 1, chunkSegs);
     [-wallX + wallThick * 0.5, wallX - wallThick * 0.5].forEach((nx) => {
       const neon = new THREE.Mesh(neonGeo, mats.modernNeonMat);
       neon.position.set(nx, wallHeight + 0.05, -this.length * 0.5);
@@ -694,8 +707,9 @@ export class TrackChunk {
 
     // Modern yellow safety railing
     const railPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 6);
-    const railBarGeo = new THREE.BoxGeometry(0.06, 0.06, this.length);
+    const railBarGeo = new THREE.BoxGeometry(0.06, 0.06, this.length, 1, 1, chunkSegs);
     const yellowMat = new THREE.MeshStandardMaterial({ color: 0xffd600, roughness: 0.3 });
+    CurvedShaderManager.getInstance().applyCurvature(yellowMat);
 
     [-wallX, wallX].forEach((wx) => {
       const topBar = new THREE.Mesh(railBarGeo, yellowMat);
@@ -781,6 +795,7 @@ export class TrackChunk {
 
         const lensGeo = new THREE.CircleGeometry(0.08, 10);
         const greenMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
+        CurvedShaderManager.getInstance().applyCurvature(greenMat);
         const greenLens = new THREE.Mesh(lensGeo, greenMat);
         greenLens.position.set(laneX, poleHeight - 0.65, 0.25);
         gantryGroup.add(greenLens);
@@ -791,7 +806,7 @@ export class TrackChunk {
 
     // Overhead catenary contact wires elevated at 10.7m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-      const cableGeo = new THREE.CylinderGeometry(0.015, 0.015, this.length, 6);
+      const cableGeo = new THREE.CylinderGeometry(0.015, 0.015, this.length, 6, Math.round(this.length / 2.0));
       const cable = new THREE.Mesh(cableGeo, mats.cableMat);
       cable.rotation.x = Math.PI / 2;
       cable.position.set(laneX, poleHeight - 0.50, -this.length * 0.5);
@@ -839,9 +854,12 @@ export class TrackChunk {
           pad.position.y = bH + 0.12;
           bGroup.add(pad);
 
+          const helipadBeaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+          CurvedShaderManager.getInstance().applyCurvature(helipadBeaconMat);
+
           [-bW * 0.3, bW * 0.3].forEach((px) => {
             [-bD * 0.3, bD * 0.3].forEach((pz) => {
-              const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff1744 }));
+              const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6, 6), helipadBeaconMat);
               beacon.position.set(px, bH + 0.4, pz);
               bGroup.add(beacon);
             });
@@ -967,8 +985,9 @@ export class TrackChunk {
     const mats = TrackChunk.sharedMaterials!;
     const wallHeight = 2.4;
     const wallThick = 0.6;
+    const chunkSegs = Math.round(this.length / 2.0);
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length);
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length, 1, 1, chunkSegs);
 
     // Left & Right Weathered Victorian Brick Retaining Walls
     const leftWall = new THREE.Mesh(wallGeo, mats.weatheredBrickMat1);
@@ -984,7 +1003,7 @@ export class TrackChunk {
     this.decorativeGroup.add(rightWall);
 
     // Ashlar stone coping cap along wall top
-    const capGeo = new THREE.BoxGeometry(wallThick + 0.18, 0.22, this.length);
+    const capGeo = new THREE.BoxGeometry(wallThick + 0.18, 0.22, this.length, 1, 1, chunkSegs);
     const leftCap = new THREE.Mesh(capGeo, mats.stoneMasonryMat);
     leftCap.position.set(-wallX, wallHeight + 0.11, -this.length * 0.5);
     this.decorativeGroup.add(leftCap);
@@ -1026,7 +1045,7 @@ export class TrackChunk {
     });
 
     // Heavy cast-iron steam pipes along wall foot
-    const pipeGeo = new THREE.CylinderGeometry(0.09, 0.09, this.length, 8);
+    const pipeGeo = new THREE.CylinderGeometry(0.09, 0.09, this.length, 8, chunkSegs);
     const leftPipe = new THREE.Mesh(pipeGeo, mats.castIronMat);
     leftPipe.rotation.x = Math.PI / 2;
     leftPipe.position.set(-wallX + wallThick * 0.5 + 0.12, 0.65, -this.length * 0.5);
@@ -1088,7 +1107,9 @@ export class TrackChunk {
         gantryGroup.add(semPost);
 
         // Signal Arm Blade (Red with white stripe)
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.04), new THREE.MeshStandardMaterial({ color: 0xd32f2f }));
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xd32f2f });
+        CurvedShaderManager.getInstance().applyCurvature(bladeMat);
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.04), bladeMat);
         blade.position.set(laneX + 0.35, poleHeight - 0.65, 0.22);
         blade.rotation.z = -0.3; // Raised clear signal!
         gantryGroup.add(blade);
@@ -1099,7 +1120,7 @@ export class TrackChunk {
 
     // Overhead dark copper telegraph wires elevated at 9.4m
     CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, this.length, 6), mats.copperCableMat);
+      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, this.length, 6, Math.round(this.length / 2.0)), mats.copperCableMat);
       wire.rotation.x = Math.PI / 2;
       wire.position.set(laneX, poleHeight - 0.60, -this.length * 0.5);
       this.decorativeGroup.add(wire);
@@ -1201,6 +1222,7 @@ export class TrackChunk {
           // Clock Faces on all 4 sides with illuminated dial
           const clockDialGeo = new THREE.CircleGeometry(1.1, 16);
           const clockDialMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+          CurvedShaderManager.getInstance().applyCurvature(clockDialMat);
           [-Math.PI / 2, Math.PI / 2, 0, Math.PI].forEach((angle) => {
             const dial = new THREE.Mesh(clockDialGeo, clockDialMat);
             dial.rotation.y = angle;
@@ -1337,6 +1359,7 @@ export class TrackChunk {
 
       // Welcome portal lantern on each pylon
       const lanternMat = new THREE.MeshBasicMaterial({ color: targetTheme.id === 'HISTORIC_QUARTER' ? 0xffb300 : 0x00e5ff });
+      CurvedShaderManager.getInstance().applyCurvature(lanternMat);
       const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.6), lanternMat);
       lantern.position.set(px > 0 ? px - 1.6 : px + 1.6, 6.5, 2.3);
       portalGroup.add(lantern);
@@ -1356,11 +1379,12 @@ export class TrackChunk {
     portalGroup.add(banner);
 
     // Also build retaining walls along remainder of chunk
+    const chunkSegs = Math.round(this.length / 2.0);
     const wallHeight = 2.4;
     const wallThick = 0.6;
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
     const wallMat = targetTheme.id === 'HISTORIC_QUARTER' ? mats.weatheredBrickMat1 : mats.modernConcreteMat;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length);
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, this.length, 1, 1, chunkSegs);
 
     const leftWall = new THREE.Mesh(wallGeo, wallMat);
     leftWall.position.set(-wallX, wallHeight * 0.5, 0);
@@ -1419,6 +1443,7 @@ export class TrackChunk {
 
     const beaconGeo = new THREE.SphereGeometry(0.12, 8, 8);
     const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+    CurvedShaderManager.getInstance().applyCurvature(beaconMat);
     const beacon = new THREE.Mesh(beaconGeo, beaconMat);
     beacon.position.y = 4.55;
     ant.add(beacon);
