@@ -268,6 +268,14 @@ export class CameraController {
     this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma * shakeMult);
   }
 
+  public getShakeTrauma(): number {
+    return this.shakeTrauma;
+  }
+
+  public getShakeOffset(): THREE.Vector3 {
+    return this.shakeOffset;
+  }
+
   public update(
     playerPos: THREE.Vector3,
     dt: number,

@@ -1323,7 +1323,10 @@ export class CharacterModel {
     if (!this.glbInstance) return;
     if (this.currentGlbClip === name) return;
 
-    const action = this.glbInstance.actions.get(name);
+    let action = this.glbInstance.actions.get(name);
+    if (!action && name === 'defeat') {
+      action = this.glbInstance.actions.get('stumble') || this.glbInstance.actions.get('idle');
+    }
     if (!action) return;
 
     const prevAction = this.currentGlbClip ? this.glbInstance.actions.get(this.currentGlbClip) : null;

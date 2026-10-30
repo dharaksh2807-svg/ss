@@ -255,6 +255,8 @@ export class Player {
   }
 
   private changeLane(direction: -1 | 1): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
+
     if (this.isChangingLane) {
       // Buffer the next lane switch ONLY if destination from target is within bounds [-1, 1]
       const potentialNextLane = this.targetLane + direction;
@@ -287,6 +289,7 @@ export class Player {
   }
 
   public jump(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
     if (this.isJumping) return;
     if (this.isUnderOverheadObstacle) return; // Cannot jump upright into overhead barrier!
 
@@ -331,6 +334,7 @@ export class Player {
   }
 
   public slide(): void {
+    if (this.state === 'CRASH' || this.state === 'IDLE') return;
     if (this.isJumping || this.position.y > this.groundY + 0.05) {
       // Record intended slide upon landing and engage fast-drop descent immediately
       this.pendingSlideOnLanding = true;
@@ -397,7 +401,8 @@ export class Player {
     this.model.setInvulnerable(this.isInvulnerable());
 
     if (this.state === 'CRASH') {
-      this.model.updateAnimation(this.state, this.speed, 0, this.groundY, dt);
+      this.model.updateAnimation(this.state, 0, 0, this.groundY, dt);
+      this.mesh.position.copy(this.position);
       return;
     }
 
@@ -872,26 +877,47 @@ export class Player {
     this.eventBus.emit(EVENTS.REVIVE_EXECUTED, { position: this.position, lane: this.currentLane });
   }
 
+  public isDead(): boolean {
+    return this.state === 'CRASH';
+  }
+
   public crash(reason: string = 'OBSTACLE_COLLISION'): boolean {
-    // 0. Active invulnerability protection (intro, powerups, crash grace, or revive grace)
+    // 0. Idempotent death transition guard: only the first valid fatal impact initiates death
+    if (this.state === 'CRASH') {
+      return false;
+    }
+
+    // 1. Active invulnerability protection (intro, powerups, crash grace, or revive grace)
     if (this.isInvulnerable()) {
       return false; // Ignored during grace period
     }
 
-    // 1. Protective Shield absorbs collision (does not advance guard capture state)
+    // 2. Protective Shield absorbs collision (does not advance guard capture state)
     if (this.powerups.consumeShield()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by shield!
     }
 
-    // 2. Hoverboard absorbs collision (breaks board without advancing guard to capture)
+    // 3. Hoverboard absorbs collision (breaks board without advancing guard to capture)
     if (this.hoverboardManager.breakBoard()) {
       this.eventBus.emit(EVENTS.CHASER_STUMBLE_REACTION);
       return false; // Absorbed by hoverboard!
     }
 
+    // Authoritative fatal crash initiated: stop all movement & input forces
+    this.speed = 0;
+    this.isChangingLane = false;
+    this.queuedLaneChange = null;
+    this.bankingAngle = 0;
+    this.isJumping = false;
+    this.isSliding = false;
+    this.slideTimer = 0;
     this.pendingSlideOnLanding = false;
     this.isFastDropping = false;
+    this.verticalVelocity = 0;
+    this.mesh.position.copy(this.position);
+    this.updateCollider();
+
     this.state = 'CRASH';
     this.eventBus.emit(EVENTS.CRASH, reason);
     return true; // Fatal crash

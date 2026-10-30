@@ -602,8 +602,21 @@ export class HUD {
     this.powerupContainer?.classList?.toggle?.('powerup-multi-3', activeKeys.size >= 3);
   }
 
+  public clearFeedbackBadges(): void {
+    if (this.feedbackStack) {
+      this.feedbackStack.innerHTML = '';
+    }
+  }
+
   public showFeedbackBadge(text: string, type: 'streak' | 'precision' | 'nearmiss' = 'precision'): void {
     if (!this.feedbackStack) return;
+
+    // Deduplication guard: ignore duplicate toast notifications if already showing
+    for (let i = 0; i < this.feedbackStack.children.length; i++) {
+      if (this.feedbackStack.children[i].textContent === text) {
+        return;
+      }
+    }
 
     // Limit active visible badges to at most 3 to never clutter the screen
     while (this.feedbackStack.children.length >= 3) {

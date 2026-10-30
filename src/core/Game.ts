@@ -54,7 +54,7 @@ import { DebugVisualizer } from '../debug/DebugVisualizer';
 import { DevBugReportModal } from '../ui/DevBugReportModal';
 import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
 
-export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
+export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'DYING' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -118,6 +118,7 @@ export class Game {
 
   // Fast Retry & Game Over delay handling (Task 2)
   private isRestartInProgress: boolean = false;
+  private deathTimeoutId: number | null = null;
   private gameOverTimeoutId: number | null = null;
   private lastResultMeta: any = null;
 
@@ -290,25 +291,29 @@ export class Game {
     bus.on(EVENTS.GAME_PAUSE, () => this.pause());
     bus.on(EVENTS.GAME_RESUME, () => this.resume());
     bus.on(EVENTS.GAME_RESTART, () => this.quickRestart());
-    bus.on('SKIP_GAME_OVER_DELAY', () => this.skipGameOverDelay());
+    bus.on('SKIP_GAME_OVER_DELAY', () => this.skipDeathOrGameOverDelay());
     bus.on('GO_TO_MENU', () => this.goToMenu());
 
     // Instant crash tumble skip / quick restart via keyboard or tap during collision reaction
     window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId !== null) {
+      const isDeadOrGameOver = this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'DYING';
+      const hasActiveDelay = this.gameOverTimeoutId !== null || this.deathTimeoutId !== null;
+      if (isDeadOrGameOver && hasActiveDelay) {
         if (e.key === 'r' || e.key === 'R') {
           e.preventDefault();
           this.quickRestart();
         } else if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
-          this.skipGameOverDelay();
+          this.skipDeathOrGameOverDelay();
         }
       }
     });
 
     window.addEventListener('pointerdown', () => {
-      if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId !== null) {
-        this.skipGameOverDelay();
+      const isDeadOrGameOver = this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'DYING';
+      const hasActiveDelay = this.gameOverTimeoutId !== null || this.deathTimeoutId !== null;
+      if (isDeadOrGameOver && hasActiveDelay) {
+        this.skipDeathOrGameOverDelay();
       }
     });
 
@@ -519,6 +524,11 @@ export class Game {
       clearTimeout(this.gameOverTimeoutId);
       this.gameOverTimeoutId = null;
     }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
 
     // Verify eligibility for trial character: block run with Rahul Gandhi if 0 trials remain and unowned
     const selectedChar = this.progression.getSelectedCharacter();
@@ -744,6 +754,11 @@ export class Game {
       clearTimeout(this.gameOverTimeoutId);
       this.gameOverTimeoutId = null;
     }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
@@ -893,6 +908,32 @@ export class Game {
     }
   }
 
+  public skipDeathOrGameOverDelay(): void {
+    if (this.lifecycleState === 'DYING' && this.deathTimeoutId !== null) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+      const reason = this.crashReplayManager.getActiveAnalysis()?.metadata?.reason || 'CRASH';
+      const explanation = this.crashReplayManager.getActiveExplanation();
+      if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
+        this.lifecycleState = 'REVIVE_OFFER';
+        this.reviveManager.beginOffer();
+        const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+        this.reviveModal.show(
+          offerState,
+          this.score,
+          this.coinsCount,
+          () => this.onReviveAccepted(),
+          () => this.onReviveDeclined(reason),
+          explanation
+        );
+      } else {
+        this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
+      }
+      return;
+    }
+    this.skipGameOverDelay();
+  }
+
   public skipGameOverDelay(): void {
     if (this.lifecycleState === 'GAMEOVER' && this.gameOverTimeoutId) {
       clearTimeout(this.gameOverTimeoutId);
@@ -917,6 +958,11 @@ export class Game {
       clearTimeout(this.gameOverTimeoutId);
       this.gameOverTimeoutId = null;
     }
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
+    }
+    this.hud.clearFeedbackBadges();
 
     this.reviveModal.hide();
     this.reviveManager.cancelOffer();
@@ -1053,8 +1099,13 @@ export class Game {
         );
         this.bugSnapshotManager.runInvariantChecks(this.player, nearbyObstacles, activeChunk);
       }
-    } else if (this.lifecycleState === 'GAMEOVER') {
-      // Update tumble animation
+    } else if (this.lifecycleState === 'DYING' || this.lifecycleState === 'GAMEOVER') {
+      // Gameplay world simulation (movement, track, collision, score) is FROZEN
+      // Presentation and animation updates continue smoothly!
+      this.player.update(dt);
+      this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
+      this.locomotionVFX.update(dt, this.player);
+    } else if (this.lifecycleState === 'REVIVE_OFFER') {
       this.player.update(dt);
       this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
     } else if (this.lifecycleState === 'REPLAY') {
@@ -1274,13 +1325,28 @@ export class Game {
   }
 
   private handleFatalCrash(reason: string): void {
-    if (this.lifecycleState === 'GAMEOVER' || this.lifecycleState === 'REVIVE_OFFER' || this.lifecycleState === 'REPLAY') return;
+    if (
+      this.lifecycleState === 'DYING' ||
+      this.lifecycleState === 'GAMEOVER' ||
+      this.lifecycleState === 'REVIVE_OFFER' ||
+      this.lifecycleState === 'REPLAY'
+    ) {
+      return;
+    }
 
     if (this.activeGameMode === 'PRACTICE' || this.activeGameMode === 'ARENA') {
       return;
     }
 
-    // Ensure fatal crash analysis is recorded if not already recorded directly from TrackManager
+    // 1. Authoritative transition to DYING lifecycle state
+    this.lifecycleState = 'DYING';
+    this.inputManager.setEnabled(false);
+
+    // 2. Chaser capture reaction & camera framing
+    this.chaser.triggerCaughtReaction();
+    this.cameraController.setGameOverMode(true, this.player.position);
+
+    // 3. Ensure fatal crash analysis is recorded if not already recorded directly from TrackManager
     if (!this.crashReplayManager.getActiveAnalysis()) {
       this.crashReplayManager.recordFatalCrash({
         reason,
@@ -1308,30 +1374,41 @@ export class Game {
 
     const explanation = this.crashReplayManager.getActiveExplanation();
 
-    if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
-      this.lifecycleState = 'REVIVE_OFFER';
-      this.inputManager.setEnabled(false);
-      this.reviveManager.beginOffer();
-      const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+    // 4. Smooth death animation presentation window before Revive offer or Game Over screen
+    const deathDurationMs = 1200;
+    this.deathTimeoutId = window.setTimeout(() => {
+      this.deathTimeoutId = null;
+      if (this.lifecycleState !== 'DYING') return;
 
-      this.reviveModal.show(
-        offerState,
-        this.score,
-        this.coinsCount,
-        () => this.onReviveAccepted(),
-        () => this.onReviveDeclined(reason),
-        explanation
-      );
-    } else {
-      this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH');
-    }
+      if (this.reviveManager.canOfferRevive(this.activeGameMode)) {
+        this.lifecycleState = 'REVIVE_OFFER';
+        this.reviveManager.beginOffer();
+        const offerState = this.reviveManager.getOfferState(this.activeGameMode);
+
+        this.reviveModal.show(
+          offerState,
+          this.score,
+          this.coinsCount,
+          () => this.onReviveAccepted(),
+          () => this.onReviveDeclined(reason),
+          explanation
+        );
+      } else {
+        this.handleGameOver(reason === 'CHASER_CAPTURE' ? 'CHASER_CAPTURE' : 'CRASH', true);
+      }
+    }, deathDurationMs);
   }
 
   private onReviveAccepted(): void {
     const result = this.reviveManager.executeRevive();
     if (!result.success) {
-      this.handleGameOver('CRASH');
+      this.handleGameOver('CRASH', true);
       return;
+    }
+
+    if (this.deathTimeoutId) {
+      clearTimeout(this.deathTimeoutId);
+      this.deathTimeoutId = null;
     }
 
     // 0. Reset crash replay state for fresh clean run life
@@ -1346,10 +1423,14 @@ export class Game {
     // 3. Reset Chaser distance to 14m standby behind runner
     this.chaser.reset();
 
+    // Restore camera
+    this.cameraController.setGameOverMode(false, this.player.position);
+
     // 4. Play audio feedback
     this.soundManager.playReviveSound();
 
     // 5. Show celebratory HUD badge
+    this.hud.clearFeedbackBadges();
     this.hud.showFeedbackBadge(`SAVED! 🔑 -${result.keysSpent}`, 'precision');
 
     // 6. Resume game simulation

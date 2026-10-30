@@ -1249,6 +1249,10 @@ export class TrackManager {
   }
 
   private updateGroundHeight(player: Player, dt: number = 0.016): void {
+    if (player.state === 'CRASH') {
+      return;
+    }
+
     // Carry an existing grounded rider before testing the platform's new bounds.
     // Use actual displacement, so landing this frame never adds a second movement.
     const previousSupport = this.findObstacleById(player.getActiveSupportObstacleId() || '');
@@ -1476,6 +1480,10 @@ export class TrackManager {
   }
 
   private checkCollisions(player: Player, dt: number): void {
+    if (player.state === 'CRASH') {
+      return;
+    }
+
     const playerBox = player.collider;
     // High-speed full 3D swept volume to prevent tunneling or missed coins at high speed (up to 45m/s)
     this.sweptCollectibleBox.copy(playerBox);
@@ -1637,7 +1645,29 @@ export class TrackManager {
                 player.stumble();
               }
               if (this.chaser) {
-                this.chaser.onMinorStumble();
+                const stumbleRes = this.chaser.onMinorStumble();
+                if (stumbleRes.captured) {
+                  CrashReplayManager.getInstance().recordFatalCrash({
+                    reason: 'CHASER_CAPTURE',
+                    obstacle: obs,
+                    diagnostic,
+                    player,
+                    chaser: this.chaser,
+                    isFrontal: false,
+                    isFlankContact,
+                    isGlance
+                  });
+                  BugSnapshotManager.getInstance().recordFatalCollision({
+                    reason: 'CHASER_CAPTURE',
+                    player,
+                    obstacle: obs,
+                    diagnostic,
+                    isFrontal: false,
+                    isFlankContact,
+                    isGlance
+                  });
+                  player.crash('CHASER_CAPTURE');
+                }
               }
               return;
 
