@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  define: {
+    __DEV__: JSON.stringify(mode === 'development'),
+  },
   server: {
     port: 3000,
     open: false,
@@ -10,4 +13,4 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true
   }
-});
+}));

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS, LaneIndex } from '../core/Constants';
+import { CONSTANTS, LaneIndex, isDeveloperMode } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { Player, SupportSurfaceType } from '../player/Player';
 import { TrackManager } from '../track/TrackManager';
@@ -122,7 +122,7 @@ export class DevTestArena {
   }
 
   private checkUrlDevParams(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isDeveloperMode()) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('dev') === 'arena' || params.get('arena') === '1' || params.get('test') === 'arena') {
       this.show();
@@ -131,8 +131,9 @@ export class DevTestArena {
 
   private setupEventListeners(): void {
     if (typeof window !== 'undefined') {
-      // Dev shortcut toggle: Backquote (` or ~) or Ctrl+Shift+D or F8
+      // Dev shortcut toggle: Backquote (` or ~) or Ctrl+Shift+D or F8 (only when authorized)
       window.addEventListener('keydown', (e) => {
+        if (!isDeveloperMode()) return;
         if ((e.code === 'Backquote' && (e.ctrlKey || e.altKey)) || (e.code === 'KeyD' && e.ctrlKey && e.shiftKey) || e.code === 'F8') {
           e.preventDefault();
           this.toggle();
@@ -181,6 +182,7 @@ export class DevTestArena {
   }
 
   public show(): void {
+    if (!isDeveloperMode()) return;
     this.isVisible = true;
     this.mountUI();
     if (this.rootEl) {
@@ -197,6 +199,7 @@ export class DevTestArena {
   }
 
   public toggle(): void {
+    if (!isDeveloperMode()) return;
     if (this.isVisible) {
       this.hide();
     } else {

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONSTANTS, LaneIndex } from '../core/Constants';
+import { CONSTANTS, LaneIndex, isDeveloperMode } from '../core/Constants';
 import { Player } from '../player/Player';
 import { TrackManager } from '../track/TrackManager';
 import { TrackChunk } from '../track/TrackChunk';
@@ -244,7 +244,7 @@ export class TrainScenarioRunner {
    * Binds debugging APIs to global window object when in development environment
    */
   public attachToWindow(game: any): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isDeveloperMode()) return;
 
     (window as any).__TRAIN_SCENARIO_RUNNER__ = {
       runScenario: (config: TrainScenarioConfig, maxDuration?: number) => {

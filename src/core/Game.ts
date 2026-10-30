@@ -192,7 +192,7 @@ export class Game {
     const config = graphics.getActiveConfig();
     this.worldScene.applyGraphicsConfig(config);
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && isDeveloperMode()) {
       (window as any).__METRO_GAME__ = this;
       (window as any).__GRAPHICS_MANAGER__ = graphics;
       (window as any).__SOUND_MANAGER__ = this.soundManager;
@@ -236,8 +236,10 @@ export class Game {
     this.startScreen.show();
     this.hud.hide();
 
-    // Attach development scenario runner to window
-    TrainScenarioRunner.getInstance().attachToWindow(this);
+    // Attach development scenario runner to window only in developer mode
+    if (isDeveloperMode()) {
+      TrainScenarioRunner.getInstance().attachToWindow(this);
+    }
 
     // Register synchronous screenshot capture hook for bug snapshots
     this.bugSnapshotManager.setCaptureHandler(() => {
@@ -1181,7 +1183,7 @@ export class Game {
   }
 
   private updateCollisionDebugVisuals(): void {
-    const isDebug = typeof window !== 'undefined' && (!!(window as any).__DEBUG_COLLIDERS__ || this.debugVisualizer.getIsEnabled());
+    const isDebug = typeof window !== 'undefined' && isDeveloperMode() && (!!(window as any).__DEBUG_COLLIDERS__ || this.debugVisualizer.getIsEnabled());
     this.debugVisualizer.setEnabled(isDebug);
     if (!isDebug) {
       if (this.debugGroup.children.length > 0) {
@@ -1200,7 +1202,7 @@ export class Game {
   }
 
   private updateWorldGenDiagnostics(dt: number): void {
-    const isDebug = typeof window !== 'undefined' && !!(window as any).__DEBUG_WORLD_GEN__;
+    const isDebug = typeof window !== 'undefined' && isDeveloperMode() && !!(window as any).__DEBUG_WORLD_GEN__;
     if (!isDebug) {
       if (this.worldGenOverlayEl) {
         this.worldGenOverlayEl.style.display = 'none';

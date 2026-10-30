@@ -407,52 +407,55 @@ export function getLaneX(lane: LaneIndex): number {
   return lane * CONSTANTS.LANE_WIDTH;
 }
 
+declare const __DEV__: boolean | undefined;
+
+/**
+ * Build-time development flag.
+ * In production Vite builds, this is statically replaced with literal `false`
+ * at compile time by the bundler.
+ */
+export const IS_BUILD_DEV: boolean = (() => {
+  // 1. Compile-time constant injected by bundler define
+  if (typeof __DEV__ === 'boolean') {
+    return __DEV__;
+  }
+  // 2. Vite standard import.meta.env flag
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return Boolean(import.meta.env.DEV);
+    }
+  } catch {}
+  return false;
+})();
+
 /**
  * Determines whether the current execution context is an authorized developer environment.
- * Ensures developer-facing diagnostics (wireframes, bug snapshot reports, debug buttons)
- * remain accessible on deliberate developer request while strictly isolated from normal gameplay.
+ * Development tools, diagnostics, and test arenas depend strictly on the build-time development flag.
+ * User-editable URL parameters (e.g. ?dev=1, ?debug=1, ?test=1, ?arena=1) and browser window variables
+ * cannot activate developer mode in production.
  */
 export function isDeveloperMode(): boolean {
-  const g = typeof window !== 'undefined' ? (window as any) : (globalThis as any);
-
-  // 1. Explicit in-memory developer override (allows tests & sessions to toggle mode)
-  if (typeof (globalThis as any).__IS_DEV__ === 'boolean') {
-    return (globalThis as any).__IS_DEV__;
-  }
-  if (typeof g.__IS_DEV__ === 'boolean') {
-    return g.__IS_DEV__;
-  }
-
-  // 2. Vite development mode
-  try {
-    if (Boolean((import.meta as any)?.env?.DEV)) {
-      return true;
-    }
-  } catch {}
-
-  // 3. Explicit URL developer query parameter (?dev=1, ?debug=1, ?test=1)
-  try {
-    if (typeof window !== 'undefined' && window.location && window.location.search) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('dev') || params.has('debug') || params.has('test') || params.has('arena')) {
-        return true;
-      }
-    }
-  } catch {}
-
-  // 4. Local development hostnames
-  try {
-    if (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return true;
-    }
-  } catch {}
-
-  // 5. Node.js runtime / unit test environment (when running in tsx / node without a browser hostname)
+  // 1. In Node.js testing/CI environments (tsx / node test runners)
   const proc = (globalThis as any).process;
-  if (proc && proc.env && (!g.location?.hostname || proc.env.NODE_ENV === 'test')) {
+  if (proc && proc.versions?.node) {
+    if (typeof (globalThis as any).__IS_DEV__ === 'boolean') {
+      return (globalThis as any).__IS_DEV__;
+    }
     return true;
   }
 
-  return false;
+  // 2. In browser environments: STRICTLY governed by the compile-time build flag.
+  // In production builds, this returns false unconditionally.
+  // URL parameters and window globals CANNOT enable developer mode in production.
+  if (!IS_BUILD_DEV) {
+    return false;
+  }
+
+  // 3. In dev server mode (IS_BUILD_DEV === true):
+  if (typeof window !== 'undefined' && typeof (window as any).__IS_DEV__ === 'boolean') {
+    return (window as any).__IS_DEV__;
+  }
+
+  return true;
 }
 
