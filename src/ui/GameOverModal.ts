@@ -13,6 +13,7 @@ export class GameOverModal {
   private countUpInterval: any = null;
   private onReplayCallback: (() => void) | null = null;
   private isRestarting: boolean = false;
+  private keydownBound: ((e: KeyboardEvent) => void) | null = null;
 
   constructor() {
     let el = document.getElementById('game-over-modal');
@@ -179,25 +180,25 @@ export class GameOverModal {
 
         <!-- Action Buttons -->
         <div class="game-over-actions-flow">
-          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Quick Retry (Press R or Space)">
+          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Play Again (Instant Retry)" title="Play Again [Space / Enter / R]">
             <span class="play-btn-content">
               <span class="play-icon">🔄</span>
-              <span id="game-over-retry-text" class="play-text">QUICK RETRY</span>
+              <span id="game-over-retry-text" class="play-text">PLAY AGAIN</span>
               <span class="retry-key-badge"><kbd>R</kbd></span>
             </span>
           </button>
 
           <div class="game-over-nav-row">
-            <button id="game-over-menu-btn" class="arcade-btn btn-secondary" aria-label="Return to Lobby (Press ESC)">
-              <span class="btn-icon">🏠</span> LOBBY <span class="nav-key-badge"><kbd>ESC</kbd></span>
+            <button id="game-over-menu-btn" class="arcade-btn btn-secondary" aria-label="Return to Main Menu" title="Main Menu [Esc]">
+              <span class="btn-icon">🏠</span> MAIN MENU <span class="nav-key-badge"><kbd>ESC</kbd></span>
             </button>
-            <button id="game-over-shop-btn" class="arcade-btn btn-gold">
+            <button id="game-over-shop-btn" class="arcade-btn btn-gold" aria-label="Open Upgrades Shop">
               <span class="btn-icon">🛒</span> SHOP
             </button>
-            <button id="game-over-missions-btn" class="arcade-btn btn-secondary">
+            <button id="game-over-missions-btn" class="arcade-btn btn-secondary" aria-label="Open Missions">
               <span class="btn-icon">🎯</span> MISSIONS
             </button>
-            <button id="game-over-characters-btn" class="arcade-btn btn-secondary">
+            <button id="game-over-characters-btn" class="arcade-btn btn-secondary" aria-label="Open Runners Showroom">
               <span class="btn-icon">👤</span> RUNNERS
             </button>
           </div>
@@ -206,6 +207,29 @@ export class GameOverModal {
     `;
 
     this.bindEvents();
+  }
+
+  public handlePlayAgain(): void {
+    if (this.isRestarting) return;
+    this.isRestarting = true;
+
+    const retryBtn = this.element.querySelector('#game-over-retry-btn') as HTMLButtonElement | null;
+    if (retryBtn) {
+      retryBtn.disabled = true;
+      retryBtn.classList.add('btn-disabled');
+    }
+
+    this.hide();
+    EventBus.getInstance().emit(EVENTS.GAME_RESTART);
+  }
+
+  public handleRetry(): void {
+    this.handlePlayAgain();
+  }
+
+  public handleMainMenu(): void {
+    this.hide();
+    EventBus.getInstance().emit('GO_TO_MENU');
   }
 
   private bindEvents(): void {
@@ -226,36 +250,13 @@ export class GameOverModal {
     const retryBtn = this.element.querySelector('#game-over-retry-btn');
     retryBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.handleRetry();
-    });
-
-    // Keyboard shortcuts for results screen: R / Space / Enter to retry, ESC to Lobby
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (this.element.classList.contains('hidden')) return;
-
-      if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.handleRetry();
-      } else if (e.key === ' ' || e.key === 'Enter') {
-        const active = document.activeElement;
-        if (!active || active === document.body || active === this.element || active.id === 'game-over-retry-btn') {
-          e.preventDefault();
-          e.stopPropagation();
-          this.handleRetry();
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.hide();
-        EventBus.getInstance().emit('GO_TO_MENU');
-      }
+      this.handlePlayAgain();
     });
 
     const menuBtn = this.element.querySelector('#game-over-menu-btn');
-    menuBtn?.addEventListener('click', () => {
-      this.hide();
-      EventBus.getInstance().emit('GO_TO_MENU');
+    menuBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.handleMainMenu();
     });
 
     const shopBtn = this.element.querySelector('#game-over-shop-btn');
@@ -291,28 +292,31 @@ export class GameOverModal {
         EventBus.getInstance().emit('OPEN_BUG_REPORT_MODAL');
       }
     });
-  }
 
-  public handleRetry(): void {
-    if (this.isRestarting) return;
-    this.isRestarting = true;
+    // Keyboard support: Enter/Space when focused, R for instant retry, Escape for Main Menu
+    if (typeof window !== 'undefined' && !this.keydownBound) {
+      this.keydownBound = (e: KeyboardEvent) => {
+        if (this.element.classList.contains('hidden')) return;
 
-    const retryBtn = this.element.querySelector('#game-over-retry-btn') as HTMLButtonElement;
-    if (retryBtn) {
-      retryBtn.disabled = true;
-      retryBtn.classList.add('btn-processing');
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handlePlayAgain();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          const active = document.activeElement;
+          if (!active || active === document.body || active === this.element || active.id === 'game-over-retry-btn') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handlePlayAgain();
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleMainMenu();
+        }
+      };
+      window.addEventListener('keydown', this.keydownBound);
     }
-
-    this.hide();
-    EventBus.getInstance().emit(EVENTS.GAME_RESTART);
-
-    setTimeout(() => {
-      this.isRestarting = false;
-      if (retryBtn) {
-        retryBtn.disabled = false;
-        retryBtn.classList.remove('btn-processing');
-      }
-    }, 400);
   }
 
   public show(
@@ -554,12 +558,20 @@ export class GameOverModal {
         scoreEl.textContent = current.toLocaleString();
 
         if (progress < 1) {
-          requestAnimationFrame(animateCount);
+          if (typeof requestAnimationFrame !== 'undefined') {
+            requestAnimationFrame(animateCount);
+          } else {
+            scoreEl.textContent = targetScore.toLocaleString();
+          }
         } else {
           scoreEl.textContent = targetScore.toLocaleString();
         }
       };
-      requestAnimationFrame(animateCount);
+      if (typeof requestAnimationFrame !== 'undefined') {
+        requestAnimationFrame(animateCount);
+      } else {
+        scoreEl.textContent = targetScore.toLocaleString();
+      }
     }
 
     // Populate equipped runner showcase
@@ -590,6 +602,14 @@ export class GameOverModal {
           runnerAvatarEl.textContent = selChar.portraitIcon || '🏃';
         }
       }
+    }
+
+    // Reset retry state & ensure button is active
+    this.isRestarting = false;
+    const retryBtn = this.element.querySelector('#game-over-retry-btn') as HTMLButtonElement | null;
+    if (retryBtn) {
+      retryBtn.disabled = false;
+      retryBtn.classList.remove('btn-disabled');
     }
 
     // Render Claimable Missions Section
@@ -640,7 +660,14 @@ export class GameOverModal {
     }
 
     this.element.classList.remove('hidden');
-    this.element.focus();
+    // Ensure primary action receives focus for direct keyboard/controller play
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => {
+        retryBtn?.focus();
+      });
+    } else {
+      retryBtn?.focus();
+    }
   }
 
   private renderCompletedMissions(): void {

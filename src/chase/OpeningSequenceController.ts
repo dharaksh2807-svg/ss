@@ -201,7 +201,7 @@ export class OpeningSequenceController {
     }
 
     // Set player to standard running speed & forward orientation
-    this.player.speed = CONSTANTS.INITIAL_SPEED;
+    this.player.speed = this.player.speedController ? this.player.speedController.getInitialSpeed() : CONSTANTS.INITIAL_SPEED;
     this.player.mesh.rotation.y = 0;
     this.player.isIntroInvincible = false; // Normal collision active
 

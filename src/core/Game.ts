@@ -893,8 +893,14 @@ export class Game {
 
     this.lastResultMeta = resultMeta;
 
+    if (this.gameOverTimeoutId) {
+      clearTimeout(this.gameOverTimeoutId);
+      this.gameOverTimeoutId = null;
+    }
+
     const showModal = () => {
       this.gameOverTimeoutId = null;
+      if (this.lifecycleState !== 'GAMEOVER') return;
       this.hud.hide();
       this.gameOverModal.show(
         this.score,
