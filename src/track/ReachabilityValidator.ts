@@ -23,11 +23,23 @@ export interface ValidatedPattern {
   speedMax?: number;
 }
 
+export interface TrajectoryNodeState {
+  lane: LaneIndex;
+  onRoof: boolean;
+  supportRouteLegId?: string;
+  supportLane?: LaneIndex;
+  airborneFromRoof?: boolean;
+  airborneTimer: number; // Seconds remaining in jump airtime
+  slidingTimer: number;  // Seconds remaining in slide
+  lateralCooldown: number; // Seconds until next lane change can occur
+}
+
 export interface ReachabilityResult {
   solvable: boolean;
   reason?: string;
   minReactionTimeSeconds?: number;
   survivingExitLanes?: LaneIndex[];
+  survivingExitNodes?: TrajectoryNodeState[];
 }
 
 /**
@@ -37,36 +49,141 @@ export interface ReachabilityResult {
  */
 export class ReachabilityValidator {
   /**
+   * Helper to retrieve all obstacles covering a specific lane and Z coordinate at elapsed time.
+   */
+  private static getObstaclesAt(
+    obstacles: ValidatedObstacle[],
+    lane: LaneIndex,
+    z: number,
+    timeElapsed: number
+  ): ValidatedObstacle[] {
+    return obstacles.filter((obs) => {
+      if (obs.lane !== lane) return false;
+
+      const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
+      const halfLength = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
+      let obsStart = isTrain ? Math.max(0, obs.zOffset - halfLength) : obs.zOffset;
+      let obsEnd = isTrain ? (obs.zOffset + halfLength) : (obs.zOffset + (obs.length || 2.0));
+
+      if (obs.type === 'MOVING_TRAIN' || obs.isMoving) {
+        const advanceDist = (obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED) * timeElapsed;
+        obsStart = Math.max(0, (obs.zOffset - halfLength) - advanceDist);
+        obsEnd = Math.max(0, (obs.zOffset + halfLength) - advanceDist);
+      }
+
+      return z >= obsStart && z <= obsEnd;
+    });
+  }
+
+  /**
+   * Helper to evaluate physical collisions with obstacles given current action and elevation.
+   */
+  private static checkCollision(
+    obstacles: ValidatedObstacle[],
+    z: number,
+    action: { isAirborne: boolean; isSliding: boolean },
+    onRoof: boolean
+  ): { collision: boolean; climbedRoof: boolean } {
+    let collision = false;
+    let climbedRoof = false;
+
+    for (const obs of obstacles) {
+      if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION') {
+        const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
+        const halfLength = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
+        const rampStart = Math.max(0, obs.zOffset - halfLength);
+        if (hasRamp && z >= rampStart && z <= rampStart + CONSTANTS.TRAIN_RAMP_LENGTH) {
+          climbedRoof = true;
+          continue;
+        }
+        if (onRoof) {
+          climbedRoof = true;
+          continue;
+        }
+        collision = true;
+        break;
+      } else if (obs.type === 'ROOFTOP_AC_HURDLE' || obs.type === 'ROOFTOP_VENT') {
+        if (onRoof) {
+          if (action.isAirborne) {
+            continue;
+          }
+          collision = true;
+          break;
+        } else {
+          continue;
+        }
+      } else if (obs.type === 'LOW_BARRIER') {
+        if (action.isAirborne || onRoof) {
+          continue;
+        }
+        collision = true;
+        break;
+      } else if (obs.type === 'MEDIUM_BARRIER') {
+        if (action.isAirborne || onRoof) {
+          continue;
+        }
+        collision = true;
+        break;
+      } else if (obs.type === 'HIGH_BARRIER') {
+        if (onRoof) {
+          collision = true;
+          break;
+        }
+        if (action.isSliding) {
+          continue;
+        }
+        collision = true;
+        break;
+      } else if (obs.type === 'PILLAR') {
+        collision = true;
+        break;
+      } else if (obs.type === 'SIDE_BARRIER') {
+        collision = true;
+        break;
+      } else if (obs.type === 'TUNNEL_ARCH') {
+        if (action.isAirborne || onRoof) {
+          collision = true;
+          break;
+        }
+        if (action.isSliding) {
+          continue;
+        }
+        collision = true;
+        break;
+      }
+    }
+
+    return { collision, climbedRoof };
+  }
+
+  /**
    * Validates reachability across a single pattern or chunk at a given player forward speed.
    */
   public static validatePattern(
     pattern: ValidatedPattern,
     speed: number = CONSTANTS.INITIAL_SPEED,
-    initialLanes: LaneIndex[] = [-1, 0, 1]
+    initialLanes: LaneIndex[] = [-1, 0, 1],
+    initialNodes?: TrajectoryNodeState[]
   ): ReachabilityResult {
     const chunkLen = CONSTANTS.CHUNK_LENGTH;
     const zStep = 1.0; // 1-meter spatial resolution
     const dtPerMeter = 1.0 / speed;
 
-    interface TrajectoryNode {
-      lane: LaneIndex;
-      onRoof: boolean;
-      supportRouteLegId?: string;
-      supportLane?: LaneIndex;
-      airborneFromRoof?: boolean;
-      airborneTimer: number; // Seconds remaining in jump airtime
-      slidingTimer: number;  // Seconds remaining in slide
-      lateralCooldown: number; // Seconds until next lane change can occur
-    }
+    type TrajectoryNode = TrajectoryNodeState;
 
-    // Initialize state set with allowed entry lanes
-    let currentNodes: TrajectoryNode[] = initialLanes.map((lane) => ({
-      lane,
-      onRoof: false,
-      airborneTimer: 0,
-      slidingTimer: 0,
-      lateralCooldown: 0
-    }));
+    // Initialize state set with allowed entry nodes
+    let currentNodes: TrajectoryNode[];
+    if (initialNodes && initialNodes.length > 0) {
+      currentNodes = initialNodes.map((n) => ({ ...n }));
+    } else {
+      currentNodes = initialLanes.map((lane) => ({
+        lane,
+        onRoof: false,
+        airborneTimer: 0,
+        slidingTimer: 0,
+        lateralCooldown: 0
+      }));
+    }
 
     // Precalculate moving train Z trajectories at each meter slice
     for (let z = 0; z < chunkLen; z += zStep) {
@@ -81,168 +198,181 @@ export class ReachabilityValidator {
 
         // Allowed lateral actions from current state:
         // 1. Remain in current lane
-        const allowedTransitions: Array<{ targetLane: LaneIndex; newCooldown: number }> = [
-          { targetLane: node.lane, newCooldown: updatedLateralCooldown }
+        const allowedTransitions: Array<{ targetLane: LaneIndex; newCooldown: number; isChanging: boolean }> = [
+          { targetLane: node.lane, newCooldown: updatedLateralCooldown, isChanging: false }
         ];
 
         // 2. If lane transition cooldown has elapsed, can shift to adjacent lanes
         if (updatedLateralCooldown <= 0) {
           if (node.lane > -1) {
-            allowedTransitions.push({ targetLane: (node.lane - 1) as LaneIndex, newCooldown: CONSTANTS.LANE_CHANGE_DURATION });
+            allowedTransitions.push({
+              targetLane: (node.lane - 1) as LaneIndex,
+              newCooldown: CONSTANTS.LANE_CHANGE_DURATION,
+              isChanging: true
+            });
           }
           if (node.lane < 1) {
-            allowedTransitions.push({ targetLane: (node.lane + 1) as LaneIndex, newCooldown: CONSTANTS.LANE_CHANGE_DURATION });
+            allowedTransitions.push({
+              targetLane: (node.lane + 1) as LaneIndex,
+              newCooldown: CONSTANTS.LANE_CHANGE_DURATION,
+              isChanging: true
+            });
           }
         }
 
-        // Test each possible target lane & action combination (Run, Jump, Slide)
+        // Action enumeration adhering strictly to real Player physics constraints
+        interface ActionPlan {
+          isAirborne: boolean;
+          isSliding: boolean;
+          newAirTimer: number;
+          newSlideTimer: number;
+        }
+
+        const actionsToTest: ActionPlan[] = [];
+
+        if (node.airborneTimer > 0) {
+          // Player is currently AIRBORNE:
+          if (updatedAirTimer > 0) {
+            // Must continue airborne trajectory until touching down
+            actionsToTest.push({
+              isAirborne: true,
+              isSliding: false,
+              newAirTimer: updatedAirTimer,
+              newSlideTimer: 0
+            });
+          } else {
+            // Airtime expired at this meter: player touches down!
+            // Can land into run:
+            actionsToTest.push({
+              isAirborne: false,
+              isSliding: false,
+              newAirTimer: 0,
+              newSlideTimer: 0
+            });
+            // Or land into slide (fast drop slide on landing):
+            actionsToTest.push({
+              isAirborne: false,
+              isSliding: true,
+              newAirTimer: 0,
+              newSlideTimer: CONSTANTS.SLIDE_DURATION
+            });
+          }
+        } else if (node.slidingTimer > 0) {
+          // Player is currently SLIDING:
+          if (updatedSlideTimer > 0) {
+            // Can continue slide:
+            actionsToTest.push({
+              isAirborne: false,
+              isSliding: true,
+              newAirTimer: 0,
+              newSlideTimer: updatedSlideTimer
+            });
+          }
+          // Can stand up into run:
+          actionsToTest.push({
+            isAirborne: false,
+            isSliding: false,
+            newAirTimer: 0,
+            newSlideTimer: 0
+          });
+          // Can jump cancel out of slide:
+          actionsToTest.push({
+            isAirborne: true,
+            isSliding: false,
+            newAirTimer: CONSTANTS.JUMP_DURATION,
+            newSlideTimer: 0
+          });
+        } else {
+          // Player is RUNNING on ground or rooftop:
+          // 1. Continue running
+          actionsToTest.push({
+            isAirborne: false,
+            isSliding: false,
+            newAirTimer: 0,
+            newSlideTimer: 0
+          });
+          // 2. Initiate JUMP
+          actionsToTest.push({
+            isAirborne: true,
+            isSliding: false,
+            newAirTimer: CONSTANTS.JUMP_DURATION,
+            newSlideTimer: 0
+          });
+          // 3. Initiate SLIDE
+          actionsToTest.push({
+            isAirborne: false,
+            isSliding: true,
+            newAirTimer: 0,
+            newSlideTimer: CONSTANTS.SLIDE_DURATION
+          });
+        }
+
+        // Test each possible target lane & action combination
         for (const transition of allowedTransitions) {
           const targetLane = transition.targetLane;
 
-          // Check collision with obstacles at coordinate (targetLane, z)
-          const obstaclesAtLocation = pattern.obstacles.filter((obs) => {
-            if (obs.lane !== targetLane) return false;
+          const obstaclesAtTarget = ReachabilityValidator.getObstaclesAt(pattern.obstacles, targetLane, z, timeElapsed);
 
-            const isTrain = obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || (obs as any).type === 'TRAIN_COMPOSITION';
-            const halfLength = isTrain ? ((obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5) : 0;
-            let obsStart = isTrain ? Math.max(0, obs.zOffset - halfLength) : obs.zOffset;
-            let obsEnd = isTrain ? (obs.zOffset + halfLength) : (obs.zOffset + (obs.length || 2.0));
-
-            // If moving train, calculate adjusted position at timeElapsed
-            if (obs.type === 'MOVING_TRAIN' || obs.isMoving) {
-              const advanceDist = (obs.velocityZ || CONSTANTS.MOVING_TRAIN_SPEED) * timeElapsed;
-              obsStart = Math.max(0, (obs.zOffset - halfLength) - advanceDist);
-              obsEnd = Math.max(0, (obs.zOffset + halfLength) - advanceDist);
+          // If initiating a lateral lane switch, verify source lane is passable at takeoff coordinate z
+          if (transition.isChanging) {
+            const obstaclesAtSource = ReachabilityValidator.getObstaclesAt(pattern.obstacles, node.lane, z, timeElapsed);
+            const sourceCheck = ReachabilityValidator.checkCollision(
+              obstaclesAtSource,
+              z,
+              { isAirborne: node.airborneTimer > 0, isSliding: node.slidingTimer > 0 },
+              node.onRoof
+            );
+            if (sourceCheck.collision) {
+              continue; // Cannot initiate lane switch from inside a collision
             }
-
-            return z >= obsStart && z <= obsEnd;
-          });
-
-          // Possible action modes: RUN, JUMP, SLIDE
-          const actionsToTest: Array<{ isAirborne: boolean; isSliding: boolean }> = [
-            { isAirborne: updatedAirTimer > 0, isSliding: updatedSlideTimer > 0 }, // Continue current
-            { isAirborne: true, isSliding: false }, // Jump action
-            { isAirborne: false, isSliding: true }  // Slide action
-          ];
+          }
 
           for (const action of actionsToTest) {
-            let collision = false;
-            let climbedRoof = false;
+            const check = ReachabilityValidator.checkCollision(obstaclesAtTarget, z, action, node.onRoof);
+            if (check.collision) {
+              continue;
+            }
 
-            for (const obs of obstaclesAtLocation) {
-              if (obs.type === 'TRAIN' || obs.type === 'MOVING_TRAIN' || obs.type === 'TRAIN_RAMP' || obs.type === 'TRAIN_COMPOSITION') {
-                const hasRamp = !!(obs.hasRamp || obs.type === 'TRAIN_RAMP');
-                const halfLength = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) * 0.5;
-                const rampStart = Math.max(0, obs.zOffset - halfLength);
-                if (hasRamp && z >= rampStart && z <= rampStart + CONSTANTS.TRAIN_RAMP_LENGTH) {
-                  // Running up ramp onto roof is safe!
-                  climbedRoof = true;
-                  continue;
-                }
-                if (node.onRoof) {
-                  // Already running on roof
-                  climbedRoof = true;
-                  continue;
-                }
-                // Ground collision with train hull
-                collision = true;
-                break;
-              } else if (obs.type === 'ROOFTOP_AC_HURDLE' || obs.type === 'ROOFTOP_VENT') {
-                if (node.onRoof) {
-                  if (action.isAirborne) {
-                    // Jumped over rooftop equipment safely
-                    continue;
-                  }
-                  // Hit rooftop obstacle on train top
-                  collision = true;
-                  break;
-                } else {
-                  // Ground runner passes safely underneath elevated rooftop obstacle
-                  continue;
-                }
-              } else if (obs.type === 'LOW_BARRIER') {
-                if (action.isAirborne || node.onRoof) {
-                  // Jumped over low hurdle safely or running above on train roof
-                  continue;
-                }
-                collision = true;
-                break;
-              } else if (obs.type === 'MEDIUM_BARRIER') {
-                if (action.isAirborne || node.onRoof) {
-                  // Jumped over medium barrier safely or running above on train roof
-                  continue;
-                }
-                collision = true;
-                break;
-              } else if (obs.type === 'HIGH_BARRIER') {
-                if (node.onRoof) {
-                  // High barrier overhead beam blocks rooftop runner
-                  collision = true;
-                  break;
-                }
-                if (action.isSliding) {
-                  // Slid underneath high barrier safely on ground
-                  continue;
-                }
-                // Normal jumping into high barrier hits overhead crossbar
-                collision = true;
-                break;
-              } else if (obs.type === 'PILLAR') {
-                // Solid vertical pillar blocks lane completely from ground to ceiling
-                collision = true;
-                break;
-              } else if (obs.type === 'SIDE_BARRIER') {
-                // Side barrier occupies lane completely
-                collision = true;
-                break;
-              } else if (obs.type === 'TUNNEL_ARCH') {
-                if (action.isAirborne || node.onRoof) {
-                  // Hit overhead tunnel truss
-                  collision = true;
-                  break;
-                }
-                if (action.isSliding) {
-                  // Cleared underneath tunnel arch
-                  continue;
-                }
-                collision = true;
-                break;
+            let newOnRoof = check.climbedRoof;
+            let newAirTimer = action.newAirTimer;
+            let newAirborneFromRoof = node.airborneFromRoof;
+
+            if (!check.climbedRoof && node.onRoof) {
+              const onTrain = obstaclesAtTarget.some(
+                (o) => o.type === 'TRAIN' || o.type === 'MOVING_TRAIN' || o.type === 'TRAIN_RAMP' || (o as any).type === 'TRAIN_COMPOSITION'
+              );
+              if (onTrain) {
+                newOnRoof = true;
+              } else if (action.isAirborne) {
+                // Jumping across a carriage gap
+                newOnRoof = true;
+              } else {
+                // Exited train roof onto ground: falls under gravity (h=2.6m, t ~ 0.38s)
+                newOnRoof = false;
+                newAirTimer = Math.max(newAirTimer, 0.38);
+                newAirborneFromRoof = true;
               }
             }
 
-            if (!collision) {
-              let newOnRoof = climbedRoof;
-              if (!climbedRoof && node.onRoof) {
-                const onTrain = obstaclesAtLocation.some(
-                  (o) => o.type === 'TRAIN' || o.type === 'MOVING_TRAIN' || o.type === 'TRAIN_RAMP' || o.type === 'TRAIN_COMPOSITION'
-                );
-                if (onTrain) {
-                  newOnRoof = true;
-                } else if (action.isAirborne) {
-                  // Jumping across a carriage gap
-                  newOnRoof = true;
-                } else {
-                  // Exited train roof onto ground
-                  newOnRoof = false;
-                }
-              }
-
-              nextNodes.push({
-                lane: targetLane,
-                onRoof: newOnRoof,
-                airborneTimer: action.isAirborne ? (updatedAirTimer > 0 ? updatedAirTimer : CONSTANTS.JUMP_DURATION) : 0,
-                slidingTimer: action.isSliding ? (updatedSlideTimer > 0 ? updatedSlideTimer : CONSTANTS.SLIDE_DURATION) : 0,
-                lateralCooldown: transition.newCooldown
-              });
-            }
+            nextNodes.push({
+              lane: targetLane,
+              onRoof: newOnRoof,
+              airborneFromRoof: newAirborneFromRoof,
+              airborneTimer: newAirTimer,
+              slidingTimer: action.newSlideTimer,
+              lateralCooldown: transition.newCooldown
+            });
           }
         }
       }
 
-      // Deduplicate trajectory states at this Z slice
+      // Deduplicate trajectory states at this Z slice using timing buckets
       const stateMap = new Map<string, TrajectoryNode>();
       for (const n of nextNodes) {
-        const key = `${n.lane}_${n.onRoof}_${n.airborneTimer > 0}_${n.slidingTimer > 0}_${n.lateralCooldown > 0}`;
+        const airBucket = Math.round(n.airborneTimer * 5);
+        const slideBucket = Math.round(n.slidingTimer * 5);
+        const latBucket = Math.round(n.lateralCooldown * 5);
+        const key = `${n.lane}_${n.onRoof}_${airBucket}_${slideBucket}_${latBucket}`;
         if (!stateMap.has(key)) {
           stateMap.set(key, n);
         }
@@ -259,6 +389,7 @@ export class ReachabilityValidator {
     }
 
     const survivingExitLanes = Array.from(new Set(currentNodes.map((n) => n.lane)));
+    const survivingExitNodes = currentNodes.map((n) => ({ ...n }));
 
     let minEntryObstacleDist = Infinity;
     for (const obs of pattern.obstacles) {
@@ -278,7 +409,8 @@ export class ReachabilityValidator {
     return {
       solvable: true,
       minReactionTimeSeconds: actualReactionDist / speed,
-      survivingExitLanes
+      survivingExitLanes,
+      survivingExitNodes
     };
   }
 
@@ -353,12 +485,12 @@ export class ReachabilityValidator {
     speed: number = CONSTANTS.INITIAL_SPEED
   ): boolean {
     const resA = this.validatePattern(chunkA, speed);
-    if (!resA.solvable || !resA.survivingExitLanes || resA.survivingExitLanes.length === 0) {
+    if (!resA.solvable || !resA.survivingExitNodes || resA.survivingExitNodes.length === 0) {
       return false;
     }
 
-    // Validate chunk B starting strictly from the surviving exit lanes of chunk A
-    const resB = this.validatePattern(chunkB, speed, resA.survivingExitLanes);
+    // Validate chunk B starting strictly from the surviving exit nodes of chunk A
+    const resB = this.validatePattern(chunkB, speed, resA.survivingExitLanes, resA.survivingExitNodes);
     return resB.solvable;
   }
 
