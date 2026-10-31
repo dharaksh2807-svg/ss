@@ -217,6 +217,7 @@ export class GameOverModal {
     if (retryBtn) {
       retryBtn.disabled = true;
       retryBtn.classList.add('btn-disabled');
+      retryBtn.classList.add('btn-processing');
     }
 
     this.hide();
@@ -610,6 +611,7 @@ export class GameOverModal {
     if (retryBtn) {
       retryBtn.disabled = false;
       retryBtn.classList.remove('btn-disabled');
+      retryBtn.classList.remove('btn-processing');
     }
 
     // Render Claimable Missions Section

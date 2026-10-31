@@ -8739,11 +8739,21 @@ input:focus-visible {
   box-shadow: 0 11px 0 #064e3b, 0 18px 45px rgba(16, 185, 129, 0.7), inset 0 2px 0 rgba(255, 255, 255, 0.6) !important;
 }
 
-.quick-retry-btn:active,
+.quick-retry-btn:active {
+  transform: translateY(4px) scale(0.985);
+  box-shadow: 0 3px 0 #064e3b, 0 8px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  opacity: 0.85;
+}
+
 .quick-retry-btn.btn-processing {
   transform: translateY(4px) scale(0.985);
   box-shadow: 0 3px 0 #064e3b, 0 8px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   opacity: 0.85;
+  pointer-events: none;
+}
+
+.quick-retry-btn .play-btn-content,
+.quick-retry-btn .play-btn-content * {
   pointer-events: none;
 }
 

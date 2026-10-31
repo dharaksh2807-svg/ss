@@ -208,3 +208,4 @@ console.log('\n--- Suite 4: High-Fidelity Solvability Across All 66 Authorized P
 }
 
 console.log(`\n🎉 ALL ${passed} OF ${total} TESTS PASSED CLEANLY! ReachabilityValidator physics rigor verified.`);
+
