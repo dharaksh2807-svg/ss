@@ -550,7 +550,7 @@ export class Game {
     this.lifecycleState = 'PLAYING';
     this.score = 0;
     this.coinsCount = 0;
-    this.scoreMultiplier = mode === 'HARD' ? 1.25 : 1;
+    this.scoreMultiplier = this.calculateEffectiveMultiplier();
     this.timeTrialRemaining = 60.0;
     this.coinRushElapsed = 0.0;
 
@@ -592,16 +592,14 @@ export class Game {
       // Survival starts fast at 25 m/s immediately!
       this.player.speed = 25.0;
     } else if (this.activeGameMode === 'DAILY_CHALLENGE') {
-      const active = DailyChallengeManager.getInstance().getActiveChallenge();
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const active = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
       if (active?.difficulty === 'HARD') {
         this.player.speed = 24.0;
-        this.scoreMultiplier = 1.25;
       } else if (active?.difficulty === 'EASY') {
         this.player.speed = 22.0;
-        this.scoreMultiplier = 1.15;
       } else {
         this.player.speed = 19.0;
-        this.scoreMultiplier = 1.0;
       }
     }
 
@@ -646,6 +644,8 @@ export class Game {
     } else if (this.activeGameMode === 'SURVIVAL') {
       this.hud.setSurvivalDistance(0);
     }
+    this.scoreMultiplier = this.calculateEffectiveMultiplier();
+    this.hud.setMultiplier(this.scoreMultiplier);
     this.hud.show();
     this.inputManager.setEnabled(true);
 
@@ -720,7 +720,7 @@ export class Game {
     this.lifecycleState = 'PLAYING';
     this.score = 0;
     this.coinsCount = 0;
-    this.scoreMultiplier = 1;
+    this.scoreMultiplier = this.calculateEffectiveMultiplier();
 
     this.cameraController.setLobbyMode(false);
     this.cameraController.reset(this.player.position);
@@ -1034,15 +1034,13 @@ export class Game {
       } else if (this.openingSequence.isActive()) {
         this.openingSequence.update(dt);
         this.locomotionVFX.update(dt, this.player);
+        this.scoreMultiplier = this.calculateEffectiveMultiplier();
+        this.hud.setMultiplier(this.scoreMultiplier);
         this.hud.update(dt);
         this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
       } else {
-        // 1. Multiplier calculation (Time Trial awards 2X base multiplier)
-        let baseMult = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
-        if (this.activeGameMode === 'TIME_TRIAL') {
-          baseMult *= 2;
-        }
-        this.scoreMultiplier = baseMult + this.player.hoverboardManager.getScoreMultiplierBonus();
+        // 1. Multiplier calculation (Mode baseline * 2X powerup + hoverboard bonus)
+        this.scoreMultiplier = this.calculateEffectiveMultiplier();
         this.hud.setMultiplier(this.scoreMultiplier);
 
         // 2. Mode Timers & Goals Check
@@ -1285,6 +1283,42 @@ export class Game {
 
   public getPlayer(): Player {
     return this.player;
+  }
+
+  public getScore(): number {
+    return this.score;
+  }
+
+  public getScoreMultiplier(): number {
+    return this.scoreMultiplier;
+  }
+
+  public getHUD(): HUD {
+    return this.hud;
+  }
+
+  public getActiveGameMode(): GameMode {
+    return this.activeGameMode;
+  }
+
+  public getModeScoreMultiplier(): number {
+    if (this.activeGameMode === 'HARD') return 1.25;
+    if (this.activeGameMode === 'TIME_TRIAL') return 2.0;
+    if (this.activeGameMode === 'DAILY_CHALLENGE') {
+      const dailyMgr = DailyChallengeManager.getInstance();
+      const active = dailyMgr.getActiveChallenge() || dailyMgr.getTodayChallenge();
+      if (active?.difficulty === 'HARD') return 1.25;
+      if (active?.difficulty === 'EASY') return 1.15;
+      return 1.0;
+    }
+    return 1.0;
+  }
+
+  public calculateEffectiveMultiplier(): number {
+    const modeMult = this.getModeScoreMultiplier();
+    const powerupMult = this.player.powerups.is2xMultiplierActive() ? 2 : 1;
+    const hoverboardBonus = this.player.hoverboardManager.getScoreMultiplierBonus();
+    return modeMult * powerupMult + hoverboardBonus;
   }
 
   public getTrackManager(): TrackManager {

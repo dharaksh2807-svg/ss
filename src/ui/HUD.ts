@@ -360,12 +360,17 @@ export class HUD {
 
   public setMultiplier(val: number): void {
     this.multiplier = val;
-    this.multiplierEl.textContent = `${val}X`;
+    const formatted = Number.isInteger(val) ? val.toString() : parseFloat(val.toFixed(2)).toString();
+    this.multiplierEl.textContent = `${formatted}X`;
     if (val > 1) {
       this.multiplierEl.classList.add('active');
     } else {
       this.multiplierEl.classList.remove('active');
     }
+  }
+
+  public getMultiplier(): number {
+    return this.multiplier;
   }
 
   public update(
