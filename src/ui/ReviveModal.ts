@@ -53,9 +53,9 @@ export class ReviveModal {
       <div class="modal-card arcade-modal-card revive-modal-card animate-pop" role="dialog" aria-modal="true" aria-labelledby="revive-main-title">
         <!-- Top Emergency Badge -->
         <div class="revive-alert-banner">
-          <span class="pulse-icon" id="revive-alert-icon">💥</span>
+          <span class="revive-alert-icon-pulse" id="revive-alert-icon">💥</span>
           <span class="revive-alert-text" id="revive-alert-text">FATAL CRASH!</span>
-          <span class="pulse-icon">💥</span>
+          <span class="revive-alert-icon-pulse">💥</span>
         </div>
 
         <div class="modal-top-bar" style="justify-content: center; margin-bottom: 8px;">
@@ -93,7 +93,7 @@ export class ReviveModal {
             <circle class="timer-bg-circle" cx="50" cy="50" r="45" />
             <circle class="timer-bar-circle" id="revive-timer-circle" cx="50" cy="50" r="45" />
           </svg>
-          <div class="revive-timer-display">
+          <div class="revive-timer-display" aria-live="polite" aria-atomic="true">
             <span class="timer-number" id="revive-timer-sec">5</span>
             <span class="timer-unit">SEC</span>
           </div>

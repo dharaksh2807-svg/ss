@@ -430,7 +430,7 @@ html, body {
 
 /* Near-Expiration States (<= 3s warning, <= 1s critical) */
 .powerup-expiring {
-  animation: pulseExpiring 0.40s infinite alternate ease-in-out;
+  animation: pulseExpiring 0.60s infinite alternate ease-in-out;
   border-color: #ff5252 !important;
 }
 
@@ -455,7 +455,7 @@ html, body {
 }
 
 .powerup-critical {
-  animation: pulseCritical 0.22s infinite alternate ease-in-out !important;
+  animation: pulseCritical 0.35s infinite alternate ease-in-out !important;
   border-color: #ff1744 !important;
 }
 
@@ -468,6 +468,42 @@ html, body {
     transform: scale(1.06);
     box-shadow: 0 0 22px rgba(255, 23, 68, 1.0);
   }
+}
+
+/* === Phase 3: Pause Photo Btn (moved from inline style) === */
+.pause-photo-btn {
+  width: 100%;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(124, 77, 255, 0.28));
+  border: 1.5px solid rgba(0, 229, 255, 0.7);
+  color: #00e5ff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 1.5px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+.pause-photo-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.35), rgba(124, 77, 255, 0.42));
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.45);
+}
+
+/* === Phase 3: Revive alert icon pulse (gentler than generic pulse-icon) === */
+@keyframes reviveAlertPulse {
+  from { transform: scale(1.0); opacity: 0.85; }
+  to   { transform: scale(1.18); opacity: 1.0; }
+}
+.revive-alert-icon-pulse {
+  display: inline-block;
+  animation: reviveAlertPulse 0.55s infinite alternate ease-in-out;
+}
+
+/* === Phase 3: Game Over sub-title — prevent clip (VIS-04) === */
+#game-over-sub-title.tab-subtitle {
+  white-space: normal;
+  overflow: visible;
+  max-height: none;
+  line-height: 1.4;
 }
 
 /* Instant Pickup Confirmation Banner (Upper-Center Notification) */
@@ -4651,10 +4687,20 @@ kbd {
 
 /* 10. Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  /* Stop looping scale/glow animations — keep short opacity/color transitions */
+  .powerup-expiring,
+  .powerup-critical,
+  .pulse-glow,
+  .revive-alert-icon-pulse,
+  .animate-pop,
+  .shimmer-play-btn::before {
+    animation: none !important;
+  }
+  /* Allow very brief transitions for state feedback */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.12ms !important;
   }
 }
 
