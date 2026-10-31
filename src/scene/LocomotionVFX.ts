@@ -18,6 +18,7 @@ export class LocomotionVFX {
   private group: THREE.Group;
   private landingPool: DustParticle[] = [];
   private slidePool: DustParticle[] = [];
+  private footfallPool: DustParticle[] = [];   // Phase 4: per-step ground puff
   private slideSpawnAccumulator: number = 0;
   private particleMultiplier: number = 1.0;
   private eventBus = EventBus.getInstance();
@@ -89,6 +90,33 @@ export class LocomotionVFX {
         active: false
       });
     }
+
+    // 3. Phase 4: Per-footfall ground puff (subtle ground contact feedback)
+    const footfallGeo = new THREE.PlaneGeometry(0.14, 0.14);
+    for (let i = 0; i < 16; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xcbd5e1,
+        transparent: true,
+        opacity: 0.0,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(footfallGeo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.visible = false;
+      this.group.add(mesh);
+
+      this.footfallPool.push({
+        mesh,
+        velocity: new THREE.Vector3(),
+        age: 0,
+        maxAge: 0.14,
+        startScale: 0.2,
+        endScale: 0.72,
+        startOpacity: 0.38,
+        active: false
+      });
+    }
   }
 
   private setupListeners(): void {
@@ -154,6 +182,41 @@ export class LocomotionVFX {
 
       spawned++;
       if (spawned >= particleCount) break;
+    }
+  }
+
+  public spawnFootfall(pos: THREE.Vector3, surface: SupportSurfaceType): void {
+    if (this.particleMultiplier < 0.5) return; // Skip on low-quality preset
+    const count = Math.max(1, Math.round(3 * this.particleMultiplier));
+    const baseColor = surface === 'TRAIN_ROOF' ? 0x94a3b8 : 0xcbd5e1;
+    let spawned = 0;
+    for (const p of this.footfallPool) {
+      if (p.active) continue;
+      const angle = (spawned / count) * Math.PI * 2 + Math.random() * 0.6;
+      const radialSpeed = 0.55 + Math.random() * 0.35;
+      p.active = true;
+      p.age = 0;
+      p.maxAge = 0.14;
+      p.startScale = 0.18 + Math.random() * 0.08;
+      p.endScale = 0.55 + Math.random() * 0.22;
+      p.startOpacity = 0.32 + Math.random() * 0.12;
+      p.mesh.position.set(
+        pos.x + Math.cos(angle) * 0.06,
+        pos.y + 0.015,
+        pos.z + Math.sin(angle) * 0.06
+      );
+      p.mesh.scale.setScalar(p.startScale);
+      const mat = p.mesh.material as THREE.MeshBasicMaterial;
+      mat.color.setHex(baseColor);
+      mat.opacity = p.startOpacity;
+      p.mesh.visible = true;
+      p.velocity.set(
+        Math.cos(angle) * radialSpeed,
+        0.08 + Math.random() * 0.10,
+        Math.sin(angle) * radialSpeed
+      );
+      spawned++;
+      if (spawned >= count) break;
     }
   }
 
@@ -251,6 +314,25 @@ export class LocomotionVFX {
       const mat = p.mesh.material as THREE.MeshBasicMaterial;
       mat.opacity = p.startOpacity * (1.0 - progress);
     }
+
+    // 3. Update footfall puff particles (Phase 4)
+    for (const p of this.footfallPool) {
+      if (!p.active) continue;
+      p.age += dt;
+      const progress = p.age / p.maxAge;
+      if (progress >= 1.0) {
+        p.active = false;
+        p.mesh.visible = false;
+        continue;
+      }
+      p.mesh.position.x += p.velocity.x * dt;
+      p.mesh.position.y += p.velocity.y * dt;
+      p.mesh.position.z += p.velocity.z * dt;
+      const scale = THREE.MathUtils.lerp(p.startScale, p.endScale, progress);
+      p.mesh.scale.setScalar(scale);
+      const mat = p.mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = p.startOpacity * (1.0 - progress);
+    }
   }
 
   public reset(): void {
@@ -259,6 +341,10 @@ export class LocomotionVFX {
       p.mesh.visible = false;
     }
     for (const p of this.slidePool) {
+      p.active = false;
+      p.mesh.visible = false;
+    }
+    for (const p of this.footfallPool) {
       p.active = false;
       p.mesh.visible = false;
     }
