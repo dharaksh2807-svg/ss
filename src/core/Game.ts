@@ -135,6 +135,14 @@ export class Game {
     this.inputManager = new InputManager();
     this.locomotionVFX = new LocomotionVFX(this.worldScene.scene);
 
+    // Phase 4: Wire per-footfall puff — triggered by CharacterModel stride zero-crossing
+    this.player.model.setFootstepCallback((foot) => {
+      const pos = this.player.position.clone();
+      // Offset left/right foot position laterally (±0.18m) for realism
+      pos.x += foot === 'left' ? -0.18 : 0.18;
+      this.locomotionVFX.spawnFootfall(pos, this.player.supportSurface);
+    });
+
     this.chaser = new ChaserModel();
     this.worldScene.scene.add(this.chaser.mesh);
     this.trackManager.setChaser(this.chaser);

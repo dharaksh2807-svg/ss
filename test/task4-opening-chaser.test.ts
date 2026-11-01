@@ -236,6 +236,28 @@ console.log('\n--- Suite 4: Opening Sequence Skippability ---');
 }
 
 // Suite 5: Repeat Intro Preferences & Retry Behavior
+console.log('\n--- Mode-specific launch speed survives cinematic and skip ---');
+for (const mode of ['NORMAL', 'HARD', 'EASY'] as const) {
+  for (const elapsed of [0, 0.3, 1.2, 1.9, 2.5]) {
+    const player = new Player();
+    player.setGameMode(mode);
+    const initialSpeed = player.speedController.getInitialSpeed();
+    const opening = new OpeningSequenceController(player, new CameraController(), new ChaserModel());
+    opening.setPreference('ALWAYS');
+    opening.start(false);
+    opening.update(elapsed);
+    opening.skip();
+    assertClose(player.speed, initialSpeed, 0.001, `${mode} restores launch speed after ${elapsed}s`);
+    assertClose(player.speedController.getInitialSpeed(), initialSpeed, 0.001, `${mode} retains configured speed profile`);
+    opening.setPreference('FIRST_ONLY');
+    opening.start(true);
+    assertClose(player.speed, initialSpeed, 0.001, `${mode} fast retry retains launch speed`);
+    opening.setPreference('DISABLED');
+    opening.start(false);
+    assertClose(player.speed, initialSpeed, 0.001, `${mode} disabled intro retains launch speed`);
+  }
+}
+
 console.log('\n--- Suite 5: Repeat Preferences & Retry Optimization ---');
 {
   const player = new Player();

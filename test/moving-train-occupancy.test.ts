@@ -24,6 +24,17 @@ const layout = (obstacles: any[]) => ({ name: 'OCCUPANCY_TEST', difficulty: 'EAS
 const place = (obstacles: any[], worldZ = 0, peers: any[] = []) =>
   chunk.populate(layout(obstacles), worldZ, undefined, false, undefined, peers);
 
+const parked = (zOffset: number, lane = 0) => ({ type: 'TRAIN', lane, zOffset, length: 24 });
+check(place([parked(30)]), 'Prepare an existing parked formation');
+const previousParked = chunk.obstacles;
+check(!place([parked(30), parked(45)]), 'Reject overlapping parked formations in the same layout');
+check(chunk.obstacles === previousParked, 'Rejected parked layout preserves published objects');
+check(place([parked(20), parked(60)]), 'Separated parked formations remain valid');
+check(place([parked(30, -1), parked(30, 1)]), 'Adjacent-lane parked formations remain valid');
+neighbor.populate(layout([parked(5)]), -80);
+check(!place([parked(75)], 0, [neighbor]), 'Reject parked overlap across a streamed chunk boundary');
+neighbor.clearDynamicItems();
+
 check(place([train()]), 'An unobstructed 42 m/s train is accepted');
 const obs = chunk.obstacles[0];
 chunk.update(0.8, 0.8, 0, 46);

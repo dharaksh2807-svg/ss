@@ -140,7 +140,7 @@ const arcChunk = new TrackChunk(obstacleFactory, factory);
 arcChunk.populate(runwayPattern, 0);
 
 // Extract the arc coins
-const arcCoins = arcChunk.collectibles.filter(c => c.lane === arcData.lane && c.initialLocalZ! <= -arcData.zOffset + 0.05 && c.initialLocalZ! >= -(arcData.zOffset + (arcData.count! - 1) * (arcData.spacing || 2.0)) - 0.05);
+const arcCoins = arcChunk.collectibles.filter(c => c.type === 'COIN' && c.lane === arcData.lane && c.initialLocalZ! <= -arcData.zOffset + 0.05 && c.initialLocalZ! >= -(arcData.zOffset + (arcData.count! - 1) * (arcData.spacing || 2.0)) - 0.05);
 assert(arcCoins.length === arcData.count, `All ${arcData.count} arc coins successfully spawned`);
 
 const firstArcCoin = arcCoins[0];
@@ -192,7 +192,7 @@ let targetChunk: TrackChunk | null = null;
 for (const ch of trackManager.chunks) {
   for (const col of ch.collectibles) {
     const worldZ = ch.chunkZ + col.group.position.z;
-    if (col.type === 'COIN' && worldZ < player.position.z && worldZ > player.position.z - 10.0) {
+    if (col.type === 'COIN' && worldZ < player.position.z - 3.0 && worldZ > player.position.z - 10.0) {
       targetCoin = col;
       targetChunk = ch;
       break;

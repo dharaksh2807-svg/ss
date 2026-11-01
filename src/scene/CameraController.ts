@@ -292,10 +292,10 @@ export class CameraController {
     if (this.isGameOverMode) {
       const isPortrait = this.camera.aspect < 1.0;
       const targetFov = isPortrait ? 66.0 : 54.0;
-      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-4.0 * dt));
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-5.0 * dt)); // Snappier FOV on crash
       this.camera.updateProjectionMatrix();
 
-      const lerpFactor = 1.0 - Math.exp(-4.5 * dt);
+      const lerpFactor = 1.0 - Math.exp(-5.5 * dt); // Snappier dramatic framing on crash
       this.currentPosition.lerp(this.gameOverTargetPos, lerpFactor);
       this.lookTarget.lerp(this.gameOverLookTarget, lerpFactor);
       this.camera.position.copy(this.currentPosition);
@@ -381,7 +381,7 @@ export class CameraController {
       targetCamY = playerPos.y + 2.4;
       targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8 + distanceOffset; // Step back slightly for wide sky vista
       targetLookY = playerPos.y + 0.6;
-      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 6.0; // Look 24m ahead along flight path
+      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 8.0; // Look further down track on flight (increased from -6.0)
     } else {
       const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
       const baseOffsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
@@ -390,12 +390,12 @@ export class CameraController {
       targetCamY = cameraBaseY + baseOffsetY;
       targetLookY = cameraBaseY + baseLookY;
 
-      // Train rooftop enhanced perspective: extend lookahead and elevate slightly for clear forward hazard visibility
+      // Train rooftop enhanced perspective: extend lookahead and elevate more for clear forward hazard visibility
       if (groundY >= 4.0) {
-        targetCamY += 0.35;
+        targetCamY += 0.55;      // Increased from 0.35 for better rooftop composition
         targetCamOffsetZ += 0.65;
         targetLookAheadZ -= 3.5;
-        targetLookY += 0.30;
+        targetLookY += 0.45;     // Increased from 0.30 for improved sightline to ahead hazards
       }
 
       // Subtle dynamic camera dip during slide for enhanced tactile action feedback

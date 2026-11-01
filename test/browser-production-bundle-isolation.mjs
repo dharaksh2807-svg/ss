@@ -53,8 +53,12 @@ async function run() {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 }
   });
+  // Keep software WebGL rendering from starving input in this security audit.
+  // Graphics quality does not alter the production developer-tool guards.
+  await page.addInitScript(() => localStorage.setItem('metro_graphics_preset', 'LOW'));
 
   const errors = [];
+  page.on('pageerror', error => errors.push(String(error)));
   page.on('console', msg => {
     if (msg.type() === 'error') {
       const text = msg.text();
@@ -104,6 +108,7 @@ async function run() {
   verify(!windowAudit.hasEventBus, 'window.EventBus is NOT exposed in production');
   verify(!windowAudit.hasPacingMetrics, 'window.__PACING_METRICS__ is NOT exposed in production');
   verify(!windowAudit.hasScenarioRunner, 'window.__TRAIN_SCENARIO_RUNNER__ is NOT exposed in production');
+  verify(Object.values(windowAudit).every(value => !value), 'All audited developer globals are absent in production');
 
   // 3. Verify DevTestArena cannot be toggled via keyboard in production
   await page.keyboard.press('F8');
@@ -148,6 +153,7 @@ async function run() {
     return canvas !== null && canvas.width > 0 && canvas.height > 0;
   });
   verify(canvasVisible, 'WebGL 3D game canvas active and rendering');
+  verify(errors.length === 0, `No production browser errors (${errors.join('; ')})`);
 
   console.log(`\n🏁 Production Bundle Browser Audit: ${passed} passed, ${failed} failed`);
 

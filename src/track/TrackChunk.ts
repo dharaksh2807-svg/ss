@@ -2196,6 +2196,22 @@ export class TrackChunk {
   public hasMovingTrainPathConflict(peers: readonly TrackChunk[] = []): boolean {
     this.placementConflictWithinPattern = false;
     const chunks = [this, ...peers.filter((chunk) => chunk !== this)];
+    // Composition lengths are resolved during population and may exceed the
+    // pattern's nominal length. Validate actual parked hulls before publishing,
+    // including formations that extend across a streamed chunk boundary.
+    const parked = chunks.flatMap((chunk) => chunk.obstacles
+      .filter((obs) => obs.active && !obs.isMoving && obs.group.userData.isTrain)
+      .map((obs) => ({ chunk, obs })));
+    for (let i = 0; i < parked.length; i++) {
+      const a = parked[i];
+      for (const b of parked.slice(i + 1)) {
+        if (a.chunk !== this && b.chunk !== this) continue;
+        if (a.obs.collider.intersectsBox(b.obs.collider)) {
+          this.placementConflictWithinPattern = a.chunk === this && b.chunk === this;
+          return true;
+        }
+      }
+    }
     if (!chunks.some((chunk) => chunk.obstacles.some((obs) => obs.active && obs.isMoving))) return false;
     const entries = chunks.flatMap((chunk) => chunk.obstacles.filter((obs) => obs.active).map((obs) => {
       let local = chunk.solidObstacleBounds.get(obs.group);

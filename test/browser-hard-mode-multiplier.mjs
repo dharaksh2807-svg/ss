@@ -58,7 +58,11 @@ async function run() {
 
   // Skip cinematic intro to enter active gameplay immediately
   await page.evaluate(() => {
-    window.__METRO_GAME__.getOpeningSequence().skip();
+    const game = window.__METRO_GAME__;
+    game.getOpeningSequence().skip();
+    // This test isolates score multipliers. Keep random obstacles from ending
+    // the run while a software-rendered screenshot delays the browser.
+    game.getPlayer().isIntroInvincible = true;
   });
   await page.waitForTimeout(300);
 
@@ -115,7 +119,11 @@ async function run() {
     };
   });
   console.log('Powerup Diag:', JSON.stringify(powerupDiag));
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => {
+    const game = window.__METRO_GAME__;
+    return game.lifecycleState === 'PLAYING' && game.getPlayer().powerups.is2xMultiplierActive() &&
+      game.getScoreMultiplier() === 2.5 && document.getElementById('hud-multiplier').textContent === '2.5X';
+  });
 
   const stackedMultiplierText = await page.locator('#hud-multiplier').textContent();
   const stackedInternalScoreMult = await page.evaluate(() => window.__METRO_GAME__.getScoreMultiplier());
@@ -135,7 +143,11 @@ async function run() {
   await page.evaluate(() => {
     window.__METRO_GAME__.getPlayer().powerups.reset();
   });
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => {
+    const game = window.__METRO_GAME__;
+    return game.lifecycleState === 'PLAYING' && game.getScoreMultiplier() === 1.25 &&
+      document.getElementById('hud-multiplier').textContent === '1.25X';
+  });
 
   const restoredMultiplierText = await page.locator('#hud-multiplier').textContent();
   const restoredInternalScoreMult = await page.evaluate(() => window.__METRO_GAME__.getScoreMultiplier());

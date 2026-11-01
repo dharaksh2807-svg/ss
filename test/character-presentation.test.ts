@@ -46,8 +46,8 @@ console.log('--- Test 1: CameraController Modes & Preference Persistence ---');
 const controller = new CameraController();
 
 assert(
-  controller.getCameraMode() === 'CHARACTER_FOCUS',
-  `Default camera mode is CHARACTER_FOCUS (actual: ${controller.getCameraMode()})`
+  controller.getCameraMode() === 'CLASSIC',
+  `Default camera mode is CLASSIC (actual: ${controller.getCameraMode()})`
 );
 
 controller.setCameraMode('CLASSIC');

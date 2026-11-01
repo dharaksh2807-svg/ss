@@ -180,9 +180,9 @@ export class GameOverModal {
 
         <!-- Action Buttons -->
         <div class="game-over-actions-flow">
-          <button id="game-over-retry-btn" class="arcade-play-btn pulse-glow quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Play Again (Instant Retry)" title="Play Again [Space / Enter / R]">
+          <button id="game-over-retry-btn" class="arcade-play-btn quick-retry-btn" style="width: 100%; margin-bottom: 12px;" aria-label="Play Again (Instant Retry)" title="Play Again [Space / Enter / R]">
             <span class="play-btn-content">
-              <span class="play-icon">🔄</span>
+              <span class="play-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></span>
               <span id="game-over-retry-text" class="play-text">PLAY AGAIN</span>
               <span class="retry-key-badge"><kbd>R</kbd></span>
             </span>

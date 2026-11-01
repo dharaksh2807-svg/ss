@@ -81,6 +81,8 @@ export class CharacterModel {
 
   // Animation clocks & state
   private animTime: number = 0;
+  private prevAnimSin: number = 0;          // For footstep zero-crossing detection
+  private onFootstep: ((foot: 'left' | 'right') => void) | null = null;
   private isSuperSneakers: boolean = false;
   private presentationPose: PresentationPose = 'DEFAULT';
 
@@ -174,6 +176,10 @@ export class CharacterModel {
     });
 
     this.rebuildModel(this.currentCharacterId, this.currentOutfitId);
+  }
+
+  public setFootstepCallback(cb: ((foot: 'left' | 'right') => void) | null): void {
+    this.onFootstep = cb;
   }
 
   public getRunningStyle(): RunningStyle {
@@ -334,6 +340,8 @@ export class CharacterModel {
   }
 
   private resetPoseBuffers(): void {
+    // Reset animation clock so revive/retry starts cleanly from phase 0
+    this.animTime = 0;
     this.rootPos.set(0, 0, 0);
     this.rootRot.set(0, 0, 0);
     this.hipsPos.set(0, this.baseHipsY, 0);
@@ -570,6 +578,18 @@ export class CharacterModel {
       ? Math.min(32.0, 12.0 + (speed / CONSTANTS.MAX_SPEED) * 16.0)
       : 14.0;
     this.animTime += dt * cadence;
+
+    // Footstep zero-crossing detection: left foot plants when sin(animTime) crosses 0 positive→negative,
+    // right foot plants when it crosses 0 negative→positive. Only fire during active run states.
+    if (this.onFootstep && (state === 'RUN' || state === 'TRAIN_ROOF_RUN' || state === 'CLIMB')) {
+      const curSin = Math.sin(this.animTime);
+      if (this.prevAnimSin > 0 && curSin <= 0) {
+        this.onFootstep('left');
+      } else if (this.prevAnimSin <= 0 && curSin > 0) {
+        this.onFootstep('right');
+      }
+      this.prevAnimSin = curSin;
+    }
 
     this.isHoverboard = hasHoverboard;
     if (this.hoverboardGroup) {
@@ -858,38 +878,43 @@ export class CharacterModel {
     const sinT = Math.sin(t);
     const cosT = Math.cos(t);
 
-    // 1. Pelvis harmonic vertical bob (2 bobs per full 2-step stride cycle)
-    const bob = -Math.cos(2.0 * t) * 0.045;
+    // 1. Pelvis harmonic vertical bob — amplitude scales with speed to avoid excessive bounce at low cadence
+    const speedFraction = Math.min(1.0, speed / CONSTANTS.MAX_SPEED);
+    const bobAmplitude = 0.022 + speedFraction * 0.030; // 0.022 at walk-speed, 0.052 at full sprint
+    const bob = -Math.cos(2.0 * t) * bobAmplitude;
     this.targetHipsPos.set(0, this.baseHipsY + bob, 0);
 
-    // 2. Pelvis yaw & roll counter-rotation
-    this.targetHipsRot.set(0, -sinT * 0.08, sinT * 0.035);
+    // 2. Pelvis yaw & roll counter-rotation (proportional to stride intensity)
+    this.targetHipsRot.set(0, -sinT * (0.06 + speedFraction * 0.04), sinT * (0.025 + speedFraction * 0.018));
 
-    // 3. Spine athletic forward lean & counter-twist
-    let forwardLean = 0.14 + (speed / CONSTANTS.MAX_SPEED) * 0.08;
-    if (variant === 'TRAIN_ROOF_RUN') forwardLean += 0.04;
+    // 3. Spine athletic forward lean — stronger at sprint speed for energetic body language
+    let forwardLean = 0.12 + speedFraction * 0.14; // 0.12 idle-run → 0.26 max sprint
+    if (variant === 'TRAIN_ROOF_RUN') forwardLean += 0.05; // hunched for low clearance
     if (variant === 'CLIMB') forwardLean += 0.22;
 
-    this.targetSpineRot.set(forwardLean, sinT * 0.12, 0);
+    // Counter-twist amplitude also scales slightly with speed
+    this.targetSpineRot.set(forwardLean, sinT * (0.10 + speedFraction * 0.04), 0);
 
-    // 4. Head gaze stabilization (keeps eyes focused level on oncoming track)
-    this.targetHeadRot.set(-forwardLean * 0.65, -sinT * 0.10, -sinT * 0.03);
+    // 4. Head gaze stabilization — compensates for spine lean, keeps eyes level on track
+    this.targetHeadRot.set(-forwardLean * 0.60, -sinT * 0.09, -sinT * 0.025);
 
     // 5. Alternating Legs with Biomechanical Knee Delay
-    const legSwing = sinT * 0.72;
+    // Leg swing amplitude scales with speed for natural cadence feel
+    const legSwing = sinT * (0.62 + speedFraction * 0.14); // 0.62 slow → 0.76 sprint
     this.targetLeftLegRot.set(legSwing, 0, 0);
     this.targetRightLegRot.set(-legSwing, 0, 0);
 
     // Delayed knee flexion: Knee bends smoothly during recovery swing, clearing the ground
     const leftSwing = Math.max(0, Math.sin(t - 0.35));
-    this.targetLeftCalfRot.set(0.06 + leftSwing * 1.15, 0, 0);
+    this.targetLeftCalfRot.set(0.06 + leftSwing * (1.05 + speedFraction * 0.18), 0, 0);
 
     const rightSwing = Math.max(0, Math.sin(t + Math.PI - 0.35));
-    this.targetRightCalfRot.set(0.06 + rightSwing * 1.15, 0, 0);
+    this.targetRightCalfRot.set(0.06 + rightSwing * (1.05 + speedFraction * 0.18), 0, 0);
 
     // Foot ankle flexion (with slope-aligned dorsiflexion during climbing)
-    let leftAnklePitch = -sinT * 0.12;
-    let rightAnklePitch = sinT * 0.12;
+    // Ankle pushes off more aggressively at speed (plantarflexion on stance phase)
+    let leftAnklePitch = -sinT * (0.10 + speedFraction * 0.06);
+    let rightAnklePitch = sinT * (0.10 + speedFraction * 0.06);
     if (variant === 'CLIMB') {
       leftAnklePitch += 0.24;
       rightAnklePitch += 0.24;
@@ -897,13 +922,17 @@ export class CharacterModel {
     this.targetLeftSneakerRot.set(leftAnklePitch, 0, 0);
     this.targetRightSneakerRot.set(rightAnklePitch, 0, 0);
 
-    // 6. Natural Arm Swing with Elbow Flexion
-    const armSwing = sinT * 0.68;
-    this.targetLeftArmRot.set(-armSwing + 0.12, 0, -0.22);
-    this.targetRightArmRot.set(armSwing + 0.12, 0, 0.22);
+    // 6. Contralateral arm swing with independent elbow flexion
+    // Arm drives opposite to same-side leg (left arm forward when right leg forward)
+    // armSwing: positive = arm forward (in +X / shoulder pitch back when left arm, forward when right arm)
+    const armSwing = sinT * (0.60 + speedFraction * 0.12); // 0.60 → 0.72 at sprint
+    this.targetLeftArmRot.set(-armSwing + 0.10, 0, -0.22);
+    this.targetRightArmRot.set(armSwing + 0.10, 0, 0.22);
 
-    this.targetLeftForearmRot.set(-0.45 - Math.max(0, -armSwing) * 0.55, 0, 0);
-    this.targetRightForearmRot.set(-0.45 - Math.max(0, armSwing) * 0.55, 0, 0);
+    // Elbow flexion: elbow bends MORE on the back-swing (arm driving backward) — contralateral correct
+    // Left arm swings back when sinT > 0 (armSwing > 0), so leftForearm bends more then
+    this.targetLeftForearmRot.set(-0.42 - Math.max(0, armSwing) * 0.52, 0, 0);
+    this.targetRightForearmRot.set(-0.42 - Math.max(0, -armSwing) * 0.52, 0, 0);
   }
 
   private computeJumpTakeoffTarget(): void {
@@ -1121,14 +1150,19 @@ export class CharacterModel {
   }
 
   private computeStumbleTarget(): void {
-    const t = this.animTime * 1.5;
-    const wobble = Math.sin(t * 8.0) * 0.18;
-    this.targetSpineRot.set(-0.25 + Math.sin(t * 6.0) * 0.12, wobble, wobble * 0.5);
-    this.targetHeadRot.set(0.15, -wobble * 0.8, 0);
-    this.targetLeftArmRot.set(-0.80 + Math.cos(t * 7.0) * 0.45, 0, -0.45);
-    this.targetRightArmRot.set(-0.80 - Math.cos(t * 7.0) * 0.45, 0, 0.45);
-    this.targetLeftLegRot.set(0.35 + Math.sin(t * 8.0) * 0.3, 0, 0);
-    this.targetRightLegRot.set(-0.35 - Math.sin(t * 8.0) * 0.3, 0, 0);
+    // Wobble at 5-6 Hz (physiologically believable off-balance recovery, not a glitch)
+    const t = this.animTime * 1.0; // 1x speed (was 1.5x — too fast/glitchy)
+    const wobble = Math.sin(t * 5.5) * 0.16;
+    this.targetSpineRot.set(-0.18 + Math.sin(t * 4.5) * 0.10, wobble, wobble * 0.45);
+    this.targetHeadRot.set(0.12, -wobble * 0.7, 0);
+    // Arms flail outward for balance recovery — asymmetric to look reactive, not mirrored
+    this.targetLeftArmRot.set(-0.65 + Math.cos(t * 5.0) * 0.40, 0, -0.55);
+    this.targetRightArmRot.set(-0.65 - Math.cos(t * 5.0) * 0.40, 0, 0.55);
+    // Legs: shuffle pattern — slightly bent, staggered
+    this.targetLeftLegRot.set(0.28 + Math.sin(t * 5.5) * 0.22, 0, -0.04);
+    this.targetRightLegRot.set(-0.28 - Math.sin(t * 5.5) * 0.22, 0, 0.04);
+    this.targetLeftCalfRot.set(0.35 + Math.max(0, Math.sin(t * 5.5)) * 0.45, 0, 0);
+    this.targetRightCalfRot.set(0.35 + Math.max(0, -Math.sin(t * 5.5)) * 0.45, 0, 0);
   }
 
   private computeCrashTarget(): void {
