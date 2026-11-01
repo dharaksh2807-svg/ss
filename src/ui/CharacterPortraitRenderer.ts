@@ -193,9 +193,12 @@ export class CharacterPortraitRenderer {
   }
 
   public setCharacter(charId: CharacterId, outfitId?: string): void {
-    this.currentCharacterId = charId;
     const charDef = getCharacterById(charId);
-    this.currentOutfitId = outfitId || (charDef ? charDef.defaultOutfitId : 'jax_classic');
+    const nextOutfitId = outfitId || (charDef ? charDef.defaultOutfitId : 'jax_classic');
+    if (this.currentCharacterId === charId && this.currentOutfitId === nextOutfitId &&
+        (this.charModel || this.glbGroup)) return;
+    this.currentCharacterId = charId;
+    this.currentOutfitId = nextOutfitId;
 
     if (this.nameEl && charDef) {
       this.nameEl.textContent = charDef.name.toUpperCase();
@@ -215,6 +218,7 @@ export class CharacterPortraitRenderer {
     // Clean up previous model
     if (this.charModel) {
       this.scene.remove(this.charModel.mesh);
+      this.charModel.dispose();
       this.charModel = null;
     }
     if (this.glbGroup) {
@@ -410,6 +414,8 @@ export class CharacterPortraitRenderer {
   }
 
   public dispose(): void {
+    this.charModel?.dispose();
+    this.charModel = null;
     if (this.renderer) {
       this.renderer.dispose();
       this.renderer = null;

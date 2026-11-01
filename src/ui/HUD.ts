@@ -43,6 +43,7 @@ export class HUD {
   private modeBadgeEl: HTMLElement | null = null;
   private toastContainerEl: HTMLElement | null = null;
   private missionTickerEl: HTMLElement | null = null;
+  private missionTickerContent = '';
   private fpsCounterEl: HTMLElement | null = null;
   private fpsUpdateTimer: number = 0;
 
@@ -443,11 +444,11 @@ export class HUD {
         this.missionTickerEl.style.display = 'flex';
         this.missionTickerEl.classList.add('ticker-celebrating');
         const info = this.completedMissionInfo;
-        this.missionTickerEl.innerHTML = `
+        this.setMissionTickerContent(`
           <span class="ticker-dot">✨</span>
           <span class="ticker-label">${info ? info.title : 'Mission'}:</span>
           <span class="ticker-val completed-gold">COMPLETED! +${info ? info.rewardCoins : 100} 🪙</span>
-        `;
+        `);
       } else {
         this.missionTickerEl.classList.remove('ticker-celebrating');
         const activeMissions = ProgressionManager.getInstance().getActiveMissions();
@@ -455,11 +456,11 @@ export class HUD {
         if (curr) {
           this.missionTickerEl.style.display = 'flex';
           const pct = Math.min(100, Math.floor((curr.progress / curr.target) * 100));
-          this.missionTickerEl.innerHTML = `
+          this.setMissionTickerContent(`
             <span class="ticker-dot">🎯</span>
             <span class="ticker-label">${curr.title}:</span>
             <span class="ticker-val">${Math.floor(curr.progress)} / ${curr.target} (${pct}%)</span>
-          `;
+          `);
         } else {
           // All active objectives completed: gracefully retire from prominent HUD
           this.missionTickerEl.style.display = 'none';
@@ -709,6 +710,13 @@ export class HUD {
     this.clearAllTimeouts();
   }
 
+  private setMissionTickerContent(content: string): void {
+    if (this.missionTickerEl && content !== this.missionTickerContent) {
+      this.missionTickerEl.innerHTML = content;
+      this.missionTickerContent = content;
+    }
+  }
+
   public reset(): void {
     this.clearAllTimeouts();
     this.score = 0;
@@ -731,6 +739,7 @@ export class HUD {
     this.completedCelebrationMissionId = null;
     this.completedCelebrationTimer = 0;
     this.completedMissionInfo = null;
+    this.missionTickerContent = '';
     if (this.missionTickerEl) {
       this.missionTickerEl.classList.remove('ticker-celebrating');
     }

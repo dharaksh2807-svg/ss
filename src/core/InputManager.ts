@@ -42,6 +42,14 @@ export class InputManager {
       // Always allow Pause / Escape even when gameplay input is disabled (e.g. in game over or pause menu)
       const mappedAction = this.settingsManager.resolveKeyToAction(e.code);
 
+      // Let focused controls keep native activation, editing and navigation.
+      // Gameplay shortcuts must not swallow Space on the lobby's Play button.
+      if (e.defaultPrevented) return;
+      if (e.target instanceof Element) {
+        if (e.target.closest('input, select, textarea, [contenteditable="true"]')) return;
+        if (mappedAction !== 'PAUSE' && e.target.closest('button, a[href], [role="button"]')) return;
+      }
+
       if (!this.enabled && mappedAction !== 'PAUSE' && e.code !== 'Escape' && e.code !== 'KeyP') return;
 
       // Ignore automatic keyboard repeat to prevent unintended multiple lane switches

@@ -8,6 +8,7 @@ import { EnvironmentRegistry } from '../src/environment/EnvironmentRegistry';
 import { DistrictPlanner } from '../src/environment/DistrictPlanner';
 import { SceneryFactory } from '../src/environment/SceneryFactory';
 import { SceneryPool } from '../src/environment/SceneryPool';
+import { captureSharedResources } from '../src/scene/ResourceDisposal';
 import { MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, NEON_INDUSTRIAL_THEME } from '../src/environment/EnvironmentConfig';
 import { CONSTANTS } from '../src/core/Constants';
 
@@ -316,8 +317,36 @@ testChunk.populate([], -80, 'MODERN_METRO', false);
 const countBefore = testChunk.decorativeGroup.children.length;
 assert(countBefore > 0, 'Chunk has populated decorative elements');
 
+// Observe real disposal events: removal from the scene alone does not free WebGL resources.
+const oldGeometries = new Set<THREE.BufferGeometry>();
+const oldLocalMaterials = new Set<THREE.Material>();
+const sharedMaterialSet = new Set(Object.values(SceneryFactory.getInstance().getSharedMaterials()));
+const geometryDisposals = new Map<THREE.BufferGeometry, number>();
+const materialDisposals = new Map<THREE.Material, number>();
+let sharedDisposals = 0;
+for (const material of sharedMaterialSet) material.addEventListener('dispose', () => sharedDisposals++);
+testChunk.decorativeGroup.traverse((object) => {
+  if (!(object instanceof THREE.Mesh)) return;
+  oldGeometries.add(object.geometry);
+  for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+    if (!sharedMaterialSet.has(material)) oldLocalMaterials.add(material);
+  }
+});
+for (const geometry of oldGeometries) geometry.addEventListener('dispose', () => geometryDisposals.set(geometry, (geometryDisposals.get(geometry) || 0) + 1));
+for (const material of oldLocalMaterials) material.addEventListener('dispose', () => materialDisposals.set(material, (materialDisposals.get(material) || 0) + 1));
+
 // Recycle to new position
 testChunk.populate([], -400, 'HISTORIC_QUARTER', false);
+assert(oldGeometries.size > 0 && [...oldGeometries].every(g => geometryDisposals.get(g) === 1), 'Recycling disposes each owned scenery geometry exactly once');
+assert(oldLocalMaterials.size > 0 && [...oldLocalMaterials].every(m => materialDisposals.get(m) === 1), 'Recycling disposes local materials exactly once');
+assert(sharedDisposals === 0, 'Recycling preserves shared scenery materials');
+const isolatedPool = new SceneryPool();
+const borrowed = isolatedPool.obtainGroup();
+isolatedPool.releaseGroup(borrowed);
+assert(isolatedPool.obtainGroup() === borrowed, 'Explicitly borrowed groups remain reusable');
+const unmanaged = new THREE.Group();
+isolatedPool.releaseGroup(unmanaged);
+assert(isolatedPool.obtainGroup() !== unmanaged, 'Groups never borrowed from pool are not retained indefinitely');
 const countAfter = testChunk.decorativeGroup.children.length;
 assert(countAfter > 0, 'Recycled chunk populated with new district elements');
 
@@ -331,6 +360,33 @@ testChunk.decorativeGroup.traverse((c) => {
   }
 });
 assert(!foundModernWallInHistoric, 'Previous Modern Metro meshes are cleanly cleared when recycled to Historic Quarter');
+
+// Chunk retirement must free instance geometry/materials without invalidating
+// the factory's shared coin meshes, obstacle materials or cached textures.
+const dynamicChunk = new TrackChunk(obsFactory, colFactory);
+dynamicChunk.populate({ name: 'RESOURCE_LIFECYCLE', difficulty: 'BEGINNER',
+  obstacles: [{ type: 'TRAIN', lane: 1, zOffset: 45, length: 20 }, { type: 'LOW_BARRIER', lane: -1, zOffset: 20 }],
+  collectibles: [{ type: 'COIN', lane: 0, zOffset: 10 }, { type: 'MAGNET', lane: 0, zOffset: 15 }]
+}, 0);
+const cached = new Set([...captureSharedResources(obsFactory), ...captureSharedResources(colFactory)]);
+const retiredResources = new Set<THREE.BufferGeometry | THREE.Material>();
+const retiredDisposals = new Map<object, number>();
+let cachedDisposals = 0;
+for (const resource of cached) resource.addEventListener('dispose', () => cachedDisposals++);
+for (const item of [...dynamicChunk.obstacles, ...dynamicChunk.collectibles]) {
+  item.group.traverse(object => {
+    if (!(object instanceof THREE.Mesh)) return;
+    for (const resource of [object.geometry, ...Array.isArray(object.material) ? object.material : [object.material]]) {
+      if (!cached.has(resource)) retiredResources.add(resource);
+    }
+  });
+}
+for (const resource of retiredResources) resource.addEventListener('dispose', () => retiredDisposals.set(resource, (retiredDisposals.get(resource) || 0) + 1));
+dynamicChunk.clearDynamicItems();
+assert(retiredResources.size > 0 && [...retiredResources].every(r => retiredDisposals.get(r) === 1), 'Chunk retirement disposes train, barrier and powerup instance resources exactly once');
+assert(cachedDisposals === 0, 'Chunk retirement preserves shared obstacle/coin/VFX resources');
+dynamicChunk.clearDynamicItems();
+assert([...retiredResources].every(r => retiredDisposals.get(r) === 1), 'Repeated empty retirement does not dispose resources twice');
 
 // =========================================================================
 // Suite 8: Shared Materials Remain Valid and Undisposed

@@ -623,7 +623,9 @@ export class SceneryFactory {
     isAerialCorridor: boolean = false
   ): void {
     // Clean previous scenery
-    this.sceneryPool.clearDecorativeGroup(decorativeGroup);
+    // Scenery geometries and local materials belong to this build. Textures
+    // and the material cache are shared across chunks and must remain alive.
+    this.sceneryPool.clearDecorativeGroup(decorativeGroup, new Set(Object.values(this.getSharedMaterials())));
 
     const chunkLength = CONSTANTS.CHUNK_LENGTH;
     const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8;

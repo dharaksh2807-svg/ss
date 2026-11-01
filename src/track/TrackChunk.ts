@@ -2263,6 +2263,7 @@ export class TrackChunk {
     for (const obs of this.obstacles) {
       SkillComboManager.getInstance().clearScoredObstacle(obs.id);
       this.group.remove(obs.group);
+      this.obstacleFactory.disposeGroup(obs.group);
       obs.roofSegments = undefined;
       obs.bodySegments = undefined;
       obs.rooftopObstacles = undefined;
@@ -2273,6 +2274,7 @@ export class TrackChunk {
 
     for (const col of this.collectibles) {
       this.group.remove(col.group);
+      this.collectibleFactory.disposeGroup(col.group);
     }
     this.collectibles = [];
   }

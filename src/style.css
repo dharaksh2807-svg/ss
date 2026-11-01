@@ -6416,6 +6416,32 @@ kbd {
   }
 }
 
+/* Compact portrait and mission placement */
+@media (max-width: 480px) {
+  /* Keep the portrait and mission on a second row, clear of score and pause. */
+  .hud-stats-left .hud-portrait-pill {
+    position: absolute;
+    top: 52px;
+    left: 0;
+    max-width: 142px;
+  }
+  .hud-portrait-pill .portrait-meta-column {
+    min-width: 0;
+  }
+  .hud-portrait-pill .portrait-name-label,
+  .hud-portrait-pill .portrait-mood-badge {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hud-mission-ticker {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right, 12px));
+    transform: none;
+    max-width: calc(100vw - 178px);
+  }
+}
+
 /* Game Over Selected Runner Showcase */
 .game-over-runner-card {
   display: flex;

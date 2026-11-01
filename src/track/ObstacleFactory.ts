@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { captureSharedResources, disposeObjectResources, RenderResource } from '../scene/ResourceDisposal';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { CurvedShaderManager } from '../scene/CurvedShader';
 import { TextureGenerator } from '../scene/TextureGenerator';
@@ -221,6 +222,7 @@ export class ObstacleFactory {
   private trainSpawnCounter = 0;
   private lowBarrierVariantCounter = 0;
   private highBarrierVariantCounter = 0;
+  private sharedResources: Set<RenderResource>;
 
   constructor() {
     this.lowBarrierMats = [0, 1, 2].map(v => {
@@ -427,6 +429,11 @@ export class ObstacleFactory {
       metalness: 0.75
     });
     this.curvedManager.applyCurvature(this.rampTransitionMat);
+    this.sharedResources = captureSharedResources(this);
+  }
+
+  public disposeGroup(group: THREE.Group): void {
+    disposeObjectResources(group, this.sharedResources);
   }
 
   /**

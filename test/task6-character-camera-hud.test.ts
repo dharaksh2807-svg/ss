@@ -343,7 +343,16 @@ const prog = ProgressionManager.getInstance();
 const activeMissions = prog.getActiveMissions();
 assert(activeMissions.length > 0, 'Progression manager has active missions');
 
+let tickerWrites = 0;
+let tickerContent = tickerEl.innerHTML;
+Object.defineProperty(tickerEl, 'innerHTML', {
+  get: () => tickerContent,
+  set: (value: string) => { tickerContent = value; tickerWrites++; }
+});
 hud.update(0.016);
+const initialTickerWrites = tickerWrites;
+for (let frame = 0; frame < 60; frame++) hud.update(0);
+assert(tickerWrites === initialTickerWrites, 'Unchanged mission preserves ticker DOM over 60 frames');
 assert(tickerEl.style.display !== 'none', 'Mission ticker is visible for active uncompleted mission');
 
 // 2. Mark active mission complete and emit event
@@ -357,6 +366,9 @@ EventBus.getInstance().emit(EVENTS.MISSION_COMPLETED, missionToComplete);
 hud.update(0.016);
 assert(tickerEl.classList.contains('ticker-celebrating'), 'Mission ticker enters celebration state on completion');
 assert(tickerEl.innerHTML.includes('COMPLETED!'), 'Mission ticker displays COMPLETED victory message with rewards');
+const celebrationWrites = tickerWrites;
+for (let frame = 0; frame < 60; frame++) hud.update(0.016);
+assert(tickerWrites === celebrationWrites, 'Celebration preserves DOM until its content changes');
 
 // 3. Fast-forward through celebration duration (2.5s)
 hud.update(2.6);
@@ -379,5 +391,18 @@ hud.reset();
 assert(!tickerEl.classList.contains('ticker-celebrating'), 'HUD reset clears any active celebration classes');
 
 console.log('\n================================================================');
-console.log('🎉 ALL 24 / 24 TASK 6 CHARACTER, CAMERA & HUD TESTS PASSED!');
+// Discarded portrait models must release their running-style subscription.
+const discardedModel = new CharacterModel('char_jax', 'jax_classic');
+discardedModel.setRunningStyle('CLASSIC');
+let disposedGeometryCount = 0;
+discardedModel.mesh.traverse((object) => {
+  if ((object as THREE.Mesh).isMesh) {
+    (object as THREE.Mesh).geometry.addEventListener('dispose', () => disposedGeometryCount++);
+  }
+});
+discardedModel.dispose();
+EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, 'REVERSE');
+assert(discardedModel.getRunningStyle() === 'CLASSIC', 'Disposed character no longer receives running-style events');
+assert(disposedGeometryCount > 0 && discardedModel.mesh.children.length === 0, 'Disposed character releases geometry and hierarchy');
+console.log('🎉 ALL TASK 6 CHARACTER, CAMERA & HUD TESTS PASSED!');
 console.log('================================================================\n');

@@ -137,6 +137,7 @@ export class CharacterModel {
   private glbInstance: LoadedGlbCharacter | null = null;
   private glbContainer: THREE.Group | null = null;
   private currentGlbClip: string = '';
+  private unsubscribeRunningStyle: () => void;
 
   public static getRunningStyleForCharacter(characterId: string): RunningStyle {
     if (typeof localStorage !== 'undefined') {
@@ -171,7 +172,7 @@ export class CharacterModel {
       }
     }
 
-    EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, (style: RunningStyle) => {
+    this.unsubscribeRunningStyle = EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, (style: RunningStyle) => {
       this.setRunningStyle(style);
     });
 
@@ -407,6 +408,13 @@ export class CharacterModel {
         }
       }
     });
+  }
+
+  public dispose(): void {
+    this.unsubscribeRunningStyle();
+    this.onFootstep = null;
+    this.disposeHierarchy();
+    this.mesh.clear();
   }
 
   public getCharacterId(): CharacterId {

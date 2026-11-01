@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+import { disposeObjectResources } from '../scene/ResourceDisposal';
 
 export class SceneryPool {
   private static instance: SceneryPool;
   private groupPool: THREE.Group[] = [];
+  private borrowedGroups = new WeakSet<THREE.Group>();
   private activeObjectCount: number = 0;
   private activeMeshCount: number = 0;
 
@@ -24,6 +26,7 @@ export class SceneryPool {
       group.scale.set(1, 1, 1);
       group.visible = true;
     }
+    this.borrowedGroups.add(group);
     return group;
   }
 
@@ -35,19 +38,23 @@ export class SceneryPool {
         this.releaseGroup(child);
       }
     }
-    this.groupPool.push(group);
+    // Only retain groups obtained from this pool. Factory-created groups have
+    // no consumer here and would otherwise accumulate on every chunk recycle.
+    if (this.borrowedGroups.delete(group)) this.groupPool.push(group);
   }
 
   /**
-   * Safely clears a chunk's decorative group without disposing shared materials or geometries
+   * Clears scenery, optionally releasing factory-owned resources while keeping
+   * the supplied shared material cache (and its textures) alive.
    */
-  public clearDecorativeGroup(decorativeGroup: THREE.Group): void {
+  public clearDecorativeGroup(decorativeGroup: THREE.Group, sharedMaterials?: ReadonlySet<THREE.Material>): void {
     let meshesRemoved = 0;
     decorativeGroup.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         meshesRemoved++;
       }
     });
+    if (sharedMaterials) disposeObjectResources(decorativeGroup, sharedMaterials);
 
     while (decorativeGroup.children.length > 0) {
       const child = decorativeGroup.children[0];
