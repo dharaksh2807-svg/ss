@@ -1,441 +1,485 @@
 import * as THREE from 'three';
+import { CONSTANTS } from '../core/Constants';
+import { EventBus, EVENTS } from '../core/EventBus';
+import { SettingsManager } from '../settings/SettingsManager';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
-export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
+export type CameraMode = 'CLASSIC' | 'CHARACTER_FOCUS';
 
-export interface EnvironmentTheme {
-  id: EnvironmentId;
-  displayName: string;
-  subtitle: string;
-  description: string;
-  badgeEmoji: string;
-  accentColor: string;
-  districtRange: {
-    minLengthMeters: number;
-    maxLengthMeters: number;
-  };
-  allowedTransitions: EnvironmentId[];
-  sky: {
-    top: number;
-    bottom: number;
-  };
-  fog: {
-    color: number;
-    density: number;
-  };
-  sun: {
-    color: number;
-    intensity: number;
-    position: { x: number; y: number; z: number };
-  };
-  fill: {
-    color: number;
-    intensity: number;
-  };
-  hemi: {
-    sky: number;
-    ground: number;
-    intensity: number;
-  };
-  skyline: {
-    color: number;
-    opacity: number;
-    style: 'MODERN' | 'HISTORIC' | 'INDUSTRIAL';
-  };
-  clouds: {
-    color: number;
-    roughness: number;
-  };
-  materials: {
-    ballastColor: number;
-    sleeperColor: number;
-    wallBaseColor: number;
-    wallAccentColor: number;
-    curbColor: number;
-    catenaryColor: number;
-    insulatorColor: number;
-    pipeColor: number;
-    bridgeMainColor: number;
-    bridgeAccentColor: number;
-    groundPlaneColor: number;
-  };
-  ambience: {
-    baseToneFreq: number;
-    windNoiseFilter: number;
-    humGain: number;
-    tag: string;
-  };
-}
+export class CameraController {
+  public camera: THREE.PerspectiveCamera;
+  private settingsManager = SettingsManager.getInstance();
+  private targetPosition = new THREE.Vector3();
+  private currentPosition = new THREE.Vector3();
+  public lookTarget = new THREE.Vector3();
+  private shakeTrauma = 0;
+  private shakeOffset = new THREE.Vector3();
+  private landingDipOffset = 0;
 
-export const MODERN_METRO_THEME: EnvironmentTheme = {
-  id: 'MODERN_METRO',
-  displayName: 'Modern Metro District',
-  subtitle: 'Sleek Glass Towers & High-Tech Rail',
-  description: 'Gleaming corporate headquarters, azure daylight skies, glass skybridges, and modern electrified transit corridors.',
-  badgeEmoji: '🏙️',
-  accentColor: '#00e5ff',
-  districtRange: {
-    minLengthMeters: 560,
-    maxLengthMeters: 800
-  },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO'],
-  sky: {
-    top: 0x0288d1,    // Rich vibrant azure
-    bottom: 0xe1f5fe // Crisp cyan daylight horizon
-  },
-  fog: {
-    color: 0xb3e5fc,  // Soft aerial cyan haze
-    density: 0.0028   // Reduced from 0.0035 to prevent midground train wash-out
-  },
-  sun: {
-    color: 0xfffaea,  // Bright crisp white-gold midday sun
-    intensity: 1.45,
-    position: { x: 24, y: 42, z: 18 }
-  },
-  fill: {
-    color: 0xa0c4e8,  // Cool sky reflection fill
-    intensity: 0.70   // Boosted to eliminate dark crushed voids on train flanks
-  },
-  hemi: {
-    sky: 0xc8e6f9,
-    ground: 0x546e7a, // Illuminated ground bounce to reveal underbody and trucks
-    intensity: 1.30
-  },
-  skyline: {
-    color: 0x90caf9,
-    opacity: 0.75,
-    style: 'MODERN'
-  },
-  clouds: {
-    color: 0xffffff,
-    roughness: 0.90
-  },
-  materials: {
-    ballastColor: 0xffffff,
-    sleeperColor: 0x42362b,
-    wallBaseColor: 0x8a9ba8,    // Clean modern transit retaining concrete
-    wallAccentColor: 0x455a64,
-    curbColor: 0xe0e6eb,        // Clean concrete curb
-    catenaryColor: 0x546e7a,    // Clean structural steel
-    insulatorColor: 0x81d4fa,   // Turquoise ceramic
-    pipeColor: 0x455a64,
-    bridgeMainColor: 0x37474f,   // Sleek illuminated dark steel
-    bridgeAccentColor: 0x00e5ff, // Cyber cyan glowing accents
-    groundPlaneColor: 0x263238
-  },
-  ambience: {
-    baseToneFreq: 110,
-    windNoiseFilter: 1200,
-    humGain: 0.035,
-    tag: 'MODERN_ELECTRIC_HUM'
-  }
-};
+  // Camera Preferences: 'CLASSIC' (rear chase) or 'CHARACTER_FOCUS' (expressive 3/4 side profile)
+  private cameraMode: CameraMode = 'CLASSIC';
+  private currentLateralOffset: number = 0;
+  private targetLateralOffset: number = 0;
 
-export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
-  id: 'HISTORIC_QUARTER',
-  displayName: 'Historic Railway Quarter',
-  subtitle: 'Victorian Brick & Stone Viaducts',
-  description: 'Aged red brick brownstones, soot-stained arched viaducts, gas lamp posts, riveted iron gantries, and warm golden hour atmosphere.',
-  badgeEmoji: '🏛️',
-  accentColor: '#f59e0b',
-  districtRange: {
-    minLengthMeters: 560,
-    maxLengthMeters: 800
-  },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO'],
-  sky: {
-    top: 0x1e3a5f,    // Deep twilight sapphire/slate top
-    bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
-  },
-  fog: {
-    color: 0xd9a58b,  // Warm terracotta / sandstone atmospheric haze
-    density: 0.0046
-  },
-  sun: {
-    color: 0xffaa55,  // Warm golden amber late-afternoon sun
-    intensity: 1.55,
-    position: { x: 32, y: 36, z: 22 }
-  },
-  fill: {
-    color: 0xffcc80,  // Warm amber bounced ambient fill
-    intensity: 0.65
-  },
-  hemi: {
-    sky: 0xffd8b0,    // Warm dusty peach sky
-    ground: 0x5c3d28, // Slightly warmer cobblestone earth reflection
-    intensity: 1.25
-  },
-  skyline: {
-    color: 0xbcaaa4,  // Sepia/dusty silhouettes with clocktowers and spires
-    opacity: 0.85,
-    style: 'HISTORIC'
-  },
-  clouds: {
-    color: 0xfff3e0,  // Soft sunset-tinted clouds
-    roughness: 0.85
-  },
-  materials: {
-    ballastColor: 0xefdfcf,
-    sleeperColor: 0x2d2219,
-    wallBaseColor: 0x8d493a,    // Aged weathered London brick
-    wallAccentColor: 0x4a2e2b,  // Dark soot-stained brick
-    curbColor: 0xb0bec5,        // Hand-cut granite curbs
-    catenaryColor: 0x212121,    // Heavy riveted cast iron
-    insulatorColor: 0xa1887f,   // Antique brown earthenware
-    pipeColor: 0x3e2723,
-    bridgeMainColor: 0x6d4c41,   // Weathered red stone / brick arch
-    bridgeAccentColor: 0xd4af37, // Brass / aged copper patina
-    groundPlaneColor: 0x1f1712
-  },
-  ambience: {
-    baseToneFreq: 75,
-    windNoiseFilter: 750,
-    humGain: 0.045,
-    tag: 'HISTORIC_STEAM_RUMBLE'
-  }
-};
+  // Lobby mode staging
+  private isLobbyMode: boolean = true;
+  private lobbyTargetPos = new THREE.Vector3(0.35, 1.45, 3.8);
+  private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
 
-export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
-  id: 'UNDERGROUND_METRO',
-  displayName: 'Underground Metro System',
-  subtitle: 'Vaulted Caverns, Glazed Tiles & Subterranean Stations',
-  description: 'Fully enclosed subterranean subway system with white glazed ceramic tiles, monumental vaulted concrete haunches, elevated emergency walkways, and illuminated underground station concourses.',
-  badgeEmoji: '🚇',
-  accentColor: '#38bdf8',
-  districtRange: {
-    minLengthMeters: 560,
-    maxLengthMeters: 800
-  },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
-  sky: {
-    top: 0x0a0f1d,    // Subterranean dark slate shadow
-    bottom: 0x111827 // Deep tunnel ambient tone
-  },
-  fog: {
-    color: 0x111827,  // Subterranean cool slate haze
-    density: 0.0055   // Tuned so obstacles 80m ahead remain crisp and readable
-  },
-  sun: {
-    color: 0x94a3b8,  // Cool downward artificial tunnel beam
-    intensity: 0.35,  // Darker tunnel: fill is the key light underground
-    position: { x: 0, y: 35, z: 12 }
-  },
-  fill: {
-    color: 0x38bdf8,  // Cool fluorescent ambient bounce
-    intensity: 0.75   // High legibility on train flanks and player
-  },
-  hemi: {
-    sky: 0x7dd3fc,    // Overhead luminaire strip bounce
-    ground: 0x283548, // Lighter concrete ballast floor bounce for better contact grounding
-    intensity: 1.35
-  },
-  skyline: {
-    color: 0x0f172a,
-    opacity: 0.0,     // Hidden in enclosed subterranean environment
-    style: 'MODERN'
-  },
-  clouds: {
-    color: 0x000000,
-    roughness: 1.0
-  },
-  materials: {
-    ballastColor: 0x242833,
-    sleeperColor: 0x181a20,
-    wallBaseColor: 0x1e293b,    // Subway concrete wainscoting
-    wallAccentColor: 0x0284c7,  // Metro blue ceramic accent band
-    curbColor: 0x475569,        // Platform concrete curb
-    catenaryColor: 0x334155,    // Heavy subway steel rib
-    insulatorColor: 0x38bdf8,   // Third-rail ceramic insulator
-    pipeColor: 0x64748b,        // Conduit / sprinkler pipe
-    bridgeMainColor: 0x1e293b,   // Steel support bent
-    bridgeAccentColor: 0xf59e0b, // Yellow hazard warning stripes
-    groundPlaneColor: 0x0f172a
-  },
-  ambience: {
-    baseToneFreq: 55,
-    windNoiseFilter: 500,
-    humGain: 0.06,
-    tag: 'SUBWAY_TUNNEL_RUMBLE'
-  }
-};
+  // Opening cinematic sequence camera state
+  private isIntroMode: boolean = false;
+  private introStartPos = new THREE.Vector3();
+  private introStartLook = new THREE.Vector3();
 
-export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
-  id: 'NEON_INDUSTRIAL',
-  displayName: 'Industrial Rail Yard',
-  subtitle: 'Nocturnal Steel, Amber Glow & Freight Gantries',
-  description: 'Heavy industrial rail depot, nocturnal amber horizon glow, towering freight cranes, corrugated warehouses, and steam pipes.',
-  badgeEmoji: '🏭',
-  accentColor: '#ff6d00',
-  districtRange: {
-    minLengthMeters: 560,
-    maxLengthMeters: 800
-  },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
-  sky: {
-    top: 0x181326,    // Deep nocturnal purple dusk
-    bottom: 0xf57c00 // Radiant amber horizon glow
-  },
-  fog: {
-    color: 0xbf5700,  // Warm industrial amber haze
-    density: 0.0036   // Reduced from 0.0042 to improve obstacle silhouette contrast
-  },
-  sun: {
-    color: 0xff8f00,  // Low amber sodium sun
-    intensity: 1.50,
-    position: { x: -28, y: 38, z: 20 }
-  },
-  fill: {
-    color: 0xffb74d,  // Warm bounce fill
-    intensity: 0.60
-  },
-  hemi: {
-    sky: 0xffa726,
-    ground: 0x241810,
-    intensity: 1.20
-  },
-  skyline: {
-    color: 0x8d6e63,
-    opacity: 0.80,
-    style: 'INDUSTRIAL'
-  },
-  clouds: {
-    color: 0xffcc80,
-    roughness: 0.88
-  },
-  materials: {
-    ballastColor: 0x3e3532,
-    sleeperColor: 0x261c14,
-    wallBaseColor: 0x5d4037,    // Aged board-formed concrete with rust
-    wallAccentColor: 0xbf360c,  // Industrial orange/rust accent
-    curbColor: 0x78909c,        // Chipped concrete curb
-    catenaryColor: 0x37474f,    // Heavy industrial steel
-    insulatorColor: 0xffb300,   // High-voltage amber ceramic
-    pipeColor: 0xd84315,        // Rust orange steam pipe
-    bridgeMainColor: 0x37474f,   // Steel truss bridge
-    bridgeAccentColor: 0xffab00, // Warning yellow/amber accents
-    groundPlaneColor: 0x181310
-  },
-  ambience: {
-    baseToneFreq: 60,
-    windNoiseFilter: 650,
-    humGain: 0.05,
-    tag: 'INDUSTRIAL_FACTORY_HUM'
-  }
-};
+  // Game-over dramatic reaction framing
+  private isGameOverMode: boolean = false;
+  private gameOverTargetPos = new THREE.Vector3();
+  private gameOverLookTarget = new THREE.Vector3();
 
-export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
-  MODERN_METRO: MODERN_METRO_THEME,
-  HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
-  UNDERGROUND_METRO: UNDERGROUND_METRO_THEME,
-  NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME
-};
+  // Dedicated Photo Mode camera state
+  private isPhotoMode: boolean = false;
+  private photoPos = new THREE.Vector3();
+  private photoLookTarget = new THREE.Vector3();
+  private savedFov: number = CONSTANTS.CAMERA_FOV;
 
-export class EnvironmentManager {
-  private static instance: EnvironmentManager;
-  private currentEnvironment: EnvironmentId = 'MODERN_METRO';
-  private selectionPreference: EnvironmentSelection = 'DYNAMIC';
-  private storageKey = 'metro_runner_environment_preference';
+  constructor() {
+    const aspect = typeof window !== 'undefined' && window.innerHeight > 0
+      ? window.innerWidth / window.innerHeight
+      : 16 / 9;
 
-  private constructor() {
-    this.loadPreference();
-  }
+    // Near plane set to 0.2 to prevent near-clipping on adjacent trains and overhead structures
+    this.camera = new THREE.PerspectiveCamera(
+      CONSTANTS.CAMERA_FOV,
+      aspect,
+      0.2,
+      600
+    );
 
-  public static getInstance(): EnvironmentManager {
-    if (!EnvironmentManager.instance) {
-      EnvironmentManager.instance = new EnvironmentManager();
-    }
-    return EnvironmentManager.instance;
-  }
-
-  public loadPreference(): void {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'UNDERGROUND_METRO' || saved === 'NEON_INDUSTRIAL' || saved === 'DYNAMIC') {
-        this.selectionPreference = saved as EnvironmentSelection;
-      }
-    } catch {
-      // Safe fallback
-    }
-  }
-
-  public savePreference(pref: EnvironmentSelection): void {
-    this.selectionPreference = pref;
+    // Load persisted camera preference
     if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(this.storageKey, pref);
-      } catch {
-        // Safe fallback
+      const saved = localStorage.getItem('metro_camera_mode') as CameraMode | null;
+      if (saved === 'CLASSIC' || saved === 'CHARACTER_FOCUS') {
+        this.cameraMode = saved;
       }
     }
-  }
 
-  public getSelectionPreference(): EnvironmentSelection {
-    return this.selectionPreference;
-  }
+    // Initial lobby position
+    this.currentPosition.copy(this.lobbyTargetPos);
+    this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.lobbyLookTarget);
 
-  public getPreference(): EnvironmentSelection {
-    return this.selectionPreference;
-  }
-
-  public getStartingEnvironment(): EnvironmentId {
-    if (this.selectionPreference === 'HISTORIC_QUARTER') {
-      return 'HISTORIC_QUARTER';
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onResize.bind(this));
     }
-    if (this.selectionPreference === 'UNDERGROUND_METRO') {
-      return 'UNDERGROUND_METRO';
+
+    const bus = EventBus.getInstance();
+    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean }) => {
+      const isFastDrop = data?.isFastDrop === true;
+      this.landingDipOffset = isFastDrop ? -0.09 : -0.045;
+      this.addShake(isFastDrop ? 0.14 : 0.06);
+    });
+    bus.on(EVENTS.STUMBLE, () => this.addShake(0.35));
+    bus.on(EVENTS.CRASH, () => this.addShake(0.85));
+    bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
+    bus.on('CAMERA_MODE_CHANGED', (mode: CameraMode) => {
+      this.setCameraMode(mode);
+    });
+  }
+
+  public getCameraMode(): CameraMode {
+    return this.cameraMode;
+  }
+
+  public setCameraMode(mode: CameraMode): void {
+    this.cameraMode = mode;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('metro_camera_mode', mode);
     }
-    if (this.selectionPreference === 'NEON_INDUSTRIAL') {
-      return 'NEON_INDUSTRIAL';
+    EventBus.getInstance().emit('CAMERA_MODE_UPDATED', mode);
+  }
+
+  public setLobbyMode(enabled: boolean): void {
+    this.isLobbyMode = enabled;
+  }
+
+  public setIntroMode(enabled: boolean, playerPos?: THREE.Vector3): void {
+    this.isIntroMode = enabled;
+    if (enabled && playerPos) {
+      this.isLobbyMode = false;
+      // Close-up front 3/4 cinematic camera framing runner's face and upper outfit prominently
+      const isPortrait = this.camera.aspect < 1.0;
+      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
+      this.introStartPos.set(camX, playerPos.y + 1.25, playerPos.z - 2.1);
+      this.introStartLook.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
+      this.currentPosition.copy(this.introStartPos);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.introStartLook);
     }
-    return 'MODERN_METRO';
   }
 
-  public getCurrentEnvironment(): EnvironmentId {
-    return this.currentEnvironment;
+  public getIntroMode(): boolean {
+    return this.isIntroMode;
   }
 
-  public setCurrentEnvironment(id: EnvironmentId): void {
-    this.currentEnvironment = id;
-  }
-
-  public getTheme(id: EnvironmentId = this.currentEnvironment): EnvironmentTheme {
-    return ENVIRONMENTS[id] || MODERN_METRO_THEME;
-  }
-
-  public getOtherEnvironment(id: EnvironmentId): EnvironmentId {
-    if (id === 'MODERN_METRO') {
-      return 'HISTORIC_QUARTER';
+  public setGameOverMode(enabled: boolean, playerPos?: THREE.Vector3): void {
+    this.isGameOverMode = enabled;
+    if (enabled && playerPos) {
+      this.isLobbyMode = false;
+      this.isIntroMode = false;
+      const isPortrait = this.camera.aspect < 1.0;
+      // Front-side 3/4 dramatic cinematic framing player's face, defeat reaction, and scene context
+      const camX = playerPos.x - (isPortrait ? 1.15 : 1.55);
+      this.gameOverTargetPos.set(camX, playerPos.y + 1.15, playerPos.z - 2.3);
+      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 1.05, playerPos.z);
     }
-    return 'MODERN_METRO';
   }
 
-  public lerpThemeColors(from: EnvironmentTheme, to: EnvironmentTheme, t: number): EnvironmentTheme {
-    const clampedT = Math.max(0, Math.min(1, t));
+  public getGameOverMode(): boolean {
+    return this.isGameOverMode;
+  }
+
+  public enterPhotoMode(playerPos: THREE.Vector3): void {
+    this.isPhotoMode = true;
+    this.savedFov = this.camera.fov;
+    this.photoPos.copy(this.camera.position);
+    this.photoLookTarget.copy(this.lookTarget);
+  }
+
+  public exitPhotoMode(): void {
+    this.isPhotoMode = false;
+    this.camera.fov = this.savedFov;
+    this.camera.updateProjectionMatrix();
+  }
+
+  public isPhotoModeActive(): boolean {
+    return this.isPhotoMode;
+  }
+
+  public setPhotoCameraTransform(pos: THREE.Vector3, lookAt: THREE.Vector3, fov?: number): void {
+    if (!this.isPhotoMode) return;
+    this.photoPos.copy(pos);
+    this.photoLookTarget.copy(lookAt);
+    this.camera.position.copy(this.photoPos);
+    this.camera.lookAt(this.photoLookTarget);
+    if (fov !== undefined && Math.abs(this.camera.fov - fov) > 0.05) {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  public getPhotoCameraTransform(): { position: THREE.Vector3; lookAt: THREE.Vector3; fov: number } {
     return {
-      ...to,
-      sky: {
-        top: EnvironmentManager.lerpColor(from.sky.top, to.sky.top, clampedT).getHex(),
-        bottom: EnvironmentManager.lerpColor(from.sky.bottom, to.sky.bottom, clampedT).getHex()
-      },
-      fog: {
-        color: EnvironmentManager.lerpColor(from.fog.color, to.fog.color, clampedT).getHex(),
-        density: from.fog.density + (to.fog.density - from.fog.density) * clampedT
-      },
-      sun: {
-        ...to.sun,
-        color: EnvironmentManager.lerpColor(from.sun.color, to.sun.color, clampedT).getHex(),
-        intensity: from.sun.intensity + (to.sun.intensity - from.sun.intensity) * clampedT
-      }
+      position: this.camera.position.clone(),
+      lookAt: this.photoLookTarget.clone(),
+      fov: this.camera.fov
     };
   }
 
-  /**
-   * Helper to linearly blend two hex colors with factor t in [0, 1]
-   */
-  public static lerpColor(c1Hex: number, c2Hex: number, t: number): THREE.Color {
-    const c1 = new THREE.Color(c1Hex);
-    const c2 = new THREE.Color(c2Hex);
-    return c1.lerp(c2, Math.max(0, Math.min(1, t)));
+  public updateIntro(progress: number, playerPos: THREE.Vector3, dt: number): void {
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    this.camera.updateProjectionMatrix();
+
+    let t = Math.max(0, Math.min(1.0, progress));
+
+    if (t < 0.35) {
+      // Phase 1 (0.0s – 0.85s): Expressive front 3/4 character reveal with gentle push-in
+      const p = t / 0.35;
+      const push = p * 0.30;
+      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
+      const camY = playerPos.y + 1.25;
+      const camZ = playerPos.z - 2.1 + push;
+
+      this.currentPosition.set(camX, camY, camZ);
+      this.lookTarget.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
+    } else {
+      // Phase 2 & 3 (0.85s – 2.4s): Smooth orbital arc around runner into active gameplay camera
+      const u = (t - 0.35) / 0.65;
+      const smoothU = u * u * (3.0 - 2.0 * u);
+
+      const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+      const endAngle = isCharFocus ? 0.13 : 0; // ~7.5° offset in character focus
+      const startAngle = -2.55; // ~ -146°
+      const theta = THREE.MathUtils.lerp(startAngle, endAngle, smoothU);
+
+      const startRadius = isPortrait ? 2.5 : 2.8;
+      const endRadius = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+      const radius = THREE.MathUtils.lerp(startRadius, endRadius, smoothU);
+
+      const startHeight = 1.25;
+      const endHeight = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
+      const height = THREE.MathUtils.lerp(startHeight, endHeight, smoothU);
+
+      const camX = playerPos.x + radius * Math.sin(theta);
+      const camZ = playerPos.z + radius * Math.cos(theta);
+      const camY = playerPos.y + height;
+      this.currentPosition.set(camX, camY, camZ);
+
+      const startLookX = playerPos.x;
+      const endLookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
+      const lookX = THREE.MathUtils.lerp(startLookX, endLookX, smoothU);
+
+      const startLookY = playerPos.y + 1.18;
+      const endLookY = playerPos.y + (isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y);
+      const lookY = THREE.MathUtils.lerp(startLookY, endLookY, smoothU);
+
+      const lookAheadBlend = Math.max(0, Math.min(1.0, (smoothU - 0.40) / 0.60));
+      const smoothLookAhead = lookAheadBlend * lookAheadBlend * (3.0 - 2.0 * lookAheadBlend);
+      const startLookZ = playerPos.z + 0.1;
+      const endLookZ = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
+      const lookZ = THREE.MathUtils.lerp(startLookZ, endLookZ, smoothLookAhead);
+
+      this.lookTarget.set(lookX, lookY, lookZ);
+    }
+
+    this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.lookTarget);
+  }
+
+  public finishIntro(playerPos: THREE.Vector3): void {
+    this.isIntroMode = false;
+    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+    const offsetX = isCharFocus ? 0.68 : 0;
+    const offsetZ = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+    const offsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
+    const lookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
+    const lookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
+
+    this.currentPosition.set(
+      playerPos.x + offsetX,
+      playerPos.y + offsetY,
+      playerPos.z + offsetZ
+    );
+    this.camera.position.copy(this.currentPosition);
+    this.lookTarget.set(
+      lookX,
+      playerPos.y + lookY,
+      playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z
+    );
+    this.camera.lookAt(this.lookTarget);
+  }
+
+  public addShake(trauma: number): void {
+    const shakeMult = this.settingsManager.getCameraShakeMultiplier();
+    if (shakeMult <= 0) {
+      this.shakeTrauma = 0;
+      this.shakeOffset.set(0, 0, 0);
+      return;
+    }
+    this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma * shakeMult);
+  }
+
+  public getShakeTrauma(): number {
+    return this.shakeTrauma;
+  }
+
+  public getShakeOffset(): THREE.Vector3 {
+    return this.shakeOffset;
+  }
+
+  public update(
+    playerPos: THREE.Vector3,
+    dt: number,
+    timeSec: number = 0,
+    speed: number = CONSTANTS.INITIAL_SPEED,
+    groundY: number = CONSTANTS.PLAYER_BASE_Y,
+    isSliding: boolean = false,
+    isTunnelEnclosed: boolean = false
+  ): void {
+    if (this.isIntroMode || this.isPhotoMode) {
+      return;
+    }
+
+    if (this.isGameOverMode) {
+      const isPortrait = this.camera.aspect < 1.0;
+      const targetFov = isPortrait ? 66.0 : 54.0;
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-5.0 * dt)); // Snappier FOV on crash
+      this.camera.updateProjectionMatrix();
+
+      const lerpFactor = 1.0 - Math.exp(-5.5 * dt); // Snappier dramatic framing on crash
+      this.currentPosition.lerp(this.gameOverTargetPos, lerpFactor);
+      this.lookTarget.lerp(this.gameOverLookTarget, lerpFactor);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lookTarget);
+      return;
+    }
+
+    const isPortrait = this.camera.aspect < 1.0;
+
+    if (this.isLobbyMode) {
+      const lobbyBaseFov = isPortrait ? 66.0 : CONSTANTS.CAMERA_FOV;
+      if (Math.abs(this.camera.fov - lobbyBaseFov) > 0.1) {
+        this.camera.fov = lobbyBaseFov;
+        this.camera.updateProjectionMatrix();
+      }
+
+      // Cinematic front-quarter framing in the subway lobby
+      const motionScale = this.settingsManager.getCameraMotionMultiplier();
+      const sway = Math.sin(timeSec * 0.45) * 0.12 * motionScale;
+      const bob = Math.cos(timeSec * 0.35) * 0.04 * motionScale;
+
+      if (isPortrait) {
+        // Step back further and higher to comfortably frame full runner in mobile portrait
+        this.lobbyTargetPos.set(0.25 + sway, 1.85 + bob, 5.6);
+        this.lobbyLookTarget.set(0, 1.15, -0.6);
+      } else {
+        this.lobbyTargetPos.set(0.35 + sway, 1.45 + bob, 3.8);
+        this.lobbyLookTarget.set(0, 0.95, -1.0);
+      }
+
+      const lerpFactor = 1.0 - Math.exp(-5.0 * dt);
+      this.currentPosition.lerp(this.lobbyTargetPos, lerpFactor);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lobbyLookTarget);
+      return;
+    }
+
+    // Dynamic FOV widening:
+    // Base FOV: 60° landscape, 68° portrait to frame all 3 track lanes cleanly.
+    // Expands smoothly up to +8.5° at high speed (especially in Hard mode up to 52 m/s)
+    // to give intense peripheral velocity cues without distorting track center.
+    const baseFov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    const minSpd = 19.0;
+    const maxSpd = 52.0;
+    const speedRatio = Math.max(0, Math.min(1.0, (speed - minSpd) / (maxSpd - minSpd)));
+    const targetFov = baseFov + speedRatio * 8.5;
+    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
+      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.5 * dt));
+      this.camera.updateProjectionMatrix();
+    }
+
+    // Coordinated vertical tracking:
+    // 1. Jetpack flight: elevates smoothly to cruise altitude, expands lookahead for aerial coins.
+    // 2. Ground & train-roof running: tracks support surface authoritatively while dampening
+    //    airborne jump bobbing (30% apex follow) so track horizon remains clear and stable.
+    const airborneDelta = Math.max(0, playerPos.y - groundY);
+    const isJetpackFlight = playerPos.y >= 7.0 || (playerPos.y - groundY > 3.6);
+
+    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
+
+    // Character Focus Lateral Composition:
+    // Provides an expressive 3/4 side profile view revealing facial profile, hair/cap, and outfit details.
+    // Safety fallback: smoothly return to center chase in narrow tunnels, on train roofs, or in jetpack flight.
+    const motionScale = this.settingsManager.getCameraMotionMultiplier();
+    const isUnsafeForOffset = isTunnelEnclosed || groundY >= 4.0 || isJetpackFlight || this.shakeTrauma > 0.35;
+    if (isCharFocus && !isUnsafeForOffset) {
+      this.targetLateralOffset = (isPortrait ? 0.58 : 0.70) * motionScale;
+    } else {
+      this.targetLateralOffset = 0;
+    }
+
+    // Smooth exponential decay interpolation for lateral offset
+    const lateralBlendRate = 6.0;
+    this.currentLateralOffset += (this.targetLateralOffset - this.currentLateralOffset) * (1.0 - Math.exp(-lateralBlendRate * dt));
+
+    const distanceOffset = this.settingsManager.getCameraDistanceOffset();
+    let targetCamY: number;
+    let targetCamOffsetZ = (isCharFocus && !isJetpackFlight ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z) + distanceOffset;
+    let targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z;
+    let targetLookY: number;
+
+    if (isJetpackFlight) {
+      targetCamY = playerPos.y + 2.4;
+      targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8 + distanceOffset; // Step back slightly for wide sky vista
+      targetLookY = playerPos.y + 0.6;
+      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 8.0; // Look further down track on flight (increased from -6.0)
+    } else {
+      const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
+      const baseOffsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
+      const baseLookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
+
+      targetCamY = cameraBaseY + baseOffsetY;
+      targetLookY = cameraBaseY + baseLookY;
+
+      // Train rooftop enhanced perspective: extend lookahead and elevate more for clear forward hazard visibility
+      if (groundY >= 4.0) {
+        targetCamY += 0.55;      // Increased from 0.35 for better rooftop composition
+        targetCamOffsetZ += 0.65;
+        targetLookAheadZ -= 3.5;
+        targetLookY += 0.45;     // Increased from 0.30 for improved sightline to ahead hazards
+      }
+
+      // Subtle dynamic camera dip during slide for enhanced tactile action feedback
+      if (isSliding) {
+        targetCamY -= 0.18;
+        targetLookY -= 0.10;
+      }
+
+      // Restrained landing vertical impact compression dip
+      if (Math.abs(this.landingDipOffset) > 0.001) {
+        targetCamY += this.landingDipOffset;
+        targetLookY += this.landingDipOffset * 0.45;
+        this.landingDipOffset += (0 - this.landingDipOffset) * (1.0 - Math.exp(-18.0 * dt));
+      } else {
+        this.landingDipOffset = 0;
+      }
+    }
+
+    // Target position behind and above player in gameplay
+    this.targetPosition.x = playerPos.x + this.currentLateralOffset;
+    this.targetPosition.y = targetCamY;
+    this.targetPosition.z = playerPos.z + targetCamOffsetZ;
+
+    // Frame-rate independent exponential decay interpolation
+    const lerpX = 1.0 - Math.exp(-CONSTANTS.CAMERA_LERP_X * dt);
+    const lerpY = 1.0 - Math.exp(-(isJetpackFlight ? 6.5 : CONSTANTS.CAMERA_LERP_Y) * dt);
+
+    this.currentPosition.x += (this.targetPosition.x - this.currentPosition.x) * lerpX;
+    this.currentPosition.y += (this.targetPosition.y - this.currentPosition.y) * lerpY;
+    this.currentPosition.z = this.targetPosition.z; // Exact forward distance lock
+
+    // Process camera shake with non-linear decay scaled by comfort settings
+    const shakeScale = this.settingsManager.getCameraShakeMultiplier();
+    if (this.shakeTrauma > 0.001 && shakeScale > 0) {
+      const shakeAmt = this.shakeTrauma * this.shakeTrauma * shakeScale;
+      this.shakeOffset.set(
+        (Math.random() * 2 - 1) * shakeAmt * 0.40,
+        (Math.random() * 2 - 1) * shakeAmt * 0.30,
+        (Math.random() * 2 - 1) * shakeAmt * 0.22
+      );
+      this.shakeTrauma = Math.max(0, this.shakeTrauma - CONSTANTS.CAMERA_SHAKE_DECAY * dt);
+    } else {
+      this.shakeOffset.set(0, 0, 0);
+      if (shakeScale <= 0) this.shakeTrauma = 0;
+    }
+
+    this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
+
+    // Look at point slightly ahead and above the character, with centered lateral tracking
+    // In Character Focus, angle slightly inward across runner to keep center lane & incoming trains locked in center
+    const inwardAimOffset = this.currentLateralOffset * 0.28;
+    this.lookTarget.x = this.currentPosition.x * 0.45 + (playerPos.x - inwardAimOffset) * 0.55;
+    this.lookTarget.y = targetLookY;
+    this.lookTarget.z = playerPos.z + targetLookAheadZ;
+
+    this.camera.lookAt(this.lookTarget);
+  }
+
+  public reset(playerPos: THREE.Vector3): void {
+    this.shakeTrauma = 0;
+    this.landingDipOffset = 0;
+    this.isGameOverMode = false;
+    this.isPhotoMode = false;
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    this.camera.updateProjectionMatrix();
+    if (this.isLobbyMode) {
+      this.currentPosition.copy(this.lobbyTargetPos);
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.lobbyLookTarget);
+    } else {
+      this.currentPosition.set(
+        playerPos.x,
+        playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
+        playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
+      );
+      this.camera.position.copy(this.currentPosition);
+    }
+  }
+
+  public onResize(): void {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const isPortrait = this.camera.aspect < 1.0;
+    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    this.camera.updateProjectionMatrix();
   }
 }

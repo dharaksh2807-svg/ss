@@ -1,485 +1,711 @@
 import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
-import { EventBus, EVENTS } from '../core/EventBus';
+import { GraphicsManager, QualityConfig, GraphicsPreset, ResolvedQuality } from './GraphicsManager';
+import { EventBus } from '../core/EventBus';
 import { SettingsManager } from '../settings/SettingsManager';
+import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
+import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
 
-export type CameraMode = 'CLASSIC' | 'CHARACTER_FOCUS';
+export class WorldScene {
+  public scene: THREE.Scene;
+  public renderer: THREE.WebGLRenderer;
+  public sunLight: THREE.DirectionalLight;
+  public fillLight: THREE.DirectionalLight;
+  public hemiLight: THREE.HemisphereLight;
+  public skyMesh: THREE.Mesh;
+  public cloudsGroup: THREE.Group;
+  public skylineGroup: THREE.Group;
+  public modernSkyline: THREE.Group | null = null;
+  public historicSkyline: THREE.Group | null = null;
+  public skylineMaterial: THREE.MeshBasicMaterial | null = null;
+  public playerContactShadow: THREE.Mesh;
+  public rainParticles: THREE.Points | null = null;
+  public currentAtmospherePreset: AtmospherePreset = 'CLEAR_DAYLIGHT';
+  private currentConfig: QualityConfig;
 
-export class CameraController {
-  public camera: THREE.PerspectiveCamera;
-  private settingsManager = SettingsManager.getInstance();
-  private targetPosition = new THREE.Vector3();
-  private currentPosition = new THREE.Vector3();
-  public lookTarget = new THREE.Vector3();
-  private shakeTrauma = 0;
-  private shakeOffset = new THREE.Vector3();
-  private landingDipOffset = 0;
+  // Environment and smooth atmospheric transition states
+  public currentTheme: EnvironmentTheme = MODERN_METRO_THEME;
+  public targetTheme: EnvironmentTheme = MODERN_METRO_THEME;
+  public prevTheme: EnvironmentTheme | null = null;
+  public transitionProgress: number = 1.0;
+  private transitionSpeed: number = 0.5; // Smooth 2s transition
 
-  // Camera Preferences: 'CLASSIC' (rear chase) or 'CHARACTER_FOCUS' (expressive 3/4 side profile)
-  private cameraMode: CameraMode = 'CLASSIC';
-  private currentLateralOffset: number = 0;
-  private targetLateralOffset: number = 0;
+  constructor(canvas: HTMLCanvasElement) {
+    this.scene = new THREE.Scene();
+    const envManager = EnvironmentManager.getInstance();
+    const initialEnvId = envManager.getStartingEnvironment();
+    this.currentTheme = envManager.getTheme(initialEnvId);
+    this.targetTheme = this.currentTheme;
 
-  // Lobby mode staging
-  private isLobbyMode: boolean = true;
-  private lobbyTargetPos = new THREE.Vector3(0.35, 1.45, 3.8);
-  private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
+    this.scene.background = new THREE.Color(this.currentTheme.fog.color);
+    // Soft atmospheric distance haze
+    this.scene.fog = new THREE.FogExp2(this.currentTheme.fog.color, this.currentTheme.fog.density);
 
-  // Opening cinematic sequence camera state
-  private isIntroMode: boolean = false;
-  private introStartPos = new THREE.Vector3();
-  private introStartLook = new THREE.Vector3();
+    const graphics = GraphicsManager.getInstance();
+    this.currentConfig = graphics.getActiveConfig();
 
-  // Game-over dramatic reaction framing
-  private isGameOverMode: boolean = false;
-  private gameOverTargetPos = new THREE.Vector3();
-  private gameOverLookTarget = new THREE.Vector3();
+    // High performance WebGL renderer
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(this.currentConfig.pixelRatio);
+    this.renderer.shadowMap.enabled = this.currentConfig.shadowMapEnabled;
+    this.renderer.shadowMap.type = this.currentConfig.shadowMapType;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.20;
 
-  // Dedicated Photo Mode camera state
-  private isPhotoMode: boolean = false;
-  private photoPos = new THREE.Vector3();
-  private photoLookTarget = new THREE.Vector3();
-  private savedFov: number = CONSTANTS.CAMERA_FOV;
-
-  constructor() {
-    const aspect = typeof window !== 'undefined' && window.innerHeight > 0
-      ? window.innerWidth / window.innerHeight
-      : 16 / 9;
-
-    // Near plane set to 0.2 to prevent near-clipping on adjacent trains and overhead structures
-    this.camera = new THREE.PerspectiveCamera(
-      CONSTANTS.CAMERA_FOV,
-      aspect,
-      0.2,
-      600
+    // 1. Balanced Lighting Setup initialized to active theme
+    this.hemiLight = new THREE.HemisphereLight(
+      this.currentTheme.hemi.sky,
+      this.currentTheme.hemi.ground,
+      this.currentTheme.hemi.intensity
     );
+    this.scene.add(this.hemiLight);
 
-    // Load persisted camera preference
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('metro_camera_mode') as CameraMode | null;
-      if (saved === 'CLASSIC' || saved === 'CHARACTER_FOCUS') {
-        this.cameraMode = saved;
+    // Directional sunlight
+    this.sunLight = new THREE.DirectionalLight(
+      this.currentTheme.sun.color,
+      this.currentTheme.sun.intensity
+    );
+    this.sunLight.position.set(
+      this.currentTheme.sun.position.x,
+      this.currentTheme.sun.position.y,
+      this.currentTheme.sun.position.z
+    );
+    this.sunLight.castShadow = true;
+    this.sunLight.shadow.mapSize.width = 2048;
+    this.sunLight.shadow.mapSize.height = 2048;
+    this.sunLight.shadow.camera.near = 1.0;
+    this.sunLight.shadow.camera.far = 130.0;
+    this.sunLight.shadow.camera.left = -24;
+    this.sunLight.shadow.camera.right = 24;
+    this.sunLight.shadow.camera.top = 36;
+    this.sunLight.shadow.camera.bottom = -12;
+    this.sunLight.shadow.bias = -0.0003;
+    this.sunLight.shadow.normalBias = 0.02;
+    this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
+
+    // Soft sky-blue opposite fill light for shadowed canyon facades
+    this.fillLight = new THREE.DirectionalLight(0xa0c4e8, 0.70);
+    this.fillLight.position.set(-24, 28, 14);
+    this.scene.add(this.fillLight);
+
+    // Modern asphalt transit ground beneath tracks and lobby camera
+    const stationGroundGeo = new THREE.PlaneGeometry(80, 80);
+    const stationGroundMat = new THREE.MeshStandardMaterial({
+      color: 0x263238,
+      roughness: 0.85,
+      metalness: 0.2
+    });
+    const stationGround = new THREE.Mesh(stationGroundGeo, stationGroundMat);
+    stationGround.rotation.x = -Math.PI / 2;
+    stationGround.position.set(0, -0.28, 0);
+    stationGround.receiveShadow = true;
+    this.scene.add(stationGround);
+
+    // 2. Vibrant Daytime Sky Dome
+    this.skyMesh = this.createSkyDome();
+    this.scene.add(this.skyMesh);
+
+    // 3. Floating Stylized Cumulus Clouds
+    this.cloudsGroup = this.createClouds();
+    this.scene.add(this.cloudsGroup);
+
+    // 4. Distant Parallax City Skyline Silhouettes
+    this.skylineGroup = this.createDistantSkyline();
+    this.scene.add(this.skylineGroup);
+
+    // 5. Subtle high-speed motion streaks (difficulty feedback)
+    this.speedLinesMesh = this.createSpeedLines();
+    this.scene.add(this.speedLinesMesh);
+
+    // 6. Ground contact blob shadow for player (active when real-time directional shadows are disabled)
+    const shadowGeo = new THREE.PlaneGeometry(1.5, 1.5);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x05070a,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false
+    });
+    this.playerContactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+    this.playerContactShadow.rotation.x = -Math.PI / 2;
+    this.playerContactShadow.position.set(0, 0.02, 0);
+    this.playerContactShadow.visible = this.currentConfig.contactBlobShadow;
+    this.scene.add(this.playerContactShadow);
+
+    // 7. Light atmospheric rain particle streaks
+    this.rainParticles = this.createRainParticles();
+    this.scene.add(this.rainParticles);
+
+    EventBus.getInstance().on('GRAPHICS_CONFIG_CHANGED', (config: QualityConfig) => {
+      this.applyGraphicsConfig(config);
+    });
+
+    window.addEventListener('resize', this.onWindowResize.bind(this));
+  }
+
+  private createRainParticles(): THREE.Points {
+    const count = 350;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 36;
+      positions[i * 3 + 1] = Math.random() * 22;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 55;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x93c5fd,
+      size: 0.20,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false
+    });
+    const p = new THREE.Points(geo, mat);
+    p.visible = false;
+    return p;
+  }
+
+  private speedLinesMesh: THREE.LineSegments;
+
+  private createSpeedLines(): THREE.LineSegments {
+    const lineCount = 45;
+    const positions = new Float32Array(lineCount * 6);
+    for (let i = 0; i < lineCount; i++) {
+      const idx = i * 6;
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 3.5 + Math.random() * 5.5;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius + 2.5;
+      const z = -Math.random() * 45;
+      const len = 3.5 + Math.random() * 6.0;
+
+      positions[idx] = x;
+      positions[idx + 1] = y;
+      positions[idx + 2] = z;
+
+      positions[idx + 3] = x;
+      positions[idx + 4] = y;
+      positions[idx + 5] = z + len;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xe0f7fa,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    });
+    return new THREE.LineSegments(geo, mat);
+  }
+
+  private createSkyDome(): THREE.Mesh {
+    const geo = new THREE.SphereGeometry(450, 32, 20);
+    const colors: number[] = [];
+    const topColor = new THREE.Color(this.currentTheme.sky.top);
+    const bottomColor = new THREE.Color(this.currentTheme.sky.bottom);
+
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      // Normalized vertical height for smooth sky transition
+      const t = Math.max(0, Math.min(1, (y + 40) / 400));
+      const c = bottomColor.clone().lerp(topColor, Math.pow(t, 0.8));
+      colors.push(c.r, c.g, c.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const mat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      side: THREE.BackSide,
+      fog: false
+    });
+
+    return new THREE.Mesh(geo, mat);
+  }
+
+  public updateSkyDomeColors(topColor: THREE.Color, bottomColor: THREE.Color): void {
+    if (!this.skyMesh) return;
+    const geo = this.skyMesh.geometry as THREE.BufferGeometry;
+    const colorAttr = geo.getAttribute('color') as THREE.BufferAttribute;
+    if (!colorAttr) return;
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const t = Math.max(0, Math.min(1, (y + 40) / 400));
+      const c = bottomColor.clone().lerp(topColor, Math.pow(t, 0.8));
+      colorAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+    colorAttr.needsUpdate = true;
+  }
+
+  /**
+   * Creates puffy stylized 3D cumulus clouds in the sky
+   */
+  private createClouds(): THREE.Group {
+    const group = new THREE.Group();
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.9,
+      metalness: 0.05
+    });
+
+    const puffGeo = new THREE.SphereGeometry(1, 8, 8);
+
+    // Spawn 14 distinct fluffy cloud clusters
+    for (let c = 0; c < 14; c++) {
+      const cloud = new THREE.Group();
+      const numPuffs = 4 + Math.floor(Math.random() * 4);
+
+      for (let p = 0; p < numPuffs; p++) {
+        const puff = new THREE.Mesh(puffGeo, cloudMat);
+        const sx = 10 + Math.random() * 14;
+        const sy = 6 + Math.random() * 8;
+        const sz = 10 + Math.random() * 12;
+        puff.scale.set(sx, sy, sz);
+        puff.position.set(
+          (p - numPuffs * 0.5) * 8.0,
+          Math.sin(p) * 2.0,
+          (Math.random() - 0.5) * 6.0
+        );
+        cloud.add(puff);
       }
+
+      // Scatter across upper sky hemisphere
+      const angle = (c / 14) * Math.PI * 2;
+      const dist = 180 + Math.random() * 120;
+      const height = 75 + Math.random() * 45;
+
+      cloud.position.set(
+        Math.cos(angle) * dist,
+        height,
+        Math.sin(angle) * dist
+      );
+
+      group.add(cloud);
     }
 
-    // Initial lobby position
-    this.currentPosition.copy(this.lobbyTargetPos);
-    this.camera.position.copy(this.currentPosition);
-    this.camera.lookAt(this.lobbyLookTarget);
+    return group;
+  }
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.onResize.bind(this));
-    }
-
-    const bus = EventBus.getInstance();
-    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean }) => {
-      const isFastDrop = data?.isFastDrop === true;
-      this.landingDipOffset = isFastDrop ? -0.09 : -0.045;
-      this.addShake(isFastDrop ? 0.14 : 0.06);
+  /**
+   * Creates distant hazy skyline silhouettes for both Modern Metro and Historic Quarter
+   */
+  private createDistantSkyline(): THREE.Group {
+    const group = new THREE.Group();
+    this.skylineMaterial = new THREE.MeshBasicMaterial({
+      color: this.currentTheme.skyline.color,
+      transparent: true,
+      opacity: this.currentTheme.skyline.opacity,
+      fog: false
     });
-    bus.on(EVENTS.STUMBLE, () => this.addShake(0.35));
-    bus.on(EVENTS.CRASH, () => this.addShake(0.85));
-    bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
-    bus.on('CAMERA_MODE_CHANGED', (mode: CameraMode) => {
-      this.setCameraMode(mode);
-    });
-  }
 
-  public getCameraMode(): CameraMode {
-    return this.cameraMode;
-  }
+    const towerGeo = new THREE.BoxGeometry(1, 1, 1);
 
-  public setCameraMode(mode: CameraMode): void {
-    this.cameraMode = mode;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('metro_camera_mode', mode);
+    // 1. Ring of Modern Skyscraper Silhouettes
+    this.modernSkyline = new THREE.Group();
+    for (let i = 0; i < 28; i++) {
+      const angle = (i / 28) * Math.PI * 2;
+      const dist = 320;
+      const h = 40 + Math.random() * 80;
+      const w = 15 + Math.random() * 25;
+      const d = 15 + Math.random() * 25;
+
+      const tower = new THREE.Mesh(towerGeo, this.skylineMaterial);
+      tower.scale.set(w, h, d);
+      tower.position.set(
+        Math.cos(angle) * dist,
+        h * 0.5 - 10,
+        Math.sin(angle) * dist
+      );
+      this.modernSkyline.add(tower);
     }
-    EventBus.getInstance().emit('CAMERA_MODE_UPDATED', mode);
-  }
+    group.add(this.modernSkyline);
 
-  public setLobbyMode(enabled: boolean): void {
-    this.isLobbyMode = enabled;
-  }
+    // 2. Ring of Historic Victorian Silhouettes (Spires, Clocktowers, Mansard Roofs)
+    this.historicSkyline = new THREE.Group();
+    for (let i = 0; i < 28; i++) {
+      const angle = (i / 28) * Math.PI * 2;
+      const dist = 320;
+      const h = 25 + Math.random() * 45;
+      const w = 18 + Math.random() * 18;
+      const d = 15 + Math.random() * 18;
 
-  public setIntroMode(enabled: boolean, playerPos?: THREE.Vector3): void {
-    this.isIntroMode = enabled;
-    if (enabled && playerPos) {
-      this.isLobbyMode = false;
-      // Close-up front 3/4 cinematic camera framing runner's face and upper outfit prominently
-      const isPortrait = this.camera.aspect < 1.0;
-      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
-      this.introStartPos.set(camX, playerPos.y + 1.25, playerPos.z - 2.1);
-      this.introStartLook.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
-      this.currentPosition.copy(this.introStartPos);
-      this.camera.position.copy(this.currentPosition);
-      this.camera.lookAt(this.introStartLook);
+      const bGroup = new THREE.Group();
+      bGroup.position.set(
+        Math.cos(angle) * dist,
+        -10,
+        Math.sin(angle) * dist
+      );
+
+      // Base masonry building
+      const base = new THREE.Mesh(towerGeo, this.skylineMaterial);
+      base.scale.set(w, h, d);
+      base.position.y = h * 0.5;
+      bGroup.add(base);
+
+      if (i % 2 === 0) {
+        // Pointed church spire
+        const spireGeo = new THREE.ConeGeometry(w * 0.28, h * 0.55, 6);
+        const spire = new THREE.Mesh(spireGeo, this.skylineMaterial);
+        spire.position.y = h + h * 0.27;
+        bGroup.add(spire);
+      } else {
+        // Clocktower gable or dual chimneys
+        const gableGeo = new THREE.BoxGeometry(w * 0.45, h * 0.35, d * 0.45);
+        const gable = new THREE.Mesh(gableGeo, this.skylineMaterial);
+        gable.position.y = h + h * 0.17;
+        bGroup.add(gable);
+      }
+
+      this.historicSkyline.add(bGroup);
     }
+    group.add(this.historicSkyline);
+
+    this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO';
+    this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
+
+    return group;
   }
 
-  public getIntroMode(): boolean {
-    return this.isIntroMode;
-  }
-
-  public setGameOverMode(enabled: boolean, playerPos?: THREE.Vector3): void {
-    this.isGameOverMode = enabled;
-    if (enabled && playerPos) {
-      this.isLobbyMode = false;
-      this.isIntroMode = false;
-      const isPortrait = this.camera.aspect < 1.0;
-      // Front-side 3/4 dramatic cinematic framing player's face, defeat reaction, and scene context
-      const camX = playerPos.x - (isPortrait ? 1.15 : 1.55);
-      this.gameOverTargetPos.set(camX, playerPos.y + 1.15, playerPos.z - 2.3);
-      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 1.05, playerPos.z);
-    }
-  }
-
-  public getGameOverMode(): boolean {
-    return this.isGameOverMode;
-  }
-
-  public enterPhotoMode(playerPos: THREE.Vector3): void {
-    this.isPhotoMode = true;
-    this.savedFov = this.camera.fov;
-    this.photoPos.copy(this.camera.position);
-    this.photoLookTarget.copy(this.lookTarget);
-  }
-
-  public exitPhotoMode(): void {
-    this.isPhotoMode = false;
-    this.camera.fov = this.savedFov;
-    this.camera.updateProjectionMatrix();
-  }
-
-  public isPhotoModeActive(): boolean {
-    return this.isPhotoMode;
-  }
-
-  public setPhotoCameraTransform(pos: THREE.Vector3, lookAt: THREE.Vector3, fov?: number): void {
-    if (!this.isPhotoMode) return;
-    this.photoPos.copy(pos);
-    this.photoLookTarget.copy(lookAt);
-    this.camera.position.copy(this.photoPos);
-    this.camera.lookAt(this.photoLookTarget);
-    if (fov !== undefined && Math.abs(this.camera.fov - fov) > 0.05) {
-      this.camera.fov = fov;
-      this.camera.updateProjectionMatrix();
-    }
-  }
-
-  public getPhotoCameraTransform(): { position: THREE.Vector3; lookAt: THREE.Vector3; fov: number } {
-    return {
-      position: this.camera.position.clone(),
-      lookAt: this.photoLookTarget.clone(),
-      fov: this.camera.fov
-    };
-  }
-
-  public updateIntro(progress: number, playerPos: THREE.Vector3, dt: number): void {
-    const isPortrait = this.camera.aspect < 1.0;
-    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    this.camera.updateProjectionMatrix();
-
-    let t = Math.max(0, Math.min(1.0, progress));
-
-    if (t < 0.35) {
-      // Phase 1 (0.0s – 0.85s): Expressive front 3/4 character reveal with gentle push-in
-      const p = t / 0.35;
-      const push = p * 0.30;
-      const camX = playerPos.x - (isPortrait ? 0.95 : 1.35);
-      const camY = playerPos.y + 1.25;
-      const camZ = playerPos.z - 2.1 + push;
-
-      this.currentPosition.set(camX, camY, camZ);
-      this.lookTarget.set(playerPos.x, playerPos.y + 1.18, playerPos.z + 0.1);
-    } else {
-      // Phase 2 & 3 (0.85s – 2.4s): Smooth orbital arc around runner into active gameplay camera
-      const u = (t - 0.35) / 0.65;
-      const smoothU = u * u * (3.0 - 2.0 * u);
-
-      const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
-      const endAngle = isCharFocus ? 0.13 : 0; // ~7.5° offset in character focus
-      const startAngle = -2.55; // ~ -146°
-      const theta = THREE.MathUtils.lerp(startAngle, endAngle, smoothU);
-
-      const startRadius = isPortrait ? 2.5 : 2.8;
-      const endRadius = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
-      const radius = THREE.MathUtils.lerp(startRadius, endRadius, smoothU);
-
-      const startHeight = 1.25;
-      const endHeight = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
-      const height = THREE.MathUtils.lerp(startHeight, endHeight, smoothU);
-
-      const camX = playerPos.x + radius * Math.sin(theta);
-      const camZ = playerPos.z + radius * Math.cos(theta);
-      const camY = playerPos.y + height;
-      this.currentPosition.set(camX, camY, camZ);
-
-      const startLookX = playerPos.x;
-      const endLookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
-      const lookX = THREE.MathUtils.lerp(startLookX, endLookX, smoothU);
-
-      const startLookY = playerPos.y + 1.18;
-      const endLookY = playerPos.y + (isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y);
-      const lookY = THREE.MathUtils.lerp(startLookY, endLookY, smoothU);
-
-      const lookAheadBlend = Math.max(0, Math.min(1.0, (smoothU - 0.40) / 0.60));
-      const smoothLookAhead = lookAheadBlend * lookAheadBlend * (3.0 - 2.0 * lookAheadBlend);
-      const startLookZ = playerPos.z + 0.1;
-      const endLookZ = playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z;
-      const lookZ = THREE.MathUtils.lerp(startLookZ, endLookZ, smoothLookAhead);
-
-      this.lookTarget.set(lookX, lookY, lookZ);
-    }
-
-    this.camera.position.copy(this.currentPosition);
-    this.camera.lookAt(this.lookTarget);
-  }
-
-  public finishIntro(playerPos: THREE.Vector3): void {
-    this.isIntroMode = false;
-    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
-    const offsetX = isCharFocus ? 0.68 : 0;
-    const offsetZ = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
-    const offsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
-    const lookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
-    const lookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
-
-    this.currentPosition.set(
-      playerPos.x + offsetX,
-      playerPos.y + offsetY,
-      playerPos.z + offsetZ
-    );
-    this.camera.position.copy(this.currentPosition);
-    this.lookTarget.set(
-      lookX,
-      playerPos.y + lookY,
-      playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z
-    );
-    this.camera.lookAt(this.lookTarget);
-  }
-
-  public addShake(trauma: number): void {
-    const shakeMult = this.settingsManager.getCameraShakeMultiplier();
-    if (shakeMult <= 0) {
-      this.shakeTrauma = 0;
-      this.shakeOffset.set(0, 0, 0);
-      return;
-    }
-    this.shakeTrauma = Math.min(1.0, this.shakeTrauma + trauma * shakeMult);
-  }
-
-  public getShakeTrauma(): number {
-    return this.shakeTrauma;
-  }
-
-  public getShakeOffset(): THREE.Vector3 {
-    return this.shakeOffset;
-  }
-
-  public update(
-    playerPos: THREE.Vector3,
-    dt: number,
-    timeSec: number = 0,
-    speed: number = CONSTANTS.INITIAL_SPEED,
-    groundY: number = CONSTANTS.PLAYER_BASE_Y,
-    isSliding: boolean = false,
-    isTunnelEnclosed: boolean = false
+  public applyEnvironment(
+    targetTheme: EnvironmentTheme,
+    blendFactor: number = 1.0,
+    prevTheme?: EnvironmentTheme
   ): void {
-    if (this.isIntroMode || this.isPhotoMode) {
-      return;
+    const t = Math.max(0, Math.min(1, blendFactor));
+    const base = prevTheme || this.currentTheme || targetTheme;
+
+    // 1. Fog & Background Color
+    const fogColor = EnvironmentManager.lerpColor(base.fog.color, targetTheme.fog.color, t);
+    this.scene.background = fogColor;
+    if (this.scene.fog && (this.scene.fog as THREE.FogExp2).isFogExp2) {
+      this.scene.fog.color.copy(fogColor);
+      (this.scene.fog as THREE.FogExp2).density = THREE.MathUtils.lerp(base.fog.density, targetTheme.fog.density, t);
     }
 
-    if (this.isGameOverMode) {
-      const isPortrait = this.camera.aspect < 1.0;
-      const targetFov = isPortrait ? 66.0 : 54.0;
-      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-5.0 * dt)); // Snappier FOV on crash
-      this.camera.updateProjectionMatrix();
+    // 2. Sun Directional Light
+    const sunColor = EnvironmentManager.lerpColor(base.sun.color, targetTheme.sun.color, t);
+    this.sunLight.color.copy(sunColor);
+    this.sunLight.intensity = THREE.MathUtils.lerp(base.sun.intensity, targetTheme.sun.intensity, t);
 
-      const lerpFactor = 1.0 - Math.exp(-5.5 * dt); // Snappier dramatic framing on crash
-      this.currentPosition.lerp(this.gameOverTargetPos, lerpFactor);
-      this.lookTarget.lerp(this.gameOverLookTarget, lerpFactor);
-      this.camera.position.copy(this.currentPosition);
-      this.camera.lookAt(this.lookTarget);
-      return;
+    // 3. Fill Directional Light
+    const fillColor = EnvironmentManager.lerpColor(base.fill.color, targetTheme.fill.color, t);
+    this.fillLight.color.copy(fillColor);
+    this.fillLight.intensity = THREE.MathUtils.lerp(base.fill.intensity, targetTheme.fill.intensity, t);
+
+    // 4. Hemisphere Light
+    const hemiSky = EnvironmentManager.lerpColor(base.hemi.sky, targetTheme.hemi.sky, t);
+    const hemiGround = EnvironmentManager.lerpColor(base.hemi.ground, targetTheme.hemi.ground, t);
+    this.hemiLight.color.copy(hemiSky);
+    this.hemiLight.groundColor.copy(hemiGround);
+    this.hemiLight.intensity = THREE.MathUtils.lerp(base.hemi.intensity, targetTheme.hemi.intensity, t);
+
+    // 5. Sky Dome Vertex Colors
+    const topColor = EnvironmentManager.lerpColor(base.sky.top, targetTheme.sky.top, t);
+    const bottomColor = EnvironmentManager.lerpColor(base.sky.bottom, targetTheme.sky.bottom, t);
+    this.updateSkyDomeColors(topColor, bottomColor);
+
+    // 6. Skyline Silhouettes
+    if (this.skylineMaterial) {
+      const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
+      this.skylineMaterial.color.copy(skylineColor);
+      this.skylineMaterial.opacity = THREE.MathUtils.lerp(base.skyline.opacity, targetTheme.skyline.opacity, t);
     }
 
-    const isPortrait = this.camera.aspect < 1.0;
+    if (this.modernSkyline && this.historicSkyline) {
+      // Cross-fade both skyline variants simultaneously to eliminate the hard t=0.5 visibility pop.
+      // Each skyline's opacity ramps in/out across the full transition window.
+      const baseOpacity = THREE.MathUtils.lerp(base.skyline.opacity, targetTheme.skyline.opacity, t);
 
-    if (this.isLobbyMode) {
-      const lobbyBaseFov = isPortrait ? 66.0 : CONSTANTS.CAMERA_FOV;
-      if (Math.abs(this.camera.fov - lobbyBaseFov) > 0.1) {
-        this.camera.fov = lobbyBaseFov;
-        this.camera.updateProjectionMatrix();
-      }
-
-      // Cinematic front-quarter framing in the subway lobby
-      const motionScale = this.settingsManager.getCameraMotionMultiplier();
-      const sway = Math.sin(timeSec * 0.45) * 0.12 * motionScale;
-      const bob = Math.cos(timeSec * 0.35) * 0.04 * motionScale;
-
-      if (isPortrait) {
-        // Step back further and higher to comfortably frame full runner in mobile portrait
-        this.lobbyTargetPos.set(0.25 + sway, 1.85 + bob, 5.6);
-        this.lobbyLookTarget.set(0, 1.15, -0.6);
-      } else {
-        this.lobbyTargetPos.set(0.35 + sway, 1.45 + bob, 3.8);
-        this.lobbyLookTarget.set(0, 0.95, -1.0);
-      }
-
-      const lerpFactor = 1.0 - Math.exp(-5.0 * dt);
-      this.currentPosition.lerp(this.lobbyTargetPos, lerpFactor);
-      this.camera.position.copy(this.currentPosition);
-      this.camera.lookAt(this.lobbyLookTarget);
-      return;
-    }
-
-    // Dynamic FOV widening:
-    // Base FOV: 60° landscape, 68° portrait to frame all 3 track lanes cleanly.
-    // Expands smoothly up to +8.5° at high speed (especially in Hard mode up to 52 m/s)
-    // to give intense peripheral velocity cues without distorting track center.
-    const baseFov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    const minSpd = 19.0;
-    const maxSpd = 52.0;
-    const speedRatio = Math.max(0, Math.min(1.0, (speed - minSpd) / (maxSpd - minSpd)));
-    const targetFov = baseFov + speedRatio * 8.5;
-    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
-      this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.5 * dt));
-      this.camera.updateProjectionMatrix();
-    }
-
-    // Coordinated vertical tracking:
-    // 1. Jetpack flight: elevates smoothly to cruise altitude, expands lookahead for aerial coins.
-    // 2. Ground & train-roof running: tracks support surface authoritatively while dampening
-    //    airborne jump bobbing (30% apex follow) so track horizon remains clear and stable.
-    const airborneDelta = Math.max(0, playerPos.y - groundY);
-    const isJetpackFlight = playerPos.y >= 7.0 || (playerPos.y - groundY > 3.6);
-
-    const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
-
-    // Character Focus Lateral Composition:
-    // Provides an expressive 3/4 side profile view revealing facial profile, hair/cap, and outfit details.
-    // Safety fallback: smoothly return to center chase in narrow tunnels, on train roofs, or in jetpack flight.
-    const motionScale = this.settingsManager.getCameraMotionMultiplier();
-    const isUnsafeForOffset = isTunnelEnclosed || groundY >= 4.0 || isJetpackFlight || this.shakeTrauma > 0.35;
-    if (isCharFocus && !isUnsafeForOffset) {
-      this.targetLateralOffset = (isPortrait ? 0.58 : 0.70) * motionScale;
-    } else {
-      this.targetLateralOffset = 0;
-    }
-
-    // Smooth exponential decay interpolation for lateral offset
-    const lateralBlendRate = 6.0;
-    this.currentLateralOffset += (this.targetLateralOffset - this.currentLateralOffset) * (1.0 - Math.exp(-lateralBlendRate * dt));
-
-    const distanceOffset = this.settingsManager.getCameraDistanceOffset();
-    let targetCamY: number;
-    let targetCamOffsetZ = (isCharFocus && !isJetpackFlight ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z) + distanceOffset;
-    let targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z;
-    let targetLookY: number;
-
-    if (isJetpackFlight) {
-      targetCamY = playerPos.y + 2.4;
-      targetCamOffsetZ = CONSTANTS.CAMERA_OFFSET_Z + 1.8 + distanceOffset; // Step back slightly for wide sky vista
-      targetLookY = playerPos.y + 0.6;
-      targetLookAheadZ = CONSTANTS.CAMERA_LOOK_AHEAD_Z - 8.0; // Look further down track on flight (increased from -6.0)
-    } else {
-      const cameraBaseY = Math.max(CONSTANTS.PLAYER_BASE_Y, groundY) + airborneDelta * 0.30;
-      const baseOffsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
-      const baseLookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
-
-      targetCamY = cameraBaseY + baseOffsetY;
-      targetLookY = cameraBaseY + baseLookY;
-
-      // Train rooftop enhanced perspective: extend lookahead and elevate more for clear forward hazard visibility
-      if (groundY >= 4.0) {
-        targetCamY += 0.55;      // Increased from 0.35 for better rooftop composition
-        targetCamOffsetZ += 0.65;
-        targetLookAheadZ -= 3.5;
-        targetLookY += 0.45;     // Increased from 0.30 for improved sightline to ahead hazards
-      }
-
-      // Subtle dynamic camera dip during slide for enhanced tactile action feedback
-      if (isSliding) {
-        targetCamY -= 0.18;
-        targetLookY -= 0.10;
-      }
-
-      // Restrained landing vertical impact compression dip
-      if (Math.abs(this.landingDipOffset) > 0.001) {
-        targetCamY += this.landingDipOffset;
-        targetLookY += this.landingDipOffset * 0.45;
-        this.landingDipOffset += (0 - this.landingDipOffset) * (1.0 - Math.exp(-18.0 * dt));
-      } else {
-        this.landingDipOffset = 0;
-      }
-    }
-
-    // Target position behind and above player in gameplay
-    this.targetPosition.x = playerPos.x + this.currentLateralOffset;
-    this.targetPosition.y = targetCamY;
-    this.targetPosition.z = playerPos.z + targetCamOffsetZ;
-
-    // Frame-rate independent exponential decay interpolation
-    const lerpX = 1.0 - Math.exp(-CONSTANTS.CAMERA_LERP_X * dt);
-    const lerpY = 1.0 - Math.exp(-(isJetpackFlight ? 6.5 : CONSTANTS.CAMERA_LERP_Y) * dt);
-
-    this.currentPosition.x += (this.targetPosition.x - this.currentPosition.x) * lerpX;
-    this.currentPosition.y += (this.targetPosition.y - this.currentPosition.y) * lerpY;
-    this.currentPosition.z = this.targetPosition.z; // Exact forward distance lock
-
-    // Process camera shake with non-linear decay scaled by comfort settings
-    const shakeScale = this.settingsManager.getCameraShakeMultiplier();
-    if (this.shakeTrauma > 0.001 && shakeScale > 0) {
-      const shakeAmt = this.shakeTrauma * this.shakeTrauma * shakeScale;
-      this.shakeOffset.set(
-        (Math.random() * 2 - 1) * shakeAmt * 0.40,
-        (Math.random() * 2 - 1) * shakeAmt * 0.30,
-        (Math.random() * 2 - 1) * shakeAmt * 0.22
+      // Modern: fully visible in base, fades out when transitioning away; fades in when transitioning in.
+      const modernBaseVisible = base.id === 'MODERN_METRO' || base.id === 'NEON_INDUSTRIAL';
+      const modernTargetVisible = targetTheme.id === 'MODERN_METRO' || targetTheme.id === 'NEON_INDUSTRIAL';
+      const modernOpacity = THREE.MathUtils.lerp(
+        modernBaseVisible ? baseOpacity : 0,
+        modernTargetVisible ? baseOpacity : 0,
+        t
       );
-      this.shakeTrauma = Math.max(0, this.shakeTrauma - CONSTANTS.CAMERA_SHAKE_DECAY * dt);
-    } else {
-      this.shakeOffset.set(0, 0, 0);
-      if (shakeScale <= 0) this.shakeTrauma = 0;
+      const historicBaseVisible = base.id === 'HISTORIC_QUARTER';
+      const historicTargetVisible = targetTheme.id === 'HISTORIC_QUARTER';
+      const historicOpacity = THREE.MathUtils.lerp(
+        historicBaseVisible ? baseOpacity : 0,
+        historicTargetVisible ? baseOpacity : 0,
+        t
+      );
+
+      // Drive visibility through opacity threshold — avoid zero-opacity invisible mesh draw calls
+      this.modernSkyline.visible = modernOpacity > 0.01;
+      this.historicSkyline.visible = historicOpacity > 0.01;
+
+      // Apply per-skyline opacity using traverse so we don't need separate materials
+      if (this.modernSkyline.visible && this.skylineMaterial) {
+        this.modernSkyline.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh && mesh.material) {
+            (mesh.material as THREE.MeshBasicMaterial).opacity = modernOpacity;
+          }
+        });
+      }
+      if (this.historicSkyline.visible && this.skylineMaterial) {
+        this.historicSkyline.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh && mesh.material) {
+            (mesh.material as THREE.MeshBasicMaterial).opacity = historicOpacity;
+          }
+        });
+      }
+
+      if (this.cloudsGroup) {
+        // Hide clouds underground; fade them out smoothly going underground
+        const isUndergroundTarget = targetTheme.id === 'UNDERGROUND_METRO';
+        const isUndergroundBase = base.id === 'UNDERGROUND_METRO';
+        if (isUndergroundTarget) {
+          this.cloudsGroup.visible = t < 0.85;
+        } else if (isUndergroundBase) {
+          this.cloudsGroup.visible = t > 0.15;
+        } else {
+          this.cloudsGroup.visible = true;
+        }
+      }
     }
 
-    this.camera.position.copy(this.currentPosition).add(this.shakeOffset);
-
-    // Look at point slightly ahead and above the character, with centered lateral tracking
-    // In Character Focus, angle slightly inward across runner to keep center lane & incoming trains locked in center
-    const inwardAimOffset = this.currentLateralOffset * 0.28;
-    this.lookTarget.x = this.currentPosition.x * 0.45 + (playerPos.x - inwardAimOffset) * 0.55;
-    this.lookTarget.y = targetLookY;
-    this.lookTarget.z = playerPos.z + targetLookAheadZ;
-
-    this.camera.lookAt(this.lookTarget);
-  }
-
-  public reset(playerPos: THREE.Vector3): void {
-    this.shakeTrauma = 0;
-    this.landingDipOffset = 0;
-    this.isGameOverMode = false;
-    this.isPhotoMode = false;
-    const isPortrait = this.camera.aspect < 1.0;
-    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    this.camera.updateProjectionMatrix();
-    if (this.isLobbyMode) {
-      this.currentPosition.copy(this.lobbyTargetPos);
-      this.camera.position.copy(this.currentPosition);
-      this.camera.lookAt(this.lobbyLookTarget);
-    } else {
-      this.currentPosition.set(
-        playerPos.x,
-        playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
-        playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
-      );
-      this.camera.position.copy(this.currentPosition);
+    if (t >= 0.999) {
+      this.currentTheme = targetTheme;
+      this.prevTheme = null;
     }
   }
 
-  public onResize(): void {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    const isPortrait = this.camera.aspect < 1.0;
-    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    this.camera.updateProjectionMatrix();
+  public startAtmosphericTransition(targetTheme: EnvironmentTheme, durationSeconds: number = 2.5): void {
+    if (this.currentTheme.id === targetTheme.id && this.transitionProgress >= 1.0) return;
+    this.prevTheme = this.currentTheme;
+    this.targetTheme = targetTheme;
+    this.transitionProgress = 0.0;
+    this.transitionSpeed = durationSeconds > 0 ? 1.0 / durationSeconds : 10.0;
+  }
+
+  public updateAtmosphere(dt: number): void {
+    if (this.transitionProgress < 1.0) {
+      this.transitionProgress = Math.min(1.0, this.transitionProgress + dt * this.transitionSpeed);
+      this.applyEnvironment(this.targetTheme, this.transitionProgress, this.prevTheme || this.currentTheme);
+    }
+  }
+
+  /**
+   * Applies a weather or time-of-day atmospheric lighting and fog preset
+   */
+  public applyAtmospherePreset(preset: AtmospherePreset, blendFactor: number = 1.0): void {
+    this.currentAtmospherePreset = preset;
+    const t = Math.max(0, Math.min(1, blendFactor));
+
+    let sunColorHex = 0xfff8eb;
+    let sunIntensity = 1.35;
+    let skyTopHex = 0x3a82f7;
+    let skyBottomHex = 0xcfe2ff;
+    let fogColorHex = 0x88c4ff;
+    let fogDensity = 0.0022;
+    let fillColorHex = 0xa0c4e8;
+    let fillIntensity = 0.70;
+    let isRain = false;
+
+    switch (preset) {
+      case 'WARM_GOLDEN_HOUR':
+        sunColorHex = 0xffb366;
+        sunIntensity = 1.25;
+        skyTopHex = 0xd9531e;
+        skyBottomHex = 0xfed7aa;
+        fogColorHex = 0xe6915b;
+        fogDensity = 0.0030;
+        fillColorHex = 0xffaa77;
+        fillIntensity = 0.65;
+        break;
+      case 'SOFT_OVERCAST':
+        sunColorHex = 0xd0e0f0;
+        sunIntensity = 0.95;
+        skyTopHex = 0x64748b;
+        skyBottomHex = 0xc8d6e5;
+        fogColorHex = 0x94a3b8;
+        fogDensity = 0.0038;
+        fillColorHex = 0x94a3b8;
+        fillIntensity = 0.60;
+        break;
+      case 'LIGHT_RAIN':
+        sunColorHex = 0x94a3b8;
+        sunIntensity = 0.75;
+        skyTopHex = 0x334155;
+        skyBottomHex = 0x64748b;
+        fogColorHex = 0x475569;
+        fogDensity = 0.0050;
+        fillColorHex = 0x64748b;
+        fillIntensity = 0.50;
+        isRain = true;
+        break;
+      case 'ILLUMINATED_UNDERGROUND':
+        sunColorHex = 0xfff5e6;
+        sunIntensity = 0.35;
+        skyTopHex = 0x0f172a;
+        skyBottomHex = 0x1e293b;
+        fogColorHex = 0x111827;
+        fogDensity = 0.0055;
+        fillColorHex = 0x38bdf8;
+        fillIntensity = 0.95;
+        break;
+      case 'CLEAR_DAYLIGHT':
+      default:
+        sunColorHex = 0xfff8eb;
+        sunIntensity = 1.35;
+        skyTopHex = 0x3a82f7;
+        skyBottomHex = 0xcfe2ff;
+        fogColorHex = 0x88c4ff;
+        fogDensity = 0.0022;
+        fillColorHex = 0xa0c4e8;
+        fillIntensity = 0.70;
+        break;
+    }
+
+    if (this.rainParticles) {
+      this.rainParticles.visible = isRain;
+    }
+
+    // Smoothly lerp towards target
+    const targetFog = new THREE.Color(fogColorHex);
+    this.scene.background = targetFog;
+    if (this.scene.fog && (this.scene.fog as THREE.FogExp2).isFogExp2) {
+      this.scene.fog.color.lerp(targetFog, t);
+      (this.scene.fog as THREE.FogExp2).density = THREE.MathUtils.lerp((this.scene.fog as THREE.FogExp2).density, fogDensity, t);
+    }
+
+    this.sunLight.color.lerp(new THREE.Color(sunColorHex), t);
+    this.sunLight.intensity = THREE.MathUtils.lerp(this.sunLight.intensity, sunIntensity, t);
+
+    this.fillLight.color.lerp(new THREE.Color(fillColorHex), t);
+    this.fillLight.intensity = THREE.MathUtils.lerp(this.fillLight.intensity, fillIntensity, t);
+
+    this.updateSkyDomeColors(new THREE.Color(skyTopHex), new THREE.Color(skyBottomHex));
+  }
+
+  public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED, dt: number = 0.016): void {
+    // Keep directional shadow map frustum centered on active player and oncoming track
+    this.sunLight.position.z = playerZ + 20;
+    this.sunLight.target.position.z = playerZ - 12;
+    this.sunLight.target.updateMatrixWorld();
+
+    this.fillLight.position.z = playerZ + 15;
+
+    // Sky and skyline track player so horizon feels infinite
+    this.skyMesh.position.z = playerZ;
+    this.cloudsGroup.position.z = playerZ;
+    this.skylineGroup.position.z = playerZ;
+
+    // Subtle cloud drift
+    this.cloudsGroup.rotation.y += 0.00015;
+
+    // Subtle high-speed motion lines opacity
+    if (this.speedLinesMesh) {
+      const isEnabled = SettingsManager.getInstance().isSpeedLinesEnabled();
+      this.speedLinesMesh.visible = isEnabled;
+      if (isEnabled) {
+        this.speedLinesMesh.position.z = playerZ;
+        const speedThreshold = 21.0;
+        const maxSpd = 52.0;
+        const ratio = Math.max(0, Math.min(1.0, (speed - speedThreshold) / (maxSpd - speedThreshold)));
+        (this.speedLinesMesh.material as THREE.LineBasicMaterial).opacity = ratio * 0.52;
+      }
+    }
+
+    // Atmospheric rain particles tracking & animation
+    if (this.rainParticles && this.rainParticles.visible) {
+      this.rainParticles.position.z = playerZ - 12;
+      const pos = (this.rainParticles.geometry as THREE.BufferGeometry).attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - 28 * (dt || 0.016);
+        if (y < 0) y = 22;
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
+    }
+  }
+
+  public applyGraphicsConfig(config: QualityConfig): void {
+    const wasShadowEnabled = this.renderer.shadowMap.enabled;
+    const wasShadowType = this.renderer.shadowMap.type;
+    this.currentConfig = config;
+
+    // 1. Reconfigure Pixel Ratio & Viewport Resolution
+    this.renderer.setPixelRatio(config.pixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 2. Reconfigure Shadow Maps
+    this.renderer.shadowMap.enabled = config.shadowMapEnabled;
+    this.renderer.shadowMap.type = config.shadowMapType;
+    this.sunLight.castShadow = config.shadowMapEnabled;
+
+    if (config.shadowMapEnabled) {
+      this.sunLight.shadow.mapSize.set(config.shadowMapSize, config.shadowMapSize);
+      if (this.sunLight.shadow.map) {
+        this.sunLight.shadow.map.dispose();
+        (this.sunLight.shadow.map as any) = null;
+      }
+    }
+
+    // Force material shader recompilation if shadow state changed at runtime
+    if (wasShadowEnabled !== config.shadowMapEnabled || wasShadowType !== config.shadowMapType) {
+      this.scene.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m) => {
+              if (m) m.needsUpdate = true;
+            });
+          } else if (mesh.material) {
+            mesh.material.needsUpdate = true;
+          }
+        }
+      });
+    }
+
+    // 3. Scenery Detail Toggles
+    this.cloudsGroup.visible = config.cloudsVisible;
+    this.skylineGroup.visible = config.skylineVisible;
+    if (this.speedLinesMesh) {
+      this.speedLinesMesh.visible = config.speedLinesVisible;
+    }
+
+    // 4. Contact Blob Shadow (Active when directional shadows are off)
+    if (this.playerContactShadow) {
+      this.playerContactShadow.visible = config.contactBlobShadow;
+    }
+  }
+
+  public updatePlayerContactShadow(playerX: number, playerY: number, playerZ: number, groundY: number = 0.02): void {
+    if (!this.playerContactShadow || !this.playerContactShadow.visible) return;
+
+    this.playerContactShadow.position.set(playerX, groundY + 0.02, playerZ);
+
+    // Scale and fade contact shadow as character jumps higher off ground/roof
+    const heightAboveSurface = Math.max(0, playerY - groundY);
+    const scaleFactor = Math.max(0.4, 1.5 - heightAboveSurface * 0.25);
+    this.playerContactShadow.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    const mat = this.playerContactShadow.material as THREE.MeshBasicMaterial;
+    if (mat) {
+      mat.opacity = Math.max(0.12, 0.45 - heightAboveSurface * 0.12);
+    }
+  }
+
+  public setGraphicsQuality(preset: 'HIGH' | 'MEDIUM' | 'LOW'): void {
+    const graphics = GraphicsManager.getInstance();
+    graphics.setPreset(preset, true);
+  }
+
+  public onWindowResize(): void {
+    const config = GraphicsManager.getInstance().getActiveConfig();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(config.pixelRatio);
   }
 }
