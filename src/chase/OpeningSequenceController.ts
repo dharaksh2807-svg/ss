@@ -13,6 +13,7 @@ export class OpeningSequenceController {
   private readonly introDuration: number = 2.4; // 2.4s total cinematic
   private skipBtn: HTMLElement | null = null;
   private hasBlownWhistle: boolean = false;
+  private launchSpeed: number = CONSTANTS.INITIAL_SPEED;
 
   private onCompleteCallback: (() => void) | null = null;
 
@@ -92,6 +93,11 @@ export class OpeningSequenceController {
   }
 
   public start(isRetry: boolean = false, onComplete?: () => void): boolean {
+    // Cinematic speed overrides also update the speed controller's profile.
+    // Preserve the selected mode's launch speed before setting speed to zero.
+    if (!this.isIntroActive) {
+      this.launchSpeed = this.player.speedController.getInitialSpeed();
+    }
     this.onCompleteCallback = onComplete || null;
 
     if (!this.shouldPlayIntro(isRetry)) {
@@ -161,7 +167,7 @@ export class OpeningSequenceController {
       const takeOffT = (progress - 0.35) / 0.33;
       // Smooth cubic acceleration from 0 to full running speed
       const accelFactor = takeOffT * takeOffT * (3.0 - 2.0 * takeOffT);
-      this.player.speed = accelFactor * CONSTANTS.INITIAL_SPEED;
+      this.player.speed = accelFactor * this.launchSpeed;
       this.player.mesh.rotation.y = (1.0 - takeOffT) * 2.45; // Smoothly whip around to face forward
 
       // Player advances down the track
@@ -173,7 +179,7 @@ export class OpeningSequenceController {
     // Phase 3 (1.6s – 2.4s): Camera Blend into Gameplay View
     // -----------------------------------------------------------------
     else {
-      this.player.speed = CONSTANTS.INITIAL_SPEED;
+      this.player.speed = this.launchSpeed;
       this.player.position.z -= this.player.speed * dt;
       this.player.mesh.position.copy(this.player.position);
       this.player.update(dt);
@@ -201,7 +207,7 @@ export class OpeningSequenceController {
     }
 
     // Set player to standard running speed & forward orientation
-    this.player.speed = this.player.speedController ? this.player.speedController.getInitialSpeed() : CONSTANTS.INITIAL_SPEED;
+    this.player.speed = this.launchSpeed;
     this.player.mesh.rotation.y = 0;
     this.player.isIntroInvincible = false; // Normal collision active
 

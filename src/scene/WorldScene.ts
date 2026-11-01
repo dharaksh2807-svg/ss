@@ -18,6 +18,8 @@ export class WorldScene {
   public modernSkyline: THREE.Group | null = null;
   public historicSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
   public currentAtmospherePreset: AtmospherePreset = 'CLEAR_DAYLIGHT';
@@ -252,8 +254,10 @@ export class WorldScene {
     const cloudMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.9,
-      metalness: 0.05
+      metalness: 0.05,
+      transparent: true
     });
+    this.cloudMaterial = cloudMat;
 
     const puffGeo = new THREE.SphereGeometry(1, 8, 8);
 
@@ -304,6 +308,7 @@ export class WorldScene {
       opacity: this.currentTheme.skyline.opacity,
       fog: false
     });
+    this.historicSkylineMaterial = this.skylineMaterial.clone();
 
     const towerGeo = new THREE.BoxGeometry(1, 1, 1);
 
@@ -344,7 +349,7 @@ export class WorldScene {
       );
 
       // Base masonry building
-      const base = new THREE.Mesh(towerGeo, this.skylineMaterial);
+      const base = new THREE.Mesh(towerGeo, this.historicSkylineMaterial);
       base.scale.set(w, h, d);
       base.position.y = h * 0.5;
       bGroup.add(base);
@@ -352,13 +357,13 @@ export class WorldScene {
       if (i % 2 === 0) {
         // Pointed church spire
         const spireGeo = new THREE.ConeGeometry(w * 0.28, h * 0.55, 6);
-        const spire = new THREE.Mesh(spireGeo, this.skylineMaterial);
+        const spire = new THREE.Mesh(spireGeo, this.historicSkylineMaterial);
         spire.position.y = h + h * 0.27;
         bGroup.add(spire);
       } else {
         // Clocktower gable or dual chimneys
         const gableGeo = new THREE.BoxGeometry(w * 0.45, h * 0.35, d * 0.45);
-        const gable = new THREE.Mesh(gableGeo, this.skylineMaterial);
+        const gable = new THREE.Mesh(gableGeo, this.historicSkylineMaterial);
         gable.position.y = h + h * 0.17;
         bGroup.add(gable);
       }
@@ -367,7 +372,7 @@ export class WorldScene {
     }
     group.add(this.historicSkyline);
 
-    this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO';
+    this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
 
     return group;
@@ -411,68 +416,39 @@ export class WorldScene {
     const bottomColor = EnvironmentManager.lerpColor(base.sky.bottom, targetTheme.sky.bottom, t);
     this.updateSkyDomeColors(topColor, bottomColor);
 
-    // 6. Skyline Silhouettes
+    // 6. Independent skyline materials allow both variants to cross-fade.
+    const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
+    const isModern = (theme: EnvironmentTheme) => theme.id === 'MODERN_METRO' || theme.id === 'NEON_INDUSTRIAL';
+    const modernOpacity = THREE.MathUtils.lerp(
+      isModern(base) ? base.skyline.opacity : 0,
+      isModern(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
+    const historicOpacity = THREE.MathUtils.lerp(
+      base.id === 'HISTORIC_QUARTER' ? base.skyline.opacity : 0,
+      targetTheme.id === 'HISTORIC_QUARTER' ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
-      const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
       this.skylineMaterial.color.copy(skylineColor);
-      this.skylineMaterial.opacity = THREE.MathUtils.lerp(base.skyline.opacity, targetTheme.skyline.opacity, t);
+      this.skylineMaterial.opacity = modernOpacity;
     }
+    if (this.historicSkylineMaterial) {
+      this.historicSkylineMaterial.color.copy(skylineColor);
+      this.historicSkylineMaterial.opacity = historicOpacity;
+    }
+    if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
+    if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
 
-    if (this.modernSkyline && this.historicSkyline) {
-      // Cross-fade both skyline variants simultaneously to eliminate the hard t=0.5 visibility pop.
-      // Each skyline's opacity ramps in/out across the full transition window.
-      const baseOpacity = THREE.MathUtils.lerp(base.skyline.opacity, targetTheme.skyline.opacity, t);
-
-      // Modern: fully visible in base, fades out when transitioning away; fades in when transitioning in.
-      const modernBaseVisible = base.id === 'MODERN_METRO' || base.id === 'NEON_INDUSTRIAL';
-      const modernTargetVisible = targetTheme.id === 'MODERN_METRO' || targetTheme.id === 'NEON_INDUSTRIAL';
-      const modernOpacity = THREE.MathUtils.lerp(
-        modernBaseVisible ? baseOpacity : 0,
-        modernTargetVisible ? baseOpacity : 0,
-        t
-      );
-      const historicBaseVisible = base.id === 'HISTORIC_QUARTER';
-      const historicTargetVisible = targetTheme.id === 'HISTORIC_QUARTER';
-      const historicOpacity = THREE.MathUtils.lerp(
-        historicBaseVisible ? baseOpacity : 0,
-        historicTargetVisible ? baseOpacity : 0,
-        t
-      );
-
-      // Drive visibility through opacity threshold — avoid zero-opacity invisible mesh draw calls
-      this.modernSkyline.visible = modernOpacity > 0.01;
-      this.historicSkyline.visible = historicOpacity > 0.01;
-
-      // Apply per-skyline opacity using traverse so we don't need separate materials
-      if (this.modernSkyline.visible && this.skylineMaterial) {
-        this.modernSkyline.traverse((obj) => {
-          const mesh = obj as THREE.Mesh;
-          if (mesh.isMesh && mesh.material) {
-            (mesh.material as THREE.MeshBasicMaterial).opacity = modernOpacity;
-          }
-        });
-      }
-      if (this.historicSkyline.visible && this.skylineMaterial) {
-        this.historicSkyline.traverse((obj) => {
-          const mesh = obj as THREE.Mesh;
-          if (mesh.isMesh && mesh.material) {
-            (mesh.material as THREE.MeshBasicMaterial).opacity = historicOpacity;
-          }
-        });
-      }
-
-      if (this.cloudsGroup) {
-        // Hide clouds underground; fade them out smoothly going underground
-        const isUndergroundTarget = targetTheme.id === 'UNDERGROUND_METRO';
-        const isUndergroundBase = base.id === 'UNDERGROUND_METRO';
-        if (isUndergroundTarget) {
-          this.cloudsGroup.visible = t < 0.85;
-        } else if (isUndergroundBase) {
-          this.cloudsGroup.visible = t > 0.15;
-        } else {
-          this.cloudsGroup.visible = true;
-        }
-      }
+    // Clouds fade for the entire tunnel transition and respect graphics settings.
+    const cloudOpacity = THREE.MathUtils.lerp(
+      base.id === 'UNDERGROUND_METRO' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' ? 0 : 1,
+      t
+    );
+    if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
+    if (this.cloudsGroup) {
+      this.cloudsGroup.visible = this.currentConfig.cloudsVisible && cloudOpacity > 0.01;
     }
 
     if (t >= 0.999) {

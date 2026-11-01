@@ -210,14 +210,18 @@ console.log('\n--- Suite 4: Environment C — Underground Metro System Complete 
       if (child.position.x >= 5.4 && b.max.y <= 1.2 && b.min.y >= 0.0) {
         hasStationPlatform = true;
       }
-      if (child.material instanceof THREE.MeshBasicMaterial && (child.material as any).color.getHex() === 0xfacc15) {
+      // The curvature repair (7cf23e4) switched this strip to the shared amber
+      // hazard material. Check its platform-edge geometry as well as its color.
+      if (child.material instanceof THREE.MeshBasicMaterial && child.material.color.getHex() === 0xffab00 &&
+          child.geometry instanceof THREE.BoxGeometry && child.geometry.parameters.width === 0.08 &&
+          child.geometry.parameters.height === 0.04 && b.min.y >= 0.95 && b.max.y <= 1.1) {
         hasTactileWarning = true;
       }
     }
   });
 
   assert(hasStationPlatform, 'Station concourse chunks feature raised passenger platform section');
-  assert(hasTactileWarning, 'Station platform edge features safety yellow tactile warning strip');
+  assert(hasTactileWarning, 'Station platform edge features the amber tactile warning strip');
 
   // Test Tunnel Portal Arch Generation
   const portalGroup = new THREE.Group();
@@ -231,7 +235,9 @@ console.log('\n--- Suite 4: Environment C — Underground Metro System Complete 
       if (b.max.y > 9.5 && Math.abs(child.position.x) > 6.0) {
         hasPortalPylons = true;
       }
-      if (child.material instanceof THREE.MeshBasicMaterial && (child.material as any).color.getHex() === 0xff1744) {
+      // Portal beacons now share the curved red signal material (7cf23e4).
+      if (child.material instanceof THREE.MeshBasicMaterial && child.material.color.getHex() === 0xef4444 &&
+          child.geometry instanceof THREE.SphereGeometry && child.geometry.parameters.radius === 0.25) {
         hasWarningBeacons = true;
       }
     }

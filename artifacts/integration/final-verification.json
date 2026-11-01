@@ -1,0 +1,545 @@
+{
+  "date": "2026-11-01",
+  "repository": "dharaksh2807-svg/ss",
+  "base_main": "6d46a6753c0a1e6e09be7b2e2150faa92f103578",
+  "branch_audit": [
+    {
+      "branch": "feature/train-rooftop-traversal",
+      "sha": "3cfe6bea9d0bcb6dbf6c0673c9dddf4965bfe394",
+      "already_in_main": true,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-0-baseline",
+      "sha": "d2aa6194074625257c103bc86b640581d4b40132",
+      "already_in_main": false,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-2-lobby",
+      "sha": "681a861c5067996005f56f9bea9ec8a003d27790",
+      "already_in_main": false,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-3-hud-modals",
+      "sha": "88aca2b9844add8b9f8165fb5bbbf59c0801c84d",
+      "already_in_main": false,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-4-characters",
+      "sha": "71c4c179dad5a1155f9f3a68e92aee52aae108ec",
+      "already_in_main": false,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-5-trains",
+      "sha": "9506534ee5fb64fcb619204754ba9cfb2092e86e",
+      "already_in_main": true,
+      "in_original_pr4": true
+    },
+    {
+      "branch": "polish/phase-6-world-camera",
+      "sha": "6feae4612f2033fdca2c4fa3c9c14d4962b75662",
+      "already_in_main": false,
+      "in_original_pr4": false
+    },
+    {
+      "branch": "integration/professional-polish",
+      "sha": "21a8cdad0b1ac2fcb91bceb17b3c5abf8e99f5df",
+      "already_in_main": false,
+      "in_original_pr4": true
+    }
+  ],
+  "release_commands": [
+    {
+      "suite": "npm-test-release",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exit_code": 0,
+      "seconds": 190.56
+    },
+    {
+      "suite": "task-crash-and-screenshot-fix-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task-crash-and-screenshot-fix.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 7.11
+    },
+    {
+      "suite": "task3-branching-junctions-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task3-branching-junctions.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 1.05
+    },
+    {
+      "suite": "task2-secret-routes-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task2-secret-routes.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 1.02
+    },
+    {
+      "suite": "build-release",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 4.93
+    },
+    {
+      "suite": "browser-integration-release",
+      "command": [
+        "node",
+        "test/verify-integration-final.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 135.63
+    },
+    {
+      "suite": "browser-production-release",
+      "command": [
+        "node",
+        "test/browser-production-bundle-isolation.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 20.08
+    },
+    {
+      "suite": "browser-runtime-release",
+      "command": [
+        "node",
+        "test/final-integration-runtime.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 6.89
+    }
+  ],
+  "supplemental_completed": [
+    {
+      "suite": "instant-play-again-lifecycle",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 3.65
+    },
+    {
+      "suite": "task3-save-backup",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.66
+    },
+    {
+      "suite": "production-developer-tools-security",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 3.41
+    },
+    {
+      "suite": "hard-mode-scoring-multiplier",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 5.67
+    },
+    {
+      "suite": "reachability-validator-physics-rigor",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.91
+    },
+    {
+      "suite": "phase2-deterministic-train-scene",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.07
+    },
+    {
+      "suite": "phase3-procedural-rooftop-audit",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 67.01
+    },
+    {
+      "suite": "phase4-collectibles-powerups-inputs",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 9.28
+    },
+    {
+      "suite": "phase6-release-audit",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 12.8
+    },
+    {
+      "suite": "moving-train-occupancy",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 3.54
+    },
+    {
+      "suite": "train-visual-transform-verification",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 1.59
+    },
+    {
+      "suite": "death-transition-idempotency",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 18.14
+    },
+    {
+      "suite": "developer-diagnostics-isolation",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 3.0
+    },
+    {
+      "suite": "task-no-auto-open-crash-report",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.58
+    },
+    {
+      "suite": "powerup-hud-presentation",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.17
+    },
+    {
+      "suite": "character-presentation",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.13
+    },
+    {
+      "suite": "task2-controls-accessibility",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 1.91
+    },
+    {
+      "suite": "task3-obstacle-visibility",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 7.06
+    },
+    {
+      "suite": "task2-jetpack-landing-repair",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 4.21
+    },
+    {
+      "suite": "task1-banner-clearance-verification",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 2.14
+    },
+    {
+      "suite": "task1-bug-snapshot-diagnostics",
+      "exit_code": 0,
+      "failed": false,
+      "seconds": 14.2
+    }
+  ],
+  "additional_final_commands": [
+    {
+      "suite": "task-crash-and-screenshot-fix-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task-crash-and-screenshot-fix.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 7.11
+    },
+    {
+      "suite": "task3-branching-junctions-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task3-branching-junctions.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 1.05
+    },
+    {
+      "suite": "task2-secret-routes-final",
+      "command": [
+        "npx",
+        "tsx",
+        "test/task2-secret-routes.test.ts"
+      ],
+      "exit_code": 0,
+      "seconds": 1.02
+    }
+  ],
+  "npm_script_count": 41,
+  "npm_assertion_success_log_lines": 4211,
+  "npm_failing_assertion_markers": 0,
+  "opening_chaser": {
+    "passed": 149,
+    "failed": 0
+  },
+  "occupancy_checks": 47,
+  "fast_retry_checks": 216,
+  "traffic_calibration": [
+    {
+      "mode": "NORMAL",
+      "stages": [
+        {
+          "seconds": 13.6,
+          "static": 3,
+          "moving": 2,
+          "roofs": 3,
+          "staticPerMin": 13.2,
+          "movingPerMin": 8.8
+        },
+        {
+          "seconds": 31.1,
+          "static": 7,
+          "moving": 7,
+          "roofs": 6,
+          "staticPerMin": 13.5,
+          "movingPerMin": 13.5
+        },
+        {
+          "seconds": 37.5,
+          "static": 12,
+          "moving": 5,
+          "roofs": 7,
+          "staticPerMin": 19.2,
+          "movingPerMin": 8
+        },
+        {
+          "seconds": 53.3,
+          "static": 16,
+          "moving": 3,
+          "roofs": 10,
+          "staticPerMin": 18,
+          "movingPerMin": 3.4
+        }
+      ],
+      "minWarning": 1.95,
+      "maxObjects": 18,
+      "paired": false,
+      "patterns": [
+        "RAILWAY_EARLY_MIXED_APPROACH",
+        "RAILWAY_EARLY_ROOF_LINK",
+        "MOVING_TRAIN_LEFT_BYPASS",
+        "MOVING_TRAIN_SIDE_CHOICE",
+        "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+        "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+        "RAILWAY_ROOF_LINK_EXPRESS",
+        "MOVING_TRAIN_TELEGRAPH",
+        "CENTER_TRAIN_FLANKS",
+        "RAILWAY_LONG_ROOF_LINK_EXPRESS",
+        "RAILWAY_LONG_ROOF_LINK",
+        "CONSECUTIVE_JUMP_SLIDE_GAUNTLET",
+        "ADVANCED_CARRIAGE_GAP_HOP",
+        "HARD_SLIDE_SWITCH_ROOF_RUN"
+      ],
+      "simulationMs": 40922,
+      "metrics": {
+        "attempts": 1655,
+        "placements": 17,
+        "occupancyRejections": 1402,
+        "reachabilityRejections": 1938,
+        "staticAttempts": 2354,
+        "staticPlacements": 16,
+        "staticEncounters": 43,
+        "visibleRangeEntries": 62,
+        "spacingRejections": 0,
+        "encounters": 17,
+        "warnings": 17,
+        "expressEncounters": 4,
+        "transitionRejections": 0,
+        "windowRejections": 1938,
+        "lastEncounterTime": 135.04999999999646,
+        "gaps": [
+          3.999999999999986,
+          6.150000000000078,
+          3.600000000000051,
+          5.700000000000081,
+          3.450000000000049,
+          7.749999999999957,
+          3.2499999999998153,
+          4.549999999999741,
+          3.099999999999824,
+          9.299999999999471,
+          9.299999999999471,
+          6.849999999999618,
+          8.949999999999491,
+          17.349999999999014,
+          21.349999999998786,
+          16.90000000000103
+        ],
+        "distance": 4500.569449660119,
+        "stage": 3,
+        "runnerSpeed": 37.893623886407,
+        "nextPlannedArrival": 137.48488517154772,
+        "activeTrains": 1,
+        "activeStaticTrains": 6,
+        "relevantTrains": 1,
+        "movingTrainSpeeds": [
+          36
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 1402,
+          "patternTransition": 0,
+          "movingActionWindow": 1938,
+          "arrivalSpacing": 0
+        },
+        "averageGap": 8.22187499999978
+      }
+    },
+    {
+      "mode": "HARD",
+      "stages": [
+        {
+          "seconds": 8.7,
+          "static": 2,
+          "moving": 2,
+          "roofs": 2,
+          "staticPerMin": 13.7,
+          "movingPerMin": 13.7
+        },
+        {
+          "seconds": 20.6,
+          "static": 9,
+          "moving": 5,
+          "roofs": 6,
+          "staticPerMin": 26.2,
+          "movingPerMin": 14.6
+        },
+        {
+          "seconds": 25.8,
+          "static": 12,
+          "moving": 8,
+          "roofs": 7,
+          "staticPerMin": 27.9,
+          "movingPerMin": 18.6
+        },
+        {
+          "seconds": 38.6,
+          "static": 17,
+          "moving": 5,
+          "roofs": 8,
+          "staticPerMin": 26.4,
+          "movingPerMin": 7.8
+        }
+      ],
+      "minWarning": 1.95,
+      "maxObjects": 20,
+      "paired": false,
+      "patterns": [
+        "RAILWAY_EARLY_ROOF_LINK",
+        "RAILWAY_EARLY_MIXED_APPROACH",
+        "MOVING_TRAIN_SIDE_CHOICE",
+        "RAILWAY_ROOF_LINK",
+        "MOVING_TRAIN_CENTER_STATIONARY_FLANK",
+        "RAMP_AND_ROOFTOP_RUN",
+        "CENTER_TRAIN_FLANKS",
+        "MOVING_TRAIN_RIGHT_SLIDE_ESCAPE",
+        "RAILWAY_ROOF_LINK_EXPRESS",
+        "TUNNEL_EXIT_MOVING_TRAIN",
+        "STATIONARY_RAMP_WITH_ONCOMING_TRAIN",
+        "HARD_SLIDE_SWITCH_ROOF_RUN",
+        "ADVANCED_CARRIAGE_GAP_HOP",
+        "EXPERT_RAPID_TRAFFIC_CORRIDOR",
+        "CONSECUTIVE_JUMP_SLIDE_GAUNTLET",
+        "EXPERT_TRIPLE_LANE_GAUNTLET"
+      ],
+      "simulationMs": 71606,
+      "metrics": {
+        "attempts": 1468,
+        "placements": 21,
+        "occupancyRejections": 1308,
+        "reachabilityRejections": 1627,
+        "staticAttempts": 2108,
+        "staticPlacements": 23,
+        "staticEncounters": 49,
+        "visibleRangeEntries": 71,
+        "spacingRejections": 16,
+        "encounters": 20,
+        "warnings": 20,
+        "expressEncounters": 4,
+        "transitionRejections": 0,
+        "windowRejections": 1627,
+        "lastEncounterTime": 80.89999999999755,
+        "gaps": [
+          1.4499999999999948,
+          5.600000000000032,
+          7.700000000000109,
+          2.0000000000000284,
+          6.900000000000098,
+          1.7000000000000242,
+          3.400000000000002,
+          1.6999999999999034,
+          4.649999999999736,
+          3.149999999999821,
+          3.149999999999821,
+          1.599999999999909,
+          1.6499999999999062,
+          4.549999999999741,
+          6.199999999999648,
+          12.399999999999302,
+          6.099999999999653,
+          1.549999999999912,
+          1.549999999999912
+        ],
+        "distance": 4502.491658093584,
+        "stage": 3,
+        "runnerSpeed": 51.99999999999994,
+        "nextPlannedArrival": 97.7979830770476,
+        "activeTrains": 1,
+        "activeStaticTrains": 6,
+        "relevantTrains": 1,
+        "movingTrainSpeeds": [
+          53.247836497410816
+        ],
+        "rejectedPlacementReasons": {
+          "solidOccupancy": 1308,
+          "patternTransition": 0,
+          "movingActionWindow": 1627,
+          "arrivalSpacing": 16
+        },
+        "averageGap": 4.052631578947239
+      }
+    }
+  ],
+  "browser_checks": {
+    "existing_walkthrough": 19,
+    "runtime": 15,
+    "production_isolation": 13
+  },
+  "other_browser_workflows": [
+    "moving-train rooftop avoidance and descent",
+    "three-run instant Play Again",
+    "Hard Mode power-up multiplier stacking and reset"
+  ],
+  "source_sha256": {
+    "src/chase/OpeningSequenceController.ts": "b256729cd51670d2498a0785b3d19b3622fb775bfdcf1f762f63390e676b9e06",
+    "src/scene/WorldScene.ts": "4e60ca7bf4059d5c7731dbdce74fd12c2a32ad14c012e417317a68d5df152b19",
+    "src/track/TrackChunk.ts": "2ed7ec5647d5e0c99094c52b32eae7854dd1baaa9df094550b8399fce85662cf",
+    "src/environment/EnvironmentConfig.ts": "761be8ff7ef1f77d8283e89e6c867360260522ffd818f4fe85039928ce73f30e",
+    "src/scene/CameraController.ts": "ab5f641e274f68013d949fb8cdeda3b0214a72f312b8e4e371fd27077aa1c72c"
+  },
+  "verdict": "PASS"
+}
