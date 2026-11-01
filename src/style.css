@@ -1968,18 +1968,29 @@ kbd {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.mode-toggle-btn.active[data-mode="NORMAL"] {
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(0, 229, 255, 0.12));
+.mode-toggle-btn.active[data-mode="NORMAL"],
+.mode-toggle-btn.active[data-mode="BEGINNER"] {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(0, 229, 255, 0.1));
   border-color: rgba(0, 229, 255, 0.6);
   color: #00e5ff;
   box-shadow: 0 2px 10px rgba(0, 229, 255, 0.2);
+  font-weight: 700;
+}
+
+.mode-toggle-btn.active[data-mode="EASY"] {
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.22), rgba(0, 230, 118, 0.1));
+  border-color: rgba(0, 230, 118, 0.6);
+  color: #00e676;
+  box-shadow: 0 2px 10px rgba(0, 230, 118, 0.2);
+  font-weight: 700;
 }
 
 .mode-toggle-btn.active[data-mode="HARD"] {
-  background: linear-gradient(135deg, rgba(255, 179, 0, 0.3), rgba(255, 111, 0, 0.15));
-  border-color: rgba(255, 179, 0, 0.7);
-  color: #ffb300;
-  box-shadow: 0 2px 12px rgba(255, 179, 0, 0.25);
+  background: linear-gradient(135deg, rgba(255, 75, 43, 0.3), rgba(255, 111, 0, 0.15));
+  border-color: rgba(255, 100, 43, 0.7);
+  color: #ff6b2b;
+  box-shadow: 0 2px 12px rgba(255, 75, 43, 0.25);
+  font-weight: 700;
 }
 
 .mode-toggle-icon {
@@ -3269,6 +3280,57 @@ kbd {
   border-color: #fff;
 }
 
+/* Phase 2 helper classes */
+
+/* SVG icon inside resource pills */
+.resource-svg-icon {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Profile avatar ring */
+.profile-avatar-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #00b0ff, #00e5ff);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.5);
+  flex-shrink: 0;
+}
+
+/* Pulsing widget icon — restrained, 4s cycle */
+.widget-icon-pulse {
+  animation: widgetIconPulse 4s ease-in-out infinite;
+}
+@keyframes widgetIconPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.75; transform: scale(0.92); }
+}
+
+/* SVG icons in mode toggle buttons */
+.mode-toggle-svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Equipped badge SVG icons */
+.equipped-icon-svg {
+  color: #00e5ff;
+  flex-shrink: 0;
+}
+.equipped-edit-svg {
+  color: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+
+/* Settings button SVG */
+.lobby-settings-btn svg {
+  pointer-events: none;
+}
+
 /* Side Rails */
 .lobby-side-rail {
   position: absolute;
@@ -3436,6 +3498,39 @@ kbd {
 .arcade-play-btn:active {
   transform: translateY(5px);
   box-shadow: 0 3px 0 var(--arcade-crimson-shadow), 0 8px 20px rgba(255, 42, 95, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Phase 2: Remove perpetual pulse-glow; use restrained shimmer instead */
+.arcade-play-btn.pulse-glow {
+  animation: none;
+}
+
+.play-btn-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: btnShimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes btnShimmer {
+  0%   { background-position: -100% 0; }
+  40%  { background-position: -100% 0; }
+  60%  { background-position: 200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* SVG play icon inside button */
+.play-icon-svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
 .play-btn-content {
@@ -4559,14 +4654,10 @@ kbd {
   .lobby-tagline {
     font-size: 0.6rem;
   }
-  .lobby-side-rail.left-rail {
-    top: 74px;
-    left: 12px;
-    gap: 8px;
-  }
+  /* Phase 2: hide side rails on narrow mobile, info available in dock nav */
+  .lobby-side-rail.left-rail,
   .lobby-side-rail.right-rail {
-    top: 74px;
-    right: 12px;
+    display: none;
   }
   .lobby-card-widget {
     min-width: 135px;
@@ -4589,6 +4680,10 @@ kbd {
   .play-text {
     font-size: 1.45rem;
   }
+  /* Phase 2: controls hint hidden on mobile */
+  .lobby-controls-bar {
+    display: none;
+  }
   .lobby-dock-nav {
     bottom: 8px;
     padding: 4px 8px;
@@ -4605,6 +4700,29 @@ kbd {
   }
   .dock-label {
     font-size: 0.58rem;
+  }
+  /* Phase 2: tighten top-bar on mobile */
+  .lobby-resources-group {
+    gap: 6px;
+  }
+  .resource-pill {
+    padding: 5px 10px;
+    gap: 5px;
+  }
+  .resource-val {
+    font-size: 0.9rem;
+  }
+  .lobby-profile-pill {
+    padding: 5px 12px 5px 6px;
+  }
+  .lobby-mode-toggle {
+    gap: 4px;
+    padding: 3px;
+  }
+  .mode-toggle-btn {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    gap: 4px;
   }
   .arcade-modal-card {
     width: 96vw;

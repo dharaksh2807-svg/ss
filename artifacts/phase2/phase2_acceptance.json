@@ -1,0 +1,139 @@
+{
+  "capturedAt": "2026-10-31T10:41:07.623Z",
+  "consoleErrors": [],
+  "viewportResults": {
+    "desktop_1440x900": {
+      "playButtonVisible": true,
+      "dockButtons": {
+        "start-characters-btn": true,
+        "start-boards-btn": true,
+        "start-shop-btn": true,
+        "start-practice-btn": true,
+        "start-missions-btn": true,
+        "start-events-btn": true,
+        "start-profile-btn": true
+      },
+      "settingsVisible": true,
+      "difficultyToggles": {
+        "beginner": true,
+        "easy": true,
+        "hard": true
+      },
+      "currencyPills": {
+        "coins": true,
+        "keys": true,
+        "boards": true
+      },
+      "activeDifficultyMode": "BEGINNER",
+      "highScoreEl": true,
+      "playBtnLayout": {
+        "x": 572.140625,
+        "y": 705,
+        "width": 295.71875,
+        "height": 74,
+        "visible": true
+      }
+    },
+    "desktop_1280x720": {
+      "playButtonVisible": true,
+      "dockButtons": {
+        "start-characters-btn": true,
+        "start-boards-btn": true,
+        "start-shop-btn": true,
+        "start-practice-btn": true,
+        "start-missions-btn": true,
+        "start-events-btn": true,
+        "start-profile-btn": true
+      },
+      "settingsVisible": true,
+      "difficultyToggles": {
+        "beginner": true,
+        "easy": true,
+        "hard": true
+      },
+      "currencyPills": {
+        "coins": true,
+        "keys": true,
+        "boards": true
+      },
+      "activeDifficultyMode": "BEGINNER",
+      "highScoreEl": true,
+      "playBtnLayout": {
+        "x": 492.140625,
+        "y": 525,
+        "width": 295.71875,
+        "height": 74,
+        "visible": true
+      }
+    },
+    "mobile_390x844": {
+      "playButtonVisible": true,
+      "dockButtons": {
+        "start-characters-btn": true,
+        "start-boards-btn": true,
+        "start-shop-btn": true,
+        "start-practice-btn": true,
+        "start-missions-btn": true,
+        "start-events-btn": true,
+        "start-profile-btn": true
+      },
+      "settingsVisible": true,
+      "difficultyToggles": {
+        "beginner": true,
+        "easy": true,
+        "hard": true
+      },
+      "currencyPills": {
+        "coins": true,
+        "keys": true,
+        "boards": true
+      },
+      "activeDifficultyMode": "BEGINNER",
+      "highScoreEl": false,
+      "playBtnLayout": {
+        "x": 74.234375,
+        "y": 700,
+        "width": 241.515625,
+        "height": 60,
+        "visible": true
+      }
+    },
+    "mobile_360x800": {
+      "playButtonVisible": true,
+      "dockButtons": {
+        "start-characters-btn": true,
+        "start-boards-btn": true,
+        "start-shop-btn": true,
+        "start-practice-btn": true,
+        "start-missions-btn": true,
+        "start-events-btn": true,
+        "start-profile-btn": true
+      },
+      "settingsVisible": true,
+      "difficultyToggles": {
+        "beginner": true,
+        "easy": true,
+        "hard": true
+      },
+      "currencyPills": {
+        "coins": true,
+        "keys": true,
+        "boards": true
+      },
+      "activeDifficultyMode": "BEGINNER",
+      "highScoreEl": false,
+      "playBtnLayout": {
+        "x": 59.234375,
+        "y": 656,
+        "width": 241.515625,
+        "height": 60,
+        "visible": true
+      }
+    }
+  },
+  "difficultyModeSwitch": {
+    "hardActive": true,
+    "easyActive": true,
+    "beginnerActive": true
+  }
+}
