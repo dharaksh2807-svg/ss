@@ -85,7 +85,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0xb3e5fc,  // Soft aerial cyan haze
-    density: 0.0035
+    density: 0.0028   // Reduced from 0.0035 to prevent midground train wash-out
   },
   sun: {
     color: 0xfffaea,  // Bright crisp white-gold midday sun
@@ -162,7 +162,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
   },
   hemi: {
     sky: 0xffd8b0,    // Warm dusty peach sky
-    ground: 0x4e3629, // Cobblestone earth reflection
+    ground: 0x5c3d28, // Slightly warmer cobblestone earth reflection
     intensity: 1.25
   },
   skyline: {
@@ -217,7 +217,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
   },
   sun: {
     color: 0x94a3b8,  // Cool downward artificial tunnel beam
-    intensity: 0.45,
+    intensity: 0.35,  // Darker tunnel: fill is the key light underground
     position: { x: 0, y: 35, z: 12 }
   },
   fill: {
@@ -226,7 +226,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
   },
   hemi: {
     sky: 0x7dd3fc,    // Overhead luminaire strip bounce
-    ground: 0x1e293b, // Concrete ballast floor bounce
+    ground: 0x283548, // Lighter concrete ballast floor bounce for better contact grounding
     intensity: 1.35
   },
   skyline: {
@@ -277,7 +277,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0xbf5700,  // Warm industrial amber haze
-    density: 0.0042
+    density: 0.0036   // Reduced from 0.0042 to improve obstacle silhouette contrast
   },
   sun: {
     color: 0xff8f00,  // Low amber sodium sun
