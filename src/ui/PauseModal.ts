@@ -45,7 +45,7 @@ export class PauseModal {
           </button>
 
           <!-- Photo Mode Action Button -->
-          <button id="pause-photo-btn" class="arcade-btn btn-photo" style="width: 100%; margin-bottom: 14px; background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(124, 77, 255, 0.28)); border: 1.5px solid rgba(0, 229, 255, 0.7); color: #00e5ff; font-weight: 800; font-size: 1.05rem; letter-spacing: 1.5px; box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);">
+          <button id="pause-photo-btn" class="arcade-btn btn-photo pause-photo-btn">
             <span class="btn-icon">📷</span> PHOTO MODE
           </button>
 
