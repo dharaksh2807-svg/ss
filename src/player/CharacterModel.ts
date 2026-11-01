@@ -809,6 +809,8 @@ export class CharacterModel {
     this.targetRootRot.z += -bankAngle * 0.95 * bankSign;
     this.targetRootRot.y += this.visualFacingAngle + bankAngle * 0.22 * bankSign;
     this.targetSpineRot.z += bankAngle * 0.35 * bankSign;
+    this.targetHeadRot.z += -bankAngle * 0.22 * bankSign;
+    this.targetHipsRot.z += -bankAngle * 0.12 * bankSign;
   }
 
   /**

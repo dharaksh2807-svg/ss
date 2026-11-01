@@ -50,6 +50,8 @@ export class HUD {
   private activePowerupDOMs: Map<string, PowerupDOMItem> = new Map();
   private pickupToastEl: HTMLElement | null = null;
   private pickupToastTimeout: number | null = null;
+  private activeTimeouts: Set<any> = new Set();
+  private activeToastTitles: Set<string> = new Set();
 
   private completedCelebrationMissionId: string | null = null;
   private completedCelebrationTimer: number = 0;
@@ -218,6 +220,16 @@ export class HUD {
 
     bus.on(EVENTS.GAME_RESTART, () => {
       this.clearPowerupCards();
+      this.clearFeedbackBadges();
+      this.clearAllTimeouts();
+      if (this.toastContainerEl) this.toastContainerEl.innerHTML = '';
+    });
+
+    bus.on(EVENTS.GO_TO_LOBBY, () => {
+      this.clearPowerupCards();
+      this.clearFeedbackBadges();
+      this.clearAllTimeouts();
+      if (this.toastContainerEl) this.toastContainerEl.innerHTML = '';
     });
 
     bus.on('CHRONO_ORB_COLLECTED', (sec: number = 5) => {
@@ -608,6 +620,38 @@ export class HUD {
     this.powerupContainer?.classList?.toggle?.('powerup-multi-3', activeKeys.size >= 3);
   }
 
+  private safeTimeout(fn: () => void, delayMs: number): any {
+    const timerFn = (typeof window !== 'undefined' && typeof window.setTimeout === 'function')
+      ? window.setTimeout
+      : setTimeout;
+    const id = timerFn(() => {
+      this.activeTimeouts.delete(id);
+      fn();
+    }, delayMs);
+    this.activeTimeouts.add(id);
+    return id;
+  }
+
+  private clearAllTimeouts(): void {
+    for (const id of this.activeTimeouts) {
+      clearTimeout(id);
+    }
+    this.activeTimeouts.clear();
+    this.activeToastTitles.clear();
+    if (this.bumpTimeout !== null) {
+      clearTimeout(this.bumpTimeout);
+      this.bumpTimeout = null;
+    }
+    if (this.pickupToastTimeout !== null) {
+      clearTimeout(this.pickupToastTimeout);
+      this.pickupToastTimeout = null;
+    }
+    if (this.comboBrokenTimeout !== null) {
+      clearTimeout(this.comboBrokenTimeout);
+      this.comboBrokenTimeout = null;
+    }
+  }
+
   public clearFeedbackBadges(): void {
     if (this.feedbackStack) {
       this.feedbackStack.innerHTML = '';
@@ -634,7 +678,7 @@ export class HUD {
     badge.textContent = text;
     this.feedbackStack.appendChild(badge);
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       if (badge.parentElement) {
         badge.parentElement.removeChild(badge);
       }
@@ -648,7 +692,7 @@ export class HUD {
     badge.textContent = '▲ CLIMB RAMP TO ROOF';
     this.feedbackStack.appendChild(badge);
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       if (badge.parentElement) {
         badge.parentElement.removeChild(badge);
       }
@@ -662,9 +706,11 @@ export class HUD {
 
   public hide(): void {
     this.container.classList.add('hidden');
+    this.clearAllTimeouts();
   }
 
   public reset(): void {
+    this.clearAllTimeouts();
     this.score = 0;
     this.coins = 0;
     this.multiplier = 1;
@@ -674,6 +720,9 @@ export class HUD {
     this.clearPowerupCards();
     if (this.feedbackStack) {
       this.feedbackStack.innerHTML = '';
+    }
+    if (this.toastContainerEl) {
+      this.toastContainerEl.innerHTML = '';
     }
     if (this.modeBadgeEl) {
       this.modeBadgeEl.classList.add('hidden');
@@ -813,6 +862,8 @@ export class HUD {
 
   public showProgressionToast(header: string, title: string, rewardText: string): void {
     if (!this.toastContainerEl) return;
+    if (this.activeToastTitles.has(title)) return;
+    this.activeToastTitles.add(title);
 
     const toast = document.createElement('div');
     toast.className = 'progression-toast glassmorphic slide-down-anim';
@@ -827,9 +878,10 @@ export class HUD {
 
     this.toastContainerEl.appendChild(toast);
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       toast.classList.add('slide-up-anim');
-      setTimeout(() => {
+      this.safeTimeout(() => {
+        this.activeToastTitles.delete(title);
         if (toast.parentElement) {
           toast.parentElement.removeChild(toast);
         }
@@ -853,9 +905,9 @@ export class HUD {
 
     this.toastContainerEl.appendChild(toast);
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       toast.classList.add('slide-up-anim');
-      setTimeout(() => {
+      this.safeTimeout(() => {
         if (toast.parentElement) {
           toast.parentElement.removeChild(toast);
         }
@@ -879,10 +931,10 @@ export class HUD {
 
     this.toastContainerEl.appendChild(toast);
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transition = 'opacity 0.4s ease';
-      setTimeout(() => {
+      this.safeTimeout(() => {
         if (toast.parentElement) toast.parentElement.removeChild(toast);
       }, 400);
     }, 2500);
@@ -890,6 +942,7 @@ export class HUD {
 
   public triggerCoinBump(): void {
     if (!this.coinBadgeEl) return;
+    if (SettingsManager.getInstance().isReducedMotion()) return;
     this.coinBadgeEl.classList.remove('coin-pulse');
     // Force DOM reflow to re-trigger CSS keyframe pulse
     void this.coinBadgeEl.offsetWidth;
@@ -898,7 +951,7 @@ export class HUD {
     if (this.bumpTimeout !== null) {
       clearTimeout(this.bumpTimeout);
     }
-    this.bumpTimeout = window.setTimeout(() => {
+    this.bumpTimeout = this.safeTimeout(() => {
       if (this.coinBadgeEl) {
         this.coinBadgeEl.classList.remove('coin-pulse');
       }
@@ -914,10 +967,13 @@ export class HUD {
       cueEl.className = 'hud-hazard-cue';
       this.container.appendChild(cueEl);
     }
+    if (cueEl.textContent === message && cueEl.classList.contains('active')) {
+      return; // Deduplicate active warning cue
+    }
     cueEl.textContent = message;
     cueEl.className = `hud-hazard-cue active hazard-${severity}`;
 
-    setTimeout(() => {
+    this.safeTimeout(() => {
       cueEl?.classList.remove('active');
     }, 2400);
   }
