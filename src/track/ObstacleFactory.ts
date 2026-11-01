@@ -232,7 +232,7 @@ export class ObstacleFactory {
         // High visibility in dark environments: subtle emissive map to ensure chevrons remain vivid in dark tunnels and night city
         emissive: v === 0 ? new THREE.Color(0x3d3200) : (v === 1 ? new THREE.Color(0x3a1900) : new THREE.Color(0x3a0000)),
         emissiveMap: tex,
-        emissiveIntensity: 0.45
+        emissiveIntensity: 0.58
       });
       this.curvedManager.applyCurvature(mat);
       return mat;
@@ -307,15 +307,17 @@ export class ObstacleFactory {
 
     this.trainRoofMat = new THREE.MeshStandardMaterial({
       color: 0x475569,
-      roughness: 0.48,
-      metalness: 0.35
+      roughness: 0.42,
+      metalness: 0.52
     });
     this.curvedManager.applyCurvature(this.trainRoofMat);
 
     this.trainWindowMat = new THREE.MeshStandardMaterial({
-      color: 0x162436,
-      roughness: 0.08,
-      metalness: 0.92
+      color: 0x1a2e42,
+      roughness: 0.06,
+      metalness: 0.55,
+      transparent: true,
+      opacity: 0.72
     });
     this.curvedManager.applyCurvature(this.trainWindowMat);
 
@@ -415,7 +417,7 @@ export class ObstacleFactory {
     this.curvedManager.applyCurvature(this.rampTrussMat);
 
     this.rampReflectorMat = new THREE.MeshBasicMaterial({
-      color: 0xffab00 // High-intensity amber corner reflector
+      color: 0xffca28 // High-intensity amber corner reflector — warm gold-amber for ramp entry cue
     });
     this.curvedManager.applyCurvature(this.rampReflectorMat);
 
@@ -1022,8 +1024,11 @@ export class ObstacleFactory {
     // Livery PBR Material (Automotive / Transit Gloss Enamel)
     const bodyMat = new THREE.MeshStandardMaterial({
       color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex,
-      roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : 0.32,
-      metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : 0.35
+      roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28),
+      metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52),
+      // Subtle livery self-glow so body reads under any ambient level
+      emissive: new THREE.Color(colorHex).multiplyScalar(0.04),
+      emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
 
@@ -1730,17 +1735,17 @@ export class ObstacleFactory {
     catwalk.receiveShadow = true;
     group.add(catwalk);
 
-    // Yellow safety edge boundaries along catwalk sides
+    // Yellow safety edge boundaries along catwalk sides (solid yellow lines for instant readability)
     [-catwalkWidth * 0.5, catwalkWidth * 0.5].forEach((cx) => {
       const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, bodyLength * 0.98, 1, 1, bodySegs);
-      const edge = new THREE.Mesh(edgeGeo, this.barrierMat);
+      const edge = new THREE.Mesh(edgeGeo, this.hazardYellowMat);
       edge.position.set(cx, 4.28, 0);
       group.add(edge);
     });
 
     // 2. High-Visibility Rear Hazard Boundary Threshold (marks the physical end of the roof)
     const rearThresholdGeo = new THREE.BoxGeometry(catwalkWidth + 0.08, 0.14, 0.45);
-    const rearThreshold = new THREE.Mesh(rearThresholdGeo, this.barrierMat);
+    const rearThreshold = new THREE.Mesh(rearThresholdGeo, this.hazardYellowMat);
     rearThreshold.position.set(0, 4.28, -bodyLength * 0.485);
     rearThreshold.receiveShadow = true;
     group.add(rearThreshold);
@@ -2378,8 +2383,9 @@ export class ObstacleFactory {
     group.add(baseMesh);
 
     // 2. High-visibility diagonal hazard skirt along perimeter base
+    // Use hazardYellowMat for AC units (distinct from barrier chevrons)
     const skirtGeo = new THREE.BoxGeometry(width + 0.06, 0.18, length + 0.06);
-    const skirtMesh = new THREE.Mesh(skirtGeo, this.barrierMat);
+    const skirtMesh = new THREE.Mesh(skirtGeo, this.hazardYellowMat);
     skirtMesh.position.set(0, 4.35 + 0.09, 0);
     skirtMesh.castShadow = true;
     group.add(skirtMesh);
@@ -2548,8 +2554,11 @@ export class ObstacleFactory {
 
       const bodyMat = new THREE.MeshStandardMaterial({
         color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : carColor,
-        roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : 0.32,
-        metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : 0.35
+        roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28),
+        metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52),
+        // Subtle livery self-glow so body reads under any ambient level
+        emissive: new THREE.Color(carColor).multiplyScalar(0.04),
+        emissiveIntensity: 1.0
       });
       this.curvedManager.applyCurvature(bodyMat);
 
@@ -2627,10 +2636,10 @@ export class ObstacleFactory {
         bridge.receiveShadow = true;
         masterGroup.add(bridge);
 
-        // Yellow safety edge plates along bridge
+        // Yellow safety edge plates along bridge (solid yellow for readability)
         [-1.7 * 0.5, 1.7 * 0.5].forEach((cx) => {
           const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, gap + 0.2);
-          const edge = new THREE.Mesh(edgeGeo, this.barrierMat);
+          const edge = new THREE.Mesh(edgeGeo, this.hazardYellowMat);
           edge.position.set(cx, 4.28, junctionZ);
           masterGroup.add(edge);
         });

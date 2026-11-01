@@ -55,7 +55,7 @@ export class WorldScene {
     this.renderer.shadowMap.enabled = this.currentConfig.shadowMapEnabled;
     this.renderer.shadowMap.type = this.currentConfig.shadowMapType;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.22;
 
     // 1. Balanced Lighting Setup initialized to active theme
     this.hemiLight = new THREE.HemisphereLight(
