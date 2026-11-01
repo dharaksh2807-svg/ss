@@ -93,6 +93,12 @@ export class SoundManager {
   private lastCoinTime: number = 0;
   private coinAudioScheduledTime: number = 0;
 
+  // Shared Noise Buffer (Pre-allocated to eliminate GC churn and audio allocations)
+  private sharedNoiseBuffer: AudioBuffer | null = null;
+
+  // Hazard Reaction Cooldowns
+  private lastCrashTime: number = -999;
+
   // Cleanup listeners list
   private unsubscribers: Array<() => void> = [];
 
@@ -181,6 +187,9 @@ export class SoundManager {
 
       // 4. Initialize Environmental Train Rail Rumble Loop
       this.initAmbientTrainRumble();
+
+      // 5. Pre-warm shared noise buffer for low-allocation audio events
+      this.getNoiseBuffer();
 
       // Resume context if suspended
       if (this.ctx.state === 'suspended') {
@@ -354,6 +363,14 @@ export class SoundManager {
     this.unsubscribers.push(bus.on(EVENTS.STUMBLE, () => this.playStumble()));
     this.unsubscribers.push(bus.on(EVENTS.NEAR_MISS, () => this.playNearMiss()));
     this.unsubscribers.push(
+      bus.on(EVENTS.REVIVE_EXECUTED, () => {
+        this.playReviveSound();
+        this.lastCrashTime = -999;
+        this.setMusicState('RUNNING_NORMAL');
+        this.startMusic();
+      })
+    );
+    this.unsubscribers.push(
       bus.on(EVENTS.TRAIN_HORN, (data?: { laneX?: number; distance?: number; speed?: number; relativeSpeed?: number; timeToImpact?: number }) =>
         this.playTrainHorn(data)
       )
@@ -395,13 +412,25 @@ export class SoundManager {
         this.setMusicState('GAME_OVER');
       })
     );
-    this.unsubscribers.push(bus.on(EVENTS.GAME_PAUSE, () => this.pauseMusic()));
+    this.unsubscribers.push(
+      bus.on(EVENTS.GAME_PAUSE, () => {
+        this.pauseMusic();
+        this.stopSlide();
+        if (this.trainRumbleGain && this.ctx) {
+          this.trainRumbleGain.gain.setValueAtTime(0, this.ctx.currentTime);
+        }
+      })
+    );
     this.unsubscribers.push(bus.on(EVENTS.GAME_RESUME, () => this.resumeMusic()));
     this.unsubscribers.push(
       bus.on(EVENTS.GO_TO_LOBBY, () => {
         this.stopSlide();
         this.stopHoverboardLoop();
         this.stopJetpackLoop();
+        this.footstepTimer = 0;
+        if (this.trainRumbleGain && this.ctx) {
+          this.trainRumbleGain.gain.setValueAtTime(0, this.ctx.currentTime);
+        }
         this.setMusicState('LOBBY');
         this.startMusic();
       })
@@ -489,6 +518,24 @@ export class SoundManager {
     }
   }
 
+  // --- Shared Reusable Noise Buffer ---
+  private getNoiseBuffer(): AudioBuffer | null {
+    if (this.sharedNoiseBuffer) return this.sharedNoiseBuffer;
+    if (!this.ctx) return null;
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * 1.0);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      this.sharedNoiseBuffer = buffer;
+      return buffer;
+    } catch {
+      return null;
+    }
+  }
+
   // --- Running and Movement Sound Synthesizers ---
 
   private playFootstep(surface: 'GROUND' | 'TRAIN_ROOF' | 'RAMP'): void {
@@ -557,29 +604,26 @@ export class SoundManager {
       osc.start(now);
       osc.stop(now + 0.065);
 
-      // Soft gravel click
+      // Soft gravel click reusing pre-allocated noise buffer
       try {
-        const bufferSize = Math.floor(this.ctx.sampleRate * 0.035);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.5;
-        }
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(800 * pitchShift, now);
-        filter.Q.setValueAtTime(1.5, now);
-        const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.08, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        const noiseBuffer = this.getNoiseBuffer();
+        if (noiseBuffer) {
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(800 * pitchShift, now);
+          filter.Q.setValueAtTime(1.5, now);
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.08, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
-        noise.connect(filter);
-        filter.connect(noiseGain);
-        noiseGain.connect(this.sfxGain);
-        noise.start(now);
-        noise.stop(now + 0.035);
+          noise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(this.sfxGain);
+          noise.start(now);
+          noise.stop(now + 0.035);
+        }
       } catch {}
     }
   }
@@ -587,6 +631,8 @@ export class SoundManager {
   public playJump(): void {
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
     const now = this.ctx.currentTime;
+
+    // 1. Primary upward melodic spring
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -594,7 +640,7 @@ export class SoundManager {
     osc.frequency.setValueAtTime(140, now);
     osc.frequency.exponentialRampToValueAtTime(480, now + 0.16);
 
-    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.setValueAtTime(0.26, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
 
     osc.connect(gain);
@@ -602,6 +648,22 @@ export class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.20);
+
+    // 2. Subtle athletic push-off punch (visceral low transient)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(120, now);
+    subOsc.frequency.exponentialRampToValueAtTime(45, now + 0.08);
+
+    subGain.gain.setValueAtTime(0.20, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.sfxGain);
+
+    subOsc.start(now);
+    subOsc.stop(now + 0.08);
   }
 
   public playLandingTouchdown(options?: boolean | { isFastDrop?: boolean; surface?: string }): void {
@@ -689,15 +751,11 @@ export class SoundManager {
     if (!this.ctx || !this.sfxGain || this.isSlidingLoopActive) return;
     try {
       this.isSlidingLoopActive = true;
-      const bufferSize = this.ctx.sampleRate * 0.5;
-      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
+      const noiseBuffer = this.getNoiseBuffer();
+      if (!noiseBuffer) return;
 
       const noise = this.ctx.createBufferSource();
-      noise.buffer = buffer;
+      noise.buffer = noiseBuffer;
       noise.loop = true;
 
       const filter = this.ctx.createBiquadFilter();
@@ -1802,16 +1860,14 @@ export class SoundManager {
   public playCrash(): void {
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
     const now = this.ctx.currentTime;
+    if (now - this.lastCrashTime < 0.6) return; // Prevent repeated crash audio playback
+    this.lastCrashTime = now;
 
-    const bufferSize = Math.floor(this.ctx.sampleRate * 0.35);
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
+    const noiseBuffer = this.getNoiseBuffer();
+    if (!noiseBuffer) return;
 
     const whiteNoise = this.ctx.createBufferSource();
-    whiteNoise.buffer = buffer;
+    whiteNoise.buffer = noiseBuffer;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
@@ -2464,6 +2520,7 @@ export class SoundManager {
 
     this.unsubscribers.forEach((unsub) => unsub());
     this.unsubscribers = [];
+    this.sharedNoiseBuffer = null;
 
     if (this.ctx) {
       try {

@@ -72,11 +72,18 @@ export class CameraController {
     }
 
     const bus = EventBus.getInstance();
-    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean }) => {
+    bus.on(EVENTS.LAND, (data?: { isFastDrop?: boolean; surface?: string }) => {
       const isFastDrop = data?.isFastDrop === true;
-      this.landingDipOffset = isFastDrop ? -0.09 : -0.045;
-      this.addShake(isFastDrop ? 0.14 : 0.06);
+      const isRoof = data?.surface === 'TRAIN_ROOF';
+      if (this.settingsManager.isReducedMotion()) {
+        this.landingDipOffset = 0;
+      } else {
+        const motionScale = this.settingsManager.getCameraMotionMultiplier();
+        this.landingDipOffset = (isFastDrop ? -0.09 : -0.045) * motionScale;
+      }
+      this.addShake(isFastDrop ? (isRoof ? 0.16 : 0.14) : (isRoof ? 0.08 : 0.06));
     });
+    bus.on(EVENTS.NEAR_MISS, () => this.addShake(0.08));
     bus.on(EVENTS.STUMBLE, () => this.addShake(0.35));
     bus.on(EVENTS.CRASH, () => this.addShake(0.85));
     bus.on(EVENTS.HOVERBOARD_BROKEN, () => this.addShake(0.5));
@@ -260,7 +267,7 @@ export class CameraController {
 
   public addShake(trauma: number): void {
     const shakeMult = this.settingsManager.getCameraShakeMultiplier();
-    if (shakeMult <= 0) {
+    if (shakeMult <= 0 || this.settingsManager.isReducedMotion()) {
       this.shakeTrauma = 0;
       this.shakeOffset.set(0, 0, 0);
       return;
@@ -338,10 +345,13 @@ export class CameraController {
     // Expands smoothly up to +8.5° at high speed (especially in Hard mode up to 52 m/s)
     // to give intense peripheral velocity cues without distorting track center.
     const baseFov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
-    const minSpd = 19.0;
-    const maxSpd = 52.0;
-    const speedRatio = Math.max(0, Math.min(1.0, (speed - minSpd) / (maxSpd - minSpd)));
-    const targetFov = baseFov + speedRatio * 8.5;
+    let targetFov = baseFov;
+    if (!this.settingsManager.isReducedMotion()) {
+      const minSpd = 19.0;
+      const maxSpd = 52.0;
+      const speedRatio = Math.max(0, Math.min(1.0, (speed - minSpd) / (maxSpd - minSpd)));
+      targetFov = baseFov + speedRatio * 8.5;
+    }
     if (Math.abs(this.camera.fov - targetFov) > 0.05) {
       this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-3.5 * dt));
       this.camera.updateProjectionMatrix();
@@ -399,13 +409,14 @@ export class CameraController {
       }
 
       // Subtle dynamic camera dip during slide for enhanced tactile action feedback
-      if (isSliding) {
-        targetCamY -= 0.18;
-        targetLookY -= 0.10;
+      if (isSliding && !this.settingsManager.isReducedMotion()) {
+        const slideScale = this.settingsManager.getCameraMotionMultiplier();
+        targetCamY -= 0.18 * slideScale;
+        targetLookY -= 0.10 * slideScale;
       }
 
       // Restrained landing vertical impact compression dip
-      if (Math.abs(this.landingDipOffset) > 0.001) {
+      if (Math.abs(this.landingDipOffset) > 0.001 && !this.settingsManager.isReducedMotion()) {
         targetCamY += this.landingDipOffset;
         targetLookY += this.landingDipOffset * 0.45;
         this.landingDipOffset += (0 - this.landingDipOffset) * (1.0 - Math.exp(-18.0 * dt));
