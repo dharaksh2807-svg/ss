@@ -111,6 +111,20 @@ export class SceneryFactory {
     lighthouseRedMat: THREE.MeshStandardMaterial;
     undergroundCathedralMuralMat: THREE.MeshStandardMaterial;
     goldFiligreeMat: THREE.MeshStandardMaterial;
+    // Neon Rainline Premium Scenery Materials
+    neonRainAlloyMat: THREE.MeshStandardMaterial;
+    neonRainGlassMat: THREE.MeshStandardMaterial;
+    neonRainFacadeMat1: THREE.MeshStandardMaterial;
+    neonRainFacadeMat2: THREE.MeshStandardMaterial;
+    neonCyanGlowMat: THREE.MeshBasicMaterial;
+    neonMagentaGlowMat: THREE.MeshBasicMaterial;
+    neonVioletGlowMat: THREE.MeshBasicMaterial;
+    neonWhiteLedMat: THREE.MeshBasicMaterial;
+    neonHoloAdMat1: THREE.MeshBasicMaterial;
+    neonHoloAdMat2: THREE.MeshBasicMaterial;
+    neonHoloAdMat3: THREE.MeshBasicMaterial;
+    neonTransitSignMat: THREE.MeshBasicMaterial;
+    neonWetBallastMat: THREE.MeshStandardMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -602,6 +616,108 @@ export class SceneryFactory {
         });
         curved.applyCurvature(m);
         return m;
+      })(),
+      // Neon Rainline Premium Scenery Materials
+      neonRainAlloyMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x0c1220,
+          roughness: 0.22,
+          metalness: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonRainGlassMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x071526,
+          roughness: 0.12,
+          metalness: 0.70,
+          transparent: true,
+          opacity: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonRainFacadeMat1: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getNeonTowerFacadeTexture(0),
+          roughness: 0.25,
+          metalness: 0.65
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonRainFacadeMat2: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getNeonTowerFacadeTexture(1),
+          roughness: 0.25,
+          metalness: 0.65
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonCyanGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonMagentaGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xf026d3 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonVioletGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonWhiteLedMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonHoloAdMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getNeonHoloBillboardTexture(0),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonHoloAdMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getNeonHoloBillboardTexture(1),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonHoloAdMat3: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getNeonHoloBillboardTexture(2),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonTransitSignMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getNeonTransitSignTexture('RAINLINE CENTRAL', 'SECTOR 04')
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      neonWetBallastMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getWetBallastTexture(),
+          roughness: 0.35,
+          metalness: 0.50
+        });
+        curved.applyCurvature(m);
+        return m;
       })()
     };
   }
@@ -641,6 +757,8 @@ export class SceneryFactory {
       this.buildHistoricQuarterScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'NEON_INDUSTRIAL') {
       this.buildNeonIndustrialScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'NEON_RAINLINE') {
+      this.buildNeonRainlineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -1695,6 +1813,618 @@ export class SceneryFactory {
   }
 
   // -------------------------------------------------------------------------
+  // NEON RAINLINE DISTRICT (PREMIUM FUTURISTIC RAIN-SOAKED MEGACITY)
+  // -------------------------------------------------------------------------
+  private buildNeonRainlineScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const rng = new SeededRandom(seed);
+
+    const wallHeight = 2.6;
+    const wallThick = 0.65;
+    const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, chunkLength);
+
+    // 1. Sleek Wet Carbon/Titanium Retaining Walls
+    const leftWall = new THREE.Mesh(wallGeo, mats.neonRainAlloyMat);
+    leftWall.position.set(-wallX, wallHeight * 0.5, -chunkLength * 0.5);
+    leftWall.castShadow = true;
+    leftWall.receiveShadow = true;
+    group.add(leftWall);
+
+    const rightWall = new THREE.Mesh(wallGeo, mats.neonRainAlloyMat);
+    rightWall.position.set(wallX, wallHeight * 0.5, -chunkLength * 0.5);
+    rightWall.castShadow = true;
+    rightWall.receiveShadow = true;
+    group.add(rightWall);
+
+    // Wet reflective curb coping cap
+    const capGeo = new THREE.BoxGeometry(wallThick + 0.18, 0.20, chunkLength);
+    const leftCap = new THREE.Mesh(capGeo, mats.curbMat);
+    leftCap.position.set(-wallX, wallHeight + 0.10, -chunkLength * 0.5);
+    group.add(leftCap);
+
+    const rightCap = new THREE.Mesh(capGeo, mats.curbMat);
+    rightCap.position.set(wallX, wallHeight + 0.10, -chunkLength * 0.5);
+    group.add(rightCap);
+
+    // Continuous luminescent LED race strips along the retaining walls:
+    // Upper strip: Electric Cyan; Lower strip: Hot Magenta
+    const upperStripGeo = new THREE.BoxGeometry(0.08, 0.08, chunkLength);
+    const lowerStripGeo = new THREE.BoxGeometry(0.08, 0.06, chunkLength);
+
+    [-wallX + wallThick * 0.5 + 0.02, wallX - wallThick * 0.5 - 0.02].forEach((nx) => {
+      // Upper cyan runner
+      const cyanStrip = new THREE.Mesh(upperStripGeo, mats.neonCyanGlowMat);
+      cyanStrip.position.set(nx, wallHeight + 0.08, -chunkLength * 0.5);
+      group.add(cyanStrip);
+
+      // Lower magenta runner
+      const magentaStrip = new THREE.Mesh(lowerStripGeo, mats.neonMagentaGlowMat);
+      magentaStrip.position.set(nx, 1.1, -chunkLength * 0.5);
+      group.add(magentaStrip);
+    });
+
+    // Wet-sheen ground-level third-rail magnetic power shoes along the wall bases
+    const thirdRailGeo = new THREE.BoxGeometry(0.18, 0.22, chunkLength);
+    const thirdRailX = roadbedWidth * 0.5 + 0.45;
+    [-thirdRailX, thirdRailX].forEach((rx) => {
+      const railMesh = new THREE.Mesh(thirdRailGeo, mats.neonRainAlloyMat);
+      railMesh.position.set(rx, 0.11, -chunkLength * 0.5);
+      group.add(railMesh);
+
+      // Embedded glowing cyan energy conduit
+      const conduitGeo = new THREE.BoxGeometry(0.06, 0.06, chunkLength);
+      const conduit = new THREE.Mesh(conduitGeo, mats.neonCyanGlowMat);
+      conduit.position.set(rx, 0.23, -chunkLength * 0.5);
+      group.add(conduit);
+    });
+
+    // Trackside Holographic Route Repeaters & Angled Cyber Poles
+    if (detail !== 'MINIMAL') {
+      const poleGeo = new THREE.CylinderGeometry(0.07, 0.09, 7.0, 8);
+      const armGeo = new THREE.BoxGeometry(1.6, 0.08, 0.08);
+      const holoSignGeo = new THREE.PlaneGeometry(1.4, 0.8);
+
+      for (let z = 14; z < chunkLength; z += 26) {
+        [-wallX, wallX].forEach((wx, sideIdx) => {
+          const poleGroup = new THREE.Group();
+          const inwardSign = wx < 0 ? 1 : -1;
+          poleGroup.position.set(wx, wallHeight, -z);
+
+          const pole = new THREE.Mesh(poleGeo, mats.neonRainAlloyMat);
+          pole.position.y = 3.5;
+          poleGroup.add(pole);
+
+          const arm = new THREE.Mesh(armGeo, mats.neonRainAlloyMat);
+          arm.position.set(inwardSign * 0.8, 6.8, 0);
+          poleGroup.add(arm);
+
+          // Hanging holographic repeater display
+          const signMat = (sideIdx + Math.floor(z / 26)) % 2 === 0 ? mats.neonHoloAdMat1 : mats.neonHoloAdMat2;
+          const sign = new THREE.Mesh(holoSignGeo, signMat);
+          sign.position.set(inwardSign * 1.5, 6.2, 0);
+          sign.rotation.y = inwardSign > 0 ? -0.2 : Math.PI + 0.2;
+          poleGroup.add(sign);
+
+          // Downward luminaire
+          const lampGeo = new THREE.BoxGeometry(0.5, 0.06, 0.2);
+          const lamp = new THREE.Mesh(lampGeo, mats.neonWhiteLedMat);
+          lamp.position.set(inwardSign * 1.5, 6.75, 0);
+          poleGroup.add(lamp);
+
+          group.add(poleGroup);
+        });
+      }
+    }
+
+    // 2. High-Tech Carbon/Titanium Catenary System with Superconducting Induction Rings
+    this.buildNeonCatenaryAndPowerSystem(group, chunkLength, detail);
+
+    // 3. Modular Futuristic Megacity Buildings (4 Architectures with Layered Variation)
+    this.buildNeonModularMegacity(group, chunkLength, rng, detail);
+
+    // 4. Monumental Illuminated Transit Arch (Every ~2 chunks, when rng.chance(0.48))
+    const hasArch = rng.chance(0.48);
+    const archZ = -chunkLength * 0.5;
+    if (hasArch) {
+      this.buildNeonMonumentalTransitArch(group, chunkLength, archZ);
+    }
+
+    // 5. Glass Pedestrian Skybridge (When no arch or staggered away from arch)
+    if (detail !== 'MINIMAL' && (!hasArch || rng.chance(0.35))) {
+      const bridgeZ = hasArch ? -chunkLength * 0.18 : -chunkLength * 0.5;
+      this.buildNeonGlassSkybridge(group, chunkLength, bridgeZ);
+    }
+  }
+
+  private buildNeonCatenaryAndPowerSystem(group: THREE.Group, chunkLength: number, detail: 'FULL' | 'BALANCED' | 'MINIMAL'): void {
+    const mats = this.getSharedMaterials();
+    const gantrySpacing = 26.6;
+    const gantryCount = Math.floor(chunkLength / gantrySpacing);
+    const poleHeight = 10.4;
+    const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.6;
+
+    for (let g = 0; g < gantryCount; g++) {
+      const gz = -g * gantrySpacing - 13.3;
+      const gantryGroup = new THREE.Group();
+      gantryGroup.position.set(0, 0, gz);
+
+      // Heavy faceted carbon masts flanking tracks
+      const colGeo = new THREE.BoxGeometry(0.42, poleHeight, 0.42);
+      [-spanWidth * 0.5, spanWidth * 0.5].forEach((cx) => {
+        const col = new THREE.Mesh(colGeo, mats.neonRainAlloyMat);
+        col.position.set(cx, poleHeight * 0.5, 0);
+        gantryGroup.add(col);
+
+        // Vertical cyan accent strip climbing mast
+        const stripGeo = new THREE.BoxGeometry(0.06, poleHeight * 0.85, 0.06);
+        const strip = new THREE.Mesh(stripGeo, mats.neonCyanGlowMat);
+        strip.position.set(cx + (cx < 0 ? 0.22 : -0.22), poleHeight * 0.45, 0);
+        gantryGroup.add(strip);
+      });
+
+      // Overhead cross-truss beam (clearance >= 9.8m)
+      const truss = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 0.8, 0.45, 0.55), mats.neonRainAlloyMat);
+      truss.position.set(0, poleHeight - 0.22, 0);
+      gantryGroup.add(truss);
+
+      // Horizontal magenta glow strip along lower girder edge
+      const girderGlow = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 0.6, 0.06, 0.06), mats.neonMagentaGlowMat);
+      girderGlow.position.set(0, poleHeight - 0.46, 0);
+      gantryGroup.add(girderGlow);
+
+      // Superconducting cyan induction ring droppers per lane
+      CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
+        const ringGeo = new THREE.TorusGeometry(0.24, 0.04, 6, 12);
+        const ring = new THREE.Mesh(ringGeo, mats.neonCyanGlowMat);
+        ring.position.set(laneX, poleHeight - 0.85, 0);
+        gantryGroup.add(ring);
+
+        if (detail !== 'MINIMAL') {
+          // Downward luminaire focusing on track
+          const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.05, 0.15), mats.neonWhiteLedMat);
+          lamp.position.set(laneX, poleHeight - 0.52, 0.1);
+          gantryGroup.add(lamp);
+        }
+      });
+
+      group.add(gantryGroup);
+    }
+  }
+
+  private buildNeonMonumentalTransitArch(group: THREE.Group, chunkLength: number, archZ: number): void {
+    const mats = this.getSharedMaterials();
+    const archGroup = new THREE.Group();
+    archGroup.name = 'neon_transit_arch';
+    archGroup.position.set(0, 0, archZ);
+
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 4.8; // ~15.6m
+    const archClearanceH = 9.8;
+    const archTotalH = 14.5;
+
+    // Heavy faceted pylons flanking track corridor
+    const pylonGeo = new THREE.BoxGeometry(1.6, archTotalH, 2.8);
+    [-spanW * 0.5 - 0.8, spanW * 0.5 + 0.8].forEach((px) => {
+      const pylon = new THREE.Mesh(pylonGeo, mats.neonRainAlloyMat);
+      pylon.position.set(px, archTotalH * 0.5, 0);
+      pylon.castShadow = true;
+      pylon.receiveShadow = true;
+      archGroup.add(pylon);
+
+      // Vertical magenta neon edge runners
+      const edgeGeo = new THREE.BoxGeometry(0.08, archTotalH * 0.9, 0.08);
+      const edge = new THREE.Mesh(edgeGeo, mats.neonMagentaGlowMat);
+      edge.position.set(px + (px < 0 ? 0.82 : -0.82), archTotalH * 0.48, 1.4);
+      archGroup.add(edge);
+    });
+
+    // Massive overhead hexagonal transit bridge beam
+    const bridgeBeam = new THREE.Mesh(new THREE.BoxGeometry(spanW + 3.2, 3.2, 2.6), mats.neonRainAlloyMat);
+    bridgeBeam.position.set(0, archClearanceH + 1.6, 0);
+    bridgeBeam.castShadow = true;
+    bridgeBeam.receiveShadow = true;
+    archGroup.add(bridgeBeam);
+
+    // Illuminated digital transit route banner facing oncoming runners (Z > 0)
+    const signGeo = new THREE.PlaneGeometry(10.5, 2.2);
+    const sign = new THREE.Mesh(signGeo, mats.neonTransitSignMat);
+    sign.position.set(0, archClearanceH + 1.6, 1.32);
+    archGroup.add(sign);
+
+    // Glowing cyan chevron perimeter strips on the bridge frame
+    const topStrip = new THREE.Mesh(new THREE.BoxGeometry(spanW + 3.0, 0.1, 0.1), mats.neonCyanGlowMat);
+    topStrip.position.set(0, archTotalH - 0.05, 1.34);
+    archGroup.add(topStrip);
+
+    const botStrip = new THREE.Mesh(new THREE.BoxGeometry(spanW + 3.0, 0.1, 0.1), mats.neonCyanGlowMat);
+    botStrip.position.set(0, archClearanceH + 0.05, 1.34);
+    archGroup.add(botStrip);
+
+    // Overhead high-voltage hyperloop tube on top of arch
+    const tubeGeo = new THREE.CylinderGeometry(0.8, 0.8, spanW + 3.5, 12);
+    const tube = new THREE.Mesh(tubeGeo, mats.neonRainAlloyMat);
+    tube.rotation.z = Math.PI / 2;
+    tube.position.set(0, archTotalH + 1.2, 0);
+    archGroup.add(tube);
+
+    // Superconducting ring halos around the hyperloop tube
+    [-4, 0, 4].forEach((rx) => {
+      const haloGeo = new THREE.TorusGeometry(1.05, 0.08, 6, 16);
+      const halo = new THREE.Mesh(haloGeo, mats.neonCyanGlowMat);
+      halo.rotation.y = Math.PI / 2;
+      halo.position.set(rx, archTotalH + 1.2, 0);
+      archGroup.add(halo);
+    });
+
+    group.add(archGroup);
+  }
+
+  private buildNeonGlassSkybridge(group: THREE.Group, chunkLength: number, bridgeZ: number): void {
+    const mats = this.getSharedMaterials();
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.name = 'neon_glass_skybridge';
+    bridgeGroup.position.set(0, 0, bridgeZ);
+
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 6.0; // ~17m
+    const bridgeY = 9.4;
+    const bridgeH = 3.2;
+    const bridgeDepth = 4.2;
+
+    // Structural dark alloy space frame skeleton
+    const floorSlab = new THREE.Mesh(new THREE.BoxGeometry(spanW, 0.35, bridgeDepth), mats.neonRainAlloyMat);
+    floorSlab.position.set(0, bridgeY, 0);
+    bridgeGroup.add(floorSlab);
+
+    const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(spanW, 0.35, bridgeDepth), mats.neonRainAlloyMat);
+    roofSlab.position.set(0, bridgeY + bridgeH, 0);
+    bridgeGroup.add(roofSlab);
+
+    // Aerodynamic tinted glass walls (front & back)
+    const glassGeo = new THREE.BoxGeometry(spanW - 0.2, bridgeH - 0.6, 0.12);
+    const frontGlass = new THREE.Mesh(glassGeo, mats.neonRainGlassMat);
+    frontGlass.position.set(0, bridgeY + bridgeH * 0.5, bridgeDepth * 0.5 - 0.06);
+    bridgeGroup.add(frontGlass);
+
+    const backGlass = new THREE.Mesh(glassGeo, mats.neonRainGlassMat);
+    backGlass.position.set(0, bridgeY + bridgeH * 0.5, -bridgeDepth * 0.5 + 0.06);
+    bridgeGroup.add(backGlass);
+
+    // Interior illuminated floor walkway with soft electric violet glow
+    const deckLightGeo = new THREE.PlaneGeometry(spanW - 0.4, bridgeDepth - 0.4);
+    const deckLight = new THREE.Mesh(deckLightGeo, mats.neonVioletGlowMat);
+    deckLight.rotation.x = -Math.PI / 2;
+    deckLight.position.set(0, bridgeY + 0.20, 0);
+    bridgeGroup.add(deckLight);
+
+    // Exterior glowing cyan edge trims
+    const trimGeo = new THREE.BoxGeometry(spanW, 0.08, 0.08);
+    [-bridgeDepth * 0.5, bridgeDepth * 0.5].forEach((bz) => {
+      const topTrim = new THREE.Mesh(trimGeo, mats.neonCyanGlowMat);
+      topTrim.position.set(0, bridgeY + bridgeH + 0.18, bz);
+      bridgeGroup.add(topTrim);
+
+      const botTrim = new THREE.Mesh(trimGeo, mats.neonCyanGlowMat);
+      botTrim.position.set(0, bridgeY - 0.18, bz);
+      bridgeGroup.add(botTrim);
+    });
+
+    group.add(bridgeGroup);
+  }
+
+  private buildNeonModularMegacity(
+    group: THREE.Group,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = CONSTANTS.TUNNEL_WALL_X;
+    const numBuildings = 5;
+    const lotLength = chunkLength / numBuildings;
+
+    for (let b = 0; b < numBuildings; b++) {
+      const bz = -b * lotLength - lotLength * 0.5;
+      const bStyle = rng.int(0, 3); // 4 distinct modular families
+
+      [-1, 1].forEach((side) => {
+        const bGroup = new THREE.Group();
+        const lateralJitter = rng.range(0, 2.2);
+
+        if (bStyle === 0) {
+          // --- Family 0: Holographic Megastructure Tower (Height 48-78m) ---
+          const bW = rng.range(13.0, 16.5);
+          const bH = rng.range(48.0, 78.0);
+          const bD = lotLength * rng.range(0.88, 0.96);
+
+          const frontX = wallX + 1.8 + lateralJitter;
+          const bX = side * (frontX + bW * 0.5);
+          bGroup.position.set(bX, 0, bz);
+
+          // Ground-level commercial storefront podium with neon trim
+          const podiumH = 5.4;
+          const podiumDepth = 0.9;
+          const podium = new THREE.Mesh(new THREE.BoxGeometry(podiumDepth, podiumH, bD * 0.92), mats.modernStorefrontMat);
+          podium.position.set(-side * (bW * 0.5 + podiumDepth * 0.5), podiumH * 0.5, 0);
+          podium.castShadow = true;
+          podium.receiveShadow = true;
+          bGroup.add(podium);
+
+          // Neon storefront accent strip
+          const storeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, bD * 0.88), mats.neonMagentaGlowMat);
+          storeTrim.position.set(-side * (bW * 0.5 + podiumDepth + 0.05), podiumH + 0.04, 0);
+          bGroup.add(storeTrim);
+
+          // Main tower alloy body
+          const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.neonRainAlloyMat);
+          mainBody.position.y = bH * 0.5;
+          mainBody.castShadow = true;
+          mainBody.receiveShadow = true;
+          bGroup.add(mainBody);
+
+          // Glass curtain wall with glowing window grid
+          const facadeMat = (b % 2 === 0) ? mats.neonRainFacadeMat1 : mats.neonRainFacadeMat2;
+          const glass = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.12, bH * 0.88, bD * 0.88), facadeMat);
+          glass.position.y = bH * 0.5;
+          bGroup.add(glass);
+
+          // Protruding cantilevered 2-sided Holographic Advertising Billboard
+          if (detail !== 'MINIMAL') {
+            const holoArmH = rng.range(14.0, 20.0);
+            const holoW = 6.8;
+            const holoH = 3.6;
+
+            // Cantilever support truss
+            const trussArm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 0.25), mats.neonRainAlloyMat);
+            trussArm.position.set(-side * (bW * 0.5 + 1.2), holoArmH, 0);
+            bGroup.add(trussArm);
+
+            // Double-sided holographic display panel
+            const holoMat = (b % 3 === 0) ? mats.neonHoloAdMat1 : ((b % 3 === 1) ? mats.neonHoloAdMat2 : mats.neonHoloAdMat3);
+            const holoPlane = new THREE.Mesh(new THREE.BoxGeometry(0.12, holoH, holoW), holoMat);
+            holoPlane.position.set(-side * (bW * 0.5 + 2.4), holoArmH, 0);
+            bGroup.add(holoPlane);
+
+            // Holographic frame glow borders
+            const borderTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, holoW + 0.2), mats.neonCyanGlowMat);
+            borderTop.position.set(-side * (bW * 0.5 + 2.4), holoArmH + holoH * 0.5, 0);
+            bGroup.add(borderTop);
+
+            const borderBot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, holoW + 0.2), mats.neonCyanGlowMat);
+            borderBot.position.set(-side * (bW * 0.5 + 2.4), holoArmH - holoH * 0.5, 0);
+            bGroup.add(borderBot);
+          }
+
+          // Stepped setback rooftop penthouse & communications deck
+          if (detail === 'FULL') {
+            const pentW = bW * 0.58;
+            const pentH = 5.2;
+            const pent = new THREE.Mesh(new THREE.BoxGeometry(pentW, pentH, bD * 0.6), mats.neonRainAlloyMat);
+            pent.position.set(0, bH + pentH * 0.5, 0);
+            bGroup.add(pent);
+
+            // Glowing rooftop edge halo
+            const pentHalo = new THREE.Mesh(new THREE.BoxGeometry(pentW + 0.2, 0.1, bD * 0.6 + 0.2), mats.neonCyanGlowMat);
+            pentHalo.position.set(0, bH + pentH + 0.05, 0);
+            bGroup.add(pentHalo);
+
+            // Satellite dish / transmitter antenna
+            const antGeo = new THREE.CylinderGeometry(0.12, 0.22, 10.0, 6);
+            const ant = new THREE.Mesh(antGeo, mats.neonRainAlloyMat);
+            ant.position.set(0, bH + pentH + 5.0, 0);
+            bGroup.add(ant);
+
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), mats.subwaySignalRedMat);
+            beacon.position.set(0, bH + pentH + 10.2, 0);
+            bGroup.add(beacon);
+
+            // Vertical luminescent data channel climbing facade
+            const conduit = new THREE.Mesh(new THREE.BoxGeometry(0.08, bH * 0.9, 0.08), mats.neonCyanGlowMat);
+            conduit.position.set(-side * (bW * 0.5 + 0.08), bH * 0.5, side * (bD * 0.25));
+            bGroup.add(conduit);
+          }
+        } else if (bStyle === 1) {
+          // --- Family 1: Cyber High-Rise with Diagonal Exoskeleton (Height 36-64m) ---
+          const bW = rng.range(12.0, 15.0);
+          const bH = rng.range(36.0, 64.0);
+          const bD = lotLength * rng.range(0.88, 0.95);
+
+          const frontX = wallX + 1.8 + lateralJitter;
+          const bX = side * (frontX + bW * 0.5);
+          bGroup.position.set(bX, 0, bz);
+
+          // Main alloy hull
+          const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.neonRainAlloyMat);
+          mainBody.position.y = bH * 0.5;
+          mainBody.castShadow = true;
+          mainBody.receiveShadow = true;
+          bGroup.add(mainBody);
+
+          // Glass curtain panels
+          const glass = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.08, bH * 0.85, bD * 0.85), mats.neonRainGlassMat);
+          glass.position.y = bH * 0.5;
+          bGroup.add(glass);
+
+          // Diagonal structural cross-bracing with glowing magenta LED piping
+          const trussArmGeo = new THREE.BoxGeometry(0.25, bH * 0.5, 0.25);
+          [-1, 1].forEach((dir) => {
+            const diag = new THREE.Mesh(trussArmGeo, mats.neonRainAlloyMat);
+            diag.rotation.z = dir * 0.24;
+            diag.position.set(-side * (bW * 0.5 + 0.15), bH * 0.5, 0);
+            bGroup.add(diag);
+
+            const glowLine = new THREE.Mesh(new THREE.BoxGeometry(0.06, bH * 0.5, 0.06), mats.neonMagentaGlowMat);
+            glowLine.rotation.z = dir * 0.24;
+            glowLine.position.set(-side * (bW * 0.5 + 0.28), bH * 0.5, 0);
+            bGroup.add(glowLine);
+          });
+
+          // Protruding cantilevered observation lounge pods with tinted glass
+          if (detail !== 'MINIMAL') {
+            const podGeo = new THREE.BoxGeometry(1.6, 2.8, 3.8);
+            const pod = new THREE.Mesh(podGeo, mats.neonRainGlassMat);
+            pod.position.set(-side * (bW * 0.5 + 0.6), bH * 0.42, 0);
+            bGroup.add(pod);
+
+            const podFrame = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.1, 4.0), mats.neonCyanGlowMat);
+            podFrame.position.set(-side * (bW * 0.5 + 0.6), bH * 0.42 - 1.4, 0);
+            bGroup.add(podFrame);
+          }
+
+          // Rooftop solar/plasma collectors and transmission antenna
+          if (detail === 'FULL') {
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(bW * 0.7, 0.2, bD * 0.7), mats.solarPanelMat);
+            panel.position.set(0, bH + 0.15, 0);
+            panel.rotation.x = 0.12;
+            bGroup.add(panel);
+
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 7.0, 6), mats.neonRainAlloyMat);
+            mast.position.set(0, bH + 3.6, 0);
+            bGroup.add(mast);
+
+            const mastBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), mats.neonCyanGlowMat);
+            mastBeacon.position.set(0, bH + 7.2, 0);
+            bGroup.add(mastBeacon);
+          }
+        } else if (bStyle === 2) {
+          // --- Family 2: Elevated Transit Platform & Sky-Concourse Station Facade (Height 22-36m) ---
+          const bW = rng.range(13.5, 17.0);
+          const bH = rng.range(22.0, 36.0);
+          const bD = lotLength * rng.range(0.92, 0.98);
+
+          const frontX = wallX + 1.8 + lateralJitter;
+          const bX = side * (frontX + bW * 0.5);
+          bGroup.position.set(bX, 0, bz);
+
+          // Main station concourse structure
+          const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.neonRainAlloyMat);
+          mainBody.position.y = bH * 0.5;
+          mainBody.castShadow = true;
+          mainBody.receiveShadow = true;
+          bGroup.add(mainBody);
+
+          // Panoramic multi-level glass concourse facing tracks
+          const glassDeckGeo = new THREE.BoxGeometry(1.8, bH * 0.55, bD * 0.88);
+          const glassDeck = new THREE.Mesh(glassDeckGeo, mats.neonRainGlassMat);
+          glassDeck.position.set(-side * (bW * 0.5 + 0.6), bH * 0.45, 0);
+          bGroup.add(glassDeck);
+
+          // Illuminated passenger concourse deck floors (visible through glass)
+          const floorDeck1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, bD * 0.84), mats.neonVioletGlowMat);
+          floorDeck1.position.set(-side * (bW * 0.5 + 0.5), bH * 0.32, 0);
+          bGroup.add(floorDeck1);
+
+          const floorDeck2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, bD * 0.84), mats.neonCyanGlowMat);
+          floorDeck2.position.set(-side * (bW * 0.5 + 0.5), bH * 0.58, 0);
+          bGroup.add(floorDeck2);
+
+          // Overhead platform canopy with integrated white luminaires
+          const canopyGeo = new THREE.BoxGeometry(2.4, 0.3, bD * 0.94);
+          const canopy = new THREE.Mesh(canopyGeo, mats.neonRainAlloyMat);
+          canopy.position.set(-side * (bW * 0.5 + 0.8), bH * 0.74, 0);
+          bGroup.add(canopy);
+
+          const canopyLight = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, bD * 0.88), mats.neonWhiteLedMat);
+          canopyLight.position.set(-side * (bW * 0.5 + 0.8), bH * 0.74 - 0.18, 0);
+          bGroup.add(canopyLight);
+
+          // Glowing transit line display sign
+          if (detail !== 'MINIMAL') {
+            const stationSign = new THREE.Mesh(new THREE.PlaneGeometry(bD * 0.7, 1.4), mats.neonTransitSignMat);
+            stationSign.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2;
+            stationSign.position.set(-side * (bW * 0.5 + 1.82), bH * 0.84, 0);
+            bGroup.add(stationSign);
+          }
+
+          // Ground-level commercial storefronts with cyber signage
+          const storeH = 4.8;
+          const store = new THREE.Mesh(new THREE.BoxGeometry(1.2, storeH, bD * 0.9), mats.modernStorefrontMat);
+          store.position.set(-side * (bW * 0.5 + 0.5), storeH * 0.5, 0);
+          bGroup.add(store);
+        } else {
+          // --- Family 3: Cyber-Spire Arcology with Stepped Rooftop Antennas (Height 52-85m) ---
+          const bW = rng.range(14.0, 18.0);
+          const bH = rng.range(52.0, 85.0);
+          const bD = lotLength * rng.range(0.90, 0.96);
+
+          const frontX = wallX + 1.8 + lateralJitter;
+          const bX = side * (frontX + bW * 0.5);
+          bGroup.position.set(bX, 0, bz);
+
+          // 3-Tier Stepped Ziggurat Arcology Body
+          // Base tier (0 to 45% height)
+          const tier1H = bH * 0.45;
+          const tier1 = new THREE.Mesh(new THREE.BoxGeometry(bW, tier1H, bD), mats.neonRainAlloyMat);
+          tier1.position.y = tier1H * 0.5;
+          bGroup.add(tier1);
+
+          // Mid tier (45% to 75% height)
+          const tier2W = bW * 0.78;
+          const tier2D = bD * 0.78;
+          const tier2H = bH * 0.30;
+          const tier2 = new THREE.Mesh(new THREE.BoxGeometry(tier2W, tier2H, tier2D), mats.neonRainAlloyMat);
+          tier2.position.y = tier1H + tier2H * 0.5;
+          bGroup.add(tier2);
+
+          // Crown tier (75% to 100% height)
+          const tier3W = bW * 0.55;
+          const tier3D = bD * 0.55;
+          const tier3H = bH * 0.25;
+          const tier3 = new THREE.Mesh(new THREE.BoxGeometry(tier3W, tier3H, tier3D), mats.neonRainAlloyMat);
+          tier3.position.y = tier1H + tier2H + tier3H * 0.5;
+          bGroup.add(tier3);
+
+          // Glass curtain facades on all tiers
+          const glass1 = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, tier1H * 0.85, bD * 0.85), mats.neonRainFacadeMat1);
+          glass1.position.y = tier1H * 0.5;
+          bGroup.add(glass1);
+
+          const glass2 = new THREE.Mesh(new THREE.BoxGeometry(tier2W + 0.1, tier2H * 0.85, tier2D * 0.85), mats.neonRainFacadeMat2);
+          glass2.position.y = tier1H + tier2H * 0.5;
+          bGroup.add(glass2);
+
+          // Horizontal neon banding wrapping tiers
+          const band1 = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.15, 0.12, bD + 0.15), mats.neonVioletGlowMat);
+          band1.position.y = tier1H;
+          bGroup.add(band1);
+
+          const band2 = new THREE.Mesh(new THREE.BoxGeometry(tier2W + 0.15, 0.12, tier2D + 0.15), mats.neonCyanGlowMat);
+          band2.position.y = tier1H + tier2H;
+          bGroup.add(band2);
+
+          // Twin needle transmission spires on top of arcology
+          if (detail === 'FULL') {
+            const spireH = 16.0;
+            const spireGeo = new THREE.CylinderGeometry(0.12, 0.35, spireH, 6);
+            [-tier3W * 0.25, tier3W * 0.25].forEach((sx) => {
+              const spire = new THREE.Mesh(spireGeo, mats.neonRainAlloyMat);
+              spire.position.set(sx, bH + spireH * 0.5, 0);
+              bGroup.add(spire);
+
+              const summitBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), mats.neonMagentaGlowMat);
+              summitBeacon.position.set(sx, bH + spireH + 0.15, 0);
+              bGroup.add(summitBeacon);
+            });
+
+            // Rooftop holographic kanji / cyber sign on truss frame
+            const signArm = new THREE.Mesh(new THREE.BoxGeometry(tier3W * 0.8, 1.8, 0.2), mats.neonHoloAdMat1);
+            signArm.position.set(0, bH + 2.5, 0);
+            bGroup.add(signArm);
+          }
+        }
+
+        group.add(bGroup);
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // TRANSITION PORTAL SCENERY
   // -------------------------------------------------------------------------
   private buildTransitionPortalScenery(
@@ -1711,6 +2441,56 @@ export class SceneryFactory {
     const portalZ = -chunkLength * 0.5;
     const portalH = 18.0;
     const spanW = roadbedWidth + curbWidth * 2.0 + 1.2;
+
+    if (theme.id === 'NEON_RAINLINE') {
+      // --- Monumental Cyber Megacity Transit Gateway (Neon Rainline) ---
+      const pylonGeo = new THREE.BoxGeometry(3.6, portalH, 3.8);
+      [-spanW * 0.5 - 1.2, spanW * 0.5 + 1.2].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, mats.neonRainAlloyMat);
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+        portalGroup.add(pylon);
+
+        // Vertical cyan & magenta luminescent data channels
+        const cyanStrip = new THREE.Mesh(new THREE.BoxGeometry(0.12, portalH * 0.88, 0.12), mats.neonCyanGlowMat);
+        cyanStrip.position.set(px + (px < 0 ? 1.82 : -1.82), portalH * 0.48, portalZ + 1.4);
+        portalGroup.add(cyanStrip);
+
+        const magentaStrip = new THREE.Mesh(new THREE.BoxGeometry(0.12, portalH * 0.88, 0.12), mats.neonMagentaGlowMat);
+        magentaStrip.position.set(px + (px < 0 ? 1.82 : -1.82), portalH * 0.48, portalZ - 1.4);
+        portalGroup.add(magentaStrip);
+      });
+
+      // Overhead hexagonal crown beam
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.0, 3.6, 4.2), mats.neonRainAlloyMat);
+      crown.position.set(0, portalH + 0.8, portalZ);
+      crown.castShadow = true;
+      crown.receiveShadow = true;
+      portalGroup.add(crown);
+
+      // Illuminated digital transit destination banner
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 2.4), mats.neonTransitSignMat);
+      sign.position.set(0, portalH + 0.8, portalZ + 2.12);
+      portalGroup.add(sign);
+
+      // Superconducting cyan glow halo
+      const haloGeo = new THREE.TorusGeometry(spanW * 0.45, 0.25, 6, 24);
+      const halo = new THREE.Mesh(haloGeo, mats.neonCyanGlowMat);
+      halo.position.set(0, portalH + 2.8, portalZ);
+      portalGroup.add(halo);
+
+      // Pulsing cyan & magenta portal beacons
+      [-spanW * 0.5 - 0.5, spanW * 0.5 + 0.5].forEach((bx, idx) => {
+        const beaconMat = idx === 0 ? mats.neonCyanGlowMat : mats.neonMagentaGlowMat;
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), beaconMat);
+        beacon.position.set(bx, portalH + 2.8, portalZ + 2.1);
+        portalGroup.add(beacon);
+      });
+
+      group.add(portalGroup);
+      return;
+    }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
     const pylonGeo = new THREE.BoxGeometry(3.6, portalH, 4.2);

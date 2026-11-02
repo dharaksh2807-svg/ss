@@ -2073,6 +2073,323 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Neon Megacity Holographic Advertising Display Texture
+   */
+  public static getNeonHoloBillboardTexture(variant: number = 0): THREE.Texture {
+    const v = Math.abs(Math.floor(variant)) % 3;
+    return this.getOrCreate(`neon_holo_billboard_v${v}`, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep transparent-feeling midnight backdrop
+      ctx.fillStyle = '#060914';
+      ctx.fillRect(0, 0, w, h);
+
+      // Holographic scanline raster
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.04)';
+      for (let y = 0; y < h; y += 4) {
+        ctx.fillRect(0, y, w, 2);
+      }
+
+      if (v === 0) {
+        // Variant 0: CyberPulse / Audio Waveform
+        // Outer glowing frame
+        ctx.strokeStyle = '#00f5ff';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(8, 8, w - 16, h - 16);
+        ctx.strokeStyle = '#f026d3';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(14, 14, w - 28, h - 28);
+
+        // Header
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '900 32px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('CYBERPULSE', 30, 58);
+
+        ctx.fillStyle = '#f026d3';
+        ctx.font = '700 22px sans-serif';
+        ctx.fillText('サイバー // AUDIO DRIVE', 260, 58);
+
+        // Equalizer Bars
+        const barCount = 36;
+        const barW = (w - 60) / barCount - 3;
+        for (let i = 0; i < barCount; i++) {
+          const barH = 20 + Math.sin(i * 0.45) * 45 + Math.cos(i * 0.9) * 25;
+          const bx = 30 + i * (barW + 3);
+          const by = 180 - barH;
+          const grad = ctx.createLinearGradient(0, by, 0, by + barH);
+          grad.addColorStop(0, '#f026d3');
+          grad.addColorStop(0.5, '#a855f7');
+          grad.addColorStop(1, '#00f5ff');
+          ctx.fillStyle = grad;
+          ctx.fillRect(bx, by, barW, barH);
+        }
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 13px monospace';
+        ctx.fillText('NEO DYNAMICS • REAL-TIME SYNTHESIS • 96kHz 32BIT', 30, 225);
+      } else if (v === 1) {
+        // Variant 1: Neo-Tokyo Transit & Kanji Hologram
+        ctx.strokeStyle = '#f026d3';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(8, 8, w - 16, h - 16);
+        ctx.strokeStyle = '#00f5ff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(14, 14, w - 28, h - 28);
+
+        // Corner brackets
+        ctx.fillStyle = '#00f5ff';
+        ctx.fillRect(4, 4, 20, 4); ctx.fillRect(4, 4, 4, 20);
+        ctx.fillRect(w - 24, 4, 20, 4); ctx.fillRect(w - 8, 4, 4, 20);
+        ctx.fillRect(4, h - 8, 20, 4); ctx.fillRect(4, h - 24, 4, 20);
+        ctx.fillRect(w - 24, h - 8, 20, 4); ctx.fillRect(w - 8, h - 24, 4, 20);
+
+        ctx.fillStyle = '#f026d3';
+        ctx.font = '900 48px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('新東京 2099', w / 2, 75);
+
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '800 24px monospace';
+        ctx.fillText('NEO TRANSIT // RAINLINE EXPRESS', w / 2, 115);
+
+        // Velocity chevron graphic
+        ctx.fillStyle = 'rgba(0, 245, 255, 0.25)';
+        for (let i = 0; i < 7; i++) {
+          const cx = w / 2 - 120 + i * 40;
+          ctx.beginPath();
+          ctx.moveTo(cx, 135);
+          ctx.lineTo(cx + 20, 155);
+          ctx.lineTo(cx, 175);
+          ctx.lineTo(cx - 10, 175);
+          ctx.lineTo(cx + 10, 155);
+          ctx.lineTo(cx - 10, 135);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '700 16px sans-serif';
+        ctx.fillText('NEXT HIGH-SPEED DEPARTURE: 00:02 • PLATFORM 7', w / 2, 215);
+      } else {
+        // Variant 2: Quantum / Hyperion Dynamics
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(8, 8, w - 16, h - 16);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '900 30px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('HYPERION DYNAMICS', 30, 58);
+
+        ctx.fillStyle = '#a855f7';
+        ctx.font = '700 20px monospace';
+        ctx.fillText('光速 // WARP RAIL', 340, 58);
+
+        // Tech schematic circles
+        ctx.strokeStyle = '#f026d3';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(120, 140, 45, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#00f5ff';
+        ctx.beginPath(); ctx.arc(120, 140, 32, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#00f5ff';
+        ctx.beginPath(); ctx.arc(120, 140, 8, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = '#f1f5f9';
+        ctx.font = '700 18px monospace';
+        ctx.fillText('MAGNETIC FLUX: 42.8 TESLA', 190, 125);
+        ctx.fillStyle = '#00f5ff';
+        ctx.fillText('SUPERCONDUCTING MAGLEV V5', 190, 155);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 13px sans-serif';
+        ctx.fillText('AUTOMATED TRANSIT GRID • SYSTEM NOMINAL', 190, 185);
+
+        ctx.fillStyle = '#f026d3';
+        ctx.fillRect(30, 212, w - 60, 3);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Futuristic Skyscraper Facade Texture with Glowing Data & Window Matrix
+   */
+  public static getNeonTowerFacadeTexture(variant: number = 0): THREE.Texture {
+    const v = Math.abs(Math.floor(variant)) % 3;
+    return this.getOrCreate(`neon_tower_facade_v${v}`, () => {
+      const w = 256;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark carbon alloy background
+      ctx.fillStyle = '#0a0e1c';
+      ctx.fillRect(0, 0, w, h);
+
+      // Floor plates & vertical mullions
+      const floorH = 24;
+      const winW = 16;
+      for (let y = 8; y < h; y += floorH) {
+        // Floor slab dividing line
+        ctx.fillStyle = '#161f36';
+        ctx.fillRect(0, y + floorH - 4, w, 4);
+
+        // Windows along the floor
+        for (let x = 12; x < w - 12; x += winW + 6) {
+          const rand = Math.sin(x * 12.3 + y * 45.7 + v * 9.1);
+          if (rand > 0.45) {
+            // Illuminated window
+            ctx.fillStyle = rand > 0.85 ? '#00f5ff' : (rand > 0.65 ? '#a855f7' : '#e0f2fe');
+            ctx.fillRect(x, y + 2, winW, floorH - 8);
+          } else if (rand > 0.1) {
+            // Dark office window
+            ctx.fillStyle = '#10172a';
+            ctx.fillRect(x, y + 2, winW, floorH - 8);
+          }
+        }
+      }
+
+      // Vertical luminescent data channel running up the facade
+      const conduitX = v === 0 ? 32 : (v === 1 ? w - 36 : w / 2);
+      ctx.fillStyle = v % 2 === 0 ? 'rgba(0, 245, 255, 0.85)' : 'rgba(240, 38, 211, 0.85)';
+      ctx.fillRect(conduitX, 0, 4, h);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillRect(conduitX + 1, 0, 2, h);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Neon Overhead Transit Banner & Portal Sign Texture
+   */
+  public static getNeonTransitSignTexture(stationName: string = 'RAINLINE CENTRAL', line: string = 'SECTOR 04'): THREE.Texture {
+    return this.getOrCreate(`neon_transit_sign_${stationName}_${line}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Midnight chassis
+      ctx.fillStyle = '#050814';
+      ctx.fillRect(0, 0, w, h);
+
+      // Neon dual-color frame
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#00f5ff';
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#f026d3';
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Badge
+      ctx.fillStyle = '#f026d3';
+      ctx.fillRect(24, 20, 80, 22);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(line, 64, 36);
+
+      // Main station name
+      ctx.fillStyle = '#00f5ff';
+      ctx.font = '900 28px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(stationName, 116, 38);
+
+      // Subtitle
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '700 13px monospace';
+      ctx.fillText('SPEED LIMIT 350 KM/H • AUTOMATED MAGLEV • 24/7 RAPID TRANSIT', 26, 75);
+
+      // Bottom chevron guide
+      ctx.fillStyle = '#00f5ff';
+      for (let i = 0; i < 12; i++) {
+        const cx = 26 + i * 38;
+        ctx.beginPath();
+        ctx.moveTo(cx, 92);
+        ctx.lineTo(cx + 12, 104);
+        ctx.lineTo(cx, 116);
+        ctx.lineTo(cx - 6, 116);
+        ctx.lineTo(cx + 6, 104);
+        ctx.lineTo(cx - 6, 92);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Rain-Soaked Dark Basalt Ballast with Puddle Specular Highlights
+   */
+  public static getWetBallastTexture(): THREE.Texture {
+    return this.getOrCreate('wet_ballast', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep wet basalt dark base
+      ctx.fillStyle = '#101522';
+      ctx.fillRect(0, 0, w, h);
+
+      // Crushed stone speckled texture
+      for (let i = 0; i < 1800; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = 1 + Math.random() * 2.5;
+        const shade = Math.floor(18 + Math.random() * 32);
+        ctx.fillStyle = `rgb(${shade}, ${shade + 4}, ${shade + 12})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Rain puddles with specular highlights
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.08)';
+      ctx.beginPath();
+      ctx.ellipse(80, 70, 45, 20, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(240, 38, 211, 0.07)';
+      ctx.beginPath();
+      ctx.ellipse(180, 170, 55, 25, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular shine spots in puddles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.fillRect(75, 68, 14, 2);
+      ctx.fillRect(170, 168, 18, 2);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
+
 
 

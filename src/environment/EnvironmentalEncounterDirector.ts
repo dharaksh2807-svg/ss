@@ -24,7 +24,8 @@ export type AtmospherePreset =
   | 'WARM_GOLDEN_HOUR'
   | 'SOFT_OVERCAST'
   | 'LIGHT_RAIN'
-  | 'ILLUMINATED_UNDERGROUND';
+  | 'ILLUMINATED_UNDERGROUND'
+  | 'NEON_MIDNIGHT_RAIN';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -382,6 +383,10 @@ export class EnvironmentalEncounterDirector {
 
     if (districtId === 'UNDERGROUND_METRO') {
       return 'ILLUMINATED_UNDERGROUND';
+    }
+
+    if (districtId === 'NEON_RAINLINE') {
+      return 'NEON_MIDNIGHT_RAIN';
     }
 
     // Check if an upcoming or recent landmark prefers an atmosphere

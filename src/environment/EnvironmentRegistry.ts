@@ -5,6 +5,7 @@ import {
   HISTORIC_QUARTER_THEME,
   UNDERGROUND_METRO_THEME,
   NEON_INDUSTRIAL_THEME,
+  NEON_RAINLINE_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -17,6 +18,7 @@ export class EnvironmentRegistry {
     this.register(HISTORIC_QUARTER_THEME);
     this.register(UNDERGROUND_METRO_THEME);
     this.register(NEON_INDUSTRIAL_THEME);
+    this.register(NEON_RAINLINE_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

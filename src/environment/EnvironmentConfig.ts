@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -43,7 +43,7 @@ export interface EnvironmentTheme {
   skyline: {
     color: number;
     opacity: number;
-    style: 'MODERN' | 'HISTORIC' | 'INDUSTRIAL';
+    style: 'MODERN' | 'HISTORIC' | 'INDUSTRIAL' | 'NEON';
   };
   clouds: {
     color: number;
@@ -81,7 +81,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -145,7 +145,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -209,7 +209,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
   sky: {
     top: 0x0a0f1d,    // Subterranean dark slate shadow
     bottom: 0x111827 // Deep tunnel ambient tone
@@ -273,7 +273,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE'],
   sky: {
     top: 0x181326,    // Deep nocturnal purple dusk
     bottom: 0xf57c00 // Radiant amber horizon glow
@@ -326,11 +326,76 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
   }
 };
 
+export const NEON_RAINLINE_THEME: EnvironmentTheme = {
+  id: 'NEON_RAINLINE',
+  displayName: 'Neon Rainline',
+  subtitle: 'Futuristic Rain-Soaked Megacity',
+  description: 'A midnight cyber-metropolis illuminated by holographic transit arches, towering megastructures, and glistening rain-soaked railway corridors.',
+  badgeEmoji: '🌧️',
+  accentColor: '#e879f9',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
+  sky: {
+    top: 0x050814,    // Midnight obsidian navy
+    bottom: 0x1f0b38 // Radiant electric violet & magenta horizon glow
+  },
+  fog: {
+    color: 0x0d1226,  // Deep midnight atmospheric haze (clear obstacle contrast within 80m)
+    density: 0.0032
+  },
+  sun: {
+    color: 0x8be9fd,  // Cool downward lunar/neon key light
+    intensity: 0.70,
+    position: { x: 26, y: 45, z: 20 }
+  },
+  fill: {
+    color: 0xf026d3,  // Rich magenta city canyon ambient bounce
+    intensity: 0.55
+  },
+  hemi: {
+    sky: 0x00f5ff,    // Electric cyan luminescent sky dome
+    ground: 0x220c38, // Deep violet wet-ground bounce
+    intensity: 1.15
+  },
+  skyline: {
+    color: 0x181236,  // Distant cyber megacity silhouettes with glowing spires
+    opacity: 0.88,
+    style: 'NEON'
+  },
+  clouds: {
+    color: 0x201533,  // Nocturnal low-hanging rain clouds
+    roughness: 0.95
+  },
+  materials: {
+    ballastColor: 0x121724,    // Rain-soaked dark crushed basalt
+    sleeperColor: 0x0b0e17,    // Wet composite sleepers
+    wallBaseColor: 0x111625,    // Dark cyber alloy retaining walls
+    wallAccentColor: 0x00f5ff,  // Electric cyan neon channel
+    curbColor: 0x1e273b,        // Wet curb with cyan reflective bead
+    catenaryColor: 0x151d2f,    // Carbon-composite structural framing
+    insulatorColor: 0x00ffff,   // Superconducting cyan glowing ring
+    pipeColor: 0x4a1d6d,        // High-voltage plasma conduit
+    bridgeMainColor: 0x0e1322,   // Sleek dark futuristic steel
+    bridgeAccentColor: 0xf026d3, // Neon magenta structural glow accents
+    groundPlaneColor: 0x070912
+  },
+  ambience: {
+    baseToneFreq: 75,
+    windNoiseFilter: 950,
+    humGain: 0.045,
+    tag: 'NEON_RAIN_SYNTH_DRONE'
+  }
+};
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
   UNDERGROUND_METRO: UNDERGROUND_METRO_THEME,
-  NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME
+  NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME,
+  NEON_RAINLINE: NEON_RAINLINE_THEME
 };
 
 export class EnvironmentManager {

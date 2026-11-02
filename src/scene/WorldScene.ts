@@ -17,8 +17,10 @@ export class WorldScene {
   public skylineGroup: THREE.Group;
   public modernSkyline: THREE.Group | null = null;
   public historicSkyline: THREE.Group | null = null;
+  public neonSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -372,8 +374,110 @@ export class WorldScene {
     }
     group.add(this.historicSkyline);
 
+    // 3. Ring of Futuristic Cyber Megacity Silhouettes (Neon Rainline)
+    this.neonSkyline = new THREE.Group();
+    this.neonSkylineMaterial = this.skylineMaterial.clone();
+    const neonCyanTrimMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff, fog: false });
+    const neonMagentaTrimMat = new THREE.MeshBasicMaterial({ color: 0xf026d3, fog: false });
+
+    for (let i = 0; i < 32; i++) {
+      const angle = (i / 32) * Math.PI * 2;
+      const dist = 320;
+      const isSignatureAngle = Math.abs(angle - (-Math.PI * 0.5 + 0.22)) < 0.15;
+
+      const nGroup = new THREE.Group();
+      nGroup.position.set(
+        Math.cos(angle) * dist,
+        -10,
+        Math.sin(angle) * dist
+      );
+
+      if (isSignatureAngle) {
+        // --- SIGNATURE SKYLINE LANDMARK: "Hyperion Apex / Neo-Sky Spire" (240m tall) ---
+        const spireBaseH = 140;
+        const spireBaseW = 20;
+        const spireBase = new THREE.Mesh(towerGeo, this.neonSkylineMaterial);
+        spireBase.scale.set(spireBaseW, spireBaseH, spireBaseW);
+        spireBase.position.y = spireBaseH * 0.5;
+        nGroup.add(spireBase);
+
+        // Upper tapering spire shaft
+        const spireTopH = 100;
+        const spireTopGeo = new THREE.ConeGeometry(spireBaseW * 0.45, spireTopH, 6);
+        const spireTop = new THREE.Mesh(spireTopGeo, this.neonSkylineMaterial);
+        spireTop.position.y = spireBaseH + spireTopH * 0.5;
+        nGroup.add(spireTop);
+
+        // Concentric illuminated superconductor rings
+        const ringGeo1 = new THREE.TorusGeometry(spireBaseW * 0.75, 0.9, 6, 18);
+        const ring1 = new THREE.Mesh(ringGeo1, neonCyanTrimMat);
+        ring1.rotation.x = Math.PI / 2;
+        ring1.position.y = 75;
+        nGroup.add(ring1);
+
+        const ringGeo2 = new THREE.TorusGeometry(spireBaseW * 0.60, 0.8, 6, 18);
+        const ring2 = new THREE.Mesh(ringGeo2, neonMagentaTrimMat);
+        ring2.rotation.x = Math.PI / 2;
+        ring2.position.y = 135;
+        nGroup.add(ring2);
+
+        const ringGeo3 = new THREE.TorusGeometry(spireBaseW * 0.40, 0.7, 6, 18);
+        const ring3 = new THREE.Mesh(ringGeo3, neonCyanTrimMat);
+        ring3.rotation.x = Math.PI / 2;
+        ring3.position.y = 190;
+        nGroup.add(ring3);
+
+        // Summit beacon
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(2.4, 8, 8), neonCyanTrimMat);
+        beacon.position.y = spireBaseH + spireTopH + 1.2;
+        nGroup.add(beacon);
+      } else {
+        // Modular megacity skyscraper
+        const h = 55 + Math.random() * 95;
+        const w = 16 + Math.random() * 24;
+        const d = 16 + Math.random() * 24;
+
+        const mainTower = new THREE.Mesh(towerGeo, this.neonSkylineMaterial);
+        mainTower.scale.set(w, h, d);
+        mainTower.position.y = h * 0.5;
+        nGroup.add(mainTower);
+
+        // Stepped crown setback
+        const crownH = 12 + Math.random() * 20;
+        const crownW = w * 0.6;
+        const crown = new THREE.Mesh(towerGeo, this.neonSkylineMaterial);
+        crown.scale.set(crownW, crownH, d * 0.6);
+        crown.position.y = h + crownH * 0.5;
+        nGroup.add(crown);
+
+        // Glowing crown accent trim
+        const trimMat = i % 2 === 0 ? neonCyanTrimMat : neonMagentaTrimMat;
+        const trimGeo = new THREE.BoxGeometry(w + 0.4, 1.2, d + 0.4);
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.position.y = h;
+        nGroup.add(trim);
+
+        // Spire antenna
+        if (i % 3 === 0) {
+          const antH = 15 + Math.random() * 25;
+          const antGeo = new THREE.CylinderGeometry(0.3, 0.5, antH, 6);
+          const ant = new THREE.Mesh(antGeo, this.neonSkylineMaterial);
+          ant.position.y = h + crownH + antH * 0.5;
+          nGroup.add(ant);
+
+          const antBeacon = new THREE.Mesh(new THREE.SphereGeometry(1.0, 6, 6), trimMat);
+          antBeacon.position.y = h + crownH + antH;
+          nGroup.add(antBeacon);
+        }
+      }
+
+      this.neonSkyline.add(nGroup);
+    }
+    group.add(this.neonSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
+    this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
 
     return group;
   }
@@ -416,9 +520,10 @@ export class WorldScene {
     const bottomColor = EnvironmentManager.lerpColor(base.sky.bottom, targetTheme.sky.bottom, t);
     this.updateSkyDomeColors(topColor, bottomColor);
 
-    // 6. Independent skyline materials allow both variants to cross-fade.
+    // 6. Independent skyline materials allow all theme variants to cross-fade.
     const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
     const isModern = (theme: EnvironmentTheme) => theme.id === 'MODERN_METRO' || theme.id === 'NEON_INDUSTRIAL';
+    const isNeon = (theme: EnvironmentTheme) => theme.id === 'NEON_RAINLINE';
     const modernOpacity = THREE.MathUtils.lerp(
       isModern(base) ? base.skyline.opacity : 0,
       isModern(targetTheme) ? targetTheme.skyline.opacity : 0,
@@ -429,6 +534,11 @@ export class WorldScene {
       targetTheme.id === 'HISTORIC_QUARTER' ? targetTheme.skyline.opacity : 0,
       t
     );
+    const neonOpacity = THREE.MathUtils.lerp(
+      isNeon(base) ? base.skyline.opacity : 0,
+      isNeon(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -437,8 +547,13 @@ export class WorldScene {
       this.historicSkylineMaterial.color.copy(skylineColor);
       this.historicSkylineMaterial.opacity = historicOpacity;
     }
+    if (this.neonSkylineMaterial) {
+      this.neonSkylineMaterial.color.copy(skylineColor);
+      this.neonSkylineMaterial.opacity = neonOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
+    if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
 
     // Clouds fade for the entire tunnel transition and respect graphics settings.
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -531,6 +646,17 @@ export class WorldScene {
         fillColorHex = 0x38bdf8;
         fillIntensity = 0.95;
         break;
+      case 'NEON_MIDNIGHT_RAIN':
+        sunColorHex = 0x8be9fd;
+        sunIntensity = 0.70;
+        skyTopHex = 0x050814;
+        skyBottomHex = 0x1f0b38;
+        fogColorHex = 0x0d1226;
+        fogDensity = 0.0032;
+        fillColorHex = 0xf026d3;
+        fillIntensity = 0.55;
+        isRain = true;
+        break;
       case 'CLEAR_DAYLIGHT':
       default:
         sunColorHex = 0xfff8eb;
@@ -546,6 +672,10 @@ export class WorldScene {
 
     if (this.rainParticles) {
       this.rainParticles.visible = isRain;
+      if (isRain && (this.rainParticles.material as THREE.PointsMaterial)) {
+        (this.rainParticles.material as THREE.PointsMaterial).opacity =
+          this.currentConfig?.sceneryDetail === 'MINIMAL' ? 0.25 : 0.60;
+      }
     }
 
     // Smoothly lerp towards target

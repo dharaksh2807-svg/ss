@@ -30,9 +30,9 @@ export interface WorldDefinition {
 const PREMIUM_WORLDS: readonly WorldDefinition[] = [
   {
     id: 'NEON_RAINLINE', environmentId: 'NEON_RAINLINE', displayName: 'Neon Rainline',
-    description: 'A rain-soaked neon railway world. Coming soon.', rarity: 'EPIC',
-    unlock: 'COINS', coinCost: 3000, keyCost: null, previewReference: null,
-    implemented: false, available: false, dynamicEligible: true, icon: '🌧️', accentColor: '#e879f9'
+    description: 'A rain-soaked neon megacity illuminated by holographic transit arches, towering megastructures, and glistening rails.', rarity: 'EPIC',
+    unlock: 'COINS', coinCost: 3000, keyCost: null, previewReference: 'environment:NEON_RAINLINE',
+    implemented: true, available: true, dynamicEligible: true, icon: '🌧️', accentColor: '#e879f9'
   },
   {
     id: 'ORBITAL_HALO', environmentId: 'ORBITAL_HALO', displayName: 'Orbital Halo',

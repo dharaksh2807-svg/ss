@@ -1002,7 +1002,8 @@ export class ObstacleFactory {
     length: number = CONSTANTS.TRAIN_LENGTH_SHORT,
     hasRamp: boolean = false,
     colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_1,
-    variant?: TrainVariant
+    variant?: TrainVariant,
+    themeId?: string
   ): THREE.Group {
     const group = new THREE.Group();
     group.userData = { isTrain: true, type: hasRamp ? 'TRAIN_RAMP' : 'TRAIN' };
@@ -1012,29 +1013,38 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
-      if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) {
+      if (themeId === 'NEON_RAINLINE') {
         variant = 'STREAMLINED_EXPRESS';
-      } else if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_3) {
-        variant = 'CLASSIC_TRANSIT';
       } else {
-        variant = variants[(this.trainSpawnCounter++) % variants.length];
+        const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
+        if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) {
+          variant = 'STREAMLINED_EXPRESS';
+        } else if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_3) {
+          variant = 'CLASSIC_TRANSIT';
+        } else {
+          variant = variants[(this.trainSpawnCounter++) % variants.length];
+        }
       }
     }
     group.userData.variant = variant;
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
-    if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
+    if (themeId === 'NEON_RAINLINE') {
+      accentColor = colorHex === 0x8b5cf6 ? 0xf026d3 : 0x00f5ff;
+    } else {
+      if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
+      if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
+    }
 
     // Livery PBR Material (Automotive / Transit Gloss Enamel)
+    const isNeon = themeId === 'NEON_RAINLINE';
     const bodyMat = new THREE.MeshStandardMaterial({
       color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex,
-      roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28),
-      metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52),
+      roughness: isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)),
+      metalness: isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)),
       // Subtle livery self-glow so body reads under any ambient level
-      emissive: new THREE.Color(colorHex).multiplyScalar(0.04),
+      emissive: new THREE.Color(colorHex).multiplyScalar(isNeon ? 0.08 : 0.04),
       emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
@@ -1063,6 +1073,28 @@ export class ObstacleFactory {
 
     // 6. Dual 2-Axle Rail Wheel Bogies & Underbody Equipment
     this.buildBogiesAndUnderbody(group, w, h, bodyLength, variant);
+
+    // 7. Theme-Specific Neon Rainline Cyber Underglow and Nose Trims
+    if (isNeon) {
+      const halfW = w * 0.5;
+      const underglowGeo = new THREE.BoxGeometry(0.05, 0.05, bodyLength * 0.94);
+      const underglowMat = new THREE.MeshBasicMaterial({ color: accentColor });
+      this.curvedManager.applyCurvature(underglowMat);
+      [-halfW, halfW].forEach((sideX) => {
+        const underglow = new THREE.Mesh(underglowGeo, underglowMat);
+        underglow.position.set(sideX, 0.42, 0);
+        group.add(underglow);
+      });
+
+      if (!hasRamp) {
+        const noseGlowGeo = new THREE.BoxGeometry(w * 0.72, 0.08, 0.08);
+        const noseGlowMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+        this.curvedManager.applyCurvature(noseGlowMat);
+        const noseGlow = new THREE.Mesh(noseGlowGeo, noseGlowMat);
+        noseGlow.position.set(0, 1.85, bodyLength * 0.5 + noseLength * 0.65);
+        group.add(noseGlow);
+      }
+    }
 
     return group;
   }
@@ -2315,10 +2347,12 @@ export class ObstacleFactory {
 
   public createMovingTrain(
     length: number = CONSTANTS.TRAIN_LENGTH_SHORT,
-    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_2
+    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_2,
+    themeId?: string
   ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
-    const group = this.createTrain(length, false, colorHex);
+    const movingColor = themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex;
+    const group = this.createTrain(length, false, movingColor, undefined, themeId);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 
     // Find and reference the twin headlights for flashing telegraph & bogie wheel meshes
@@ -2531,7 +2565,8 @@ export class ObstacleFactory {
    */
   public createTrainComposition(
     composition: TrainCompositionDef,
-    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_1
+    colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_1,
+    themeId?: string
   ): THREE.Group {
     const masterGroup = new THREE.Group();
     masterGroup.userData = {
@@ -2552,12 +2587,20 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || variants[(this.trainSpawnCounter++) % variants.length];
-      const carColor = comp.colorHex || colorHex;
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' ? 'STREAMLINED_EXPRESS' : variants[(this.trainSpawnCounter++) % variants.length]);
+      let carColor = comp.colorHex || colorHex;
+      if (themeId === 'NEON_RAINLINE' && !comp.colorHex) {
+        const cyberColors = [0x0b1021, 0x00e5ff, 0x8b5cf6];
+        carColor = cyberColors[i % cyberColors.length];
+      }
 
       let accentColor = 0xffd600;
-      if (carColor === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
-      if (carColor === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
+      if (themeId === 'NEON_RAINLINE') {
+        accentColor = carColor === 0x8b5cf6 ? 0xf026d3 : 0x00f5ff;
+      } else {
+        if (carColor === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
+        if (carColor === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
+      }
 
       const bodyMat = new THREE.MeshStandardMaterial({
         color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : carColor,

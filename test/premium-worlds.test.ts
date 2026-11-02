@@ -108,9 +108,9 @@ progression.load();
 check(progression.getSelectedTheme() === 'DYNAMIC' && environments.getStartingEnvironment() === 'MODERN_METRO', 'Unknown save has a valid fallback');
 assert.deepEqual(progression.getUnlockedThemes(), FREE_WORLD_IDS);
 
-// Real Phase 1 catalog: no unfinished world can be sold, equipped or planned.
+// Unfinished worlds cannot be sold, equipped or planned.
 reset();
-for (const id of ['NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE']) {
+for (const id of ['ORBITAL_HALO', 'ABYSSAL_GLASSLINE']) {
   check(!getWorld(id)!.available && !getWorld(id)!.implemented, `${id} is coming soon`);
   check(!progression.purchaseTheme(id).success, `${id} rejects purchase`);
   check(!progression.equipTheme(id).success, `${id} rejects equip`);
@@ -121,95 +121,94 @@ const freePlanner = new DistrictPlanner(12345);
 const freeRoute = new Set(Array.from({ length: 100 }, (_, i) => freePlanner.getDistrictAtZ(-i * 600 - 100).districtId));
 for (const id of FREE_WORLD_IDS) check(freeRoute.has(id), `Dynamic Districts can visit ${id}`);
 
-// Exercise a future implemented catalog entry without shipping scenery or enabling it in production.
+// Phase 2: NEON_RAINLINE is genuinely implemented and registered in production.
 const future = getWorld('NEON_RAINLINE') as any;
-const futureOriginal = { ...future };
 const futureId = future.id as EnvironmentId;
+check(future.available && future.implemented, 'NEON_RAINLINE is implemented and available in catalog');
+check(registry.has(futureId), 'NEON_RAINLINE is registered in environment registry');
+check(!progression.equipTheme(future.id).success, 'Implemented but locked world cannot equip');
+reset(future.coinCost - 1);
+check(!progression.purchaseTheme(future.id).success && wallet.getCoins() === future.coinCost - 1, 'Insufficient funds never deduct');
+reset(future.coinCost);
+check(!progression.purchaseTheme(future.id, 'KEYS').success && progression.getKeys() === baseline.keys, 'Key purchases stay disabled');
+check(progression.purchaseTheme(future.id).success, 'Sufficient coins purchase permanent ownership');
+check(wallet.getCoins() === 0 && walletWrites === 1, 'Exact balance is debited once, never negative');
+check(!progression.purchaseTheme(future.id).success && walletWrites === 1, 'Duplicate purchase rejects without debit');
+check(progression.equipTheme(future.id).success, 'Owned available world equips');
+wallet.load();
+progression.load();
+check(progression.isThemeUnlocked(future.id) && progression.getSelectedTheme() === future.id && wallet.getCoins() === 0,
+  'Ownership, selection and wallet survive reload');
+const returned = progression.getUnlockedThemes();
+returned.length = 0;
+check(progression.isThemeUnlocked(future.id), 'Ownership getter cannot mutate save');
+
+reset();
+let reentered = false;
+EventBus.getInstance().on('WALLET_UPDATED', () => {
+  if (reentered) return;
+  reentered = true;
+  check(!progression.purchaseTheme(future.id).success, 'Reentrant double-click rejects while wallet event fires');
+});
+check(progression.purchaseTheme(future.id).success, 'First double-click purchase succeeds');
+check(!progression.purchaseTheme(future.id).success && walletWrites === 1, 'Second double-click never charges');
+check(wallet.getCoins() === 10000 - future.coinCost, 'Double-click leaves correct balance');
+
+// Ownership save fails before any debit; previous durable state stays byte-for-byte intact.
+reset();
+const beforeFailure = data.get(PROGRESSION);
+const warn = console.warn;
+console.warn = () => {};
 try {
-  future.available = true;
-  future.implemented = true;
-  check(!progression.purchaseTheme(future.id).success, 'Availability flags cannot bypass missing environment registration');
-  registry.register({ ...registry.get('MODERN_METRO'), id: futureId, allowedTransitions: [...FREE_WORLD_IDS] });
-  check(!progression.equipTheme(future.id).success, 'Implemented but locked world cannot equip');
-  reset(future.coinCost - 1);
-  check(!progression.purchaseTheme(future.id).success && wallet.getCoins() === future.coinCost - 1, 'Insufficient funds never deduct');
-  reset(future.coinCost);
-  check(!progression.purchaseTheme(future.id, 'KEYS').success && progression.getKeys() === baseline.keys, 'Key purchases stay disabled');
-  check(progression.purchaseTheme(future.id).success, 'Sufficient coins purchase permanent ownership');
-  check(wallet.getCoins() === 0 && walletWrites === 1, 'Exact balance is debited once, never negative');
-  check(!progression.purchaseTheme(future.id).success && walletWrites === 1, 'Duplicate purchase rejects without debit');
-  check(progression.equipTheme(future.id).success, 'Owned available world equips');
-  wallet.load();
+  failWrite = (key) => key === PROGRESSION;
+  check(!progression.purchaseTheme(future.id).success, 'Ownership storage failure is reported');
+  check(!progression.isThemeUnlocked(future.id) && wallet.getCoins() === 10000 && walletWrites === 0,
+    'Ownership write failure leaves ownership and currency intact');
+  check(data.get(PROGRESSION) === beforeFailure, 'Failed write preserves prior save');
+
+  reset();
+  failWrite = (key) => key === WALLET;
+  check(!progression.purchaseTheme(future.id).success, 'Payment storage failure is reported');
+  check(!progression.isThemeUnlocked(future.id) && !saved().unlockedThemes.includes(future.id) && wallet.getCoins() === 10000,
+    'Failed debit rolls back durable ownership without charge');
+
+  reset();
+  let progressionWrites = 0;
+  failWrite = (key) => key === WALLET || (key === PROGRESSION && ++progressionWrites > 1);
+  const failedRollback = progression.purchaseTheme(future.id);
+  check(!failedRollback.success && failedRollback.message.includes('without charge'), 'Rollback storage failure is explicit');
+  check(progression.isThemeUnlocked(future.id) && saved().unlockedThemes.includes(future.id) && wallet.getCoins() === 10000,
+    'Failed rollback retains durable ownership without losing coins');
+  failWrite = () => false;
   progression.load();
-  check(progression.isThemeUnlocked(future.id) && progression.getSelectedTheme() === future.id && wallet.getCoins() === 0,
-    'Ownership, selection and wallet survive reload');
-  const returned = progression.getUnlockedThemes();
-  returned.length = 0;
-  check(progression.isThemeUnlocked(future.id), 'Ownership getter cannot mutate save');
+  check(!progression.purchaseTheme(future.id).success && wallet.getCoins() === 10000, 'Retry after failed rollback cannot charge twice');
 
   reset();
-  let reentered = false;
-  EventBus.getInstance().on('WALLET_UPDATED', () => {
-    if (reentered) return;
-    reentered = true;
-    check(!progression.purchaseTheme(future.id).success, 'Reentrant double-click rejects while wallet event fires');
-  });
-  check(progression.purchaseTheme(future.id).success, 'First double-click purchase succeeds');
-  check(!progression.purchaseTheme(future.id).success && walletWrites === 1, 'Second double-click never charges');
-  check(wallet.getCoins() === 10000 - future.coinCost, 'Double-click leaves correct balance');
+  failWrite = (key) => key === PROGRESSION;
+  check(!progression.equipTheme('NEON_INDUSTRIAL').success && progression.getSelectedTheme() === 'DYNAMIC',
+    'Failed equip write rolls back selection');
+  check(!progression.setIncludePremiumThemesInDynamic(true).success && !progression.getState().includePremiumThemesInDynamic,
+    'Failed Dynamic preference write rolls back');
+} finally {
+  failWrite = () => false;
+  console.warn = warn;
+}
 
-  // Ownership save fails before any debit; previous durable state stays byte-for-byte intact.
-  reset();
-  const beforeFailure = data.get(PROGRESSION);
-  const warn = console.warn;
-  console.warn = () => {};
-  try {
-    failWrite = (key) => key === PROGRESSION;
-    check(!progression.purchaseTheme(future.id).success, 'Ownership storage failure is reported');
-    check(!progression.isThemeUnlocked(future.id) && wallet.getCoins() === 10000 && walletWrites === 0,
-      'Ownership write failure leaves ownership and currency intact');
-    check(data.get(PROGRESSION) === beforeFailure, 'Failed write preserves prior save');
-
-    reset();
-    failWrite = (key) => key === WALLET;
-    check(!progression.purchaseTheme(future.id).success, 'Payment storage failure is reported');
-    check(!progression.isThemeUnlocked(future.id) && !saved().unlockedThemes.includes(future.id) && wallet.getCoins() === 10000,
-      'Failed debit rolls back durable ownership without charge');
-
-    reset();
-    let progressionWrites = 0;
-    failWrite = (key) => key === WALLET || (key === PROGRESSION && ++progressionWrites > 1);
-    const failedRollback = progression.purchaseTheme(future.id);
-    check(!failedRollback.success && failedRollback.message.includes('without charge'), 'Rollback storage failure is explicit');
-    check(progression.isThemeUnlocked(future.id) && saved().unlockedThemes.includes(future.id) && wallet.getCoins() === 10000,
-      'Failed rollback retains durable ownership without losing coins');
-    failWrite = () => false;
-    progression.load();
-    check(!progression.purchaseTheme(future.id).success && wallet.getCoins() === 10000, 'Retry after failed rollback cannot charge twice');
-
-    reset();
-    failWrite = (key) => key === PROGRESSION;
-    check(!progression.equipTheme('NEON_INDUSTRIAL').success && progression.getSelectedTheme() === 'DYNAMIC',
-      'Failed equip write rolls back selection');
-    check(!progression.setIncludePremiumThemesInDynamic(true).success && !progression.getState().includePremiumThemesInDynamic,
-      'Failed Dynamic preference write rolls back');
-  } finally {
-    failWrite = () => false;
-    console.warn = warn;
-  }
-
-  // Deterministic planning filters locked, opted-out and unfinished premium worlds.
-  reset();
-  check(!getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Locked world excluded from Dynamic Districts');
-  check(progression.setIncludePremiumThemesInDynamic(true).success, 'Dynamic inclusion preference persists');
-  check(!getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Opt-in does not bypass ownership');
-  check(progression.purchaseTheme(future.id).success, 'Purchase for Dynamic filtering succeeds');
-  check(getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Owned implemented premium included after opt-in');
-  check(progression.setIncludePremiumThemesInDynamic(false).success, 'Player can opt out');
-  assert.deepEqual(getDynamicEnvironmentIds(progression.getState()), FREE_WORLD_IDS);
-  progression.setIncludePremiumThemesInDynamic(true);
-  progression.load();
-  check(progression.getState().includePremiumThemesInDynamic, 'Dynamic opt-in survives reload');
+// Deterministic planning filters locked, opted-out and unfinished premium worlds.
+reset();
+check(!getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Locked world excluded from Dynamic Districts');
+check(progression.setIncludePremiumThemesInDynamic(true).success, 'Dynamic inclusion preference persists');
+check(!getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Opt-in does not bypass ownership');
+check(progression.purchaseTheme(future.id).success, 'Purchase for Dynamic filtering succeeds');
+check(getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Owned implemented premium included after opt-in');
+check(progression.setIncludePremiumThemesInDynamic(false).success, 'Player can opt out');
+assert.deepEqual(getDynamicEnvironmentIds(progression.getState()), FREE_WORLD_IDS);
+progression.setIncludePremiumThemesInDynamic(true);
+progression.load();
+check(progression.getState().includePremiumThemesInDynamic, 'Dynamic opt-in survives reload');
+const futureOriginalAvail = future.available;
+const futureOriginalImpl = future.implemented;
+try {
   future.available = false;
   check(!getDynamicEnvironmentIds(progression.getState()).includes(futureId), 'Unavailable owned premium excluded');
   future.available = true;
@@ -240,9 +239,8 @@ try {
     modern.allowedTransitions = transitions;
   }
 } finally {
-  Object.assign(future, futureOriginal);
-  (registry as any).themes.delete(futureId);
-  delete (ENVIRONMENTS as any)[futureId];
+  future.available = futureOriginalAvail;
+  future.implemented = futureOriginalImpl;
 }
 
 // Render and apply the real modal methods using a minimal DOM; no browser/screenshots.
@@ -262,7 +260,7 @@ const modal = Object.assign(Object.create(EnvironmentSelectModal.prototype), {
 });
 modal.render();
 for (const id of FREE_WORLD_IDS) check(handlers.has(id), `${id} has a selectable modal card`);
-check(!list.innerHTML.includes('data-env-id="NEON_RAINLINE"'), 'Unfinished worlds absent from selection modal');
+check(!list.innerHTML.includes('data-env-id="NEON_RAINLINE"'), 'Locked world absent from selection modal');
 handlers.get('NEON_INDUSTRIAL')!();
 check(modal.selectedPreference === 'NEON_INDUSTRIAL', 'Neon card click changes selection');
 let emitted = '';
@@ -271,12 +269,18 @@ modal.applySelection();
 check(saved().selectedTheme === 'NEON_INDUSTRIAL' && emitted === 'NEON_INDUSTRIAL', 'Apply persists Neon and emits preference change');
 check(list.innerHTML.includes('env-card-option selected'), 'Modal renders the selected state');
 
+// When unlocked, premium world appears in selection modal
+progression.purchaseTheme('NEON_RAINLINE');
+modal.render();
+check(list.innerHTML.includes('data-env-id="NEON_RAINLINE"'), 'Unlocked premium world appears in selection modal');
+
 const content = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
 const shop = Object.assign(Object.create(ShopModal.prototype), { progression, upgradeManager: wallet });
 shop.renderWorlds(content);
-check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 3, 'Shop marks all premiums coming soon');
-check(!content.innerHTML.includes('data-buy-world='), 'Shop cannot sell unfinished worlds or charge for free worlds');
-check(getWorlds(progression.getState()).filter((world) => world.owned).length === 4, 'All four originals are owned by default');
+check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 2, 'Shop marks unfinished premiums coming soon');
+check(content.innerHTML.includes('data-buy-world="NEON_RAINLINE"') || content.innerHTML.includes('data-equip-world="NEON_RAINLINE"'),
+  'Shop renders interactive action for implemented premium world');
+check(getWorlds(progression.getState()).filter((world) => world.owned).length === 5, 'All four originals + purchased Neon Rainline are owned');
 check(progression.getKeys() === baseline.keys, 'World APIs preserve revive Key balance');
 check(progression.consumeKeys(1) && progression.getKeys() === baseline.keys - 1, 'Existing revive Key spending still works');
 check(!wallet.deductCoinsPersisted(-10) && !wallet.deductCoinsPersisted(NaN) && !wallet.deductCoinsPersisted(Infinity),

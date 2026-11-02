@@ -21,6 +21,7 @@
     "test:revive": "npx tsx test/revive-system.test.ts",
     "test:premium-art": "npx tsx test/premium-environment-art.test.ts",
     "test:premium-worlds": "npx tsx test/premium-worlds.test.ts",
+    "test:neon-rainline": "npx tsx test/neon-rainline-world.test.ts",
     "test:encounters": "npx tsx test/environmental-encounters.test.ts",
     "test:audit": "npx tsx test/task4-worldgen-audit.test.ts",
     "test:task3-rooftops": "npx tsx test/task3-train-rooftop-gameplay.test.ts",

@@ -1526,18 +1526,24 @@ export class TrackChunk {
       let wheelMeshes: THREE.Mesh[] | undefined;
       let headlightBeam: THREE.Mesh | undefined;
 
+      const themeId = this.currentTheme?.id;
+      const isNeon = themeId === 'NEON_RAINLINE';
+
       if (isComposition && compDef) {
-        group = this.obstacleFactory.createTrainComposition(compDef);
+        group = this.obstacleFactory.createTrainComposition(compDef, undefined, themeId);
       } else if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
-        const colors = [
-          CONSTANTS.COLORS.TRAIN_BODY_1,
-          CONSTANTS.COLORS.TRAIN_BODY_2,
-          CONSTANTS.COLORS.TRAIN_BODY_3
-        ];
+        const colors = isNeon
+          ? [0x0b1021, 0x00e5ff, 0x8b5cf6]
+          : [
+            CONSTANTS.COLORS.TRAIN_BODY_1,
+            CONSTANTS.COLORS.TRAIN_BODY_2,
+            CONSTANTS.COLORS.TRAIN_BODY_3
+          ];
         const color = colors[Math.floor(Math.random() * colors.length)];
-        group = this.obstacleFactory.createTrain(length, hasRamp, color);
+        group = this.obstacleFactory.createTrain(length, hasRamp, color, undefined, themeId);
       } else if (obsData.type === 'MOVING_TRAIN') {
-        const movingData = this.obstacleFactory.createMovingTrain(length, CONSTANTS.COLORS.TRAIN_BODY_2);
+        const movingColor = isNeon ? 0x0b1021 : CONSTANTS.COLORS.TRAIN_BODY_2;
+        const movingData = this.obstacleFactory.createMovingTrain(length, movingColor, themeId);
         group = movingData.group;
         headlights = movingData.headlights;
         wheelMeshes = movingData.wheelMeshes;
