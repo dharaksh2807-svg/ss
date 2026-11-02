@@ -118,6 +118,13 @@ const freePlanner = new DistrictPlanner(12345);
 const freeRoute = new Set(Array.from({ length: 100 }, (_, i) => freePlanner.getDistrictAtZ(-i * 600 - 100).districtId));
 for (const id of FREE_WORLD_IDS) check(freeRoute.has(id), `Dynamic Districts can visit ${id}`);
 
+// Phase 3D: PHANTOM_LINE is genuinely implemented and registered in production.
+const phantomWorld = getWorld('PHANTOM_LINE') as any;
+const phantomId = phantomWorld.id as EnvironmentId;
+check(phantomWorld.available && phantomWorld.implemented, 'PHANTOM_LINE is implemented and available in catalog');
+check(registry.has(phantomId), 'PHANTOM_LINE is registered in environment registry');
+check(phantomWorld.coinCost === 9000, 'PHANTOM_LINE costs 9000 coins');
+
 // Phase 3C: DOOMSDAY_LAST_TRANSIT is genuinely implemented and registered in production.
 const doomsdayWorld = getWorld('DOOMSDAY_LAST_TRANSIT') as any;
 const doomsdayId = doomsdayWorld.id as EnvironmentId;
@@ -304,6 +311,8 @@ check(content.innerHTML.includes('data-buy-world="ABYSSAL_GLASSLINE"') || conten
   'Shop renders interactive action for Abyssal Glassline');
 check(content.innerHTML.includes('data-buy-world="DOOMSDAY_LAST_TRANSIT"') || content.innerHTML.includes('data-equip-world="DOOMSDAY_LAST_TRANSIT"'),
   'Shop renders interactive action for Doomsday Last Transit');
+check(content.innerHTML.includes('data-buy-world="PHANTOM_LINE"') || content.innerHTML.includes('data-equip-world="PHANTOM_LINE"'),
+  'Shop renders interactive action for Phantom Line');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 5, 'All four originals + purchased Neon Rainline are owned');
 progression.purchaseTheme('ORBITAL_HALO');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 6, 'All four originals + purchased Neon Rainline + Orbital Halo are owned');
@@ -313,10 +322,14 @@ check(getWorlds(progression.getState()).filter((world) => world.owned).length ==
 wallet.addCoins(7500);
 progression.purchaseTheme('DOOMSDAY_LAST_TRANSIT');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 8, 'All four originals + all four premium worlds are owned');
+wallet.addCoins(9000);
+progression.purchaseTheme('PHANTOM_LINE');
+check(getWorlds(progression.getState()).filter((world) => world.owned).length === 9, 'All four originals + all five premium worlds are owned');
 modal.render();
 check(list.innerHTML.includes('data-env-id="ORBITAL_HALO"'), 'Unlocked Orbital Halo appears in selection modal');
 check(list.innerHTML.includes('data-env-id="ABYSSAL_GLASSLINE"'), 'Unlocked Abyssal Glassline appears in selection modal');
 check(list.innerHTML.includes('data-env-id="DOOMSDAY_LAST_TRANSIT"'), 'Unlocked Doomsday Last Transit appears in selection modal');
+check(list.innerHTML.includes('data-env-id="PHANTOM_LINE"'), 'Unlocked Phantom Line appears in selection modal');
 check(progression.getKeys() === baseline.keys, 'World APIs preserve revive Key balance');
 check(progression.consumeKeys(1) && progression.getKeys() === baseline.keys - 1, 'Existing revive Key spending still works');
 check(!wallet.deductCoinsPersisted(-10) && !wallet.deductCoinsPersisted(NaN) && !wallet.deductCoinsPersisted(Infinity),

@@ -6,6 +6,7 @@ import { SettingsManager } from '../settings/SettingsManager';
 import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
 import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
 import { TextureGenerator } from './TextureGenerator';
+import { SeededRandom } from '../environment/SceneryFactory';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -22,12 +23,14 @@ export class WorldScene {
   public orbitalSkyline: THREE.Group | null = null;
   public abyssalSkyline: THREE.Group | null = null;
   public doomsdaySkyline: THREE.Group | null = null;
+  public phantomSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private orbitalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private abyssalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private doomsdaySkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private phantomSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
@@ -36,6 +39,12 @@ export class WorldScene {
   private doomsdayEmbersTime: number = 0;
   private doomsdayEmbersGeo: THREE.BufferGeometry | null = null;
   private doomsdayEmbersPositions: Float32Array | null = null;
+  private phantomEctoParticlesGeo: THREE.BufferGeometry | null = null;
+  private phantomEctoParticlesPos: Float32Array | null = null;
+  private phantomEctoTime: number = 0;
+  private phantomGhostTrain: THREE.Group | null = null;
+  private phantomFlickerLamps: THREE.Mesh[] = [];
+  private phantomFlickerTime: number = 0;
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -1073,12 +1082,169 @@ export class WorldScene {
     this.doomsdaySkyline.add(bridgeGroup);
     group.add(this.doomsdaySkyline);
 
+    // =========================================================================
+    // 6. PHANTOM LINE SKYLINE: Derelict Subterranean Catacombs, Gliding Ghost
+    //    Train, Ectoplasmic Vapor Motes & Motionless Watcher Silhouettes
+    // =========================================================================
+    this.phantomFlickerLamps = [];
+    const phantomSkyline = new THREE.Group();
+    this.phantomSkyline = phantomSkyline;
+    this.phantomSkylineMaterial = this.skylineMaterial.clone();
+    this.phantomSkylineMaterial.color.setHex(0x071520);
+    this.phantomSkylineMaterial.transparent = true;
+    this.phantomSkylineMaterial.opacity = 0.85;
+
+    const phantomMat = this.phantomSkylineMaterial;
+    const ghostTrainMat = new THREE.MeshBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.38
+    });
+    const phantomGlowMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee
+    });
+
+    // Subterranean Catacomb Archway Monoliths & Derelict Gallery Vaults (Z in [-220, -540])
+    const archRng = new SeededRandom(666);
+    for (let i = 0; i < 16; i++) {
+      const archGroup = new THREE.Group();
+      const side = (i % 2 === 0) ? -1 : 1;
+      const ax = side * (55.0 + (i % 4) * 18.0);
+      const az = -220.0 - i * 20.0;
+      const ah = 48.0 + (i % 3) * 14.0;
+      archGroup.position.set(ax, 0, az);
+
+      // Massive catacomb pillar
+      const pillarGeo = new THREE.BoxGeometry(10.0, ah, 12.0);
+      const pillar = new THREE.Mesh(pillarGeo, phantomMat);
+      pillar.position.y = ah * 0.5;
+      archGroup.add(pillar);
+
+      // Transverse vaulted ceiling rib
+      const ribGeo = new THREE.BoxGeometry(28.0, 4.5, 6.0);
+      const rib = new THREE.Mesh(ribGeo, phantomMat);
+      rib.position.set(-side * 10.0, ah - 2.0, 0);
+      rib.rotation.z = side * 0.12;
+      archGroup.add(rib);
+
+      // Distant flickering gas / cold fluorescent fixture on pillar
+      if (i % 3 === 0) {
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.8), phantomGlowMat);
+        lamp.position.set(-side * 5.2, ah * 0.45, 6.1);
+        archGroup.add(lamp);
+        this.phantomFlickerLamps.push(lamp);
+      }
+
+      // Motionless watcher silhouette standing on high gallery ledge
+      if (i === 3 || i === 7 || i === 11) {
+        const watcher = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 4.2, 6), phantomMat);
+        watcher.position.set(-side * 4.5, ah * 0.52 + 2.1, 5.0);
+        archGroup.add(watcher);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), phantomMat);
+        head.position.set(-side * 4.5, ah * 0.52 + 4.6, 5.0);
+        archGroup.add(head);
+      }
+
+      this.phantomSkyline.add(archGroup);
+    }
+
+    // Distant Parallel Disused Railway Viaduct with Gliding Ghost Train
+    const ghostTrackGroup = new THREE.Group();
+    const ghostTrackX = -42.0;
+    const ghostTrackY = 14.0;
+    const ghostTrackLen = 420.0;
+    const trackBedGeo = new THREE.BoxGeometry(6.5, 1.8, ghostTrackLen);
+    const trackBed = new THREE.Mesh(trackBedGeo, phantomMat);
+    trackBed.position.set(ghostTrackX, ghostTrackY, -320.0);
+    ghostTrackGroup.add(trackBed);
+
+    // Silent Gliding Ghost Train (Cab + 2 Carriages)
+    const ghostTrain = new THREE.Group();
+    ghostTrain.position.set(ghostTrackX, ghostTrackY + 2.2, -260.0);
+
+    // Locomotive Cab
+    const cabGeo = new THREE.BoxGeometry(3.2, 3.4, 14.0);
+    const cab = new THREE.Mesh(cabGeo, ghostTrainMat);
+    ghostTrain.add(cab);
+
+    // Glowing spectral window strips on cab
+    const winGeo = new THREE.BoxGeometry(3.24, 0.9, 11.5);
+    const cabWin = new THREE.Mesh(winGeo, phantomGlowMat);
+    cabWin.position.y = 0.4;
+    ghostTrain.add(cabWin);
+
+    // Two trailing carriages
+    [-15.5, -31.0].forEach((offZ) => {
+      const carGeo = new THREE.BoxGeometry(3.0, 3.2, 13.5);
+      const car = new THREE.Mesh(carGeo, ghostTrainMat);
+      car.position.z = offZ;
+      ghostTrain.add(car);
+
+      const cWin = new THREE.Mesh(new THREE.BoxGeometry(3.04, 0.85, 11.0), phantomGlowMat);
+      cWin.position.set(0, 0.35, offZ);
+      ghostTrain.add(cWin);
+    });
+
+    ghostTrackGroup.add(ghostTrain);
+    this.phantomGhostTrain = ghostTrain;
+    this.phantomSkyline.add(ghostTrackGroup);
+
+    // 300 Floating Ectoplasmic Motes & Spectral Vapor Particles
+    const ectoCount = 300;
+    const ectoGeo = new THREE.BufferGeometry();
+    const ectoPositions = new Float32Array(ectoCount * 3);
+    const ectoColors = new Float32Array(ectoCount * 3);
+    const ectoRng = new SeededRandom(777);
+
+    for (let i = 0; i < ectoCount; i++) {
+      ectoPositions[i * 3 + 0] = ectoRng.range(-90, 90);
+      ectoPositions[i * 3 + 1] = ectoRng.range(2, 52);
+      ectoPositions[i * 3 + 2] = ectoRng.range(-80, -380);
+
+      // Vertex color variation: cold cyan to pale mint jade to ghostly white
+      const cRoll = ectoRng.range(0, 1);
+      if (cRoll < 0.55) {
+        // Pale cyan (0x67e8f9)
+        ectoColors[i * 3 + 0] = 0.40;
+        ectoColors[i * 3 + 1] = 0.91;
+        ectoColors[i * 3 + 2] = 0.97;
+      } else if (cRoll < 0.85) {
+        // Mint jade (0x34d399)
+        ectoColors[i * 3 + 0] = 0.20;
+        ectoColors[i * 3 + 1] = 0.83;
+        ectoColors[i * 3 + 2] = 0.60;
+      } else {
+        // Dim ghostly white (0xe2e8f0)
+        ectoColors[i * 3 + 0] = 0.88;
+        ectoColors[i * 3 + 1] = 0.91;
+        ectoColors[i * 3 + 2] = 0.94;
+      }
+    }
+
+    ectoGeo.setAttribute('position', new THREE.BufferAttribute(ectoPositions, 3));
+    ectoGeo.setAttribute('color', new THREE.BufferAttribute(ectoColors, 3));
+    this.phantomEctoParticlesGeo = ectoGeo;
+    this.phantomEctoParticlesPos = ectoPositions;
+
+    const ectoMat = new THREE.PointsMaterial({
+      size: 1.6,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.65
+    });
+    const ectoPoints = new THREE.Points(ectoGeo, ectoMat);
+    this.phantomSkyline.add(ectoPoints);
+
+    group.add(this.phantomSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
     this.orbitalSkyline.visible = this.currentTheme.id === 'ORBITAL_HALO';
     this.abyssalSkyline.visible = this.currentTheme.id === 'ABYSSAL_GLASSLINE';
     this.doomsdaySkyline.visible = this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT';
+    this.phantomSkyline.visible = this.currentTheme.id === 'PHANTOM_LINE';
 
     return group;
   }
@@ -1158,6 +1324,12 @@ export class WorldScene {
       isDoomsday(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isPhantom = (env: EnvironmentTheme) => env.id === 'PHANTOM_LINE';
+    const phantomOpacity = THREE.MathUtils.lerp(
+      isPhantom(base) ? base.skyline.opacity : 0,
+      isPhantom(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1182,17 +1354,22 @@ export class WorldScene {
       this.doomsdaySkylineMaterial.color.copy(skylineColor);
       this.doomsdaySkylineMaterial.opacity = doomsdayOpacity;
     }
+    if (this.phantomSkylineMaterial) {
+      this.phantomSkylineMaterial.color.copy(skylineColor);
+      this.phantomSkylineMaterial.opacity = phantomOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
     if (this.orbitalSkyline) this.orbitalSkyline.visible = orbitalOpacity > 0.01;
     if (this.abyssalSkyline) this.abyssalSkyline.visible = abyssalOpacity > 0.01;
     if (this.doomsdaySkyline) this.doomsdaySkyline.visible = doomsdayOpacity > 0.01;
+    if (this.phantomSkyline) this.phantomSkyline.visible = phantomOpacity > 0.01;
 
-    // Clouds fade for tunnel, orbital space & underwater abyss transitions and respect graphics settings.
+    // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
-      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' ? 0 : 1,
-      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' ? 0 : 1,
+      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' || base.id === 'PHANTOM_LINE' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' ? 0 : 1,
       t
     );
     if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
@@ -1322,6 +1499,17 @@ export class WorldScene {
         fogDensity = 0.0038;
         fillColorHex = 0x7c2d12;
         fillIntensity = 0.75;
+        isRain = false;
+        break;
+      case 'PHANTOM_SPECTRAL_VOID':
+        sunColorHex = 0x67e8f9;
+        sunIntensity = 1.10;
+        skyTopHex = 0x030712;
+        skyBottomHex = 0x082f49;
+        fogColorHex = 0x051b24;
+        fogDensity = 0.0036;
+        fillColorHex = 0x064e3b;
+        fillIntensity = 0.65;
         isRain = false;
         break;
       case 'CLEAR_DAYLIGHT':
@@ -1467,6 +1655,43 @@ export class WorldScene {
         if (meteor.position.x < -240) {
           meteor.position.x = meteor.userData.startX + 60;
           meteor.position.y = meteor.userData.startY + 24;
+        }
+      }
+    }
+
+    // Drifting ectoplasmic motes, silent ghost train & subtle flickering lamps in Phantom Line skyline
+    if (this.phantomSkyline && this.phantomSkyline.visible) {
+      const delta = dt || 0.016;
+      this.phantomEctoTime += delta;
+      this.phantomFlickerTime += delta;
+
+      // Animate drifting ectoplasmic motes
+      if (this.phantomEctoParticlesGeo && this.phantomEctoParticlesPos) {
+        const count = this.phantomEctoParticlesPos.length / 3;
+        for (let i = 0; i < count; i++) {
+          this.phantomEctoParticlesPos[i * 3 + 1] += delta * 1.5; // Rise gently upward
+          this.phantomEctoParticlesPos[i * 3 + 0] += Math.sin(this.phantomEctoTime * 0.8 + i) * delta * 1.2; // Ethereal lateral wander
+          if (this.phantomEctoParticlesPos[i * 3 + 1] > 54.0) {
+            this.phantomEctoParticlesPos[i * 3 + 1] = 2.0; // Wrap back to bottom
+          }
+        }
+        this.phantomEctoParticlesGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Animate silent gliding background ghost train along far viaduct
+      if (this.phantomGhostTrain) {
+        this.phantomGhostTrain.position.z -= delta * 14.0;
+        if (this.phantomGhostTrain.position.z < -440.0) {
+          this.phantomGhostTrain.position.z = -140.0;
+        }
+      }
+
+      // Gentle, restrained atmospheric flicker on distant lamps (non-epileptogenic smooth pulsation)
+      if (this.phantomFlickerLamps && this.phantomFlickerLamps.length > 0) {
+        for (let i = 0; i < this.phantomFlickerLamps.length; i++) {
+          const lamp = this.phantomFlickerLamps[i];
+          const s = 0.85 + 0.15 * Math.sin(this.phantomFlickerTime * 3.5 + i * 2.1);
+          lamp.scale.set(s, s, s);
         }
       }
     }

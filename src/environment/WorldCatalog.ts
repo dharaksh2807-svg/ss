@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -51,6 +51,12 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     description: 'The final functioning evacuation railway through the ruins of a collapsing futuristic metropolis, framed by shattered monolithic skyscrapers, burning horizons, falling ash, and emergency distress beacons.', rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 7500, keyCost: null, previewReference: 'environment:DOOMSDAY_LAST_TRANSIT',
     implemented: true, available: true, dynamicEligible: true, icon: '☄️', accentColor: '#f97316'
+  },
+  {
+    id: 'PHANTOM_LINE', environmentId: 'PHANTOM_LINE', displayName: 'Phantom Line',
+    description: 'An abandoned subterranean transit system gripped by chilling tension, decaying Victorian-modern platforms, flickering cathode fluorescents, shadowy apparitions, and silent ghost trains.', rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 9000, keyCost: null, previewReference: 'environment:PHANTOM_LINE',
+    implemented: true, available: true, dynamicEligible: true, icon: '👻', accentColor: '#67e8f9'
   }
 ];
 

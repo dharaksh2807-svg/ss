@@ -1015,6 +1015,8 @@ export class ObstacleFactory {
     if (!variant) {
       if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT') {
         variant = 'STREAMLINED_EXPRESS';
+      } else if (themeId === 'PHANTOM_LINE') {
+        variant = 'CLASSIC_TRANSIT';
       } else {
         const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
         if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) {
@@ -1030,7 +1032,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
+    if (themeId === 'PHANTOM_LINE') {
+      accentColor = 0x67e8f9;
+    } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
       accentColor = 0xf97316;
     } else if (themeId === 'ABYSSAL_GLASSLINE') {
       accentColor = 0x22d3ee;
@@ -1048,17 +1052,20 @@ export class ObstacleFactory {
     const isOrbital = themeId === 'ORBITAL_HALO';
     const isAbyssal = themeId === 'ABYSSAL_GLASSLINE';
     const isDoomsday = themeId === 'DOOMSDAY_LAST_TRANSIT';
-    const trainColor = isDoomsday
-      ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
-      : (isAbyssal
-        ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-        : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex)));
+    const isPhantom = themeId === 'PHANTOM_LINE';
+    const trainColor = isPhantom
+      ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+      : (isDoomsday
+        ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
+        : (isAbyssal
+          ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
+          : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))));
     const bodyMat = new THREE.MeshStandardMaterial({
       color: trainColor,
-      roughness: isDoomsday ? 0.65 : (isAbyssal ? 0.20 : (isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))))),
-      metalness: isDoomsday ? 0.70 : (isAbyssal ? 0.70 : (isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))))),
+      roughness: isPhantom ? 0.65 : (isDoomsday ? 0.65 : (isAbyssal ? 0.20 : (isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)))))),
+      metalness: isPhantom ? 0.65 : (isDoomsday ? 0.70 : (isAbyssal ? 0.70 : (isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)))))),
       // Subtle livery self-glow so body reads under any ambient level
-      emissive: new THREE.Color(isDoomsday ? 0xf97316 : (isAbyssal ? 0x22d3ee : (isOrbital ? 0x00f5ff : colorHex))).multiplyScalar(isDoomsday ? 0.05 : (isAbyssal ? 0.05 : (isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04)))),
+      emissive: new THREE.Color(isPhantom ? 0x67e8f9 : (isDoomsday ? 0xf97316 : (isAbyssal ? 0x22d3ee : (isOrbital ? 0x00f5ff : colorHex)))).multiplyScalar(isPhantom ? 0.05 : (isDoomsday ? 0.05 : (isAbyssal ? 0.05 : (isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04))))),
       emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
@@ -1231,6 +1238,66 @@ export class ObstacleFactory {
       this.curvedManager.applyCurvature(armorSkirtMat);
       [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
         const skirt = new THREE.Mesh(armorSkirtGeo, armorSkirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+      });
+    }
+
+    // 11. Theme-Specific Phantom Line Cast-Iron Cowcatcher & High-Beam Cyclops Headlight
+    if (isPhantom) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const cowcatcherGroup = new THREE.Group();
+        const ironMat = new THREE.MeshStandardMaterial({
+          color: 0x111827,
+          roughness: 0.75,
+          metalness: 0.85
+        });
+        this.curvedManager.applyCurvature(ironMat);
+
+        // Pointed cast-iron cowcatcher plow slats
+        const slatGeo = new THREE.BoxGeometry(w * 0.45, 0.65, 0.35);
+        [-w * 0.22, w * 0.22].forEach((px, idx) => {
+          const slat = new THREE.Mesh(slatGeo, ironMat);
+          slat.position.set(px, 0.40, bodyLength * 0.5 + noseLength * 0.85);
+          slat.rotation.y = idx === 0 ? 0.40 : -0.40;
+          cowcatcherGroup.add(slat);
+        });
+
+        // Cyclops central high-beam headlight lens atop nose
+        const cyclopsGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.30, 16);
+        cyclopsGeo.rotateX(Math.PI / 2);
+        const cyclopsMat = new THREE.MeshBasicMaterial({ color: 0x67e8f9 });
+        this.curvedManager.applyCurvature(cyclopsMat);
+        const cyclops = new THREE.Mesh(cyclopsGeo, cyclopsMat);
+        cyclops.position.set(0, 2.1, bodyLength * 0.5 + noseLength * 0.98);
+        cowcatcherGroup.add(cyclops);
+
+        // Distressed oxidized copper trim band
+        const trimGeo = new THREE.BoxGeometry(w * 0.88, 0.12, 0.15);
+        const trimMat = new THREE.MeshStandardMaterial({
+          color: 0x134e4a,
+          roughness: 0.55,
+          metalness: 0.70
+        });
+        this.curvedManager.applyCurvature(trimMat);
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.position.set(0, 1.35, bodyLength * 0.5 + noseLength * 0.95);
+        cowcatcherGroup.add(trim);
+
+        group.add(cowcatcherGroup);
+      }
+
+      // Cast-iron protective skirts along side flanks
+      const ironSkirtGeo = new THREE.BoxGeometry(0.08, 0.26, bodyLength * 0.92);
+      const ironSkirtMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.70,
+        metalness: 0.80
+      });
+      this.curvedManager.applyCurvature(ironSkirtMat);
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(ironSkirtGeo, ironSkirtMat);
         skirt.position.set(sideX, 0.44, 0);
         group.add(skirt);
       });
@@ -2491,7 +2558,7 @@ export class ObstacleFactory {
     themeId?: string
   ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
-    const movingColor = themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917 : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443 : (themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex)));
+    const movingColor = themeId === 'PHANTOM_LINE' ? 0x0f172a : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917 : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443 : (themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex))));
     const group = this.createTrain(length, false, movingColor, undefined, themeId);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 
@@ -2727,9 +2794,12 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' ? 'STREAMLINED_EXPRESS' : variants[(this.trainSpawnCounter++) % variants.length]);
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
+      if (themeId === 'PHANTOM_LINE') {
+        const phantomColors = [0x0f172a, 0x1e293b, 0x134e4a];
+        carColor = phantomColors[i % phantomColors.length];
+      } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
         const doomsdayColors = [0x1c1917, 0x292524, 0x78350f];
         carColor = doomsdayColors[i % doomsdayColors.length];
       } else if (themeId === 'ABYSSAL_GLASSLINE') {
@@ -2744,7 +2814,9 @@ export class ObstacleFactory {
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
+      if (themeId === 'PHANTOM_LINE') {
+        accentColor = 0x67e8f9;
+      } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
         accentColor = 0xf97316;
       } else if (themeId === 'ABYSSAL_GLASSLINE') {
         accentColor = 0x22d3ee;
@@ -2757,12 +2829,13 @@ export class ObstacleFactory {
         if (carColor === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
       }
 
+      const isPhantom = themeId === 'PHANTOM_LINE';
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : carColor,
-        roughness: themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)),
-        metalness: themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)),
+        color: variant === 'CLASSIC_TRANSIT' && !isPhantom ? 0xd0d5dd : carColor,
+        roughness: isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))),
+        metalness: isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))),
         // Subtle livery self-glow so body reads under any ambient level
-        emissive: new THREE.Color(carColor).multiplyScalar(themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04))),
+        emissive: new THREE.Color(carColor).multiplyScalar(isPhantom ? 0.05 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04)))),
         emissiveIntensity: 1.0
       });
       this.curvedManager.applyCurvature(bodyMat);
@@ -2925,6 +2998,62 @@ export class ObstacleFactory {
         this.curvedManager.applyCurvature(armorSkirtMat);
         [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
           const skirt = new THREE.Mesh(armorSkirtGeo, armorSkirtMat);
+          skirt.position.set(sideX, 0.44, 0);
+          carriageGroup.add(skirt);
+        });
+      }
+
+      // Theme-Specific Phantom Line Cast-Iron Cowcatcher & High-Beam Cyclops Headlight
+      if (themeId === 'PHANTOM_LINE') {
+        const halfW = w * 0.5;
+        if (!comp.hasRamp && comp.type === 'LOCOMOTIVE_CAB') {
+          const cowcatcherGroup = new THREE.Group();
+          const ironMat = new THREE.MeshStandardMaterial({
+            color: 0x111827,
+            roughness: 0.75,
+            metalness: 0.85
+          });
+          this.curvedManager.applyCurvature(ironMat);
+
+          const slatGeo = new THREE.BoxGeometry(w * 0.45, 0.65, 0.35);
+          [-w * 0.22, w * 0.22].forEach((px, idx) => {
+            const slat = new THREE.Mesh(slatGeo, ironMat);
+            slat.position.set(px, 0.40, comp.length * 0.5 + noseLength * 0.85);
+            slat.rotation.y = idx === 0 ? 0.40 : -0.40;
+            cowcatcherGroup.add(slat);
+          });
+
+          const cyclopsGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.30, 16);
+          cyclopsGeo.rotateX(Math.PI / 2);
+          const cyclopsMat = new THREE.MeshBasicMaterial({ color: 0x67e8f9 });
+          this.curvedManager.applyCurvature(cyclopsMat);
+          const cyclops = new THREE.Mesh(cyclopsGeo, cyclopsMat);
+          cyclops.position.set(0, 2.1, comp.length * 0.5 + noseLength * 0.98);
+          cowcatcherGroup.add(cyclops);
+
+          const trimGeo = new THREE.BoxGeometry(w * 0.88, 0.12, 0.15);
+          const trimMat = new THREE.MeshStandardMaterial({
+            color: 0x134e4a,
+            roughness: 0.55,
+            metalness: 0.70
+          });
+          this.curvedManager.applyCurvature(trimMat);
+          const trim = new THREE.Mesh(trimGeo, trimMat);
+          trim.position.set(0, 1.35, comp.length * 0.5 + noseLength * 0.95);
+          cowcatcherGroup.add(trim);
+
+          carriageGroup.add(cowcatcherGroup);
+        }
+
+        const ironSkirtGeo = new THREE.BoxGeometry(0.08, 0.26, comp.length * 0.92);
+        const ironSkirtMat = new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          roughness: 0.70,
+          metalness: 0.80
+        });
+        this.curvedManager.applyCurvature(ironSkirtMat);
+        [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+          const skirt = new THREE.Mesh(ironSkirtGeo, ironSkirtMat);
           skirt.position.set(sideX, 0.44, 0);
           carriageGroup.add(skirt);
         });

@@ -9,6 +9,7 @@ import {
   ORBITAL_HALO_THEME,
   ABYSSAL_GLASSLINE_THEME,
   DOOMSDAY_LAST_TRANSIT_THEME,
+  PHANTOM_LINE_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -25,6 +26,7 @@ export class EnvironmentRegistry {
     this.register(ORBITAL_HALO_THEME);
     this.register(ABYSSAL_GLASSLINE_THEME);
     this.register(DOOMSDAY_LAST_TRANSIT_THEME);
+    this.register(PHANTOM_LINE_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

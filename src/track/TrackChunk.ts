@@ -1531,27 +1531,30 @@ export class TrackChunk {
       const isOrbital = themeId === 'ORBITAL_HALO';
       const isAbyssal = themeId === 'ABYSSAL_GLASSLINE';
       const isDoomsday = themeId === 'DOOMSDAY_LAST_TRANSIT';
+      const isPhantom = themeId === 'PHANTOM_LINE';
 
       if (isComposition && compDef) {
         group = this.obstacleFactory.createTrainComposition(compDef, undefined, themeId);
       } else if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
-        const colors = isDoomsday
-          ? [0x1c1917, 0x292524, 0x78350f]
-          : (isAbyssal
-            ? [0x0f3443, 0x071e2e, 0xd97706]
-            : (isOrbital
-              ? [0xf8fafc, 0x0f172a, 0x38bdf8]
-              : (isNeon
-                ? [0x0b1021, 0x00e5ff, 0x8b5cf6]
-                : [
-                  CONSTANTS.COLORS.TRAIN_BODY_1,
-                  CONSTANTS.COLORS.TRAIN_BODY_2,
-                  CONSTANTS.COLORS.TRAIN_BODY_3
-                ])));
+        const colors = isPhantom
+          ? [0x0f172a, 0x1e293b, 0x134e4a]
+          : (isDoomsday
+            ? [0x1c1917, 0x292524, 0x78350f]
+            : (isAbyssal
+              ? [0x0f3443, 0x071e2e, 0xd97706]
+              : (isOrbital
+                ? [0xf8fafc, 0x0f172a, 0x38bdf8]
+                : (isNeon
+                  ? [0x0b1021, 0x00e5ff, 0x8b5cf6]
+                  : [
+                    CONSTANTS.COLORS.TRAIN_BODY_1,
+                    CONSTANTS.COLORS.TRAIN_BODY_2,
+                    CONSTANTS.COLORS.TRAIN_BODY_3
+                  ]))));
         const color = colors[Math.floor(Math.random() * colors.length)];
         group = this.obstacleFactory.createTrain(length, hasRamp, color, undefined, themeId);
       } else if (obsData.type === 'MOVING_TRAIN') {
-        const movingColor = isDoomsday ? 0x1c1917 : (isAbyssal ? 0x0f3443 : (isOrbital ? 0xf8fafc : (isNeon ? 0x0b1021 : CONSTANTS.COLORS.TRAIN_BODY_2)));
+        const movingColor = isPhantom ? 0x0f172a : (isDoomsday ? 0x1c1917 : (isAbyssal ? 0x0f3443 : (isOrbital ? 0xf8fafc : (isNeon ? 0x0b1021 : CONSTANTS.COLORS.TRAIN_BODY_2))));
         const movingData = this.obstacleFactory.createMovingTrain(length, movingColor, themeId);
         group = movingData.group;
         headlights = movingData.headlights;

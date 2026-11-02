@@ -3611,6 +3611,313 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  // -------------------------------------------------------------------------
+  // PHANTOM LINE: GHOST HORROR PREMIUM WORLD TEXTURES
+  // -------------------------------------------------------------------------
+
+  /**
+   * Decaying Victorian Subterranean Ceramic Glazed Tile Texture
+   */
+  public static getPhantomDecayedTileTexture(): THREE.Texture {
+    return this.getOrCreate('phantom_decayed_tile', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Damp subterranean substrate background
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, size, size);
+
+      // Sub-tile grid: 8 columns x 16 rows of subway brick tiles
+      const cols = 8;
+      const rows = 16;
+      const tileW = size / cols;
+      const tileH = size / rows;
+
+      for (let r = 0; r < rows; r++) {
+        const offset = (r % 2 === 0) ? 0 : tileW * 0.5;
+        for (let c = -1; c <= cols; c++) {
+          const x = c * tileW + offset;
+          const y = r * tileH;
+
+          // Aged, mildewed off-white/pale greenish-gray ceramic tile
+          const tone = 210 + Math.floor(Math.sin(c * 3.7 + r * 2.3) * 20);
+          const greenTint = Math.floor(tone * 0.96);
+          const blueTint = Math.floor(tone * 0.94);
+          ctx.fillStyle = `rgb(${tone - 20}, ${greenTint}, ${blueTint})`;
+          ctx.fillRect(x + 1.5, y + 1.5, tileW - 3, tileH - 3);
+
+          // Tile highlight bevel top/left
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.fillRect(x + 1.5, y + 1.5, tileW - 3, 2);
+          ctx.fillRect(x + 1.5, y + 1.5, 2, tileH - 3);
+
+          // Tile shadow bevel bottom/right
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          ctx.fillRect(x + 1.5, y + tileH - 3.5, tileW - 3, 2);
+          ctx.fillRect(x + tileW - 3.5, y + 1.5, 2, tileH - 3);
+
+          // Water seepage and grime streaks on random tiles
+          if ((c + r * 3) % 5 === 0) {
+            ctx.fillStyle = 'rgba(6, 78, 59, 0.45)'; // Mildew green
+            ctx.fillRect(x + 3, y + 3, tileW - 6, tileH - 6);
+          }
+          if ((c * 7 + r) % 11 === 0) {
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.75)'; // Missing/broken tile
+            ctx.fillRect(x + 1.5, y + 1.5, tileW - 3, tileH - 3);
+          }
+        }
+      }
+
+      // Descending dark vertical water drip streaks
+      ctx.fillStyle = 'rgba(8, 47, 73, 0.35)';
+      ctx.fillRect(size * 0.22, 0, 14, size);
+      ctx.fillRect(size * 0.68, 0, 22, size);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Distorted Antique Station Wall Clock Face (Frozen at 3:33)
+   */
+  public static getPhantomDistortedClockTexture(): THREE.Texture {
+    return this.getOrCreate('phantom_distorted_clock', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Outer bezel ring
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(size * 0.5, size * 0.5, size * 0.48, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tarnished brass rim
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      // Yellowed parchment clock dial
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(size * 0.5, size * 0.5, size * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Faded Roman numeral markings
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 22px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('XII', size * 0.5, size * 0.18);
+      ctx.fillText('III', size * 0.82, size * 0.5);
+      ctx.fillText('VI', size * 0.5, size * 0.82);
+      ctx.fillText('IX', size * 0.18, size * 0.5);
+
+      // Cracked glass fracture line
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.65)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.2, size * 0.15);
+      ctx.lineTo(size * 0.5, size * 0.5);
+      ctx.lineTo(size * 0.75, size * 0.8);
+      ctx.stroke();
+
+      // Clock hands frozen at 3:33 (Hour hand towards III, Minute hand past VI)
+      ctx.strokeStyle = '#020617';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.5, size * 0.5);
+      ctx.lineTo(size * 0.76, size * 0.54); // Hour hand at ~3:15-3:30
+      ctx.stroke();
+
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.5, size * 0.5);
+      ctx.lineTo(size * 0.58, size * 0.82); // Minute hand at ~33 min
+      ctx.stroke();
+
+      // Center rivet
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(size * 0.5, size * 0.5, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Decaying Derelict Station Enamel Signage
+   */
+  public static getPhantomDistressSignTexture(variant: number = 0): THREE.Texture {
+    return this.getOrCreate(`phantom_distress_sign_${variant}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Weathered rusted iron plate backing
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Enamel face with border
+      const faceColor = variant === 1 ? '#450a0a' : (variant === 2 ? '#064e3b' : '#082f49');
+      ctx.fillStyle = faceColor;
+      ctx.fillRect(8, 8, w - 16, h - 16);
+
+      ctx.strokeStyle = '#67e8f9';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Warning text
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (variant === 0) {
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = 'bold 30px "Arial Black", sans-serif';
+        ctx.fillText('PLATFORM 13 // CLOSED', w * 0.5, 45);
+        ctx.fillStyle = '#67e8f9';
+        ctx.font = 'bold 18px "Courier New", monospace';
+        ctx.fillText('NO DEPARTURES SCHEDULED', w * 0.5, 85);
+      } else if (variant === 1) {
+        ctx.fillStyle = '#fecaca';
+        ctx.font = 'bold 28px "Arial Black", sans-serif';
+        ctx.fillText('ABANDONED TRACK // KEEP OUT', w * 0.5, 45);
+        ctx.fillStyle = '#f87171';
+        ctx.font = 'bold 18px "Courier New", monospace';
+        ctx.fillText('UNSTABLE ARCHITECTURE', w * 0.5, 85);
+      } else {
+        ctx.fillStyle = '#ccfbf1';
+        ctx.font = 'bold 28px "Arial Black", sans-serif';
+        ctx.fillText('STATION OUT OF SERVICE', w * 0.5, 45);
+        ctx.fillStyle = '#2dd4bf';
+        ctx.font = 'bold 18px "Courier New", monospace';
+        ctx.fillText('POWER SEVERED 1974', w * 0.5, 85);
+      }
+
+      // Rust blotches on corners
+      ctx.fillStyle = 'rgba(120, 53, 15, 0.65)';
+      ctx.beginPath();
+      ctx.arc(14, 14, 12, 0, Math.PI * 2);
+      ctx.arc(w - 14, 14, 14, 0, Math.PI * 2);
+      ctx.arc(14, h - 14, 16, 0, Math.PI * 2);
+      ctx.arc(w - 14, h - 14, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Spectral Passenger Silhouette in Window / Alcove
+   */
+  public static getPhantomSpectralSilhouetteTexture(): THREE.Texture {
+    return this.getOrCreate('phantom_spectral_silhouette', () => {
+      const w = 256;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Pitch black alcove / window interior
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      // Pale cyan spectral ethereal glow aura
+      const grad = ctx.createRadialGradient(w * 0.5, h * 0.45, 10, w * 0.5, h * 0.45, w * 0.45);
+      grad.addColorStop(0, 'rgba(103, 232, 249, 0.55)');
+      grad.addColorStop(0.6, 'rgba(45, 212, 191, 0.25)');
+      grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Slender shadowy humanoid specter silhouette
+      ctx.fillStyle = '#030712';
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.28, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso & long coat
+      ctx.beginPath();
+      ctx.moveTo(w * 0.35, h * 0.36);
+      ctx.lineTo(w * 0.65, h * 0.36);
+      ctx.lineTo(w * 0.74, h * 0.85);
+      ctx.lineTo(w * 0.26, h * 0.85);
+      ctx.closePath();
+      ctx.fill();
+
+      // Pale glowing eye motes
+      ctx.fillStyle = '#a5f3fc';
+      ctx.beginPath();
+      ctx.arc(w * 0.46, h * 0.28, 2.5, 0, Math.PI * 2);
+      ctx.arc(w * 0.54, h * 0.28, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Murky Water Puddle & Fluorescent Specular Reflection Texture
+   */
+  public static getPhantomWaterMirrorTexture(): THREE.Texture {
+    return this.getOrCreate('phantom_water_mirror', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark wet ballast base
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, size, size);
+
+      // Murky standing water pool
+      ctx.fillStyle = 'rgba(8, 47, 73, 0.85)';
+      ctx.beginPath();
+      ctx.ellipse(size * 0.5, size * 0.5, size * 0.42, size * 0.32, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Reflected cold fluorescent tube light streak in the puddle
+      ctx.fillStyle = 'rgba(103, 232, 249, 0.75)';
+      ctx.fillRect(size * 0.28, size * 0.46, size * 0.44, 4);
+
+      // Subtle ripple rings
+      ctx.strokeStyle = 'rgba(45, 212, 191, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(size * 0.5, size * 0.5, size * 0.25, size * 0.15, 0.2, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 
