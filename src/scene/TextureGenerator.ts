@@ -3333,6 +3333,284 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Apocalyptic Doomsday Distress & Evacuation Transit Sign Texture
+   */
+  public static getDoomsdayDistressSignTexture(variant: 0 | 1 | 2 = 0): THREE.Texture {
+    return this.getOrCreate(`doomsday_distress_sign_${variant}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep charred metal housing
+      ctx.fillStyle = '#0f0907';
+      ctx.fillRect(0, 0, w, h);
+
+      // Warning hazard border (black and amber/red stripes)
+      const stripeW = 16;
+      ctx.fillStyle = variant === 1 ? '#ef4444' : '#f97316';
+      for (let x = -stripeW; x < w + stripeW; x += stripeW * 2) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + stripeW, 0);
+        ctx.lineTo(x, 14);
+        ctx.lineTo(x - stripeW, 14);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(x, h - 14);
+        ctx.lineTo(x + stripeW, h - 14);
+        ctx.lineTo(x, h);
+        ctx.lineTo(x - stripeW, h);
+        ctx.fill();
+      }
+
+      // Display matrix panel
+      ctx.fillStyle = '#1c0a05';
+      ctx.fillRect(14, 18, w - 28, h - 36);
+
+      // Flashing alert headers & distress typography
+      ctx.fillStyle = variant === 1 ? '#ff3b30' : (variant === 2 ? '#ff9500' : '#ffcc00');
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      if (variant === 0) {
+        ctx.fillText('EVACUATION LAST TRANSIT // SECTOR 00', 26, 28);
+        ctx.fillStyle = '#f97316';
+        ctx.font = '14px monospace';
+        ctx.fillText('STATUS: CRITICAL // CIVILIAN DEPARTURE TERMINAL AHEAD', 26, 58);
+        ctx.fillText('WARNING: STRUCTURAL FAILURE IMMINENT >>> KEEP MOVING', 26, 78);
+      } else if (variant === 1) {
+        ctx.fillText('GRID COLLAPSE // RADIATION OUTPOST 04', 26, 28);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '14px monospace';
+        ctx.fillText('SECTOR INTEGRITY: 14% // ATMOSPHERIC FALLOUT HAZARD', 26, 58);
+        ctx.fillText('DO NOT DETRAIN // BLAST DOORS CLOSING IN T-MINUS 04:00', 26, 78);
+      } else {
+        ctx.fillText('BUNKER CORRIDOR // ARMED EXCLUSION ZONE', 26, 28);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '14px monospace';
+        ctx.fillText('FINAL REFUGE FACILITY // TRANSIT CLEARANCE REQUIRED', 26, 58);
+        ctx.fillText('RESTRICTED PROTOCOL ENFORCED // REMAIN IN VEHICLE', 26, 78);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Scorched Concrete Blast Wall with Jagged Fractures Texture
+   */
+  public static getDoomsdayScorchedConcreteTexture(): THREE.Texture {
+    return this.getOrCreate('doomsday_scorched_concrete', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep soot and char base
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(0, 0, size, size);
+
+      // Concrete blast slab blocks
+      const step = size / 4;
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
+          ctx.fillStyle = (x + y) % 32 === 0 ? '#171412' : '#231f1c';
+          ctx.fillRect(x + 2, y + 2, step - 4, step - 4);
+
+          // Deep fissure / fracture lines
+          ctx.strokeStyle = '#0c0a09';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x + 6, y + 10);
+          ctx.lineTo(x + step * 0.45, y + step * 0.55);
+          ctx.lineTo(x + step - 8, y + step - 12);
+          ctx.stroke();
+
+          // Exposed rebar steel grid lines
+          ctx.strokeStyle = '#7c2d12';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x + step * 0.3, y + 4);
+          ctx.lineTo(x + step * 0.3, y + step - 4);
+          ctx.stroke();
+        }
+      }
+
+      // Thermal burn scorch marks across slabs
+      const grad = ctx.createRadialGradient(size * 0.5, size * 0.5, 10, size * 0.5, size * 0.5, size * 0.45);
+      grad.addColorStop(0, 'rgba(124, 45, 18, 0.45)');
+      grad.addColorStop(0.6, 'rgba(30, 20, 15, 0.6)');
+      grad.addColorStop(1, 'rgba(15, 10, 8, 0.85)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * High-Visibility Industrial Hazard Chevrons Texture
+   */
+  public static getDoomsdayHazardStripesTexture(): THREE.Texture {
+    return this.getOrCreate('doomsday_hazard_stripes', () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Soot black background
+      ctx.fillStyle = '#140c0a';
+      ctx.fillRect(0, 0, size, size);
+
+      // Vivid amber warning diagonals
+      ctx.fillStyle = '#f97316';
+      const stripeW = 24;
+      for (let x = -size; x < size * 2; x += stripeW * 2) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + stripeW, 0);
+        ctx.lineTo(x + stripeW - size, size);
+        ctx.lineTo(x - size, size);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Fractured / Glitched Futuristic Holographic Billboard Texture
+   */
+  public static getDoomsdayBillboardFracturedTexture(variant: 0 | 1 = 0): THREE.Texture {
+    return this.getOrCreate(`doomsday_billboard_fractured_${variant}`, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Burned-out frame
+      ctx.fillStyle = '#0a0504';
+      ctx.fillRect(0, 0, w, h);
+
+      // Flickering active quadrant
+      ctx.fillStyle = '#1f0d06';
+      ctx.fillRect(12, 12, w - 24, h - 24);
+
+      // Horizontal static scanlines
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.08)';
+      for (let y = 14; y < h - 14; y += 4) {
+        ctx.fillRect(14, y, w - 28, 2);
+      }
+
+      // High-priority emergency broadcast graphics
+      ctx.fillStyle = variant === 0 ? '#ef4444' : '#f97316';
+      ctx.font = 'bold 32px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(variant === 0 ? '⚠️ EMERGENCY BROADCAST' : '⚠️ ALL TRANSIT CANCELLED', w * 0.5, 60);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 20px monospace';
+      ctx.fillText(variant === 0 ? 'METROPOLIS CORE DESTABILIZING' : 'FINAL CONVOY CLEARING SECTOR 08', w * 0.5, 110);
+
+      ctx.fillStyle = '#d97706';
+      ctx.font = '16px monospace';
+      ctx.fillText('PROCEED RAPIDLY ALONG ACTIVE GUIDEWAY', w * 0.5, 150);
+      ctx.fillText('DO NOT EXIT TO GROUND LEVEL // ATMOSPHERE HAZARD', w * 0.5, 180);
+
+      // Broken / shattered screen overlay lines
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.2, 0);
+      ctx.lineTo(w * 0.45, h * 0.6);
+      ctx.lineTo(w * 0.8, h);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 100, 50, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.45, h * 0.6);
+      ctx.lineTo(w * 0.6, h * 0.2);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Molten Magma & Geothermal Vein Texture
+   */
+  public static getDoomsdayMoltenFissureTexture(): THREE.Texture {
+    return this.getOrCreate('doomsday_molten_fissure', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Charred crust
+      ctx.fillStyle = '#140806';
+      ctx.fillRect(0, 0, size, size);
+
+      // Fiery glowing magma fissures
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(size * 0.1, size * 0.2);
+      ctx.lineTo(size * 0.4, size * 0.5);
+      ctx.lineTo(size * 0.7, size * 0.4);
+      ctx.lineTo(size * 0.9, size * 0.8);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.1, size * 0.2);
+      ctx.lineTo(size * 0.4, size * 0.5);
+      ctx.lineTo(size * 0.7, size * 0.4);
+      ctx.lineTo(size * 0.9, size * 0.8);
+      ctx.stroke();
+
+      // Incandescent core vein
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.12, size * 0.21);
+      ctx.lineTo(size * 0.4, size * 0.5);
+      ctx.lineTo(size * 0.68, size * 0.41);
+      ctx.lineTo(size * 0.89, size * 0.79);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 

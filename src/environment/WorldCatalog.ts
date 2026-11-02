@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -45,6 +45,12 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     description: 'A colossal glass transit railway through the deep ocean abyss, surrounded by luminescent sea life, submerged megacity domes, and hydrothermal trench architecture.', rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 6000, keyCost: null, previewReference: 'environment:ABYSSAL_GLASSLINE',
     implemented: true, available: true, dynamicEligible: true, icon: '🌊', accentColor: '#22d3ee'
+  },
+  {
+    id: 'DOOMSDAY_LAST_TRANSIT', environmentId: 'DOOMSDAY_LAST_TRANSIT', displayName: 'Doomsday: Last Transit',
+    description: 'The final functioning evacuation railway through the ruins of a collapsing futuristic metropolis, framed by shattered monolithic skyscrapers, burning horizons, falling ash, and emergency distress beacons.', rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 7500, keyCost: null, previewReference: 'environment:DOOMSDAY_LAST_TRANSIT',
+    implemented: true, available: true, dynamicEligible: true, icon: '☄️', accentColor: '#f97316'
   }
 ];
 

@@ -27,7 +27,8 @@ export type AtmospherePreset =
   | 'ILLUMINATED_UNDERGROUND'
   | 'NEON_MIDNIGHT_RAIN'
   | 'ORBITAL_CELESTIAL_DAWN'
-  | 'ABYSSAL_BIOLUMINESCENT_CHASM';
+  | 'ABYSSAL_BIOLUMINESCENT_CHASM'
+  | 'DOOMSDAY_FIRESTORM_FALLOUT';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -397,6 +398,10 @@ export class EnvironmentalEncounterDirector {
 
     if (districtId === 'ABYSSAL_GLASSLINE') {
       return 'ABYSSAL_BIOLUMINESCENT_CHASM';
+    }
+
+    if (districtId === 'DOOMSDAY_LAST_TRANSIT') {
+      return 'DOOMSDAY_FIRESTORM_FALLOUT';
     }
 
     // Check if an upcoming or recent landmark prefers an atmosphere

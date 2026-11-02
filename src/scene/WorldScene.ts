@@ -21,14 +21,21 @@ export class WorldScene {
   public neonSkyline: THREE.Group | null = null;
   public orbitalSkyline: THREE.Group | null = null;
   public abyssalSkyline: THREE.Group | null = null;
+  public doomsdaySkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private orbitalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private abyssalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private doomsdaySkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
+  private doomsdaySmokePlumes: THREE.Group[] = [];
+  private doomsdayMeteorStreaks: THREE.Mesh[] = [];
+  private doomsdayEmbersTime: number = 0;
+  private doomsdayEmbersGeo: THREE.BufferGeometry | null = null;
+  private doomsdayEmbersPositions: Float32Array | null = null;
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -854,11 +861,224 @@ export class WorldScene {
 
     group.add(this.abyssalSkyline);
 
+    // 6. Apocalyptic Burning Metropolis Skyline (Doomsday: Last Transit)
+    const doomsdaySkyline = new THREE.Group();
+    this.doomsdaySkyline = doomsdaySkyline;
+    this.doomsdaySkylineMaterial = this.skylineMaterial.clone();
+    const doomsdaySootMat = new THREE.MeshBasicMaterial({ color: 0x140806, fog: false });
+    const doomsdayCharcoalMat = new THREE.MeshBasicMaterial({ color: 0x22130e, fog: false });
+    const doomsdayAmberMat = new THREE.MeshBasicMaterial({ color: 0xf97316, fog: false });
+    const doomsdayFlameMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, fog: false });
+    const doomsdayLavaMat = new THREE.MeshBasicMaterial({ color: 0xef4444, fog: false });
+    const doomsdaySmokeMat = new THREE.MeshBasicMaterial({
+      color: 0x1c0b06,
+      transparent: true,
+      opacity: 0.65,
+      fog: false
+    });
+
+    // 6a. Falling Embers & Atmospheric Volcanic Ash Particles
+    const emberCount = 450;
+    const emberGeo = new THREE.BufferGeometry();
+    const emberPositions = new Float32Array(emberCount * 3);
+    const emberColors = new Float32Array(emberCount * 3);
+
+    const emberColorPalette = [
+      new THREE.Color(0xffedd5), // incandescent white-gold
+      new THREE.Color(0xf97316), // intense amber flame
+      new THREE.Color(0xef4444), // glowing thermal red
+      new THREE.Color(0x78716c)  // dark drifting soot flake
+    ];
+
+    for (let i = 0; i < emberCount; i++) {
+      emberPositions[i * 3 + 0] = (Math.random() - 0.5) * 160;
+      emberPositions[i * 3 + 1] = Math.random() * 60;
+      emberPositions[i * 3 + 2] = -Math.random() * 220 + 20;
+
+      const col = emberColorPalette[Math.floor(Math.random() * emberColorPalette.length)];
+      emberColors[i * 3 + 0] = col.r;
+      emberColors[i * 3 + 1] = col.g;
+      emberColors[i * 3 + 2] = col.b;
+    }
+
+    emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPositions, 3));
+    emberGeo.setAttribute('color', new THREE.BufferAttribute(emberColors, 3));
+    this.doomsdayEmbersGeo = emberGeo;
+    this.doomsdayEmbersPositions = emberPositions;
+
+    const emberMat = new THREE.PointsMaterial({
+      size: 1.6,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.90,
+      fog: false
+    });
+    const embers = new THREE.Points(emberGeo, emberMat);
+    this.doomsdaySkyline.add(embers);
+
+    // 6b. 18 Massive Distant Shattered Monolith Skyscrapers
+    const ruinedTowerSpecs = [
+      // Left cluster: Financial district ruins
+      { x: -80, z: -290, w: 26, d: 24, h: 88, tiltZ: 0.12, shearAngle: 0.28 },
+      { x: -115, z: -340, w: 32, d: 28, h: 110, tiltZ: -0.08, shearAngle: -0.22 },
+      { x: -155, z: -310, w: 24, d: 24, h: 72, tiltZ: 0.05, shearAngle: 0.35 },
+      { x: -190, z: -380, w: 36, d: 32, h: 125, tiltZ: -0.15, shearAngle: -0.18 },
+      { x: -70, z: -430, w: 28, d: 26, h: 95, tiltZ: 0.08, shearAngle: 0.25 },
+      { x: -130, z: -460, w: 30, d: 30, h: 84, tiltZ: -0.10, shearAngle: -0.30 },
+      { x: -175, z: -510, w: 40, d: 35, h: 130, tiltZ: 0.06, shearAngle: 0.15 },
+      { x: -95, z: -540, w: 25, d: 22, h: 76, tiltZ: -0.05, shearAngle: -0.25 },
+
+      // Right cluster: Megacity commercial / communications monoliths
+      { x: 85, z: -280, w: 28, d: 25, h: 92, tiltZ: -0.10, shearAngle: -0.26 },
+      { x: 120, z: -330, w: 34, d: 30, h: 118, tiltZ: 0.14, shearAngle: 0.20 },
+      { x: 160, z: -315, w: 22, d: 22, h: 68, tiltZ: -0.06, shearAngle: -0.32 },
+      { x: 195, z: -375, w: 38, d: 34, h: 135, tiltZ: 0.12, shearAngle: 0.18 },
+      { x: 75, z: -425, w: 26, d: 24, h: 86, tiltZ: -0.07, shearAngle: -0.22 },
+      { x: 135, z: -455, w: 32, d: 28, h: 98, tiltZ: 0.09, shearAngle: 0.28 },
+      { x: 180, z: -505, w: 42, d: 36, h: 140, tiltZ: -0.11, shearAngle: -0.16 },
+      { x: 100, z: -535, w: 26, d: 24, h: 80, tiltZ: 0.08, shearAngle: 0.24 },
+
+      // Center distant colossal ruined spires
+      { x: -35, z: -520, w: 44, d: 38, h: 155, tiltZ: 0.06, shearAngle: 0.22 },
+      { x: 40, z: -550, w: 48, d: 40, h: 165, tiltZ: -0.07, shearAngle: -0.19 }
+    ];
+
+    ruinedTowerSpecs.forEach((spec, idx) => {
+      const towerGroup = new THREE.Group();
+      towerGroup.position.set(spec.x, 0, spec.z);
+      towerGroup.rotation.z = spec.tiltZ;
+
+      // Lower intact structural base
+      const baseH = spec.h * 0.65;
+      const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(spec.w, baseH, spec.d), doomsdaySootMat);
+      baseMesh.position.y = baseH * 0.5;
+      towerGroup.add(baseMesh);
+
+      // Sheared upper fractured section
+      const topH = spec.h * 0.35;
+      const topMesh = new THREE.Mesh(new THREE.BoxGeometry(spec.w * 0.85, topH, spec.d * 0.85), doomsdayCharcoalMat);
+      topMesh.position.set(spec.shearAngle * 10, baseH + topH * 0.45, 0);
+      topMesh.rotation.z = spec.shearAngle;
+      towerGroup.add(topMesh);
+
+      // Jagged exposed steel rebar spires protruding from sheared roof
+      [-spec.w * 0.25, 0, spec.w * 0.25].forEach((rx, rIdx) => {
+        const rebarH = 8.0 + (rIdx * 5);
+        const rebar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, rebarH, 4), doomsdayAmberMat);
+        rebar.position.set(rx + (spec.shearAngle * 8), spec.h + rebarH * 0.4, (rIdx - 1) * 4);
+        rebar.rotation.z = spec.shearAngle * 0.8;
+        towerGroup.add(rebar);
+      });
+
+      // Glowing internal firestorm blast cavities / broken window fissures
+      if (idx % 2 === 0) {
+        const breachMesh = new THREE.Mesh(new THREE.BoxGeometry(spec.w * 0.6, 6.0, spec.d + 0.5), doomsdayAmberMat);
+        breachMesh.position.set(0, baseH * 0.55, 0);
+        towerGroup.add(breachMesh);
+
+        const flameLick = new THREE.Mesh(new THREE.BoxGeometry(spec.w * 0.35, 3.5, spec.d + 0.8), doomsdayFlameMat);
+        flameLick.position.set(spec.w * 0.1, baseH * 0.55 + 2.5, 0);
+        towerGroup.add(flameLick);
+      }
+
+      this.doomsdaySkyline!.add(towerGroup);
+    });
+
+    // 6c. Massive Smoke Columns (6 Billowing Plumes rising into the atmosphere)
+    this.doomsdaySmokePlumes = [];
+    const plumeCoords = [
+      { x: -120, z: -330, baseR: 12, topR: 32, h: 120, speed: 0.15 },
+      { x: -170, z: -480, baseR: 16, topR: 44, h: 145, speed: 0.12 },
+      { x: -60, z: -440, baseR: 10, topR: 28, h: 110, speed: 0.18 },
+      { x: 95, z: -320, baseR: 14, topR: 36, h: 130, speed: 0.14 },
+      { x: 165, z: -460, baseR: 18, topR: 48, h: 150, speed: 0.11 },
+      { x: 50, z: -530, baseR: 20, topR: 52, h: 160, speed: 0.10 }
+    ];
+
+    plumeCoords.forEach((coord) => {
+      const plumeGroup = new THREE.Group();
+      plumeGroup.position.set(coord.x, 0, coord.z);
+      plumeGroup.userData = { speed: coord.speed, baseY: 0, rotSpeed: (Math.random() - 0.5) * 0.05 };
+
+      // Stacked low-poly conical billows for volumetric appearance
+      const segments = 4;
+      for (let s = 0; s < segments; s++) {
+        const segH = coord.h / segments;
+        const r1 = THREE.MathUtils.lerp(coord.baseR, coord.topR, s / segments);
+        const r2 = THREE.MathUtils.lerp(coord.baseR, coord.topR, (s + 1) / segments);
+        const billowGeo = new THREE.CylinderGeometry(r2, r1, segH * 1.1, 7, 1);
+        const billow = new THREE.Mesh(billowGeo, doomsdaySmokeMat);
+        billow.position.y = (s + 0.5) * segH;
+        billow.rotation.y = (s * Math.PI) / 3;
+        plumeGroup.add(billow);
+      }
+
+      this.doomsdaySmokePlumes.push(plumeGroup);
+      this.doomsdaySkyline!.add(plumeGroup);
+    });
+
+    // 6d. High-Altitude Atmospheric Re-entry / Meteor Streaks
+    this.doomsdayMeteorStreaks = [];
+    const meteorSpecs = [
+      { x: -90, y: 135, z: -360, len: 45, rotZ: -0.42, rotX: 0.15 },
+      { x: 45, y: 148, z: -420, len: 60, rotZ: -0.36, rotX: 0.10 },
+      { x: -160, y: 125, z: -480, len: 40, rotZ: -0.48, rotX: 0.20 },
+      { x: 130, y: 140, z: -510, len: 50, rotZ: -0.38, rotX: 0.12 }
+    ];
+
+    meteorSpecs.forEach((spec) => {
+      const meteorGeo = new THREE.CylinderGeometry(0.35, 1.8, spec.len, 5);
+      const meteorMat = new THREE.MeshBasicMaterial({ color: 0xffedd5, fog: false });
+      const meteor = new THREE.Mesh(meteorGeo, meteorMat);
+      meteor.position.set(spec.x, spec.y, spec.z);
+      meteor.rotation.set(spec.rotX, 0, spec.rotZ);
+      meteor.userData = { vx: -8.0, vy: -3.2, startX: spec.x, startY: spec.y };
+
+      // Fiery ionization tail
+      const tailGeo = new THREE.CylinderGeometry(0.1, 1.4, spec.len * 0.7, 4);
+      const tail = new THREE.Mesh(tailGeo, doomsdayAmberMat);
+      tail.position.y = spec.len * 0.5;
+      meteor.add(tail);
+
+      this.doomsdayMeteorStreaks.push(meteor);
+      this.doomsdaySkyline!.add(meteor);
+    });
+
+    // 6e. Distant Collapsed Suspension Bridge Corridor
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.position.set(0, 0, -440);
+
+    // Twin shattered suspension towers (X = -65, +65)
+    [-65, 65].forEach((bx) => {
+      const towerH = 105;
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(10, towerH, 12), doomsdaySootMat);
+      tower.position.set(bx, towerH * 0.5, 0);
+      tower.rotation.z = bx < 0 ? -0.06 : 0.08;
+      bridgeGroup.add(tower);
+
+      // Snapped suspension cables dangling downward
+      const cableGeo = new THREE.CylinderGeometry(0.3, 0.3, 45, 4);
+      const cable = new THREE.Mesh(cableGeo, doomsdayCharcoalMat);
+      cable.position.set(bx + (bx < 0 ? 12 : -12), 48, 0);
+      cable.rotation.z = bx < 0 ? -0.38 : 0.42;
+      bridgeGroup.add(cable);
+    });
+
+    // Molten lava trench beneath the collapsed span
+    const lavaTrench = new THREE.Mesh(new THREE.PlaneGeometry(160, 45), doomsdayLavaMat);
+    lavaTrench.rotation.x = -Math.PI / 2;
+    lavaTrench.position.set(0, 1.0, 0);
+    bridgeGroup.add(lavaTrench);
+
+    this.doomsdaySkyline.add(bridgeGroup);
+    group.add(this.doomsdaySkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
     this.orbitalSkyline.visible = this.currentTheme.id === 'ORBITAL_HALO';
     this.abyssalSkyline.visible = this.currentTheme.id === 'ABYSSAL_GLASSLINE';
+    this.doomsdaySkyline.visible = this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT';
 
     return group;
   }
@@ -932,6 +1152,12 @@ export class WorldScene {
       isAbyssal(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isDoomsday = (env: EnvironmentTheme) => env.id === 'DOOMSDAY_LAST_TRANSIT';
+    const doomsdayOpacity = THREE.MathUtils.lerp(
+      isDoomsday(base) ? base.skyline.opacity : 0,
+      isDoomsday(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -952,11 +1178,16 @@ export class WorldScene {
       this.abyssalSkylineMaterial.color.copy(skylineColor);
       this.abyssalSkylineMaterial.opacity = abyssalOpacity;
     }
+    if (this.doomsdaySkylineMaterial) {
+      this.doomsdaySkylineMaterial.color.copy(skylineColor);
+      this.doomsdaySkylineMaterial.opacity = doomsdayOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
     if (this.orbitalSkyline) this.orbitalSkyline.visible = orbitalOpacity > 0.01;
     if (this.abyssalSkyline) this.abyssalSkyline.visible = abyssalOpacity > 0.01;
+    if (this.doomsdaySkyline) this.doomsdaySkyline.visible = doomsdayOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space & underwater abyss transitions and respect graphics settings.
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -1082,6 +1313,17 @@ export class WorldScene {
         fillIntensity = 0.75;
         isRain = false;
         break;
+      case 'DOOMSDAY_FIRESTORM_FALLOUT':
+        sunColorHex = 0xff6a20;
+        sunIntensity = 1.15;
+        skyTopHex = 0x140402;
+        skyBottomHex = 0x4a1104;
+        fogColorHex = 0x1a0705;
+        fogDensity = 0.0038;
+        fillColorHex = 0x7c2d12;
+        fillIntensity = 0.75;
+        isRain = false;
+        break;
       case 'CLEAR_DAYLIGHT':
       default:
         sunColorHex = 0xfff8eb;
@@ -1189,6 +1431,42 @@ export class WorldScene {
           creature.position.x = creature.userData.minX;
         } else if (creature.userData.vx < 0 && creature.position.x < creature.userData.minX) {
           creature.position.x = creature.userData.maxX;
+        }
+      }
+    }
+
+    // Falling embers, billowing smoke and meteor streaks in Doomsday skyline
+    if (this.doomsdaySkyline && this.doomsdaySkyline.visible) {
+      const delta = dt || 0.016;
+      this.doomsdayEmbersTime += delta;
+
+      // Animate falling ash/ember particles
+      if (this.doomsdayEmbersGeo && this.doomsdayEmbersPositions) {
+        const count = this.doomsdayEmbersPositions.length / 3;
+        for (let i = 0; i < count; i++) {
+          this.doomsdayEmbersPositions[i * 3 + 1] -= delta * 14.0; // Fall downward
+          this.doomsdayEmbersPositions[i * 3 + 0] += Math.sin(this.doomsdayEmbersTime * 1.6 + i) * delta * 2.8; // Turbulent drift
+          if (this.doomsdayEmbersPositions[i * 3 + 1] < 0) {
+            this.doomsdayEmbersPositions[i * 3 + 1] = 58.0; // Wrap back to top
+          }
+        }
+        this.doomsdayEmbersGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Animate smoke plume billows
+      for (let i = 0; i < this.doomsdaySmokePlumes.length; i++) {
+        const plume = this.doomsdaySmokePlumes[i];
+        plume.rotation.y += plume.userData.rotSpeed * delta;
+      }
+
+      // Animate meteor streaks
+      for (let i = 0; i < this.doomsdayMeteorStreaks.length; i++) {
+        const meteor = this.doomsdayMeteorStreaks[i];
+        meteor.position.x += meteor.userData.vx * delta;
+        meteor.position.y += meteor.userData.vy * delta;
+        if (meteor.position.x < -240) {
+          meteor.position.x = meteor.userData.startX + 60;
+          meteor.position.y = meteor.userData.startY + 24;
         }
       }
     }

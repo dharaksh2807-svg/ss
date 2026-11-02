@@ -154,6 +154,22 @@ export class SceneryFactory {
     abyssalHoloSignMat3: THREE.MeshBasicMaterial;
     abyssalTransitSignMat: THREE.MeshBasicMaterial;
     abyssalGuidewayDeckMat: THREE.MeshStandardMaterial;
+    // Doomsday: Last Transit Premium Scenery Materials
+    doomsdayScorchedConcreteMat: THREE.MeshStandardMaterial;
+    doomsdayRustedSteelMat: THREE.MeshStandardMaterial;
+    doomsdayBlastAlloyMat: THREE.MeshStandardMaterial;
+    doomsdayRebarSteelMat: THREE.MeshStandardMaterial;
+    doomsdayShatteredGlassMat: THREE.MeshStandardMaterial;
+    doomsdayAshBasaltMat: THREE.MeshStandardMaterial;
+    doomsdayHazardStripeMat: THREE.MeshStandardMaterial;
+    doomsdayMoltenGlowMat: THREE.MeshBasicMaterial;
+    doomsdayFireAmberGlowMat: THREE.MeshBasicMaterial;
+    doomsdayEmergencyRedGlowMat: THREE.MeshBasicMaterial;
+    doomsdayDistressSignMat1: THREE.MeshBasicMaterial;
+    doomsdayDistressSignMat2: THREE.MeshBasicMaterial;
+    doomsdayDistressSignMat3: THREE.MeshBasicMaterial;
+    doomsdayBillboardMat1: THREE.MeshBasicMaterial;
+    doomsdayBillboardMat2: THREE.MeshBasicMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -968,6 +984,126 @@ export class SceneryFactory {
         });
         curved.applyCurvature(m);
         return m;
+      })(),
+      // Doomsday: Last Transit Premium Scenery Materials
+      doomsdayScorchedConcreteMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getDoomsdayScorchedConcreteTexture(),
+          roughness: 0.85,
+          metalness: 0.15
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayRustedSteelMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x2e1913,
+          roughness: 0.75,
+          metalness: 0.65
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayBlastAlloyMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x140e0c,
+          roughness: 0.45,
+          metalness: 0.80
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayRebarSteelMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x5a2312,
+          roughness: 0.60,
+          metalness: 0.70
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayShatteredGlassMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x3d271d,
+          roughness: 0.35,
+          metalness: 0.40,
+          transparent: true,
+          opacity: 0.45
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayAshBasaltMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x181311,
+          roughness: 0.92,
+          metalness: 0.08
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayHazardStripeMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getDoomsdayHazardStripesTexture(),
+          roughness: 0.45,
+          metalness: 0.25,
+          emissive: new THREE.Color(0x7c2d12),
+          emissiveIntensity: 0.45
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayMoltenGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayMoltenFissureTexture()
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayFireAmberGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayEmergencyRedGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayDistressSignMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayDistressSignTexture(0)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayDistressSignMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayDistressSignTexture(1)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayDistressSignMat3: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayDistressSignTexture(2)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayBillboardMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayBillboardFracturedTexture(0)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      doomsdayBillboardMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getDoomsdayBillboardFracturedTexture(1)
+        });
+        curved.applyCurvature(m);
+        return m;
       })()
     };
   }
@@ -1013,6 +1149,8 @@ export class SceneryFactory {
       this.buildOrbitalHaloScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'ABYSSAL_GLASSLINE') {
       this.buildAbyssalGlasslineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'DOOMSDAY_LAST_TRANSIT') {
+      this.buildDoomsdayLastTransitScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -4011,6 +4149,54 @@ export class SceneryFactory {
 
       group.add(portalGroup);
       return;
+    } else if (theme.id === 'DOOMSDAY_LAST_TRANSIT') {
+      // --- Fortified Apocalyptic Evacuation Blast Portal (Doomsday: Last Transit) ---
+      const pylonGeo = new THREE.BoxGeometry(4.0, portalH, 4.4);
+      [-spanW * 0.5 - 1.4, spanW * 0.5 + 1.4].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, mats.doomsdayScorchedConcreteMat);
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+        portalGroup.add(pylon);
+
+        // Heavy steel blast shutter track guides
+        const guideGeo = new THREE.BoxGeometry(0.5, portalH * 0.85, 0.8);
+        const guide = new THREE.Mesh(guideGeo, mats.doomsdayRustedSteelMat);
+        guide.position.set(px + (px < 0 ? 1.9 : -1.9), portalH * 0.45, portalZ);
+        portalGroup.add(guide);
+
+        // Flashing red emergency strobe beacons
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.40, 8, 8), mats.doomsdayEmergencyRedGlowMat);
+        beacon.position.set(px + (px < 0 ? 2.0 : -2.0), portalH * 0.9, portalZ + 1.5);
+        portalGroup.add(beacon);
+      });
+
+      // Overhead heavy reinforced concrete blast lintel crown
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.5, 3.8, 4.8), mats.doomsdayScorchedConcreteMat);
+      crown.position.set(0, portalH + 0.8, portalZ);
+      crown.castShadow = true;
+      crown.receiveShadow = true;
+      portalGroup.add(crown);
+
+      // Warning hazard stripe threshold beam (clearance >= 10.2m)
+      const hazardBeam = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.8, 0.65, 0.5), mats.doomsdayHazardStripeMat);
+      hazardBeam.position.set(0, portalH - 1.1, portalZ + 2.45);
+      portalGroup.add(hazardBeam);
+
+      // Evacuation Sector Distress Sign
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 2.4), mats.doomsdayDistressSignMat1);
+      sign.position.set(0, portalH + 0.9, portalZ + 2.45);
+      portalGroup.add(sign);
+
+      // Overhead amber warning spotlights
+      [-spanW * 0.45, spanW * 0.45].forEach((bx) => {
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 0.5), mats.doomsdayFireAmberGlowMat);
+        lamp.position.set(bx, portalH - 1.5, portalZ + 2.2);
+        portalGroup.add(lamp);
+      });
+
+      group.add(portalGroup);
+      return;
     }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
@@ -5262,5 +5448,495 @@ export class SceneryFactory {
     }
 
     group.add(haloGroup);
+  }
+
+  // -------------------------------------------------------------------------
+  // DOOMSDAY: LAST TRANSIT SCENERY
+  // -------------------------------------------------------------------------
+
+  /**
+   * Builds apocalyptic ruins, blast retaining walls, damaged gantries, and signature landmarks
+   * for the DOOMSDAY: LAST TRANSIT premium world.
+   */
+  private buildDoomsdayLastTransitScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const rng = new SeededRandom(seed);
+
+    // 1. Heavy fortified blast retaining walls and service walkways flanking tracks
+    this.buildDoomsdayBlastWallsAndWalkways(group, roadbedWidth, curbWidth, chunkLength, detail);
+
+    // 2. Heavy damaged transit gantries with warning strobes and severed conduits
+    this.buildDoomsdayDamagedGantries(group, chunkLength, detail);
+
+    // 3. Rubble piles, fortified barricades, distress signs, and emergency searchlights
+    this.buildDoomsdayRubbleAndCraterFormations(group, chunkLength, rng, detail);
+
+    // 4. Deterministic signature landmarks across chunks (varied by seed)
+    const landmarkVariant = Math.floor(Math.abs(seed) / 7) % 4;
+    if (landmarkVariant === 0) {
+      this.buildDoomsdayRuinedSkyscraper(group, chunkLength, -chunkLength * 0.45, rng);
+    } else if (landmarkVariant === 1) {
+      this.buildDoomsdayBunkerGateway(group, chunkLength, -chunkLength * 0.5);
+    } else if (landmarkVariant === 2) {
+      this.buildDoomsdayFracturedSkybridge(group, chunkLength, -chunkLength * 0.55);
+    } else {
+      this.buildDoomsdayFlareStack(group, chunkLength, -chunkLength * 0.4, rng);
+    }
+  }
+
+  /**
+   * Fortified blast retaining walls with rebar ribs, hazard chevrons, and damaged catwalks.
+   * Safety invariant: Wall face is at |X| = 6.6m >= 6.5m, safely outside the 4.0m playable zone.
+   */
+  private buildDoomsdayBlastWallsAndWalkways(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = CONSTANTS.TUNNEL_WALL_X; // 6.6m
+    const wallHeight = 3.6;
+    const wallThickness = 0.8;
+
+    // Continuous scorched concrete blast walls flanking tracks
+    const wallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, chunkLength);
+    [-wallX, wallX].forEach((wx) => {
+      const wall = new THREE.Mesh(wallGeo, mats.doomsdayScorchedConcreteMat);
+      wall.position.set(wx, wallHeight * 0.5, -chunkLength * 0.5);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      group.add(wall);
+
+      // Warning hazard stripe runner along the top coping
+      const runnerGeo = new THREE.BoxGeometry(0.12, 0.22, chunkLength);
+      const runner = new THREE.Mesh(runnerGeo, mats.doomsdayHazardStripeMat);
+      runner.position.set(wx + (wx < 0 ? 0.38 : -0.38), wallHeight - 0.12, -chunkLength * 0.5);
+      group.add(runner);
+
+      // Heavy steel rebar buttresses every 10m along the wall exterior
+      const buttressSpacing = 10.0;
+      const buttressCount = Math.floor(chunkLength / buttressSpacing);
+      const buttressGeo = new THREE.BoxGeometry(0.45, wallHeight * 1.15, 0.45);
+      for (let b = 0; b < buttressCount; b++) {
+        const bz = -b * buttressSpacing - 5.0;
+        const buttress = new THREE.Mesh(buttressGeo, mats.doomsdayRustedSteelMat);
+        buttress.position.set(wx + (wx < 0 ? -0.35 : 0.35), wallHeight * 0.55, bz);
+        buttress.castShadow = true;
+        group.add(buttress);
+      }
+    });
+
+    // Outer service catwalks with rusted industrial grating (|X| >= 7.2m)
+    if (detail !== 'MINIMAL') {
+      const catwalkWidth = 1.4;
+      const catwalkY = 1.8;
+      const catwalkGeo = new THREE.BoxGeometry(catwalkWidth, 0.15, chunkLength);
+      [-wallX - 0.9, wallX + 0.9].forEach((cx) => {
+        const catwalk = new THREE.Mesh(catwalkGeo, mats.doomsdayRustedSteelMat);
+        catwalk.position.set(cx, catwalkY, -chunkLength * 0.5);
+        group.add(catwalk);
+
+        // Catwalk safety handrails (|X| >= 7.8m)
+        const railGeo = new THREE.BoxGeometry(0.08, 0.9, chunkLength);
+        const rail = new THREE.Mesh(railGeo, mats.doomsdayRebarSteelMat);
+        rail.position.set(cx + (cx < 0 ? -catwalkWidth * 0.45 : catwalkWidth * 0.45), catwalkY + 0.5, -chunkLength * 0.5);
+        group.add(rail);
+      });
+    }
+
+    // Wall-mounted emergency hazard floodlights every 24m
+    const lampSpacing = 24.0;
+    const lampCount = Math.floor(chunkLength / lampSpacing);
+    const lampArmGeo = new THREE.BoxGeometry(0.6, 0.1, 0.1);
+    const lampHeadGeo = new THREE.BoxGeometry(0.35, 0.2, 0.25);
+    for (let l = 0; l < lampCount; l++) {
+      const lz = -l * lampSpacing - 12.0;
+      [-wallX, wallX].forEach((wx, sideIdx) => {
+        const inwardSign = wx < 0 ? 1 : -1;
+        const arm = new THREE.Mesh(lampArmGeo, mats.doomsdayRustedSteelMat);
+        arm.position.set(wx + inwardSign * 0.3, wallHeight + 0.5, lz);
+        group.add(arm);
+
+        const lampMat = (sideIdx + l) % 2 === 0 ? mats.doomsdayFireAmberGlowMat : mats.doomsdayEmergencyRedGlowMat;
+        const lamp = new THREE.Mesh(lampHeadGeo, lampMat);
+        lamp.position.set(wx + inwardSign * 0.6, wallHeight + 0.45, lz);
+        group.add(lamp);
+      });
+    }
+  }
+
+  /**
+   * Damaged transit gantries spanning the track at 16m intervals.
+   * Safety invariant: Vertical clearance is strictly >= 10.1m, well above train roof (4.35m) and jump arcs.
+   */
+  private buildDoomsdayDamagedGantries(
+    group: THREE.Group,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const gantrySpacing = 16.0;
+    const gantryCount = Math.floor(chunkLength / gantrySpacing);
+    const poleHeight = 10.8;
+    const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8; // ~10.4m
+
+    for (let g = 0; g < gantryCount; g++) {
+      const gz = -g * gantrySpacing - 8.0;
+      const gantryGroup = new THREE.Group();
+      gantryGroup.position.set(0, 0, gz);
+
+      // Heavy scorched steel columns flanking tracks (X = ±5.2m, safely outside ±4.0m)
+      const colGeo = new THREE.BoxGeometry(0.55, poleHeight, 0.6);
+      [-spanWidth * 0.5, spanWidth * 0.5].forEach((px) => {
+        const col = new THREE.Mesh(colGeo, mats.doomsdayRustedSteelMat);
+        col.position.set(px, poleHeight * 0.5, 0);
+        col.castShadow = true;
+        gantryGroup.add(col);
+
+        // Flashing emergency warning beacon on column shoulder
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6), mats.doomsdayEmergencyRedGlowMat);
+        beacon.position.set(px, poleHeight * 0.85, (px < 0 ? 0.35 : -0.35));
+        gantryGroup.add(beacon);
+      });
+
+      // Overhead heavy primary steel box beam (center Y = 10.8m, bottom flange Y = 10.45m >= 10.1m)
+      const beamGeo = new THREE.BoxGeometry(spanWidth + 1.2, 0.7, 0.8);
+      const beam = new THREE.Mesh(beamGeo, mats.doomsdayRustedSteelMat);
+      beam.position.set(0, poleHeight, 0);
+      beam.castShadow = true;
+      gantryGroup.add(beam);
+
+      // Warning hazard stripe runner under the gantry
+      const stripeGeo = new THREE.BoxGeometry(spanWidth, 0.15, 0.82);
+      const stripe = new THREE.Mesh(stripeGeo, mats.doomsdayHazardStripeMat);
+      stripe.position.set(0, poleHeight - 0.36, 0);
+      gantryGroup.add(stripe);
+
+      // Evacuation Sector Distress Sign on alternate gantries
+      if (g % 2 === 0) {
+        const signMat = (g % 4 === 0) ? mats.doomsdayDistressSignMat1 : mats.doomsdayDistressSignMat3;
+        const signGeo = new THREE.PlaneGeometry(3.6, 1.2);
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(0, poleHeight + 0.75, 0.42);
+        gantryGroup.add(sign);
+      }
+
+      // Overhead amber track inspection spotlights pointing downward
+      [-spanWidth * 0.28, spanWidth * 0.28].forEach((lx) => {
+        const spot = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.3), mats.doomsdayFireAmberGlowMat);
+        spot.position.set(lx, poleHeight - 0.45, 0);
+        gantryGroup.add(spot);
+      });
+
+      // Sheared/twisted dangling rebar and cables (detail BALANCED/FULL)
+      if (detail !== 'MINIMAL' && g % 3 === 1) {
+        const dangleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 4);
+        const dangle = new THREE.Mesh(dangleGeo, mats.doomsdayRebarSteelMat);
+        dangle.position.set(1.4, poleHeight - 0.55, 0.2);
+        dangle.rotation.z = 0.25;
+        gantryGroup.add(dangle);
+      }
+
+      group.add(gantryGroup);
+    }
+  }
+
+  /**
+   * Perimeter rubble clusters, charred barricades, and warning signage.
+   * Safety invariant: Placed strictly at |X| >= 4.8m to prevent collision intrusion.
+   */
+  private buildDoomsdayRubbleAndCraterFormations(
+    group: THREE.Group,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const clusterCount = detail === 'MINIMAL' ? 2 : (detail === 'BALANCED' ? 3 : 5);
+
+    for (let i = 0; i < clusterCount; i++) {
+      const side = rng.chance(0.5) ? -1 : 1;
+      const rubbleX = side * rng.range(4.8, 6.0); // Outside playable corridor (|X| <= 4.0m)
+      const rubbleZ = -rng.range(6.0, chunkLength - 6.0);
+      const rubbleGroup = new THREE.Group();
+      rubbleGroup.position.set(rubbleX, 0, rubbleZ);
+
+      // Scorched concrete debris block
+      const bW = rng.range(0.9, 1.5);
+      const bH = rng.range(0.6, 1.2);
+      const bD = rng.range(0.8, 1.6);
+      const blockGeo = new THREE.BoxGeometry(bW, bH, bD);
+      const block = new THREE.Mesh(blockGeo, mats.doomsdayScorchedConcreteMat);
+      block.position.y = bH * 0.5;
+      block.rotation.y = rng.range(-0.4, 0.4);
+      block.rotation.z = side * 0.15;
+      block.castShadow = true;
+      rubbleGroup.add(block);
+
+      // Twisted rebar spike protruding from rubble
+      const rebarGeo = new THREE.CylinderGeometry(0.04, 0.04, rng.range(1.2, 1.8), 4);
+      const rebar = new THREE.Mesh(rebarGeo, mats.doomsdayRebarSteelMat);
+      rebar.position.set(rng.range(-0.3, 0.3), bH + 0.6, rng.range(-0.3, 0.3));
+      rebar.rotation.x = rng.range(-0.3, 0.3);
+      rebar.rotation.z = side * rng.range(0.2, 0.5);
+      rubbleGroup.add(rebar);
+
+      // Smoldering ember / flare marker atop the debris
+      if (rng.chance(0.6)) {
+        const ember = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), mats.doomsdayFireAmberGlowMat);
+        ember.position.set(0, bH + 0.1, 0);
+        rubbleGroup.add(ember);
+      }
+
+      // Distress / danger billboard marker along the perimeter (|X| >= 5.0m)
+      if (i === 1 && detail !== 'MINIMAL') {
+        const boardPost = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.4, 0.15), mats.doomsdayRustedSteelMat);
+        boardPost.position.set(side * 0.4, 1.2, 0);
+        rubbleGroup.add(boardPost);
+
+        const boardGeo = new THREE.PlaneGeometry(1.8, 1.1);
+        const boardMat = rng.chance(0.5) ? mats.doomsdayBillboardMat1 : mats.doomsdayBillboardMat2;
+        const board = new THREE.Mesh(boardGeo, boardMat);
+        board.position.set(side * 0.4, 2.0, 0.1);
+        board.rotation.y = side < 0 ? 0.3 : Math.PI - 0.3;
+        rubbleGroup.add(board);
+      }
+
+      group.add(rubbleGroup);
+    }
+  }
+
+  /**
+   * Landmark 0: Shattered Skyscraper Ruin.
+   * Imposing sheared corporate tower with exposed twisted rebar framework and flashing beacon.
+   */
+  private buildDoomsdayRuinedSkyscraper(
+    group: THREE.Group,
+    chunkLength: number,
+    monoZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const towerGroup = new THREE.Group();
+    towerGroup.name = 'doomsday_ruined_skyscraper';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const towerX = side * 18.5; // Well outside tracks
+    towerGroup.position.set(towerX, 0, monoZ);
+
+    const towerW = 14.0;
+    const towerD = 14.0;
+    const towerH = 48.0;
+
+    // Main fractured tower body
+    const towerGeo = new THREE.BoxGeometry(towerW, towerH, towerD);
+    const tower = new THREE.Mesh(towerGeo, mats.doomsdayScorchedConcreteMat);
+    tower.position.y = towerH * 0.5;
+    tower.castShadow = true;
+    towerGroup.add(tower);
+
+    // Shattered window ribbons on the facade
+    const glassRibbonGeo = new THREE.BoxGeometry(towerW * 0.85, towerH * 0.65, 0.2);
+    const glassRibbon = new THREE.Mesh(glassRibbonGeo, mats.doomsdayShatteredGlassMat);
+    glassRibbon.position.set(0, towerH * 0.45, -side * (towerD * 0.5 + 0.1));
+    towerGroup.add(glassRibbon);
+
+    // Sheared diagonal summit cap creating an unmistakable broken skyline silhouette
+    const shearedCapGeo = new THREE.BoxGeometry(towerW * 0.75, 12.0, towerD * 0.75);
+    const shearedCap = new THREE.Mesh(shearedCapGeo, mats.doomsdayScorchedConcreteMat);
+    shearedCap.position.set(-side * 2.0, towerH + 4.5, 0);
+    shearedCap.rotation.z = side * 0.22;
+    shearedCap.castShadow = true;
+    towerGroup.add(shearedCap);
+
+    // Exposed structural rebar spires jutting from the sheared top
+    for (let r = 0; r < 5; r++) {
+      const spireH = rng.range(6.0, 12.0);
+      const spireGeo = new THREE.CylinderGeometry(0.12, 0.15, spireH, 6);
+      const spire = new THREE.Mesh(spireGeo, mats.doomsdayRebarSteelMat);
+      spire.position.set(rng.range(-4.0, 4.0), towerH + 8.0 + spireH * 0.5, rng.range(-4.0, 4.0));
+      spire.rotation.x = rng.range(-0.15, 0.15);
+      spire.rotation.z = rng.range(-0.25, 0.25);
+      towerGroup.add(spire);
+
+      // Warning aviation beacon atop the tallest spire
+      if (r === 0) {
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), mats.doomsdayEmergencyRedGlowMat);
+        beacon.position.set(spire.position.x, towerH + 8.0 + spireH, spire.position.z);
+        towerGroup.add(beacon);
+      }
+    }
+
+    group.add(towerGroup);
+  }
+
+  /**
+   * Landmark 1: Fortified Evacuation Bunker Gateway.
+   * Massive blast portal archway with heavy pylons, warning chevrons, and distress transponder.
+   * Safety invariant: Vertical clearance is strictly >= 10.2m over the playable track.
+   */
+  private buildDoomsdayBunkerGateway(group: THREE.Group, chunkLength: number, gateZ: number): void {
+    const mats = this.getSharedMaterials();
+    const bunkerGroup = new THREE.Group();
+    bunkerGroup.name = 'doomsday_bunker_gateway';
+    bunkerGroup.position.set(0, 0, gateZ);
+
+    const gateH = 13.5;
+    const spanW = 12.0;
+
+    // Massive reinforced concrete bunker pylons (|X| = 6.8m, safely outside ±4.0m)
+    const pylonGeo = new THREE.BoxGeometry(3.6, gateH, 4.8);
+    [-spanW * 0.5 - 0.8, spanW * 0.5 + 0.8].forEach((px) => {
+      const pylon = new THREE.Mesh(pylonGeo, mats.doomsdayScorchedConcreteMat);
+      pylon.position.set(px, gateH * 0.5, 0);
+      pylon.castShadow = true;
+      pylon.receiveShadow = true;
+      bunkerGroup.add(pylon);
+
+      // Heavy blast door vertical guide rail
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.4, gateH * 0.9, 0.6), mats.doomsdayRustedSteelMat);
+      rail.position.set(px + (px < 0 ? 1.7 : -1.7), gateH * 0.45, 0);
+      bunkerGroup.add(rail);
+
+      // Emergency red beacon array
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), mats.doomsdayEmergencyRedGlowMat);
+      beacon.position.set(px + (px < 0 ? 1.8 : -1.8), gateH * 0.88, 1.8);
+      bunkerGroup.add(beacon);
+    });
+
+    // Overhead heavy concrete lintel arch (bottom edge at Y = 10.6m >= 10.1m)
+    const lintelGeo = new THREE.BoxGeometry(spanW + 4.5, 3.2, 5.0);
+    const lintel = new THREE.Mesh(lintelGeo, mats.doomsdayScorchedConcreteMat);
+    lintel.position.set(0, gateH - 0.6, 0);
+    lintel.castShadow = true;
+    bunkerGroup.add(lintel);
+
+    // Hazard stripe warning boundary beam
+    const hazardBeamGeo = new THREE.BoxGeometry(spanW + 3.8, 0.55, 0.4);
+    const hazardBeam = new THREE.Mesh(hazardBeamGeo, mats.doomsdayHazardStripeMat);
+    hazardBeam.position.set(0, gateH - 2.1, 2.52);
+    bunkerGroup.add(hazardBeam);
+
+    // Evacuation Transponder Distress Sign
+    const signGeo = new THREE.PlaneGeometry(8.5, 2.0);
+    const sign = new THREE.Mesh(signGeo, mats.doomsdayDistressSignMat2);
+    sign.position.set(0, gateH - 0.4, 2.55);
+    bunkerGroup.add(sign);
+
+    group.add(bunkerGroup);
+  }
+
+  /**
+   * Landmark 2: Fractured Skybridge & Suspended Rail.
+   * Severed overhead maglev transit bridge with dangling cables far above the tracks.
+   * Safety invariant: Bridge clearance is strictly >= 12.0m (clearance >= 10.1m).
+   */
+  private buildDoomsdayFracturedSkybridge(group: THREE.Group, chunkLength: number, bridgeZ: number): void {
+    const mats = this.getSharedMaterials();
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.name = 'doomsday_fractured_skybridge';
+    bridgeGroup.position.set(0, 0, bridgeZ);
+
+    const bridgeY = 13.0; // Well above tracks (Y >= 10.1m)
+
+    // West fractured span (X from -24m to -1.8m)
+    const westLen = 22.2;
+    const westSpanGeo = new THREE.BoxGeometry(westLen, 1.8, 4.5);
+    const westSpan = new THREE.Mesh(westSpanGeo, mats.doomsdayBlastAlloyMat);
+    westSpan.position.set(-westLen * 0.5 - 1.8, bridgeY, 0);
+    westSpan.castShadow = true;
+    bridgeGroup.add(westSpan);
+
+    // East fractured span (X from 2.2m to 24m)
+    const eastLen = 21.8;
+    const eastSpanGeo = new THREE.BoxGeometry(eastLen, 1.8, 4.5);
+    const eastSpan = new THREE.Mesh(eastSpanGeo, mats.doomsdayBlastAlloyMat);
+    eastSpan.position.set(eastLen * 0.5 + 2.2, bridgeY - 0.8, 0);
+    eastSpan.rotation.z = -0.06;
+    eastSpan.castShadow = true;
+    bridgeGroup.add(eastSpan);
+
+    // Abandoned damaged transit car on the west elevated deck
+    const carGeo = new THREE.BoxGeometry(7.5, 2.2, 3.2);
+    const car = new THREE.Mesh(carGeo, mats.doomsdayRustedSteelMat);
+    car.position.set(-8.5, bridgeY + 1.8, 0);
+    car.rotation.y = 0.12;
+    bridgeGroup.add(car);
+
+    // Dangling steel suspension cables at the fracture gap (Y >= 10.4m, safe above track)
+    const cable1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 4), mats.doomsdayRebarSteelMat);
+    cable1.position.set(-2.0, bridgeY - 1.1, 1.5);
+    cable1.rotation.z = 0.18;
+    bridgeGroup.add(cable1);
+
+    const cable2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 4), mats.doomsdayRebarSteelMat);
+    cable2.position.set(2.4, bridgeY - 1.6, -1.2);
+    cable2.rotation.z = -0.22;
+    bridgeGroup.add(cable2);
+
+    group.add(bridgeGroup);
+  }
+
+  /**
+   * Landmark 3: Industrial Thermal Flare Stack & Vent Silo.
+   * High-capacity exhaust tower burning off volatile reactor/refinery pressure.
+   */
+  private buildDoomsdayFlareStack(
+    group: THREE.Group,
+    chunkLength: number,
+    flareZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const flareGroup = new THREE.Group();
+    flareGroup.name = 'doomsday_flare_stack';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const flareX = side * 17.0; // Outside playable tracks
+    flareGroup.position.set(flareX, 0, flareZ);
+
+    const stackH = 34.0;
+    const stackRadius = 2.4;
+
+    // Industrial exhaust chimney stack
+    const stackGeo = new THREE.CylinderGeometry(stackRadius * 0.8, stackRadius, stackH, 12);
+    const stack = new THREE.Mesh(stackGeo, mats.doomsdayRustedSteelMat);
+    stack.position.y = stackH * 0.5;
+    stack.castShadow = true;
+    flareGroup.add(stack);
+
+    // Hazard chevron warning collar at mid-height
+    const collarGeo = new THREE.CylinderGeometry(stackRadius * 0.95, stackRadius * 0.95, 2.2, 12);
+    const collar = new THREE.Mesh(collarGeo, mats.doomsdayHazardStripeMat);
+    collar.position.y = stackH * 0.6;
+    flareGroup.add(collar);
+
+    // Summit burner nozzle ring
+    const burnerGeo = new THREE.CylinderGeometry(stackRadius * 1.15, stackRadius * 0.75, 1.8, 12);
+    const burner = new THREE.Mesh(burnerGeo, mats.doomsdayBlastAlloyMat);
+    burner.position.y = stackH + 0.9;
+    flareGroup.add(burner);
+
+    // Roaring burnoff flame beacon at summit
+    const flameGeo = new THREE.ConeGeometry(stackRadius * 1.3, 7.5, 8);
+    const flame = new THREE.Mesh(flameGeo, mats.doomsdayFireAmberGlowMat);
+    flame.position.y = stackH + 5.2;
+    flareGroup.add(flame);
+
+    // Base molten runoff fissure trench
+    const fissureGeo = new THREE.BoxGeometry(6.5, 0.4, 6.5);
+    const fissure = new THREE.Mesh(fissureGeo, mats.doomsdayMoltenGlowMat);
+    fissure.position.y = 0.2;
+    flareGroup.add(fissure);
+
+    group.add(flareGroup);
   }
 }

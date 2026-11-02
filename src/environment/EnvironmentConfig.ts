@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -81,7 +81,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -145,7 +145,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -209,7 +209,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x0a0f1d,    // Subterranean dark slate shadow
     bottom: 0x111827 // Deep tunnel ambient tone
@@ -273,7 +273,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x181326,    // Deep nocturnal purple dusk
     bottom: 0xf57c00 // Radiant amber horizon glow
@@ -337,7 +337,7 @@ export const NEON_RAINLINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x050814,    // Midnight obsidian navy
     bottom: 0x1f0b38 // Radiant electric violet & magenta horizon glow
@@ -401,7 +401,7 @@ export const ORBITAL_HALO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ABYSSAL_GLASSLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x01030a,    // Cosmic abyss deep void black
     bottom: 0x0b1a30 // Electric azure/cyan planetary horizon limb glow
@@ -465,7 +465,7 @@ export const ABYSSAL_GLASSLINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'DOOMSDAY_LAST_TRANSIT'],
   sky: {
     top: 0x011324,    // Deep oceanic abyss abyss-blue / midnight trench
     bottom: 0x033852 // Luminous oceanic teal / deep hydro-glow
@@ -518,6 +518,70 @@ export const ABYSSAL_GLASSLINE_THEME: EnvironmentTheme = {
   }
 };
 
+export const DOOMSDAY_LAST_TRANSIT_THEME: EnvironmentTheme = {
+  id: 'DOOMSDAY_LAST_TRANSIT',
+  displayName: 'Doomsday: Last Transit',
+  subtitle: 'The Final Railway Through a Collapsing Civilization',
+  description: 'The final functioning evacuation railway through the ruins of a collapsing futuristic metropolis, framed by shattered monolithic skyscrapers, burning horizons, falling ash, and emergency distress beacons.',
+  badgeEmoji: '☄️',
+  accentColor: '#f97316',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE'],
+  sky: {
+    top: 0x140402,    // Deep suffocating smoke-black with volcanic ember underglow
+    bottom: 0x4a1104 // Raging inferno horizon / firestorm glow
+  },
+  fog: {
+    color: 0x1a0705,  // Dense atmospheric ash and particulate haze, preserving crisp obstacle silhouettes within 80m
+    density: 0.0038
+  },
+  sun: {
+    color: 0xff6a20,  // Filtered apocalyptic low-angle sunlight
+    intensity: 1.15,
+    position: { x: -25, y: 35, z: -30 }
+  },
+  fill: {
+    color: 0x7c2d12,  // Warm fiery ground bounce fill
+    intensity: 0.75
+  },
+  hemi: {
+    sky: 0xf97316,    // Fiery fallout sky
+    ground: 0x180806, // Charred basalt bedrock bounce
+    intensity: 1.20
+  },
+  skyline: {
+    color: 0x240705,  // Distant shattered monolith silhouettes
+    opacity: 0.88,
+    style: 'INDUSTRIAL'
+  },
+  clouds: {
+    color: 0x2a0c06,  // Billowing firestorm smoke plume layers
+    roughness: 0.95
+  },
+  materials: {
+    ballastColor: 0x1c1917,    // Scorched volcanic basalt/soot ballast
+    sleeperColor: 0x0c0a09,    // Reinforced heat-resistant dark composite sleepers
+    wallBaseColor: 0x1c1917,    // Charred concrete blast retaining walls
+    wallAccentColor: 0xf97316,  // Hazard chevron warning orange / thermal glow
+    curbColor: 0x292524,        // Battered concrete coping
+    catenaryColor: 0x1c1917,    // Twisted industrial steel trusses
+    insulatorColor: 0xef4444,   // Emergency red warning nodes
+    pipeColor: 0xb45309,        // Molten conduit / thermal piping
+    bridgeMainColor: 0x171717,   // Scorched blast alloy
+    bridgeAccentColor: 0xf97316, // Active evacuation emergency LED runners
+    groundPlaneColor: 0x0c0a09
+  },
+  ambience: {
+    baseToneFreq: 44,
+    windNoiseFilter: 260,
+    humGain: 0.06,
+    tag: 'DOOMSDAY_INFERNO_RUMBLE'
+  }
+};
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
@@ -525,7 +589,8 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME,
   NEON_RAINLINE: NEON_RAINLINE_THEME,
   ORBITAL_HALO: ORBITAL_HALO_THEME,
-  ABYSSAL_GLASSLINE: ABYSSAL_GLASSLINE_THEME
+  ABYSSAL_GLASSLINE: ABYSSAL_GLASSLINE_THEME,
+  DOOMSDAY_LAST_TRANSIT: DOOMSDAY_LAST_TRANSIT_THEME
 };
 
 export class EnvironmentManager {
