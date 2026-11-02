@@ -160,6 +160,20 @@ export class UpgradeManager {
     return true;
   }
 
+  /** Durable wallet-only debit for permanent worlds; existing revive/upgrade APIs are unchanged. */
+  public deductCoinsPersisted(amount: number): boolean {
+    if (!Number.isSafeInteger(amount) || amount <= 0 || !Number.isSafeInteger(this.totalCoins) || this.totalCoins < amount) return false;
+    const next = this.totalCoins - amount;
+    try {
+      localStorage.setItem(STORAGE_KEYS.WALLET, next.toString());
+    } catch {
+      return false;
+    }
+    this.totalCoins = next;
+    this.eventBus.emit('WALLET_UPDATED', this.totalCoins);
+    return true;
+  }
+
   public getLevel(type: UpgradablePowerup): number {
     return this.levels[type] || 1;
   }

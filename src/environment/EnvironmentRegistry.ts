@@ -54,14 +54,14 @@ export class EnvironmentRegistry {
     return theme ? [...theme.allowedTransitions] : [];
   }
 
-  public getNextRandomTransition(currentId: EnvironmentId, rng: () => number, excludePrevious?: EnvironmentId): EnvironmentId {
+  public getNextRandomTransition(currentId: EnvironmentId, rng: () => number, excludePrevious?: EnvironmentId, eligibleIds: readonly EnvironmentId[] = this.getAllIds()): EnvironmentId {
     const current = this.get(currentId);
-    let candidates = current.allowedTransitions.filter((id) => id !== currentId);
+    let candidates = current.allowedTransitions.filter((id) => id !== currentId && this.has(id) && eligibleIds.includes(id));
     if (excludePrevious && candidates.length > 1) {
       candidates = candidates.filter((id) => id !== excludePrevious);
     }
     if (candidates.length === 0) {
-      candidates = this.getAllIds().filter((id) => id !== currentId);
+      candidates = this.getAllIds().filter((id) => id !== currentId && eligibleIds.includes(id));
     }
     if (candidates.length === 0) {
       return currentId;

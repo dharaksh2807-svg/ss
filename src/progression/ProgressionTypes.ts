@@ -1,3 +1,5 @@
+import type { WorldId, WorldSelection } from '../environment/WorldCatalog';
+
 export type MissionType = 
   | 'COINS' 
   | 'DISTANCE' 
@@ -140,6 +142,9 @@ export interface ProgressionState {
   selectedOutfits: Record<string, string>;   // characterId -> active outfitId
   unlockedBoards: string[];
   selectedBoard: string;
+  unlockedThemes: WorldId[];
+  selectedTheme: WorldSelection;
+  includePremiumThemesInDynamic: boolean;
   hoverboardCharges: number;
   modiFreeRuns?: number;
   rahulTrialsRemaining?: number;

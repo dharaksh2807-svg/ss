@@ -1,6 +1,8 @@
 import { CONSTANTS } from '../core/Constants';
 import { EnvironmentId, EnvironmentSelection, EnvironmentManager } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
+import { getDynamicEnvironmentIds } from './WorldCatalog';
+import { ProgressionManager } from '../progression/ProgressionManager';
 
 export interface DistrictRegion {
   index: number;
@@ -73,6 +75,7 @@ export class DistrictPlanner {
       }
 
       const pref = this.envManager.getSelectionPreference();
+      const eligibleIds = getDynamicEnvironmentIds(ProgressionManager.getInstance().getState());
       let districtId: EnvironmentId;
 
       if (this.debugOverrideDistrict) {
@@ -83,7 +86,7 @@ export class DistrictPlanner {
         districtId = this.envManager.getStartingEnvironment();
       } else {
         const olderDistrictId = regionIndex > 1 ? this.regions[regionIndex - 2].districtId : undefined;
-        districtId = this.envRegistry.getNextRandomTransition(prevDistrictId!, () => this.rng(), olderDistrictId);
+        districtId = this.envRegistry.getNextRandomTransition(prevDistrictId!, () => this.rng(), olderDistrictId, eligibleIds);
       }
 
       const theme = this.envRegistry.get(districtId);
@@ -105,7 +108,7 @@ export class DistrictPlanner {
       } else if (pref !== 'DYNAMIC') {
         nextDistrictId = pref as EnvironmentId;
       } else {
-        nextDistrictId = this.envRegistry.getNextRandomTransition(districtId, () => this.rng(), prevDistrictId);
+        nextDistrictId = this.envRegistry.getNextRandomTransition(districtId, () => this.rng(), prevDistrictId, eligibleIds);
       }
 
       const region: DistrictRegion = {

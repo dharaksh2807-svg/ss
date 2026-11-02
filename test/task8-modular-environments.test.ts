@@ -332,16 +332,16 @@ const envMgr = EnvironmentManager.getInstance();
 
 envMgr.savePreference('DYNAMIC');
 assert(envMgr.getPreference() === 'DYNAMIC', 'Preference set to DYNAMIC');
-assert(mockStorage['metro_runner_environment_preference'] === 'DYNAMIC', 'DYNAMIC saved to localStorage');
+assert(JSON.parse(mockStorage['metro_progression_v1']).selectedTheme === 'DYNAMIC', 'DYNAMIC saved in authoritative progression');
 
 envMgr.savePreference('HISTORIC_QUARTER');
 assert(envMgr.getPreference() === 'HISTORIC_QUARTER', 'Preference set to HISTORIC_QUARTER');
-assert(mockStorage['metro_runner_environment_preference'] === 'HISTORIC_QUARTER', 'HISTORIC_QUARTER saved to localStorage');
+assert(JSON.parse(mockStorage['metro_progression_v1']).selectedTheme === 'HISTORIC_QUARTER', 'HISTORIC_QUARTER saved in authoritative progression');
 assert(envMgr.getStartingEnvironment() === 'HISTORIC_QUARTER', 'Starting environment resolves to HISTORIC_QUARTER');
 
 envMgr.savePreference('MODERN_METRO');
 assert(envMgr.getPreference() === 'MODERN_METRO', 'Preference set to MODERN_METRO');
-assert(mockStorage['metro_runner_environment_preference'] === 'MODERN_METRO', 'MODERN_METRO saved to localStorage');
+assert(JSON.parse(mockStorage['metro_progression_v1']).selectedTheme === 'MODERN_METRO', 'MODERN_METRO saved in authoritative progression');
 assert(envMgr.getStartingEnvironment() === 'MODERN_METRO', 'Starting environment resolves to MODERN_METRO');
 
 // Test color interpolation helper

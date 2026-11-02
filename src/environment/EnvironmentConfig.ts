@@ -1,7 +1,10 @@
 import * as THREE from 'three';
+import { ProgressionManager } from '../progression/ProgressionManager';
+import { EnvironmentRegistry } from './EnvironmentRegistry';
+import type { WorldSelection } from './WorldCatalog';
 
 export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
-export type EnvironmentSelection = 'DYNAMIC' | 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL';
+export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
   id: EnvironmentId;
@@ -78,7 +81,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -142,7 +145,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -206,7 +209,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL'],
   sky: {
     top: 0x0a0f1d,    // Subterranean dark slate shadow
     bottom: 0x111827 // Deep tunnel ambient tone
@@ -333,12 +336,7 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
 export class EnvironmentManager {
   private static instance: EnvironmentManager;
   private currentEnvironment: EnvironmentId = 'MODERN_METRO';
-  private selectionPreference: EnvironmentSelection = 'DYNAMIC';
-  private storageKey = 'metro_runner_environment_preference';
-
-  private constructor() {
-    this.loadPreference();
-  }
+  private constructor() {}
 
   public static getInstance(): EnvironmentManager {
     if (!EnvironmentManager.instance) {
@@ -348,47 +346,26 @@ export class EnvironmentManager {
   }
 
   public loadPreference(): void {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      if (saved === 'MODERN_METRO' || saved === 'HISTORIC_QUARTER' || saved === 'UNDERGROUND_METRO' || saved === 'NEON_INDUSTRIAL' || saved === 'DYNAMIC') {
-        this.selectionPreference = saved as EnvironmentSelection;
-      }
-    } catch {
-      // Safe fallback
-    }
+    ProgressionManager.getInstance().load();
   }
 
-  public savePreference(pref: EnvironmentSelection): void {
-    this.selectionPreference = pref;
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(this.storageKey, pref);
-      } catch {
-        // Safe fallback
-      }
-    }
+  public savePreference(pref: EnvironmentSelection): boolean {
+    return ProgressionManager.getInstance().equipTheme(pref).success;
   }
 
   public getSelectionPreference(): EnvironmentSelection {
-    return this.selectionPreference;
+    return ProgressionManager.getInstance().getSelectedTheme();
   }
 
   public getPreference(): EnvironmentSelection {
-    return this.selectionPreference;
+    return this.getSelectionPreference();
   }
 
   public getStartingEnvironment(): EnvironmentId {
-    if (this.selectionPreference === 'HISTORIC_QUARTER') {
-      return 'HISTORIC_QUARTER';
-    }
-    if (this.selectionPreference === 'UNDERGROUND_METRO') {
-      return 'UNDERGROUND_METRO';
-    }
-    if (this.selectionPreference === 'NEON_INDUSTRIAL') {
-      return 'NEON_INDUSTRIAL';
-    }
-    return 'MODERN_METRO';
+    const preference = this.getSelectionPreference();
+    const registry = EnvironmentRegistry.getInstance();
+    return preference !== 'DYNAMIC' && registry.has(preference)
+      ? registry.get(preference).id : 'MODERN_METRO';
   }
 
   public getCurrentEnvironment(): EnvironmentId {

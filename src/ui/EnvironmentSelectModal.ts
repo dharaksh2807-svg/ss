@@ -1,10 +1,10 @@
 import { EventBus } from '../core/EventBus';
 import {
   EnvironmentManager,
-  EnvironmentSelection,
-  MODERN_METRO_THEME,
-  HISTORIC_QUARTER_THEME
+  EnvironmentSelection
 } from '../environment/EnvironmentConfig';
+import { ProgressionManager } from '../progression/ProgressionManager';
+import { getWorlds } from '../environment/WorldCatalog';
 
 export class EnvironmentSelectModal {
   private element: HTMLElement;
@@ -79,56 +79,27 @@ export class EnvironmentSelectModal {
     const list = document.getElementById('env-options-list');
     if (!list) return;
 
-    const options: {
-      id: EnvironmentSelection;
-      title: string;
-      badge: string;
-      icon: string;
-      tagline: string;
-      description: string;
-      accent: string;
-      bgGradient: string;
-    }[] = [
+    const options = [
       {
-        id: 'DYNAMIC',
+        id: 'DYNAMIC' as EnvironmentSelection,
         title: 'Dynamic Districts (Recommended)',
         badge: 'ENDLESS JOURNEY',
         icon: '🔄',
-        tagline: 'Monumental Portals & Seamless Era Transitions',
-        description: 'Run continuously across Modern Metro, Historic Quarter, and Underground Metro. Monumental portals bridge the districts with atmospheric lighting and sky blends.',
+        description: 'Journey across all four free railway worlds. Owned premium worlds join only when you enable them in the shop.',
         accent: '#38bdf8',
-        bgGradient: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(245, 158, 11, 0.18) 100%)'
+        bgGradient: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(245, 158, 11, 0.18))'
       },
-      {
-        id: 'MODERN_METRO',
-        title: 'Modern Metro District',
-        badge: 'AZURE DAYLIGHT',
-        icon: '🏙️',
-        tagline: 'Glass High-Rises • Electric Rail • Daylight Skies',
-        description: 'Sleek corporate skyscrapers, cantilevered balconies, illuminated glass skybridges, digital LED signs, and vibrant azure daytime lighting.',
-        accent: '#00e5ff',
-        bgGradient: 'linear-gradient(135deg, rgba(2, 136, 209, 0.22) 0%, rgba(14, 165, 233, 0.08) 100%)'
-      },
-      {
-        id: 'HISTORIC_QUARTER',
-        title: 'Historic Railway Quarter',
-        badge: 'GOLDEN HOUR',
-        icon: '🏛️',
-        tagline: 'Victorian Brick • Stone Viaducts • Clock Towers',
-        description: 'Aged red brick brownstones, soot-stained arched viaducts, cast-iron gas lamp posts, steam locomotive workshops, and warm golden hour atmosphere.',
-        accent: '#f59e0b',
-        bgGradient: 'linear-gradient(135deg, rgba(217, 119, 6, 0.22) 0%, rgba(180, 83, 9, 0.08) 100%)'
-      },
-      {
-        id: 'UNDERGROUND_METRO',
-        title: 'Underground Metro System',
-        badge: 'SUBTERRANEAN CAVERN',
-        icon: '🚇',
-        tagline: 'Vaulted Ceilings • Ceramic Tiles • Underground Stations',
-        description: 'Enclosed subterranean transit system with white glazed subway tiles, monumental vaulted concrete haunches, elevated emergency walkways, and illuminated underground station concourses.',
-        accent: '#38bdf8',
-        bgGradient: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(14, 165, 233, 0.20) 100%)'
-      }
+      ...getWorlds(ProgressionManager.getInstance().getState())
+        .filter((world) => world.available && world.owned)
+        .map((world) => ({
+          id: world.id as EnvironmentSelection,
+          title: world.displayName,
+          badge: world.unlock === 'FREE' ? 'FREE WORLD' : world.rarity,
+          icon: world.icon,
+          description: world.description,
+          accent: world.accentColor,
+          bgGradient: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(14, 165, 233, 0.20))'
+        }))
     ];
 
     list.innerHTML = options.map((opt) => {
@@ -170,8 +141,16 @@ export class EnvironmentSelectModal {
   }
 
   private applySelection(): void {
-    this.envManager.savePreference(this.selectedPreference);
-    EventBus.getInstance().emit('ENVIRONMENT_PREFERENCE_CHANGED', this.selectedPreference);
+    if (!this.envManager.savePreference(this.selectedPreference)) {
+      const list = document.getElementById('env-options-list');
+      if (list) {
+        const error = document.createElement('p');
+        error.setAttribute('role', 'alert');
+        error.textContent = 'Could not save world selection. Please try again.';
+        list.appendChild(error);
+      }
+      return;
+    }
 
     if (this.onSelectCallback) {
       this.onSelectCallback(this.selectedPreference);

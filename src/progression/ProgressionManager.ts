@@ -20,6 +20,8 @@ import {
 } from './MissionCatalog';
 import { getCharacterById, getOutfitById } from '../characters/CharacterCatalog';
 import { getHoverboardById, HOVERBOARD_CHARGES_PACK } from '../hoverboard/HoverboardCatalog';
+import { FREE_WORLD_IDS, getWorld, isWorldAvailable } from '../environment/WorldCatalog';
+import type { WorldId, WorldSelection } from '../environment/WorldCatalog';
 
 const STORAGE_KEY = 'metro_progression_v1';
 
@@ -157,6 +159,9 @@ export class ProgressionManager {
       },
       unlockedBoards: ['board_urban_glide'],
       selectedBoard: 'board_urban_glide',
+      unlockedThemes: [...FREE_WORLD_IDS],
+      selectedTheme: 'DYNAMIC',
+      includePremiumThemesInDynamic: false,
       hoverboardCharges: 5,
       modiFreeRuns: 5,
       rahulTrialsRemaining: 5,
@@ -288,21 +293,48 @@ export class ProgressionManager {
             if (!parsed.lastSelectedMode) {
               parsed.lastSelectedMode = 'BEGINNER';
             }
-            return parsed;
+            return this.migrateThemes(parsed);
           }
         }
       }
     } catch (e) {
       console.warn('Failed to parse progression state, resetting to defaults', e);
     }
-    return this.getDefaultState();
+    const defaults = this.getDefaultState();
+    // A standalone environment preference may predate the progression save.
+    try {
+      defaults.selectedTheme = (localStorage.getItem('metro_runner_environment_preference') ?? 'DYNAMIC') as WorldSelection;
+    } catch { /* Storage may be unavailable. */ }
+    return this.migrateThemes(defaults);
   }
 
-  public saveState(): void {
+  private migrateThemes(state: ProgressionState): ProgressionState {
+    const owned = Array.isArray(state.unlockedThemes) ? state.unlockedThemes : [];
+    state.unlockedThemes = [...new Set<WorldId>([
+      ...FREE_WORLD_IDS, ...owned.filter((id) => typeof id === 'string' && getWorld(id))
+    ])];
+    if (state.selectedTheme === undefined) {
+      state.selectedTheme = 'DYNAMIC';
+      try {
+        state.selectedTheme = (localStorage.getItem('metro_runner_environment_preference') ?? 'DYNAMIC') as WorldSelection;
+      } catch { /* Keep existing progression even if the legacy preference cannot be read. */ }
+    }
+    const selected = getWorld(state.selectedTheme);
+    if (state.selectedTheme !== 'DYNAMIC' &&
+        (!selected || !isWorldAvailable(selected) || !state.unlockedThemes.includes(selected.id))) {
+      state.selectedTheme = 'DYNAMIC';
+    }
+    state.includePremiumThemesInDynamic = state.includePremiumThemesInDynamic === true;
+    return state;
+  }
+
+  public saveState(): boolean {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      return true;
     } catch (e) {
       console.warn('Failed to save progression state to localStorage', e);
+      return false;
     }
   }
 
@@ -315,6 +347,7 @@ export class ProgressionManager {
     this.state = {
       ...defaultState,
       ...newState,
+      selectedTheme: newState.selectedTheme ?? this.getSelectedTheme(),
       lifetimeStats: {
         ...defaultState.lifetimeStats,
         ...(newState.lifetimeStats || {})
@@ -340,6 +373,7 @@ export class ProgressionManager {
       this.state.dailyChallenges = generateDailyChallenges(this.state.dailyDate);
     }
 
+    this.migrateThemes(this.state);
     this.saveState();
     this.eventBus.emit('PROGRESSION_RESTORED', this.state);
     this.eventBus.emit('KEYS_UPDATED', this.state.keys ?? 3);
@@ -1183,6 +1217,83 @@ export class ProgressionManager {
       return true;
     }
     return false;
+  }
+
+  public isThemeUnlocked(id: string): boolean {
+    const world = getWorld(id);
+    return !!world && (world.unlock === 'FREE' || this.state.unlockedThemes.includes(world.id));
+  }
+
+  public getUnlockedThemes(): WorldId[] {
+    return [...this.state.unlockedThemes];
+  }
+
+  public getSelectedTheme(): WorldSelection {
+    // Protect callers if an installed world is subsequently removed or disabled.
+    const selected = this.state.selectedTheme;
+    const world = getWorld(selected);
+    return selected === 'DYNAMIC' || (world && isWorldAvailable(world) && this.isThemeUnlocked(selected))
+      ? selected : 'DYNAMIC';
+  }
+
+  public purchaseTheme(id: string, currency: 'COINS' | 'KEYS' = 'COINS'): { success: boolean; message: string } {
+    const world = getWorld(id);
+    if (!world) return { success: false, message: 'World not found' };
+    if (!isWorldAvailable(world)) return { success: false, message: 'World is coming soon' };
+    if (this.isThemeUnlocked(id)) return { success: false, message: 'World already owned' };
+    if (currency !== 'COINS') return { success: false, message: 'Key purchases are disabled' };
+    const wallet = UpgradeManager.getInstance();
+    const cost = world.coinCost;
+    if (world.unlock !== 'COINS' || !Number.isSafeInteger(cost) || cost <= 0) {
+      return { success: false, message: 'World is not for sale' };
+    }
+    if (wallet.getCoins() < cost) return { success: false, message: 'Insufficient coins' };
+
+    const previous = this.state.unlockedThemes;
+    this.state.unlockedThemes = [...previous, world.id];
+    if (!this.saveState()) {
+      this.state.unlockedThemes = previous;
+      return { success: false, message: 'Could not save ownership; no coins charged' };
+    }
+    // Separate localStorage keys are NOT transactional. Persist ownership first:
+    // a crash in this gap grants a free cosmetic, never a charge without ownership.
+    // In-memory ownership also rejects reentrant/double-click purchases before wallet events.
+    if (!wallet.deductCoinsPersisted(cost)) {
+      this.state.unlockedThemes = previous;
+      if (!this.saveState()) {
+        // Durable ownership could not be rolled back. Keep memory consistent with it.
+        this.state.unlockedThemes = [...previous, world.id];
+        return { success: false, message: 'Payment and rollback could not be saved; world remains owned without charge' };
+      }
+      return { success: false, message: 'Could not save payment; no coins charged' };
+    }
+    return { success: true, message: `Purchased ${world.displayName}!` };
+  }
+
+  public equipTheme(id: string): { success: boolean; message: string } {
+    if (id !== 'DYNAMIC') {
+      const world = getWorld(id);
+      if (!world || !isWorldAvailable(world)) return { success: false, message: 'World is unavailable' };
+      if (!this.isThemeUnlocked(id)) return { success: false, message: 'World is locked' };
+    }
+    const previous = this.state.selectedTheme;
+    this.state.selectedTheme = id as WorldSelection;
+    if (!this.saveState()) {
+      this.state.selectedTheme = previous;
+      return { success: false, message: 'Could not save world selection' };
+    }
+    this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', this.state.selectedTheme);
+    return { success: true, message: 'World selected' };
+  }
+
+  public setIncludePremiumThemesInDynamic(enabled: boolean): { success: boolean; message: string } {
+    const previous = this.state.includePremiumThemesInDynamic;
+    this.state.includePremiumThemesInDynamic = enabled;
+    if (!this.saveState()) {
+      this.state.includePremiumThemesInDynamic = previous;
+      return { success: false, message: 'Could not save Dynamic Districts preference' };
+    }
+    return { success: true, message: 'Dynamic Districts preference saved' };
   }
 
   public getKeys(): number {

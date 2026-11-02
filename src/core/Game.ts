@@ -33,7 +33,7 @@ import { DevTestArena } from '../debug/DevTestArena';
 import { PracticeModuleId } from '../practice/PracticeTypes';
 import { GraphicsManager } from '../scene/GraphicsManager';
 import { EnvironmentSelectModal } from '../ui/EnvironmentSelectModal';
-import { EnvironmentManager, EnvironmentId, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
+import { EnvironmentManager, EnvironmentId } from '../environment/EnvironmentConfig';
 import { EnvironmentDirector } from '../environment/EnvironmentDirector';
 import { EnvironmentalEncounterDirector, LandmarkType } from '../environment/EnvironmentalEncounterDirector';
 import { EnvironmentRegistry } from '../environment/EnvironmentRegistry';
@@ -487,26 +487,13 @@ export class Game {
     });
 
     // Environment District & Transitions
-    bus.on('ENVIRONMENT_PREFERENCE_CHANGED', (pref: string) => {
+    bus.on('ENVIRONMENT_PREFERENCE_CHANGED', () => {
       if (this.lifecycleState === 'MENU') {
-        if (pref === 'HISTORIC_QUARTER') {
-          this.trackManager.setEnvironment('HISTORIC_QUARTER');
-          this.worldScene.applyEnvironment(HISTORIC_QUARTER_THEME);
-          this.soundManager.setEnvironmentAmbience('HISTORIC_QUARTER');
-        } else if (pref === 'MODERN_METRO') {
-          this.trackManager.setEnvironment('MODERN_METRO');
-          this.worldScene.applyEnvironment(MODERN_METRO_THEME);
-          this.soundManager.setEnvironmentAmbience('MODERN_METRO');
-        } else if (pref === 'UNDERGROUND_METRO') {
-          this.trackManager.setEnvironment('UNDERGROUND_METRO');
-          this.worldScene.applyEnvironment(UNDERGROUND_METRO_THEME);
-          this.soundManager.setEnvironmentAmbience('UNDERGROUND_METRO');
-        } else {
-          const initialTheme = EnvironmentManager.getInstance().getTheme();
-          this.trackManager.setEnvironment(initialTheme.id);
-          this.worldScene.applyEnvironment(initialTheme);
-          this.soundManager.setEnvironmentAmbience(initialTheme.id);
-        }
+        const environmentId = EnvironmentManager.getInstance().getStartingEnvironment();
+        const theme = EnvironmentRegistry.getInstance().get(environmentId);
+        this.trackManager.setEnvironment(theme.id);
+        this.worldScene.applyEnvironment(theme);
+        this.soundManager.setEnvironmentAmbience(theme.id);
       }
     });
 
@@ -577,7 +564,7 @@ export class Game {
     }
     this.trackManager.reset(!this.trackManager.isDebugMode());
     const startEnvId = this.trackManager.getActiveEnvironment();
-    const startTheme = EnvironmentManager.getInstance().getTheme(startEnvId);
+    const startTheme = EnvironmentRegistry.getInstance().get(startEnvId);
     this.worldScene.applyEnvironment(startTheme);
     this.soundManager.setEnvironmentAmbience(startEnvId);
     this.locomotionVFX.reset();

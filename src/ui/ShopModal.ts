@@ -4,8 +4,9 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { getAllCharacters } from '../characters/CharacterCatalog';
 import { getAllHoverboards } from '../hoverboard/HoverboardCatalog';
 import { getPowerupIconSvg } from './IconCatalog';
+import { getWorlds } from '../environment/WorldCatalog';
 
-export type ShopCategory = 'FEATURED' | 'UPGRADES' | 'BOOSTERS' | 'CHARACTERS' | 'HOVERBOARDS';
+export type ShopCategory = 'FEATURED' | 'UPGRADES' | 'BOOSTERS' | 'CHARACTERS' | 'HOVERBOARDS' | 'WORLDS';
 
 export class ShopModal {
   private element: HTMLElement;
@@ -53,6 +54,7 @@ export class ShopModal {
           <button class="arcade-tab-btn" data-cat="BOOSTERS">🚀 BOOSTERS</button>
           <button class="arcade-tab-btn" data-cat="CHARACTERS">👤 RUNNERS</button>
           <button class="arcade-tab-btn" data-cat="HOVERBOARDS">🛹 BOARDS</button>
+          <button class="arcade-tab-btn" data-cat="WORLDS">🌐 WORLDS</button>
         </div>
 
         <!-- Shop Content Container -->
@@ -176,7 +178,50 @@ export class ShopModal {
       case 'HOVERBOARDS':
         this.renderHoverboards(content);
         break;
+      case 'WORLDS':
+        this.renderWorlds(content);
+        break;
     }
+  }
+
+  private renderWorlds(container: HTMLElement): void {
+    const worlds = getWorlds(this.progression.getState());
+    container.innerHTML = `
+      <p>Worlds are permanent cosmetics.</p>
+      <label><input type="checkbox" data-premium-dynamic ${this.progression.getState().includePremiumThemesInDynamic ? 'checked' : ''}>
+        Include owned premium worlds in Dynamic Districts when available
+      </label>
+      <div class="shop-grid">${worlds.map((world) => `
+        <div class="shop-card-item ${world.owned ? 'owned' : ''}">
+          <div class="item-icon-box">${world.icon}</div>
+          <div class="item-meta">
+            <div class="item-name">${world.displayName}</div>
+            <div class="item-sub">${world.rarity}${world.unlock === 'FREE' ? ' · FREE' : ''}</div>
+            <p>${world.description}</p>
+          </div>
+          <div class="item-action-area">
+            ${!world.available ? '<button class="arcade-btn btn-disabled" disabled>COMING SOON</button>'
+              : world.equipped ? '<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>'
+              : world.owned ? `<button class="arcade-btn btn-secondary" data-equip-world="${world.id}">EQUIP</button>`
+              : `<button class="arcade-btn btn-gold" data-buy-world="${world.id}" ${this.upgradeManager.getCoins() < world.coinCost ? 'disabled' : ''}>${world.coinCost.toLocaleString()} 🪙</button>`}
+          </div>
+        </div>`).join('')}
+      </div>`;
+    container.querySelectorAll<HTMLButtonElement>('[data-buy-world], [data-equip-world]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        const result = button.dataset.buyWorld
+          ? this.progression.purchaseTheme(button.dataset.buyWorld)
+          : this.progression.equipTheme(button.dataset.equipWorld!);
+        this.showToast(result.message, !result.success);
+        this.renderCategoryContent();
+      });
+    });
+    container.querySelector<HTMLInputElement>('[data-premium-dynamic]')?.addEventListener('change', (event) => {
+      const result = this.progression.setIncludePremiumThemesInDynamic((event.target as HTMLInputElement).checked);
+      if (!result.success) this.showToast(result.message, true);
+      this.renderCategoryContent();
+    });
   }
 
   // --- Featured Deals ---
