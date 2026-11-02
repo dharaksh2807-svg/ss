@@ -26,7 +26,8 @@ export type AtmospherePreset =
   | 'LIGHT_RAIN'
   | 'ILLUMINATED_UNDERGROUND'
   | 'NEON_MIDNIGHT_RAIN'
-  | 'ORBITAL_CELESTIAL_DAWN';
+  | 'ORBITAL_CELESTIAL_DAWN'
+  | 'ABYSSAL_BIOLUMINESCENT_CHASM';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -392,6 +393,10 @@ export class EnvironmentalEncounterDirector {
 
     if (districtId === 'ORBITAL_HALO') {
       return 'ORBITAL_CELESTIAL_DAWN';
+    }
+
+    if (districtId === 'ABYSSAL_GLASSLINE') {
+      return 'ABYSSAL_BIOLUMINESCENT_CHASM';
     }
 
     // Check if an upcoming or recent landmark prefers an atmosphere

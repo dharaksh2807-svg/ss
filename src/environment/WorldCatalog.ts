@@ -42,9 +42,9 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
   },
   {
     id: 'ABYSSAL_GLASSLINE', environmentId: 'ABYSSAL_GLASSLINE', displayName: 'Abyssal Glassline',
-    description: 'A glass railway through the ocean depths. Coming soon.', rarity: 'LEGENDARY',
-    unlock: 'COINS', coinCost: 6000, keyCost: null, previewReference: null,
-    implemented: false, available: false, dynamicEligible: true, icon: '🌊', accentColor: '#22d3ee'
+    description: 'A colossal glass transit railway through the deep ocean abyss, surrounded by luminescent sea life, submerged megacity domes, and hydrothermal trench architecture.', rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 6000, keyCost: null, previewReference: 'environment:ABYSSAL_GLASSLINE',
+    implemented: true, available: true, dynamicEligible: true, icon: '🌊', accentColor: '#22d3ee'
   }
 ];
 

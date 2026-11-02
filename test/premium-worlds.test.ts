@@ -108,18 +108,22 @@ progression.load();
 check(progression.getSelectedTheme() === 'DYNAMIC' && environments.getStartingEnvironment() === 'MODERN_METRO', 'Unknown save has a valid fallback');
 assert.deepEqual(progression.getUnlockedThemes(), FREE_WORLD_IDS);
 
-// Unfinished worlds cannot be sold, equipped or planned.
+// Phase 3B: All premium worlds implemented. Unknown or disabled worlds cannot be sold, equipped or planned.
 reset();
-for (const id of ['ABYSSAL_GLASSLINE']) {
-  check(!getWorld(id)!.available && !getWorld(id)!.implemented, `${id} is coming soon`);
-  check(!progression.purchaseTheme(id).success, `${id} rejects purchase`);
-  check(!progression.equipTheme(id).success, `${id} rejects equip`);
-}
+check(!progression.purchaseTheme('UNKNOWN_WORLD').success, 'UNKNOWN_WORLD rejects purchase');
+check(!progression.equipTheme('UNKNOWN_WORLD').success, 'UNKNOWN_WORLD rejects equip');
 check(wallet.getCoins() === 10000 && walletWrites === 0, 'Unavailable purchases leave wallet untouched');
 progression.equipTheme('DYNAMIC');
 const freePlanner = new DistrictPlanner(12345);
 const freeRoute = new Set(Array.from({ length: 100 }, (_, i) => freePlanner.getDistrictAtZ(-i * 600 - 100).districtId));
 for (const id of FREE_WORLD_IDS) check(freeRoute.has(id), `Dynamic Districts can visit ${id}`);
+
+// Phase 3B: ABYSSAL_GLASSLINE is genuinely implemented and registered in production.
+const abyssalWorld = getWorld('ABYSSAL_GLASSLINE') as any;
+const abyssalId = abyssalWorld.id as EnvironmentId;
+check(abyssalWorld.available && abyssalWorld.implemented, 'ABYSSAL_GLASSLINE is implemented and available in catalog');
+check(registry.has(abyssalId), 'ABYSSAL_GLASSLINE is registered in environment registry');
+check(abyssalWorld.coinCost === 6000, 'ABYSSAL_GLASSLINE costs 6000 coins');
 
 // Phase 3A: ORBITAL_HALO is genuinely implemented and registered in production.
 const orbitalWorld = getWorld('ORBITAL_HALO') as any;
@@ -284,16 +288,22 @@ check(list.innerHTML.includes('data-env-id="NEON_RAINLINE"'), 'Unlocked premium 
 const content = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
 const shop = Object.assign(Object.create(ShopModal.prototype), { progression, upgradeManager: wallet });
 shop.renderWorlds(content);
-check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 1, 'Shop marks unfinished premiums coming soon');
+check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 0, 'No worlds marked coming soon once all premium worlds implemented');
 check(content.innerHTML.includes('data-buy-world="NEON_RAINLINE"') || content.innerHTML.includes('data-equip-world="NEON_RAINLINE"'),
   'Shop renders interactive action for implemented premium world');
 check(content.innerHTML.includes('data-buy-world="ORBITAL_HALO"') || content.innerHTML.includes('data-equip-world="ORBITAL_HALO"'),
   'Shop renders interactive action for Orbital Halo');
+check(content.innerHTML.includes('data-buy-world="ABYSSAL_GLASSLINE"') || content.innerHTML.includes('data-equip-world="ABYSSAL_GLASSLINE"'),
+  'Shop renders interactive action for Abyssal Glassline');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 5, 'All four originals + purchased Neon Rainline are owned');
 progression.purchaseTheme('ORBITAL_HALO');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 6, 'All four originals + purchased Neon Rainline + Orbital Halo are owned');
+wallet.addCoins(6000);
+progression.purchaseTheme('ABYSSAL_GLASSLINE');
+check(getWorlds(progression.getState()).filter((world) => world.owned).length === 7, 'All four originals + all three premium worlds are owned');
 modal.render();
 check(list.innerHTML.includes('data-env-id="ORBITAL_HALO"'), 'Unlocked Orbital Halo appears in selection modal');
+check(list.innerHTML.includes('data-env-id="ABYSSAL_GLASSLINE"'), 'Unlocked Abyssal Glassline appears in selection modal');
 check(progression.getKeys() === baseline.keys, 'World APIs preserve revive Key balance');
 check(progression.consumeKeys(1) && progression.getKeys() === baseline.keys - 1, 'Existing revive Key spending still works');
 check(!wallet.deductCoinsPersisted(-10) && !wallet.deductCoinsPersisted(NaN) && !wallet.deductCoinsPersisted(Infinity),

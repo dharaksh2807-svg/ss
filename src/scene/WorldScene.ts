@@ -20,11 +20,15 @@ export class WorldScene {
   public historicSkyline: THREE.Group | null = null;
   public neonSkyline: THREE.Group | null = null;
   public orbitalSkyline: THREE.Group | null = null;
+  public abyssalSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private orbitalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private abyssalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private backgroundSpacecraft: THREE.Group[] = [];
+  private backgroundMarineCreatures: THREE.Group[] = [];
+  private abyssalCreatureTime: number = 0;
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -688,10 +692,173 @@ export class WorldScene {
 
     group.add(this.orbitalSkyline);
 
+    // 5. Deep Ocean Oceanic Megacity & Benthic Skyline (Abyssal Glassline)
+    const abyssalSkyline = new THREE.Group();
+    this.abyssalSkyline = abyssalSkyline;
+    this.abyssalSkylineMaterial = this.skylineMaterial.clone();
+    const abyssalTealMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, fog: false });
+    const abyssalCyanMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff, fog: false });
+    const abyssalAmberMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, fog: false });
+    const abyssalNavyMat = new THREE.MeshBasicMaterial({ color: 0x051d2f, fog: false });
+
+    // 5a. Marine Snow / Bioluminescent Particulate
+    const planktonCount = 450;
+    const planktonGeo = new THREE.BufferGeometry();
+    const planktonPos = new Float32Array(planktonCount * 3);
+    const planktonColors = new Float32Array(planktonCount * 3);
+    for (let i = 0; i < planktonCount; i++) {
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = Math.random() * Math.PI * 2;
+      const r = 180 + Math.random() * 120;
+      planktonPos[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta);
+      planktonPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) + 8;
+      planktonPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+
+      const type = Math.random();
+      if (type < 0.60) {
+        // Cyan-teal bioluminescence
+        planktonColors[i * 3 + 0] = 0.13; planktonColors[i * 3 + 1] = 0.83; planktonColors[i * 3 + 2] = 0.93;
+      } else if (type < 0.85) {
+        // Electric white-cyan
+        planktonColors[i * 3 + 0] = 0.8; planktonColors[i * 3 + 1] = 0.95; planktonColors[i * 3 + 2] = 1.0;
+      } else {
+        // Warm hydrothermal amber
+        planktonColors[i * 3 + 0] = 0.96; planktonColors[i * 3 + 1] = 0.62; planktonColors[i * 3 + 2] = 0.1;
+      }
+    }
+    planktonGeo.setAttribute('position', new THREE.BufferAttribute(planktonPos, 3));
+    planktonGeo.setAttribute('color', new THREE.BufferAttribute(planktonColors, 3));
+    const planktonMat = new THREE.PointsMaterial({
+      size: 2.8,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      fog: false
+    });
+    const plankton = new THREE.Points(planktonGeo, planktonMat);
+    this.abyssalSkyline.add(plankton);
+
+    // 5b. Giant Submerged Geodesic Biodomes
+    // Main forward-left Trench Sanctum Dome
+    const domeGroup = new THREE.Group();
+    domeGroup.position.set(-75, 38, -260);
+
+    const domeRadius = 95;
+    const domeGeo = new THREE.SphereGeometry(domeRadius, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.52);
+    const domeMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getAbyssalDomeHexTexture(),
+      fog: false,
+      transparent: true,
+      opacity: 0.92
+    });
+    const domeMesh = new THREE.Mesh(domeGeo, domeMat);
+    domeGroup.add(domeMesh);
+
+    // Glowing interior city spire core inside the dome
+    const coreSpireGeo = new THREE.CylinderGeometry(1.2, 14, 75, 8);
+    const coreSpire = new THREE.Mesh(coreSpireGeo, abyssalCyanMat);
+    coreSpire.position.y = 35;
+    domeGroup.add(coreSpire);
+
+    // Concentric hydrostatic compression ring at dome base
+    const domeRingGeo = new THREE.RingGeometry(domeRadius - 2, domeRadius + 8, 32);
+    const domeRing = new THREE.Mesh(domeRingGeo, abyssalTealMat);
+    domeRing.rotation.x = -Math.PI / 2;
+    domeGroup.add(domeRing);
+
+    this.abyssalSkyline.add(domeGroup);
+
+    // Secondary distant research dome on the right
+    const dome2 = new THREE.Mesh(new THREE.SphereGeometry(50, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), domeMat);
+    dome2.position.set(145, 25, -290);
+    this.abyssalSkyline.add(dome2);
+
+    // 5c. Hydrothermal Vent Spires with Amber Thermal Plumes
+    const ventCoords = [
+      { x: -160, y: 0, z: -270, h: 65 },
+      { x: 185, y: 0, z: -250, h: 55 }
+    ];
+    ventCoords.forEach((coord) => {
+      const vent = new THREE.Group();
+      vent.position.set(coord.x, 0, coord.z);
+
+      const chimneyGeo = new THREE.CylinderGeometry(2.5, 9.0, coord.h, 8);
+      const chimney = new THREE.Mesh(chimneyGeo, abyssalNavyMat);
+      chimney.position.y = coord.h * 0.5;
+      vent.add(chimney);
+
+      // Amber thermal beacon glow at summit
+      const glowGeo = new THREE.SphereGeometry(3.5, 8, 8);
+      const glow = new THREE.Mesh(glowGeo, abyssalAmberMat);
+      glow.position.y = coord.h;
+      vent.add(glow);
+
+      this.abyssalSkyline!.add(vent);
+    });
+
+    // 5d. Shimmering Downwelling Caustics Plane
+    const causticGeo = new THREE.PlaneGeometry(360, 240);
+    const causticMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getAbyssalCausticTexture(),
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+      fog: false
+    });
+    const causticPlane = new THREE.Mesh(causticGeo, causticMat);
+    causticPlane.position.set(0, 92, -180);
+    causticPlane.rotation.set(Math.PI / 2 + 0.12, 0, 0);
+    this.abyssalSkyline.add(causticPlane);
+
+    // 5e. Swimming Background Marine Leviathans (Creatures)
+    this.backgroundMarineCreatures = [];
+    const creatureSpecs = [
+      { startX: -140, y: 52, z: -240, vx: 14.0, verticalAmp: 4.5, swimFreq: 1.4, swimPhase: 0.0, minX: -220, maxX: 220, scale: 1.4, type: 'MANTA' },
+      { startX: 160, y: 72, z: -280, vx: -11.0, verticalAmp: 3.2, swimFreq: 1.1, swimPhase: 2.1, minX: -220, maxX: 220, scale: 1.8, type: 'LEVIATHAN' },
+      { startX: -60, y: 92, z: -310, vx: 22.0, verticalAmp: 5.0, swimFreq: 1.9, swimPhase: 4.2, minX: -220, maxX: 220, scale: 0.9, type: 'SCOUT_RAY' }
+    ];
+
+    creatureSpecs.forEach((spec) => {
+      const creature = new THREE.Group();
+      creature.position.set(spec.startX, spec.y, spec.z);
+      creature.userData = {
+        vx: spec.vx,
+        verticalAmp: spec.verticalAmp,
+        swimFreq: spec.swimFreq,
+        swimPhase: spec.swimPhase,
+        minX: spec.minX,
+        maxX: spec.maxX
+      };
+
+      const sc = spec.scale;
+      // Fusiform hydrodynamic body
+      const bodyGeo = new THREE.ConeGeometry(2.4 * sc, 16 * sc, 8);
+      const body = new THREE.Mesh(bodyGeo, abyssalNavyMat);
+      body.rotation.z = spec.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
+      creature.add(body);
+
+      // Wide undulating pectoral wings
+      const wingGeo = new THREE.BoxGeometry(22 * sc, 0.4, 7 * sc);
+      const wing = new THREE.Mesh(wingGeo, abyssalTealMat);
+      creature.add(wing);
+
+      // Bioluminescent dorsal spine light strip
+      const dorsalGeo = new THREE.BoxGeometry(0.3 * sc, 0.8 * sc, 14 * sc);
+      const dorsal = new THREE.Mesh(dorsalGeo, abyssalCyanMat);
+      dorsal.position.y = 1.4 * sc;
+      creature.add(dorsal);
+
+      this.backgroundMarineCreatures.push(creature);
+      this.abyssalSkyline!.add(creature);
+    });
+
+    group.add(this.abyssalSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
     this.orbitalSkyline.visible = this.currentTheme.id === 'ORBITAL_HALO';
+    this.abyssalSkyline.visible = this.currentTheme.id === 'ABYSSAL_GLASSLINE';
 
     return group;
   }
@@ -739,6 +906,7 @@ export class WorldScene {
     const isModern = (theme: EnvironmentTheme) => theme.id === 'MODERN_METRO' || theme.id === 'NEON_INDUSTRIAL';
     const isNeon = (theme: EnvironmentTheme) => theme.id === 'NEON_RAINLINE';
     const isOrbital = (theme: EnvironmentTheme) => theme.id === 'ORBITAL_HALO';
+    const isAbyssal = (theme: EnvironmentTheme) => theme.id === 'ABYSSAL_GLASSLINE';
     const modernOpacity = THREE.MathUtils.lerp(
       isModern(base) ? base.skyline.opacity : 0,
       isModern(targetTheme) ? targetTheme.skyline.opacity : 0,
@@ -759,6 +927,11 @@ export class WorldScene {
       isOrbital(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const abyssalOpacity = THREE.MathUtils.lerp(
+      isAbyssal(base) ? base.skyline.opacity : 0,
+      isAbyssal(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -775,15 +948,20 @@ export class WorldScene {
       this.orbitalSkylineMaterial.color.copy(skylineColor);
       this.orbitalSkylineMaterial.opacity = orbitalOpacity;
     }
+    if (this.abyssalSkylineMaterial) {
+      this.abyssalSkylineMaterial.color.copy(skylineColor);
+      this.abyssalSkylineMaterial.opacity = abyssalOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
     if (this.orbitalSkyline) this.orbitalSkyline.visible = orbitalOpacity > 0.01;
+    if (this.abyssalSkyline) this.abyssalSkyline.visible = abyssalOpacity > 0.01;
 
-    // Clouds fade for tunnel & orbital space transitions and respect graphics settings.
+    // Clouds fade for tunnel, orbital space & underwater abyss transitions and respect graphics settings.
     const cloudOpacity = THREE.MathUtils.lerp(
-      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' ? 0 : 1,
-      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' ? 0 : 1,
+      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' ? 0 : 1,
       t
     );
     if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
@@ -893,6 +1071,17 @@ export class WorldScene {
         fillIntensity = 0.65;
         isRain = false;
         break;
+      case 'ABYSSAL_BIOLUMINESCENT_CHASM':
+        sunColorHex = 0x38bdf8;
+        sunIntensity = 1.15;
+        skyTopHex = 0x011324;
+        skyBottomHex = 0x033852;
+        fogColorHex = 0x021b2d;
+        fogDensity = 0.0035;
+        fillColorHex = 0x0d9488;
+        fillIntensity = 0.75;
+        isRain = false;
+        break;
       case 'CLEAR_DAYLIGHT':
       default:
         sunColorHex = 0xfff8eb;
@@ -983,6 +1172,23 @@ export class WorldScene {
           craft.position.x = craft.userData.minX;
         } else if (craft.userData.vx < 0 && craft.position.x < craft.userData.minX) {
           craft.position.x = craft.userData.maxX;
+        }
+      }
+    }
+
+    // Swimming background marine leviathans in oceanic abyss
+    if (this.backgroundMarineCreatures.length > 0 && this.abyssalSkyline && this.abyssalSkyline.visible) {
+      const delta = dt || 0.016;
+      this.abyssalCreatureTime += delta;
+      for (let i = 0; i < this.backgroundMarineCreatures.length; i++) {
+        const creature = this.backgroundMarineCreatures[i];
+        creature.position.x += creature.userData.vx * delta;
+        creature.position.y += Math.sin(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * creature.userData.verticalAmp * delta;
+        creature.rotation.z = Math.cos(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * 0.08;
+        if (creature.userData.vx > 0 && creature.position.x > creature.userData.maxX) {
+          creature.position.x = creature.userData.minX;
+        } else if (creature.userData.vx < 0 && creature.position.x < creature.userData.minX) {
+          creature.position.x = creature.userData.maxX;
         }
       }
     }

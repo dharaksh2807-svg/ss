@@ -2865,6 +2865,474 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Shimmering Deep Ocean Water Caustic Texture
+   */
+  public static getAbyssalCausticTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_water_caustics', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep aquatic abyss backdrop
+      const bg = ctx.createLinearGradient(0, 0, size, size);
+      bg.addColorStop(0, '#021321');
+      bg.addColorStop(0.5, '#03253b');
+      bg.addColorStop(1, '#011624');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, size, size);
+
+      // Organic interconnected caustic ripple webbing
+      const points: [number, number][] = [
+        [32, 45], [96, 28], [170, 52], [224, 38],
+        [48, 110], [128, 95], [195, 120], [80, 185],
+        [160, 175], [235, 190], [55, 230], [130, 240]
+      ];
+
+      const curve = (cpx: number, cpy: number, x: number, y: number) => {
+        if (typeof ctx.quadraticCurveTo === 'function') {
+          ctx.quadraticCurveTo(cpx, cpy, x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      };
+
+      // Layer 1: Soft broad cyan underwater glow
+      ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i * 3 + 1) % points.length];
+        const cp = points[(i * 2 + 5) % points.length];
+        ctx.moveTo(p1[0], p1[1]);
+        curve(cp[0], cp[1], p2[0], p2[1]);
+      }
+      ctx.stroke();
+
+      // Layer 2: Focused bright electric cyan caustic network
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.65)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        const p3 = points[(i + 4) % points.length];
+        ctx.moveTo(p1[0], p1[1]);
+        curve((p1[0] + p2[0]) * 0.5 + 8, (p1[1] + p2[1]) * 0.5 - 8, p2[0], p2[1]);
+        ctx.moveTo(p2[0], p2[1]);
+        curve((p2[0] + p3[0]) * 0.5 - 6, (p2[1] + p3[1]) * 0.5 + 6, p3[0], p3[1]);
+      }
+      ctx.stroke();
+
+      // Layer 3: Razor-thin diamond-bright caustic convergence lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i += 2) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        ctx.moveTo(p1[0], p1[1]);
+        ctx.lineTo(p2[0], p2[1]);
+      }
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Benthic Ocean Seafloor & Hydrothermal Basalt Texture
+   */
+  public static getAbyssalSeafloorTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_seafloor_basalt', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep ocean volcanic basalt bedrock
+      ctx.fillStyle = '#06131c';
+      ctx.fillRect(0, 0, size, size);
+
+      // Irregular rock slab fissures
+      ctx.fillStyle = '#0a1d29';
+      for (let i = 0; i < 28; i++) {
+        const rx = (i * 37) % size;
+        const ry = (i * 49) % size;
+        const rw = 24 + ((i * 13) % 40);
+        const rh = 18 + ((i * 17) % 35);
+        ctx.beginPath();
+        ctx.roundRect(rx, ry, rw, rh, 6);
+        ctx.fill();
+      }
+
+      // Bioluminescent hydrothermal micro-veins
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(20, 40);
+      ctx.lineTo(80, 75);
+      ctx.lineTo(140, 60);
+      ctx.lineTo(210, 110);
+      ctx.moveTo(50, 180);
+      ctx.lineTo(120, 160);
+      ctx.lineTo(190, 210);
+      ctx.stroke();
+
+      // Warm hydrothermal sulfur glow spots
+      ctx.fillStyle = '#f59e0b';
+      for (let i = 0; i < 8; i++) {
+        const gx = ((i * 43) + 20) % size;
+        const gy = ((i * 61) + 30) % size;
+        ctx.beginPath();
+        ctx.arc(gx, gy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Geodesic Hexagonal Pressure Dome Glass & Framework Texture
+   */
+  public static getAbyssalDomeHexTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_dome_hex', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Transparent ocean glass tint base
+      ctx.fillStyle = 'rgba(6, 32, 51, 0.85)';
+      ctx.fillRect(0, 0, size, size);
+
+      // Hexagonal structural titanium rib lattice
+      const hexRadius = 48;
+      const h = hexRadius * Math.sqrt(3);
+      ctx.strokeStyle = '#0e3a54';
+      ctx.lineWidth = 5;
+
+      for (let y = -h; y < size + h; y += h) {
+        for (let x = -hexRadius * 3; x < size + hexRadius * 3; x += hexRadius * 3) {
+          const drawHex = (cx: number, cy: number) => {
+            ctx.beginPath();
+            for (let a = 0; a < 6; a++) {
+              const angle = (a * Math.PI) / 3;
+              const hx = cx + hexRadius * Math.cos(angle);
+              const hy = cy + hexRadius * Math.sin(angle);
+              if (a === 0) ctx.moveTo(hx, hy);
+              else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Glowing cyan structural vertex rivets
+            ctx.fillStyle = '#00f5ff';
+            for (let a = 0; a < 6; a++) {
+              const angle = (a * Math.PI) / 3;
+              const hx = cx + hexRadius * Math.cos(angle);
+              const hy = cy + hexRadius * Math.sin(angle);
+              ctx.beginPath();
+              ctx.arc(hx, hy, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          };
+
+          drawHex(x, y);
+          drawHex(x + hexRadius * 1.5, y + h * 0.5);
+        }
+      }
+
+      // Diagonal ambient light caustics across the glass panes
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.moveTo(0, size * 0.6);
+      ctx.lineTo(size * 0.6, 0);
+      ctx.moveTo(size * 0.3, size);
+      ctx.lineTo(size, size * 0.3);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Deep Sea Bioluminescent Coral Texture
+   */
+  public static getAbyssalBioluminescentCoralTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_bio_coral', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep aquatic background
+      ctx.fillStyle = '#031422';
+      ctx.fillRect(0, 0, size, size);
+
+      // Branching coral stalk structures
+      const drawCoralStalk = (bx: number, by: number, color: string, glowColor: string) => {
+        const curve = (cpx: number, cpy: number, x: number, y: number) => {
+          if (typeof ctx.quadraticCurveTo === 'function') {
+            ctx.quadraticCurveTo(cpx, cpy, x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        };
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        curve(bx - 15, by - 40, bx - 25, by - 70);
+        ctx.moveTo(bx, by);
+        curve(bx + 18, by - 35, bx + 28, by - 65);
+        ctx.moveTo(bx, by);
+        curve(bx + 4, by - 45, bx + 6, by - 85);
+        ctx.stroke();
+
+        // Luminescent tip polyps
+        ctx.fillStyle = glowColor;
+        [[-25, -70], [28, -65], [6, -85], [-12, -45], [16, -42]].forEach(([ox, oy]) => {
+          ctx.beginPath();
+          ctx.arc(bx + ox, by + oy, 4.0, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      };
+
+      drawCoralStalk(64, 230, '#0284c7', '#00f5ff'); // Electric cyan coral
+      drawCoralStalk(192, 230, '#9333ea', '#f026d3'); // Magenta sea fan
+      drawCoralStalk(128, 240, '#0d9488', '#22d3ee'); // Teal sea whip
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Underwater Oceanic Transit Departures Banner Texture
+   */
+  public static getAbyssalTransitSignTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_transit_sign', () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep nautical graphite hull
+      ctx.fillStyle = '#051826';
+      ctx.fillRect(0, 0, w, h);
+
+      // Electric cyan luminous border
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      // Header district name
+      ctx.fillStyle = '#00f5ff';
+      ctx.font = '900 24px sans-serif';
+      ctx.fillText('ABYSSAL GLASSLINE // SECTOR 08', 24, 42);
+
+      // Telemetry badge
+      ctx.fillStyle = '#0d9488';
+      ctx.fillRect(24, 52, 90, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 11px monospace';
+      ctx.fillText('DEPTH: 8,450M', 30, 65);
+
+      // Hydrostatic status
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 12px monospace';
+      ctx.fillText('PRESSURE: 845 ATM • GLASS TUBE INTEGRITY: 100% • HYDRO-MAGLEV ACTIVE', 124, 65);
+
+      // Bottom guide arrows
+      ctx.fillStyle = '#22d3ee';
+      for (let i = 0; i < 14; i++) {
+        const cx = 24 + i * 34;
+        ctx.beginPath();
+        ctx.moveTo(cx, 85);
+        ctx.lineTo(cx + 10, 97);
+        ctx.lineTo(cx, 109);
+        ctx.lineTo(cx - 5, 109);
+        ctx.lineTo(cx + 5, 97);
+        ctx.lineTo(cx - 5, 85);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Underwater Holographic Telemetry & Depth Warning Displays
+   */
+  public static getAbyssalHoloSignTexture(variant: number = 0): THREE.Texture {
+    return this.getOrCreate(`abyssal_holo_sign_${variant}`, () => {
+      const w = 256;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep cyan/teal translucent holographic projection background
+      ctx.fillStyle = 'rgba(2, 26, 42, 0.90)';
+      ctx.fillRect(0, 0, w, h);
+
+      // Outer illuminated neon cyan border
+      ctx.strokeStyle = variant === 1 ? '#f59e0b' : '#00f5ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(3, 3, w - 6, h - 6);
+
+      if (variant === 0) {
+        // Variant 0: Hydrostatic Pressure & Hull Seal Monitor
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '800 14px sans-serif';
+        ctx.fillText('HYDROSTATIC MONITOR', 16, 28);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('DEPTH: -8,450 METERS', 16, 50);
+        ctx.fillText('EXTERNAL: 845.2 ATM', 16, 68);
+        ctx.fillText('GLASS TUBE SEAL: NOMINAL', 16, 86);
+
+        // Circular Pressure Dial
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(205, 64, 24, 0, Math.PI * 1.5);
+        ctx.stroke();
+
+        ctx.fillStyle = '#00f5ff';
+        ctx.beginPath();
+        ctx.arc(205, 64, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (variant === 1) {
+        // Variant 1: Hydrothermal Vent & Thermal Energy Grid
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '800 14px sans-serif';
+        ctx.fillText('GEOTHERMAL VENT SECTOR', 16, 28);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('CORE TEMP: 382°C', 16, 50);
+        ctx.fillText('ENERGY HARVEST: 98.4%', 16, 68);
+        ctx.fillText('CURRENT VELOCITY: 4.2 M/S', 16, 86);
+
+        // Thermal wave spikes
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(170, 75);
+        ctx.lineTo(185, 45);
+        ctx.lineTo(195, 80);
+        ctx.lineTo(210, 38);
+        ctx.lineTo(225, 75);
+        ctx.stroke();
+      } else {
+        // Variant 2: Deep Trench Navigation & Sonar Bathymetry
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '800 14px sans-serif';
+        ctx.fillText('BATHYMETRIC TRENCH', 16, 28);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('MARIANA RIFT • SECTOR 08', 16, 50);
+        ctx.fillText('SONAR ECHO: CLEAR', 16, 68);
+        ctx.fillText('TRANSIT GUIDANCE: ACTIVE', 16, 86);
+
+        // Concentric Sonar Rings
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(205, 64, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(205, 64, 22, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Progress bar at bottom
+      ctx.fillStyle = variant === 1 ? '#f59e0b' : '#00f5ff';
+      ctx.fillRect(16, 102, w - 32, 4);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Underwater Hydro-Maglev Guideway Track Deck Texture
+   */
+  public static getAbyssalGuidewayTexture(): THREE.Texture {
+    return this.getOrCreate('abyssal_guideway_deck', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep marine titanium-tungsten deck
+      ctx.fillStyle = '#061824';
+      ctx.fillRect(0, 0, size, size);
+
+      // High-pressure segmented floor plates
+      const step = size / 4;
+      for (let x = 0; x < size; x += step) {
+        for (let y = 0; y < size; y += step) {
+          ctx.fillStyle = '#0a2333';
+          ctx.fillRect(x + 2, y + 2, step - 4, step - 4);
+          ctx.strokeStyle = '#133e5c';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 2, y + 2, step - 4, step - 4);
+        }
+      }
+
+      // Magnetic levitation induction rails with bioluminescent teal conduits
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(size * 0.25 - 4, 0, 8, size);
+      ctx.fillRect(size * 0.75 - 4, 0, 8, size);
+
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(size * 0.25 - 1.5, 0, 3, size);
+      ctx.fillRect(size * 0.75 - 1.5, 0, 3, size);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 

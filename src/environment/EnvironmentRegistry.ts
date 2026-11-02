@@ -7,6 +7,7 @@ import {
   NEON_INDUSTRIAL_THEME,
   NEON_RAINLINE_THEME,
   ORBITAL_HALO_THEME,
+  ABYSSAL_GLASSLINE_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -21,6 +22,7 @@ export class EnvironmentRegistry {
     this.register(NEON_INDUSTRIAL_THEME);
     this.register(NEON_RAINLINE_THEME);
     this.register(ORBITAL_HALO_THEME);
+    this.register(ABYSSAL_GLASSLINE_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

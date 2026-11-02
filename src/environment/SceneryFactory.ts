@@ -138,6 +138,22 @@ export class SceneryFactory {
     orbitalHoloSignMat3: THREE.MeshBasicMaterial;
     orbitalTransitSignMat: THREE.MeshBasicMaterial;
     orbitalGuidewayDeckMat: THREE.MeshStandardMaterial;
+    // Abyssal Glassline Premium Scenery Materials
+    abyssalGlassTunnelMat: THREE.MeshStandardMaterial;
+    abyssalTitaniumRibMat: THREE.MeshStandardMaterial;
+    abyssalHydroBrassMat: THREE.MeshStandardMaterial;
+    abyssalNavyCompositeMat: THREE.MeshStandardMaterial;
+    abyssalBioTealGlowMat: THREE.MeshBasicMaterial;
+    abyssalBioCyanGlowMat: THREE.MeshBasicMaterial;
+    abyssalBioAmberGlowMat: THREE.MeshBasicMaterial;
+    abyssalBioMagentaGlowMat: THREE.MeshBasicMaterial;
+    abyssalBasaltRockMat: THREE.MeshStandardMaterial;
+    abyssalCoralMat: THREE.MeshStandardMaterial;
+    abyssalHoloSignMat1: THREE.MeshBasicMaterial;
+    abyssalHoloSignMat2: THREE.MeshBasicMaterial;
+    abyssalHoloSignMat3: THREE.MeshBasicMaterial;
+    abyssalTransitSignMat: THREE.MeshBasicMaterial;
+    abyssalGuidewayDeckMat: THREE.MeshStandardMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -832,6 +848,126 @@ export class SceneryFactory {
         });
         curved.applyCurvature(m);
         return m;
+      })(),
+      // Abyssal Glassline Shared Materials
+      abyssalGlassTunnelMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x22d3ee,
+          roughness: 0.05,
+          metalness: 0.55,
+          transparent: true,
+          opacity: 0.35
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalTitaniumRibMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x0f2738,
+          roughness: 0.28,
+          metalness: 0.78
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalHydroBrassMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xd97706,
+          roughness: 0.22,
+          metalness: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalNavyCompositeMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x081d2c,
+          roughness: 0.35,
+          metalness: 0.60
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalBioTealGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalBioCyanGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalBioAmberGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalBioMagentaGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xf026d3 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalBasaltRockMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getAbyssalSeafloorTexture(),
+          roughness: 0.90,
+          metalness: 0.15
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalCoralMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getAbyssalBioluminescentCoralTexture(),
+          roughness: 0.40,
+          metalness: 0.25
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalHoloSignMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getAbyssalHoloSignTexture(0),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalHoloSignMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getAbyssalHoloSignTexture(1),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalHoloSignMat3: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getAbyssalHoloSignTexture(2),
+          transparent: true,
+          opacity: 0.92
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalTransitSignMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getAbyssalTransitSignTexture()
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      abyssalGuidewayDeckMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getAbyssalGuidewayTexture(),
+          roughness: 0.42,
+          metalness: 0.55
+        });
+        curved.applyCurvature(m);
+        return m;
       })()
     };
   }
@@ -875,6 +1011,8 @@ export class SceneryFactory {
       this.buildNeonRainlineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'ORBITAL_HALO') {
       this.buildOrbitalHaloScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'ABYSSAL_GLASSLINE') {
+      this.buildAbyssalGlasslineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -3125,6 +3263,598 @@ export class SceneryFactory {
   }
 
   // -------------------------------------------------------------------------
+  // ABYSSAL GLASSLINE PROCEDURAL 3D SCENERY (PHASE 3B)
+  // -------------------------------------------------------------------------
+  private buildAbyssalGlasslineScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const rng = new SeededRandom(seed);
+
+    // 1. Enclosed Transparent Glass Transit Tunnel & Guideway
+    this.buildAbyssalGuidewayAndGlassTunnel(group, roadbedWidth, curbWidth, chunkLength, detail);
+
+    // 2. High-Pressure Titanium Compression Ribs & Hydrostatic Gantries
+    this.buildAbyssalCompressionRibsGantries(group, chunkLength, detail);
+
+    // 3. Benthic Seafloor, Basalt Slabs, Bioluminescent Corals & Research Pods
+    this.buildAbyssalSeabedAndCoralFormations(group, chunkLength, rng, detail);
+
+    // 4. Deterministic Landmark Variations
+    // Variation 1: Monumental Trench Sanctum Dome (~48% of chunks)
+    const hasSanctumDome = rng.chance(0.48);
+    const domeZ = -chunkLength * 0.5;
+    if (hasSanctumDome) {
+      this.buildAbyssalMonumentalSanctumDome(group, chunkLength, domeZ);
+    }
+
+    // Variation 2: Oceanographic Research Skybridge & Submersible Dock (~38% of chunks when staggered)
+    if (detail !== 'MINIMAL' && (!hasSanctumDome || rng.chance(0.38))) {
+      const bridgeZ = hasSanctumDome ? -chunkLength * 0.18 : -chunkLength * 0.5;
+      this.buildAbyssalResearchSkybridge(group, chunkLength, bridgeZ);
+    }
+
+    // Variation 3: Hydrothermal Trench Chasm & Geothermal Vent (~35% of chunks)
+    if (detail !== 'MINIMAL' && rng.chance(0.35)) {
+      const chasmZ = hasSanctumDome ? -chunkLength * 0.80 : -chunkLength * 0.25;
+      this.buildAbyssalHydrothermalChasm(group, chunkLength, chasmZ, rng);
+    }
+  }
+
+  private buildAbyssalGuidewayAndGlassTunnel(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = CONSTANTS.TUNNEL_WALL_X;
+    const wallThick = 0.55;
+    const baseH = 1.4;
+    const wallHeight = 6.4;
+    const glassH = wallHeight - baseH;
+
+    // 1. Reinforced Marine Composite Lower Retaining Base & Upper Glass Walls
+    const baseGeo = new THREE.BoxGeometry(wallThick, baseH, chunkLength);
+    const footingGeo = new THREE.BoxGeometry(wallThick + 0.35, 0.40, chunkLength);
+    [-wallX, wallX].forEach((wx) => {
+      // Wall foundation footing using guideway deck material
+      const footing = new THREE.Mesh(footingGeo, mats.abyssalGuidewayDeckMat);
+      footing.position.set(wx, 0.20, -chunkLength * 0.5);
+      footing.receiveShadow = true;
+      group.add(footing);
+
+      const baseMesh = new THREE.Mesh(baseGeo, mats.abyssalNavyCompositeMat);
+      baseMesh.position.set(wx, baseH * 0.5, -chunkLength * 0.5);
+      baseMesh.castShadow = true;
+      baseMesh.receiveShadow = true;
+      group.add(baseMesh);
+
+      // Upper Transparent Pressure Glass Walls
+      const glassGeo = new THREE.BoxGeometry(0.16, glassH, chunkLength);
+      const glassMesh = new THREE.Mesh(glassGeo, mats.abyssalGlassTunnelMat);
+      glassMesh.position.set(wx, baseH + glassH * 0.5, -chunkLength * 0.5);
+      group.add(glassMesh);
+
+      // Heavy Hydro-Brass Coping Trim at wall-roof junction
+      const capGeo = new THREE.BoxGeometry(wallThick + 0.14, 0.22, chunkLength);
+      const capMesh = new THREE.Mesh(capGeo, mats.abyssalHydroBrassMat);
+      capMesh.position.set(wx, wallHeight + 0.11, -chunkLength * 0.5);
+      group.add(capMesh);
+
+      // Continuous Bioluminescent Cyan Light Runners
+      const upperRunner = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, chunkLength), mats.abyssalBioCyanGlowMat);
+      upperRunner.position.set(wx + (wx < 0 ? wallThick * 0.5 : -wallThick * 0.5), wallHeight + 0.10, -chunkLength * 0.5);
+      group.add(upperRunner);
+
+      const lowerRunner = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, chunkLength), mats.abyssalBioTealGlowMat);
+      lowerRunner.position.set(wx + (wx < 0 ? wallThick * 0.5 : -wallThick * 0.5), baseH, -chunkLength * 0.5);
+      group.add(lowerRunner);
+    });
+
+    // 2. Vaulted Enclosed Transparent Pressure Glass Roof Canopy
+    // High-arched cylindrical segment spanning between the two walls (Y = 6.4m to apex 11.2m)
+    // Span width is 2 * wallX = 22.4m, radius = 13.5m, arc centered at Y = -2.3m, Z = -chunkLength/2
+    const canopyRadius = 13.5;
+    const canopySpanAngle = Math.PI * 0.54; // Arch segment
+    const canopyGeo = new THREE.CylinderGeometry(canopyRadius, canopyRadius, chunkLength, 18, 1, true, -canopySpanAngle * 0.5, canopySpanAngle);
+    const canopyMesh = new THREE.Mesh(canopyGeo, mats.abyssalGlassTunnelMat);
+    canopyMesh.name = 'tunnel_scenery';
+    canopyMesh.rotation.x = -Math.PI / 2; // Lie along Z axis with arch apex oriented upward
+    canopyMesh.position.set(0, -2.3, -chunkLength * 0.5);
+    group.add(canopyMesh);
+
+    // Apex longitudinal hydro-brass compression spine along the roof ridge (Y = 11.2m)
+    const spineGeo = new THREE.BoxGeometry(0.45, 0.35, chunkLength);
+    const spineMesh = new THREE.Mesh(spineGeo, mats.abyssalHydroBrassMat);
+    spineMesh.position.set(0, 11.2, -chunkLength * 0.5);
+    group.add(spineMesh);
+
+    const spineGlow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, chunkLength), mats.abyssalBioCyanGlowMat);
+    spineGlow.position.set(0, 11.0, -chunkLength * 0.5);
+    group.add(spineGlow);
+
+    // 4. Vertical Titanium Frame Mullions dividing the observation glass
+    const mullionGeo = new THREE.BoxGeometry(wallThick + 0.08, glassH + 0.1, 0.38);
+    for (let z = 6; z < chunkLength; z += 12) {
+      [-wallX, wallX].forEach((wx) => {
+        const mullion = new THREE.Mesh(mullionGeo, mats.abyssalTitaniumRibMat);
+        mullion.position.set(wx, baseH + glassH * 0.5, -z);
+        group.add(mullion);
+      });
+    }
+
+    // 5. Trackside Magnetic Levitation Cavitation Guide Rails
+    const magGuideGeo = new THREE.BoxGeometry(0.20, 0.24, chunkLength);
+    const magX = roadbedWidth * 0.5 + 0.45;
+    [-magX, magX].forEach((rx) => {
+      const guideMesh = new THREE.Mesh(magGuideGeo, mats.abyssalTitaniumRibMat);
+      guideMesh.position.set(rx, 0.12, -chunkLength * 0.5);
+      group.add(guideMesh);
+
+      const conduit = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, chunkLength), mats.abyssalBioTealGlowMat);
+      conduit.position.set(rx, 0.25, -chunkLength * 0.5);
+      group.add(conduit);
+    });
+
+    // 6. Trackside Bathymetric Depth Displays & Sonar Telemetry Displays
+    if (detail !== 'MINIMAL') {
+      const poleGeo = new THREE.CylinderGeometry(0.08, 0.10, 7.2, 8);
+      const armGeo = new THREE.BoxGeometry(1.6, 0.08, 0.08);
+      const holoSignGeo = new THREE.PlaneGeometry(1.5, 0.85);
+
+      for (let z = 16; z < chunkLength; z += 26) {
+        [-wallX, wallX].forEach((wx, sideIdx) => {
+          const poleGroup = new THREE.Group();
+          const inwardSign = wx < 0 ? 1 : -1;
+          poleGroup.position.set(wx, wallHeight, -z);
+
+          const pole = new THREE.Mesh(poleGeo, mats.abyssalTitaniumRibMat);
+          pole.position.y = 3.6;
+          poleGroup.add(pole);
+
+          const arm = new THREE.Mesh(armGeo, mats.abyssalTitaniumRibMat);
+          arm.position.set(inwardSign * 0.8, 6.9, 0);
+          poleGroup.add(arm);
+
+          // Hanging holographic bathymetric display
+          const signMat = (sideIdx + Math.floor(z / 26)) % 3 === 0
+            ? mats.abyssalHoloSignMat1
+            : ((sideIdx + Math.floor(z / 26)) % 3 === 1 ? mats.abyssalHoloSignMat2 : mats.abyssalHoloSignMat3);
+          const sign = new THREE.Mesh(holoSignGeo, signMat);
+          sign.position.set(inwardSign * 1.5, 6.3, 0);
+          sign.rotation.y = inwardSign > 0 ? -0.15 : Math.PI + 0.15;
+          poleGroup.add(sign);
+
+          // Downward ocean spotlight
+          const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.2), mats.abyssalBioCyanGlowMat);
+          lamp.position.set(inwardSign * 1.5, 6.85, 0);
+          poleGroup.add(lamp);
+
+          group.add(poleGroup);
+        });
+      }
+    }
+  }
+
+  private buildAbyssalCompressionRibsGantries(
+    group: THREE.Group,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const gantrySpacing = 16.0; // Compression rib every 16m
+    const gantryCount = Math.floor(chunkLength / gantrySpacing);
+    const poleHeight = 10.6;
+    const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
+
+    for (let g = 0; g < gantryCount; g++) {
+      const gz = -g * gantrySpacing - 8.0;
+      const gantryGroup = new THREE.Group();
+      gantryGroup.position.set(0, 0, gz);
+
+      // Heavy faceted marine titanium compression columns flanking tracks
+      const colGeo = new THREE.BoxGeometry(0.48, poleHeight, 0.52);
+      [-spanWidth * 0.5, spanWidth * 0.5].forEach((cx) => {
+        const col = new THREE.Mesh(colGeo, mats.abyssalTitaniumRibMat);
+        col.position.set(cx, poleHeight * 0.5, 0);
+        gantryGroup.add(col);
+
+        // Vertical bioluminescent teal hydrostatic gasket seam
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(0.08, poleHeight * 0.85, 0.08), mats.abyssalBioTealGlowMat);
+        strip.position.set(cx + (cx < 0 ? 0.25 : -0.25), poleHeight * 0.45, 0);
+        gantryGroup.add(strip);
+
+        // Anti-corrosion hydro-brass base reinforcement
+        const boot = new THREE.Mesh(new THREE.BoxGeometry(0.56, 1.2, 0.60), mats.abyssalHydroBrassMat);
+        boot.position.set(cx, 0.6, 0);
+        gantryGroup.add(boot);
+      });
+
+      // Overhead cross-truss beam (clearance strictly >= 10.1m)
+      const truss = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 0.8, 0.50, 0.60), mats.abyssalTitaniumRibMat);
+      truss.position.set(0, poleHeight - 0.25, 0);
+      gantryGroup.add(truss);
+
+      // Arching compression ring rib curving over the vault
+      const archRibGeo = new THREE.TorusGeometry(spanWidth * 0.5, 0.25, 6, 20, Math.PI);
+      const archRib = new THREE.Mesh(archRibGeo, mats.abyssalHydroBrassMat);
+      archRib.position.set(0, poleHeight - 0.25, 0);
+      gantryGroup.add(archRib);
+
+      // Horizontal cyan glow strip along lower girder edge (clearance >= 10.0m)
+      const girderGlow = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 0.6, 0.06, 0.06), mats.abyssalBioCyanGlowMat);
+      girderGlow.position.set(0, poleHeight - 0.50, 0);
+      gantryGroup.add(girderGlow);
+
+      // Hydrostatic levitation induction rings per lane (clearance strictly >= 9.6m)
+      CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
+        const ringGeo = new THREE.TorusGeometry(0.28, 0.04, 6, 14);
+        const ring = new THREE.Mesh(ringGeo, mats.abyssalBioTealGlowMat);
+        ring.position.set(laneX, poleHeight - 0.85, 0);
+        gantryGroup.add(ring);
+
+        if (detail !== 'MINIMAL') {
+          const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.05, 0.16), mats.abyssalBioAmberGlowMat);
+          lamp.position.set(laneX, poleHeight - 0.55, 0.1);
+          gantryGroup.add(lamp);
+        }
+      });
+
+      group.add(gantryGroup);
+    }
+  }
+
+  private buildAbyssalSeabedAndCoralFormations(
+    group: THREE.Group,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = CONSTANTS.TUNNEL_WALL_X;
+    // 2 formation clusters per chunk (every 40m)
+    const numClusters = 2;
+    const lotLength = chunkLength / numClusters;
+
+    for (let c = 0; c < numClusters; c++) {
+      const cz = -c * lotLength - lotLength * 0.5;
+      const cStyle = rng.int(0, 3);
+      const primarySide = (c % 2 === 0) ? -1 : 1;
+
+      [-1, 1].forEach((side) => {
+        const isPrimary = side === primarySide;
+        const cGroup = new THREE.Group();
+        const lateralJitter = rng.range(0, 2.0);
+        const frontX = wallX + 3.0 + lateralJitter;
+
+        if (isPrimary) {
+          if (cStyle === 0) {
+            // --- Typology 0: Bioluminescent Coral Reef & Sea Fan Garden ---
+            const reefW = rng.range(8.0, 11.0);
+            const reefH = rng.range(6.0, 12.0);
+            const reefD = lotLength * rng.range(0.65, 0.78);
+            const cX = side * (frontX + reefW * 0.5);
+            cGroup.position.set(cX, 0, cz);
+
+            // Benthic basalt rock mound
+            const rockGeo = new THREE.BoxGeometry(reefW, reefH * 0.45, reefD);
+            const rock = new THREE.Mesh(rockGeo, mats.abyssalBasaltRockMat);
+            rock.position.y = reefH * 0.225;
+            rock.castShadow = true;
+            cGroup.add(rock);
+
+            // Sprouting coral branches
+            const coralCount = detail === 'FULL' ? 6 : (detail === 'BALANCED' ? 4 : 2);
+            for (let k = 0; k < coralCount; k++) {
+              const coralH = rng.range(3.5, 6.5);
+              const coralGeo = new THREE.ConeGeometry(rng.range(1.0, 1.8), coralH, 6);
+              const coralMat = k % 2 === 0 ? mats.abyssalBioTealGlowMat : mats.abyssalBioMagentaGlowMat;
+              const coral = new THREE.Mesh(coralGeo, coralMat);
+              coral.position.set(rng.range(-reefW * 0.3, reefW * 0.3), reefH * 0.45 + coralH * 0.5, rng.range(-reefD * 0.3, reefD * 0.3));
+              coral.rotation.z = rng.range(-0.25, 0.25);
+              cGroup.add(coral);
+            }
+
+            // Luminous coral polyp beacons
+            const polypGeo = new THREE.SphereGeometry(0.6, 6, 6);
+            for (let p = 0; p < 4; p++) {
+              const polyp = new THREE.Mesh(polypGeo, mats.abyssalBioCyanGlowMat);
+              polyp.position.set(rng.range(-reefW * 0.4, reefW * 0.4), reefH * 0.45 + rng.range(1.0, 5.0), rng.range(-reefD * 0.4, reefD * 0.4));
+              cGroup.add(polyp);
+            }
+          } else if (cStyle === 1) {
+            // --- Typology 1: Hydrothermal Black Smoker Vent Chimney ---
+            const ventW = 3.5;
+            const ventH = rng.range(18.0, 28.0);
+            const cX = side * (frontX + ventW * 0.5);
+            cGroup.position.set(cX, 0, cz);
+
+            // Volcanic chimney spire
+            const chimneyGeo = new THREE.CylinderGeometry(1.2, 2.8, ventH, 8);
+            const chimney = new THREE.Mesh(chimneyGeo, mats.abyssalBasaltRockMat);
+            chimney.position.y = ventH * 0.5;
+            cGroup.add(chimney);
+
+            // Glowing amber thermal vent orifice at top
+            const orificeGeo = new THREE.SphereGeometry(1.6, 8, 8);
+            const orifice = new THREE.Mesh(orificeGeo, mats.abyssalBioAmberGlowMat);
+            orifice.position.y = ventH;
+            cGroup.add(orifice);
+
+            // Geothermal heat transfer conduit descending to seafloor
+            const conduitGeo = new THREE.BoxGeometry(0.18, ventH, 0.18);
+            const conduit = new THREE.Mesh(conduitGeo, mats.abyssalHydroBrassMat);
+            conduit.position.set(-side * (ventW * 0.5 + 0.1), ventH * 0.5, 0);
+            cGroup.add(conduit);
+
+            const conduitGlow = new THREE.Mesh(new THREE.BoxGeometry(0.08, ventH, 0.08), mats.abyssalBioAmberGlowMat);
+            conduitGlow.position.set(-side * (ventW * 0.5 + 0.15), ventH * 0.5, 0);
+            cGroup.add(conduitGlow);
+          } else if (cStyle === 2) {
+            // --- Typology 2: Subsea Pressure Research Capsule & Airlock Pylon ---
+            const pylonW = rng.range(7.5, 9.5);
+            const pylonH = rng.range(18.0, 26.0);
+            const pylonD = lotLength * rng.range(0.60, 0.72);
+            const cX = side * (frontX + pylonW * 0.5);
+            cGroup.position.set(cX, 0, cz);
+
+            // Cylindrical research capsule body
+            const capRadius = pylonW * 0.45;
+            const capGeo = new THREE.CylinderGeometry(capRadius, capRadius, pylonH, 12);
+            const capsule = new THREE.Mesh(capGeo, mats.abyssalNavyCompositeMat);
+            capsule.position.y = pylonH * 0.5;
+            capsule.castShadow = true;
+            cGroup.add(capsule);
+
+            // Domed observation cupola facing tracks
+            const cupolaRadius = capRadius * 0.6;
+            const cupolaGeo = new THREE.SphereGeometry(cupolaRadius, 12, 8, 0, Math.PI, 0, Math.PI);
+            const cupola = new THREE.Mesh(cupolaGeo, mats.abyssalGlassTunnelMat);
+            cupola.position.set(-side * capRadius * 0.8, pylonH * 0.6, 0);
+            cupola.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2;
+            cGroup.add(cupola);
+
+            // Pressurized airlock umbilical bridge connecting to tunnel gallery
+            const tubeLen = frontX - wallX + 1.2;
+            const tubeGeo = new THREE.CylinderGeometry(1.6, 1.6, tubeLen, 12);
+            const tube = new THREE.Mesh(tubeGeo, mats.abyssalNavyCompositeMat);
+            tube.rotation.z = Math.PI / 2;
+            tube.position.set(-side * (pylonW * 0.5 + tubeLen * 0.5), 6.5, 0);
+            cGroup.add(tube);
+
+            // Telemetry mast
+            const mastH = rng.range(8.0, 12.0);
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, mastH, 6), mats.abyssalHydroBrassMat);
+            mast.position.y = pylonH + mastH * 0.5;
+            cGroup.add(mast);
+
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.6, 6, 6), mats.abyssalBioCyanGlowMat);
+            beacon.position.y = pylonH + mastH;
+            cGroup.add(beacon);
+          } else {
+            // --- Typology 3: Geothermal Extraction Rig & Acoustic Hydrophone Tower ---
+            const rigW = rng.range(8.0, 12.0);
+            const rigH = rng.range(20.0, 30.0);
+            const rigD = lotLength * rng.range(0.65, 0.75);
+            const cX = side * (frontX + rigW * 0.5);
+            cGroup.position.set(cX, 0, cz);
+
+            const mainRig = new THREE.Mesh(new THREE.BoxGeometry(rigW, rigH, rigD), mats.abyssalTitaniumRibMat);
+            mainRig.position.y = rigH * 0.5;
+            mainRig.castShadow = true;
+            cGroup.add(mainRig);
+
+            // Acoustic sonar dish
+            const dish = new THREE.Mesh(new THREE.ConeGeometry(3.0, 1.2, 12, 1, true), mats.abyssalBioTealGlowMat);
+            dish.rotation.x = Math.PI / 4;
+            dish.rotation.z = side * 0.3;
+            dish.position.set(0, rigH + 2.0, 0);
+            cGroup.add(dish);
+
+            // Glowing teal perimeter trim
+            const trim = new THREE.Mesh(new THREE.BoxGeometry(rigW + 0.3, 0.3, rigD + 0.3), mats.abyssalBioTealGlowMat);
+            trim.position.y = rigH;
+            cGroup.add(trim);
+          }
+        } else {
+          // --- Non-primary side: Low Benthic Rock Ledge & Coral Terrace ---
+          // Low-profile structure (height <= 3.8m) preserving open oceanic abyss vista
+          if (rng.chance(0.65)) {
+            const ledgeW = rng.range(6.0, 8.5);
+            const ledgeH = rng.range(2.0, 3.5);
+            const ledgeD = lotLength * 0.55;
+            const cX = side * (frontX + ledgeW * 0.5);
+            cGroup.position.set(cX, 0, cz);
+
+            const ledge = new THREE.Mesh(new THREE.BoxGeometry(ledgeW, ledgeH, ledgeD), mats.abyssalBasaltRockMat);
+            ledge.position.y = ledgeH * 0.5;
+            cGroup.add(ledge);
+
+            // Bioluminescent sea fan cluster
+            const coralMat = rng.chance(0.5) ? mats.abyssalBioTealGlowMat : mats.abyssalBioCyanGlowMat;
+            const fan = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2.5, 6), coralMat);
+            fan.position.set(0, ledgeH + 1.25, 0);
+            cGroup.add(fan);
+          }
+        }
+
+        if (cGroup.children.length > 0) {
+          group.add(cGroup);
+        }
+      });
+    }
+  }
+
+  private buildAbyssalMonumentalSanctumDome(group: THREE.Group, chunkLength: number, domeZ: number): void {
+    const mats = this.getSharedMaterials();
+    const domeGroup = new THREE.Group();
+    domeGroup.name = 'abyssal_sanctum_dome';
+    domeGroup.position.set(0, 0, domeZ);
+
+    const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 4.8;
+    const archTotalH = 16.5;
+
+    // 1. Heavy Marine Titanium-Tungsten Support Pylons
+    const pylonGeo = new THREE.BoxGeometry(1.8, archTotalH, 2.8);
+    [-spanWidth * 0.5 - 1.2, spanWidth * 0.5 + 1.2].forEach((px) => {
+      const pylon = new THREE.Mesh(pylonGeo, mats.abyssalTitaniumRibMat);
+      pylon.position.set(px, archTotalH * 0.5, 0);
+      pylon.castShadow = true;
+      pylon.receiveShadow = true;
+      domeGroup.add(pylon);
+
+      // Vertical bioluminescent teal pressure seal
+      const seal = new THREE.Mesh(new THREE.BoxGeometry(0.12, archTotalH * 0.9, 0.12), mats.abyssalBioTealGlowMat);
+      seal.position.set(px + (px < 0 ? 0.95 : -0.95), archTotalH * 0.48, 0);
+      domeGroup.add(seal);
+
+      // Hydro-brass structural corner braces
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.4, 3.0), mats.abyssalHydroBrassMat);
+      brace.position.set(px, 5.0, 0);
+      domeGroup.add(brace);
+    });
+
+    // 2. High-Vaulted Arch Crown Girders (Y = 15.6m, clearance strictly >= 10.2m)
+    const crown = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 4.0, 1.2, 3.0), mats.abyssalTitaniumRibMat);
+    crown.position.set(0, archTotalH + 0.6, 0);
+    crown.castShadow = true;
+    domeGroup.add(crown);
+
+    // 3. Geodesic Glass Pressure Dome Shell Vaulting Over Apex
+    const domeShellGeo = new THREE.SphereGeometry(spanWidth * 0.65, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const domeShell = new THREE.Mesh(domeShellGeo, mats.abyssalGlassTunnelMat);
+    domeShell.position.set(0, archTotalH + 0.6, 0);
+    domeGroup.add(domeShell);
+
+    // 4. Hydrostatic Pressure Halo Ring at Summit (Y = 19.0m, radius 7.2m, clearance >= 11.8m)
+    const haloGeo = new THREE.TorusGeometry(7.2, 0.32, 6, 28);
+    const halo = new THREE.Mesh(haloGeo, mats.abyssalBioTealGlowMat);
+    halo.position.set(0, archTotalH + 2.5, 0);
+    domeGroup.add(halo);
+
+    // 5. Central Deep Ocean Transit Destination Banner
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 2.2), mats.abyssalTransitSignMat);
+    sign.position.set(0, archTotalH - 1.2, 1.55);
+    domeGroup.add(sign);
+
+    // 6. Acoustic Sonar Navigation Beacons
+    [-spanWidth * 0.5, spanWidth * 0.5].forEach((bx) => {
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), mats.abyssalBioCyanGlowMat);
+      beacon.position.set(bx, archTotalH + 2.5, 1.4);
+      domeGroup.add(beacon);
+    });
+
+    group.add(domeGroup);
+  }
+
+  private buildAbyssalResearchSkybridge(group: THREE.Group, chunkLength: number, bridgeZ: number): void {
+    const mats = this.getSharedMaterials();
+    const bridgeHeight = 12.5; // Strictly >= 12.0m clearance
+    const bridgeDepth = 6.2;
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 5.2;
+
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.name = 'abyssal_skybridge';
+    bridgeGroup.position.set(0, bridgeHeight, bridgeZ);
+
+    // Laboratory bottom deck
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.0, 0.45, bridgeDepth), mats.abyssalTitaniumRibMat);
+    deck.position.set(0, 0, 0);
+    deck.castShadow = true;
+    deck.receiveShadow = true;
+    bridgeGroup.add(deck);
+
+    // Panoramic observation glass walls (height 2.8m)
+    const glassGeo = new THREE.BoxGeometry(spanW + 3.8, 2.6, 0.14);
+    [-bridgeDepth * 0.5 + 0.1, bridgeDepth * 0.5 - 0.1].forEach((gz) => {
+      const gw = new THREE.Mesh(glassGeo, mats.abyssalGlassTunnelMat);
+      gw.position.set(0, 1.4, gz);
+      bridgeGroup.add(gw);
+    });
+
+    // Laboratory roof canopy with hydro-brass coping
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.2, 0.45, bridgeDepth + 0.4), mats.abyssalNavyCompositeMat);
+    roof.position.set(0, 2.85, 0);
+    roof.castShadow = true;
+    bridgeGroup.add(roof);
+
+    const roofGlow = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.0, 0.08, bridgeDepth + 0.2), mats.abyssalBioCyanGlowMat);
+    roofGlow.position.set(0, 3.1, 0);
+    bridgeGroup.add(roofGlow);
+
+    // Support columns flanking tracks
+    const colGeo = new THREE.BoxGeometry(1.6, bridgeHeight, 2.2);
+    [-spanW * 0.45, spanW * 0.45].forEach((cx) => {
+      const col = new THREE.Mesh(colGeo, mats.abyssalTitaniumRibMat);
+      col.position.set(cx, -bridgeHeight * 0.5, 0);
+      col.castShadow = true;
+      bridgeGroup.add(col);
+    });
+
+    // Docked Exploratory Deep-Sea Submersible
+    const subGroup = new THREE.Group();
+    subGroup.name = 'abyssal_submersible';
+    subGroup.position.set(spanW * 0.35, 1.4, bridgeDepth * 0.5 + 2.8);
+
+    // Submersible hull
+    const subHull = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 6.0, 12), mats.abyssalHydroBrassMat);
+    subHull.rotation.x = Math.PI / 2;
+    subGroup.add(subHull);
+
+    // Panoramic bubble viewport at front
+    const viewDome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), mats.abyssalGlassTunnelMat);
+    viewDome.rotation.x = -Math.PI / 2;
+    viewDome.position.set(0, 0, 3.0);
+    subGroup.add(viewDome);
+
+    // Amber floodlight beacons
+    const light = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 6), mats.abyssalBioAmberGlowMat);
+    light.position.set(0, -0.6, 3.4);
+    subGroup.add(light);
+
+    bridgeGroup.add(subGroup);
+    group.add(bridgeGroup);
+  }
+
+  private buildAbyssalHydrothermalChasm(group: THREE.Group, chunkLength: number, chasmZ: number, rng: SeededRandom): void {
+    const mats = this.getSharedMaterials();
+    const chasmGroup = new THREE.Group();
+    chasmGroup.name = 'abyssal_chasm';
+
+    const wallX = CONSTANTS.TUNNEL_WALL_X;
+    const side = rng.chance(0.5) ? -1 : 1;
+    const chasmX = side * (wallX + rng.range(6.0, 8.5));
+    chasmGroup.position.set(chasmX, 0, chasmZ);
+
+    // Monumental hydrothermal chimney spire
+    const spireH = rng.range(28.0, 36.0);
+    const spireGeo = new THREE.CylinderGeometry(2.2, 5.5, spireH, 8);
+    const spire = new THREE.Mesh(spireGeo, mats.abyssalBasaltRockMat);
+    spire.position.y = spireH * 0.5;
+    spire.castShadow = true;
+    chasmGroup.add(spire);
+
+    // Luminous sulfur-amber thermal fissures along the spire
+    const fissureGeo = new THREE.BoxGeometry(0.25, spireH * 0.7, 0.25);
+    const fissure = new THREE.Mesh(fissureGeo, mats.abyssalBioAmberGlowMat);
+    fissure.position.set(-side * 1.8, spireH * 0.5, 0);
+    chasmGroup.add(fissure);
+
+    // Vent plume beacon at summit
+    const plume = new THREE.Mesh(new THREE.SphereGeometry(2.4, 8, 8), mats.abyssalBioAmberGlowMat);
+    plume.position.y = spireH;
+    chasmGroup.add(plume);
+
+    group.add(chasmGroup);
+  }
+
+  // -------------------------------------------------------------------------
   // TRANSITION PORTAL SCENERY
   // -------------------------------------------------------------------------
   private buildTransitionPortalScenery(
@@ -3227,6 +3957,54 @@ export class SceneryFactory {
       // Navigation telemetry beacons
       [-spanW * 0.5 - 0.5, spanW * 0.5 + 0.5].forEach((bx) => {
         const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), mats.orbitalCyanGlowMat);
+        beacon.position.set(bx, portalH + 2.8, portalZ + 2.1);
+        portalGroup.add(beacon);
+      });
+
+      group.add(portalGroup);
+      return;
+    } else if (theme.id === 'ABYSSAL_GLASSLINE') {
+      // --- Monumental Deep Ocean Trench Pressure Gateway Portal ---
+      const pylonGeo = new THREE.BoxGeometry(3.6, portalH, 3.8);
+      [-spanW * 0.5 - 1.2, spanW * 0.5 + 1.2].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, mats.abyssalTitaniumRibMat);
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+        portalGroup.add(pylon);
+
+        // Vertical bioluminescent teal pressure seal channel
+        const tealStrip = new THREE.Mesh(new THREE.BoxGeometry(0.12, portalH * 0.88, 0.12), mats.abyssalBioTealGlowMat);
+        tealStrip.position.set(px + (px < 0 ? 1.82 : -1.82), portalH * 0.48, portalZ + 1.4);
+        portalGroup.add(tealStrip);
+
+        // Hydro-brass trim flange
+        const brassFlange = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.6, 3.9), mats.abyssalHydroBrassMat);
+        brassFlange.position.set(px + (px < 0 ? 1.82 : -1.82), 4.5, portalZ);
+        portalGroup.add(brassFlange);
+      });
+
+      // Overhead heavy hydrostatic compression crown
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.0, 3.6, 4.2), mats.abyssalTitaniumRibMat);
+      crown.position.set(0, portalH + 0.8, portalZ);
+      crown.castShadow = true;
+      crown.receiveShadow = true;
+      portalGroup.add(crown);
+
+      // Deep Ocean Transit Destination Sign
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 2.4), mats.abyssalTransitSignMat);
+      sign.position.set(0, portalH + 0.8, portalZ + 2.12);
+      portalGroup.add(sign);
+
+      // Hydrostatic pressure ring
+      const haloGeo = new THREE.TorusGeometry(spanW * 0.48, 0.32, 6, 28);
+      const halo = new THREE.Mesh(haloGeo, mats.abyssalBioTealGlowMat);
+      halo.position.set(0, portalH + 2.8, portalZ);
+      portalGroup.add(halo);
+
+      // Sonar bathymetric navigation beacons
+      [-spanW * 0.5 - 0.5, spanW * 0.5 + 0.5].forEach((bx) => {
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), mats.abyssalBioCyanGlowMat);
         beacon.position.set(bx, portalH + 2.8, portalZ + 2.1);
         portalGroup.add(beacon);
       });
