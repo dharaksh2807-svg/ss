@@ -1013,7 +1013,7 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      if (themeId === 'NEON_RAINLINE') {
+      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO') {
         variant = 'STREAMLINED_EXPRESS';
       } else {
         const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
@@ -1030,7 +1030,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'NEON_RAINLINE') {
+    if (themeId === 'ORBITAL_HALO') {
+      accentColor = 0x00f5ff;
+    } else if (themeId === 'NEON_RAINLINE') {
       accentColor = colorHex === 0x8b5cf6 ? 0xf026d3 : 0x00f5ff;
     } else {
       if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
@@ -1039,12 +1041,14 @@ export class ObstacleFactory {
 
     // Livery PBR Material (Automotive / Transit Gloss Enamel)
     const isNeon = themeId === 'NEON_RAINLINE';
+    const isOrbital = themeId === 'ORBITAL_HALO';
+    const trainColor = isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex);
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex,
-      roughness: isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)),
-      metalness: isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)),
+      color: trainColor,
+      roughness: isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))),
+      metalness: isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))),
       // Subtle livery self-glow so body reads under any ambient level
-      emissive: new THREE.Color(colorHex).multiplyScalar(isNeon ? 0.08 : 0.04),
+      emissive: new THREE.Color(isOrbital ? 0x00f5ff : colorHex).multiplyScalar(isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04)),
       emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
@@ -1093,6 +1097,41 @@ export class ObstacleFactory {
         const noseGlow = new THREE.Mesh(noseGlowGeo, noseGlowMat);
         noseGlow.position.set(0, 1.85, bodyLength * 0.5 + noseLength * 0.65);
         group.add(noseGlow);
+      }
+    }
+
+    // 8. Theme-Specific Orbital Halo Maglev Skirts and Quantum Flux Runners
+    if (isOrbital) {
+      const halfW = w * 0.5;
+      const magSkirtsGeo = new THREE.BoxGeometry(0.08, 0.22, bodyLength * 0.94);
+      const magSkirtsMat = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+      this.curvedManager.applyCurvature(magSkirtsMat);
+
+      const cyanEmitterGeo = new THREE.BoxGeometry(0.05, 0.05, bodyLength * 0.92);
+      const cyanEmitterMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+      this.curvedManager.applyCurvature(cyanEmitterMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(magSkirtsGeo, magSkirtsMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const emitter = new THREE.Mesh(cyanEmitterGeo, cyanEmitterMat);
+        emitter.position.set(sideX, 0.36, 0);
+        group.add(emitter);
+      });
+
+      if (!hasRamp) {
+        const visorGeo = new THREE.BoxGeometry(w * 0.74, 0.09, 0.09);
+        const visorMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+        this.curvedManager.applyCurvature(visorMat);
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 1.88, bodyLength * 0.5 + noseLength * 0.68);
+        group.add(visor);
       }
     }
 
@@ -2351,7 +2390,7 @@ export class ObstacleFactory {
     themeId?: string
   ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
-    const movingColor = themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex;
+    const movingColor = themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex);
     const group = this.createTrain(length, false, movingColor, undefined, themeId);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 
@@ -2587,15 +2626,20 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' ? 'STREAMLINED_EXPRESS' : variants[(this.trainSpawnCounter++) % variants.length]);
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' ? 'STREAMLINED_EXPRESS' : variants[(this.trainSpawnCounter++) % variants.length]);
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'NEON_RAINLINE' && !comp.colorHex) {
+      if (themeId === 'ORBITAL_HALO') {
+        const orbitalColors = [0xf8fafc, 0x0f172a, 0x38bdf8];
+        carColor = orbitalColors[i % orbitalColors.length];
+      } else if (themeId === 'NEON_RAINLINE') {
         const cyberColors = [0x0b1021, 0x00e5ff, 0x8b5cf6];
         carColor = cyberColors[i % cyberColors.length];
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'NEON_RAINLINE') {
+      if (themeId === 'ORBITAL_HALO') {
+        accentColor = 0x00f5ff;
+      } else if (themeId === 'NEON_RAINLINE') {
         accentColor = carColor === 0x8b5cf6 ? 0xf026d3 : 0x00f5ff;
       } else {
         if (carColor === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
@@ -2607,7 +2651,7 @@ export class ObstacleFactory {
         roughness: variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28),
         metalness: variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52),
         // Subtle livery self-glow so body reads under any ambient level
-        emissive: new THREE.Color(carColor).multiplyScalar(0.04),
+        emissive: new THREE.Color(carColor).multiplyScalar(themeId === 'ORBITAL_HALO' ? 0.05 : 0.04),
         emissiveIntensity: 1.0
       });
       this.curvedManager.applyCurvature(bodyMat);
@@ -2653,6 +2697,41 @@ export class ObstacleFactory {
 
       // Wheel Bogies & Underbody
       this.buildBogiesAndUnderbody(carriageGroup, w, h, comp.length, variant);
+
+      // Theme-Specific Maglev Skirts and Cyan Quantum Flux Runners
+      if (themeId === 'ORBITAL_HALO') {
+        const halfW = w * 0.5;
+        const magSkirtsGeo = new THREE.BoxGeometry(0.08, 0.22, comp.length * 0.94);
+        const magSkirtsMat = new THREE.MeshStandardMaterial({
+          color: 0x334155,
+          metalness: 0.85,
+          roughness: 0.25
+        });
+        this.curvedManager.applyCurvature(magSkirtsMat);
+
+        const cyanEmitterGeo = new THREE.BoxGeometry(0.05, 0.05, comp.length * 0.92);
+        const cyanEmitterMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+        this.curvedManager.applyCurvature(cyanEmitterMat);
+
+        [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+          const skirt = new THREE.Mesh(magSkirtsGeo, magSkirtsMat);
+          skirt.position.set(sideX, 0.44, 0);
+          carriageGroup.add(skirt);
+
+          const emitter = new THREE.Mesh(cyanEmitterGeo, cyanEmitterMat);
+          emitter.position.set(sideX, 0.36, 0);
+          carriageGroup.add(emitter);
+        });
+
+        if (!comp.hasRamp && comp.type === 'LOCOMOTIVE_CAB') {
+          const visorGeo = new THREE.BoxGeometry(w * 0.74, 0.09, 0.09);
+          const visorMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff });
+          this.curvedManager.applyCurvature(visorMat);
+          const visor = new THREE.Mesh(visorGeo, visorMat);
+          visor.position.set(0, 1.88, comp.length * 0.5 + noseLength * 0.68);
+          carriageGroup.add(visor);
+        }
+      }
 
       masterGroup.add(carriageGroup);
     }

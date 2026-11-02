@@ -25,7 +25,8 @@ export type AtmospherePreset =
   | 'SOFT_OVERCAST'
   | 'LIGHT_RAIN'
   | 'ILLUMINATED_UNDERGROUND'
-  | 'NEON_MIDNIGHT_RAIN';
+  | 'NEON_MIDNIGHT_RAIN'
+  | 'ORBITAL_CELESTIAL_DAWN';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -387,6 +388,10 @@ export class EnvironmentalEncounterDirector {
 
     if (districtId === 'NEON_RAINLINE') {
       return 'NEON_MIDNIGHT_RAIN';
+    }
+
+    if (districtId === 'ORBITAL_HALO') {
+      return 'ORBITAL_CELESTIAL_DAWN';
     }
 
     // Check if an upcoming or recent landmark prefers an atmosphere

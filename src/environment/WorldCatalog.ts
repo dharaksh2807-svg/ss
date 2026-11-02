@@ -36,9 +36,9 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
   },
   {
     id: 'ORBITAL_HALO', environmentId: 'ORBITAL_HALO', displayName: 'Orbital Halo',
-    description: 'An orbital railway above the planet. Coming soon.', rarity: 'LEGENDARY',
-    unlock: 'COINS', coinCost: 4500, keyCost: null, previewReference: null,
-    implemented: false, available: false, dynamicEligible: true, icon: '🪐', accentColor: '#a78bfa'
+    description: 'An immense futuristic orbital transportation station overlooking a breathtaking planet, with sweeping megastructure rings and celestial transit rails.', rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 4500, keyCost: null, previewReference: 'environment:ORBITAL_HALO',
+    implemented: true, available: true, dynamicEligible: true, icon: '🪐', accentColor: '#38bdf8'
   },
   {
     id: 'ABYSSAL_GLASSLINE', environmentId: 'ABYSSAL_GLASSLINE', displayName: 'Abyssal Glassline',

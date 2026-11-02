@@ -1245,6 +1245,7 @@ export class Game {
             <button style="font-size:9px;background:#475569;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('UNDERGROUND_METRO')">Underground</button>
             <button style="font-size:9px;background:#ea580c;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('NEON_INDUSTRIAL')">Industrial</button>
             <button style="font-size:9px;background:#c026d3;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('NEON_RAINLINE')">Neon Rainline</button>
+            <button style="font-size:9px;background:#0284c7;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;" onclick="window.__PREVIEW_ENVIRONMENT__('ORBITAL_HALO')">Orbital Halo</button>
           </div>
           <div style="font-weight:bold;color:#10b981;font-size:10px;margin-bottom:3px;">SPAWN LANDMARK:</div>
           <div style="display:flex;gap:3px;margin-bottom:5px;flex-wrap:wrap;">

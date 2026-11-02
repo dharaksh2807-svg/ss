@@ -110,7 +110,7 @@ assert.deepEqual(progression.getUnlockedThemes(), FREE_WORLD_IDS);
 
 // Unfinished worlds cannot be sold, equipped or planned.
 reset();
-for (const id of ['ORBITAL_HALO', 'ABYSSAL_GLASSLINE']) {
+for (const id of ['ABYSSAL_GLASSLINE']) {
   check(!getWorld(id)!.available && !getWorld(id)!.implemented, `${id} is coming soon`);
   check(!progression.purchaseTheme(id).success, `${id} rejects purchase`);
   check(!progression.equipTheme(id).success, `${id} rejects equip`);
@@ -120,6 +120,13 @@ progression.equipTheme('DYNAMIC');
 const freePlanner = new DistrictPlanner(12345);
 const freeRoute = new Set(Array.from({ length: 100 }, (_, i) => freePlanner.getDistrictAtZ(-i * 600 - 100).districtId));
 for (const id of FREE_WORLD_IDS) check(freeRoute.has(id), `Dynamic Districts can visit ${id}`);
+
+// Phase 3A: ORBITAL_HALO is genuinely implemented and registered in production.
+const orbitalWorld = getWorld('ORBITAL_HALO') as any;
+const orbitalId = orbitalWorld.id as EnvironmentId;
+check(orbitalWorld.available && orbitalWorld.implemented, 'ORBITAL_HALO is implemented and available in catalog');
+check(registry.has(orbitalId), 'ORBITAL_HALO is registered in environment registry');
+check(orbitalWorld.coinCost === 4500, 'ORBITAL_HALO costs 4500 coins');
 
 // Phase 2: NEON_RAINLINE is genuinely implemented and registered in production.
 const future = getWorld('NEON_RAINLINE') as any;
@@ -277,10 +284,16 @@ check(list.innerHTML.includes('data-env-id="NEON_RAINLINE"'), 'Unlocked premium 
 const content = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
 const shop = Object.assign(Object.create(ShopModal.prototype), { progression, upgradeManager: wallet });
 shop.renderWorlds(content);
-check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 2, 'Shop marks unfinished premiums coming soon');
+check((content.innerHTML.match(/COMING SOON/g) ?? []).length === 1, 'Shop marks unfinished premiums coming soon');
 check(content.innerHTML.includes('data-buy-world="NEON_RAINLINE"') || content.innerHTML.includes('data-equip-world="NEON_RAINLINE"'),
   'Shop renders interactive action for implemented premium world');
+check(content.innerHTML.includes('data-buy-world="ORBITAL_HALO"') || content.innerHTML.includes('data-equip-world="ORBITAL_HALO"'),
+  'Shop renders interactive action for Orbital Halo');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 5, 'All four originals + purchased Neon Rainline are owned');
+progression.purchaseTheme('ORBITAL_HALO');
+check(getWorlds(progression.getState()).filter((world) => world.owned).length === 6, 'All four originals + purchased Neon Rainline + Orbital Halo are owned');
+modal.render();
+check(list.innerHTML.includes('data-env-id="ORBITAL_HALO"'), 'Unlocked Orbital Halo appears in selection modal');
 check(progression.getKeys() === baseline.keys, 'World APIs preserve revive Key balance');
 check(progression.consumeKeys(1) && progression.getKeys() === baseline.keys - 1, 'Existing revive Key spending still works');
 check(!wallet.deductCoinsPersisted(-10) && !wallet.deductCoinsPersisted(NaN) && !wallet.deductCoinsPersisted(Infinity),

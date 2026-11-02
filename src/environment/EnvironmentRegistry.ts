@@ -6,6 +6,7 @@ import {
   UNDERGROUND_METRO_THEME,
   NEON_INDUSTRIAL_THEME,
   NEON_RAINLINE_THEME,
+  ORBITAL_HALO_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -19,6 +20,7 @@ export class EnvironmentRegistry {
     this.register(UNDERGROUND_METRO_THEME);
     this.register(NEON_INDUSTRIAL_THEME);
     this.register(NEON_RAINLINE_THEME);
+    this.register(ORBITAL_HALO_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

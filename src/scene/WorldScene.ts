@@ -5,6 +5,7 @@ import { EventBus } from '../core/EventBus';
 import { SettingsManager } from '../settings/SettingsManager';
 import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUARTER_THEME, UNDERGROUND_METRO_THEME } from '../environment/EnvironmentConfig';
 import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
+import { TextureGenerator } from './TextureGenerator';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -18,9 +19,12 @@ export class WorldScene {
   public modernSkyline: THREE.Group | null = null;
   public historicSkyline: THREE.Group | null = null;
   public neonSkyline: THREE.Group | null = null;
+  public orbitalSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private orbitalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private backgroundSpacecraft: THREE.Group[] = [];
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -475,9 +479,219 @@ export class WorldScene {
     }
     group.add(this.neonSkyline);
 
+    // 4. Celestial Megastructure & Planet Skyline (Orbital Halo)
+    const orbitalSkyline = new THREE.Group();
+    this.orbitalSkyline = orbitalSkyline;
+    this.orbitalSkylineMaterial = this.skylineMaterial.clone();
+    const orbitalCyanMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff, fog: false });
+    const orbitalWhiteMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc, fog: false });
+    const orbitalGoldMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, fog: false });
+
+    // 4a. Starfield (Deep space star points)
+    const starCount = 600;
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 380 + Math.random() * 80;
+      const sx = r * Math.sin(phi) * Math.cos(theta);
+      const sy = Math.abs(r * Math.cos(phi)) + 15; // Above horizon
+      const sz = r * Math.sin(phi) * Math.sin(theta);
+      starPos[i * 3 + 0] = sx;
+      starPos[i * 3 + 1] = sy;
+      starPos[i * 3 + 2] = sz;
+
+      // Color variation: 70% pure white, 20% electric cyan, 10% warm amber
+      const type = Math.random();
+      if (type < 0.70) {
+        starColors[i * 3 + 0] = 1.0; starColors[i * 3 + 1] = 1.0; starColors[i * 3 + 2] = 1.0;
+      } else if (type < 0.90) {
+        starColors[i * 3 + 0] = 0.4; starColors[i * 3 + 1] = 0.9; starColors[i * 3 + 2] = 1.0;
+      } else {
+        starColors[i * 3 + 0] = 1.0; starColors[i * 3 + 1] = 0.85; starColors[i * 3 + 2] = 0.5;
+      }
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+    const starMat = new THREE.PointsMaterial({
+      size: 2.2,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      fog: false
+    });
+    const stars = new THREE.Points(starGeo, starMat);
+    this.orbitalSkyline.add(stars);
+
+    // 4b. Gigantic Planet Dominating the Forward Horizon
+    const planetGroup = new THREE.Group();
+    // Positioned prominently in forward-right vista, dominating upper view from running camera
+    planetGroup.position.set(75, 50, -280);
+
+    const planetRadius = 130;
+    const planetGeo = new THREE.SphereGeometry(planetRadius, 36, 24);
+    const planetMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getOrbitalPlanetTexture(),
+      fog: false
+    });
+    const planetMesh = new THREE.Mesh(planetGeo, planetMat);
+    planetMesh.rotation.set(0.25, -0.75, 0.2);
+    planetGroup.add(planetMesh);
+
+    // Atmospheric Glow Halo / Limb Rings
+    // Sharp razor-thin cyan atmospheric crescent
+    const atmoLimbGeo = new THREE.RingGeometry(planetRadius + 0.5, planetRadius + 18, 48);
+    const atmoLimbMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5ff,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      fog: false
+    });
+    const atmoLimb = new THREE.Mesh(atmoLimbGeo, atmoLimbMat);
+    atmoLimb.lookAt(new THREE.Vector3(-75, -45, 280));
+    planetGroup.add(atmoLimb);
+
+    // Soft outer atmosphere aura
+    const atmoOuterGeo = new THREE.RingGeometry(planetRadius + 16, planetRadius + 38, 48);
+    const atmoOuterMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide,
+      fog: false
+    });
+    const atmoOuter = new THREE.Mesh(atmoOuterGeo, atmoOuterMat);
+    atmoOuter.lookAt(new THREE.Vector3(-75, -45, 280));
+    planetGroup.add(atmoOuter);
+
+    this.orbitalSkyline.add(planetGroup);
+
+    // 4c. Enormous Sweeping Megastructure Orbital Ring / Halo Arc
+    const ringGroup = new THREE.Group();
+    ringGroup.position.set(0, -80, -260);
+    ringGroup.rotation.set(1.15, 0.40, -0.25);
+
+    const mainRingGeo = new THREE.TorusGeometry(540, 5.5, 12, 72, Math.PI * 0.95);
+    const mainRing = new THREE.Mesh(mainRingGeo, this.orbitalSkylineMaterial);
+    ringGroup.add(mainRing);
+
+    // Companion illuminated cyan superconductor induction rail along ring
+    const glowRingGeo = new THREE.TorusGeometry(540, 1.4, 6, 72, Math.PI * 0.95);
+    const glowRing = new THREE.Mesh(glowRingGeo, orbitalCyanMat);
+    ringGroup.add(glowRing);
+
+    // Modular structural truss ribs along ring
+    const ribGeo = new THREE.BoxGeometry(4.0, 14.0, 8.0);
+    for (let r = 0; r < 24; r++) {
+      const angle = (r / 24) * (Math.PI * 0.95);
+      const rx = Math.cos(angle) * 540;
+      const ry = Math.sin(angle) * 540;
+      const rib = new THREE.Mesh(ribGeo, orbitalWhiteMat);
+      rib.position.set(rx, ry, 0);
+      rib.rotation.z = angle + Math.PI / 2;
+      ringGroup.add(rib);
+    }
+    this.orbitalSkyline.add(ringGroup);
+
+    // 4d. Distant Space Station Modules & Orbital Docks
+    const stationSpireMat = this.orbitalSkylineMaterial;
+    const stationCoords = [
+      { x: -160, y: 55, z: -320, scale: 1.2 },
+      { x: -90, y: 110, z: -340, scale: 0.9 },
+      { x: 190, y: 95, z: -330, scale: 1.1 },
+      { x: 40, y: 130, z: -350, scale: 0.85 }
+    ];
+
+    stationCoords.forEach((coord, sIdx) => {
+      const station = new THREE.Group();
+      station.position.set(coord.x, coord.y, coord.z);
+      const sc = coord.scale;
+
+      // Central cylindrical habitat drum
+      const drumGeo = new THREE.CylinderGeometry(8 * sc, 8 * sc, 34 * sc, 12);
+      const drum = new THREE.Mesh(drumGeo, stationSpireMat);
+      drum.rotation.z = Math.PI / 2 + 0.2;
+      station.add(drum);
+
+      // Observation cupola dome
+      const domeGeo = new THREE.SphereGeometry(7 * sc, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      const dome = new THREE.Mesh(domeGeo, orbitalCyanMat);
+      dome.position.set(18 * sc, 0, 0);
+      dome.rotation.z = -Math.PI / 2;
+      station.add(dome);
+
+      // Articulated Photovoltaic Solar Wings
+      const wingGeo = new THREE.BoxGeometry(26 * sc, 0.4, 8 * sc);
+      const wingMat = new THREE.MeshBasicMaterial({
+        map: TextureGenerator.getOrbitalSolarPanelTexture(),
+        fog: false
+      });
+      const wing1 = new THREE.Mesh(wingGeo, wingMat);
+      wing1.position.set(0, 16 * sc, 0);
+      station.add(wing1);
+
+      const wing2 = new THREE.Mesh(wingGeo, wingMat);
+      wing2.position.set(0, -16 * sc, 0);
+      station.add(wing2);
+
+      // Telemetry beacon lights
+      const beaconGeo = new THREE.SphereGeometry(1.6 * sc, 6, 6);
+      const beaconMat = sIdx % 2 === 0 ? orbitalCyanMat : orbitalGoldMat;
+      const beacon1 = new THREE.Mesh(beaconGeo, beaconMat);
+      beacon1.position.set(-18 * sc, 0, 0);
+      station.add(beacon1);
+
+      this.orbitalSkyline!.add(station);
+    });
+
+    // 4e. Moving Background Spacecraft (Lightweight Traffic)
+    this.backgroundSpacecraft = [];
+    const craftSpecs = [
+      { startX: -160, y: 75, z: -280, vx: 18.0, vy: 0.5, minX: -220, maxX: 220, scale: 1.0, type: 'SHUTTLE' },
+      { startX: 180, y: 45, z: -250, vx: -14.0, vy: -0.3, minX: -220, maxX: 220, scale: 1.3, type: 'FREIGHTER' },
+      { startX: -80, y: 115, z: -300, vx: 28.0, vy: 1.2, minX: -220, maxX: 220, scale: 0.7, type: 'SCOUT' },
+      { startX: 120, y: 88, z: -340, vx: -8.0, vy: 0.2, minX: -220, maxX: 220, scale: 1.1, type: 'CARGO' }
+    ];
+
+    craftSpecs.forEach((spec) => {
+      const craft = new THREE.Group();
+      craft.position.set(spec.startX, spec.y, spec.z);
+      craft.userData = {
+        vx: spec.vx,
+        vy: spec.vy,
+        minX: spec.minX,
+        maxX: spec.maxX
+      };
+
+      const s = spec.scale;
+      // Fuselage body
+      const bodyGeo = new THREE.ConeGeometry(2.2 * s, 8.5 * s, 6);
+      const body = new THREE.Mesh(bodyGeo, orbitalWhiteMat);
+      body.rotation.z = spec.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
+      craft.add(body);
+
+      // Ion thruster plume
+      const thrusterGeo = new THREE.ConeGeometry(1.2 * s, 5.0 * s, 6);
+      const thruster = new THREE.Mesh(thrusterGeo, orbitalCyanMat);
+      thruster.position.set(spec.vx > 0 ? -5.5 * s : 5.5 * s, 0, 0);
+      thruster.rotation.z = spec.vx > 0 ? Math.PI / 2 : -Math.PI / 2;
+      craft.add(thruster);
+
+      this.backgroundSpacecraft.push(craft);
+      this.orbitalSkyline!.add(craft);
+    });
+
+    group.add(this.orbitalSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
+    this.orbitalSkyline.visible = this.currentTheme.id === 'ORBITAL_HALO';
 
     return group;
   }
@@ -524,6 +738,7 @@ export class WorldScene {
     const skylineColor = EnvironmentManager.lerpColor(base.skyline.color, targetTheme.skyline.color, t);
     const isModern = (theme: EnvironmentTheme) => theme.id === 'MODERN_METRO' || theme.id === 'NEON_INDUSTRIAL';
     const isNeon = (theme: EnvironmentTheme) => theme.id === 'NEON_RAINLINE';
+    const isOrbital = (theme: EnvironmentTheme) => theme.id === 'ORBITAL_HALO';
     const modernOpacity = THREE.MathUtils.lerp(
       isModern(base) ? base.skyline.opacity : 0,
       isModern(targetTheme) ? targetTheme.skyline.opacity : 0,
@@ -539,6 +754,11 @@ export class WorldScene {
       isNeon(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const orbitalOpacity = THREE.MathUtils.lerp(
+      isOrbital(base) ? base.skyline.opacity : 0,
+      isOrbital(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -551,14 +771,19 @@ export class WorldScene {
       this.neonSkylineMaterial.color.copy(skylineColor);
       this.neonSkylineMaterial.opacity = neonOpacity;
     }
+    if (this.orbitalSkylineMaterial) {
+      this.orbitalSkylineMaterial.color.copy(skylineColor);
+      this.orbitalSkylineMaterial.opacity = orbitalOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
+    if (this.orbitalSkyline) this.orbitalSkyline.visible = orbitalOpacity > 0.01;
 
-    // Clouds fade for the entire tunnel transition and respect graphics settings.
+    // Clouds fade for tunnel & orbital space transitions and respect graphics settings.
     const cloudOpacity = THREE.MathUtils.lerp(
-      base.id === 'UNDERGROUND_METRO' ? 0 : 1,
-      targetTheme.id === 'UNDERGROUND_METRO' ? 0 : 1,
+      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' ? 0 : 1,
       t
     );
     if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
@@ -657,6 +882,17 @@ export class WorldScene {
         fillIntensity = 0.55;
         isRain = true;
         break;
+      case 'ORBITAL_CELESTIAL_DAWN':
+        sunColorHex = 0xffffff;
+        sunIntensity = 1.45;
+        skyTopHex = 0x01030a;
+        skyBottomHex = 0x0b1a30;
+        fogColorHex = 0x050914;
+        fogDensity = 0.0020;
+        fillColorHex = 0x00d2ff;
+        fillIntensity = 0.65;
+        isRain = false;
+        break;
       case 'CLEAR_DAYLIGHT':
       default:
         sunColorHex = 0xfff8eb;
@@ -734,6 +970,21 @@ export class WorldScene {
         pos.setY(i, y);
       }
       pos.needsUpdate = true;
+    }
+
+    // Moving background spacecraft in orbital space
+    if (this.backgroundSpacecraft.length > 0 && this.orbitalSkyline && this.orbitalSkyline.visible) {
+      const delta = dt || 0.016;
+      for (let i = 0; i < this.backgroundSpacecraft.length; i++) {
+        const craft = this.backgroundSpacecraft[i];
+        craft.position.x += craft.userData.vx * delta;
+        craft.position.y += craft.userData.vy * delta;
+        if (craft.userData.vx > 0 && craft.position.x > craft.userData.maxX) {
+          craft.position.x = craft.userData.minX;
+        } else if (craft.userData.vx < 0 && craft.position.x < craft.userData.minX) {
+          craft.position.x = craft.userData.maxX;
+        }
+      }
     }
   }
 

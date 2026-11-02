@@ -2389,6 +2389,482 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  // -------------------------------------------------------------------------
+  // ORBITAL HALO PROCEDURAL TEXTURES
+  // -------------------------------------------------------------------------
+
+  /**
+   * Procedural Planet Texture with Oceans, Continents, Ice Caps and Swirling Cloud Bands
+   */
+  public static getOrbitalPlanetTexture(): THREE.Texture {
+    return this.getOrCreate('orbital_planet_atmosphere', () => {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // 1. Deep Ocean Base Gradient
+      const oceanGrad = ctx.createLinearGradient(0, 0, w, h);
+      oceanGrad.addColorStop(0, '#0c2340');
+      oceanGrad.addColorStop(0.3, '#083358');
+      oceanGrad.addColorStop(0.7, '#0f4c81');
+      oceanGrad.addColorStop(1, '#06192e');
+      ctx.fillStyle = oceanGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 2. Continental Landmasses & Coastal Shallows
+      const numIslands = 18;
+      for (let i = 0; i < numIslands; i++) {
+        const cx = ((i * 73) % (w - 80)) + 40;
+        const cy = 110 + ((i * 47) % (h - 220));
+        const radX = 35 + ((i * 19) % 55);
+        const radY = 25 + ((i * 23) % 40);
+
+        // Coastal turquoise shallows
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, radX + 14, radY + 12, (i * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Landmass interior: vibrant greens and earth tones
+        const landGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, radX);
+        landGrad.addColorStop(0, '#15803d');
+        landGrad.addColorStop(0.6, '#166534');
+        landGrad.addColorStop(0.9, '#14532d');
+        landGrad.addColorStop(1, '#0284c7');
+        ctx.fillStyle = landGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, radX, radY, (i * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Secondary mountain ridge features
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.ellipse(cx - 5, cy + 3, radX * 0.45, radY * 0.35, (i * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Polar Ice Caps (North & South)
+      const northIce = ctx.createLinearGradient(0, 0, 0, 85);
+      northIce.addColorStop(0, '#ffffff');
+      northIce.addColorStop(0.7, '#e0f2fe');
+      northIce.addColorStop(1, 'rgba(224, 242, 254, 0)');
+      ctx.fillStyle = northIce;
+      ctx.fillRect(0, 0, w, 85);
+
+      const southIce = ctx.createLinearGradient(0, h - 80, 0, h);
+      southIce.addColorStop(0, 'rgba(224, 242, 254, 0)');
+      southIce.addColorStop(0.3, '#e0f2fe');
+      southIce.addColorStop(1, '#ffffff');
+      ctx.fillStyle = southIce;
+      ctx.fillRect(0, h - 80, w, 80);
+
+      // 4. Atmospheric Cloud Bands and Cyclonic Storm Vortices
+      for (let c = 0; c < 16; c++) {
+        const cy = 80 + c * 22;
+        const opacity = 0.35 + ((c * 7) % 5) * 0.08;
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+
+        // Sinusoidal cloud stream
+        ctx.beginPath();
+        ctx.moveTo(0, cy);
+        for (let x = 0; x <= w; x += 32) {
+          const waveY = cy + Math.sin(x * 0.02 + c * 1.5) * 14 + Math.cos(x * 0.05) * 6;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.lineTo(w, cy + 18);
+        for (let x = w; x >= 0; x -= 32) {
+          const waveY = cy + 18 + Math.sin(x * 0.02 + c * 1.5) * 12;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Swirling hurricane vortex
+      const hx = 210;
+      const hy = 230;
+      for (let a = 0; a < 8; a++) {
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.6 - a * 0.06})`;
+        ctx.lineWidth = 4 + a;
+        ctx.beginPath();
+        ctx.arc(hx, hy, 10 + a * 6, a * 0.8, a * 0.8 + Math.PI);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * High-Tech Photovoltaic Solar Panel Grid (Orbital Solar Array)
+   */
+  public static getOrbitalSolarPanelTexture(): THREE.Texture {
+    return this.getOrCreate('orbital_solar_panel', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep space iridescent navy/sapphire substrate
+      ctx.fillStyle = '#061325';
+      ctx.fillRect(0, 0, size, size);
+
+      // Silicon wafer cells (8x8 grid)
+      const cellSize = size / 8;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const x = c * cellSize + 2;
+          const y = r * cellSize + 2;
+          const w = cellSize - 4;
+          const h = cellSize - 4;
+
+          // Photovoltaic cell gradient
+          const cellGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+          cellGrad.addColorStop(0, '#0284c7');
+          cellGrad.addColorStop(0.5, '#0369a1');
+          cellGrad.addColorStop(1, '#082f49');
+          ctx.fillStyle = cellGrad;
+          ctx.fillRect(x, y, w, h);
+
+          // Micro collection lines
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = 1;
+          for (let m = 4; m < h; m += 6) {
+            ctx.beginPath();
+            ctx.moveTo(x + 1, y + m);
+            ctx.lineTo(x + w - 1, y + m);
+            ctx.stroke();
+          }
+
+          // Gold electrical busbars
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(x + w * 0.3, y, 1.5, h);
+          ctx.fillRect(x + w * 0.7, y, 1.5, h);
+        }
+      }
+
+      // Outer titanium framing
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(1, 1, size - 2, size - 2);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Aerospace Titanium and White Composite Hull Tiles with Technical Stencils
+   */
+  public static getOrbitalHullTileTexture(): THREE.Texture {
+    return this.getOrCreate('orbital_hull_tiles', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Crisp aerospace white composite base
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(0, 0, size, size);
+
+      // Panel grid seams
+      const step = size / 4;
+      ctx.fillStyle = '#cbd5e1';
+      for (let i = 0; i <= size; i += step) {
+        ctx.fillRect(i - 1, 0, 2, size);
+        ctx.fillRect(0, i - 1, size, 2);
+      }
+
+      // Rivets / corner mounting studs
+      ctx.fillStyle = '#64748b';
+      for (let x = step * 0.5; x < size; x += step) {
+        for (let y = step * 0.5; y < size; y += step) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Technical stencils and electric cyan hazard markings
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(8, 12, step - 16, 2);
+      ctx.fillRect(step + 8, step * 2 + 12, step - 16, 2);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = '700 9px monospace';
+      ctx.fillText('MOD-7A // DOCK', 10, 28);
+      ctx.fillText('VACUUM SEALED', step + 10, step * 2 + 28);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Holographic Orbital Transit Sign Texture (Flight telemetries, docking bays)
+   */
+  public static getOrbitalHoloSignTexture(variant: number = 0): THREE.Texture {
+    const v = Math.abs(Math.floor(variant)) % 3;
+    return this.getOrCreate(`orbital_holo_sign_v${v}`, () => {
+      const w = 384;
+      const h = 192;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Translucent deep-space cyan chassis
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+      ctx.fillRect(0, 0, w, h);
+
+      // High-tech holographic border
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      // Corner bracket accents
+      const bracketLen = 18;
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(4, 4, bracketLen, 4);
+      ctx.fillRect(4, 4, 4, bracketLen);
+      ctx.fillRect(w - 4 - bracketLen, 4, bracketLen, 4);
+      ctx.fillRect(w - 8, 4, 4, bracketLen);
+      ctx.fillRect(4, h - 8, bracketLen, 4);
+      ctx.fillRect(4, h - 4 - bracketLen, 4, bracketLen);
+      ctx.fillRect(w - 4 - bracketLen, h - 8, bracketLen, 4);
+      ctx.fillRect(w - 8, h - 4 - bracketLen, 4, bracketLen);
+
+      if (v === 0) {
+        // Telemetry & Orbital Velocity readout
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(20, 22, 100, 20);
+        ctx.fillStyle = '#020617';
+        ctx.font = '900 11px sans-serif';
+        ctx.fillText('HALO DOCK 01', 28, 36);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 20px "Arial Black", sans-serif';
+        ctx.fillText('ORBITAL TRANSIT RING', 20, 72);
+
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '700 13px monospace';
+        ctx.fillText('ORBITAL VELOCITY: 7.68 KM/S', 20, 102);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('ALTITUDE: 418 KM // APOGEE STABLE', 20, 124);
+        ctx.fillText('PRESSURIZED TUBE: 101.3 KPA NOMINAL', 20, 142);
+
+        // Compass / Horizon Artificial Ring
+        ctx.strokeStyle = '#00f5ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(315, 95, 34, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(315, 61);
+        ctx.lineTo(315, 129);
+        ctx.moveTo(281, 95);
+        ctx.lineTo(349, 95);
+        ctx.stroke();
+      } else if (v === 1) {
+        // Transit Line 02 & Earth Link
+        ctx.fillStyle = '#00f5ff';
+        ctx.fillRect(20, 22, 130, 20);
+        ctx.fillStyle = '#020617';
+        ctx.font = '900 11px sans-serif';
+        ctx.fillText('SOL-3 MAGLEV LINE', 28, 36);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 20px "Arial Black", sans-serif';
+        ctx.fillText('TRANS-ORBITAL EXPRESS', 20, 72);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '700 13px monospace';
+        ctx.fillText('NEXT DOCK: EQUATORIAL ANCHOR 04', 20, 102);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('FLUX LEVEL: 68.4 TESLA // ACCEL READY', 20, 124);
+        ctx.fillText('SPACE ELEVATOR CONNECTION: ACTIVE', 20, 142);
+
+        // Directional chevrons
+        ctx.fillStyle = '#00f5ff';
+        for (let i = 0; i < 5; i++) {
+          const cx = 265 + i * 20;
+          ctx.beginPath();
+          ctx.moveTo(cx, 80);
+          ctx.lineTo(cx + 10, 95);
+          ctx.lineTo(cx, 110);
+          ctx.lineTo(cx + 4, 110);
+          ctx.lineTo(cx + 14, 95);
+          ctx.lineTo(cx + 4, 80);
+          ctx.fill();
+        }
+      } else {
+        // Deep Space Gateway & Departure Vectors
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(20, 22, 140, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 11px sans-serif';
+        ctx.fillText('DEEP SPACE DOCKS', 28, 36);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 20px "Arial Black", sans-serif';
+        ctx.fillText('GATEWAY TERMINUS 09', 20, 72);
+
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '700 13px monospace';
+        ctx.fillText('SHUTTLE FLIGHT CORRIDOR: CLEAR', 20, 102);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 11px monospace';
+        ctx.fillText('LUNAR TRANSFER LAUNCH IN 14 MIN', 20, 124);
+        ctx.fillText('WARNING: VACUUM HAZARD BEYOND GATE', 20, 142);
+
+        // Docking radar ring
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(315, 95, 30, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = '#00f5ff';
+        ctx.beginPath();
+        ctx.arc(315, 95, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#00f5ff';
+        ctx.fillRect(312, 92, 6, 6);
+      }
+
+      // Bottom status bar
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(20, 164, w - 40, 2);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Monumental Orbital Transit Gateway Banner Texture
+   */
+  public static getOrbitalTransitSignTexture(stationName: string = 'ORBITAL HALO CENTRAL', line: string = 'GATE 07'): THREE.Texture {
+    return this.getOrCreate(`orbital_transit_sign_${stationName}_${line}`, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep space carbon alloy housing
+      ctx.fillStyle = '#030712';
+      ctx.fillRect(0, 0, w, h);
+
+      // High-precision titanium/electric cyan bezel border
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#00f5ff';
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Gate badge
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(24, 20, 88, 22);
+      ctx.fillStyle = '#030712';
+      ctx.font = '900 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(line, 68, 36);
+
+      // Main station name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 26px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(stationName, 124, 38);
+
+      // Subtitle telemetry
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 12px monospace';
+      ctx.fillText('ORBITAL VELOCITY: 27,600 KM/H • VACUUM TRANSIT • MAGLEV ACTIVE', 26, 74);
+
+      // Bottom guide arrows
+      ctx.fillStyle = '#00f5ff';
+      for (let i = 0; i < 14; i++) {
+        const cx = 26 + i * 34;
+        ctx.beginPath();
+        ctx.moveTo(cx, 92);
+        ctx.lineTo(cx + 10, 104);
+        ctx.lineTo(cx, 116);
+        ctx.lineTo(cx - 5, 116);
+        ctx.lineTo(cx + 5, 104);
+        ctx.lineTo(cx - 5, 92);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Magnetic Guideway / Heat-Shield Deck Texture
+   */
+  public static getOrbitalGuidewayTexture(): THREE.Texture {
+    return this.getOrCreate('orbital_guideway_deck', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark aerospace carbon base
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, size, size);
+
+      // Thermal ceramic tile blocks
+      const step = size / 4;
+      for (let x = 0; x < size; x += step) {
+        for (let y = 0; y < size; y += step) {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(x + 2, y + 2, step - 4, step - 4);
+          ctx.fillStyle = '#334155';
+          ctx.strokeRect(x + 2, y + 2, step - 4, step - 4);
+        }
+      }
+
+      // Magnetic levitation flux guide runners
+      ctx.fillStyle = '#00f5ff';
+      ctx.fillRect(size * 0.25 - 4, 0, 8, size);
+      ctx.fillRect(size * 0.75 - 4, 0, 8, size);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(size * 0.25 - 1.5, 0, 3, size);
+      ctx.fillRect(size * 0.75 - 1.5, 0, 3, size);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 

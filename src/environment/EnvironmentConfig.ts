@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -81,7 +81,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -145,7 +145,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -209,7 +209,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO'],
   sky: {
     top: 0x0a0f1d,    // Subterranean dark slate shadow
     bottom: 0x111827 // Deep tunnel ambient tone
@@ -273,7 +273,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE', 'ORBITAL_HALO'],
   sky: {
     top: 0x181326,    // Deep nocturnal purple dusk
     bottom: 0xf57c00 // Radiant amber horizon glow
@@ -337,7 +337,7 @@ export const NEON_RAINLINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'ORBITAL_HALO'],
   sky: {
     top: 0x050814,    // Midnight obsidian navy
     bottom: 0x1f0b38 // Radiant electric violet & magenta horizon glow
@@ -390,12 +390,77 @@ export const NEON_RAINLINE_THEME: EnvironmentTheme = {
   }
 };
 
+export const ORBITAL_HALO_THEME: EnvironmentTheme = {
+  id: 'ORBITAL_HALO',
+  displayName: 'Orbital Halo',
+  subtitle: 'Megastructure Rail Over Deep Space & Planetary Horizon',
+  description: 'An immense futuristic orbital transportation station overlooking a breathtaking planet, with sweeping megastructure rings, celestial transit rails, and deep space panoramas.',
+  badgeEmoji: '🪐',
+  accentColor: '#38bdf8',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE'],
+  sky: {
+    top: 0x01030a,    // Cosmic abyss deep void black
+    bottom: 0x0b1a30 // Electric azure/cyan planetary horizon limb glow
+  },
+  fog: {
+    color: 0x050914,  // Deep space atmospheric haze maintaining crisp obstacle silhouettes within 80m
+    density: 0.0020
+  },
+  sun: {
+    color: 0xffffff,  // Pure unfiltered space sunlight
+    intensity: 1.45,
+    position: { x: 36, y: 48, z: -20 }
+  },
+  fill: {
+    color: 0x00d2ff,  // Vibrant planetary atmosphere limb reflection fill
+    intensity: 0.65
+  },
+  hemi: {
+    sky: 0x38bdf8,    // Celestial light dome
+    ground: 0x0f172a, // Titanium hull bounce
+    intensity: 1.25
+  },
+  skyline: {
+    color: 0x475569,  // Distant orbital superstructure ring silhouettes
+    opacity: 0.85,
+    style: 'NEON'
+  },
+  clouds: {
+    color: 0x0c1b33,  // Cosmic nebula wisps
+    roughness: 0.95
+  },
+  materials: {
+    ballastColor: 0x182030,    // Ceramic heat shield / magnetic guideway
+    sleeperColor: 0x0f172a,    // Titanium composite sleepers
+    wallBaseColor: 0xf1f5f9,    // Pristine aerospace white composite retaining walls
+    wallAccentColor: 0x00f5ff,  // Electric cyan magnetic flux channel
+    curbColor: 0x94a3b8,        // Titanium curb cap
+    catenaryColor: 0x1e293b,    // Graphite carbon truss frame
+    insulatorColor: 0x38bdf8,   // High-energy quantum levitation emitter
+    pipeColor: 0x0284c7,        // Cryogenic coolant conduit
+    bridgeMainColor: 0x0f172a,   // Aerospace titanium superstructure
+    bridgeAccentColor: 0x00f5ff, // Electric cyan glowing guide accents
+    groundPlaneColor: 0x02040a
+  },
+  ambience: {
+    baseToneFreq: 88,
+    windNoiseFilter: 450,
+    humGain: 0.04,
+    tag: 'ORBITAL_STATION_HUM'
+  }
+};
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
   UNDERGROUND_METRO: UNDERGROUND_METRO_THEME,
   NEON_INDUSTRIAL: NEON_INDUSTRIAL_THEME,
-  NEON_RAINLINE: NEON_RAINLINE_THEME
+  NEON_RAINLINE: NEON_RAINLINE_THEME,
+  ORBITAL_HALO: ORBITAL_HALO_THEME
 };
 
 export class EnvironmentManager {
