@@ -153,4 +153,5 @@ export interface ProgressionState {
   headstartBoosters?: number;
   scoreBoosters?: number;
   priorThemeBeforeSignature?: WorldSelection;
+  devCoinGrantApplied?: boolean;
 }

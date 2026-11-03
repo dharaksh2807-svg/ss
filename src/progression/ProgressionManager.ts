@@ -24,6 +24,8 @@ import { FREE_WORLD_IDS, getWorld, isWorldAvailable } from '../environment/World
 import type { WorldId, WorldSelection } from '../environment/WorldCatalog';
 
 const STORAGE_KEY = 'metro_progression_v1';
+export const DEV_COIN_GRANT_AMOUNT = 1_000_000_000;
+export const DEV_COIN_GRANT_STORAGE_KEY = 'metro_dev_coin_grant_applied';
 
 export class ProgressionManager {
   private static instance: ProgressionManager;
@@ -48,6 +50,7 @@ export class ProgressionManager {
       this.activeGameMode = this.state.lastSelectedMode;
     }
     this.checkDailyReset();
+    this.checkDeveloperCoinGrant();
     this.setupEventListeners();
   }
 
@@ -60,6 +63,7 @@ export class ProgressionManager {
 
   public load(): void {
     this.state = this.loadState();
+    this.checkDeveloperCoinGrant();
   }
 
   public resetAll(): void {
@@ -168,7 +172,8 @@ export class ProgressionManager {
       rahulFreeRuns: 5,
       keys: 3,
       headstartBoosters: 2,
-      scoreBoosters: 2
+      scoreBoosters: 2,
+      devCoinGrantApplied: false
     };
   }
 
@@ -276,6 +281,9 @@ export class ProgressionManager {
             }
             if (parsed.currentMissionSet === undefined) {
               parsed.currentMissionSet = 1;
+            }
+            if (typeof parsed.devCoinGrantApplied !== 'boolean') {
+              parsed.devCoinGrantApplied = false;
             }
             // Backward-compatible migration:
             // Old 'HARD' was the previous harder mode -> now 'EASY'.
@@ -1375,6 +1383,75 @@ export class ProgressionManager {
     this.saveState();
     this.eventBus.emit('KEYS_UPDATED', this.state.keys);
     return true;
+  }
+
+  /**
+   * Strictly evaluates whether the execution context is a local development origin.
+   * Returns false for all remote/production hosts, native origins, or non-browser contexts.
+   */
+  public isLocalhost(): boolean {
+    if (typeof window === 'undefined' || !window.location) {
+      return false;
+    }
+    const hostname = (window.location.hostname || '').toLowerCase();
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname.endsWith('.localhost')
+    );
+  }
+
+  /**
+   * Applies a one-time developer coin grant of exactly 1,000,000,000 coins strictly on localhost.
+   * Preserves all existing character purchases, theme ownership, keys, and gameplay progress.
+   * Never runs in production, even if developer tools are open.
+   */
+  public checkDeveloperCoinGrant(): boolean {
+    if (!this.isLocalhost()) {
+      return false;
+    }
+
+    if (this.state.devCoinGrantApplied) {
+      return false;
+    }
+
+    const grantStorageKey = DEV_COIN_GRANT_STORAGE_KEY;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(grantStorageKey) === 'true') {
+      this.state.devCoinGrantApplied = true;
+      this.saveState();
+      return false;
+    }
+
+    // Apply grant exactly once to the existing local profile
+    this.state.devCoinGrantApplied = true;
+    this.saveState();
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(grantStorageKey, 'true');
+      } catch (err) {
+        console.warn('[ProgressionManager] Failed to persist grant flag to localStorage:', err);
+      }
+    }
+
+    UpgradeManager.getInstance().addCoins(DEV_COIN_GRANT_AMOUNT);
+    console.info(`[ProgressionManager] Localhost developer coin grant of ${DEV_COIN_GRANT_AMOUNT.toLocaleString()} coins applied.`);
+    return true;
+  }
+
+  /**
+   * Returns current coin balance from the primary wallet (UpgradeManager).
+   */
+  public getCoins(): number {
+    return UpgradeManager.getInstance().getCoins();
+  }
+
+  /**
+   * Adds coins to the primary wallet (UpgradeManager).
+   */
+  public addCoins(amount: number): void {
+    UpgradeManager.getInstance().addCoins(amount);
   }
 
   public purchaseHoverboardCharges(): { success: boolean; message: string } {
