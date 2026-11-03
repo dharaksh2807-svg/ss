@@ -173,6 +173,9 @@ export class ProgressionManager {
   }
 
   private loadState(): ProgressionState {
+    if (typeof localStorage === 'undefined') {
+      return this.migrateThemes(this.getDefaultState());
+    }
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -329,6 +332,9 @@ export class ProgressionManager {
   }
 
   public saveState(): boolean {
+    if (typeof localStorage === 'undefined') {
+      return true;
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
       return true;
@@ -571,6 +577,12 @@ export class ProgressionManager {
       if (remaining === 0) {
         this.state.selectedCharacter = 'char_jax';
         this.eventBus.emit('CHARACTER_EQUIPPED', { charId: 'char_jax', outfitId: 'jax_classic' });
+        if (this.state.selectedTheme === 'VIP_EXPRESS') {
+          const prior = this.state.priorThemeBeforeSignature || 'DYNAMIC';
+          this.state.selectedTheme = prior;
+          this.state.priorThemeBeforeSignature = undefined;
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+        }
       }
     }
 
@@ -1025,11 +1037,29 @@ export class ProgressionManager {
       return { success: false, message: 'Character not found' };
     }
 
+    const previousChar = this.state.selectedCharacter;
     const targetOutfit = outfitId || this.getSelectedOutfit(norm) || charDef.defaultOutfitId;
     if (!isUnlocked && hasFreeRuns) {
       this.state.selectedCharacter = norm;
       if (!this.state.selectedOutfits) this.state.selectedOutfits = {};
       this.state.selectedOutfits[norm] = targetOutfit;
+
+      // Requirement 7: Signature World Association & selection preservation
+      if (norm === 'char_modi' && previousChar !== 'char_modi') {
+        if (this.state.selectedTheme !== 'VIP_EXPRESS') {
+          this.state.priorThemeBeforeSignature = this.state.selectedTheme;
+          this.state.selectedTheme = 'VIP_EXPRESS';
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', 'VIP_EXPRESS');
+        }
+      } else if (previousChar === 'char_modi' && norm !== 'char_modi') {
+        if (this.state.selectedTheme === 'VIP_EXPRESS' && this.state.priorThemeBeforeSignature) {
+          const prior = this.state.priorThemeBeforeSignature;
+          this.state.selectedTheme = prior;
+          this.state.priorThemeBeforeSignature = undefined;
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+        }
+      }
+
       this.saveState();
 
       this.eventBus.emit('CHARACTER_EQUIPPED', { charId: norm, outfitId: targetOutfit });
@@ -1042,6 +1072,23 @@ export class ProgressionManager {
 
     this.state.selectedCharacter = norm;
     this.state.selectedOutfits[norm] = targetOutfit;
+
+    // Requirement 7: Signature World Association & selection preservation
+    if (norm === 'char_modi' && previousChar !== 'char_modi') {
+      if (this.state.selectedTheme !== 'VIP_EXPRESS') {
+        this.state.priorThemeBeforeSignature = this.state.selectedTheme;
+        this.state.selectedTheme = 'VIP_EXPRESS';
+        this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', 'VIP_EXPRESS');
+      }
+    } else if (previousChar === 'char_modi' && norm !== 'char_modi') {
+      if (this.state.selectedTheme === 'VIP_EXPRESS' && this.state.priorThemeBeforeSignature) {
+        const prior = this.state.priorThemeBeforeSignature;
+        this.state.selectedTheme = prior;
+        this.state.priorThemeBeforeSignature = undefined;
+        this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+      }
+    }
+
     this.saveState();
 
     this.eventBus.emit('CHARACTER_EQUIPPED', { charId: norm, outfitId: targetOutfit });
@@ -1221,7 +1268,16 @@ export class ProgressionManager {
 
   public isThemeUnlocked(id: string): boolean {
     const world = getWorld(id);
-    return !!world && (world.unlock === 'FREE' || this.state.unlockedThemes.includes(world.id));
+    if (!world) return false;
+    if (world.signatureCharacterId) {
+      if (this.isCharacterUnlocked(world.signatureCharacterId)) return true;
+      if (this.state.unlockedThemes.includes(world.id)) return true;
+      if (this.getCharacterFreeRuns(world.signatureCharacterId) > 0) {
+        return true;
+      }
+      return false;
+    }
+    return world.unlock === 'FREE' || this.state.unlockedThemes.includes(world.id);
   }
 
   public getUnlockedThemes(): WorldId[] {
@@ -1277,6 +1333,10 @@ export class ProgressionManager {
       if (!this.isThemeUnlocked(id)) return { success: false, message: 'World is locked' };
     }
     const previous = this.state.selectedTheme;
+    // When equipping VIP_EXPRESS, save prior theme if not already VIP_EXPRESS
+    if (id === 'VIP_EXPRESS' && previous !== 'VIP_EXPRESS') {
+      this.state.priorThemeBeforeSignature = previous;
+    }
     this.state.selectedTheme = id as WorldSelection;
     if (!this.saveState()) {
       this.state.selectedTheme = previous;

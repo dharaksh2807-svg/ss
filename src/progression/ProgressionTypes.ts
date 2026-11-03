@@ -152,4 +152,5 @@ export interface ProgressionState {
   keys?: number;
   headstartBoosters?: number;
   scoreBoosters?: number;
+  priorThemeBeforeSignature?: WorldSelection;
 }

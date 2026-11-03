@@ -25,6 +25,7 @@ export class WorldScene {
   public doomsdaySkyline: THREE.Group | null = null;
   public phantomSkyline: THREE.Group | null = null;
   public hauntedCarnivalSkyline: THREE.Group | null = null;
+  public vipExpressSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -33,6 +34,11 @@ export class WorldScene {
   private doomsdaySkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private phantomSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private hauntedCarnivalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private vipExpressSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private vipSearchlights: THREE.Mesh[] = [];
+  private vipConfettiGeo: THREE.BufferGeometry | null = null;
+  private vipConfettiPos: Float32Array | null = null;
+  private vipSearchlightTime: number = 0;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
@@ -1441,6 +1447,118 @@ export class WorldScene {
 
     group.add(this.hauntedCarnivalSkyline);
 
+    // 8. Monumental Civic Secretariat Domed Palace & Searchlights (VIP Express: The Great Inauguration)
+    this.vipSearchlights = [];
+    const vipSkyline = new THREE.Group();
+    this.vipExpressSkyline = vipSkyline;
+    this.vipExpressSkylineMaterial = this.skylineMaterial.clone();
+    this.vipExpressSkylineMaterial.color.setHex(0xd4a373);
+    this.vipExpressSkylineMaterial.transparent = true;
+    this.vipExpressSkylineMaterial.opacity = 0.88;
+
+    const vipMat = this.vipExpressSkylineMaterial;
+    const goldMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+
+    // Distant Secretariat Palace Central Block (Z = -440m)
+    const palaceGroup = new THREE.Group();
+    palaceGroup.position.set(0, 0, -440.0);
+
+    const palaceMain = new THREE.Mesh(new THREE.BoxGeometry(160.0, 48.0, 45.0), vipMat);
+    palaceMain.position.y = 24.0;
+    palaceGroup.add(palaceMain);
+
+    // Central Grand Dome
+    const vipDomeGeo = new THREE.SphereGeometry(22.0, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const mainDome = new THREE.Mesh(vipDomeGeo, goldMat);
+    mainDome.position.set(0, 48.0, 0);
+    palaceGroup.add(mainDome);
+
+    // Golden Kalash Spire
+    const spireGeo = new THREE.ConeGeometry(3.5, 16.0, 8);
+    const vipSpire = new THREE.Mesh(spireGeo, goldMat);
+    vipSpire.position.set(0, 78.0, 0);
+    palaceGroup.add(vipSpire);
+
+    // Flanking neoclassical wing pavilions
+    [-110.0, 110.0].forEach((wx) => {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(70.0, 36.0, 35.0), vipMat);
+      wing.position.set(wx, 18.0, 0);
+      palaceGroup.add(wing);
+
+      const wingDome = new THREE.Mesh(new THREE.SphereGeometry(12.0, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), goldMat);
+      wingDome.position.set(wx, 36.0, 0);
+      palaceGroup.add(wingDome);
+    });
+
+    vipSkyline.add(palaceGroup);
+
+    // Monumental Twin Golden Obelisks (height 65m at X = ±85m)
+    [-85.0, 85.0].forEach((ox) => {
+      const obeliskGeo = new THREE.CylinderGeometry(1.8, 3.8, 65.0, 4);
+      obeliskGeo.rotateY(Math.PI / 4);
+      const obelisk = new THREE.Mesh(obeliskGeo, goldMat);
+      obelisk.position.set(ox, 32.5, -420.0);
+      vipSkyline.add(obelisk);
+    });
+
+    // 4 Celebration Searchlight Beams swaying gently in the celebratory sky
+    const searchlightGeo = new THREE.ConeGeometry(9.0, 150.0, 8);
+    searchlightGeo.translate(0, 75.0, 0);
+    searchlightGeo.rotateX(Math.PI); // Tip down, wide beam skyward
+    const searchlightMat = new THREE.MeshBasicMaterial({
+      color: 0xffedd5,
+      transparent: true,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    [-60.0, -20.0, 20.0, 60.0].forEach((lx) => {
+      const beam = new THREE.Mesh(searchlightGeo, searchlightMat);
+      beam.position.set(lx, 24.0, -430.0);
+      vipSkyline.add(beam);
+      this.vipSearchlights.push(beam);
+    });
+
+    // Celebratory Tricolor Floating Confetti Particles
+    const confettiCount = 120;
+    const confettiGeo = new THREE.BufferGeometry();
+    const confettiPositions = new Float32Array(confettiCount * 3);
+    const confettiColors = new Float32Array(confettiCount * 3);
+    const colors = [
+      [1.0, 0.47, 0.0],  // Saffron
+      [1.0, 1.0, 1.0],   // White
+      [0.07, 0.53, 0.03], // Green
+      [0.96, 0.62, 0.04]  // Gold
+    ];
+
+    for (let i = 0; i < confettiCount; i++) {
+      confettiPositions[i * 3] = (Math.random() - 0.5) * 160.0;
+      confettiPositions[i * 3 + 1] = 6.0 + Math.random() * 54.0;
+      confettiPositions[i * 3 + 2] = -120.0 - Math.random() * 260.0;
+
+      const c = colors[i % colors.length];
+      confettiColors[i * 3] = c[0];
+      confettiColors[i * 3 + 1] = c[1];
+      confettiColors[i * 3 + 2] = c[2];
+    }
+
+    confettiGeo.setAttribute('position', new THREE.BufferAttribute(confettiPositions, 3));
+    confettiGeo.setAttribute('color', new THREE.BufferAttribute(confettiColors, 3));
+    this.vipConfettiGeo = confettiGeo;
+    this.vipConfettiPos = confettiPositions;
+
+    const confettiMat = new THREE.PointsMaterial({
+      size: 1.4,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85
+    });
+    const confettiPoints = new THREE.Points(confettiGeo, confettiMat);
+    vipSkyline.add(confettiPoints);
+
+    group.add(this.vipExpressSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -1449,6 +1567,7 @@ export class WorldScene {
     this.doomsdaySkyline.visible = this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT';
     this.phantomSkyline.visible = this.currentTheme.id === 'PHANTOM_LINE';
     this.hauntedCarnivalSkyline.visible = this.currentTheme.id === 'HAUNTED_CARNIVAL';
+    this.vipExpressSkyline.visible = this.currentTheme.id === 'VIP_EXPRESS';
 
     return group;
   }
@@ -1540,6 +1659,12 @@ export class WorldScene {
       isHaunted(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isVip = (env: EnvironmentTheme) => env.id === 'VIP_EXPRESS';
+    const vipOpacity = THREE.MathUtils.lerp(
+      isVip(base) ? base.skyline.opacity : 0,
+      isVip(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1572,6 +1697,10 @@ export class WorldScene {
       this.hauntedCarnivalSkylineMaterial.color.copy(skylineColor);
       this.hauntedCarnivalSkylineMaterial.opacity = hauntedOpacity;
     }
+    if (this.vipExpressSkylineMaterial) {
+      this.vipExpressSkylineMaterial.color.copy(skylineColor);
+      this.vipExpressSkylineMaterial.opacity = vipOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -1580,6 +1709,7 @@ export class WorldScene {
     if (this.doomsdaySkyline) this.doomsdaySkyline.visible = doomsdayOpacity > 0.01;
     if (this.phantomSkyline) this.phantomSkyline.visible = phantomOpacity > 0.01;
     if (this.hauntedCarnivalSkyline) this.hauntedCarnivalSkyline.visible = hauntedOpacity > 0.01;
+    if (this.vipExpressSkyline) this.vipExpressSkyline.visible = vipOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -1950,6 +2080,28 @@ export class WorldScene {
           bat.position.x += Math.sin(this.hauntedBatTime * 0.9 + i) * delta * 3.5;
           bat.position.y += Math.cos(this.hauntedBatTime * 1.4 + i * 2.0) * delta * 1.8;
         }
+      }
+    }
+
+    // Swaying celebration searchlights & falling confetti in VIP Express skyline
+    if (this.vipExpressSkyline && this.vipExpressSkyline.visible) {
+      const delta = dt || 0.016;
+      this.vipSearchlightTime += delta;
+
+      for (let i = 0; i < this.vipSearchlights.length; i++) {
+        const light = this.vipSearchlights[i];
+        const offset = i * 1.57;
+        light.rotation.z = Math.sin(this.vipSearchlightTime * 0.75 + offset) * 0.25;
+      }
+
+      if (this.vipConfettiPos && this.vipConfettiGeo) {
+        for (let i = 0; i < this.vipConfettiPos.length / 3; i++) {
+          this.vipConfettiPos[i * 3 + 1] -= delta * 5.0;
+          if (this.vipConfettiPos[i * 3 + 1] < 2.0) {
+            this.vipConfettiPos[i * 3 + 1] = 60.0;
+          }
+        }
+        this.vipConfettiGeo.attributes.position.needsUpdate = true;
       }
     }
   }

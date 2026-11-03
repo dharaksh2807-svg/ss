@@ -1013,7 +1013,7 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT') {
+      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS') {
         variant = 'STREAMLINED_EXPRESS';
       } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL') {
         variant = 'CLASSIC_TRANSIT';
@@ -1032,7 +1032,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'HAUNTED_CARNIVAL') {
+    if (themeId === 'VIP_EXPRESS') {
+      accentColor = 0xf59e0b;
+    } else if (themeId === 'HAUNTED_CARNIVAL') {
       accentColor = 0xf97316;
     } else if (themeId === 'PHANTOM_LINE') {
       accentColor = 0x67e8f9;
@@ -1056,21 +1058,70 @@ export class ObstacleFactory {
     const isDoomsday = themeId === 'DOOMSDAY_LAST_TRANSIT';
     const isPhantom = themeId === 'PHANTOM_LINE';
     const isHaunted = themeId === 'HAUNTED_CARNIVAL';
-    const trainColor = isHaunted
-      ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
-      : (isPhantom
-        ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
-        : (isDoomsday
-          ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
-          : (isAbyssal
-            ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-            : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex)))));
+    const isVip = themeId === 'VIP_EXPRESS';
+    const trainColor = isVip
+      ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
+      : (isHaunted
+        ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
+        : (isPhantom
+          ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+          : (isDoomsday
+            ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
+            : (isAbyssal
+              ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
+              : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))))));
+    let trainRoughness = 0.28;
+    let trainMetalness = 0.52;
+    let emissiveHex = colorHex;
+    let emissiveScale = 0.04;
+
+    if (isVip) {
+      trainRoughness = 0.22;
+      trainMetalness = 0.70;
+      emissiveHex = 0xf59e0b;
+      emissiveScale = 0.05;
+    } else if (isHaunted) {
+      trainRoughness = 0.35;
+      trainMetalness = 0.65;
+      emissiveHex = 0xf97316;
+      emissiveScale = 0.05;
+    } else if (isPhantom) {
+      trainRoughness = 0.65;
+      trainMetalness = 0.65;
+      emissiveHex = 0x67e8f9;
+      emissiveScale = 0.05;
+    } else if (isDoomsday) {
+      trainRoughness = 0.65;
+      trainMetalness = 0.70;
+      emissiveHex = 0xf97316;
+      emissiveScale = 0.05;
+    } else if (isAbyssal) {
+      trainRoughness = 0.20;
+      trainMetalness = 0.70;
+      emissiveHex = 0x22d3ee;
+      emissiveScale = 0.05;
+    } else if (isOrbital) {
+      trainRoughness = 0.20;
+      trainMetalness = 0.65;
+      emissiveHex = 0x00f5ff;
+      emissiveScale = 0.05;
+    } else if (isNeon) {
+      trainRoughness = 0.18;
+      trainMetalness = 0.78;
+      emissiveScale = 0.08;
+    } else if (variant === 'CLASSIC_TRANSIT') {
+      trainRoughness = 0.28;
+      trainMetalness = 0.85;
+    } else if (variant === 'STREAMLINED_EXPRESS') {
+      trainRoughness = 0.22;
+      trainMetalness = 0.60;
+    }
+
     const bodyMat = new THREE.MeshStandardMaterial({
       color: trainColor,
-      roughness: isHaunted ? 0.35 : (isPhantom ? 0.65 : (isDoomsday ? 0.65 : (isAbyssal ? 0.20 : (isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))))))),
-      metalness: isHaunted ? 0.65 : (isPhantom ? 0.65 : (isDoomsday ? 0.70 : (isAbyssal ? 0.70 : (isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))))))),
-      // Subtle livery self-glow so body reads under any ambient level
-      emissive: new THREE.Color(isHaunted ? 0xf97316 : (isPhantom ? 0x67e8f9 : (isDoomsday ? 0xf97316 : (isAbyssal ? 0x22d3ee : (isOrbital ? 0x00f5ff : colorHex))))).multiplyScalar(isHaunted ? 0.05 : (isPhantom ? 0.05 : (isDoomsday ? 0.05 : (isAbyssal ? 0.05 : (isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04)))))),
+      roughness: trainRoughness,
+      metalness: trainMetalness,
+      emissive: new THREE.Color(emissiveHex).multiplyScalar(emissiveScale),
       emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
@@ -1360,6 +1411,59 @@ export class ObstacleFactory {
         const crest = new THREE.Mesh(crestGeo, crestMat);
         crest.position.set(sideX, h + 0.12, 0);
         group.add(crest);
+      });
+    }
+
+    // 13. Theme-Specific VIP Express Ceremonial Cowcatcher, Gold Skirts & Headlights
+    if (isVip) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const vipCabGroup = new THREE.Group();
+        const goldMat = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          roughness: 0.20,
+          metalness: 0.90
+        });
+        this.curvedManager.applyCurvature(goldMat);
+
+        // Brushed gold streamlined cowcatcher
+        const cowcatcherGeo = new THREE.BoxGeometry(w * 0.78, 0.45, 0.35);
+        const cowcatcher = new THREE.Mesh(cowcatcherGeo, goldMat);
+        cowcatcher.position.set(0, 0.35, bodyLength * 0.5 + noseLength * 0.88);
+        vipCabGroup.add(cowcatcher);
+
+        // Warm golden high-output ceremonial headlights
+        [-w * 0.25, w * 0.25].forEach((hx) => {
+          const lampGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.2, 12);
+          lampGeo.rotateX(Math.PI / 2);
+          const lampMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+          this.curvedManager.applyCurvature(lampMat);
+          const lamp = new THREE.Mesh(lampGeo, lampMat);
+          lamp.position.set(hx, 1.85, bodyLength * 0.5 + noseLength * 0.95);
+          vipCabGroup.add(lamp);
+        });
+
+        // Golden nose ribbon stripe
+        const noseStripeGeo = new THREE.BoxGeometry(w * 0.88, 0.12, 0.14);
+        const noseStripe = new THREE.Mesh(noseStripeGeo, goldMat);
+        noseStripe.position.set(0, 1.35, bodyLength * 0.5 + noseLength * 0.96);
+        vipCabGroup.add(noseStripe);
+
+        group.add(vipCabGroup);
+      }
+
+      // Ceremonial gold and royal navy flank skirts along lower side edges
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.20, bodyLength * 0.94);
+      const navySkirtMat = new THREE.MeshStandardMaterial({
+        color: 0x1e3a8a,
+        roughness: 0.30,
+        metalness: 0.70
+      });
+      this.curvedManager.applyCurvature(navySkirtMat);
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, navySkirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
       });
     }
 
@@ -2854,9 +2958,12 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'HAUNTED_CARNIVAL') {
+      if (themeId === 'VIP_EXPRESS') {
+        const vipColors = [0xf8fafc, 0x1e3a8a, 0xf8fafc];
+        carColor = vipColors[i % vipColors.length];
+      } else if (themeId === 'HAUNTED_CARNIVAL') {
         const carnivalColors = [0x1f1135, 0x2e1065, 0x381e09];
         carColor = carnivalColors[i % carnivalColors.length];
       } else if (themeId === 'PHANTOM_LINE') {
@@ -2877,7 +2984,9 @@ export class ObstacleFactory {
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'HAUNTED_CARNIVAL') {
+      if (themeId === 'VIP_EXPRESS') {
+        accentColor = 0xf59e0b;
+      } else if (themeId === 'HAUNTED_CARNIVAL') {
         accentColor = 0xf97316;
       } else if (themeId === 'PHANTOM_LINE') {
         accentColor = 0x67e8f9;

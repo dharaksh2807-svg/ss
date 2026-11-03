@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -81,7 +81,7 @@ export const MODERN_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x0288d1,    // Rich vibrant azure
     bottom: 0xe1f5fe // Crisp cyan daylight horizon
@@ -145,7 +145,7 @@ export const HISTORIC_QUARTER_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x1e3a5f,    // Deep twilight sapphire/slate top
     bottom: 0xf5cba7 // Warm peach-amber golden hour horizon
@@ -209,7 +209,7 @@ export const UNDERGROUND_METRO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x0a0f1d,    // Subterranean dark slate shadow
     bottom: 0x111827 // Deep tunnel ambient tone
@@ -273,7 +273,7 @@ export const NEON_INDUSTRIAL_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x181326,    // Deep nocturnal purple dusk
     bottom: 0xf57c00 // Radiant amber horizon glow
@@ -337,7 +337,7 @@ export const NEON_RAINLINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x050814,    // Midnight obsidian navy
     bottom: 0x1f0b38 // Radiant electric violet & magenta horizon glow
@@ -401,7 +401,7 @@ export const ORBITAL_HALO_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x01030a,    // Cosmic abyss deep void black
     bottom: 0x0b1a30 // Electric azure/cyan planetary horizon limb glow
@@ -465,7 +465,7 @@ export const ABYSSAL_GLASSLINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x011324,    // Deep oceanic abyss abyss-blue / midnight trench
     bottom: 0x033852 // Luminous oceanic teal / deep hydro-glow
@@ -529,7 +529,7 @@ export const DOOMSDAY_LAST_TRANSIT_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x140402,    // Deep suffocating smoke-black with volcanic ember underglow
     bottom: 0x4a1104 // Raging inferno horizon / firestorm glow
@@ -593,7 +593,7 @@ export const PHANTOM_LINE_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'HAUNTED_CARNIVAL'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'HAUNTED_CARNIVAL', 'VIP_EXPRESS'],
   sky: {
     top: 0x030712,    // Deep pitch void subterranean abyss
     bottom: 0x082f49 // Cold spectral mist / cyan-tinted ectoplasmic horizon glow
@@ -657,7 +657,7 @@ export const HAUNTED_CARNIVAL_THEME: EnvironmentTheme = {
     minLengthMeters: 560,
     maxLengthMeters: 800
   },
-  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE'],
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'VIP_EXPRESS'],
   sky: {
     top: 0x0c071e,    // Midnight violet void
     bottom: 0x3b0764 // Atmospheric purple moonlight glow
@@ -710,6 +710,70 @@ export const HAUNTED_CARNIVAL_THEME: EnvironmentTheme = {
   }
 };
 
+export const VIP_EXPRESS_THEME: EnvironmentTheme = {
+  id: 'VIP_EXPRESS',
+  displayName: 'VIP Express',
+  subtitle: 'The Great Inauguration',
+  description: 'A grand fictional VIP ceremonial concourse featuring futuristic civic architecture, red-carpet walkways, endless ribbon cuttings, paparazzi chaos, and comedic political celebrations.',
+  badgeEmoji: '🏛️',
+  accentColor: '#f59e0b',
+  districtRange: {
+    minLengthMeters: 560,
+    maxLengthMeters: 800
+  },
+  allowedTransitions: ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL', 'NEON_RAINLINE', 'ORBITAL_HALO', 'ABYSSAL_GLASSLINE', 'DOOMSDAY_LAST_TRANSIT', 'PHANTOM_LINE', 'HAUNTED_CARNIVAL'],
+  sky: {
+    top: 0x1e3a8a,    // Deep royal ceremonial navy blue
+    bottom: 0xffedd5 // Warm golden hour sunrise / ceremonial glow
+  },
+  fog: {
+    color: 0xfef3c7,  // Soft warm ivory-gold afternoon haze
+    density: 0.0018
+  },
+  sun: {
+    color: 0xfffbeb,  // Bright dignified golden sunlight
+    intensity: 1.40,
+    position: { x: -30, y: 55, z: -40 }
+  },
+  fill: {
+    color: 0x1e3a8a,  // Royal navy shadow fill
+    intensity: 0.65
+  },
+  hemi: {
+    sky: 0xffedd5,    // Warm golden ceremonial sky fill
+    ground: 0xd4a373, // Warm sandstone ground bounce
+    intensity: 1.25
+  },
+  skyline: {
+    color: 0x1e293b,  // Regal silhouette of monumental domes, obelisks and pavilions
+    opacity: 0.82,
+    style: 'MODERN'
+  },
+  clouds: {
+    color: 0xfff7ed,  // Gleaming white ceremonial clouds with subtle golden edges
+    roughness: 0.60
+  },
+  materials: {
+    ballastColor: 0x334155,    // Pristine swept granite ballast with gold track bed trims
+    sleeperColor: 0x0f172a,    // Polished navy-graphite high-speed ties
+    wallBaseColor: 0xf8fafc,   // Gleaming ivory civic limestone
+    wallAccentColor: 0xf59e0b, // Polished ceremonial gold leaf line
+    curbColor: 0xd4a373,       // Warm carved sandstone curb
+    catenaryColor: 0x1e3a8a,   // Royal navy ceremonial catenary pylons with gold finials
+    insulatorColor: 0xf59e0b,  // Polished brass insulators
+    pipeColor: 0xd4a373,       // Sandstone conduits
+    bridgeMainColor: 0xf1f5f9,  // Monumental ivory viaduct arches
+    bridgeAccentColor: 0xbe123c,// Rich crimson red carpet balustrade
+    groundPlaneColor: 0xd4a373
+  },
+  ambience: {
+    baseToneFreq: 110,
+    windNoiseFilter: 400,
+    humGain: 0.05,
+    tag: 'VIP_CEREMONIAL_FANFARE'
+  }
+};
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
@@ -720,7 +784,8 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   ABYSSAL_GLASSLINE: ABYSSAL_GLASSLINE_THEME,
   DOOMSDAY_LAST_TRANSIT: DOOMSDAY_LAST_TRANSIT_THEME,
   PHANTOM_LINE: PHANTOM_LINE_THEME,
-  HAUNTED_CARNIVAL: HAUNTED_CARNIVAL_THEME
+  HAUNTED_CARNIVAL: HAUNTED_CARNIVAL_THEME,
+  VIP_EXPRESS: VIP_EXPRESS_THEME
 };
 
 export class EnvironmentManager {

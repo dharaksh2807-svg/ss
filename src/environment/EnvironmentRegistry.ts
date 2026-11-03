@@ -11,6 +11,7 @@ import {
   DOOMSDAY_LAST_TRANSIT_THEME,
   PHANTOM_LINE_THEME,
   HAUNTED_CARNIVAL_THEME,
+  VIP_EXPRESS_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -29,6 +30,7 @@ export class EnvironmentRegistry {
     this.register(DOOMSDAY_LAST_TRANSIT_THEME);
     this.register(PHANTOM_LINE_THEME);
     this.register(HAUNTED_CARNIVAL_THEME);
+    this.register(VIP_EXPRESS_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

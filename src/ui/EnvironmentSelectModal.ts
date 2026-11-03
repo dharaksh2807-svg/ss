@@ -96,7 +96,7 @@ export class EnvironmentSelectModal {
         .map((world) => ({
           id: world.id as EnvironmentSelection,
           title: world.displayName,
-          badge: world.unlock === 'FREE' ? 'FREE WORLD' : world.rarity,
+          badge: world.signatureLabel ? world.signatureLabel : (world.unlock === 'FREE' ? 'FREE WORLD' : world.rarity),
           icon: world.icon,
           description: world.description,
           accent: world.accentColor,
@@ -158,7 +158,7 @@ export class EnvironmentSelectModal {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.icon} ${w.displayName}</span>
-                  <span style="font-size: 11px; font-weight: 800; color: #f59e0b;">${w.coinCost.toLocaleString()} 🪙</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #f59e0b;">${w.signatureCharacterId ? 'WITH MODI 🏛️' : `${w.coinCost.toLocaleString()} 🪙`}</span>
                 </div>
                 <button class="arcade-btn btn-gold" data-shop-world="${w.id}" style="font-size: 10px; padding: 4px 8px; width: 100%; margin-top: 2px;">VIEW IN SHOP</button>
               </div>

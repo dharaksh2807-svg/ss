@@ -244,7 +244,7 @@ export class ShopModal {
                   <span class="world-preview-pill">👁️ 3D PREVIEW</span>
                 </div>
                 <div class="world-badges-row">
-                  <span class="world-rarity-pill ${rarityClass}">${world.rarity}${isFree ? ' · FREE' : ''}</span>
+                  <span class="world-rarity-pill ${rarityClass}">${world.signatureLabel ? world.signatureLabel : `${world.rarity}${isFree ? ' · FREE' : ''}`}</span>
                   <span class="world-icon-badge">${world.icon}</span>
                 </div>
               </div>
@@ -269,6 +269,8 @@ export class ShopModal {
                   ? `<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>`
                   : world.owned
                   ? `<button class="arcade-btn btn-secondary" data-equip-world="${world.id}">EQUIP</button>`
+                  : world.signatureCharacterId
+                  ? `<button class="arcade-btn btn-gold" data-action="unlock-signature" data-char-id="${world.signatureCharacterId}">GET WITH MODI 🏛️</button>`
                   : `<button class="arcade-btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" data-buy-world="${world.id}" ${canAfford ? '' : 'disabled'}>
                       ${world.coinCost.toLocaleString()} 🪙
                     </button>`
@@ -310,6 +312,14 @@ export class ShopModal {
         const result = this.progression.equipTheme(button.dataset.equipWorld!);
         this.showToast(result.message, !result.success);
         this.renderCategoryContent();
+      });
+    });
+
+    container.querySelectorAll<HTMLButtonElement>('[data-action="unlock-signature"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const charId = button.dataset.charId || 'char_modi';
+        this.hide();
+        this.eventBus.emit('OPEN_CHARACTERS', { source: 'SHOP', charId });
       });
     });
 

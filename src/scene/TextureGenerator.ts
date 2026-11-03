@@ -4214,6 +4214,214 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Ceremonial Triumphal Gate Banner ("GRAND OPENING" / "GRAND OPENING — PART 2")
+   */
+  public static getVipGrandOpeningSignTexture(isPartTwo: boolean = false): THREE.Texture {
+    const key = `vip_grand_opening_${isPartTwo ? 'part2' : 'part1'}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep ceremonial royal navy backdrop
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Saffron and gold decorative borders
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Gold corner rosette medallions
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(16, 16, 6, 0, Math.PI * 2);
+      ctx.arc(w - 16, 16, 6, 0, Math.PI * 2);
+      ctx.arc(16, h - 16, 6, 0, Math.PI * 2);
+      ctx.arc(w - 16, h - 16, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Heading text
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 36px "Trebuchet MS", "Outfit", sans-serif';
+      if (isPartTwo) {
+        ctx.fillText('★ GRAND OPENING — PART 2 ★', w * 0.5, 52);
+      } else {
+        ctx.fillText('★ GRAND OPENING ★', w * 0.5, 52);
+      }
+
+      // Subtitle
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 15px "Courier New", monospace';
+      ctx.letterSpacing = '1px';
+      ctx.fillText(
+        isPartTwo ? 'CEREMONIAL OVERPASS // RE-INAUGURATION IMMINENT' : 'VIP EXPRESS LINE // INAUGURATION IN PROGRESS',
+        w * 0.5,
+        92
+      );
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * The Eternal Photo Opportunity Installation Sign ("ONE MORE PHOTO!")
+   */
+  public static getVipPhotoOpSignTexture(): THREE.Texture {
+    return this.getOrCreate('vip_photo_op_sign', () => {
+      const w = 512;
+      const h = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Crimson & Gold ceremonial background
+      ctx.fillStyle = '#be123c';
+      ctx.fillRect(0, 0, w, h);
+
+      // Ornate gold frame border
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fffbeb';
+      ctx.font = '900 42px "Lilita One", "Trebuchet MS", sans-serif';
+      ctx.fillText('📷 ONE MORE PHOTO! 📷', w * 0.5, 62);
+
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 16px "Courier New", monospace';
+      ctx.fillText('ETERNAL PHOTO OPPORTUNITY // OFFICIAL PRESS POOL', w * 0.5, 104);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'italic 14px "Trebuchet MS", sans-serif';
+      ctx.fillText('“JUST ONE MORE FOR THE NATION”', w * 0.5, 134);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Megastructure Announcement Screen Ticker
+   */
+  public static getVipAnnouncementScreenTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_announcement_screen_${variant % 3}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark LED Matrix background
+      ctx.fillStyle = '#060d1f';
+      ctx.fillRect(0, 0, w, h);
+
+      // LED grid lines
+      ctx.strokeStyle = 'rgba(30, 58, 138, 0.3)';
+      ctx.lineWidth = 1;
+      for (let y = 0; y < h; y += 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Border glow
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      ctx.textAlign = 'center';
+
+      if (variant % 3 === 0) {
+        ctx.fillStyle = '#f87171';
+        ctx.font = '900 28px "Lilita One", sans-serif';
+        ctx.fillText('🔴 BREAKING: ANOTHER CEREMONY! 🔴', w * 0.5, 48);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillText('RIBBON SUPPLY: 100% SECURE // PROTOCOL ACTIVE', w * 0.5, 88);
+      } else if (variant % 3 === 1) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '900 28px "Lilita One", sans-serif';
+        ctx.fillText('⚡ VIP SPEED LIMIT: UNLIMITED ⚡', w * 0.5, 48);
+
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillText('CAMERAS READY? RUNNER READY! // NON-STOP SPRINT', w * 0.5, 88);
+      } else {
+        ctx.fillStyle = '#4ade80';
+        ctx.font = '900 28px "Lilita One", sans-serif';
+        ctx.fillText('★ INAUGURATION IN PROGRESS ★', w * 0.5, 48);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillText('RED CARPET DEPLOYED FOR 10,000 KM // SMILE!', w * 0.5, 88);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Decorative Marigold Flower Garland Texture
+   */
+  public static getVipMarigoldGarlandTexture(): THREE.Texture {
+    return this.getOrCreate('vip_marigold_garland', () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Transparent green twine base
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(0, size * 0.45, size, size * 0.1);
+
+      // Alternating saffron orange and yellow marigold blooms
+      const colors = ['#ea580c', '#f59e0b', '#fbbf24', '#d97706'];
+      for (let i = 0; i < 4; i++) {
+        const cx = 16 + i * 32;
+        const cy = size * 0.5;
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fffbeb';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 

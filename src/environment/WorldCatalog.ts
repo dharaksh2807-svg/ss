@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -24,6 +24,9 @@ export interface WorldDefinition {
   readonly dynamicEligible: boolean;
   readonly icon: string;
   readonly accentColor: string;
+  readonly signatureCharacterId?: string;
+  readonly signatureLabel?: string;
+  readonly isSignatureWorld?: boolean;
 }
 
 // Provisional proposal, not sale prices: early missions award 250 coins each;
@@ -97,6 +100,20 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     previewImage: '/worlds/haunted_carnival.png',
     features: ['Rotating Ferris Wheel', 'Giant Pumpkin Shrines', 'Haunted Big-Top Tents'],
     implemented: true, available: true, dynamicEligible: true, icon: '🎃', accentColor: '#f97316'
+  },
+  {
+    id: 'VIP_EXPRESS', environmentId: 'VIP_EXPRESS', displayName: 'VIP Express: The Great Inauguration',
+    description: 'A grand fictional VIP ceremonial concourse featuring futuristic civic architecture, red-carpet walkways, endless ribbon cuttings, paparazzi chaos, and comedic political celebrations.',
+    subtitle: 'Ceremonial VIP Concourse',
+    tagline: 'High-speed inaugural rails through grand plazas, endless ribbons, and paparazzi frenzy.',
+    rarity: 'LEGENDARY',
+    unlock: 'FREE', coinCost: 0, keyCost: null, previewReference: 'environment:VIP_EXPRESS',
+    previewImage: '/worlds/vip_express.png',
+    features: ['Never-Ending Ribbons', 'Camera Crew Chaos', 'Triumphal VIP Arches'],
+    implemented: true, available: true, dynamicEligible: false, icon: '🏛️', accentColor: '#f59e0b',
+    signatureCharacterId: 'char_modi',
+    signatureLabel: 'MODI SIGNATURE WORLD',
+    isSignatureWorld: true
   }
 ];
 
@@ -104,6 +121,9 @@ export interface WorldProgress {
   unlockedThemes: readonly WorldId[];
   selectedTheme: WorldSelection;
   includePremiumThemesInDynamic: boolean;
+  unlockedCharacters?: readonly string[];
+  selectedCharacter?: string;
+  modiFreeRuns?: number;
 }
 
 const FREE_WORLD_METADATA: Record<string, { previewImage: string; subtitle: string; tagline: string; features: string[] }> = {
@@ -166,13 +186,32 @@ export function isWorldAvailable(world: WorldDefinition): boolean {
   return world.implemented && world.available && EnvironmentRegistry.getInstance().has(world.environmentId);
 }
 
+export function isThemePermanentlyOwned(world: WorldDefinition, progress: WorldProgress): boolean {
+  if (world.signatureCharacterId) {
+    const ownsChar = progress.unlockedCharacters?.includes(world.signatureCharacterId) ?? false;
+    const hasTheme = progress.unlockedThemes.includes(world.id);
+    return ownsChar || hasTheme;
+  }
+  return world.unlock === 'FREE' || progress.unlockedThemes.includes(world.id);
+}
+
 export function getWorlds(progress: WorldProgress) {
-  return getWorldCatalog().map((world) => ({
-    ...world,
-    available: isWorldAvailable(world),
-    owned: world.unlock === 'FREE' || progress.unlockedThemes.includes(world.id),
-    equipped: progress.selectedTheme === world.id
-  }));
+  return getWorldCatalog().map((world) => {
+    const isOwned = isThemePermanentlyOwned(world, progress);
+    const isTrialing = !!world.signatureCharacterId &&
+      !isOwned &&
+      progress.selectedCharacter === world.signatureCharacterId &&
+      (progress.modiFreeRuns ?? 0) > 0;
+
+    return {
+      ...world,
+      available: isWorldAvailable(world),
+      owned: isOwned,
+      trialing: isTrialing,
+      playable: isOwned || isTrialing,
+      equipped: progress.selectedTheme === world.id
+    };
+  });
 }
 
 export function getDynamicEnvironmentIds(progress: WorldProgress): EnvironmentId[] {

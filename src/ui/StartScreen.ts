@@ -6,6 +6,7 @@ import { getCharacterById } from '../characters/CharacterCatalog';
 import { getHoverboardById } from '../hoverboard/HoverboardCatalog';
 import { EnvironmentManager } from '../environment/EnvironmentConfig';
 import { DailyChallengeManager } from '../core/DailyChallengeManager';
+import { getWorld } from '../environment/WorldCatalog';
 
 export class StartScreen {
   private element: HTMLElement;
@@ -653,6 +654,7 @@ export class StartScreen {
         envIconEl.textContent = '🏙️';
         envTitleEl.textContent = 'MODERN METRO';
         envTitleEl.className = 'widget-val highlight-cyan';
+        envSubEl.textContent = 'Glass towers & sunset glow';
       } else if (envPref === 'HISTORIC_QUARTER') {
         envIconEl.textContent = '🏛️';
         envTitleEl.textContent = 'HISTORIC QUARTER';
@@ -663,6 +665,20 @@ export class StartScreen {
         envTitleEl.textContent = 'UNDERGROUND METRO';
         envTitleEl.className = 'widget-val highlight-cyan';
         envSubEl.textContent = 'Vaulted caverns & tile murals';
+      } else {
+        const world = getWorld(envPref);
+        if (world) {
+          envIconEl.textContent = world.icon;
+          envTitleEl.textContent = world.displayName.toUpperCase();
+          envTitleEl.className = 'widget-val highlight-gold';
+          envSubEl.textContent = world.subtitle || world.tagline || 'Premium Realm';
+        }
+      }
+
+      // If Modi is selected but VIP Express is not equipped, show signature prompt
+      const selectedChar = this.progression.getSelectedCharacter();
+      if (selectedChar === 'char_modi' && envPref !== 'VIP_EXPRESS') {
+        envSubEl.textContent = '🏛️ Tap to play in Modi\'s VIP Express';
       }
     }
 

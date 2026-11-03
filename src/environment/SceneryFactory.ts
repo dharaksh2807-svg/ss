@@ -198,6 +198,27 @@ export class SceneryFactory {
     hauntedSpookySignMat2: THREE.MeshBasicMaterial;
     hauntedSpookySignMat3: THREE.MeshBasicMaterial;
     hauntedGothicWindowMat: THREE.MeshBasicMaterial;
+    // VIP Express: The Great Inauguration Materials
+    vipIvoryFacadeMat: THREE.MeshStandardMaterial;
+    vipSandstoneMat: THREE.MeshStandardMaterial;
+    vipNavyTrimMat: THREE.MeshStandardMaterial;
+    vipGoldOrnamentMat: THREE.MeshStandardMaterial;
+    vipRedCarpetMat: THREE.MeshStandardMaterial;
+    vipSaffronBannerMat: THREE.MeshStandardMaterial;
+    vipGlassCanopyMat: THREE.MeshStandardMaterial;
+    vipWhiteVehicleMat: THREE.MeshStandardMaterial;
+    vipBeaconAmberMat: THREE.MeshBasicMaterial;
+    vipBeaconBlueMat: THREE.MeshBasicMaterial;
+    vipCameraBodyMat: THREE.MeshStandardMaterial;
+    vipCameraLensMat: THREE.MeshBasicMaterial;
+    vipMarigoldGarlandMat: THREE.MeshBasicMaterial;
+    vipWaterPoolMat: THREE.MeshStandardMaterial;
+    vipGrandOpeningSignMat: THREE.MeshBasicMaterial;
+    vipPartTwoSignMat: THREE.MeshBasicMaterial;
+    vipOneMorePhotoSignMat: THREE.MeshBasicMaterial;
+    vipAnnouncementScreenMat1: THREE.MeshBasicMaterial;
+    vipAnnouncementScreenMat2: THREE.MeshBasicMaterial;
+    vipAnnouncementScreenMat3: THREE.MeshBasicMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -1333,6 +1354,165 @@ export class SceneryFactory {
         });
         curved.applyCurvature(m);
         return m;
+      })(),
+      // VIP Express: The Great Inauguration Materials
+      vipIvoryFacadeMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.35,
+          metalness: 0.15
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipSandstoneMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xd4a373,
+          roughness: 0.80,
+          metalness: 0.10
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipNavyTrimMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x1e3a8a,
+          roughness: 0.25,
+          metalness: 0.80
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipGoldOrnamentMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          roughness: 0.20,
+          metalness: 0.90
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipRedCarpetMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xbe123c,
+          roughness: 0.85,
+          metalness: 0.05
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipSaffronBannerMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xff7700,
+          roughness: 0.50,
+          metalness: 0.10
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipGlassCanopyMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x78350f,
+          roughness: 0.15,
+          metalness: 0.85,
+          transparent: true,
+          opacity: 0.75
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipWhiteVehicleMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.20,
+          metalness: 0.40
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipBeaconAmberMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipBeaconBlueMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0x2563eb });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipCameraBodyMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x18181b,
+          roughness: 0.50,
+          metalness: 0.60
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipCameraLensMat: (() => {
+        const m = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipMarigoldGarlandMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipMarigoldGarlandTexture()
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipWaterPoolMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x0284c7,
+          roughness: 0.10,
+          metalness: 0.80,
+          transparent: true,
+          opacity: 0.80
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipGrandOpeningSignMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipGrandOpeningSignTexture(false)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipPartTwoSignMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipGrandOpeningSignTexture(true)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipOneMorePhotoSignMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipPhotoOpSignTexture()
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipAnnouncementScreenMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipAnnouncementScreenTexture(0)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipAnnouncementScreenMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipAnnouncementScreenTexture(1)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      vipAnnouncementScreenMat3: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getVipAnnouncementScreenTexture(2)
+        });
+        curved.applyCurvature(m);
+        return m;
       })()
     };
   }
@@ -1384,6 +1564,8 @@ export class SceneryFactory {
       this.buildPhantomLineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'HAUNTED_CARNIVAL') {
       this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'VIP_EXPRESS') {
+      this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -4532,6 +4714,64 @@ export class SceneryFactory {
 
       group.add(portalGroup);
       return;
+    } else if (theme.id === 'VIP_EXPRESS') {
+      // --- Ceremonial Civic Gateway Portal (VIP Express: The Great Inauguration) ---
+      const pylonGeo = new THREE.BoxGeometry(4.0, portalH, 4.4);
+      [-spanW * 0.5 - 1.4, spanW * 0.5 + 1.4].forEach((px) => {
+        // Red-sandstone ceremonial pylon
+        const pylon = new THREE.Mesh(pylonGeo, mats.vipSandstoneMat);
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+        portalGroup.add(pylon);
+
+        // Fluted ivory pilasters
+        const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.8, portalH * 0.88, 1.2), mats.vipIvoryFacadeMat);
+        pilaster.position.set(px + (px < 0 ? 1.8 : -1.8), portalH * 0.46, portalZ);
+        portalGroup.add(pilaster);
+
+        // Golden kalash / finial dome on top of each pylon
+        const dome = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3.2, 12), mats.vipGoldOrnamentMat);
+        dome.position.set(px, portalH + 1.6, portalZ);
+        portalGroup.add(dome);
+
+        const finialBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), mats.vipGoldOrnamentMat);
+        finialBall.position.set(px, portalH + 3.4, portalZ);
+        portalGroup.add(finialBall);
+      });
+
+      // Overhead monumental ivory arch beam (clearance >= 10.2m)
+      const archSpan = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.6, 3.4, 4.2), mats.vipIvoryFacadeMat);
+      archSpan.position.set(0, portalH + 0.8, portalZ);
+      archSpan.castShadow = true;
+      archSpan.receiveShadow = true;
+      portalGroup.add(archSpan);
+
+      // Royal navy & gold trim frieze
+      const frieze = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.8, 0.6, 4.4), mats.vipNavyTrimMat);
+      frieze.position.set(0, portalH - 1.1, portalZ);
+      portalGroup.add(frieze);
+
+      // Huge Ceremonial "GRAND OPENING" Gateway Banner
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(12.0, 2.6), mats.vipGrandOpeningSignMat);
+      sign.position.set(0, portalH + 0.8, portalZ + 2.22);
+      portalGroup.add(sign);
+
+      // Marigold garland swag along arch beam
+      const garland = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.8, 0.5, 0.5), mats.vipMarigoldGarlandMat);
+      garland.position.set(0, portalH - 0.7, portalZ + 2.2);
+      portalGroup.add(garland);
+
+      // Ceremonial rotating amber & blue VIP beacons atop gateway
+      [-spanW * 0.45, -spanW * 0.15, spanW * 0.15, spanW * 0.45].forEach((bx, idx) => {
+        const beaconMat = idx % 2 === 0 ? mats.vipBeaconAmberMat : mats.vipBeaconBlueMat;
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), beaconMat);
+        beacon.position.set(bx, portalH + 2.8, portalZ + 2.1);
+        portalGroup.add(beacon);
+      });
+
+      group.add(portalGroup);
+      return;
     }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
@@ -7257,5 +7497,950 @@ export class SceneryFactory {
     }
 
     group.add(cryptGroup);
+  }
+
+  // =========================================================================
+  // VIP EXPRESS: THE GREAT INAUGURATION (Modi Signature World)
+  // =========================================================================
+
+  private buildVipExpressScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const rng = new SeededRandom(seed);
+    const vipGroup = new THREE.Group();
+    vipGroup.name = 'vip_express_scenery';
+
+    // 1. Red-carpeted ceremonial concourses, ivory balustrades & golden stanchions
+    this.buildVipConcoursesAndBanners(vipGroup, roadbedWidth, chunkLength, rng, detail);
+
+    // 2. High overhead ceremonial arches (clearance >= 9.5m strictly above 8.5m running envelope)
+    this.buildVipOverheadArches(vipGroup, roadbedWidth, chunkLength, rng, detail);
+
+    // 3. Trackside ceremonial set dressing & floral garlands
+    if (detail !== 'MINIMAL') {
+      this.buildVipTracksideDecorations(vipGroup, roadbedWidth, chunkLength, rng, detail);
+    }
+
+    // 4. The 6 Background Comedy Events (Always deterministic and non-intrusive)
+    this.buildVipComedyEvents(vipGroup, roadbedWidth, chunkLength, rng, detail);
+
+    // 5. Deterministic Landmark Encounter (Seeded variation across runs)
+    const landmarkChoice = Math.abs(seed) % 4;
+    const landmarkZ = -chunkLength * 0.5;
+
+    if (landmarkChoice === 0) {
+      this.buildVipCeremonialPlaza(vipGroup, chunkLength, landmarkZ, rng);
+    } else if (landmarkChoice === 1) {
+      this.buildVipPressEnclosure(vipGroup, chunkLength, landmarkZ, rng);
+    } else if (landmarkChoice === 2) {
+      this.buildVipSecretariatColonnade(vipGroup, chunkLength, landmarkZ, rng);
+    } else {
+      this.buildVipConvoyHelipad(vipGroup, chunkLength, landmarkZ, rng);
+    }
+
+    group.add(vipGroup);
+  }
+
+  /**
+   * Continuous Red-Carpeted Civic Concourses, Ivory Balustrades & Saffron/Navy Banners
+   */
+  private buildVipConcoursesAndBanners(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = roadbedWidth * 0.5 + 1.4; // ~6.8m from center (strictly outside 4.2m running corridor)
+    const concourseW = 8.0;
+    const concourseH = 1.2;
+
+    const concourseGeo = new THREE.BoxGeometry(concourseW, concourseH, chunkLength);
+    const balustradeGeo = new THREE.BoxGeometry(0.35, 1.1, chunkLength);
+    const carpetGeo = new THREE.BoxGeometry(2.4, 0.05, chunkLength);
+    const bannerGeo = new THREE.BoxGeometry(0.2, 4.8, 1.4);
+
+    [-1, 1].forEach((side) => {
+      const cx = side * (wallX + concourseW * 0.5);
+
+      // Elevated sandstone ceremonial concourse platform
+      const concourse = new THREE.Mesh(concourseGeo, mats.vipSandstoneMat);
+      concourse.position.set(cx, concourseH * 0.5, -chunkLength * 0.5);
+      concourse.receiveShadow = true;
+      group.add(concourse);
+
+      // Ivory balustrade railing along trackside edge
+      const balustrade = new THREE.Mesh(balustradeGeo, mats.vipIvoryFacadeMat);
+      balustrade.position.set(side * wallX, concourseH + 0.55, -chunkLength * 0.5);
+      balustrade.castShadow = true;
+      group.add(balustrade);
+
+      // Fluted balustrade posts at intervals
+      const postStep = detail === 'MINIMAL' ? 24 : 12;
+      for (let z = 6; z < chunkLength; z += postStep) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.35, 0.5), mats.vipSandstoneMat);
+        post.position.set(side * wallX, concourseH + 0.675, -z);
+        group.add(post);
+
+        // Golden finial ball atop each post
+        if (detail !== 'MINIMAL') {
+          const finial = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mats.vipGoldOrnamentMat);
+          finial.position.set(side * wallX, concourseH + 1.45, -z);
+          group.add(finial);
+        }
+      }
+
+      // Continuous royal red carpet path along concourse
+      const carpet = new THREE.Mesh(carpetGeo, mats.vipRedCarpetMat);
+      carpet.position.set(side * (wallX + 2.2), concourseH + 0.03, -chunkLength * 0.5);
+      carpet.receiveShadow = true;
+      group.add(carpet);
+
+      // Saffron & Navy ceremonial vertical banners flanking tracks
+      if (detail !== 'MINIMAL') {
+        for (let z = 14; z < chunkLength; z += 24) {
+          const bannerGroup = new THREE.Group();
+          bannerGroup.position.set(side * (wallX + 0.6), concourseH + 1.2, -z);
+
+          // Polished brass banner pole
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6.2, 8), mats.vipGoldOrnamentMat);
+          pole.position.y = 3.1;
+          bannerGroup.add(pole);
+
+          // Saffron or navy banner fabric
+          const isSaffron = (z / 24) % 2 === 0;
+          const banner = new THREE.Mesh(bannerGeo, isSaffron ? mats.vipSaffronBannerMat : mats.vipNavyTrimMat);
+          banner.position.set(side * 0.7, 3.6, 0);
+          bannerGroup.add(banner);
+
+          // Golden finial spear atop pole
+          const spear = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.6, 8), mats.vipGoldOrnamentMat);
+          spear.position.y = 6.4;
+          bannerGroup.add(spear);
+
+          group.add(bannerGroup);
+        }
+      }
+    });
+  }
+
+  /**
+   * Overhead Ceremonial Gateways (Y >= 9.5m clearance strictly above 8.5m running envelope)
+   */
+  private buildVipOverheadArches(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const spanW = roadbedWidth + 3.2; // ~14m span
+    const archY = 10.2; // Beam bottom at 10.2m (safe clearance > 8.5m)
+    const archZ = -chunkLength * 0.5;
+
+    const archGroup = new THREE.Group();
+    archGroup.name = 'vip_overhead_arch';
+
+    // Supporting ivory fluted pillars flanking tracks at |X| = spanW * 0.5 + 0.8 (~7.8m)
+    [-spanW * 0.5 - 0.8, spanW * 0.5 + 0.8].forEach((px) => {
+      const pylon = new THREE.Mesh(new THREE.BoxGeometry(2.4, 12.0, 2.4), mats.vipSandstoneMat);
+      pylon.position.set(px, 6.0, archZ);
+      pylon.castShadow = true;
+      archGroup.add(pylon);
+
+      // Fluted ivory cladding
+      const cladding = new THREE.Mesh(new THREE.BoxGeometry(2.6, 11.0, 2.0), mats.vipIvoryFacadeMat);
+      cladding.position.set(px, 6.0, archZ);
+      archGroup.add(cladding);
+
+      // Golden kalash finial
+      const kalash = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.4, 10), mats.vipGoldOrnamentMat);
+      kalash.position.set(px, 13.2, archZ);
+      archGroup.add(kalash);
+    });
+
+    // Transverse grand arch beam spanning tracks (clearance Y = 9.8m)
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.0, 2.2, 2.6), mats.vipIvoryFacadeMat);
+    beam.position.set(0, archY + 1.1, archZ);
+    beam.castShadow = true;
+    archGroup.add(beam);
+
+    // Polished gold frieze trim
+    const frieze = new THREE.Mesh(new THREE.BoxGeometry(spanW + 4.2, 0.4, 2.8), mats.vipGoldOrnamentMat);
+    frieze.position.set(0, archY + 2.3, archZ);
+    archGroup.add(frieze);
+
+    // Marigold garland swag along beam bottom
+    const garland = new THREE.Mesh(new THREE.BoxGeometry(spanW + 2.0, 0.45, 0.45), mats.vipMarigoldGarlandMat);
+    garland.position.set(0, archY - 0.25, archZ + 1.35);
+    archGroup.add(garland);
+
+    // Amber and Blue ceremonial beacons
+    [-spanW * 0.35, -spanW * 0.12, spanW * 0.12, spanW * 0.35].forEach((bx, idx) => {
+      const bMat = idx % 2 === 0 ? mats.vipBeaconAmberMat : mats.vipBeaconBlueMat;
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), bMat);
+      beacon.position.set(bx, archY + 2.8, archZ + 1.4);
+      archGroup.add(beacon);
+    });
+
+    group.add(archGroup);
+  }
+
+  /**
+   * Trackside Ceremonial Props, Marigold Swags & Red Carpet Brass Stanchions
+   */
+  private buildVipTracksideDecorations(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const stanchionX = roadbedWidth * 0.5 + 2.6; // ~8.0m from center
+    const stanchionGeo = new THREE.CylinderGeometry(0.06, 0.08, 1.1, 8);
+    const ropeGeo = new THREE.CylinderGeometry(0.04, 0.04, 3.8, 6);
+    ropeGeo.rotateZ(Math.PI / 2);
+
+    [-1, 1].forEach((side) => {
+      const sx = side * stanchionX;
+      for (let z = 10; z < chunkLength - 10; z += 14) {
+        // Brass stanchion post
+        const post = new THREE.Mesh(stanchionGeo, mats.vipGoldOrnamentMat);
+        post.position.set(sx, 1.8, -z);
+        group.add(post);
+
+        // Velvet red rope linking stanchions
+        const rope = new THREE.Mesh(ropeGeo, mats.vipRedCarpetMat);
+        rope.position.set(sx, 2.2, -z - 1.9);
+        group.add(rope);
+
+        // Marigold flower pot urn
+        if (detail === 'FULL') {
+          const urn = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.25, 0.7, 8), mats.vipSandstoneMat);
+          urn.position.set(side * (stanchionX + 1.4), 1.6, -z);
+          group.add(urn);
+
+          const garlandDome = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), mats.vipMarigoldGarlandMat);
+          garlandDome.position.set(side * (stanchionX + 1.4), 2.05, -z);
+          group.add(garlandDome);
+        }
+      }
+    });
+  }
+
+  /**
+   * The 6 Required VIP Background Comedy Events
+   */
+  private buildVipComedyEvents(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    // Event A: Never-Ending Ribbon Ceremony (Trackside X = -18m)
+    this.buildVipRibbonCeremony(group, chunkLength, -chunkLength * 0.3, detail);
+
+    // Event B: Camera Crew Chaos (Trackside X = +16.5m)
+    this.buildVipCameraCrew(group, chunkLength, -chunkLength * 0.5, detail);
+
+    // Event C: The Eternal Photo Opportunity ("ONE MORE PHOTO!") (Trackside X = -16m)
+    this.buildVipPhotoOp(group, chunkLength, -chunkLength * 0.7, detail);
+
+    // Event D: VIP Traffic Control (Distant X = +36m)
+    this.buildVipTrafficJam(group, chunkLength, detail);
+
+    // Event E: Grand Opening of Another Grand Opening (Twin Overhead Arches)
+    this.buildVipDoubleOpening(group, roadbedWidth, chunkLength);
+
+    // Event F: Announcement Tower (News Ticker Tower at X = -16.5m)
+    this.buildVipAnnouncementTower(group, chunkLength, -chunkLength * 0.85, rng);
+  }
+
+  /**
+   * Event A: Never-Ending Ribbon Ceremony (vip_ribbon_ceremony)
+   * An oversized ceremonial ribbon with giant gold scissors, followed immediately by a second identical ribbon!
+   */
+  private buildVipRibbonCeremony(
+    group: THREE.Group,
+    chunkLength: number,
+    ribbonZ: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const ceremonyGroup = new THREE.Group();
+    ceremonyGroup.name = 'vip_ribbon_ceremony';
+    ceremonyGroup.position.set(-18.0, 1.2, ribbonZ);
+
+    // Raised sandstone ceremonial dais
+    const dais = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.6, 12.0), mats.vipSandstoneMat);
+    dais.position.y = 0.3;
+    dais.receiveShadow = true;
+    ceremonyGroup.add(dais);
+
+    // Red carpet across dais
+    const daisCarpet = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.05, 12.0), mats.vipRedCarpetMat);
+    daisCarpet.position.y = 0.63;
+    ceremonyGroup.add(daisCarpet);
+
+    // Successive ceremonial ribbons on brass stanchions ("Never-Ending Ribbon Ceremony")
+    const ribbonOffsets = detail === 'FULL' ? [-3.0, 0, 3.0] : (detail === 'BALANCED' ? [-2.0, 2.0] : [0]);
+    ribbonOffsets.forEach((rz, idx) => {
+      // Flanking brass stanchions
+      [-2.8, 2.8].forEach((sx) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.8, 8), mats.vipGoldOrnamentMat);
+        post.position.set(sx, 1.5, rz);
+        ceremonyGroup.add(post);
+
+        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), mats.vipGoldOrnamentMat);
+        finial.position.set(sx, 2.5, rz);
+        ceremonyGroup.add(finial);
+      });
+
+      // Stretched ceremonial satin ribbon
+      const ribbon = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.3, 0.08), idx % 2 === 0 ? mats.vipRedCarpetMat : mats.vipSaffronBannerMat);
+      ribbon.position.set(0, 1.8, rz);
+      ceremonyGroup.add(ribbon);
+
+      // Comically oversized mechanical gold scissors poised to cut the ribbon
+      const scissorGroup = new THREE.Group();
+      scissorGroup.position.set(0.6 - idx * 0.4, 2.1, rz + 0.3);
+      scissorGroup.rotation.z = 0.35 * (idx % 2 === 0 ? 1 : -1);
+
+      // Blade 1
+      const blade1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.8, 0.06), mats.vipGoldOrnamentMat);
+      blade1.position.set(-0.2, 0.5, 0);
+      blade1.rotation.z = -0.3;
+      scissorGroup.add(blade1);
+
+      // Blade 2
+      const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.8, 0.06), mats.vipGoldOrnamentMat);
+      blade2.position.set(0.2, 0.5, 0);
+      blade2.rotation.z = 0.3;
+      scissorGroup.add(blade2);
+
+      // Scissor handle rings
+      if (detail !== 'MINIMAL') {
+        [-0.45, 0.45].forEach((hx) => {
+          const handle = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.08, 6, 12), mats.vipGoldOrnamentMat);
+          handle.position.set(hx, -0.6, 0);
+          scissorGroup.add(handle);
+        });
+      }
+
+      ceremonyGroup.add(scissorGroup);
+    });
+
+    group.add(ceremonyGroup);
+  }
+
+  /**
+   * Event B: Camera Crew Chaos (vip_camera_crew)
+   * High scaffolding media enclosure with cartoonish giant telephoto lenses clamoring for angle
+   */
+  private buildVipCameraCrew(
+    group: THREE.Group,
+    chunkLength: number,
+    crewZ: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const crewGroup = new THREE.Group();
+    crewGroup.name = 'vip_camera_crew';
+    crewGroup.position.set(16.5, 1.2, crewZ);
+
+    // Multi-tier metal press scaffolding tower
+    const platformW = 7.5;
+    const platformH = 3.6;
+    const platformD = 10.0;
+
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(platformW, 0.4, platformD), mats.vipNavyTrimMat);
+    deck.position.y = platformH;
+    deck.receiveShadow = true;
+    crewGroup.add(deck);
+
+    // Scaffolding steel legs
+    [-platformW * 0.45, platformW * 0.45].forEach((lx) => {
+      [-platformD * 0.45, platformD * 0.45].forEach((lz) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, platformH, 8), mats.vipSandstoneMat);
+        leg.position.set(lx, platformH * 0.5, lz);
+        crewGroup.add(leg);
+      });
+    });
+
+    // Guard rails
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, platformD), mats.vipGoldOrnamentMat);
+    rail.position.set(-platformW * 0.48, platformH + 0.55, 0);
+    crewGroup.add(rail);
+
+    // Camera operators with giant cartoon telephoto lenses pointing at the tracks
+    const camCount = detail === 'FULL' ? 4 : (detail === 'BALANCED' ? 2 : 1);
+    for (let c = 0; c < camCount; c++) {
+      const camGroup = new THREE.Group();
+      const cz = -platformD * 0.35 + c * 2.3;
+      camGroup.position.set(-platformW * 0.25, platformH + 0.4, cz);
+
+      // Camera body on tripod
+      const tripod = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.2, 4), mats.vipCameraBodyMat);
+      tripod.position.y = 0.6;
+      camGroup.add(tripod);
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.6), mats.vipCameraBodyMat);
+      body.position.y = 1.35;
+      camGroup.add(body);
+
+      // Giant oversized telephoto cylinder lens pointed inward toward tracks (-X direction)
+      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.36, 1.8, 12), mats.vipCameraBodyMat);
+      lens.rotation.z = Math.PI / 2;
+      lens.position.set(-1.0, 1.35, 0);
+      camGroup.add(lens);
+
+      // Cyan lens reflection glass
+      const glass = new THREE.Mesh(new THREE.CircleGeometry(0.24, 12), mats.vipCameraLensMat);
+      glass.rotation.y = -Math.PI / 2;
+      glass.position.set(-1.91, 1.35, 0);
+      camGroup.add(glass);
+
+      // Flashing tally indicator light
+      const tally = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), mats.vipBeaconAmberMat);
+      tally.position.set(-0.2, 1.65, 0.25);
+      camGroup.add(tally);
+
+      // Overhead boom microphone pole extending toward railway
+      if (c === 1 || c === 3) {
+        const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.2, 6), mats.vipGoldOrnamentMat);
+        boom.rotation.z = Math.PI / 3;
+        boom.position.set(-1.4, 2.6, 0);
+        camGroup.add(boom);
+
+        const mic = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), mats.vipCameraBodyMat);
+        mic.position.set(-2.8, 3.4, 0);
+        camGroup.add(mic);
+      }
+
+      crewGroup.add(camGroup);
+    }
+
+    group.add(crewGroup);
+  }
+
+  /**
+   * Event C: The Eternal Photo Opportunity ("ONE MORE PHOTO!") (vip_photo_op)
+   * 3 nested gilded baroque portrait frames with an illuminated "ONE MORE PHOTO!" sign
+   */
+  private buildVipPhotoOp(
+    group: THREE.Group,
+    chunkLength: number,
+    photoZ: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const photoGroup = new THREE.Group();
+    photoGroup.name = 'vip_photo_op';
+    photoGroup.position.set(-16.0, 1.2, photoZ);
+
+    // Ceremonial red carpet stage
+    const stage = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.5, 8.0), mats.vipSandstoneMat);
+    stage.position.y = 0.25;
+    stage.receiveShadow = true;
+    photoGroup.add(stage);
+
+    const carpet = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.05, 8.0), mats.vipRedCarpetMat);
+    carpet.position.y = 0.53;
+    photoGroup.add(carpet);
+
+    // Nested gilded baroque frames in perspective depth
+    const frameOffsets = detail === 'FULL' ? [0, 1.8, 3.6] : (detail === 'BALANCED' ? [0, 2.0] : [0]);
+    frameOffsets.forEach((fz, fIdx) => {
+      const scale = 1.0 - fIdx * 0.18;
+      const frameGroup = new THREE.Group();
+      frameGroup.position.set(0, 0.5, fz);
+
+      const fw = 4.2 * scale;
+      const fh = 5.2 * scale;
+      const barThick = 0.35 * scale;
+
+      // Top bar
+      const top = new THREE.Mesh(new THREE.BoxGeometry(fw, barThick, barThick), mats.vipGoldOrnamentMat);
+      top.position.y = fh;
+      frameGroup.add(top);
+
+      // Bottom bar
+      const bottom = new THREE.Mesh(new THREE.BoxGeometry(fw, barThick, barThick), mats.vipGoldOrnamentMat);
+      bottom.position.y = barThick * 0.5;
+      frameGroup.add(bottom);
+
+      // Left bar
+      const left = new THREE.Mesh(new THREE.BoxGeometry(barThick, fh, barThick), mats.vipGoldOrnamentMat);
+      left.position.set(-fw * 0.5, fh * 0.5, 0);
+      frameGroup.add(left);
+
+      // Right bar
+      const right = new THREE.Mesh(new THREE.BoxGeometry(barThick, fh, barThick), mats.vipGoldOrnamentMat);
+      right.position.set(fw * 0.5, fh * 0.5, 0);
+      frameGroup.add(right);
+
+      // Corner gold rosettes
+      if (detail !== 'MINIMAL') {
+        [[-fw * 0.5, fh], [fw * 0.5, fh], [-fw * 0.5, barThick * 0.5], [fw * 0.5, barThick * 0.5]].forEach(([cx, cy]) => {
+          const rosette = new THREE.Mesh(new THREE.SphereGeometry(0.24 * scale, 8, 8), mats.vipGoldOrnamentMat);
+          rosette.position.set(cx, cy, barThick * 0.5);
+          frameGroup.add(rosette);
+        });
+      }
+
+      photoGroup.add(frameGroup);
+    });
+
+    // Illuminated "ONE MORE PHOTO!" Signboard
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.5), mats.vipOneMorePhotoSignMat);
+    sign.position.set(0, 6.2, 0);
+    photoGroup.add(sign);
+
+    group.add(photoGroup);
+  }
+
+  /**
+   * Event D: VIP Traffic Control (vip_traffic_jam)
+   * Elevated civic expressway at X = +36m with pristine white SUVs stuck behind a single ceremonial cone
+   */
+  private buildVipTrafficJam(
+    group: THREE.Group,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const trafficGroup = new THREE.Group();
+    trafficGroup.name = 'vip_traffic_jam';
+    const roadX = 36.0;
+    const roadY = 3.5;
+
+    // Elevated expressway concrete viaduct deck
+    const viaduct = new THREE.Mesh(new THREE.BoxGeometry(8.5, 1.2, chunkLength), mats.vipSandstoneMat);
+    viaduct.position.set(roadX, roadY, -chunkLength * 0.5);
+    viaduct.receiveShadow = true;
+    trafficGroup.add(viaduct);
+
+    // Highway parapet barriers
+    [-4.0, 4.0].forEach((px) => {
+      const barrier = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.1, chunkLength), mats.vipIvoryFacadeMat);
+      barrier.position.set(roadX + px, roadY + 1.15, -chunkLength * 0.5);
+      trafficGroup.add(barrier);
+    });
+
+    // Line of 4 identical pristine white VIP SUVs stuck bumper-to-bumper
+    const suvCount = detail === 'FULL' ? 4 : (detail === 'BALANCED' ? 2 : 1);
+    for (let s = 0; s < suvCount; s++) {
+      const suvGroup = new THREE.Group();
+      const suvZ = -14.0 - s * 13.5;
+      suvGroup.position.set(roadX, roadY + 0.6, suvZ);
+
+      // Main SUV boxy hull
+      const hull = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.8, 6.2), mats.vipWhiteVehicleMat);
+      hull.position.y = 1.1;
+      hull.castShadow = true;
+      suvGroup.add(hull);
+
+      // Dark tinted glass greenhouse cab
+      const greenhouse = new THREE.Mesh(new THREE.BoxGeometry(2.9, 1.1, 3.6), mats.vipNavyTrimMat);
+      greenhouse.position.set(0, 2.2, -0.4);
+      suvGroup.add(greenhouse);
+
+      // Polished chrome grille
+      const grille = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.2), mats.vipGoldOrnamentMat);
+      grille.position.set(0, 0.9, 3.15);
+      suvGroup.add(grille);
+
+      // Rotating roof beacons (Amber + Blue VIP flashers)
+      [-0.8, 0.8].forEach((bx, idx) => {
+        const beaconMat = idx === 0 ? mats.vipBeaconAmberMat : mats.vipBeaconBlueMat;
+        const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.25, 8), beaconMat);
+        beacon.position.set(bx, 2.85, 0);
+        suvGroup.add(beacon);
+      });
+
+      trafficGroup.add(suvGroup);
+    }
+
+    // The Culprit: A single tiny ceremonial cone and ribbon halting the entire convoy!
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.1, 8), mats.vipSaffronBannerMat);
+    cone.position.set(roadX, roadY + 1.15, -6.5);
+    trafficGroup.add(cone);
+
+    const miniRibbon = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.15, 0.05), mats.vipRedCarpetMat);
+    miniRibbon.position.set(roadX, roadY + 1.25, -6.5);
+    trafficGroup.add(miniRibbon);
+
+    group.add(trafficGroup);
+  }
+
+  /**
+   * Event E: Grand Opening of Another Grand Opening (vip_double_opening)
+   * Twin ceremonial gateways at Z = -20m ("GRAND OPENING") and Z = -60m ("GRAND OPENING — PART 2")
+   */
+  private buildVipDoubleOpening(group: THREE.Group, roadbedWidth: number, chunkLength: number): void {
+    const mats = this.getSharedMaterials();
+    const doubleGroup = new THREE.Group();
+    doubleGroup.name = 'vip_double_opening';
+
+    const spanW = roadbedWidth + 3.0; // ~13.8m
+    const clearY = 10.4; // Beam bottom at 10.4m (clearance strictly > 8.5m)
+
+    // Arch 1: "GRAND OPENING" at Z = -20m
+    // Arch 2: "GRAND OPENING — PART 2" at Z = -60m
+    const gates = [
+      { z: -20.0, mat: mats.vipGrandOpeningSignMat },
+      { z: -60.0, mat: mats.vipPartTwoSignMat }
+    ];
+
+    gates.forEach(({ z, mat }) => {
+      const arch = new THREE.Group();
+      arch.position.set(0, 0, z);
+
+      // Flanking sandstone pylons at |X| = spanW * 0.5 + 0.8 (~7.7m)
+      [-spanW * 0.5 - 0.8, spanW * 0.5 + 0.8].forEach((px) => {
+        const pylon = new THREE.Mesh(new THREE.BoxGeometry(2.2, 12.0, 2.2), mats.vipSandstoneMat);
+        pylon.position.set(px, 6.0, 0);
+        arch.add(pylon);
+
+        const finial = new THREE.Mesh(new THREE.ConeGeometry(1.0, 2.2, 10), mats.vipGoldOrnamentMat);
+        finial.position.set(px, 13.1, 0);
+        arch.add(finial);
+      });
+
+      // Overhead arch cross-beam
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(spanW + 3.8, 2.2, 2.4), mats.vipIvoryFacadeMat);
+      beam.position.set(0, clearY + 1.1, 0);
+      arch.add(beam);
+
+      // Huge Illuminated Banner
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 2.2), mat);
+      sign.position.set(0, clearY + 1.1, 1.25);
+      arch.add(sign);
+
+      // Marigold garland swag
+      const garland = new THREE.Mesh(new THREE.BoxGeometry(spanW + 2.0, 0.4, 0.4), mats.vipMarigoldGarlandMat);
+      garland.position.set(0, clearY - 0.2, 1.25);
+      arch.add(garland);
+
+      doubleGroup.add(arch);
+    });
+
+    group.add(doubleGroup);
+  }
+
+  /**
+   * Event F: Announcement Tower / Ticker Screen (vip_announcement_tower)
+   * 14m high sleek digital media monolith displaying cycling satirical news tickers
+   */
+  private buildVipAnnouncementTower(
+    group: THREE.Group,
+    chunkLength: number,
+    towerZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const towerGroup = new THREE.Group();
+    towerGroup.name = 'vip_announcement_tower';
+    towerGroup.position.set(-16.5, 0, towerZ);
+
+    const towerH = 14.0;
+    const towerW = 6.0;
+    const towerD = 3.2;
+
+    // Ivory & sandstone architectural tower shaft
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(towerW, towerH, towerD), mats.vipSandstoneMat);
+    shaft.position.y = towerH * 0.5;
+    shaft.castShadow = true;
+    shaft.receiveShadow = true;
+    towerGroup.add(shaft);
+
+    // Polished gold fluting trim bands
+    [-towerW * 0.48, towerW * 0.48].forEach((tx) => {
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(0.3, towerH, 0.3), mats.vipGoldOrnamentMat);
+      trim.position.set(tx, towerH * 0.5, towerD * 0.5);
+      towerGroup.add(trim);
+    });
+
+    // Golden kalash spire atop tower
+    const kalash = new THREE.Mesh(new THREE.ConeGeometry(1.4, 3.2, 12), mats.vipGoldOrnamentMat);
+    kalash.position.y = towerH + 1.6;
+    towerGroup.add(kalash);
+
+    // High-resolution digital LED display screen facing toward tracks (+X / +Z angle)
+    const screenMat = rng.chance(0.33)
+      ? mats.vipAnnouncementScreenMat1
+      : rng.chance(0.5)
+      ? mats.vipAnnouncementScreenMat2
+      : mats.vipAnnouncementScreenMat3;
+
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 7.8), screenMat);
+    screen.position.set(0, 8.2, towerD * 0.5 + 0.08);
+    towerGroup.add(screen);
+
+    // Amber and blue status beacons atop screen
+    [-1.8, 1.8].forEach((bx, idx) => {
+      const beaconMat = idx === 0 ? mats.vipBeaconAmberMat : mats.vipBeaconBlueMat;
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), beaconMat);
+      beacon.position.set(bx, 12.6, towerD * 0.5 + 0.2);
+      towerGroup.add(beacon);
+    });
+
+    group.add(towerGroup);
+  }
+
+  /**
+   * Landmark 0: Grand Ceremonial Plaza (vip_ceremonial_plaza)
+   * Triumphal pavilion with cascading stairs, reflective fountain pool, golden obelisks, and flower carpets
+   */
+  private buildVipCeremonialPlaza(
+    group: THREE.Group,
+    chunkLength: number,
+    plazaZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const plazaGroup = new THREE.Group();
+    plazaGroup.name = 'vip_ceremonial_plaza';
+    plazaGroup.position.set(-18.5, 0, plazaZ);
+
+    const plazaW = 16.0;
+    const plazaD = 22.0;
+
+    // Raised sandstone pavilion terrace
+    const terrace = new THREE.Mesh(new THREE.BoxGeometry(plazaW, 1.8, plazaD), mats.vipSandstoneMat);
+    terrace.position.y = 0.9;
+    terrace.receiveShadow = true;
+    plazaGroup.add(terrace);
+
+    // Reflective civic ceremonial water fountain pool
+    const pool = new THREE.Mesh(new THREE.BoxGeometry(8.0, 0.4, 12.0), mats.vipWaterPoolMat);
+    pool.position.set(0, 1.9, 0);
+    plazaGroup.add(pool);
+
+    // Polished marble coping rim
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(8.6, 0.3, 12.6), mats.vipIvoryFacadeMat);
+    rim.position.set(0, 2.0, 0);
+    plazaGroup.add(rim);
+
+    // Golden ceremonial obelisk at center of plaza pool
+    const obeliskGeo = new THREE.CylinderGeometry(0.4, 0.9, 9.5, 4);
+    obeliskGeo.rotateY(Math.PI / 4);
+    const obelisk = new THREE.Mesh(obeliskGeo, mats.vipGoldOrnamentMat);
+    obelisk.position.set(0, 6.75, 0);
+    plazaGroup.add(obelisk);
+
+    // Golden pyramidion cap atop obelisk
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 4), mats.vipGoldOrnamentMat);
+    cap.rotation.y = Math.PI / 4;
+    cap.position.set(0, 12.0, 0);
+    plazaGroup.add(cap);
+
+    // 4 Corner Ivory Colonnade pavilions
+    [-plazaW * 0.4, plazaW * 0.4].forEach((px) => {
+      [-plazaD * 0.4, plazaD * 0.4].forEach((pz) => {
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 6.0, 8), mats.vipIvoryFacadeMat);
+        pillar.position.set(px, 4.8, pz);
+        plazaGroup.add(pillar);
+
+        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), mats.vipGoldOrnamentMat);
+        finial.position.set(px, 8.2, pz);
+        plazaGroup.add(finial);
+      });
+    });
+
+    group.add(plazaGroup);
+  }
+
+  /**
+   * Landmark 1: Monumental Media Press Enclosure (vip_press_enclosure)
+   * Colossal multi-tiered media press pavilion with broadcasting antennas and flashing camera stands
+   */
+  private buildVipPressEnclosure(
+    group: THREE.Group,
+    chunkLength: number,
+    enclosureZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const pressGroup = new THREE.Group();
+    pressGroup.name = 'vip_press_enclosure';
+    pressGroup.position.set(18.5, 0, enclosureZ);
+
+    const pressW = 14.0;
+    const pressD = 20.0;
+    const pressH = 8.5;
+
+    // Multi-tier tiered press grandstand
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(pressW, pressH, pressD), mats.vipSandstoneMat);
+    stand.position.y = pressH * 0.5;
+    stand.receiveShadow = true;
+    pressGroup.add(stand);
+
+    // Saffron and Navy canopy roof over media stands
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(pressW + 2.0, 0.6, pressD + 2.0), mats.vipSaffronBannerMat);
+    canopy.position.y = pressH + 3.2;
+    pressGroup.add(canopy);
+
+    // Broadcast antenna mast extending skyward
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 14.0, 8), mats.vipNavyTrimMat);
+    mast.position.set(0, pressH + 10.0, 0);
+    pressGroup.add(mast);
+
+    // Flashing red & amber aviation warning beacon atop mast
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), mats.vipBeaconAmberMat);
+    beacon.position.set(0, pressH + 17.2, 0);
+    pressGroup.add(beacon);
+
+    // Parabolic satellite uplink dish
+    const dish = new THREE.Mesh(new THREE.SphereGeometry(1.8, 12, 12, 0, Math.PI), mats.vipIvoryFacadeMat);
+    dish.rotation.x = Math.PI / 4;
+    dish.position.set(-pressW * 0.3, pressH + 4.8, 0);
+    pressGroup.add(dish);
+
+    group.add(pressGroup);
+  }
+
+  /**
+   * Landmark 2: Monumental Secretariat Colonnade (vip_secretariat_colonnade)
+   * Neoclassical civic concourse with endless fluted ivory columns and golden dome cupolas
+   */
+  private buildVipSecretariatColonnade(
+    group: THREE.Group,
+    chunkLength: number,
+    colonnadeZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const colonnadeGroup = new THREE.Group();
+    colonnadeGroup.name = 'vip_secretariat_colonnade';
+    colonnadeGroup.position.set(-20.0, 0, colonnadeZ);
+
+    const bldgW = 16.0;
+    const bldgH = 14.0;
+    const bldgD = 24.0;
+
+    // Massive civic secretariat administrative palace
+    const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bldgW, bldgH, bldgD), mats.vipSandstoneMat);
+    mainBody.position.y = bldgH * 0.5;
+    mainBody.receiveShadow = true;
+    colonnadeGroup.add(mainBody);
+
+    // Row of 6 monumental fluted ivory columns facing toward tracks
+    for (let c = 0; c < 6; c++) {
+      const colZ = -bldgD * 0.4 + c * (bldgD * 0.8 / 5);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, bldgH, 12), mats.vipIvoryFacadeMat);
+      col.position.set(bldgW * 0.5 + 1.2, bldgH * 0.5, colZ);
+      colonnadeGroup.add(col);
+
+      // Gold capital ornament atop column
+      const capital = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 1.8), mats.vipGoldOrnamentMat);
+      capital.position.set(bldgW * 0.5 + 1.2, bldgH + 0.3, colZ);
+      colonnadeGroup.add(capital);
+    }
+
+    // Overhead entablature and pediment
+    const entablature = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.4, bldgD + 2.0), mats.vipIvoryFacadeMat);
+    entablature.position.set(bldgW * 0.5 + 1.2, bldgH + 1.3, 0);
+    colonnadeGroup.add(entablature);
+
+    // Grand golden central cupola dome atop building
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), mats.vipGoldOrnamentMat);
+    dome.position.set(0, bldgH, 0);
+    colonnadeGroup.add(dome);
+
+    // Golden kalash spire atop central dome
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.6, 10), mats.vipGoldOrnamentMat);
+    spire.position.set(0, bldgH + 5.5, 0);
+    colonnadeGroup.add(spire);
+
+    group.add(colonnadeGroup);
+  }
+
+  /**
+   * Landmark 3: Executive VIP Convoy Helipad (vip_convoy_helipad)
+   * Elevated landing pad with red carpet runway and standby executive aircraft silhouette
+   */
+  private buildVipConvoyHelipad(
+    group: THREE.Group,
+    chunkLength: number,
+    helipadZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const helipadGroup = new THREE.Group();
+    helipadGroup.name = 'vip_convoy_helipad';
+    helipadGroup.position.set(20.0, 0, helipadZ);
+
+    const padRadius = 9.0;
+    const padH = 4.2;
+
+    // Raised circular concrete helipad platform
+    const platform = new THREE.Mesh(new THREE.CylinderGeometry(padRadius, padRadius + 1.2, padH, 20), mats.vipSandstoneMat);
+    platform.position.y = padH * 0.5;
+    platform.receiveShadow = true;
+    helipadGroup.add(platform);
+
+    // Circular red carpet landing mark
+    const landingCircle = new THREE.Mesh(new THREE.CylinderGeometry(padRadius * 0.75, padRadius * 0.75, 0.08, 16), mats.vipRedCarpetMat);
+    landingCircle.position.y = padH + 0.04;
+    helipadGroup.add(landingCircle);
+
+    // Prominent "H" landing marking in gold
+    const hBar1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 4.2), mats.vipGoldOrnamentMat);
+    hBar1.position.set(-1.4, padH + 0.08, 0);
+    helipadGroup.add(hBar1);
+
+    const hBar2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 4.2), mats.vipGoldOrnamentMat);
+    hBar2.position.set(1.4, padH + 0.08, 0);
+    helipadGroup.add(hBar2);
+
+    const hCross = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.6), mats.vipGoldOrnamentMat);
+    hCross.position.set(0, padH + 0.08, 0);
+    helipadGroup.add(hCross);
+
+    // Perimeter green & amber boundary lights
+    for (let a = 0; a < 8; a++) {
+      const angle = (a / 8) * Math.PI * 2;
+      const lx = Math.cos(angle) * (padRadius - 0.6);
+      const lz = Math.sin(angle) * (padRadius - 0.6);
+      const bMat = a % 2 === 0 ? mats.vipBeaconAmberMat : mats.vipBeaconBlueMat;
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), bMat);
+      lamp.position.set(lx, padH + 0.25, lz);
+      helipadGroup.add(lamp);
+    }
+
+    // Standby executive helicopter fuselage silhouette
+    const chopperGroup = new THREE.Group();
+    chopperGroup.position.set(0, padH + 0.6, 0);
+
+    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 6.2), mats.vipWhiteVehicleMat);
+    fuselage.position.y = 1.1;
+    chopperGroup.add(fuselage);
+
+    // Dark cockpit windshield
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.0, 1.8), mats.vipNavyTrimMat);
+    glass.position.set(0, 1.6, 2.2);
+    chopperGroup.add(glass);
+
+    // Overhead rotor blade hub & cross blades
+    const rotorHub = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8), mats.vipGoldOrnamentMat);
+    rotorHub.position.y = 2.3;
+    chopperGroup.add(rotorHub);
+
+    const blades = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.08, 0.4), mats.vipNavyTrimMat);
+    blades.position.y = 2.6;
+    chopperGroup.add(blades);
+
+    helipadGroup.add(chopperGroup);
+    group.add(helipadGroup);
   }
 }
