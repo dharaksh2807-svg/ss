@@ -14,7 +14,6 @@ export class ShopModal {
   private upgradeManager = UpgradeManager.getInstance();
   private progression = ProgressionManager.getInstance();
   private eventBus = EventBus.getInstance();
-  private previousScreen: string | null = null;
 
   constructor() {
     let el = document.getElementById('shop-modal');
@@ -85,7 +84,10 @@ export class ShopModal {
   }
 
   private setupEvents(): void {
-    this.eventBus.on('WALLET_UPDATED', () => this.updateWallet());
+    this.eventBus.on('WALLET_UPDATED', () => {
+      this.updateWallet();
+      if (this.isVisible()) this.renderCategoryContent();
+    });
     this.eventBus.on('UPGRADES_UPDATED', () => {
       if (this.isVisible()) this.renderCategoryContent();
     });
@@ -95,44 +97,35 @@ export class ShopModal {
     this.eventBus.on('BOARD_CHARGES_UPDATED', () => {
       if (this.isVisible()) this.renderCategoryContent();
     });
-    this.eventBus.on('OPEN_SHOP', (targetCatOrScreen?: string) => {
-      const validCategories: ShopCategory[] = ['FEATURED', 'UPGRADES', 'BOOSTERS', 'CHARACTERS', 'HOVERBOARDS', 'WORLDS'];
-      if (targetCatOrScreen && validCategories.includes(targetCatOrScreen as ShopCategory)) {
-        this.show(targetCatOrScreen as ShopCategory);
-      } else {
-        this.previousScreen = targetCatOrScreen || null;
-        this.show('FEATURED');
-      }
-    });
-
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isVisible()) {
-        const hasOverlay = this.element.querySelector('#world-confirm-overlay') || this.element.querySelector('#world-showcase-overlay');
-        if (hasOverlay) {
-          e.stopPropagation();
-          this.closeModals();
-        }
-      }
-    });
+    for (const event of ['CHARACTER_EQUIPPED', 'BOARD_EQUIPPED', 'ENVIRONMENT_PREFERENCE_CHANGED',
+      'CHARACTER_UNLOCKED', 'BOARD_UNLOCKED', 'OUTFIT_UNLOCKED', EVENTS.KEYS_UPDATED]) {
+      this.eventBus.on(event, () => {
+        if (this.isVisible()) this.renderCategoryContent();
+      });
+    }
   }
 
-  public show(category: ShopCategory = 'FEATURED'): void {
+  public show(category: ShopCategory = this.currentCategory): void {
     this.currentCategory = category;
     this.updateWallet();
     this.switchCategory(category);
     this.element.classList.remove('hidden');
-    this.element.focus();
   }
 
-  public hide(): void {
-    if (this.element.classList.contains('hidden')) return;
+  public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      this.eventBus.emit(EVENTS.UI_BACK, 'SHOP');
+      return;
+    }
     this.closeModals();
     this.element.classList.add('hidden');
-    const prev = this.previousScreen || 'START';
-    this.previousScreen = null;
-    if (prev === 'START') {
-      this.eventBus.emit('GO_TO_MENU');
-    }
+  }
+
+  public handleEscape(): boolean {
+    if (!this.element.querySelector('#world-confirm-overlay, #world-showcase-overlay')) return false;
+    this.closeModals();
+    this.element.querySelector<HTMLElement>('#shop-close-btn')?.focus();
+    return true;
   }
 
   public isVisible(): boolean {
@@ -322,7 +315,6 @@ export class ShopModal {
     container.querySelectorAll<HTMLButtonElement>('[data-action="unlock-signature"]').forEach((button) => {
       button.addEventListener('click', () => {
         const charId = button.dataset.charId || 'char_modi';
-        this.hide();
         this.eventBus.emit('OPEN_CHARACTERS', { source: 'SHOP', charId });
       });
     });
@@ -1000,7 +992,6 @@ export class ShopModal {
     viewBtns.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const charId = (e.currentTarget as HTMLElement).dataset.viewChar;
-        this.hide();
         this.eventBus.emit('OPEN_CHARACTERS', { source: 'SHOP', charId });
       });
     });
@@ -1071,7 +1062,6 @@ export class ShopModal {
       const viewBtn = card.querySelector(`[data-view-board="${board.id}"]`);
       if (viewBtn) {
         viewBtn.addEventListener('click', () => {
-          this.hide();
           this.eventBus.emit('OPEN_BOARDS', 'SHOP');
         });
       }

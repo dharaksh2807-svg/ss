@@ -123,7 +123,7 @@ export class PauseModal {
       bugReportBtn.style.display = isDeveloperMode() ? 'flex' : 'none';
     }
     this.element.classList.remove('hidden');
-    this.element.focus();
+    (this.element.querySelector<HTMLElement>('#pause-resume-btn') || this.element).focus();
   }
 
   public hide(): void {

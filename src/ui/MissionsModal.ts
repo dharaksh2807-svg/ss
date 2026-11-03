@@ -15,7 +15,6 @@ export class MissionsModal {
   private progression: ProgressionManager;
   private currentTab: MissionsTab = 'MISSIONS';
   private timerInterval: any = null;
-  private previousScreen: string | null = null;
 
   constructor() {
     this.progression = ProgressionManager.getInstance();
@@ -78,10 +77,6 @@ export class MissionsModal {
     });
 
     const bus = EventBus.getInstance();
-    bus.on('OPEN_MISSIONS', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
-    });
 
     bus.on('WALLET_UPDATED', () => {
       this.updateWallet();
@@ -121,20 +116,15 @@ export class MissionsModal {
   }
 
   public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'MISSIONS');
+      return;
+    }
     this.element.classList.add('hidden');
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
-
-    if (restorePrevious) {
-      if (this.previousScreen === 'START') {
-        document.getElementById('start-screen')?.classList.remove('hidden');
-      } else if (this.previousScreen === 'GAMEOVER') {
-        document.getElementById('game-over-modal')?.classList.remove('hidden');
-      }
-    }
-    this.previousScreen = null;
   }
 
   private updateWallet(): void {

@@ -54,7 +54,6 @@ export class CharacterSelectModal {
   private characters: CharacterDefinition[];
   private currentCharacterIndex: number = 0;
   private selectedOutfitId: string = '';
-  private previousScreen: 'START' | 'PAUSE' | 'SHOP' = 'START';
   private progression: ProgressionManager;
   private upgradeManager: UpgradeManager;
 
@@ -164,27 +163,17 @@ export class CharacterSelectModal {
   private setupEventListeners(): void {
     const bus = EventBus.getInstance();
 
-    bus.on('OPEN_CHARACTERS', (payload?: any) => {
-      let source: 'START' | 'PAUSE' | 'SHOP' = 'START';
-      let targetCharId: string | undefined = undefined;
+    for (const event of ['CHARACTER_EQUIPPED', 'CHARACTER_UNLOCKED', 'OUTFIT_UNLOCKED', 'KEYS_UPDATED']) {
+      bus.on(event, () => {
+        if (!this.isRendering) return;
+        this.renderCharacterTabs();
+        this.updateCharacterView();
+      });
+    }
 
-      if (typeof payload === 'string') {
-        if (payload === 'START' || payload === 'PAUSE' || payload === 'SHOP') {
-          source = payload;
-        } else {
-          targetCharId = payload;
-        }
-      } else if (payload && typeof payload === 'object') {
-        source = payload.source || payload.from || 'START';
-        targetCharId = payload.charId;
-      }
-
-      this.previousScreen = source;
-      this.show(targetCharId);
-    });
-
-    bus.on('WALLET_UPDATED', (coins: number) => {
-      this.updateWalletDisplay(coins);
+    bus.on('WALLET_UPDATED', () => {
+      this.updateWalletDisplay(this.upgradeManager.getCoins());
+      if (this.isRendering) this.updateActionButton(this.characters[this.currentCharacterIndex]);
     });
 
     // View Angle Preset Buttons
@@ -247,9 +236,8 @@ export class CharacterSelectModal {
           this.navigateCharacter(-1);
         } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
           this.navigateCharacter(1);
-        } else if (e.key === 'Escape') {
-          this.hide();
-        } else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter' && !(e.target instanceof Element && e.target.closest('button, input, select, textarea'))) {
+          e.preventDefault();
           this.handleActionButtonClick();
         }
       }
@@ -315,6 +303,7 @@ export class CharacterSelectModal {
   }
 
   public show(targetCharId?: string): void {
+    if (this.isRendering) return;
     this.element.classList.remove('hidden');
     this.updateWalletDisplay(this.upgradeManager.getCoins());
 
@@ -339,24 +328,15 @@ export class CharacterSelectModal {
   }
 
   public hide(reopenPrevious: boolean = true): void {
+    if (reopenPrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'CHARACTERS');
+      return;
+    }
     this.element.classList.add('hidden');
     this.isRendering = false;
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
-    }
-
-    // Return to previous screen if requested
-    if (reopenPrevious) {
-      if (this.previousScreen === 'START') {
-        const startScreenEl = document.getElementById('start-screen');
-        if (startScreenEl) startScreenEl.classList.remove('hidden');
-      } else if (this.previousScreen === 'PAUSE') {
-        const pauseModalEl = document.getElementById('pause-modal');
-        if (pauseModalEl) pauseModalEl.classList.remove('hidden');
-      } else if (this.previousScreen === 'SHOP') {
-        EventBus.getInstance().emit('OPEN_SHOP', 'START');
-      }
     }
   }
 

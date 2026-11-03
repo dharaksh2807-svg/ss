@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import {
   EnvironmentManager,
   EnvironmentSelection
@@ -10,7 +10,6 @@ export class EnvironmentSelectModal {
   private element: HTMLElement;
   private envManager = EnvironmentManager.getInstance();
   private selectedPreference: EnvironmentSelection = 'DYNAMIC';
-  private previousScreen: string | null = null;
   private onSelectCallback?: (pref: EnvironmentSelection) => void;
 
   constructor(onSelect?: (pref: EnvironmentSelection) => void) {
@@ -23,7 +22,7 @@ export class EnvironmentSelectModal {
       el.id = 'environment-modal';
       el.className = 'screen-overlay hidden';
       el.innerHTML = `
-        <div class="modal-card glassmorphic env-modal-card" style="max-width: 680px;">
+        <div class="modal-card glassmorphic env-modal-card" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
           <div class="modal-header">
             <h2 class="modal-title">RAILWAY DISTRICTS</h2>
             <p class="tab-subtitle">Choose your runner's world environment or experience continuous dynamic transitions!</p>
@@ -46,10 +45,14 @@ export class EnvironmentSelectModal {
     this.setupListeners();
 
     const bus = EventBus.getInstance();
-    bus.on('OPEN_ENVIRONMENT_SELECT', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || 'START';
-      this.show();
-    });
+    for (const event of ['CHARACTER_UNLOCKED', 'ENVIRONMENT_PREFERENCE_CHANGED', 'WALLET_UPDATED']) {
+      bus.on(event, () => {
+        if (event === 'ENVIRONMENT_PREFERENCE_CHANGED') {
+          this.selectedPreference = this.envManager.getSelectionPreference();
+        }
+        if (!this.element.classList.contains('hidden')) this.render();
+      });
+    }
   }
 
   private setupListeners(): void {
@@ -68,11 +71,12 @@ export class EnvironmentSelectModal {
     this.element.classList.remove('hidden');
   }
 
-  public hide(): void {
-    this.element.classList.add('hidden');
-    if (this.previousScreen === 'START') {
-      document.getElementById('start-screen')?.classList.remove('hidden');
+  public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'WORLDS');
+      return;
     }
+    this.element.classList.add('hidden');
   }
 
   private render(): void {
@@ -194,14 +198,12 @@ export class EnvironmentSelectModal {
       list.querySelectorAll('[data-shop-world]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.hide();
           EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
         });
       });
 
       list.querySelector('[data-action="open-shop-worlds"]')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.hide();
         EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
       });
     }

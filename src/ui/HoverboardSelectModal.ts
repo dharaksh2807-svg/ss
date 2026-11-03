@@ -10,7 +10,7 @@ import { HoverboardMeshBuilder, BuiltHoverboard } from '../hoverboard/Hoverboard
 import { HoverboardManager } from '../hoverboard/HoverboardManager';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { UpgradeManager } from '../player/UpgradeManager';
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 
 export class HoverboardSelectModal {
   private element: HTMLElement;
@@ -54,7 +54,6 @@ export class HoverboardSelectModal {
   // State
   private boards: HoverboardDefinition[];
   private currentBoardIndex: number = 0;
-  private previousScreen: 'START' | 'PAUSE' | 'GAMEOVER' = 'START';
   private progression: ProgressionManager;
   private upgradeManager: UpgradeManager;
   private hoverboardManager: HoverboardManager;
@@ -156,17 +155,21 @@ export class HoverboardSelectModal {
   private setupEventListeners(): void {
     const bus = EventBus.getInstance();
 
-    bus.on('OPEN_BOARDS', (source: 'START' | 'PAUSE' | 'GAMEOVER' = 'START') => {
-      this.previousScreen = source;
-      this.show();
+    for (const event of ['BOARD_EQUIPPED', 'BOARD_UNLOCKED', 'KEYS_UPDATED']) {
+      bus.on(event, () => {
+        if (!this.isRendering) return;
+        this.renderBoardTabs();
+        this.updateBoardView();
+      });
+    }
+
+    bus.on('WALLET_UPDATED', () => {
+      this.updateWalletDisplay(this.upgradeManager.getCoins());
+      if (this.isRendering) this.updateActionButton(this.boards[this.currentBoardIndex]);
     });
 
-    bus.on('WALLET_UPDATED', (coins: number) => {
-      this.updateWalletDisplay(coins);
-    });
-
-    bus.on('BOARD_CHARGES_UPDATED', (charges: number) => {
-      this.updateChargesDisplay(charges);
+    bus.on('BOARD_CHARGES_UPDATED', () => {
+      this.updateChargesDisplay(this.progression.getHoverboardCharges());
     });
 
     if (this.closeBtn) {
@@ -196,9 +199,8 @@ export class HoverboardSelectModal {
           this.navigateBoard(-1);
         } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
           this.navigateBoard(1);
-        } else if (e.key === 'Escape') {
-          this.hide();
-        } else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter' && !(e.target instanceof Element && e.target.closest('button, input, select, textarea'))) {
+          e.preventDefault();
           this.handleActionButtonClick();
         }
       }
@@ -267,6 +269,7 @@ export class HoverboardSelectModal {
   }
 
   public show(): void {
+    if (this.isRendering) return;
     this.element.classList.remove('hidden');
 
     // Update wallet and charges
@@ -293,25 +296,15 @@ export class HoverboardSelectModal {
   }
 
   public hide(reopenPrevious: boolean = true): void {
+    if (reopenPrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'BOARDS');
+      return;
+    }
     this.element.classList.add('hidden');
     this.isRendering = false;
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
-    }
-
-    // Return to previous screen if requested
-    if (reopenPrevious) {
-      if (this.previousScreen === 'START') {
-        const startScreenEl = document.getElementById('start-screen');
-        if (startScreenEl) startScreenEl.classList.remove('hidden');
-      } else if (this.previousScreen === 'PAUSE') {
-        const pauseModalEl = document.getElementById('pause-modal');
-        if (pauseModalEl) pauseModalEl.classList.remove('hidden');
-      } else if (this.previousScreen === 'GAMEOVER') {
-        const gameOverEl = document.getElementById('game-over-modal');
-        if (gameOverEl) gameOverEl.classList.remove('hidden');
-      }
     }
   }
 

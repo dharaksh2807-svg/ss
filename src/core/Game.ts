@@ -13,7 +13,8 @@ import { StartScreen } from '../ui/StartScreen';
 import { PauseModal } from '../ui/PauseModal';
 import { GameOverModal } from '../ui/GameOverModal';
 import { SettingsModal } from '../ui/SettingsModal';
-import { ShopModal } from '../ui/ShopModal';
+import { NavigationCoordinator } from '../ui/NavigationCoordinator';
+import { ShopCategory, ShopModal } from '../ui/ShopModal';
 import { UpgradeManager } from '../player/UpgradeManager';
 import { MissionsModal } from '../ui/MissionsModal';
 import { EventSelectModal } from '../ui/EventSelectModal';
@@ -74,6 +75,7 @@ export class Game {
   private gameOverModal: GameOverModal;
   private settingsModal: SettingsModal;
   private shopModal: ShopModal;
+  private navigation: NavigationCoordinator;
   private missionsModal: MissionsModal;
   private eventSelectModal: EventSelectModal;
   private characterSelectModal: CharacterSelectModal;
@@ -164,6 +166,7 @@ export class Game {
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
     this.environmentSelectModal = new EnvironmentSelectModal();
+    this.navigation = this.setupNavigation();
     this.reviveManager = ReviveManager.getInstance();
     this.reviveModal = new ReviveModal();
     this.dailyChallengeModal = new DailyChallengeModal();
@@ -294,7 +297,8 @@ export class Game {
         } else {
           this.player.handleInput(action);
         }
-      } else if (this.lifecycleState === 'PAUSED' && action === 'PAUSE') {
+      } else if (this.lifecycleState === 'PAUSED' && action === 'PAUSE' && !this.navigation.hasOverlay
+        && !document.getElementById('pause-modal')?.classList.contains('hidden')) {
         this.resume();
       }
     });
@@ -498,7 +502,12 @@ export class Game {
       if (this.lifecycleState === 'MENU') {
         const environmentId = EnvironmentManager.getInstance().getStartingEnvironment();
         const theme = EnvironmentRegistry.getInstance().get(environmentId);
-        this.trackManager.setEnvironment(theme.id);
+        // setEnvironment persists and re-emits this preference. Only change a different
+        // fixed district; Dynamic must keep its saved selection until the next run.
+        if (this.progression.getSelectedTheme() !== 'DYNAMIC'
+          && this.trackManager.getActiveEnvironment() !== theme.id) {
+          this.trackManager.setEnvironment(theme.id);
+        }
         this.worldScene.applyEnvironment(theme);
         this.soundManager.setEnvironmentAmbience(theme.id);
       }
@@ -525,6 +534,7 @@ export class Game {
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
     if (this.isRestartInProgress && !isRetry) return;
+    this.navigation.clear();
 
     if (this.gameOverTimeoutId) {
       clearTimeout(this.gameOverTimeoutId);
@@ -621,7 +631,7 @@ export class Game {
     this.gameOverModal.hide();
     this.devBugReportModal.hide();
     this.devBugReportModal.setAutoOpenCrashReport(false);
-    this.shopModal.hide();
+    this.shopModal.hide(false);
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);
@@ -630,7 +640,7 @@ export class Game {
     this.dailyRewardModal.hide();
     this.dailyChallengeModal.hide(false);
     this.photoModeModal.hide();
-    this.environmentSelectModal.hide();
+    this.environmentSelectModal.hide(false);
     this.practiceModal.hide(false);
     this.practiceController.exit();
 
@@ -658,6 +668,40 @@ export class Game {
     EventBus.getInstance().emit(EVENTS.RUN_STARTED, this.activeGameMode);
   }
 
+  private setupNavigation(): NavigationCoordinator {
+    const nav = new NavigationCoordinator(EventBus.getInstance(), () => {
+      if (this.lifecycleState === 'MENU') return 'START';
+      if (this.lifecycleState === 'PAUSED') return 'PAUSE';
+      if (this.lifecycleState === 'GAMEOVER') return 'GAMEOVER';
+      return undefined;
+    });
+    const element = (id: string) => document.getElementById(id)!;
+    nav.register('START', { element: element('start-screen'), show: () => this.startScreen.show(), hide: () => this.startScreen.hide() });
+    nav.register('PAUSE', { element: element('pause-modal'), show: () => this.pauseModal.show(), hide: () => this.pauseModal.hide() });
+    // Restoring the result screen must not run show()'s result/reward presentation again.
+    nav.register('GAMEOVER', { element: element('game-over-modal'), show: () => this.gameOverModal.restore(), hide: () => this.gameOverModal.hide() });
+    nav.register('SHOP', {
+      element: element('shop-modal'), show: category => this.shopModal.show(category),
+      hide: () => this.shopModal.hide(false), escape: () => this.shopModal.handleEscape()
+    }, 'OPEN_SHOP', value => {
+      const categories: ShopCategory[] = ['FEATURED', 'UPGRADES', 'BOOSTERS', 'CHARACTERS', 'HOVERBOARDS', 'WORLDS'];
+      return categories.includes(value) ? value : 'FEATURED';
+    });
+    nav.register('CHARACTERS', {
+      element: element('character-select-modal'), show: charId => this.characterSelectModal.show(charId),
+      hide: () => this.characterSelectModal.hide(false)
+    }, 'OPEN_CHARACTERS', value => typeof value === 'object' ? value?.charId
+      : ['START', 'PAUSE', 'SHOP', 'GAMEOVER'].includes(value) ? undefined : value);
+    nav.register('BOARDS', { element: element('hoverboard-select-modal'), show: () => this.hoverboardSelectModal.show(), hide: () => this.hoverboardSelectModal.hide(false) }, 'OPEN_BOARDS');
+    nav.register('WORLDS', { element: element('environment-modal'), show: () => this.environmentSelectModal.show(), hide: () => this.environmentSelectModal.hide(false) }, 'OPEN_ENVIRONMENT_SELECT');
+    nav.register('MISSIONS', { element: element('missions-modal'), show: () => this.missionsModal.show(), hide: () => this.missionsModal.hide(false) }, 'OPEN_MISSIONS');
+    nav.register('SETTINGS', {
+      element: element('settings-modal'), show: () => this.settingsModal.show(),
+      hide: () => this.settingsModal.hide(false), escape: () => this.settingsModal.handleEscape()
+    }, 'OPEN_SETTINGS');
+    return nav;
+  }
+
   public pause(): void {
     if (this.lifecycleState !== 'PLAYING') return;
     this.lifecycleState = 'PAUSED';
@@ -678,6 +722,11 @@ export class Game {
   }
 
   public goToMenu(): void {
+    this.navigation.clear();
+    if (this.gameOverTimeoutId) clearTimeout(this.gameOverTimeoutId);
+    if (this.deathTimeoutId) clearTimeout(this.deathTimeoutId);
+    this.gameOverTimeoutId = null;
+    this.deathTimeoutId = null;
     this.lifecycleState = 'MENU';
     this.soundManager.setMusicState('LOBBY');
     this.cameraController.setLobbyMode(true);
@@ -689,14 +738,14 @@ export class Game {
     this.gameOverModal.hide();
     this.devBugReportModal.hide();
     this.devBugReportModal.setAutoOpenCrashReport(false);
-    this.shopModal.hide();
-    this.missionsModal.hide();
+    this.shopModal.hide(false);
+    this.missionsModal.hide(false);
     this.eventSelectModal.hide();
-    this.characterSelectModal.hide();
-    this.hoverboardSelectModal.hide();
+    this.characterSelectModal.hide(false);
+    this.hoverboardSelectModal.hide(false);
     this.profileModal.hide();
     this.dailyRewardModal.hide();
-    this.environmentSelectModal.hide();
+    this.environmentSelectModal.hide(false);
     this.practiceModal.hide();
     this.practiceController.exit();
     this.photoModeModal.hide();
@@ -736,7 +785,7 @@ export class Game {
     this.startScreen.hide();
     this.pauseModal.hide();
     this.gameOverModal.hide();
-    this.shopModal.hide();
+    this.shopModal.hide(false);
     this.missionsModal.hide(false);
     this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);

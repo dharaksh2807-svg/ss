@@ -216,7 +216,6 @@ export class SettingsModal {
     this.setupBackupRestore();
 
     // External EventBus Sync
-    EventBus.getInstance().on('OPEN_SETTINGS', () => this.show());
     EventBus.getInstance().on(EVENTS.RUNNING_STYLE_CHANGED, () => {
       this.refreshRunningStyleUI();
     });
@@ -306,11 +305,6 @@ export class SettingsModal {
         this.stopListeningForKey();
         this.refreshKeyBindingsUI();
         return;
-      }
-
-      // Close modal on Escape if not rebinding
-      if (e.key === 'Escape') {
-        this.hide();
       }
     });
 
@@ -980,12 +974,22 @@ export class SettingsModal {
     }
   }
 
+  public handleEscape(): boolean {
+    if (!this.activeListeningAction) return false;
+    this.stopListeningForKey();
+    return true;
+  }
+
   public show(): void {
     this.refreshAllUI();
     this.element.classList.remove('hidden');
   }
 
-  public hide(): void {
+  public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'SETTINGS');
+      return;
+    }
     this.stopListeningForKey();
     this.element.classList.add('hidden');
   }

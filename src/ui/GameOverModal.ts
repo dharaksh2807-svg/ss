@@ -262,20 +262,17 @@ export class GameOverModal {
 
     const shopBtn = this.element.querySelector('#game-over-shop-btn');
     shopBtn?.addEventListener('click', () => {
-      this.hide();
       EventBus.getInstance().emit('OPEN_SHOP', 'GAMEOVER');
     });
 
     const missionsBtn = this.element.querySelector('#game-over-missions-btn');
     missionsBtn?.addEventListener('click', () => {
-      this.hide();
       EventBus.getInstance().emit('OPEN_MISSIONS', 'GAMEOVER');
     });
 
     const charsBtn = this.element.querySelector('#game-over-characters-btn');
     charsBtn?.addEventListener('click', () => {
-      this.hide();
-      EventBus.getInstance().emit('OPEN_CHARACTERS', 'START');
+      EventBus.getInstance().emit('OPEN_CHARACTERS', 'GAMEOVER');
     });
 
     const replayBtn = this.element.querySelector('#game-over-replay-btn');
@@ -310,10 +307,6 @@ export class GameOverModal {
             e.stopPropagation();
             this.handlePlayAgain();
           }
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopPropagation();
-          this.handleMainMenu();
         }
       };
       window.addEventListener('keydown', this.keydownBound);
@@ -721,6 +714,10 @@ export class GameOverModal {
         }
       });
     });
+  }
+
+  public restore(): void {
+    this.element.classList.remove('hidden');
   }
 
   public hide(): void {

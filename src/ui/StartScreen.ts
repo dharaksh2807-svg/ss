@@ -474,14 +474,12 @@ export class StartScreen {
     // Navigation dock items
     if (this.charactersBtn) {
       this.charactersBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_CHARACTERS', 'START');
       });
     }
 
     if (this.boardsBtn) {
       this.boardsBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_BOARDS', 'START');
       });
     }
@@ -494,21 +492,18 @@ export class StartScreen {
 
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_SHOP', 'START');
       });
     }
 
     if (this.missionsBtn) {
       this.missionsBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_MISSIONS', 'START');
       });
     }
 
     if (this.achievementsBtn) {
       this.achievementsBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_MISSIONS', 'START');
       });
     }
@@ -550,7 +545,6 @@ export class StartScreen {
     const coinsPill = document.getElementById('lobby-coins-pill');
     if (coinsPill) {
       coinsPill.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_SHOP', 'START');
       });
     }
@@ -558,7 +552,6 @@ export class StartScreen {
     const boardsPill = document.getElementById('lobby-boards-pill');
     if (boardsPill) {
       boardsPill.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_BOARDS', 'START');
       });
     }
@@ -573,7 +566,6 @@ export class StartScreen {
 
     if (this.activeMissionEl) {
       this.activeMissionEl.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_MISSIONS', 'START');
       });
     }
@@ -597,7 +589,6 @@ export class StartScreen {
     const equippedBadge = document.getElementById('lobby-equipped-badge');
     if (equippedBadge) {
       equippedBadge.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_CHARACTERS', 'START');
       });
     }
@@ -614,7 +605,6 @@ export class StartScreen {
     if (custRunnerBtn) {
       custRunnerBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.hide();
         this.eventBus.emit('OPEN_CHARACTERS', 'START');
       });
     }
@@ -623,7 +613,6 @@ export class StartScreen {
     if (custBoardBtn) {
       custBoardBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.hide();
         this.eventBus.emit('OPEN_BOARDS', 'START');
       });
     }
@@ -828,6 +817,7 @@ export class StartScreen {
   public show(): void {
     this.updateState();
     this.element.classList.remove('hidden');
+    this.playBtn.focus({ preventScroll: true });
   }
 
   public hide(): void {

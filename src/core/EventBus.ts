@@ -48,6 +48,8 @@ export class EventBus {
 }
 
 export const EVENTS = {
+  // Dismiss the current UI only; GO_TO_MENU is the explicit Home lifecycle action.
+  UI_BACK: 'UI_BACK',
   GAME_START: 'GAME_START',
   GAME_PAUSE: 'GAME_PAUSE',
   GAME_RESUME: 'GAME_RESUME',
