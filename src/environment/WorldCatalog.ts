@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -57,6 +57,12 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     description: 'An abandoned subterranean transit system gripped by chilling tension, decaying Victorian-modern platforms, flickering cathode fluorescents, shadowy apparitions, and silent ghost trains.', rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 9000, keyCost: null, previewReference: 'environment:PHANTOM_LINE',
     implemented: true, available: true, dynamicEligible: true, icon: '👻', accentColor: '#67e8f9'
+  },
+  {
+    id: 'HAUNTED_CARNIVAL', environmentId: 'HAUNTED_CARNIVAL', displayName: 'Haunted Carnival',
+    description: 'An extravagant gothic theme park railway flanked by towering castles, glowing jack-o\'-lantern shrines, creepy carnival big tops, and an immense rotating haunted Ferris wheel.', rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 10500, keyCost: null, previewReference: 'environment:HAUNTED_CARNIVAL',
+    implemented: true, available: true, dynamicEligible: true, icon: '🎃', accentColor: '#f97316'
   }
 ];
 

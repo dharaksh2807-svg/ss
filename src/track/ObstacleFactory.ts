@@ -1015,7 +1015,7 @@ export class ObstacleFactory {
     if (!variant) {
       if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT') {
         variant = 'STREAMLINED_EXPRESS';
-      } else if (themeId === 'PHANTOM_LINE') {
+      } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL') {
         variant = 'CLASSIC_TRANSIT';
       } else {
         const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
@@ -1032,7 +1032,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'PHANTOM_LINE') {
+    if (themeId === 'HAUNTED_CARNIVAL') {
+      accentColor = 0xf97316;
+    } else if (themeId === 'PHANTOM_LINE') {
       accentColor = 0x67e8f9;
     } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
       accentColor = 0xf97316;
@@ -1053,19 +1055,22 @@ export class ObstacleFactory {
     const isAbyssal = themeId === 'ABYSSAL_GLASSLINE';
     const isDoomsday = themeId === 'DOOMSDAY_LAST_TRANSIT';
     const isPhantom = themeId === 'PHANTOM_LINE';
-    const trainColor = isPhantom
-      ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
-      : (isDoomsday
-        ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
-        : (isAbyssal
-          ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-          : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))));
+    const isHaunted = themeId === 'HAUNTED_CARNIVAL';
+    const trainColor = isHaunted
+      ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
+      : (isPhantom
+        ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+        : (isDoomsday
+          ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
+          : (isAbyssal
+            ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
+            : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex)))));
     const bodyMat = new THREE.MeshStandardMaterial({
       color: trainColor,
-      roughness: isPhantom ? 0.65 : (isDoomsday ? 0.65 : (isAbyssal ? 0.20 : (isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)))))),
-      metalness: isPhantom ? 0.65 : (isDoomsday ? 0.70 : (isAbyssal ? 0.70 : (isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)))))),
+      roughness: isHaunted ? 0.35 : (isPhantom ? 0.65 : (isDoomsday ? 0.65 : (isAbyssal ? 0.20 : (isOrbital ? 0.20 : (isNeon ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))))))),
+      metalness: isHaunted ? 0.65 : (isPhantom ? 0.65 : (isDoomsday ? 0.70 : (isAbyssal ? 0.70 : (isOrbital ? 0.65 : (isNeon ? 0.78 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))))))),
       // Subtle livery self-glow so body reads under any ambient level
-      emissive: new THREE.Color(isPhantom ? 0x67e8f9 : (isDoomsday ? 0xf97316 : (isAbyssal ? 0x22d3ee : (isOrbital ? 0x00f5ff : colorHex)))).multiplyScalar(isPhantom ? 0.05 : (isDoomsday ? 0.05 : (isAbyssal ? 0.05 : (isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04))))),
+      emissive: new THREE.Color(isHaunted ? 0xf97316 : (isPhantom ? 0x67e8f9 : (isDoomsday ? 0xf97316 : (isAbyssal ? 0x22d3ee : (isOrbital ? 0x00f5ff : colorHex))))).multiplyScalar(isHaunted ? 0.05 : (isPhantom ? 0.05 : (isDoomsday ? 0.05 : (isAbyssal ? 0.05 : (isOrbital ? 0.05 : (isNeon ? 0.08 : 0.04)))))),
       emissiveIntensity: 1.0
     });
     this.curvedManager.applyCurvature(bodyMat);
@@ -1300,6 +1305,61 @@ export class ObstacleFactory {
         const skirt = new THREE.Mesh(ironSkirtGeo, ironSkirtMat);
         skirt.position.set(sideX, 0.44, 0);
         group.add(skirt);
+      });
+    }
+
+    // 12. Theme-Specific Haunted Carnival Gargoyle / Bat-Wing Cowcatcher & Glowing Pumpkin Headlight
+    if (isHaunted) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const gothicPlowGroup = new THREE.Group();
+        const ironMat = new THREE.MeshStandardMaterial({
+          color: 0x180828,
+          roughness: 0.65,
+          metalness: 0.80
+        });
+        this.curvedManager.applyCurvature(ironMat);
+
+        // Gothic bat-wing styled arched cowcatcher plow
+        const wingGeo = new THREE.BoxGeometry(w * 0.46, 0.70, 0.40);
+        [-w * 0.23, w * 0.23].forEach((px, idx) => {
+          const wing = new THREE.Mesh(wingGeo, ironMat);
+          wing.position.set(px, 0.42, bodyLength * 0.5 + noseLength * 0.85);
+          wing.rotation.y = idx === 0 ? 0.38 : -0.38;
+          gothicPlowGroup.add(wing);
+        });
+
+        // Central sinister carved jack-o'-lantern amber cyclops headlight atop cab nose
+        const pumpkinHeadlightGeo = new THREE.SphereGeometry(0.38, 10, 10);
+        const pumpkinHeadlightMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+        this.curvedManager.applyCurvature(pumpkinHeadlightMat);
+        const headlight = new THREE.Mesh(pumpkinHeadlightGeo, pumpkinHeadlightMat);
+        headlight.position.set(0, 2.05, bodyLength * 0.5 + noseLength * 0.98);
+        gothicPlowGroup.add(headlight);
+
+        // Radiant violet marquee trim line
+        const trimGeo = new THREE.BoxGeometry(w * 0.86, 0.12, 0.14);
+        const trimMat = new THREE.MeshBasicMaterial({ color: 0xc084fc });
+        this.curvedManager.applyCurvature(trimMat);
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.position.set(0, 1.35, bodyLength * 0.5 + noseLength * 0.96);
+        gothicPlowGroup.add(trim);
+
+        group.add(gothicPlowGroup);
+      }
+
+      // Ornate gothic wrought-iron roof cresting along top edge
+      const crestGeo = new THREE.BoxGeometry(0.06, 0.22, bodyLength * 0.92);
+      const crestMat = new THREE.MeshStandardMaterial({
+        color: 0x180828,
+        roughness: 0.70,
+        metalness: 0.85
+      });
+      this.curvedManager.applyCurvature(crestMat);
+      [-halfW + 0.15, halfW - 0.15].forEach((sideX) => {
+        const crest = new THREE.Mesh(crestGeo, crestMat);
+        crest.position.set(sideX, h + 0.12, 0);
+        group.add(crest);
       });
     }
 
@@ -2558,7 +2618,7 @@ export class ObstacleFactory {
     themeId?: string
   ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
-    const movingColor = themeId === 'PHANTOM_LINE' ? 0x0f172a : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917 : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443 : (themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex))));
+    const movingColor = themeId === 'HAUNTED_CARNIVAL' ? 0x1f1135 : (themeId === 'PHANTOM_LINE' ? 0x0f172a : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917 : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443 : (themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex)))));
     const group = this.createTrain(length, false, movingColor, undefined, themeId);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 
@@ -2794,9 +2854,12 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'PHANTOM_LINE') {
+      if (themeId === 'HAUNTED_CARNIVAL') {
+        const carnivalColors = [0x1f1135, 0x2e1065, 0x381e09];
+        carColor = carnivalColors[i % carnivalColors.length];
+      } else if (themeId === 'PHANTOM_LINE') {
         const phantomColors = [0x0f172a, 0x1e293b, 0x134e4a];
         carColor = phantomColors[i % phantomColors.length];
       } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
@@ -2814,7 +2877,9 @@ export class ObstacleFactory {
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'PHANTOM_LINE') {
+      if (themeId === 'HAUNTED_CARNIVAL') {
+        accentColor = 0xf97316;
+      } else if (themeId === 'PHANTOM_LINE') {
         accentColor = 0x67e8f9;
       } else if (themeId === 'DOOMSDAY_LAST_TRANSIT') {
         accentColor = 0xf97316;
@@ -2830,12 +2895,13 @@ export class ObstacleFactory {
       }
 
       const isPhantom = themeId === 'PHANTOM_LINE';
+      const isHaunted = themeId === 'HAUNTED_CARNIVAL';
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: variant === 'CLASSIC_TRANSIT' && !isPhantom ? 0xd0d5dd : carColor,
-        roughness: isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))),
-        metalness: isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))),
+        color: variant === 'CLASSIC_TRANSIT' && !isPhantom && !isHaunted ? 0xd0d5dd : carColor,
+        roughness: isHaunted ? 0.35 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)))),
+        metalness: isHaunted ? 0.65 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)))),
         // Subtle livery self-glow so body reads under any ambient level
-        emissive: new THREE.Color(carColor).multiplyScalar(isPhantom ? 0.05 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04)))),
+        emissive: new THREE.Color(carColor).multiplyScalar(isHaunted ? 0.05 : (isPhantom ? 0.05 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04))))),
         emissiveIntensity: 1.0
       });
       this.curvedManager.applyCurvature(bodyMat);
@@ -3056,6 +3122,61 @@ export class ObstacleFactory {
           const skirt = new THREE.Mesh(ironSkirtGeo, ironSkirtMat);
           skirt.position.set(sideX, 0.44, 0);
           carriageGroup.add(skirt);
+        });
+      }
+
+      // Theme-Specific Haunted Carnival Gargoyle / Bat-Wing Cowcatcher & Glowing Pumpkin Headlight
+      if (themeId === 'HAUNTED_CARNIVAL') {
+        const halfW = w * 0.5;
+        if (!comp.hasRamp && comp.type === 'LOCOMOTIVE_CAB') {
+          const gothicPlowGroup = new THREE.Group();
+          const ironMat = new THREE.MeshStandardMaterial({
+            color: 0x180828,
+            roughness: 0.65,
+            metalness: 0.80
+          });
+          this.curvedManager.applyCurvature(ironMat);
+
+          // Gothic bat-wing styled arched cowcatcher plow
+          const wingGeo = new THREE.BoxGeometry(w * 0.46, 0.70, 0.40);
+          [-w * 0.23, w * 0.23].forEach((px, idx) => {
+            const wing = new THREE.Mesh(wingGeo, ironMat);
+            wing.position.set(px, 0.42, comp.length * 0.5 + noseLength * 0.85);
+            wing.rotation.y = idx === 0 ? 0.38 : -0.38;
+            gothicPlowGroup.add(wing);
+          });
+
+          // Central sinister carved jack-o'-lantern amber cyclops headlight atop cab nose
+          const pumpkinHeadlightGeo = new THREE.SphereGeometry(0.38, 10, 10);
+          const pumpkinHeadlightMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+          this.curvedManager.applyCurvature(pumpkinHeadlightMat);
+          const headlight = new THREE.Mesh(pumpkinHeadlightGeo, pumpkinHeadlightMat);
+          headlight.position.set(0, 2.05, comp.length * 0.5 + noseLength * 0.98);
+          gothicPlowGroup.add(headlight);
+
+          // Radiant violet marquee trim line
+          const trimGeo = new THREE.BoxGeometry(w * 0.86, 0.12, 0.14);
+          const trimMat = new THREE.MeshBasicMaterial({ color: 0xc084fc });
+          this.curvedManager.applyCurvature(trimMat);
+          const trim = new THREE.Mesh(trimGeo, trimMat);
+          trim.position.set(0, 1.35, comp.length * 0.5 + noseLength * 0.96);
+          gothicPlowGroup.add(trim);
+
+          carriageGroup.add(gothicPlowGroup);
+        }
+
+        // Ornate gothic wrought-iron roof cresting along top edge
+        const crestGeo = new THREE.BoxGeometry(0.06, 0.22, comp.length * 0.92);
+        const crestMat = new THREE.MeshStandardMaterial({
+          color: 0x180828,
+          roughness: 0.70,
+          metalness: 0.85
+        });
+        this.curvedManager.applyCurvature(crestMat);
+        [-halfW + 0.15, halfW - 0.15].forEach((sideX) => {
+          const crest = new THREE.Mesh(crestGeo, crestMat);
+          crest.position.set(sideX, h + 0.12, 0);
+          carriageGroup.add(crest);
         });
       }
 

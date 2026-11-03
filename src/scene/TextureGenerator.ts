@@ -3918,6 +3918,302 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Weathered Gothic Ashlar Stone & Cemetery Masonry Texture
+   */
+  public static getHauntedGothicStoneTexture(): THREE.Texture {
+    return this.getOrCreate('haunted_gothic_stone', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep dark violet-slate masonry base
+      ctx.fillStyle = '#181226';
+      ctx.fillRect(0, 0, size, size);
+
+      // Carved stone blocks
+      const blockH = 32;
+      const blockW = 64;
+      for (let y = 0; y < size; y += blockH) {
+        const row = Math.floor(y / blockH);
+        const offsetX = (row % 2 === 0) ? 0 : blockW * 0.5;
+        for (let x = -blockW; x < size + blockW; x += blockW) {
+          const bx = x + offsetX;
+          ctx.fillStyle = ((row + Math.floor(bx / blockW)) % 2 === 0) ? '#221935' : '#1b132a';
+          ctx.fillRect(bx + 1, y + 1, blockW - 2, blockH - 2);
+
+          // Cracked fissure / moss detail
+          if ((row + bx) % 3 === 0) {
+            ctx.strokeStyle = '#0e0919';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(bx + 6, y + 4);
+            ctx.lineTo(bx + 18, y + 16);
+            ctx.lineTo(bx + 26, y + 26);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Deep dark mortar borders
+      ctx.strokeStyle = '#0a0512';
+      ctx.lineWidth = 2;
+      for (let y = 0; y <= size; y += blockH) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Intricately Carved Glowing Jack-o'-Lantern Face Texture
+   */
+  public static getHauntedJackOLanternTexture(): THREE.Texture {
+    return this.getOrCreate('haunted_jack_o_lantern', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Vibrant pumpkin orange ribbed rind base
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(0, 0, size, size);
+
+      // Darker vertical pumpkin rind grooves
+      ctx.fillStyle = '#c2410c';
+      for (let x = 0; x < size; x += 32) {
+        ctx.fillRect(x, 0, 6, size);
+      }
+
+      // Glowing carved face interior (luminous gold/amber)
+      ctx.fillStyle = '#fbbf24';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+
+      // Triangular carved left eye
+      ctx.beginPath();
+      ctx.moveTo(60, 80);
+      ctx.lineTo(100, 80);
+      ctx.lineTo(80, 50);
+      ctx.closePath();
+      ctx.fill();
+
+      // Triangular carved right eye
+      ctx.beginPath();
+      ctx.moveTo(156, 80);
+      ctx.lineTo(196, 80);
+      ctx.lineTo(176, 50);
+      ctx.closePath();
+      ctx.fill();
+
+      // Carved nose triangle
+      ctx.beginPath();
+      ctx.moveTo(118, 115);
+      ctx.lineTo(138, 115);
+      ctx.lineTo(128, 95);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sinister jagged grinning mouth with carved teeth
+      ctx.beginPath();
+      ctx.moveTo(45, 155);
+      ctx.lineTo(75, 175);
+      ctx.lineTo(95, 155);
+      ctx.lineTo(115, 180);
+      ctx.lineTo(141, 155);
+      ctx.lineTo(161, 180);
+      ctx.lineTo(181, 155);
+      ctx.lineTo(211, 160);
+      ctx.lineTo(195, 195);
+      ctx.lineTo(165, 190);
+      ctx.lineTo(145, 205);
+      ctx.lineTo(111, 205);
+      ctx.lineTo(91, 190);
+      ctx.lineTo(61, 195);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Spooky Carnival Big-Top Striped Canvas Texture
+   */
+  public static getHauntedCarnivalStripeTexture(): THREE.Texture {
+    return this.getOrCreate('haunted_carnival_stripe', () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Alternating deep gothic purple, midnight black, and pumpkin orange vertical stripes
+      const stripeW = 32;
+      const colors = ['#4c1d95', '#0f051d', '#ea580c', '#0f051d'];
+      for (let x = 0; x < size; x += stripeW) {
+        const colorIdx = Math.floor(x / stripeW) % colors.length;
+        ctx.fillStyle = colors[colorIdx];
+        ctx.fillRect(x, 0, stripeW, size);
+
+        // Subtle fabric weave texture
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+        for (let y = 0; y < size; y += 4) {
+          ctx.fillRect(x, y, stripeW, 1);
+        }
+      }
+
+      // Shadow seam between stripes
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      for (let x = 0; x < size; x += stripeW) {
+        ctx.fillRect(x, 0, 2, size);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Vintage Distressed Carnival & Cemetery Directional Signboard Textures
+   */
+  public static getHauntedSpookySignTexture(variant: number = 0): THREE.Texture {
+    const key = `haunted_spooky_sign_${variant}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Weathered dark mahogany / aged wood backing
+      ctx.fillStyle = '#1c0f24';
+      ctx.fillRect(0, 0, w, h);
+
+      // Ornate gothic double border
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Corner carnival rosettes
+      [[10, 10], [w - 10, 10], [10, h - 10], [w - 10, h - 10]].forEach(([cx, cy]) => {
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Typography
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (variant === 0) {
+        ctx.fillStyle = '#f97316';
+        ctx.font = 'bold 30px "Trebuchet MS", sans-serif';
+        ctx.fillText('★ HAUNTED CARNIVAL ★', w * 0.5, h * 0.38);
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillText('ENTER IF YOU DARE // NO RETURN', w * 0.5, h * 0.72);
+      } else if (variant === 1) {
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 32px "Trebuchet MS", sans-serif';
+        ctx.fillText('TICKETS & ADMISSION', w * 0.5, h * 0.38);
+        ctx.fillStyle = '#ea580c';
+        ctx.font = 'bold 17px "Courier New", monospace';
+        ctx.fillText('ONE-WAY PASSENGER FARE // 1 SOUL', w * 0.5, h * 0.72);
+      } else {
+        ctx.fillStyle = '#f97316';
+        ctx.font = 'bold 24px "Trebuchet MS", sans-serif';
+        ctx.fillText('FUNHOUSE ➔  GHOST TRAIN ➔', w * 0.5, h * 0.38);
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillText('GRAVEYARD CRYPT ➔ ALL ABOARD', w * 0.5, h * 0.72);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Pointed Gothic Arched Stained Glass Window with Candle Light Texture
+   */
+  public static getHauntedGothicWindowTexture(): THREE.Texture {
+    return this.getOrCreate('haunted_gothic_window', () => {
+      const w = 128;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark stone background
+      ctx.fillStyle = '#110c1c';
+      ctx.fillRect(0, 0, w, h);
+
+      // Stained glass luminous opening
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(16, h - 16);
+      ctx.lineTo(w - 16, h - 16);
+      ctx.lineTo(w - 16, 80);
+      if (typeof ctx.quadraticCurveTo === 'function') {
+        ctx.quadraticCurveTo(w * 0.5, 8, 16, 80);
+      } else {
+        ctx.lineTo(w * 0.5, 8);
+        ctx.lineTo(16, 80);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Violet glass accents in upper arch
+      ctx.fillStyle = '#7e22ce';
+      ctx.beginPath();
+      ctx.arc(w * 0.5, 60, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stone/iron tracery mullions
+      ctx.strokeStyle = '#1a102b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.5, 20);
+      ctx.lineTo(w * 0.5, h - 16);
+      ctx.moveTo(16, 120);
+      ctx.lineTo(w - 16, 120);
+      ctx.moveTo(16, 180);
+      ctx.lineTo(w - 16, 180);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
 }
 
 

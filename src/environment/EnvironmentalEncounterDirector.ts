@@ -29,7 +29,8 @@ export type AtmospherePreset =
   | 'ORBITAL_CELESTIAL_DAWN'
   | 'ABYSSAL_BIOLUMINESCENT_CHASM'
   | 'DOOMSDAY_FIRESTORM_FALLOUT'
-  | 'PHANTOM_SPECTRAL_VOID';
+  | 'PHANTOM_SPECTRAL_VOID'
+  | 'CARNIVAL_HAUNTED_NIGHT';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -407,6 +408,10 @@ export class EnvironmentalEncounterDirector {
 
     if (districtId === 'PHANTOM_LINE') {
       return 'PHANTOM_SPECTRAL_VOID';
+    }
+
+    if (districtId === 'HAUNTED_CARNIVAL') {
+      return 'CARNIVAL_HAUNTED_NIGHT';
     }
 
     // Check if an upcoming or recent landmark prefers an atmosphere

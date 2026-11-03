@@ -24,6 +24,7 @@ export class WorldScene {
   public abyssalSkyline: THREE.Group | null = null;
   public doomsdaySkyline: THREE.Group | null = null;
   public phantomSkyline: THREE.Group | null = null;
+  public hauntedCarnivalSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -31,6 +32,7 @@ export class WorldScene {
   private abyssalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private doomsdaySkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private phantomSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private hauntedCarnivalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
@@ -45,6 +47,10 @@ export class WorldScene {
   private phantomGhostTrain: THREE.Group | null = null;
   private phantomFlickerLamps: THREE.Mesh[] = [];
   private phantomFlickerTime: number = 0;
+  private hauntedFerrisWheel: THREE.Group | null = null;
+  private hauntedFerrisGondolas: THREE.Mesh[] = [];
+  private hauntedAnimatedBats: THREE.Group[] = [];
+  private hauntedBatTime: number = 0;
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
@@ -1238,6 +1244,203 @@ export class WorldScene {
 
     group.add(this.phantomSkyline);
 
+    // =========================================================================
+    // 7. HAUNTED CARNIVAL SKYLINE: Rotating Haunted Ferris Wheel, Gothic Castle
+    //    Spires, Giant Harvest Moon & Animated Flying Bat Silhouettes
+    // =========================================================================
+    this.hauntedFerrisGondolas = [];
+    this.hauntedAnimatedBats = [];
+    const carnivalSkyline = new THREE.Group();
+    this.hauntedCarnivalSkyline = carnivalSkyline;
+    this.hauntedCarnivalSkylineMaterial = this.skylineMaterial.clone();
+    this.hauntedCarnivalSkylineMaterial.color.setHex(0x1a0b2e);
+    this.hauntedCarnivalSkylineMaterial.transparent = true;
+    this.hauntedCarnivalSkylineMaterial.opacity = 0.88;
+
+    const carnivalMat = this.hauntedCarnivalSkylineMaterial;
+    const carnivalGlowAmber = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+    const carnivalGlowViolet = new THREE.MeshBasicMaterial({ color: 0xc084fc });
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+    // 7a. Giant Rotating Haunted Ferris Wheel (X = 72, Y = 60, Z = -430)
+    const ferrisGroup = new THREE.Group();
+    ferrisGroup.position.set(72, 60, -430);
+
+    // Static A-frame support stanchions
+    const legGeo = new THREE.BoxGeometry(2.5, 66.0, 2.5);
+    [-14.0, 14.0].forEach((lx) => {
+      const leg = new THREE.Mesh(legGeo, carnivalMat);
+      leg.position.set(lx, -30.0, 0);
+      leg.rotation.z = lx < 0 ? -0.22 : 0.22;
+      carnivalSkyline.add(leg);
+    });
+
+    // Central axle hub
+    const hubMesh = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 4.0, 16), carnivalMat);
+    hubMesh.rotation.x = Math.PI / 2;
+    hubMesh.position.set(72, 60, -429);
+    carnivalSkyline.add(hubMesh);
+
+    // Rotating Wheel Structure
+    const wheelRotGroup = new THREE.Group();
+    this.hauntedFerrisWheel = wheelRotGroup;
+
+    // Outer & inner rim rings (polygonal cylinders with open ends or boxes)
+    const rimCount = 24;
+    const wheelR = 36.0;
+    const innerR = 24.0;
+    const segLen = (2 * Math.PI * wheelR) / rimCount;
+    const innerSegLen = (2 * Math.PI * innerR) / rimCount;
+
+    for (let i = 0; i < rimCount; i++) {
+      const theta = (i / rimCount) * Math.PI * 2;
+      // Outer rim chord
+      const outerSeg = new THREE.Mesh(new THREE.BoxGeometry(segLen * 1.05, 1.2, 1.2), carnivalMat);
+      outerSeg.position.set(Math.cos(theta) * wheelR, Math.sin(theta) * wheelR, 0);
+      outerSeg.rotation.z = theta + Math.PI / 2;
+      wheelRotGroup.add(outerSeg);
+
+      // Inner rim chord
+      const innerSeg = new THREE.Mesh(new THREE.BoxGeometry(innerSegLen * 1.05, 0.8, 0.8), carnivalMat);
+      innerSeg.position.set(Math.cos(theta) * innerR, Math.sin(theta) * innerR, 0);
+      innerSeg.rotation.z = theta + Math.PI / 2;
+      wheelRotGroup.add(innerSeg);
+    }
+
+    // 12 Spokes & 12 Hanging Passenger Gondolas
+    const spokeCount = 12;
+    const spokeGeo = new THREE.BoxGeometry(0.8, wheelR, 0.8);
+    for (let i = 0; i < spokeCount; i++) {
+      const angle = (i / spokeCount) * Math.PI * 2;
+
+      // Spoke strut
+      const spoke = new THREE.Mesh(spokeGeo, carnivalMat);
+      spoke.position.set(Math.cos(angle) * (wheelR * 0.5), Math.sin(angle) * (wheelR * 0.5), 0);
+      spoke.rotation.z = angle - Math.PI / 2;
+      wheelRotGroup.add(spoke);
+
+      // Hanging Gondola cabin
+      const gondola = new THREE.Group();
+      gondola.position.set(Math.cos(angle) * wheelR, Math.sin(angle) * wheelR, 0);
+
+      // Cabin body
+      const cabinGeo = new THREE.BoxGeometry(4.0, 3.6, 3.2);
+      const cabin = new THREE.Mesh(cabinGeo, carnivalMat);
+      gondola.add(cabin);
+
+      // Glowing amber passenger window slit
+      const winGeo = new THREE.BoxGeometry(3.2, 1.2, 3.3);
+      const win = new THREE.Mesh(winGeo, carnivalGlowAmber);
+      gondola.add(win);
+
+      // Top decorative roof crest
+      const roofMesh = new THREE.Mesh(new THREE.ConeGeometry(2.6, 1.6, 6), carnivalGlowViolet);
+      roofMesh.position.y = 2.4;
+      gondola.add(roofMesh);
+
+      wheelRotGroup.add(gondola);
+      this.hauntedFerrisGondolas.push(gondola as any);
+    }
+
+    ferrisGroup.add(wheelRotGroup);
+    carnivalSkyline.add(ferrisGroup);
+
+    // 7b. Monumental Gothic Dracula Castles & Spire Mansions (Left & Right Flanks)
+    const castleGroup = new THREE.Group();
+    // Central Main Castle Keep (X = -90, Z = -460)
+    const keepH = 92.0;
+    const keep = new THREE.Mesh(new THREE.BoxGeometry(30.0, keepH, 26.0), carnivalMat);
+    keep.position.set(-90.0, keepH * 0.5, -460.0);
+    castleGroup.add(keep);
+
+    // Jagged crenelated battlements atop keep
+    const battlement = new THREE.Mesh(new THREE.BoxGeometry(32.0, 4.0, 28.0), carnivalMat);
+    battlement.position.set(-90.0, keepH + 2.0, -460.0);
+    castleGroup.add(battlement);
+
+    // Soaring Central Spire
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(8.5, 42.0, 8), carnivalMat);
+    spire.position.set(-90.0, keepH + 23.0, -460.0);
+    castleGroup.add(spire);
+
+    // Glowing arched windows on castle keep
+    [-6.0, 6.0].forEach((wx) => {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 8.0), carnivalGlowAmber);
+      win.position.set(-90.0 + wx, 45.0, -446.5);
+      castleGroup.add(win);
+    });
+
+    // Twin Flanking Gothic Turrets with Pointed Conical Roofs
+    [-112.0, -68.0].forEach((tx) => {
+      const turrH = 104.0;
+      const turret = new THREE.Mesh(new THREE.CylinderGeometry(5.0, 6.5, turrH, 8), carnivalMat);
+      turret.position.set(tx, turrH * 0.5, -450.0);
+      castleGroup.add(turret);
+
+      const turrRoof = new THREE.Mesh(new THREE.ConeGeometry(6.5, 26.0, 8), carnivalMat);
+      turrRoof.position.set(tx, turrH + 13.0, -450.0);
+      castleGroup.add(turrRoof);
+    });
+
+    // Right Flank Haunted Victorian Manor & Twisted Spire (X = 145, Z = -470)
+    const manorH = 68.0;
+    const manor = new THREE.Mesh(new THREE.BoxGeometry(34.0, manorH, 22.0), carnivalMat);
+    manor.position.set(145.0, manorH * 0.5, -470.0);
+    castleGroup.add(manor);
+
+    const manorSpire = new THREE.Mesh(new THREE.ConeGeometry(5.5, 28.0, 6), carnivalMat);
+    manorSpire.position.set(145.0, manorH + 14.0, -470.0);
+    castleGroup.add(manorSpire);
+
+    // Illuminated manor attic window
+    const manorWin = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 7.0), carnivalGlowAmber);
+    manorWin.position.set(145.0, manorH - 8.0, -458.5);
+    castleGroup.add(manorWin);
+
+    carnivalSkyline.add(castleGroup);
+
+    // 7c. Giant Glowing Harvest Moon (X = -45, Y = 118, Z = -580)
+    const moonMesh = new THREE.Mesh(new THREE.CircleGeometry(32.0, 32), moonMat);
+    moonMesh.position.set(-45.0, 118.0, -580.0);
+    carnivalSkyline.add(moonMesh);
+
+    // Soft outer moon corona halo
+    const coronaMat = new THREE.MeshBasicMaterial({
+      color: 0xfde047,
+      transparent: true,
+      opacity: 0.22
+    });
+    const coronaMesh = new THREE.Mesh(new THREE.CircleGeometry(42.0, 32), coronaMat);
+    coronaMesh.position.set(-45.0, 118.0, -581.0);
+    carnivalSkyline.add(coronaMesh);
+
+    // 7d. Animated Flying Bat Silhouettes (6 bats flapping across the sky)
+    const batGeoBody = new THREE.BoxGeometry(0.7, 0.4, 1.2);
+    const batWingGeo = new THREE.BoxGeometry(1.6, 0.1, 0.9);
+    for (let b = 0; b < 6; b++) {
+      const batGroup = new THREE.Group();
+      const bx = -50.0 + (b % 3) * 55.0 + Math.sin(b * 1.5) * 20.0;
+      const by = 42.0 + (b % 4) * 12.0;
+      const bz = -220.0 - b * 32.0;
+      batGroup.position.set(bx, by, bz);
+
+      const body = new THREE.Mesh(batGeoBody, carnivalMat);
+      batGroup.add(body);
+
+      const leftWing = new THREE.Mesh(batWingGeo, carnivalMat);
+      leftWing.position.set(-1.0, 0, 0);
+      batGroup.add(leftWing);
+
+      const rightWing = new THREE.Mesh(batWingGeo, carnivalMat);
+      rightWing.position.set(1.0, 0, 0);
+      batGroup.add(rightWing);
+
+      carnivalSkyline.add(batGroup);
+      this.hauntedAnimatedBats.push(batGroup);
+    }
+
+    group.add(this.hauntedCarnivalSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -1245,6 +1448,7 @@ export class WorldScene {
     this.abyssalSkyline.visible = this.currentTheme.id === 'ABYSSAL_GLASSLINE';
     this.doomsdaySkyline.visible = this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT';
     this.phantomSkyline.visible = this.currentTheme.id === 'PHANTOM_LINE';
+    this.hauntedCarnivalSkyline.visible = this.currentTheme.id === 'HAUNTED_CARNIVAL';
 
     return group;
   }
@@ -1330,6 +1534,12 @@ export class WorldScene {
       isPhantom(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isHaunted = (env: EnvironmentTheme) => env.id === 'HAUNTED_CARNIVAL';
+    const hauntedOpacity = THREE.MathUtils.lerp(
+      isHaunted(base) ? base.skyline.opacity : 0,
+      isHaunted(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1358,6 +1568,10 @@ export class WorldScene {
       this.phantomSkylineMaterial.color.copy(skylineColor);
       this.phantomSkylineMaterial.opacity = phantomOpacity;
     }
+    if (this.hauntedCarnivalSkylineMaterial) {
+      this.hauntedCarnivalSkylineMaterial.color.copy(skylineColor);
+      this.hauntedCarnivalSkylineMaterial.opacity = hauntedOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -1365,6 +1579,7 @@ export class WorldScene {
     if (this.abyssalSkyline) this.abyssalSkyline.visible = abyssalOpacity > 0.01;
     if (this.doomsdaySkyline) this.doomsdaySkyline.visible = doomsdayOpacity > 0.01;
     if (this.phantomSkyline) this.phantomSkyline.visible = phantomOpacity > 0.01;
+    if (this.hauntedCarnivalSkyline) this.hauntedCarnivalSkyline.visible = hauntedOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -1510,6 +1725,17 @@ export class WorldScene {
         fogDensity = 0.0036;
         fillColorHex = 0x064e3b;
         fillIntensity = 0.65;
+        isRain = false;
+        break;
+      case 'CARNIVAL_HAUNTED_NIGHT':
+        sunColorHex = 0xfb923c;
+        sunIntensity = 1.15;
+        skyTopHex = 0x0c071e;
+        skyBottomHex = 0x3b0764;
+        fogColorHex = 0x1e0e38;
+        fogDensity = 0.0034;
+        fillColorHex = 0x581c87;
+        fillIntensity = 0.70;
         isRain = false;
         break;
       case 'CLEAR_DAYLIGHT':
@@ -1692,6 +1918,37 @@ export class WorldScene {
           const lamp = this.phantomFlickerLamps[i];
           const s = 0.85 + 0.15 * Math.sin(this.phantomFlickerTime * 3.5 + i * 2.1);
           lamp.scale.set(s, s, s);
+        }
+      }
+    }
+
+    // Rotating Haunted Ferris Wheel & Animated Bats in Haunted Carnival skyline
+    if (this.hauntedCarnivalSkyline && this.hauntedCarnivalSkyline.visible) {
+      const delta = dt || 0.016;
+      this.hauntedBatTime += delta;
+
+      if (this.hauntedFerrisWheel) {
+        this.hauntedFerrisWheel.rotation.z += delta * 0.14;
+        const currentRot = this.hauntedFerrisWheel.rotation.z;
+        if (this.hauntedFerrisGondolas && this.hauntedFerrisGondolas.length > 0) {
+          for (let i = 0; i < this.hauntedFerrisGondolas.length; i++) {
+            this.hauntedFerrisGondolas[i].rotation.z = -currentRot;
+          }
+        }
+      }
+
+      if (this.hauntedAnimatedBats && this.hauntedAnimatedBats.length > 0) {
+        for (let i = 0; i < this.hauntedAnimatedBats.length; i++) {
+          const bat = this.hauntedAnimatedBats[i];
+          const phase = this.hauntedBatTime * 12.0 + i * 1.8;
+          if (bat.children.length >= 3) {
+            const leftWing = bat.children[1];
+            const rightWing = bat.children[2];
+            leftWing.rotation.z = Math.sin(phase) * 0.50;
+            rightWing.rotation.z = -Math.sin(phase) * 0.50;
+          }
+          bat.position.x += Math.sin(this.hauntedBatTime * 0.9 + i) * delta * 3.5;
+          bat.position.y += Math.cos(this.hauntedBatTime * 1.4 + i * 2.0) * delta * 1.8;
         }
       }
     }

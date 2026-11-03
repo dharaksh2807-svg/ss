@@ -186,6 +186,18 @@ export class SceneryFactory {
     phantomDistressSignMat2: THREE.MeshBasicMaterial;
     phantomDistressSignMat3: THREE.MeshBasicMaterial;
     phantomSpecterMat: THREE.MeshBasicMaterial;
+    // Haunted Carnival: Extravagant Gothic Theme Park Scenery Materials
+    hauntedGothicStoneMat: THREE.MeshStandardMaterial;
+    hauntedJackOLanternGlowMat: THREE.MeshStandardMaterial;
+    hauntedCarnivalStripeMat: THREE.MeshStandardMaterial;
+    hauntedWroughtIronMat: THREE.MeshStandardMaterial;
+    hauntedTwistedWoodMat: THREE.MeshStandardMaterial;
+    hauntedVioletGlowMat: THREE.MeshBasicMaterial;
+    hauntedAmberGlowMat: THREE.MeshBasicMaterial;
+    hauntedSpookySignMat1: THREE.MeshBasicMaterial;
+    hauntedSpookySignMat2: THREE.MeshBasicMaterial;
+    hauntedSpookySignMat3: THREE.MeshBasicMaterial;
+    hauntedGothicWindowMat: THREE.MeshBasicMaterial;
   } | null = null;
 
   public static getInstance(): SceneryFactory {
@@ -1232,6 +1244,95 @@ export class SceneryFactory {
         });
         curved.applyCurvature(m);
         return m;
+      })(),
+      hauntedGothicStoneMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getHauntedGothicStoneTexture(),
+          roughness: 0.85,
+          metalness: 0.20
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedJackOLanternGlowMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getHauntedJackOLanternTexture(),
+          roughness: 0.45,
+          metalness: 0.15,
+          emissive: new THREE.Color(0xfb923c),
+          emissiveIntensity: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedCarnivalStripeMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getHauntedCarnivalStripeTexture(),
+          roughness: 0.65,
+          metalness: 0.12
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedWroughtIronMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x0f0c18,
+          roughness: 0.70,
+          metalness: 0.85
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedTwistedWoodMat: (() => {
+        const m = new THREE.MeshStandardMaterial({
+          color: 0x1f1625,
+          roughness: 0.90,
+          metalness: 0.05
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedVioletGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          color: 0xc084fc
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedAmberGlowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          color: 0xfbbf24
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedSpookySignMat1: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getHauntedSpookySignTexture(0)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedSpookySignMat2: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getHauntedSpookySignTexture(1)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedSpookySignMat3: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getHauntedSpookySignTexture(2)
+        });
+        curved.applyCurvature(m);
+        return m;
+      })(),
+      hauntedGothicWindowMat: (() => {
+        const m = new THREE.MeshBasicMaterial({
+          map: TextureGenerator.getHauntedGothicWindowTexture()
+        });
+        curved.applyCurvature(m);
+        return m;
       })()
     };
   }
@@ -1281,6 +1382,8 @@ export class SceneryFactory {
       this.buildDoomsdayLastTransitScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'PHANTOM_LINE') {
       this.buildPhantomLineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'HAUNTED_CARNIVAL') {
+      this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -4374,6 +4477,61 @@ export class SceneryFactory {
 
       group.add(portalGroup);
       return;
+    } else if (theme.id === 'HAUNTED_CARNIVAL') {
+      // --- Extravagant Gothic Haunted Carnival Gateway Portal ---
+      const pylonGeo = new THREE.BoxGeometry(4.0, portalH, 4.6);
+      [-spanW * 0.5 - 1.4, spanW * 0.5 + 1.4].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, mats.hauntedGothicStoneMat);
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+        portalGroup.add(pylon);
+
+        // Giant glowing grinning jack-o'-lantern finial atop pillar
+        const pumpkinGeo = new THREE.SphereGeometry(1.6, 12, 12);
+        const pumpkin = new THREE.Mesh(pumpkinGeo, mats.hauntedJackOLanternGlowMat);
+        pumpkin.position.set(px, portalH + 1.8, portalZ);
+        portalGroup.add(pumpkin);
+
+        // Black wrought-iron decorative corner bracket
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.5, portalH * 0.85, 0.6), mats.hauntedWroughtIronMat);
+        bracket.position.set(px + (px < 0 ? 1.9 : -1.9), portalH * 0.45, portalZ);
+        portalGroup.add(bracket);
+      });
+
+      // Overhead grand gothic arch crown with pointed center peak (clearance >= 10.2m)
+      const archSpan = new THREE.Mesh(new THREE.BoxGeometry(spanW + 5.5, 3.4, 4.2), mats.hauntedGothicStoneMat);
+      archSpan.position.set(0, portalH + 0.8, portalZ);
+      archSpan.castShadow = true;
+      archSpan.receiveShadow = true;
+      portalGroup.add(archSpan);
+
+      // Pointed gothic center pediment
+      const pediment = new THREE.Mesh(new THREE.ConeGeometry(5.2, 5.0, 4), mats.hauntedGothicStoneMat);
+      pediment.position.set(0, portalH + 4.8, portalZ);
+      pediment.rotation.y = Math.PI / 4;
+      portalGroup.add(pediment);
+
+      // Wrought-iron bat-wing finial atop pediment
+      const batFinial = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.8, 0.4), mats.hauntedWroughtIronMat);
+      batFinial.position.set(0, portalH + 7.8, portalZ);
+      portalGroup.add(batFinial);
+
+      // Illuminated Carnival Entrance Marquee Sign
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(11.0, 2.5), mats.hauntedSpookySignMat1);
+      sign.position.set(0, portalH + 0.8, portalZ + 2.2);
+      portalGroup.add(sign);
+
+      // Glowing violet & amber carnival lantern bulbs along bottom arch
+      for (let bx = -spanW * 0.42; bx <= spanW * 0.42; bx += 2.4) {
+        const isAmber = Math.abs(bx) % 4.8 < 2.4;
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), isAmber ? mats.hauntedAmberGlowMat : mats.hauntedVioletGlowMat);
+        bulb.position.set(bx, portalH - 1.2, portalZ + 2.15);
+        portalGroup.add(bulb);
+      }
+
+      group.add(portalGroup);
+      return;
     }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
@@ -6595,6 +6753,508 @@ export class SceneryFactory {
     gate.position.set(-side * 5.0, 2.75, 0);
     gate.castShadow = true;
     cryptGroup.add(gate);
+
+    group.add(cryptGroup);
+  }
+
+  // =========================================================================
+  // HAUNTED CARNIVAL DISTRICT: Extravagant Gothic Theme Park Railway
+  // =========================================================================
+
+  private buildHauntedCarnivalScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const rng = new SeededRandom(seed);
+    const carnivalGroup = new THREE.Group();
+    carnivalGroup.name = 'haunted_carnival_scenery';
+
+    // 1. Gothic cemetery retaining stone walls & wrought-iron picket fence
+    this.buildHauntedCemeteryFencesAndWalls(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
+
+    // 2. High overhead pointed gothic cast-iron spans with hanging pumpkin lanterns (clearance >= 10.2m)
+    this.buildHauntedOverheadGothicArches(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
+
+    // 3. Trackside carnival set dressing & directional signposts
+    if (detail !== 'MINIMAL') {
+      this.buildHauntedCarnivalProps(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
+    }
+
+    // 4. Deterministic Landmark Encounter (Seeded variation across runs)
+    const landmarkChoice = Math.abs(seed) % 4;
+    const landmarkZ = -chunkLength * 0.5;
+
+    if (landmarkChoice === 0) {
+      this.buildCarnivalHauntedMansion(carnivalGroup, chunkLength, landmarkZ, rng);
+    } else if (landmarkChoice === 1) {
+      this.buildCarnivalSpookyTent(carnivalGroup, chunkLength, landmarkZ, rng);
+    } else if (landmarkChoice === 2) {
+      this.buildCarnivalPumpkinShrine(carnivalGroup, chunkLength, landmarkZ, rng);
+    } else {
+      this.buildCarnivalGraveyardCrypt(carnivalGroup, chunkLength, landmarkZ, rng);
+    }
+
+    group.add(carnivalGroup);
+  }
+
+  /**
+   * Gothic Cemetery Ashlar Retaining Walls & Wrought-Iron Spiked Picket Fence
+   */
+  private buildHauntedCemeteryFencesAndWalls(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const wallX = roadbedWidth * 0.5 + 1.2; // 6.6m from center (strictly outside 4.0m running corridor)
+    const wallH = 2.8;
+    const wallThick = 0.65;
+
+    const wallGeo = new THREE.BoxGeometry(wallThick, wallH, chunkLength);
+    const copingGeo = new THREE.BoxGeometry(wallThick + 0.16, 0.35, chunkLength);
+
+    [-wallX, wallX].forEach((sideX) => {
+      // Lower gothic ashlar stone wall
+      const wall = new THREE.Mesh(wallGeo, mats.hauntedGothicStoneMat);
+      wall.position.set(sideX, wallH * 0.5, -chunkLength * 0.5);
+      wall.receiveShadow = true;
+      group.add(wall);
+
+      // Coping cap stone
+      const coping = new THREE.Mesh(copingGeo, mats.hauntedGothicStoneMat);
+      coping.position.set(sideX, wallH + 0.175, -chunkLength * 0.5);
+      coping.receiveShadow = true;
+      group.add(coping);
+
+      // Wrought-iron spiked cemetery picket fence atop wall
+      const fenceH = 2.6;
+      const fenceRailGeo = new THREE.BoxGeometry(0.12, 0.12, chunkLength);
+      // Horizontal upper and lower rails
+      [wallH + 0.6, wallH + fenceH - 0.3].forEach((ry) => {
+        const rail = new THREE.Mesh(fenceRailGeo, mats.hauntedWroughtIronMat);
+        rail.position.set(sideX, ry, -chunkLength * 0.5);
+        group.add(rail);
+      });
+
+      // Spiked iron pickets along fence
+      const picketStep = detail === 'FULL' ? 2.5 : 5.0;
+      const picketGeo = new THREE.BoxGeometry(0.08, fenceH, 0.08);
+      const spearGeo = new THREE.ConeGeometry(0.12, 0.35, 4);
+      for (let z = 0; z < chunkLength; z += picketStep) {
+        const pz = -z;
+        const picket = new THREE.Mesh(picketGeo, mats.hauntedWroughtIronMat);
+        picket.position.set(sideX, wallH + fenceH * 0.5, pz);
+        group.add(picket);
+
+        const spear = new THREE.Mesh(spearGeo, mats.hauntedWroughtIronMat);
+        spear.position.set(sideX, wallH + fenceH + 0.18, pz);
+        group.add(spear);
+      }
+
+      // Stone pilasters with glowing jack-o'-lantern finials
+      const pilasterStep = 16.0;
+      const pilasterGeo = new THREE.BoxGeometry(wallThick + 0.35, wallH + 0.6, wallThick + 0.35);
+      const pumpkinGeo = new THREE.SphereGeometry(0.65, 8, 8);
+
+      for (let z = 0; z <= chunkLength; z += pilasterStep) {
+        const pz = -z;
+        const pil = new THREE.Mesh(pilasterGeo, mats.hauntedGothicStoneMat);
+        pil.position.set(sideX, (wallH + 0.6) * 0.5, pz);
+        pil.castShadow = true;
+        pil.receiveShadow = true;
+        group.add(pil);
+
+        // Glowing carved jack-o'-lantern resting atop pilaster
+        const pumpkin = new THREE.Mesh(pumpkinGeo, mats.hauntedJackOLanternGlowMat);
+        pumpkin.position.set(sideX, wallH + 0.6 + 0.55, pz);
+        pumpkin.rotation.y = sideX < 0 ? Math.PI / 4 : -Math.PI / 4;
+        group.add(pumpkin);
+
+        // Twisted dead bare tree beyond the wall
+        if (detail === 'FULL' && (z === 16 || z === 48)) {
+          const treeGroup = new THREE.Group();
+          const treeX = sideX + (sideX < 0 ? -2.2 : 2.2);
+          treeGroup.position.set(treeX, 0, pz);
+
+          // Gnarled crooked trunk
+          const trunkH = rng.range(9.0, 13.0);
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.85, trunkH, 6), mats.hauntedTwistedWoodMat);
+          trunk.position.y = trunkH * 0.5;
+          trunk.rotation.z = sideX < 0 ? -0.15 : 0.15;
+          treeGroup.add(trunk);
+
+          // Sprawling crooked bare branches
+          [-1, 1].forEach((bDir) => {
+            const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.4, 6.0, 5), mats.hauntedTwistedWoodMat);
+            branch.position.set(bDir * 1.8, trunkH * 0.8, 0);
+            branch.rotation.z = bDir * 0.55;
+            treeGroup.add(branch);
+          });
+
+          group.add(treeGroup);
+        }
+      }
+    });
+  }
+
+  /**
+   * Overhead Pointed Gothic Cast-Iron Arches with Hanging Pumpkin Lanterns (Clearance >= 10.2m)
+   */
+  private buildHauntedOverheadGothicArches(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const archesGroup = new THREE.Group();
+    archesGroup.name = 'haunted_overhead_arches';
+
+    const spanW = roadbedWidth + 2.4; // 14.0m span
+    const archH = 10.5; // Strictly >= 10.2m clearance above tracks!
+    const step = detail === 'MINIMAL' ? 40.0 : 20.0;
+
+    const postGeo = new THREE.BoxGeometry(0.65, archH, 0.65);
+    const beamGeo = new THREE.BoxGeometry(spanW + 1.2, 0.55, 0.7);
+
+    for (let z = 10.0; z < chunkLength; z += step) {
+      const pz = -z;
+      const arch = new THREE.Group();
+      arch.position.set(0, 0, pz);
+
+      // Flanking upright gothic cast-iron posts
+      [-spanW * 0.5, spanW * 0.5].forEach((px) => {
+        const post = new THREE.Mesh(postGeo, mats.hauntedWroughtIronMat);
+        post.position.set(px, archH * 0.5, 0);
+        post.castShadow = true;
+        arch.add(post);
+
+        // Bat-wing wrought-iron corner bracket
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 0.25), mats.hauntedWroughtIronMat);
+        bracket.position.set(px + (px < 0 ? 0.8 : -0.8), archH - 0.8, 0);
+        arch.add(bracket);
+      });
+
+      // Transverse arch lintel beam (Y = 10.5m)
+      const beam = new THREE.Mesh(beamGeo, mats.hauntedWroughtIronMat);
+      beam.position.set(0, archH, 0);
+      beam.castShadow = true;
+      arch.add(beam);
+
+      // Pointed gothic center apex pediment
+      const apex = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.2, 4), mats.hauntedWroughtIronMat);
+      apex.position.set(0, archH + 1.2, 0);
+      apex.rotation.y = Math.PI / 4;
+      arch.add(apex);
+
+      // Hanging Jack-o'-lantern lanterns suspended over lanes (Y = 8.8m, well above 4.35m roof)
+      [-CONSTANTS.LANE_WIDTH, CONSTANTS.LANE_WIDTH].forEach((lx) => {
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 4), mats.hauntedWroughtIronMat);
+        chain.position.set(lx, archH - 0.6, 0);
+        arch.add(chain);
+
+        const pumpkin = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), mats.hauntedJackOLanternGlowMat);
+        pumpkin.position.set(lx, archH - 1.4, 0);
+        arch.add(pumpkin);
+      });
+
+      archesGroup.add(arch);
+    }
+
+    group.add(archesGroup);
+  }
+
+  /**
+   * Trackside Carnival Amenities: Ticket Booths, Directional Signs & Pumpkin Clusters
+   */
+  private buildHauntedCarnivalProps(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const mats = this.getSharedMaterials();
+    const propsGroup = new THREE.Group();
+    propsGroup.name = 'haunted_carnival_props';
+
+    const safeSideX = roadbedWidth * 0.5 + 0.4; // 5.1m from track center (outside 4.0m)
+
+    // Directional Spooky Carnival Wooden Signs
+    [-safeSideX, safeSideX].forEach((px, idx) => {
+      const pz = -chunkLength * 0.25 - idx * 25.0;
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.8, 0.14), mats.hauntedTwistedWoodMat);
+      post.position.set(px, 1.4, pz);
+      propsGroup.add(post);
+
+      const signGeo = new THREE.PlaneGeometry(2.4, 0.7);
+      const signMat = idx === 0 ? mats.hauntedSpookySignMat2 : mats.hauntedSpookySignMat3;
+      const sign = new THREE.Mesh(signGeo, signMat);
+      sign.position.set(px + (px < 0 ? 0.08 : -0.08), 2.1, pz);
+      sign.rotation.y = px < 0 ? Math.PI / 2 : -Math.PI / 2;
+      propsGroup.add(sign);
+
+      // Pile of 3 glowing pumpkins near base of signpost
+      [[-0.4, -0.4], [0.4, -0.3], [0, 0.4]].forEach(([ox, oz], pIdx) => {
+        const r = 0.28 + pIdx * 0.08;
+        const pMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 6), mats.hauntedJackOLanternGlowMat);
+        pMesh.position.set(px + ox, r, pz + oz);
+        propsGroup.add(pMesh);
+      });
+    });
+
+    group.add(propsGroup);
+  }
+
+  /**
+   * Landmark 1: Haunted Victorian Manor & Gothic Tower Facade (carnival_haunted_mansion)
+   */
+  private buildCarnivalHauntedMansion(
+    group: THREE.Group,
+    chunkLength: number,
+    mansionZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const mansionGroup = new THREE.Group();
+    mansionGroup.name = 'carnival_haunted_mansion';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const mansionX = side * 12.5; // Well outside playable tracks
+    mansionGroup.position.set(mansionX, 0, mansionZ);
+
+    // Stone base foundation
+    const baseW = 16.0;
+    const baseH = 14.0;
+    const baseD = 18.0;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), mats.hauntedGothicStoneMat);
+    base.position.y = baseH * 0.5;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    mansionGroup.add(base);
+
+    // Steep pitched Mansard roof
+    const roofH = 8.0;
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(baseW * 0.75, roofH, 4), mats.hauntedWroughtIronMat);
+    roof.position.y = baseH + roofH * 0.5;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    mansionGroup.add(roof);
+
+    // Towering cylindrical gothic turret with pointed spire
+    const turrH = 24.0;
+    const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, turrH, 8), mats.hauntedGothicStoneMat);
+    turret.position.set(-side * 5.5, turrH * 0.5, 6.0);
+    turret.castShadow = true;
+    mansionGroup.add(turret);
+
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(3.2, 12.0, 8), mats.hauntedWroughtIronMat);
+    spire.position.set(-side * 5.5, turrH + 6.0, 6.0);
+    mansionGroup.add(spire);
+
+    // Glowing arched gothic stained glass windows
+    [-3.5, 3.5].forEach((wx) => {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 5.0), mats.hauntedGothicWindowMat);
+      win.position.set(wx, 7.5, -side * 9.05);
+      win.rotation.y = side < 0 ? 0 : Math.PI;
+      mansionGroup.add(win);
+    });
+
+    // Wrought-iron balcony railing
+    const balc = new THREE.Mesh(new THREE.BoxGeometry(9.0, 1.2, 1.4), mats.hauntedWroughtIronMat);
+    balc.position.set(0, 5.0, -side * 9.5);
+    mansionGroup.add(balc);
+
+    group.add(mansionGroup);
+  }
+
+  /**
+   * Landmark 2: Spooky Carnival Big-Top Striped Tent & Circus Ticket Booth (carnival_spooky_tent)
+   */
+  private buildCarnivalSpookyTent(
+    group: THREE.Group,
+    chunkLength: number,
+    tentZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const tentGroup = new THREE.Group();
+    tentGroup.name = 'carnival_spooky_tent';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const tentX = side * 18.0; // Outside playable tracks (canopy edge at |X| >= 7.65m)
+    tentGroup.position.set(tentX, 0, tentZ);
+
+    // Cylindrical big top canvas base
+    const tentR = 9.0;
+    const tentH = 6.5;
+    const canvasBase = new THREE.Mesh(new THREE.CylinderGeometry(tentR, tentR * 1.05, tentH, 16), mats.hauntedCarnivalStripeMat);
+    canvasBase.position.y = tentH * 0.5;
+    canvasBase.castShadow = true;
+    tentGroup.add(canvasBase);
+
+    // Conical big-top striped canopy roof
+    const roofH = 10.0;
+    const canopy = new THREE.Mesh(new THREE.ConeGeometry(tentR * 1.15, roofH, 16), mats.hauntedCarnivalStripeMat);
+    canopy.position.y = tentH + roofH * 0.5;
+    canopy.castShadow = true;
+    tentGroup.add(canopy);
+
+    // Spire center pole & flapping pennant flag
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 4.0, 6), mats.hauntedWroughtIronMat);
+    pole.position.y = tentH + roofH + 2.0;
+    tentGroup.add(pole);
+
+    const flag = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.05), mats.hauntedVioletGlowMat);
+    flag.position.set(0.9, tentH + roofH + 3.2, 0);
+    tentGroup.add(flag);
+
+    // Vintage carnival circus ticket booth at tent front
+    const boothW = 3.6;
+    const boothH = 3.2;
+    const boothD = 2.8;
+    const booth = new THREE.Mesh(new THREE.BoxGeometry(boothW, boothH, boothD), mats.hauntedTwistedWoodMat);
+    booth.position.set(-side * 7.5, boothH * 0.5, 0);
+    booth.castShadow = true;
+    tentGroup.add(booth);
+
+    // Ticket booth striped awning
+    const awning = new THREE.Mesh(new THREE.BoxGeometry(boothW + 0.6, 0.35, boothD + 0.8), mats.hauntedCarnivalStripeMat);
+    awning.position.set(-side * 7.5, boothH + 0.2, 0);
+    tentGroup.add(awning);
+
+    // Glowing ticket banner
+    const ticketSign = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.8), mats.hauntedSpookySignMat2);
+    ticketSign.position.set(-side * 7.5, boothH - 0.4, -side * 1.45);
+    ticketSign.rotation.y = side < 0 ? 0 : Math.PI;
+    tentGroup.add(ticketSign);
+
+    group.add(tentGroup);
+  }
+
+  /**
+   * Landmark 3: Monumental Glowing Jack-o'-Lantern Shrine & Pumpkin Patch (carnival_pumpkin_shrine)
+   */
+  private buildCarnivalPumpkinShrine(
+    group: THREE.Group,
+    chunkLength: number,
+    shrineZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const shrineGroup = new THREE.Group();
+    shrineGroup.name = 'carnival_pumpkin_shrine';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const shrineX = side * 12.5;
+    shrineGroup.position.set(shrineX, 0, shrineZ);
+
+    // Stepped stone sacrificial pedestal
+    const step1 = new THREE.Mesh(new THREE.BoxGeometry(9.0, 0.6, 9.0), mats.hauntedGothicStoneMat);
+    step1.position.y = 0.3;
+    step1.receiveShadow = true;
+    shrineGroup.add(step1);
+
+    const step2 = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.6, 7.0), mats.hauntedGothicStoneMat);
+    step2.position.y = 0.9;
+    step2.receiveShadow = true;
+    shrineGroup.add(step2);
+
+    // Monumental 5-meter Giant Glowing Jack-o'-Lantern
+    const giantPumpkin = new THREE.Mesh(new THREE.SphereGeometry(2.6, 16, 16), mats.hauntedJackOLanternGlowMat);
+    giantPumpkin.position.y = 3.6;
+    giantPumpkin.scale.set(1.15, 0.95, 1.05);
+    giantPumpkin.rotation.y = side < 0 ? Math.PI / 4 : -Math.PI / 4;
+    giantPumpkin.castShadow = true;
+    shrineGroup.add(giantPumpkin);
+
+    // Giant carved gnarled stem atop pumpkin
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 1.4, 6), mats.hauntedTwistedWoodMat);
+    stem.position.set(0, 6.2, 0);
+    stem.rotation.z = side * 0.25;
+    shrineGroup.add(stem);
+
+    // Surrounding miniature pumpkin patch (clusters of small carved pumpkins)
+    const patchOffsets = [
+      [-3.2, -2.5], [-2.8, 2.8], [3.0, -2.6], [3.2, 2.4],
+      [-4.0, 0], [4.0, 0.5], [0, -3.8], [0, 3.8]
+    ];
+    patchOffsets.forEach(([ox, oz], pIdx) => {
+      const pr = 0.35 + (pIdx % 3) * 0.15;
+      const p = new THREE.Mesh(new THREE.SphereGeometry(pr, 8, 8), mats.hauntedJackOLanternGlowMat);
+      p.position.set(ox, pr, oz);
+      p.rotation.y = (pIdx * 0.8);
+      shrineGroup.add(p);
+    });
+
+    group.add(shrineGroup);
+  }
+
+  /**
+   * Landmark 4: Ancient Gothic Cemetery Mausoleum Crypt (carnival_graveyard_crypt)
+   */
+  private buildCarnivalGraveyardCrypt(
+    group: THREE.Group,
+    chunkLength: number,
+    cryptZ: number,
+    rng: SeededRandom
+  ): void {
+    const mats = this.getSharedMaterials();
+    const cryptGroup = new THREE.Group();
+    cryptGroup.name = 'carnival_graveyard_crypt';
+
+    const side = rng.chance(0.5) ? -1 : 1;
+    const cryptX = side * 14.5;
+    cryptGroup.position.set(cryptX, 0, cryptZ);
+
+    // Ancient stone mausoleum structure
+    const cryptW = 9.5;
+    const cryptH = 7.5;
+    const cryptD = 12.0;
+    const cryptMesh = new THREE.Mesh(new THREE.BoxGeometry(cryptW, cryptH, cryptD), mats.hauntedGothicStoneMat);
+    cryptMesh.position.y = cryptH * 0.5;
+    cryptMesh.castShadow = true;
+    cryptMesh.receiveShadow = true;
+    cryptGroup.add(cryptMesh);
+
+    // Triangular gothic pediment roof
+    const pedimentGeo = new THREE.BoxGeometry(cryptW + 0.8, 1.8, cryptD + 0.4);
+    const pediment = new THREE.Mesh(pedimentGeo, mats.hauntedGothicStoneMat);
+    pediment.position.y = cryptH + 0.9;
+    pediment.castShadow = true;
+    cryptGroup.add(pediment);
+
+    // Wrought-iron spiked portcullis gate at crypt entrance
+    const portcullis = new THREE.Mesh(new THREE.BoxGeometry(3.6, 5.0, 0.4), mats.hauntedWroughtIronMat);
+    portcullis.position.set(-side * 4.8, 2.5, 0);
+    cryptGroup.add(portcullis);
+
+    // Gothic gargoyle stone sentinels flanking crypt entrance
+    [-2.2, 2.2].forEach((gy) => {
+      const gargoyle = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.2, 0.9), mats.hauntedGothicStoneMat);
+      gargoyle.position.set(-side * 4.8, 5.5, gy);
+      cryptGroup.add(gargoyle);
+    });
+
+    // Crooked weathered tombstones clustered in the adjacent graveyard patch
+    for (let t = 0; t < 5; t++) {
+      const tx = rng.range(-3.5, 3.5);
+      const tz = -4.0 + t * 2.0;
+      const stoneH = rng.range(1.4, 2.2);
+      const tombstone = new THREE.Mesh(new THREE.BoxGeometry(0.8, stoneH, 0.25), mats.hauntedGothicStoneMat);
+      tombstone.position.set(tx, stoneH * 0.5, tz);
+      tombstone.rotation.y = rng.range(-0.3, 0.3);
+      tombstone.rotation.z = rng.range(-0.15, 0.15); // Crooked tilt
+      tombstone.castShadow = true;
+      cryptGroup.add(tombstone);
+    }
 
     group.add(cryptGroup);
   }

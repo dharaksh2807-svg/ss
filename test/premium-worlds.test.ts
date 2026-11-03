@@ -118,6 +118,13 @@ const freePlanner = new DistrictPlanner(12345);
 const freeRoute = new Set(Array.from({ length: 100 }, (_, i) => freePlanner.getDistrictAtZ(-i * 600 - 100).districtId));
 for (const id of FREE_WORLD_IDS) check(freeRoute.has(id), `Dynamic Districts can visit ${id}`);
 
+// Phase 3E: HAUNTED_CARNIVAL is genuinely implemented and registered in production.
+const hauntedWorld = getWorld('HAUNTED_CARNIVAL') as any;
+const hauntedId = hauntedWorld.id as EnvironmentId;
+check(hauntedWorld.available && hauntedWorld.implemented, 'HAUNTED_CARNIVAL is implemented and available in catalog');
+check(registry.has(hauntedId), 'HAUNTED_CARNIVAL is registered in environment registry');
+check(hauntedWorld.coinCost === 10500, 'HAUNTED_CARNIVAL costs 10500 coins');
+
 // Phase 3D: PHANTOM_LINE is genuinely implemented and registered in production.
 const phantomWorld = getWorld('PHANTOM_LINE') as any;
 const phantomId = phantomWorld.id as EnvironmentId;
@@ -313,6 +320,8 @@ check(content.innerHTML.includes('data-buy-world="DOOMSDAY_LAST_TRANSIT"') || co
   'Shop renders interactive action for Doomsday Last Transit');
 check(content.innerHTML.includes('data-buy-world="PHANTOM_LINE"') || content.innerHTML.includes('data-equip-world="PHANTOM_LINE"'),
   'Shop renders interactive action for Phantom Line');
+check(content.innerHTML.includes('data-buy-world="HAUNTED_CARNIVAL"') || content.innerHTML.includes('data-equip-world="HAUNTED_CARNIVAL"'),
+  'Shop renders interactive action for Haunted Carnival');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 5, 'All four originals + purchased Neon Rainline are owned');
 progression.purchaseTheme('ORBITAL_HALO');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 6, 'All four originals + purchased Neon Rainline + Orbital Halo are owned');
@@ -325,11 +334,15 @@ check(getWorlds(progression.getState()).filter((world) => world.owned).length ==
 wallet.addCoins(9000);
 progression.purchaseTheme('PHANTOM_LINE');
 check(getWorlds(progression.getState()).filter((world) => world.owned).length === 9, 'All four originals + all five premium worlds are owned');
+wallet.addCoins(10500);
+progression.purchaseTheme('HAUNTED_CARNIVAL');
+check(getWorlds(progression.getState()).filter((world) => world.owned).length === 10, 'All four originals + all six premium worlds are owned');
 modal.render();
 check(list.innerHTML.includes('data-env-id="ORBITAL_HALO"'), 'Unlocked Orbital Halo appears in selection modal');
 check(list.innerHTML.includes('data-env-id="ABYSSAL_GLASSLINE"'), 'Unlocked Abyssal Glassline appears in selection modal');
 check(list.innerHTML.includes('data-env-id="DOOMSDAY_LAST_TRANSIT"'), 'Unlocked Doomsday Last Transit appears in selection modal');
 check(list.innerHTML.includes('data-env-id="PHANTOM_LINE"'), 'Unlocked Phantom Line appears in selection modal');
+check(list.innerHTML.includes('data-env-id="HAUNTED_CARNIVAL"'), 'Unlocked Haunted Carnival appears in selection modal');
 check(progression.getKeys() === baseline.keys, 'World APIs preserve revive Key balance');
 check(progression.consumeKeys(1) && progression.getKeys() === baseline.keys - 1, 'Existing revive Key spending still works');
 check(!wallet.deductCoinsPersisted(-10) && !wallet.deductCoinsPersisted(NaN) && !wallet.deductCoinsPersisted(Infinity),
