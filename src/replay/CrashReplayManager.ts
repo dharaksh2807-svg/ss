@@ -11,6 +11,7 @@ export type DeathCategory =
   | 'TRAIN_FRONTAL'
   | 'TRAIN_FLANK'
   | 'TRAIN_ROOF_MISSED'
+  | 'ROOFTOP_OBSTACLE'
   | 'LOW_BARRIER'
   | 'HIGH_BARRIER'
   | 'PILLAR'
@@ -79,6 +80,7 @@ export interface FatalCollisionMetadata {
   obstacleId?: string;
   obstacleType?: ObstacleType;
   collisionType?: string;
+  componentId?: string;
   isFrontal?: boolean;
   isFlankContact?: boolean;
   isGlance?: boolean;
@@ -248,7 +250,10 @@ export class CrashReplayManager {
       timestamp: diagnostic?.timestamp || (typeof performance !== 'undefined' ? performance.now() : Date.now()),
       reason,
       obstacleId: obstacle?.id || diagnostic?.obstacleId,
-      obstacleType: obstacle?.type || (diagnostic?.collisionType as ObstacleType),
+      obstacleType: diagnostic?.componentId
+        ? diagnostic.collisionType as ObstacleType
+        : obstacle?.type || (diagnostic?.collisionType as ObstacleType),
+      componentId: diagnostic?.componentId,
       collisionType: diagnostic?.collisionType || obstacle?.type || reason,
       isFrontal: isFrontal !== undefined ? isFrontal : !isFlankContact,
       isFlankContact: isFlankContact,
@@ -320,6 +325,16 @@ export class CrashReplayManager {
         headline: 'BUSTED BY TRANSIT SECURITY',
         explanation: 'Captured by Officer Thorne after losing momentum from consecutive obstacles.',
         proTip: 'Avoid stumbling into barriers or walls to keep Officer Thorne at a safe distance.'
+      };
+    }
+
+    if (obstacleType === 'ROOFTOP_AC_HURDLE' || obstacleType === 'ROOFTOP_VENT') {
+      return {
+        category: 'ROOFTOP_OBSTACLE',
+        icon: '⚠️',
+        headline: 'ROOFTOP EQUIPMENT IMPACT',
+        explanation: `Hit a rooftop ${obstacleType === 'ROOFTOP_AC_HURDLE' ? 'AC unit' : 'vent'} at ${spdStr}.`,
+        proTip: 'Jump over the marked rooftop equipment before reaching it.'
       };
     }
 

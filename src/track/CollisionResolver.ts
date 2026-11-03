@@ -88,7 +88,7 @@ export class CollisionResolver {
             if (hasShield || hasHoverboard) {
               return {
                 outcome: 'PROTECTED_HIT',
-                diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'PROTECTED_HIT'),
+                diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'PROTECTED_HIT', ro),
                 isGlance: false,
                 overlapX: 0,
                 isFrontal: true,
@@ -97,7 +97,7 @@ export class CollisionResolver {
             }
             return {
               outcome: 'MAJOR_FATAL_HIT',
-              diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'MAJOR_FATAL_HIT'),
+              diagnostic: this.buildDiagnostic(obs, playerPos, relVel, guardState, hasShield, hasHoverboard, isInvulnerable, 'MAJOR_FATAL_HIT', ro),
               isGlance: false,
               overlapX: 0,
               isFrontal: true,
@@ -425,12 +425,18 @@ export class CollisionResolver {
     hasShield: boolean,
     hasHoverboard: boolean,
     isInvulnerable: boolean,
-    outcome: CollisionOutcome
+    outcome: CollisionOutcome,
+    component?: { id: string; type: string; collider: THREE.Box3 }
   ): CollisionDiagnostic {
     return {
       timestamp: typeof performance !== 'undefined' ? performance.now() : Date.now(),
       obstacleId: obs.id,
-      collisionType: obs.type,
+      collisionType: component?.type ?? obs.type,
+      componentId: component?.id,
+      componentBounds: component ? {
+        min: { x: component.collider.min.x, y: component.collider.min.y, z: component.collider.min.z },
+        max: { x: component.collider.max.x, y: component.collider.max.y, z: component.collider.max.z }
+      } : undefined,
       contactPosition: {
         x: Math.round(playerPos.x * 100) / 100,
         y: Math.round(playerPos.y * 100) / 100,

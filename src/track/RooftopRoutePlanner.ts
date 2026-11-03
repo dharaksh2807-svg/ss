@@ -411,6 +411,11 @@ export class RooftopRoutePlanner {
       }
     }
 
+    // Run/transfer archetypes do not plan equipment jumps. Stock consists also
+    // serve explicit obstacle challenges, so remove inherited equipment only
+    // from these route instances, from both the mesh and collision definition.
+    for (const leg of legs) leg.composition.rooftopObstacles = [];
+
     const lastLeg = legs[legs.length - 1];
     const totalLength = lastLeg ? lastLeg.chunkRelativeZ + lastLeg.length : requiredTraversableDistance;
     const exitLane = lastLeg ? lastLeg.lane : entryLane;

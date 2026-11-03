@@ -20,6 +20,8 @@ export interface CollisionDiagnostic {
   timestamp: number;
   obstacleId: string;
   collisionType: string;
+  componentId?: string;
+  componentBounds?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
   contactPosition: { x: number; y: number; z: number };
   relativeVelocity: { x: number; y: number; z: number };
   activeGuardState: ChaseState | string;

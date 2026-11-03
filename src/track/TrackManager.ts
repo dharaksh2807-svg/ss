@@ -956,7 +956,12 @@ export class TrackManager {
 
     // 1. Recycle trailing chunks ahead of player
     for (const chunk of this.chunks) {
-      const chunkEndZ = chunk.chunkZ - CONSTANTS.CHUNK_LENGTH;
+      // Long consists/routes can extend past the chunk grid. Retain their actual
+      // geometry during airborne transfers, when no support ID is held.
+      let chunkEndZ = chunk.chunkZ - CONSTANTS.CHUNK_LENGTH;
+      for (const obs of chunk.obstacles) if (obs.active) {
+        chunkEndZ = Math.min(chunkEndZ, obs.collider.min.z, obs.exitRampCollider?.min.z ?? Infinity);
+      }
       if (chunkEndZ > player.position.z + CONSTANTS.DESPAWN_DISTANCE_BEHIND) {
         // Guard: Never recycle a chunk while the player is currently supported on its train/ramp/roof
         const isSupportingPlayer = chunk.obstacles.some(
