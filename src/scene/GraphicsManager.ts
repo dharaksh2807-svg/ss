@@ -82,6 +82,7 @@ export class GraphicsManager {
     if (typeof window === 'undefined') return 'HIGH';
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent)) ||
                      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
     const cores = navigator.hardwareConcurrency || 4;
 
@@ -160,7 +161,7 @@ export class GraphicsManager {
   }
 
   public getConfigForQuality(quality: ResolvedQuality): QualityConfig {
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+    const dpr = typeof window !== 'undefined' ? Math.max(1, window.devicePixelRatio || 1) : 1;
 
     switch (quality) {
       case 'LOW':

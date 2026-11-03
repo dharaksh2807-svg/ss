@@ -31,7 +31,7 @@ for (const kind of ['input', 'select', 'textarea', 'editable'] as const) {
 }
 assert.deepEqual(key('ArrowLeft', 'body'), { prevented: true, actions: ['LEFT'] }, 'Gameplay arrow dispatches once and prevents page scrolling');
 assert.deepEqual(key('Space', 'body'), { prevented: true, actions: ['UP'] }, 'Gameplay jump shortcut remains available');
-assert.deepEqual(key('ArrowLeft', 'body', true), { prevented: false, actions: [] }, 'Repeat does not duplicate lane input');
+assert.deepEqual(key('ArrowLeft', 'body', true), { prevented: true, actions: [] }, 'Repeat prevents scrolling without duplicate lane input');
 input.setEnabled(false);
 assert.deepEqual(key('ArrowLeft', 'body'), { prevented: false, actions: [] }, 'Paused gameplay ignores movement');
 assert.deepEqual(key('Escape', 'button'), { prevented: true, actions: ['PAUSE'] }, 'Pause shortcut remains available with a focused button');

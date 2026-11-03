@@ -101,6 +101,8 @@ export class Game {
   private progression: ProgressionManager;
   private lifecycleState: GameLifecycleState = 'MENU';
   private lastTime: number = 0;
+  private contextLost = false;
+  private suspended = false;
   private score: number = 0;
   private coinsCount: number = 0;
   private scoreMultiplier: number = 1;
@@ -126,6 +128,7 @@ export class Game {
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+    this.canvas.tabIndex = -1;
     this.worldScene = new WorldScene(this.canvas);
     this.worldScene.scene.add(this.debugGroup);
     this.cameraController = new CameraController();
@@ -251,6 +254,8 @@ export class Game {
     this.cameraController.setLobbyMode(true);
 
     this.setupEvents();
+    this.setupLifecycle();
+    this.inputManager.setEnabled(false);
     this.startScreen.show();
     this.hud.hide();
 
@@ -281,6 +286,48 @@ export class Game {
     // Start requestAnimationFrame loop
     this.lastTime = performance.now();
     requestAnimationFrame(this.gameLoop.bind(this));
+  }
+
+  private setupLifecycle(): void {
+    const suspend = () => {
+      this.suspended = true;
+      this.inputManager.resetTransientState();
+      this.lastTime = performance.now();
+      this.pause();
+    };
+    const foreground = () => {
+      this.suspended = document.hidden;
+      this.lastTime = performance.now();
+      // Stay paused until the player explicitly resumes.
+    };
+    document.addEventListener('visibilitychange', () => document.hidden ? suspend() : foreground());
+    window.addEventListener('blur', suspend);
+    window.addEventListener('pagehide', suspend);
+    window.addEventListener('focus', foreground);
+    window.addEventListener('pageshow', foreground);
+    const resize = () => {
+      this.inputManager.resetTransientState();
+      this.cameraController.onResize();
+      this.worldScene.onWindowResize();
+      this.lastTime = performance.now();
+    };
+    window.addEventListener('orientationchange', resize);
+    window.addEventListener('resize', () => this.inputManager.resetTransientState());
+    window.visualViewport?.addEventListener('resize', resize);
+    EventBus.getInstance().on('INPUT_DEVICE_DISCONNECTED', () => {
+      this.inputManager.resetTransientState();
+      this.pause();
+    });
+    this.canvas.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault(); // Permit Three.js to rebuild GPU resources on restoration.
+      this.contextLost = true;
+      suspend();
+    });
+    this.canvas.addEventListener('webglcontextrestored', () => {
+      this.contextLost = false;
+      foreground();
+      resize();
+    });
   }
 
   private setupEvents(): void {
@@ -533,6 +580,7 @@ export class Game {
   }
 
   public startRun(mode: GameMode = 'NORMAL', isRetry: boolean = false): void {
+    if (this.contextLost || document.hidden || this.suspended) return;
     if (this.isRestartInProgress && !isRetry) return;
     this.navigation.clear();
 
@@ -660,6 +708,7 @@ export class Game {
     this.hud.setMultiplier(this.scoreMultiplier);
     this.hud.show();
     this.inputManager.setEnabled(true);
+    this.canvas.focus({ preventScroll: true });
 
     this.soundManager.initAudio();
     this.soundManager.setMusicState('RUNNING_NORMAL');
@@ -713,9 +762,14 @@ export class Game {
 
   public resume(): void {
     if (this.lifecycleState !== 'PAUSED') return;
+    if (this.contextLost || document.hidden || this.suspended) {
+      this.pauseModal.show(); // A blocked Resume click must not leave an invisible pause screen.
+      return;
+    }
     this.lifecycleState = 'PLAYING';
     this.inputManager.setEnabled(true);
     this.pauseModal.hide();
+    this.canvas.focus({ preventScroll: true });
     this.lastTime = performance.now(); // Avoid huge delta jump
     this.soundManager.resumeMusic();
     EventBus.getInstance().emit(EVENTS.GAME_RESUME);
@@ -1015,6 +1069,10 @@ export class Game {
   }
 
   public quickRestart(): void {
+    if (this.contextLost || document.hidden || this.suspended) {
+      if (this.lifecycleState === 'PAUSED') this.pauseModal.show();
+      return;
+    }
     if (this.isRestartInProgress) return;
     this.isRestartInProgress = true;
 
@@ -1043,6 +1101,11 @@ export class Game {
   private gameLoop(now: number): void {
     requestAnimationFrame(this.gameLoop.bind(this));
 
+    if (this.contextLost || this.suspended || document.hidden) {
+      this.lastTime = now;
+      return;
+    }
+    this.inputManager.pollGamepads();
     const rawDt = (now - this.lastTime) / 1000;
     this.lastTime = now;
     if (rawDt > 0 && rawDt < 1.0) {

@@ -92,6 +92,16 @@ export class CameraController {
     });
   }
 
+  private getViewportFraming(): { follow: number; extraZ: number } {
+    const aspect = Math.max(0.2, this.camera.aspect);
+    // Preserve lane-width coverage without widening vertical FOV to a distorted fisheye.
+    // 5.2m half-width includes the outer runner silhouette and track edges at runner depth.
+    return {
+      follow: Math.min(1, Math.max(0, (aspect - 0.5) / 0.5)),
+      extraZ: aspect < 1 ? Math.max(0, 5.2 / (Math.tan(THREE.MathUtils.degToRad(34)) * aspect) - 4.85) : 0
+    };
+  }
+
   public getCameraMode(): CameraMode {
     return this.cameraMode;
   }
@@ -209,14 +219,18 @@ export class CameraController {
       const theta = THREE.MathUtils.lerp(startAngle, endAngle, smoothU);
 
       const startRadius = isPortrait ? 2.5 : 2.8;
-      const endRadius = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+      const framing = this.getViewportFraming();
+      const endRadius = (isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z) + framing.extraZ;
       const radius = THREE.MathUtils.lerp(startRadius, endRadius, smoothU);
 
       const startHeight = 1.25;
       const endHeight = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
       const height = THREE.MathUtils.lerp(startHeight, endHeight, smoothU);
 
-      const camX = playerPos.x + radius * Math.sin(theta);
+      const orbitX = playerPos.x + radius * Math.sin(theta);
+      const camX = isPortrait
+        ? THREE.MathUtils.lerp(orbitX, (playerPos.x + (isCharFocus ? 0.68 : 0)) * framing.follow, smoothU)
+        : orbitX;
       const camZ = playerPos.z + radius * Math.cos(theta);
       const camY = playerPos.y + height;
       this.currentPosition.set(camX, camY, camZ);
@@ -246,13 +260,14 @@ export class CameraController {
     this.isIntroMode = false;
     const isCharFocus = this.cameraMode === 'CHARACTER_FOCUS';
     const offsetX = isCharFocus ? 0.68 : 0;
-    const offsetZ = isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z;
+    const framing = this.getViewportFraming();
+    const offsetZ = (isCharFocus ? 5.25 : CONSTANTS.CAMERA_OFFSET_Z) + framing.extraZ;
     const offsetY = isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y;
     const lookY = isCharFocus ? 1.57 : CONSTANTS.CAMERA_LOOK_Y;
     const lookX = isCharFocus ? playerPos.x - 0.18 : playerPos.x;
 
     this.currentPosition.set(
-      playerPos.x + offsetX,
+      (playerPos.x + offsetX) * framing.follow,
       playerPos.y + offsetY,
       playerPos.z + offsetZ
     );
@@ -424,8 +439,10 @@ export class CameraController {
       }
     }
 
-    // Target position behind and above player in gameplay
-    this.targetPosition.x = playerPos.x + this.currentLateralOffset;
+    const framing = this.getViewportFraming();
+    targetCamOffsetZ += framing.extraZ;
+    // Narrow views center the track so both outer lanes stay readable during lane switches.
+    this.targetPosition.x = (playerPos.x + this.currentLateralOffset) * framing.follow;
     this.targetPosition.y = targetCamY;
     this.targetPosition.z = playerPos.z + targetCamOffsetZ;
 
@@ -457,7 +474,7 @@ export class CameraController {
     // Look at point slightly ahead and above the character, with centered lateral tracking
     // In Character Focus, angle slightly inward across runner to keep center lane & incoming trains locked in center
     const inwardAimOffset = this.currentLateralOffset * 0.28;
-    this.lookTarget.x = this.currentPosition.x * 0.45 + (playerPos.x - inwardAimOffset) * 0.55;
+    this.lookTarget.x = this.currentPosition.x * 0.45 + (playerPos.x - inwardAimOffset) * framing.follow * 0.55;
     this.lookTarget.y = targetLookY;
     this.lookTarget.z = playerPos.z + targetLookAheadZ;
 
@@ -477,19 +494,21 @@ export class CameraController {
       this.camera.position.copy(this.currentPosition);
       this.camera.lookAt(this.lobbyLookTarget);
     } else {
+      const framing = this.getViewportFraming();
       this.currentPosition.set(
-        playerPos.x,
+        playerPos.x * framing.follow,
         playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
-        playerPos.z + CONSTANTS.CAMERA_OFFSET_Z
+        playerPos.z + CONSTANTS.CAMERA_OFFSET_Z + framing.extraZ
       );
       this.camera.position.copy(this.currentPosition);
     }
   }
 
   public onResize(): void {
+    if (window.innerWidth <= 0 || window.innerHeight <= 0) return;
     this.camera.aspect = window.innerWidth / window.innerHeight;
     const isPortrait = this.camera.aspect < 1.0;
-    this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
+    if (!this.isPhotoMode) this.camera.fov = isPortrait ? 68.0 : CONSTANTS.CAMERA_FOV;
     this.camera.updateProjectionMatrix();
   }
 }

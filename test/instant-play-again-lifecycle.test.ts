@@ -1,5 +1,6 @@
 import { EventBus, EVENTS } from '../src/core/EventBus';
 import { GameOverModal } from '../src/ui/GameOverModal';
+import { NavigationCoordinator } from '../src/ui/NavigationCoordinator';
 import { ProgressionManager } from '../src/progression/ProgressionManager';
 import { Player } from '../src/player/Player';
 import { ChaserModel } from '../src/characters/ChaserModel';
@@ -129,8 +130,10 @@ globalThis.requestAnimationFrame = (cb: Function) => { cb(Date.now()); return 1;
     }
   },
   dispatchEvent: (event: any) => {
+    let stopped = false;
+    event.stopImmediatePropagation = () => { stopped = true; };
     const fns = windowListeners[event.type] || [];
-    for (const fn of fns) fn(event);
+    for (const fn of fns) { fn(event); if (stopped) break; }
   },
   setTimeout: setTimeout,
   clearTimeout: clearTimeout,
@@ -195,6 +198,8 @@ const rootOverlay = new MockHTMLElement();
 rootOverlay.id = 'ui-overlay';
 
 (globalThis as any).document = {
+  addEventListener() {},
+  querySelector: () => null,
   getElementById: (id: string) => {
     if (id === 'ui-overlay') return rootOverlay;
     return rootOverlay.findChildById(id) || null;
@@ -230,6 +235,10 @@ async function runTestSuite() {
   console.log('--- Suite 1: GameOverModal Action Buttons & Design System ---');
   const modal = new GameOverModal();
   const modalEl = (modal as any).element as MockHTMLElement;
+  // Escape is owned by the navigation coordinator, as in the actual Game wiring.
+  const navigation = new NavigationCoordinator(bus, () => 'GAMEOVER');
+  navigation.register('GAMEOVER', { element: modalEl as any, show: () => modal.restore(), hide: () => modal.hide() });
+  bus.on('GO_TO_MENU', () => modal.hide());
 
   assert(modalEl !== null, 'GameOverModal element successfully instantiated');
   assert(modalEl.innerHTML.includes('id="game-over-retry-btn"'), 'Primary button #game-over-retry-btn exists in HTML');

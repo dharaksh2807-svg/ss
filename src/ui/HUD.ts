@@ -92,19 +92,7 @@ export class HUD {
     this.comboEventEl = document.getElementById('hud-combo-event');
     this.comboTimerFillEl = document.getElementById('hud-combo-timer-fill');
 
-    if (this.boardBtn) {
-      let lastBoardTriggerTime = 0;
-      const triggerHoverboard = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const now = performance.now();
-        if (now - lastBoardTriggerTime < 250) return; // Prevent duplicate activation from overlapping pointerdown & click
-        lastBoardTriggerTime = now;
-        this.hoverboardManager.activate();
-      };
-      this.boardBtn.addEventListener('pointerdown', triggerHoverboard);
-      this.boardBtn.addEventListener('click', triggerHoverboard);
-    }
+    // Board activation is routed through InputManager, like keyboard and touch controls.
 
     // Create mode badge container if not present
     let modeEl = document.getElementById('hud-mode-badge');

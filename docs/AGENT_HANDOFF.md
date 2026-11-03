@@ -1,5 +1,10 @@
 # METRO RUNNER 3D — UI ARCHITECTURE HANDOFF
 
+## Latest completion — Task 8 (2026-11-04)
+
+Universal keyboard/touch/standard-gamepad input, portrait framing, lifecycle pause/resume, and context recovery are implemented. See [Task 8 verification and controls](TASK8_INPUT_VERIFICATION.md) for mappings, executed tests, limitations, and the bounded scope. InputManager owns device adaptation and board buttons; Player still owns all movement. Game owns lifecycle interruption handling. NavigationCoordinator already owns Escape; the older findings below describe the earlier UI audit and are not a current bug list. No procedural generation or collision behavior changed. Physical mobile hardware, Safari, controllers, and native consoles were not certified.
+
+
 ## 1. Relevant File Paths & Responsibilities
 - `src/ui/StartScreen.ts`: Renders lobby HTML, binds top/side/bottom buttons, displays active runner/board/world, updates UI on events.
 - `src/ui/ShopModal.ts`: Store interface handling 6 categories (`FEATURED`, `UPGRADES`, `BOOSTERS`, `CHARACTERS`, `HOVERBOARDS`, `WORLDS`).

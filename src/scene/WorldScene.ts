@@ -2179,6 +2179,7 @@ export class WorldScene {
   }
 
   public onWindowResize(): void {
+    if (window.innerWidth <= 0 || window.innerHeight <= 0) return;
     const config = GraphicsManager.getInstance().getActiveConfig();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(config.pixelRatio);

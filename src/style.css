@@ -707,8 +707,8 @@ html, body {
   pointer-events: auto;
 }
 
-@media (min-width: 900px) {
-  /* On large desktop screens, hide on-screen buttons by default unless ALWAYS is forced */
+@media (min-width: 900px) and (any-pointer: fine) and (not (any-pointer: coarse)) {
+  /* Keep touch controls available on large tablets and hybrid touch laptops. */
   .touch-controls-bar:not(.touch-mode-always) {
     display: none !important;
   }
@@ -11239,4 +11239,9 @@ html, body { touch-action: auto; }
   #hud .hud-notices :is(.hud-pickup-toast, .hud-feedback-stack) { display: none !important; }
   #hud .hud-notices .first-use-desc { display: none; }
   #hud .hud-skill-combo-widget { top: calc(var(--ui-top) + 102px); bottom: auto; }
+}
+
+/* Short landscape screens keep the runner and approaching track clear between thumbs. */
+@media (max-height: 500px) and (min-width: 600px) {
+  #hud .touch-controls-bar { justify-content: space-between; }
 }
