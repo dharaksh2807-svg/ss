@@ -10,11 +10,15 @@ export interface WorldDefinition {
   readonly environmentId: WorldId;
   readonly displayName: string;
   readonly description: string;
+  readonly subtitle?: string;
+  readonly tagline?: string;
   readonly rarity: 'COMMON' | 'EPIC' | 'LEGENDARY';
   readonly unlock: 'FREE' | 'COINS';
   readonly coinCost: number;
   readonly keyCost: number | null;
   readonly previewReference: string | null;
+  readonly previewImage: string;
+  readonly features: readonly string[];
   readonly implemented: boolean;
   readonly available: boolean;
   readonly dynamicEligible: boolean;
@@ -30,38 +34,68 @@ export interface WorldDefinition {
 const PREMIUM_WORLDS: readonly WorldDefinition[] = [
   {
     id: 'NEON_RAINLINE', environmentId: 'NEON_RAINLINE', displayName: 'Neon Rainline',
-    description: 'A rain-soaked neon megacity illuminated by holographic transit arches, towering megastructures, and glistening rails.', rarity: 'EPIC',
+    description: 'A rain-soaked neon megacity illuminated by holographic transit arches, towering megastructures, and glistening rails.',
+    subtitle: 'Cyberpunk Rain Corridor',
+    tagline: 'High-speed rails slicing through electric storm rain and holographic ads.',
+    rarity: 'EPIC',
     unlock: 'COINS', coinCost: 3000, keyCost: null, previewReference: 'environment:NEON_RAINLINE',
+    previewImage: '/worlds/neon_rainline.png',
+    features: ['Holographic Arches', 'Reflective Rain Puddles', 'Futuristic Maglevs'],
     implemented: true, available: true, dynamicEligible: true, icon: '🌧️', accentColor: '#e879f9'
   },
   {
     id: 'ORBITAL_HALO', environmentId: 'ORBITAL_HALO', displayName: 'Orbital Halo',
-    description: 'An immense futuristic orbital transportation station overlooking a breathtaking planet, with sweeping megastructure rings and celestial transit rails.', rarity: 'LEGENDARY',
+    description: 'An immense futuristic orbital transportation station overlooking a breathtaking planet, with sweeping megastructure rings and celestial transit rails.',
+    subtitle: 'Celestial Planetary Orbit',
+    tagline: 'Defy gravity along sweeping orbital rings above a glowing planetary horizon.',
+    rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 4500, keyCost: null, previewReference: 'environment:ORBITAL_HALO',
+    previewImage: '/worlds/orbital_halo.png',
+    features: ['Planetary Atmosphere', 'Quantum Maglev Trains', 'Spacecraft Docks'],
     implemented: true, available: true, dynamicEligible: true, icon: '🪐', accentColor: '#38bdf8'
   },
   {
     id: 'ABYSSAL_GLASSLINE', environmentId: 'ABYSSAL_GLASSLINE', displayName: 'Abyssal Glassline',
-    description: 'A colossal glass transit railway through the deep ocean abyss, surrounded by luminescent sea life, submerged megacity domes, and hydrothermal trench architecture.', rarity: 'LEGENDARY',
+    description: 'A colossal glass transit railway through the deep ocean abyss, surrounded by luminescent sea life, submerged megacity domes, and hydrothermal trench architecture.',
+    subtitle: 'Deep Ocean Megacity',
+    tagline: 'Rush through pressurized transparent tubes surrounded by deep-sea leviathans.',
+    rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 6000, keyCost: null, previewReference: 'environment:ABYSSAL_GLASSLINE',
+    previewImage: '/worlds/abyssal_glassline.png',
+    features: ['Bioluminescent Fauna', 'Submerged Domes', 'Hydrodynamic Maglevs'],
     implemented: true, available: true, dynamicEligible: true, icon: '🌊', accentColor: '#22d3ee'
   },
   {
     id: 'DOOMSDAY_LAST_TRANSIT', environmentId: 'DOOMSDAY_LAST_TRANSIT', displayName: 'Doomsday: Last Transit',
-    description: 'The final functioning evacuation railway through the ruins of a collapsing futuristic metropolis, framed by shattered monolithic skyscrapers, burning horizons, falling ash, and emergency distress beacons.', rarity: 'LEGENDARY',
+    description: 'The final functioning evacuation railway through the ruins of a collapsing futuristic metropolis, framed by shattered monolithic skyscrapers, burning horizons, falling ash, and emergency distress beacons.',
+    subtitle: 'Cataclysmic Evacuation Line',
+    tagline: 'Escape across fractured rail corridors as an apocalyptic skyline burns.',
+    rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 7500, keyCost: null, previewReference: 'environment:DOOMSDAY_LAST_TRANSIT',
+    previewImage: '/worlds/doomsday_last_transit.png',
+    features: ['Monolithic Ruined Spires', 'Burning Ember Skies', 'Armored Evacuation Trains'],
     implemented: true, available: true, dynamicEligible: true, icon: '☄️', accentColor: '#f97316'
   },
   {
     id: 'PHANTOM_LINE', environmentId: 'PHANTOM_LINE', displayName: 'Phantom Line',
-    description: 'An abandoned subterranean transit system gripped by chilling tension, decaying Victorian-modern platforms, flickering cathode fluorescents, shadowy apparitions, and silent ghost trains.', rarity: 'LEGENDARY',
+    description: 'An abandoned subterranean transit system gripped by chilling tension, decaying Victorian-modern platforms, flickering cathode fluorescents, shadowy apparitions, and silent ghost trains.',
+    subtitle: 'Subterranean Ghost Horror',
+    tagline: 'Navigate decaying Victorian subway catacombs haunted by silent spectral trains.',
+    rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 9000, keyCost: null, previewReference: 'environment:PHANTOM_LINE',
+    previewImage: '/worlds/phantom_line.png',
+    features: ['Eerie Apparitions', 'Ghost Train Sidings', 'Decaying Subway Ceramic'],
     implemented: true, available: true, dynamicEligible: true, icon: '👻', accentColor: '#67e8f9'
   },
   {
     id: 'HAUNTED_CARNIVAL', environmentId: 'HAUNTED_CARNIVAL', displayName: 'Haunted Carnival',
-    description: 'An extravagant gothic theme park railway flanked by towering castles, glowing jack-o\'-lantern shrines, creepy carnival big tops, and an immense rotating haunted Ferris wheel.', rarity: 'LEGENDARY',
+    description: 'An extravagant gothic theme park railway flanked by towering castles, glowing jack-o\'-lantern shrines, creepy carnival big tops, and an immense rotating haunted Ferris wheel.',
+    subtitle: 'Gothic Halloween Fairground',
+    tagline: 'Ride through a supernatural carnival with giant glowing jack-o\'-lanterns and castles.',
+    rarity: 'LEGENDARY',
     unlock: 'COINS', coinCost: 10500, keyCost: null, previewReference: 'environment:HAUNTED_CARNIVAL',
+    previewImage: '/worlds/haunted_carnival.png',
+    features: ['Rotating Ferris Wheel', 'Giant Pumpkin Shrines', 'Haunted Big-Top Tents'],
     implemented: true, available: true, dynamicEligible: true, icon: '🎃', accentColor: '#f97316'
   }
 ];
@@ -72,15 +106,51 @@ export interface WorldProgress {
   includePremiumThemesInDynamic: boolean;
 }
 
+const FREE_WORLD_METADATA: Record<string, { previewImage: string; subtitle: string; tagline: string; features: string[] }> = {
+  MODERN_METRO: {
+    previewImage: '/worlds/modern_metro.png',
+    subtitle: 'Sunlit Urban Metropolis',
+    tagline: 'The iconic high-energy transit line through gleaming city skyscrapers.',
+    features: ['Glass Skyscraper Skyline', 'LED Sign Gantries', 'Sleek Modern Transit']
+  },
+  HISTORIC_QUARTER: {
+    previewImage: '/worlds/historic_quarter.png',
+    subtitle: 'Golden Hour Heritage Railway',
+    tagline: 'Vintage charm along classic brownstones and industrial brick foundries.',
+    features: ['Victorian Brownstones', 'Cobblestone Ballast', 'Aged Iron Telegraphs']
+  },
+  UNDERGROUND_METRO: {
+    previewImage: '/worlds/underground_metro.png',
+    subtitle: 'Subterranean Deep Tunnel',
+    tagline: 'Dark vaulted tunnels echoing with high-speed commuter trains.',
+    features: ['Cavernous Subway Tubes', 'Fluorescent Fixtures', 'Deep Rail Rumble']
+  },
+  NEON_INDUSTRIAL: {
+    previewImage: '/worlds/neon_industrial.png',
+    subtitle: 'Molten Foundry Yard',
+    tagline: 'Glowing amber blast furnaces and towering gantry crane machinery.',
+    features: ['Heavy Factory Silos', 'Molten Amber Foundry Glow', 'Gantry Cranes']
+  }
+};
+
 export function getWorldCatalog(): readonly WorldDefinition[] {
   const registry = EnvironmentRegistry.getInstance();
   return [
     ...FREE_WORLD_IDS.map((id): WorldDefinition => {
       const theme = registry.get(id);
+      const meta = FREE_WORLD_METADATA[id] || {
+        previewImage: `/worlds/${id.toLowerCase()}.png`,
+        subtitle: 'Playable District',
+        tagline: theme.description,
+        features: ['Modular Scenery', 'Dynamic Time', 'Full Collision Fairness']
+      };
       return {
         id, environmentId: id, displayName: theme.displayName, description: theme.description,
+        subtitle: meta.subtitle, tagline: meta.tagline,
         rarity: 'COMMON', unlock: 'FREE', coinCost: 0, keyCost: null,
-        previewReference: `environment:${id}`, implemented: true, available: registry.has(id),
+        previewReference: `environment:${id}`, previewImage: meta.previewImage,
+        features: meta.features,
+        implemented: true, available: registry.has(id),
         dynamicEligible: true, icon: theme.badgeEmoji, accentColor: theme.accentColor
       };
     }),

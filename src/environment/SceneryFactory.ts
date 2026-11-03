@@ -3732,7 +3732,7 @@ export class SceneryFactory {
     // High-arched cylindrical segment spanning between the two walls (Y = 6.4m to apex 11.2m)
     // Span width is 2 * wallX = 22.4m, radius = 13.5m, arc centered at Y = -2.3m, Z = -chunkLength/2
     const canopyRadius = 13.5;
-    const canopySpanAngle = Math.PI * 0.54; // Arch segment
+    const canopySpanAngle = Math.PI * 0.40; // Arch segment spanning safely above Y = 8.5m clearance
     const canopyGeo = new THREE.CylinderGeometry(canopyRadius, canopyRadius, chunkLength, 18, 1, true, -canopySpanAngle * 0.5, canopySpanAngle);
     const canopyMesh = new THREE.Mesh(canopyGeo, mats.abyssalGlassTunnelMat);
     canopyMesh.name = 'tunnel_scenery';
@@ -4606,7 +4606,7 @@ export class SceneryFactory {
     // providing generous overhead clearance for runner at 9.0m and camera at 11.4m with 0 clipping!
     const ceilingH = isAerialCorridor
       ? (CONSTANTS.TUNNEL_AERIAL_VAULT_HEIGHT || 12.5)
-      : (isStationHall ? 9.6 : 8.8);
+      : (isStationHall ? 10.6 : 9.8);
     const wallH = isAerialCorridor ? 10.5 : 6.5;
 
     const wallGeo = new THREE.BoxGeometry(wallThick, wallH, chunkLength);
@@ -4842,16 +4842,16 @@ export class SceneryFactory {
     const ductGeo = new THREE.CylinderGeometry(0.38, 0.38, chunkLength, 12);
     const duct = new THREE.Mesh(ductGeo, mats.subwayDuctMat);
     duct.rotation.x = Math.PI / 2;
-    duct.position.set(-3.8, ceilingH - 0.7, -chunkLength * 0.5);
+    duct.position.set(-3.8, ceilingH - 0.5, -chunkLength * 0.5);
     duct.castShadow = true;
     undergroundGroup.add(duct);
 
     // Duct suspension hangers
     if (detail !== 'MINIMAL') {
-      const hangerGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.7, 6);
+      const hangerGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
       for (let hz = 0; hz < chunkLength; hz += 16) {
         const hanger = new THREE.Mesh(hangerGeo, mats.tunnelRibMat);
-        hanger.position.set(-3.8, ceilingH - 0.35, -hz - 8);
+        hanger.position.set(-3.8, ceilingH - 0.25, -hz - 8);
         undergroundGroup.add(hanger);
       }
     }
@@ -5999,7 +5999,7 @@ export class SceneryFactory {
 
     for (let i = 0; i < clusterCount; i++) {
       const side = rng.chance(0.5) ? -1 : 1;
-      const rubbleX = side * rng.range(4.8, 6.0); // Outside playable corridor (|X| <= 4.0m)
+      const rubbleX = side * rng.range(5.6, 6.4); // Outside playable corridor and clearance envelope (|X| >= 4.85m)
       const rubbleZ = -rng.range(6.0, chunkLength - 6.0);
       const rubbleGroup = new THREE.Group();
       rubbleGroup.position.set(rubbleX, 0, rubbleZ);
@@ -6476,7 +6476,7 @@ export class SceneryFactory {
 
     for (let i = 0; i < clusterCount; i++) {
       const side = rng.chance(0.5) ? -1 : 1;
-      const detailX = side * rng.range(4.8, 5.8); // Outside playable corridor (|X| <= 4.0m)
+      const detailX = side * rng.range(5.6, 6.4); // Outside playable corridor and clearance envelope (|X| >= 4.7m)
       const detailZ = -rng.range(6.0, chunkLength - 6.0);
       const detailGroup = new THREE.Group();
       detailGroup.position.set(detailX, 0, detailZ);

@@ -4,7 +4,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { getAllCharacters } from '../characters/CharacterCatalog';
 import { getAllHoverboards } from '../hoverboard/HoverboardCatalog';
 import { getPowerupIconSvg } from './IconCatalog';
-import { getWorlds } from '../environment/WorldCatalog';
+import { getWorld, getWorlds, WorldDefinition } from '../environment/WorldCatalog';
 
 export type ShopCategory = 'FEATURED' | 'UPGRADES' | 'BOOSTERS' | 'CHARACTERS' | 'HOVERBOARDS' | 'WORLDS';
 
@@ -95,9 +95,24 @@ export class ShopModal {
     this.eventBus.on('BOARD_CHARGES_UPDATED', () => {
       if (this.isVisible()) this.renderCategoryContent();
     });
-    this.eventBus.on('OPEN_SHOP', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
+    this.eventBus.on('OPEN_SHOP', (targetCatOrScreen?: string) => {
+      const validCategories: ShopCategory[] = ['FEATURED', 'UPGRADES', 'BOOSTERS', 'CHARACTERS', 'HOVERBOARDS', 'WORLDS'];
+      if (targetCatOrScreen && validCategories.includes(targetCatOrScreen as ShopCategory)) {
+        this.show(targetCatOrScreen as ShopCategory);
+      } else {
+        this.previousScreen = targetCatOrScreen || null;
+        this.show('FEATURED');
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isVisible()) {
+        const hasOverlay = this.element.querySelector('#world-confirm-overlay') || this.element.querySelector('#world-showcase-overlay');
+        if (hasOverlay) {
+          e.stopPropagation();
+          this.closeModals();
+        }
+      }
     });
   }
 
@@ -111,6 +126,7 @@ export class ShopModal {
 
   public hide(): void {
     if (this.element.classList.contains('hidden')) return;
+    this.closeModals();
     this.element.classList.add('hidden');
     const prev = this.previousScreen || 'START';
     this.previousScreen = null;
@@ -186,42 +202,333 @@ export class ShopModal {
 
   private renderWorlds(container: HTMLElement): void {
     const worlds = getWorlds(this.progression.getState());
+    const currentCoins = this.upgradeManager.getCoins();
+    const isDynamicOptedIn = this.progression.getState().includePremiumThemesInDynamic;
+
     container.innerHTML = `
-      <p>Worlds are permanent cosmetics.</p>
-      <label><input type="checkbox" data-premium-dynamic ${this.progression.getState().includePremiumThemesInDynamic ? 'checked' : ''}>
-        Include owned premium worlds in Dynamic Districts when available
-      </label>
-      <div class="shop-grid">${worlds.map((world) => `
-        <div class="shop-card-item ${world.owned ? 'owned' : ''}">
-          <div class="item-icon-box">${world.icon}</div>
-          <div class="item-meta">
-            <div class="item-name">${world.displayName}</div>
-            <div class="item-sub">${world.rarity}${world.unlock === 'FREE' ? ' · FREE' : ''}</div>
-            <p>${world.description}</p>
+      <div class="worlds-store-header">
+        <div class="worlds-header-info">
+          <span class="modal-badge-tag cyan-tag">DISTRICT ATLAS</span>
+          <h3 class="worlds-header-title">RAILWAY REALMS & WORLDS</h3>
+          <p class="worlds-header-desc">
+            Discover and permanently unlock world realms. Each world brings original 3D architecture, atmosphere, and distinct maglev trains.
+          </p>
+        </div>
+        <div class="worlds-dynamic-toggle-box">
+          <label class="switch-control" for="premium-dynamic-toggle">
+            <input type="checkbox" data-premium-dynamic id="premium-dynamic-toggle" ${isDynamicOptedIn ? 'checked' : ''}>
+            <span class="switch-slider"></span>
+          </label>
+          <div class="toggle-text">
+            <label for="premium-dynamic-toggle" class="toggle-title">Include Owned Premium Worlds in Dynamic Districts</label>
+            <span class="toggle-subtitle">Blends your owned premium worlds into procedural endless district transitions. Locked worlds are always strictly excluded.</span>
           </div>
-          <div class="item-action-area">
-            ${!world.available ? '<button class="arcade-btn btn-disabled" disabled>COMING SOON</button>'
-              : world.equipped ? '<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>'
-              : world.owned ? `<button class="arcade-btn btn-secondary" data-equip-world="${world.id}">EQUIP</button>`
-              : `<button class="arcade-btn btn-gold" data-buy-world="${world.id}" ${this.upgradeManager.getCoins() < world.coinCost ? 'disabled' : ''}>${world.coinCost.toLocaleString()} 🪙</button>`}
-          </div>
-        </div>`).join('')}
-      </div>`;
-    container.querySelectorAll<HTMLButtonElement>('[data-buy-world], [data-equip-world]').forEach((button) => {
+        </div>
+      </div>
+
+      <div class="worlds-shop-grid">
+        ${worlds.map((world) => {
+          const isFree = world.unlock === 'FREE';
+          const canAfford = currentCoins >= world.coinCost;
+          const statusClass = world.equipped ? 'status-equipped' : (world.owned ? 'status-owned' : 'status-locked');
+          const statusText = world.equipped ? 'EQUIPPED' : (world.owned ? 'OWNED' : 'LOCKED');
+          const rarityClass = `rarity-${world.rarity.toLowerCase()}`;
+
+          return `
+            <div class="world-shop-card ${world.owned ? 'owned' : 'locked'} ${world.equipped ? 'equipped' : ''}" style="--world-accent: ${world.accentColor}">
+              <div class="world-accent-line"></div>
+              
+              <div class="world-card-preview" data-preview-world="${world.id}" role="button" tabindex="0" title="Click to view full 3D showcase">
+                <img src="${world.previewImage}" alt="${world.displayName}" class="world-card-img" loading="lazy" />
+                <div class="world-preview-overlay">
+                  <span class="world-preview-pill">👁️ 3D PREVIEW</span>
+                </div>
+                <div class="world-badges-row">
+                  <span class="world-rarity-pill ${rarityClass}">${world.rarity}${isFree ? ' · FREE' : ''}</span>
+                  <span class="world-icon-badge">${world.icon}</span>
+                </div>
+              </div>
+
+              <div class="world-card-body">
+                <div class="world-card-title-row">
+                  <h4 class="world-card-title">${world.displayName}</h4>
+                  <span class="world-card-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="world-card-subtitle">${world.subtitle || 'Playable District'}</div>
+                <p class="world-card-desc">${world.description}</p>
+                <div class="world-features-row">
+                  ${(world.features || []).map((f) => `<span class="world-feature-tag">✦ ${f}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="world-card-footer">
+                <button class="arcade-btn btn-ghost world-preview-btn" data-preview-world="${world.id}">👁️ PREVIEW</button>
+                ${!world.available
+                  ? `<button class="arcade-btn btn-disabled" disabled>COMING SOON</button>`
+                  : world.equipped
+                  ? `<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>`
+                  : world.owned
+                  ? `<button class="arcade-btn btn-secondary" data-equip-world="${world.id}">EQUIP</button>`
+                  : `<button class="arcade-btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" data-buy-world="${world.id}" ${canAfford ? '' : 'disabled'}>
+                      ${world.coinCost.toLocaleString()} 🪙
+                    </button>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll<HTMLElement>('[data-preview-world]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const worldId = btn.dataset.previewWorld;
+        if (worldId) this.openWorldPreview(worldId);
+      });
+      btn.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const worldId = btn.dataset.previewWorld;
+          if (worldId) this.openWorldPreview(worldId);
+        }
+      });
+    });
+
+    container.querySelectorAll<HTMLButtonElement>('[data-buy-world]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const worldId = button.dataset.buyWorld;
+        if (worldId) {
+          this.openBuyConfirmation(worldId);
+        }
+      });
+    });
+
+    container.querySelectorAll<HTMLButtonElement>('[data-equip-world]').forEach((button) => {
       button.addEventListener('click', () => {
         button.disabled = true;
-        const result = button.dataset.buyWorld
-          ? this.progression.purchaseTheme(button.dataset.buyWorld)
-          : this.progression.equipTheme(button.dataset.equipWorld!);
+        const result = this.progression.equipTheme(button.dataset.equipWorld!);
         this.showToast(result.message, !result.success);
         this.renderCategoryContent();
       });
     });
+
     container.querySelector<HTMLInputElement>('[data-premium-dynamic]')?.addEventListener('change', (event) => {
       const result = this.progression.setIncludePremiumThemesInDynamic((event.target as HTMLInputElement).checked);
       if (!result.success) this.showToast(result.message, true);
       this.renderCategoryContent();
     });
+  }
+
+  public openBuyConfirmation(worldId: string): void {
+    const world = getWorld(worldId);
+    if (!world) return;
+    this.closeModals();
+
+    const currentCoins = this.upgradeManager.getCoins();
+    const canAfford = currentCoins >= world.coinCost;
+    const remainingCoins = currentCoins - world.coinCost;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'world-confirm-overlay';
+    overlay.className = 'world-modal-backdrop animate-fade-in';
+    overlay.innerHTML = `
+      <div class="world-confirm-card animate-pop" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" style="--world-accent: ${world.accentColor}">
+        <div class="world-modal-accent-bar"></div>
+        <div class="world-confirm-header">
+          <div class="world-confirm-title-group">
+            <span class="world-rarity-pill rarity-${world.rarity.toLowerCase()}">${world.rarity} DISTRICT</span>
+            <h3 id="confirm-dialog-title" class="world-confirm-title">Unlock ${world.displayName}</h3>
+            <span class="world-confirm-subtitle">${world.subtitle || ''}</span>
+          </div>
+          <button class="arcade-icon-btn close-btn" id="confirm-close-btn" aria-label="Close">✕</button>
+        </div>
+
+        <div class="world-confirm-preview-thumb">
+          <img src="${world.previewImage}" alt="${world.displayName}" class="confirm-thumb-img" />
+          <div class="confirm-thumb-badge">${world.icon}</div>
+        </div>
+
+        <div class="world-confirm-body">
+          <p class="world-confirm-tagline">${world.tagline || world.description}</p>
+          
+          <div class="balance-breakdown">
+            <div class="breakdown-row">
+              <span class="breakdown-label">Current Balance</span>
+              <span class="breakdown-value gold-value">${currentCoins.toLocaleString()} 🪙</span>
+            </div>
+            <div class="breakdown-row debit-row">
+              <span class="breakdown-label">Purchase Price</span>
+              <span class="breakdown-value debit-value">-${world.coinCost.toLocaleString()} 🪙</span>
+            </div>
+            <div class="breakdown-divider"></div>
+            <div class="breakdown-row remaining-row">
+              <span class="breakdown-label">Balance Remaining</span>
+              <span class="breakdown-value ${canAfford ? 'remaining-value' : 'deficit-value'}">
+                ${canAfford ? `${remainingCoins.toLocaleString()} 🪙` : 'INSUFFICIENT COINS'}
+              </span>
+            </div>
+          </div>
+
+          <div class="world-ownership-guarantee">
+            <span class="guarantee-icon">🛡️</span>
+            <div class="guarantee-text">
+              <strong>Permanent World Ownership</strong>
+              <span>Yours forever across all runs. Never charges again to equip. Eligible for Dynamic Districts.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="world-confirm-actions">
+          <button class="arcade-btn btn-secondary" id="confirm-cancel-btn" data-cancel-confirm>CANCEL</button>
+          <button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" 
+                  id="confirm-execute-btn" 
+                  data-confirm-buy="${world.id}" 
+                  ${canAfford ? '' : 'disabled'}>
+            ${canAfford ? `CONFIRM PURCHASE (${world.coinCost.toLocaleString()} 🪙)` : 'NOT ENOUGH COINS'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.element.appendChild(overlay);
+
+    overlay.querySelector('#confirm-close-btn')?.addEventListener('click', () => this.closeModals());
+    overlay.querySelector('#confirm-cancel-btn')?.addEventListener('click', () => this.closeModals());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this.closeModals();
+    });
+
+    const executeBtn = overlay.querySelector<HTMLButtonElement>('#confirm-execute-btn');
+    if (executeBtn && canAfford) {
+      executeBtn.addEventListener('click', () => {
+        executeBtn.disabled = true;
+        const result = this.progression.purchaseTheme(world.id);
+        this.closeModals();
+        this.showToast(result.message, !result.success);
+        this.updateWallet();
+        this.renderCategoryContent();
+      });
+    }
+  }
+
+  public openWorldPreview(worldId: string): void {
+    const world = getWorld(worldId);
+    if (!world) return;
+    this.closeModals();
+
+    const isOwned = world.unlock === 'FREE' || this.progression.isThemeUnlocked(world.id);
+    const isEquipped = this.progression.getSelectedTheme() === world.id;
+    const currentCoins = this.upgradeManager.getCoins();
+    const canAfford = currentCoins >= world.coinCost;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'world-showcase-overlay';
+    overlay.className = 'world-modal-backdrop animate-fade-in';
+    overlay.innerHTML = `
+      <div class="world-showcase-card animate-pop" role="dialog" aria-modal="true" aria-labelledby="showcase-dialog-title" style="--world-accent: ${world.accentColor}">
+        <div class="world-modal-accent-bar"></div>
+        <button class="arcade-icon-btn close-btn showcase-close-btn" id="showcase-close-btn" aria-label="Close Showcase">✕</button>
+
+        <div class="showcase-hero-container">
+          <img src="${world.previewImage}" alt="${world.displayName}" class="showcase-hero-img" />
+          <div class="showcase-hero-gradient"></div>
+          <div class="showcase-hero-badges">
+            <span class="world-rarity-pill rarity-${world.rarity.toLowerCase()}">${world.rarity}${world.unlock === 'FREE' ? ' · FREE WORLD' : ''}</span>
+            <span class="showcase-icon-badge">${world.icon}</span>
+          </div>
+          <div class="showcase-hero-titles">
+            <h2 id="showcase-dialog-title" class="showcase-hero-title">${world.displayName}</h2>
+            <p class="showcase-hero-subtitle">${world.subtitle || 'Playable District'}</p>
+          </div>
+        </div>
+
+        <div class="showcase-body custom-scroll">
+          <div class="showcase-section">
+            <h4 class="showcase-section-heading">DISTRICT OVERVIEW</h4>
+            <p class="showcase-description">${world.description}</p>
+            ${world.tagline ? `<p class="showcase-tagline">“${world.tagline}”</p>` : ''}
+          </div>
+
+          <div class="showcase-section">
+            <h4 class="showcase-section-heading">DISTRICT FEATURES & LANDMARKS</h4>
+            <div class="showcase-features-grid">
+              ${(world.features || []).map((f) => `
+                <div class="showcase-feature-chip">
+                  <span class="feature-chip-icon">✦</span>
+                  <span class="feature-chip-label">${f}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="showcase-section">
+            <h4 class="showcase-section-heading">RUNNER SPECIFICATIONS</h4>
+            <div class="showcase-specs-list">
+              <div class="showcase-spec-item">
+                <span class="spec-label">Fairness & Balance</span>
+                <span class="spec-val">100% Three-Lane Obstacle Fairness</span>
+              </div>
+              <div class="showcase-spec-item">
+                <span class="spec-label">Atmosphere</span>
+                <span class="spec-val">Dynamic Weather & Shifting Daylight</span>
+              </div>
+              <div class="showcase-spec-item">
+                <span class="spec-label">Performance</span>
+                <span class="spec-val">Hardware Accelerated Mesh Pooling</span>
+              </div>
+              <div class="showcase-spec-item">
+                <span class="spec-label">Dynamic Districts</span>
+                <span class="spec-val">${world.dynamicEligible ? 'Eligible for seamless district transitions' : 'Standalone district only'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="showcase-footer">
+          <button class="arcade-btn btn-secondary" id="showcase-back-btn">CLOSE</button>
+          ${isEquipped
+            ? `<button class="arcade-btn btn-equipped" disabled>✓ CURRENTLY EQUIPPED</button>`
+            : isOwned
+            ? `<button class="arcade-btn btn-secondary" id="showcase-equip-btn" data-equip-world="${world.id}">⚡ EQUIP THIS DISTRICT</button>`
+            : `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" id="showcase-buy-btn" data-buy-preview-world="${world.id}">
+                UNLOCK DISTRICT — ${world.coinCost.toLocaleString()} 🪙
+              </button>`
+          }
+        </div>
+      </div>
+    `;
+
+    this.element.appendChild(overlay);
+
+    overlay.querySelector('#showcase-close-btn')?.addEventListener('click', () => this.closeModals());
+    overlay.querySelector('#showcase-back-btn')?.addEventListener('click', () => this.closeModals());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this.closeModals();
+    });
+
+    const equipBtn = overlay.querySelector<HTMLButtonElement>('#showcase-equip-btn');
+    if (equipBtn) {
+      equipBtn.addEventListener('click', () => {
+        const result = this.progression.equipTheme(world.id);
+        this.closeModals();
+        this.showToast(result.message, !result.success);
+        this.renderCategoryContent();
+      });
+    }
+
+    const buyBtn = overlay.querySelector<HTMLButtonElement>('#showcase-buy-btn');
+    if (buyBtn) {
+      buyBtn.addEventListener('click', () => {
+        this.closeModals();
+        this.openBuyConfirmation(world.id);
+      });
+    }
+  }
+
+  public closeModals(): void {
+    this.element.querySelector('#world-confirm-overlay')?.remove();
+    this.element.querySelector('#world-showcase-overlay')?.remove();
   }
 
   // --- Featured Deals ---

@@ -87,6 +87,8 @@ export class EnvironmentSelectModal {
         icon: '🔄',
         description: 'Journey across all four free railway worlds. Owned premium worlds join only when you enable them in the shop.',
         accent: '#38bdf8',
+        previewImage: '/worlds/modern_metro.png',
+        features: ['Continuous Transitions', 'Procedural Diversity', 'Endless Runs'],
         bgGradient: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(245, 158, 11, 0.18))'
       },
       ...getWorlds(ProgressionManager.getInstance().getState())
@@ -98,46 +100,111 @@ export class EnvironmentSelectModal {
           icon: world.icon,
           description: world.description,
           accent: world.accentColor,
+          previewImage: world.previewImage,
+          features: world.features,
           bgGradient: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(14, 165, 233, 0.20))'
         }))
     ];
 
-    list.innerHTML = options.map((opt) => {
-      const isSelected = this.selectedPreference === opt.id;
-      return `
-        <div class="env-card-option ${isSelected ? 'selected' : ''}" 
-             data-env-id="${opt.id}" 
-             role="button" 
-             tabindex="0"
-             style="background: ${opt.bgGradient}; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.12)'}; border-radius: 14px; padding: 14px 18px; cursor: pointer; transition: all 0.2s ease; position: relative;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 26px;">${opt.icon}</span>
-              <div>
-                <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: ${opt.accent}; text-transform: uppercase;">${opt.badge}</span>
-                <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #fff;">${opt.title}</h3>
+    const lockedWorlds = getWorlds(ProgressionManager.getInstance().getState())
+      .filter((world) => world.available && !world.owned);
+
+    list.innerHTML = `
+      <div class="env-options-container" style="display: flex; flex-direction: column; gap: 12px;">
+        ${options.map((opt) => {
+          const isSelected = this.selectedPreference === opt.id;
+          return `
+            <div class="env-card-option ${isSelected ? 'selected' : ''}" 
+                 data-env-id="${opt.id}" 
+                 role="button" 
+                 tabindex="0"
+                 aria-pressed="${isSelected}"
+                 style="background: ${opt.bgGradient}; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.12)'}; border-radius: 14px; padding: 12px 16px; cursor: pointer; transition: all 0.2s ease; position: relative;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0;">
+                  <div style="width: 72px; height: 50px; border-radius: 8px; overflow: hidden; position: relative; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); background: #000;">
+                    <img src="${opt.previewImage}" alt="${opt.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+                    <span style="position: absolute; bottom: 2px; right: 2px; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${opt.icon}</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 10px; font-weight: 800; letter-spacing: 1px; color: ${opt.accent}; text-transform: uppercase;">${opt.badge}</span>
+                    </div>
+                    <h3 style="margin: 2px 0 0 0; font-size: 16px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.title}</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${opt.description}</p>
+                  </div>
+                </div>
+                <div class="env-radio-indicator" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.3)'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? opt.accent : 'transparent'}; flex-shrink: 0;">
+                  ${isSelected ? '<span style="color: #000; font-size: 13px; font-weight: 900;">✓</span>' : ''}
+                </div>
               </div>
             </div>
-            <div class="env-radio-indicator" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.3)'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? opt.accent : 'transparent'};">
-              ${isSelected ? '<span style="color: #000; font-size: 13px; font-weight: 900;">✓</span>' : ''}
-            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${lockedWorlds.length > 0 ? `
+        <div class="env-discovery-section" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #f59e0b; text-transform: uppercase;">🔒 EXPLORE PREMIUM WORLDS IN SHOP</span>
+            <button class="arcade-btn btn-ghost" data-action="open-shop-worlds" style="font-size: 11px; padding: 4px 10px;">VISIT SHOP 🛒</button>
           </div>
-          <p style="margin: 4px 0 0 0; font-size: 13px; color: #94a3b8; line-height: 1.4;">${opt.description}</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+            ${lockedWorlds.map((w) => `
+              <div class="env-locked-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="width: 100%; height: 60px; border-radius: 6px; overflow: hidden; position: relative;">
+                  <img src="${w.previewImage}" alt="${w.displayName}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+                  <span style="position: absolute; top: 4px; left: 4px; font-size: 10px; background: rgba(0,0,0,0.6); padding: 1px 5px; border-radius: 4px; color: #f59e0b; font-weight: 800;">🔒 LOCKED</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.icon} ${w.displayName}</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #f59e0b;">${w.coinCost.toLocaleString()} 🪙</span>
+                </div>
+                <button class="arcade-btn btn-gold" data-shop-world="${w.id}" style="font-size: 10px; padding: 4px 8px; width: 100%; margin-top: 2px;">VIEW IN SHOP</button>
+              </div>
+            `).join('')}
+          </div>
         </div>
-      `;
-    }).join('');
+      ` : ''}
+    `;
 
     // Attach click listeners to cards
     const cards = list.querySelectorAll('.env-card-option');
     cards.forEach((card) => {
-      card.addEventListener('click', () => {
+      const selectCard = () => {
         const id = card.getAttribute('data-env-id') as EnvironmentSelection;
         if (id) {
           this.selectedPreference = id;
           this.render();
         }
-      });
+      };
+      card.addEventListener('click', selectCard);
+      if (typeof (card as any).dispatchEvent === 'function') {
+        card.addEventListener('keydown', (e: Event) => {
+          const keyEvent = e as KeyboardEvent;
+          if (keyEvent?.key === 'Enter' || keyEvent?.key === ' ') {
+            keyEvent.preventDefault?.();
+            selectCard();
+          }
+        });
+      }
     });
+
+    if (typeof list.querySelector === 'function') {
+      list.querySelectorAll('[data-shop-world]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.hide();
+          EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
+        });
+      });
+
+      list.querySelector('[data-action="open-shop-worlds"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hide();
+        EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
+      });
+    }
   }
 
   private applySelection(): void {
