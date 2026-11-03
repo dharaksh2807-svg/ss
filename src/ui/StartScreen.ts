@@ -13,8 +13,10 @@ export class StartScreen {
   private playBtn: HTMLButtonElement;
   private charactersBtn: HTMLButtonElement | null = null;
   private boardsBtn: HTMLButtonElement | null = null;
+  private worldsBtn: HTMLButtonElement | null = null;
   private shopBtn: HTMLButtonElement | null = null;
   private missionsBtn: HTMLButtonElement | null = null;
+  private achievementsBtn: HTMLButtonElement | null = null;
   private eventsBtn: HTMLButtonElement | null = null;
   private practiceBtn: HTMLButtonElement | null = null;
   private profileBtn: HTMLButtonElement | null = null;
@@ -26,6 +28,10 @@ export class StartScreen {
   private boardChargesEl: HTMLElement | null = null;
   private activeMissionEl: HTMLElement | null = null;
   private equippedBadgeEl: HTMLElement | null = null;
+  // Direct customization labels
+  private custRunnerNameEl: HTMLElement | null = null;
+  private custBoardNameEl: HTMLElement | null = null;
+  private custWorldNameEl: HTMLElement | null = null;
 
   private progression = ProgressionManager.getInstance();
   private upgradeManager = UpgradeManager.getInstance();
@@ -39,8 +45,10 @@ export class StartScreen {
     this.playBtn = document.getElementById('start-play-btn') as HTMLButtonElement;
     this.charactersBtn = document.getElementById('start-characters-btn') as HTMLButtonElement;
     this.boardsBtn = document.getElementById('start-boards-btn') as HTMLButtonElement;
+    this.worldsBtn = document.getElementById('start-worlds-btn') as HTMLButtonElement;
     this.shopBtn = document.getElementById('start-shop-btn') as HTMLButtonElement;
     this.missionsBtn = document.getElementById('start-missions-btn') as HTMLButtonElement;
+    this.achievementsBtn = document.getElementById('start-achievements-btn') as HTMLButtonElement;
     this.eventsBtn = document.getElementById('start-events-btn') as HTMLButtonElement;
     this.practiceBtn = document.getElementById('start-practice-btn') as HTMLButtonElement;
     this.profileBtn = document.getElementById('start-profile-btn') as HTMLButtonElement;
@@ -52,6 +60,10 @@ export class StartScreen {
     this.boardChargesEl = document.getElementById('lobby-boards-val');
     this.activeMissionEl = document.getElementById('lobby-mission-snippet');
     this.equippedBadgeEl = document.getElementById('lobby-equipped-name');
+    // Direct customization labels
+    this.custRunnerNameEl = document.getElementById('cust-runner-name');
+    this.custBoardNameEl = document.getElementById('cust-board-name');
+    this.custWorldNameEl = document.getElementById('cust-world-name');
 
     this.setupListeners();
   }
@@ -64,12 +76,12 @@ export class StartScreen {
         <header class="lobby-top-bar">
 
           <!-- Profile pill (left) -->
-          <div class="lobby-profile-pill" id="lobby-profile-pill" role="button" tabindex="0" title="Open Surfer Profile" aria-label="Open profile">
+          <div class="lobby-profile-pill" id="lobby-profile-pill" role="button" tabindex="0" title="Open Runner Profile" aria-label="Open profile">
             <span class="profile-avatar-ring" aria-hidden="true">
               <span class="profile-avatar-emoji" id="lobby-avatar-icon">🏃</span>
             </span>
             <div class="profile-info-mini">
-              <span class="profile-tag">SURFER</span>
+              <span class="profile-tag">RUNNER</span>
               <span class="profile-name" id="lobby-profile-name">JAX</span>
             </div>
           </div>
@@ -77,7 +89,7 @@ export class StartScreen {
           <!-- Wordmark (center) -->
           <div class="lobby-logo-center" aria-label="Metro Runner 3D">
             <h1 class="lobby-title-3d">METRO RUNNER</h1>
-            <div class="lobby-tagline">3D · SUBWAY SURFERS</div>
+            <div class="lobby-tagline">3D ENDLESS RUNNER</div>
           </div>
 
           <!-- Currency + Settings (right) -->
@@ -236,7 +248,7 @@ export class StartScreen {
           </div>
         </aside>
 
-        <!-- HERO ZONE — Badge + Difficulty + PLAY -->
+        <!-- HERO ZONE — Badge + Customization + Difficulty + PLAY -->
         <main class="lobby-hero-actions">
           <!-- Equipped Runner & Board Identifier Badge -->
           <div class="lobby-equipped-badge" id="lobby-equipped-badge" role="button" tabindex="0" title="Change Character or Board" aria-label="Equipped character and board — tap to change">
@@ -248,6 +260,36 @@ export class StartScreen {
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
+          </div>
+
+          <!-- Direct Customization Strip — Runner | Board | World -->
+          <div class="lobby-cust-strip" role="group" aria-label="Quick customization">
+            <button class="cust-item" id="cust-runner-btn" aria-label="Change runner" title="Change Runner">
+              <span class="cust-item-icon" aria-hidden="true">🏃</span>
+              <div class="cust-item-info">
+                <span class="cust-item-label">RUNNER</span>
+                <span class="cust-item-name" id="cust-runner-name">JAX</span>
+              </div>
+              <span class="cust-item-action">CHANGE</span>
+            </button>
+            <div class="cust-strip-divider" aria-hidden="true"></div>
+            <button class="cust-item" id="cust-board-btn" aria-label="Change board" title="Change Board">
+              <span class="cust-item-icon" aria-hidden="true">🛹</span>
+              <div class="cust-item-info">
+                <span class="cust-item-label">BOARD</span>
+                <span class="cust-item-name" id="cust-board-name">URBAN GLIDE</span>
+              </div>
+              <span class="cust-item-action">CHANGE</span>
+            </button>
+            <div class="cust-strip-divider" aria-hidden="true"></div>
+            <button class="cust-item" id="cust-world-btn" aria-label="Change world" title="Change World">
+              <span class="cust-item-icon" aria-hidden="true">🌆</span>
+              <div class="cust-item-info">
+                <span class="cust-item-label">WORLD</span>
+                <span class="cust-item-name" id="cust-world-name">DYNAMIC</span>
+              </div>
+              <span class="cust-item-action">CHANGE</span>
+            </button>
           </div>
 
           <!-- Difficulty Mode Selection Toggle -->
@@ -319,6 +361,17 @@ export class StartScreen {
             <span class="dock-label">BOARDS</span>
           </button>
 
+          <button id="start-worlds-btn" class="dock-btn" data-nav="worlds" aria-label="Worlds">
+            <span class="dock-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="3" width="16" height="12" rx="2"/>
+                <path d="M8 19l4-4 4 4"/>
+                <path d="M2 19h20"/>
+              </svg>
+            </span>
+            <span class="dock-label">WORLDS</span>
+          </button>
+
           <button id="start-shop-btn" class="dock-btn" data-nav="shop" aria-label="Shop">
             <span class="dock-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -328,16 +381,6 @@ export class StartScreen {
               </svg>
             </span>
             <span class="dock-label">SHOP</span>
-          </button>
-
-          <button id="start-practice-btn" class="dock-btn" data-nav="practice" aria-label="Practice">
-            <span class="dock-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-              </svg>
-            </span>
-            <span class="dock-label">PRACTICE</span>
           </button>
 
           <button id="start-missions-btn" class="dock-btn" data-nav="missions" aria-label="Missions">
@@ -354,6 +397,17 @@ export class StartScreen {
             <span class="dock-label">MISSIONS</span>
           </button>
 
+          <button id="start-achievements-btn" class="dock-btn" data-nav="achievements" aria-label="Achievements">
+            <span class="dock-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 0 0 5H6"/>
+                <path d="M18 9h1.5a2.5 2.5 0 0 1 0 5H18"/>
+                <path d="M4 22h16M8 22V12m8 10V12"/>
+              </svg>
+            </span>
+            <span class="dock-label">ACHIEVED</span>
+          </button>
+
           <button id="start-events-btn" class="dock-btn" data-nav="events" aria-label="Events">
             <span class="dock-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -363,6 +417,16 @@ export class StartScreen {
               </svg>
             </span>
             <span class="dock-label">EVENTS</span>
+          </button>
+
+          <button id="start-practice-btn" class="dock-btn" data-nav="practice" aria-label="Practice">
+            <span class="dock-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+            </span>
+            <span class="dock-label">PRACTICE</span>
           </button>
 
           <button id="start-profile-btn" class="dock-btn" data-nav="profile" aria-label="Profile">
@@ -422,6 +486,12 @@ export class StartScreen {
       });
     }
 
+    if (this.worldsBtn) {
+      this.worldsBtn.addEventListener('click', () => {
+        this.eventBus.emit('OPEN_ENVIRONMENT_SELECT');
+      });
+    }
+
     if (this.shopBtn) {
       this.shopBtn.addEventListener('click', () => {
         this.hide();
@@ -431,6 +501,13 @@ export class StartScreen {
 
     if (this.missionsBtn) {
       this.missionsBtn.addEventListener('click', () => {
+        this.hide();
+        this.eventBus.emit('OPEN_MISSIONS', 'START');
+      });
+    }
+
+    if (this.achievementsBtn) {
+      this.achievementsBtn.addEventListener('click', () => {
         this.hide();
         this.eventBus.emit('OPEN_MISSIONS', 'START');
       });
@@ -532,6 +609,33 @@ export class StartScreen {
       });
     }
 
+    // Direct Customization Strip — one-click selectors
+    const custRunnerBtn = document.getElementById('cust-runner-btn');
+    if (custRunnerBtn) {
+      custRunnerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hide();
+        this.eventBus.emit('OPEN_CHARACTERS', 'START');
+      });
+    }
+
+    const custBoardBtn = document.getElementById('cust-board-btn');
+    if (custBoardBtn) {
+      custBoardBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hide();
+        this.eventBus.emit('OPEN_BOARDS', 'START');
+      });
+    }
+
+    const custWorldBtn = document.getElementById('cust-world-btn');
+    if (custWorldBtn) {
+      custWorldBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.eventBus.emit('OPEN_ENVIRONMENT_SELECT');
+      });
+    }
+
     // Event updates
     this.eventBus.on('WALLET_UPDATED', () => this.updateState());
     this.eventBus.on(EVENTS.KEYS_UPDATED, () => this.updateState());
@@ -610,6 +714,23 @@ export class StartScreen {
     const profileName = document.getElementById('lobby-profile-name');
     if (profileName && selChar) {
       profileName.textContent = selChar.name.toUpperCase();
+    }
+
+    // Direct customization strip labels
+    if (this.custRunnerNameEl) {
+      this.custRunnerNameEl.textContent = (selChar?.name || 'JAX').toUpperCase();
+    }
+    if (this.custBoardNameEl) {
+      this.custBoardNameEl.textContent = (selBoard?.name || 'URBAN GLIDE').toUpperCase();
+    }
+    if (this.custWorldNameEl) {
+      const envPref2 = EnvironmentManager.getInstance().getPreference();
+      if (envPref2 === 'DYNAMIC') {
+        this.custWorldNameEl.textContent = 'DYNAMIC';
+      } else {
+        const w = getWorld(envPref2);
+        this.custWorldNameEl.textContent = (w?.displayName || envPref2).toUpperCase();
+      }
     }
 
     // 4. Daily Reward Ticker

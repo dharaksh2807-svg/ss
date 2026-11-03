@@ -3498,9 +3498,10 @@ kbd {
 }
 
 .equipped-text {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  letter-spacing: 1px;
+  font-family: var(--font-body, var(--font-ui));
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   color: #fff;
 }
 
@@ -3589,6 +3590,93 @@ kbd {
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
+
+/* ── Direct Customization Strip ── */
+.lobby-cust-strip {
+  display: flex;
+  align-items: stretch;
+  background: rgba(12, 17, 36, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-lg, 20px);
+  overflow: hidden;
+  box-shadow: var(--shadow-md, 0 4px 20px rgba(0,0,0,0.6));
+  pointer-events: auto;
+}
+
+.cust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s ease;
+  min-width: 0;
+}
+
+.cust-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cust-item:active {
+  background: rgba(255, 107, 53, 0.12);
+}
+
+.cust-item-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.cust-item-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cust-item-label {
+  font-family: var(--font-body, var(--font-ui));
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.cust-item-name {
+  font-family: var(--font-body, var(--font-ui));
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.cust-item-action {
+  font-family: var(--font-body, var(--font-ui));
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--color-accent-primary, #ff6b35);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.cust-strip-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  align-self: stretch;
+  margin: 6px 0;
+}
+
 .lobby-controls-bar {
   display: flex;
   align-items: center;
@@ -3662,9 +3750,10 @@ kbd {
 }
 
 .dock-label {
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  letter-spacing: 0.8px;
+  font-family: var(--font-body, var(--font-ui));
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 /* 3. Universal Arcade Modal Cards */
@@ -4753,6 +4842,24 @@ kbd {
   }
   .dock-label {
     font-size: 0.58rem;
+  }
+  /* Customization strip — compact on mobile */
+  .lobby-cust-strip {
+    width: calc(100vw - 32px);
+    max-width: 420px;
+  }
+  .cust-item {
+    padding: 8px 10px;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+  .cust-item-name {
+    max-width: 72px;
+    font-size: 0.75rem;
+  }
+  .cust-item-action {
+    font-size: 0.55rem;
   }
   /* Phase 2: tighten top-bar on mobile */
   .lobby-resources-group {
@@ -10426,6 +10533,33 @@ input:focus-visible {
   }
   .world-confirm-card {
     padding: 18px 16px 16px;
+  }
+}
+
+/* Very small screens: compact customization strip */
+@media (max-width: 480px) {
+  .lobby-cust-strip {
+    width: calc(100vw - 24px);
+  }
+  .cust-item {
+    padding: 8px 6px;
+    gap: 4px;
+  }
+  .cust-item-name {
+    display: none;
+  }
+  .cust-item-icon {
+    font-size: 1rem;
+  }
+  .cust-item-action {
+    font-size: 0.6rem;
+  }
+  .dock-btn {
+    min-width: 36px;
+    padding: 5px 2px;
+  }
+  .dock-label {
+    font-size: 0.5rem;
   }
 }
 
