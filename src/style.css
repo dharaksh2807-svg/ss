@@ -10563,3 +10563,167 @@ input:focus-visible {
   }
 }
 
+
+/* Task 3 — Shop: scoped layout and typography; shared lobby/modal styles stay intact. */
+#shop-modal { padding: 20px; background: rgba(5, 10, 19, .82); }
+#shop-modal .shop-card {
+  width: min(1140px, 100%); max-width: 1140px; height: min(820px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px); padding: 24px; border-radius: 22px;
+  background: #101a2b; border: 1px solid #344158; box-shadow: 0 24px 80px #0008;
+  backdrop-filter: none; color: #edf3fc;
+}
+#shop-modal .shop-top-bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 40px;
+  align-items: center; gap: 16px; flex-shrink: 0; margin: 0 0 18px; padding: 0;
+  border: 0; text-align: left;
+}
+#shop-modal .modal-title-group { min-width: 0; }
+#shop-modal .modal-badge-tag { font: 700 10px/1.4 var(--font-ui); letter-spacing: 1.3px; }
+#shop-modal .arcade-title { font: 400 30px/1.1 var(--font-display); margin: 7px 0 0; letter-spacing: .5px; text-shadow: none; }
+#shop-modal #shop-wallet-pill {
+  display: flex; flex-wrap: wrap; gap: 8px; max-width: 100%; padding: 10px 14px;
+  background: #1c2636; border: 1px solid #78622b; border-radius: 12px;
+}
+#shop-modal .shop-wallet-label { font: 700 10px/1 var(--font-ui); color: #e6c975; letter-spacing: 1px; }
+#shop-modal .pill-value { font: 700 16px/1.2 var(--font-ui); font-variant-numeric: tabular-nums; color: #ffcf68; }
+#shop-modal .arcade-icon-btn.close-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; transform: none; }
+#shop-modal #shop-tabs {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;
+  flex-shrink: 0; overflow: visible; padding: 5px; margin: 0 0 18px; border-radius: 13px;
+  background: #0b1321; border: 1px solid #2a374c;
+}
+#shop-modal .arcade-tab-btn {
+  min-width: 0; min-height: 44px; padding: 10px 8px; border-radius: 9px;
+  font: 700 12px/1.3 var(--font-ui); letter-spacing: .4px; color: #b6c4d9;
+}
+#shop-modal .arcade-tab-btn.active { background: #67d9e9; color: #08202a; box-shadow: none; }
+#shop-modal #shop-content {
+  display: block; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 0 10px 8px 0; scrollbar-gutter: stable; overscroll-behavior: contain; touch-action: pan-y;
+}
+#shop-modal #shop-content > * + * { margin-top: 18px; }
+#shop-modal .shop-section-heading { text-align: left; }
+#shop-modal .shop-section-heading h3 { font: 700 21px/1.25 var(--font-ui); margin-bottom: 5px; }
+#shop-modal .shop-section-heading p { font: 400 14px/1.5 var(--font-ui); color: #adbed5; }
+#shop-modal .shop-product-grid, #shop-modal .worlds-shop-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch;
+}
+#shop-modal .shop-product-card, #shop-modal .world-shop-card {
+  display: flex; flex-direction: column; min-width: 0; padding: 0; margin: 0; border-radius: 15px;
+  background: #162237; border: 1px solid #32425a; overflow: hidden; box-shadow: none; transform: none;
+}
+#shop-modal .shop-product-card:hover, #shop-modal .world-shop-card:hover { border-color: #607591; transform: none; box-shadow: none; }
+#shop-modal .shop-product-visual {
+  position: relative; height: 136px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center bottom, #23415a, #17283c 75%); border-bottom: 1px solid #32425a;
+}
+#shop-modal .shop-product-visual img { width: 100%; height: 100%; object-fit: contain; padding: 8px 12px 0; }
+#shop-modal .shop-product-icon { display: flex; align-items: center; justify-content: center; font-size: 52px; line-height: 1; }
+#shop-modal .shop-product-badge {
+  position: absolute; top: 10px; left: 10px; right: 10px; width: fit-content; max-width: calc(100% - 20px);
+  padding: 4px 7px; border: 1px solid #51647c; border-radius: 5px;
+  background: #101a2bea; color: #d4e5f5; font: 700 10px/1.3 var(--font-ui); letter-spacing: .5px;
+}
+#shop-modal .shop-product-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 16px; text-align: left; }
+#shop-modal .shop-product-body h4 { font: 700 19px/1.25 var(--font-ui); color: #f5f8ff; }
+#shop-modal .shop-product-body p { font: 400 14px/1.45 var(--font-ui); color: #b6c6db; }
+#shop-modal .shop-product-feature { font: 500 12px/1.5 var(--font-ui); color: #92dce5; }
+#shop-modal .shop-product-status { margin-top: auto; font: 600 12px/1.5 var(--font-ui); color: #cfdaea; }
+#shop-modal .shop-product-actions { display: grid; gap: 8px; padding: 0 16px 16px; }
+#shop-modal .arcade-btn {
+  width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; border-radius: 9px;
+  font: 700 13px/1.35 var(--font-ui); letter-spacing: .25px; font-style: normal;
+  white-space: normal; overflow-wrap: anywhere; text-align: center; transform: none;
+  box-shadow: none; animation: none; text-shadow: none;
+}
+#shop-modal .arcade-btn.btn-gold { background: #ffca61; color: #302006; border: 1px solid #ffdb8c; }
+#shop-modal .arcade-btn.btn-gold:hover:not(:disabled) { background: #ffda8e; }
+#shop-modal .arcade-btn.btn-primary { background: #64d6e5; color: #072631; border: 1px solid #a3edf4; }
+#shop-modal .arcade-btn.btn-secondary { background: #25354c; color: #e3edf9; border: 1px solid #4b617c; }
+#shop-modal .arcade-btn.btn-ghost { background: transparent; color: #a2deed; border: 1px solid #3f6079; }
+#shop-modal .arcade-btn.btn-equipped { background: #163c37; color: #a0ebc5; border: 1px solid #41866b; }
+#shop-modal .arcade-btn.btn-disabled, #shop-modal .arcade-btn:disabled:not(.btn-equipped) {
+  background: #253044; color: #afbdd0; border: 1px solid #46536a; opacity: 1; cursor: not-allowed;
+}
+#shop-modal .shop-funds-note { display: block; color: #ffcf9d; font: 500 12px/1.4 var(--font-ui); text-align: left; }
+#shop-modal :is(button, [tabindex], input):focus-visible { outline: 3px solid #eafaff; outline-offset: 3px; }
+#shop-modal .shop-toast {
+  position: static; width: auto; max-width: none; flex-shrink: 0; padding: 10px 14px; margin: 12px 0 0;
+  transform: none; border-radius: 9px; font: 600 13px/1.4 var(--font-ui); animation: none;
+}
+/* The existing Worlds cards share the same grid, body rhythm and bounded artwork. */
+#shop-modal .worlds-store-header-card { padding: 14px; border: 1px solid #32425a; border-radius: 12px; background: #162237; text-align: left; }
+#shop-modal .worlds-header-intro { margin-bottom: 10px; }
+#shop-modal .worlds-store-header-card h3 { font: 700 17px/1.3 var(--font-ui); margin: 6px 0; }
+#shop-modal .worlds-store-desc, #shop-modal .dynamic-toggle-desc { font: 400 13px/1.5 var(--font-ui); color: #b6c6db; }
+#shop-modal .dynamic-districts-feature-card { padding: 12px; gap: 12px; background: #101a2b; border-radius: 9px; }
+#shop-modal .dynamic-toggle-title { font: 700 15px/1.3 var(--font-ui); }
+#shop-modal .dynamic-toggle-badge { font: 700 10px/1.4 var(--font-ui); letter-spacing: 1px; }
+#shop-modal .world-card-preview { aspect-ratio: auto; height: 136px; flex-shrink: 0; }
+#shop-modal .world-card-img { transform: none; }
+#shop-modal .world-card-body { padding: 16px; gap: 8px; text-align: left; }
+#shop-modal .world-card-title-row { flex-wrap: wrap; align-items: flex-start; }
+#shop-modal .world-card-title { font: 700 19px/1.25 var(--font-ui); letter-spacing: 0; overflow-wrap: anywhere; }
+#shop-modal .world-card-subtitle { font: 600 12px/1.4 var(--font-ui); letter-spacing: 0; }
+#shop-modal .world-card-desc { font: 400 14px/1.45 var(--font-ui); min-height: 0; color: #b6c6db; }
+#shop-modal .world-rarity-pill, #shop-modal .world-card-status { font: 700 10px/1.4 var(--font-ui); letter-spacing: .4px; padding: 3px 7px; border-radius: 5px; white-space: normal; }
+#shop-modal .world-feature-tag { white-space: normal; font: 500 11px/1.4 var(--font-ui); }
+#shop-modal .world-card-footer { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 12px 16px 16px; margin-top: auto; background: transparent; }
+#shop-modal .world-preview-btn { min-height: 38px; padding: 8px 12px !important; font: 600 12px/1.4 var(--font-ui) !important; }
+#shop-modal .world-card-footer .world-preview-btn { order: 2; }
+#shop-modal .world-shop-card.equipped { border-color: #52a486; box-shadow: none; }
+/* Each subdialog has one vertical scroll surface, with reachable actions. */
+#shop-modal .world-modal-backdrop { padding: 16px; background: #050b16df; }
+#shop-modal .world-confirm-card, #shop-modal .world-showcase-card {
+  width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; overflow-x: hidden;
+  border: 1px solid #566b85; border-radius: 17px; box-shadow: 0 24px 80px #0009; background: #142137;
+  flex-shrink: 0; touch-action: pan-y; overscroll-behavior: contain;
+}
+#shop-modal .world-confirm-card { padding: 20px; gap: 16px; }
+#shop-modal .world-confirm-header { align-items: flex-start; }
+#shop-modal .world-confirm-header h3 { font: 700 21px/1.3 var(--font-ui); margin: 8px 0 0; }
+#shop-modal .world-confirm-card p, #shop-modal .world-confirm-tagline { font: 400 14px/1.5 var(--font-ui); color: #bfcee2; }
+#shop-modal .world-confirm-actions { display: grid; grid-template-columns: 1fr; gap: 8px; flex-shrink: 0; }
+#shop-modal .world-confirm-actions #confirm-execute-btn { order: -1; }
+#shop-modal .world-confirm-preview-thumb { height: 100px; flex-shrink: 0; }
+#shop-modal .balance-breakdown { padding: 12px; border-radius: 10px; }
+#shop-modal .breakdown-row { gap: 12px; font: 500 13px/1.5 var(--font-ui); }
+#shop-modal .breakdown-row > :last-child { text-align: right; font: 700 14px/1.5 var(--font-ui); }
+#shop-modal .showcase-body { overflow: visible; max-height: none; padding: 18px; flex-shrink: 0; }
+#shop-modal .showcase-hero-container { height: 180px; min-height: 180px; flex-shrink: 0; }
+#shop-modal .showcase-hero-title { font: 700 24px/1.2 var(--font-ui); }
+#shop-modal .showcase-footer { display: grid; grid-template-columns: 1fr; padding: 16px 18px; gap: 8px; flex-shrink: 0; }
+#shop-modal .showcase-footer #showcase-back-btn { order: 2; }
+#shop-modal .showcase-section-heading { font: 700 12px/1.4 var(--font-ui); }
+#shop-modal .showcase-description, #shop-modal .showcase-tagline, #shop-modal .spec-val { font: 400 13px/1.5 var(--font-ui); }
+@media (max-width: 1050px) {
+  #shop-modal .shop-product-grid, #shop-modal .worlds-shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  #shop-modal { padding: 10px; }
+  #shop-modal .shop-card { height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); padding: 16px; border-radius: 17px; }
+  #shop-modal .shop-top-bar { grid-template-columns: minmax(0, 1fr) 38px; gap: 10px; margin-bottom: 14px; }
+  #shop-modal .arcade-title { font-size: 26px; }
+  #shop-modal #shop-close-btn { grid-column: 2; grid-row: 1; }
+  #shop-modal #shop-wallet-pill { grid-column: 1 / -1; grid-row: 2; justify-self: start; padding: 8px 10px; }
+  #shop-modal .pill-value { font-size: 14px; }
+  #shop-modal #shop-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-bottom: 14px; }
+  #shop-modal .arcade-tab-btn { font-size: 11px; letter-spacing: 0; padding: 8px 2px; min-height: 40px; }
+  #shop-modal #shop-content { padding-right: 6px; }
+  #shop-modal .shop-section-heading h3 { font-size: 19px; }
+  #shop-modal .shop-section-heading p { font-size: 13px; }
+  #shop-modal .shop-product-grid, #shop-modal .worlds-shop-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  #shop-modal .shop-product-visual, #shop-modal .world-card-preview { height: 120px; }
+  #shop-modal .shop-product-body { padding: 14px; gap: 8px; }
+  #shop-modal .shop-product-actions { padding: 0 14px 14px; }
+  #shop-modal .shop-product-body h4, #shop-modal .world-card-title { font-size: 18px; }
+  #shop-modal .world-card-body { padding: 14px; }
+  #shop-modal .world-card-footer { padding: 12px 14px 14px; }
+  #shop-modal .world-confirm-card { padding: 16px; }
+  #shop-modal .world-ownership-guarantee { padding: 10px; }
+  #shop-modal .worlds-store-header-card { padding: 12px; }
+}
+#shop-modal .worlds-store-header-card .dynamic-districts-feature-card { margin-top: 10px; margin-bottom: 0; }
+#shop-modal .dynamic-toggle-left { min-width: 0; }
+#shop-modal .dynamic-toggle-right { flex-shrink: 0; }
+#shop-modal .dynamic-status-label { font: 700 11px/1.4 var(--font-ui); letter-spacing: .5px; }
