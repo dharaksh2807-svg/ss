@@ -85,6 +85,14 @@ export class ShopModal {
   }
 
   private setupEvents(): void {
+    this.eventBus.on('OPEN_WORLD_SHOP', (worldId: string, action: string = 'PREVIEW') => {
+      if (!getWorld(worldId)) return;
+      this.eventBus.emit('OPEN_SHOP', 'WORLDS');
+      // The navigation coordinator rejects menu entry during active gameplay.
+      if (!this.isVisible()) return;
+      if (action === 'BUY') this.openBuyConfirmation(worldId);
+      else this.openWorldPreview(worldId);
+    });
     this.eventBus.on('WALLET_UPDATED', () => {
       this.updateWallet();
       if (this.isVisible()) this.renderCategoryContent();
@@ -225,7 +233,8 @@ export class ShopModal {
 
     container.innerHTML += `
       <div class="worlds-store-header-card">
-        <span class="modal-badge-tag cyan-tag">DISTRICT ATLAS</span>
+        <div class="worlds-navigation"><span class="modal-badge-tag cyan-tag">DISTRICT ATLAS</span>
+          <button class="arcade-btn btn-ghost" data-action="world-home">HOME</button></div>
         <div class="dynamic-districts-feature-card">
           <div class="dynamic-toggle-left">
             <h4 class="dynamic-toggle-title">Premium worlds in Dynamic</h4>
@@ -298,6 +307,7 @@ export class ShopModal {
       </div>
     `;
 
+    container.querySelector('[data-action="world-home"]')?.addEventListener('click', () => this.eventBus.emit('GO_TO_MENU'));
     container.querySelectorAll<HTMLElement>('[data-preview-world]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();

@@ -10853,3 +10853,75 @@ input:focus-visible {
 }
 .showroom-overlay #char-view-angles { position: static; align-self: flex-start; transform: none; max-width: 100%; flex-shrink: 0; margin: 0 0 12px; }
 .showroom-overlay .drag-hint { white-space: nowrap; }
+
+/* Task 5 — direct world selection; one scroll area with persistent navigation. */
+#environment-modal { padding: 20px; background: rgba(5, 10, 19, .82); }
+#environment-modal .env-modal-card {
+  width: min(1120px, 100%); max-width: 1120px; height: min(820px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px); padding: 24px; display: flex; flex-direction: column;
+  overflow: hidden; background: #101a2b; border: 1px solid #344158; border-radius: 22px;
+  box-shadow: 0 24px 80px #0008; color: #edf3fc; text-align: left;
+}
+#environment-modal .env-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 18px; flex-shrink: 0; }
+#environment-modal .env-eyebrow { display: block; font: 700 10px/1.4 var(--font-ui); color: #82dce7; letter-spacing: .9px; }
+#environment-modal .env-header h2 { font: 400 30px/1.2 var(--font-display); margin: 5px 0; }
+#environment-modal #env-current-world { color: #b6c6db; font: 500 13px/1.5 var(--font-ui); }
+#environment-modal .env-wallet { flex-shrink: 0; padding: 9px 12px; background: #1c2636; border: 1px solid #78622b; border-radius: 10px; font: 700 14px/1.4 var(--font-ui); color: #ffcf68; font-variant-numeric: tabular-nums; }
+#environment-modal #env-options-list { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 0 10px 6px 0; scrollbar-gutter: stable; touch-action: pan-y; overscroll-behavior: contain; }
+#environment-modal .env-dynamic-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 16px; border: 1px solid #436980; border-radius: 14px; background: #172c3e; }
+#environment-modal .env-card-option { min-width: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; transform: none; box-shadow: none; }
+#environment-modal .env-card-option:hover { transform: none; box-shadow: none; }
+#environment-modal .env-dynamic-select { display: flex; align-items: center; gap: 16px; padding: 0; }
+#environment-modal .env-dynamic-icon { font-size: 32px; flex-shrink: 0; }
+#environment-modal .env-dynamic-select strong { display: block; margin: 4px 0; font: 700 20px/1.25 var(--font-ui); }
+#environment-modal .env-description { display: block; color: #b6c6db; font: 400 13px/1.45 var(--font-ui); }
+#environment-modal .env-selection-label { display: block; margin-top: 10px; color: #8be2cf; font: 700 10px/1.5 var(--font-ui); letter-spacing: .4px; }
+#environment-modal .env-library-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 20px 0 14px; }
+#environment-modal .env-library-heading h3 { font: 700 19px/1.3 var(--font-ui); }
+#environment-modal .env-library-heading p { font: 400 13px/1.5 var(--font-ui); color: #b6c6db; margin-top: 4px; }
+#environment-modal .env-world-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+#environment-modal .env-world-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #32425a; border-top: 3px solid var(--world-accent); border-radius: 14px; background: #162237; }
+#environment-modal :is(.env-world-card, .env-dynamic-card).selected { outline: 2px solid #83e7de; outline-offset: -2px; }
+#environment-modal .env-world-select { display: flex; flex-direction: column; padding: 0; width: 100%; }
+#environment-modal .env-preview { display: block; width: 100%; height: 124px; position: relative; overflow: hidden; background: #0a1522; }
+#environment-modal .env-preview img { width: 100%; height: 100%; display: block; object-fit: cover; }
+#environment-modal .env-world-badge { position: absolute; top: 10px; left: 10px; max-width: calc(100% - 20px); padding: 3px 7px; border: 1px solid #647891; border-radius: 5px; background: #101a2bea; font: 700 10px/1.4 var(--font-ui); }
+#environment-modal .env-world-copy { padding: 14px 14px 0; width: 100%; }
+#environment-modal .env-world-copy strong { display: block; font: 700 18px/1.3 var(--font-ui); overflow-wrap: anywhere; }
+#environment-modal .env-world-subtitle { display: block; margin: 6px 0; font: 600 12px/1.45 var(--font-ui); color: #92dce5; }
+#environment-modal .env-world-copy .env-description { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+#environment-modal .env-world-details { padding: 10px 14px; margin-top: auto; }
+#environment-modal .env-world-details p { font: 600 12px/1.5 var(--font-ui); color: #e2d3a5; }
+#environment-modal .env-world-feature { display: block; margin-top: 6px; font: 400 12px/1.4 var(--font-ui); color: #afc1d8; }
+#environment-modal .env-world-actions { display: grid; gap: 8px; padding: 0 14px 14px; }
+#environment-modal .env-button { min-width: 0; min-height: 42px; padding: 10px 14px; border-radius: 9px; border: 1px solid #4b617c; font: 700 12px/1.4 var(--font-ui); letter-spacing: .2px; color: #e3edf9; cursor: pointer; white-space: normal; }
+#environment-modal .env-button.primary { background: #64d6e5; color: #072631; border-color: #a3edf4; }
+#environment-modal .env-button.secondary { background: #25354c; }
+#environment-modal .env-button.buy { background: #ffca61; color: #302006; border-color: #ffdb8c; }
+#environment-modal .env-button:disabled { background: #253044; color: #afbdd0; border-color: #46536a; cursor: default; }
+#environment-modal .env-button.equipped { background: #163c37; color: #a0ebc5; border-color: #41866b; }
+#environment-modal .env-funds-note { font: 500 12px/1.4 var(--font-ui); color: #ffcf9d; }
+#environment-modal .env-footer { flex-shrink: 0; display: grid; grid-template-columns: auto auto minmax(160px, 1fr); gap: 10px; padding-top: 16px; }
+#environment-modal .env-library-note { font: 400 12px/1.5 var(--font-ui); color: #a8bbd3; padding: 18px 0 6px; }
+#environment-modal .env-feedback { flex-shrink: 0; font: 500 13px/1.5 var(--font-ui); color: #ffd297; margin-top: 8px; }
+#environment-modal :is(button, input):focus-visible { outline: 3px solid #eafaff; outline-offset: -3px; }
+#shop-modal .worlds-navigation { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+#shop-modal .worlds-navigation .arcade-btn { width: auto; min-height: 36px; }
+@media (max-width: 1050px) { #environment-modal .env-world-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  #environment-modal { padding: 10px; }
+  #environment-modal .env-modal-card { height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); padding: 16px; border-radius: 17px; }
+  #environment-modal .env-header { flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  #environment-modal .env-header h2 { font-size: 26px; }
+  #environment-modal .env-wallet { padding: 7px 10px; }
+  #environment-modal .env-dynamic-card { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
+  #environment-modal .env-dynamic-select { gap: 10px; align-items: flex-start; }
+  #environment-modal .env-dynamic-icon { font-size: 26px; }
+  #environment-modal .env-dynamic-select strong { font-size: 18px; }
+  #environment-modal .env-library-heading { flex-direction: column; align-items: stretch; gap: 10px; }
+  #environment-modal .env-world-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  #environment-modal .env-preview { height: 116px; }
+  #environment-modal .env-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 12px; }
+  #environment-modal #env-confirm-btn { grid-column: 1 / -1; grid-row: 1; }
+  #environment-modal #env-options-list { padding-right: 6px; }
+}

@@ -1,72 +1,50 @@
 import { EventBus, EVENTS } from '../core/EventBus';
-import {
-  EnvironmentManager,
-  EnvironmentSelection
-} from '../environment/EnvironmentConfig';
+import { EnvironmentManager, EnvironmentSelection } from '../environment/EnvironmentConfig';
 import { ProgressionManager } from '../progression/ProgressionManager';
-import { getWorlds } from '../environment/WorldCatalog';
+import { getWorld, getWorlds } from '../environment/WorldCatalog';
+import { UpgradeManager } from '../player/UpgradeManager';
 
 export class EnvironmentSelectModal {
   private element: HTMLElement;
   private envManager = EnvironmentManager.getInstance();
+  // Only an unsaved UI selection. Ownership and the equipped theme always come from the manager.
   private selectedPreference: EnvironmentSelection = 'DYNAMIC';
   private onSelectCallback?: (pref: EnvironmentSelection) => void;
 
   constructor(onSelect?: (pref: EnvironmentSelection) => void) {
     this.onSelectCallback = onSelect;
-    this.selectedPreference = this.envManager.getSelectionPreference();
-
     let el = document.getElementById('environment-modal');
     if (!el) {
       el = document.createElement('div');
       el.id = 'environment-modal';
       el.className = 'screen-overlay hidden';
-      el.innerHTML = `
-        <div class="modal-card glassmorphic env-modal-card" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
-          <div class="modal-header">
-            <h2 class="modal-title">RAILWAY DISTRICTS</h2>
-            <p class="tab-subtitle">Choose your runner's world environment or experience continuous dynamic transitions!</p>
-          </div>
-
-          <div class="env-options-grid" id="env-options-list" style="display: flex; flex-direction: column; gap: 14px; margin: 18px 0;"></div>
-
-          <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
-            <button id="env-close-btn" class="btn btn-secondary">BACK</button>
-            <button id="env-confirm-btn" class="btn btn-primary pulse-anim">
-              <span class="btn-icon">✓</span> APPLY DISTRICT
-            </button>
-          </div>
-        </div>
-      `;
       document.getElementById('ui-overlay')?.appendChild(el);
     }
-
+    el.innerHTML = `<div class="modal-card env-modal-card">
+      <header class="env-header"><div><span class="env-eyebrow">METRO RUNNER · CUSTOMIZATION</span><h2>WORLDS</h2>
+        <p id="env-current-world"></p></div><div class="env-wallet" aria-label="Coin balance">🪙 <span id="env-wallet-coins"></span></div></header>
+      <div class="env-options-grid custom-scroll" id="env-options-list"></div>
+      <p class="env-feedback hidden" id="env-feedback" role="status" aria-live="polite"></p>
+      <footer class="env-footer"><button id="env-close-btn" class="env-button secondary">BACK</button>
+        <button id="env-home-btn" class="env-button secondary">HOME</button>
+        <button id="env-confirm-btn" class="env-button primary">EQUIP WORLD</button></footer>
+    </div>`;
     this.element = el;
-    this.setupListeners();
-
+    document.getElementById('env-close-btn')?.addEventListener('click', () => this.hide());
+    document.getElementById('env-home-btn')?.addEventListener('click', () => EventBus.getInstance().emit('GO_TO_MENU'));
+    document.getElementById('env-confirm-btn')?.addEventListener('click', () => this.applySelection());
     const bus = EventBus.getInstance();
-    for (const event of ['CHARACTER_UNLOCKED', 'ENVIRONMENT_PREFERENCE_CHANGED', 'WALLET_UPDATED']) {
+    for (const event of ['CHARACTER_UNLOCKED', 'CHARACTER_EQUIPPED', 'ENVIRONMENT_PREFERENCE_CHANGED', 'WALLET_UPDATED']) {
       bus.on(event, () => {
-        if (event === 'ENVIRONMENT_PREFERENCE_CHANGED') {
-          this.selectedPreference = this.envManager.getSelectionPreference();
-        }
+        if (event === 'ENVIRONMENT_PREFERENCE_CHANGED') this.selectedPreference = this.envManager.getSelectionPreference();
         if (!this.element.classList.contains('hidden')) this.render();
       });
     }
   }
 
-  private setupListeners(): void {
-    const closeBtn = document.getElementById('env-close-btn');
-    closeBtn?.addEventListener('click', () => this.hide());
-
-    const confirmBtn = document.getElementById('env-confirm-btn');
-    confirmBtn?.addEventListener('click', () => {
-      this.applySelection();
-    });
-  }
-
   public show(): void {
     this.selectedPreference = this.envManager.getSelectionPreference();
+    document.getElementById('env-feedback')?.classList.add('hidden');
     this.render();
     this.element.classList.remove('hidden');
   }
@@ -82,149 +60,86 @@ export class EnvironmentSelectModal {
   private render(): void {
     const list = document.getElementById('env-options-list');
     if (!list) return;
-
-    const options = [
-      {
-        id: 'DYNAMIC' as EnvironmentSelection,
-        title: 'Dynamic Districts (Recommended)',
-        badge: 'ENDLESS JOURNEY',
-        icon: '🔄',
-        description: 'Journey across all four free railway worlds. Owned premium worlds join only when you enable them in the shop.',
-        accent: '#38bdf8',
-        previewImage: '/worlds/modern_metro.png',
-        features: ['Continuous Transitions', 'Procedural Diversity', 'Endless Runs'],
-        bgGradient: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(245, 158, 11, 0.18))'
-      },
-      ...getWorlds(ProgressionManager.getInstance().getState())
-        .filter((world) => world.available && world.owned)
-        .map((world) => ({
-          id: world.id as EnvironmentSelection,
-          title: world.displayName,
-          badge: world.signatureLabel ? world.signatureLabel : (world.unlock === 'FREE' ? 'FREE WORLD' : world.rarity),
-          icon: world.icon,
-          description: world.description,
-          accent: world.accentColor,
-          previewImage: world.previewImage,
-          features: world.features,
-          bgGradient: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(14, 165, 233, 0.20))'
-        }))
-    ];
-
-    const lockedWorlds = getWorlds(ProgressionManager.getInstance().getState())
-      .filter((world) => world.available && !world.owned);
-
-    list.innerHTML = `
-      <div class="env-options-container" style="display: flex; flex-direction: column; gap: 12px;">
-        ${options.map((opt) => {
-          const isSelected = this.selectedPreference === opt.id;
-          return `
-            <div class="env-card-option ${isSelected ? 'selected' : ''}" 
-                 data-env-id="${opt.id}" 
-                 role="button" 
-                 tabindex="0"
-                 aria-pressed="${isSelected}"
-                 style="background: ${opt.bgGradient}; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.12)'}; border-radius: 14px; padding: 12px 16px; cursor: pointer; transition: all 0.2s ease; position: relative;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0;">
-                  <div style="width: 72px; height: 50px; border-radius: 8px; overflow: hidden; position: relative; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); background: #000;">
-                    <img src="${opt.previewImage}" alt="${opt.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-                    <span style="position: absolute; bottom: 2px; right: 2px; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${opt.icon}</span>
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 10px; font-weight: 800; letter-spacing: 1px; color: ${opt.accent}; text-transform: uppercase;">${opt.badge}</span>
-                    </div>
-                    <h3 style="margin: 2px 0 0 0; font-size: 16px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.title}</h3>
-                    <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${opt.description}</p>
-                  </div>
-                </div>
-                <div class="env-radio-indicator" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid ${isSelected ? opt.accent : 'rgba(255, 255, 255, 0.3)'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? opt.accent : 'transparent'}; flex-shrink: 0;">
-                  ${isSelected ? '<span style="color: #000; font-size: 13px; font-weight: 900;">✓</span>' : ''}
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-
-      ${lockedWorlds.length > 0 ? `
-        <div class="env-discovery-section" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #f59e0b; text-transform: uppercase;">🔒 EXPLORE PREMIUM WORLDS IN SHOP</span>
-            <button class="arcade-btn btn-ghost" data-action="open-shop-worlds" style="font-size: 11px; padding: 4px 10px;">VISIT SHOP 🛒</button>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
-            ${lockedWorlds.map((w) => `
-              <div class="env-locked-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
-                <div style="width: 100%; height: 60px; border-radius: 6px; overflow: hidden; position: relative;">
-                  <img src="${w.previewImage}" alt="${w.displayName}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-                  <span style="position: absolute; top: 4px; left: 4px; font-size: 10px; background: rgba(0,0,0,0.6); padding: 1px 5px; border-radius: 4px; color: #f59e0b; font-weight: 800;">🔒 LOCKED</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.icon} ${w.displayName}</span>
-                  <span style="font-size: 11px; font-weight: 800; color: #f59e0b;">${w.signatureCharacterId ? 'WITH MODI 🏛️' : `${w.coinCost.toLocaleString()} 🪙`}</span>
-                </div>
-                <button class="arcade-btn btn-gold" data-shop-world="${w.id}" style="font-size: 10px; padding: 4px 8px; width: 100%; margin-top: 2px;">VIEW IN SHOP</button>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-    `;
-
-    // Attach click listeners to cards
-    const cards = list.querySelectorAll('.env-card-option');
-    cards.forEach((card) => {
-      const selectCard = () => {
-        const id = card.getAttribute('data-env-id') as EnvironmentSelection;
-        if (id) {
-          this.selectedPreference = id;
-          this.render();
-        }
-      };
-      card.addEventListener('click', selectCard);
-      if (typeof (card as any).dispatchEvent === 'function') {
-        card.addEventListener('keydown', (e: Event) => {
-          const keyEvent = e as KeyboardEvent;
-          if (keyEvent?.key === 'Enter' || keyEvent?.key === ' ') {
-            keyEvent.preventDefault?.();
-            selectCard();
-          }
-        });
-      }
-    });
-
-    if (typeof list.querySelector === 'function') {
-      list.querySelectorAll('[data-shop-world]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
-        });
-      });
-
-      list.querySelector('[data-action="open-shop-worlds"]')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS');
-      });
+    const progression = ProgressionManager.getInstance();
+    const current = progression.getSelectedTheme();
+    const worlds = getWorlds(progression.getState());
+    const coins = UpgradeManager.getInstance().getCoins();
+    const focused = typeof document.activeElement !== 'undefined' ? document.activeElement as HTMLElement : null;
+    const focusKey = focused && list.contains?.(focused) ? { ...focused.dataset } : null;
+    const scrollTop = list.scrollTop || 0;
+    const stateLabel = (id: string) => current === id ? 'EQUIPPED' : this.selectedPreference === id ? 'SELECTED · NOT EQUIPPED' : '';
+    const title = document.getElementById('env-current-world');
+    if (title) title.textContent = `Equipped for next run: ${current === 'DYNAMIC' ? 'Dynamic Districts' : getWorld(current)?.displayName || current}`;
+    const balance = document.getElementById('env-wallet-coins');
+    if (balance) balance.textContent = coins.toLocaleString();
+    const confirm = document.getElementById('env-confirm-btn') as HTMLButtonElement | null;
+    if (confirm) {
+      confirm.disabled = this.selectedPreference === current;
+      confirm.textContent = confirm.disabled ? 'EQUIPPED' : this.selectedPreference === 'DYNAMIC' ? 'EQUIP DYNAMIC' : 'EQUIP WORLD';
     }
+    list.innerHTML = `<section class="env-dynamic-card ${this.selectedPreference === 'DYNAMIC' ? 'selected' : ''}">
+      <button class="env-card-option ${this.selectedPreference === 'DYNAMIC' ? 'selected' : ''} env-dynamic-select" data-env-id="DYNAMIC" aria-pressed="${this.selectedPreference === 'DYNAMIC'}">
+        <span class="env-dynamic-icon" aria-hidden="true">🔄</span><span><span class="env-eyebrow">AUTOMATIC ROUTE · MULTIPLE DISTRICTS</span>
+        <strong>Dynamic Districts</strong><span class="env-description">Rotate through the four free districts. Add owned premium worlds from Shop settings. Signature worlds stay separate.</span>
+        <span class="env-selection-label">${stateLabel('DYNAMIC') || 'FREE · AUTOMATIC DISTRICT CHANGES'}</span></span></button>
+      <button class="env-button ${current === 'DYNAMIC' ? 'equipped' : 'primary'}" data-equip-env="DYNAMIC" ${current === 'DYNAMIC' ? 'disabled' : ''}>${current === 'DYNAMIC' ? 'EQUIPPED' : 'EQUIP DYNAMIC'}</button>
+    </section>
+    <div class="env-library-heading"><div><h3>Choose one world</h3><p>A fixed district for your next run.</p></div>
+      <button class="env-button secondary" data-action="open-shop-worlds">VISIT SHOP</button></div>
+    <div class="env-world-grid">${worlds.map(world => {
+      const canSelect = world.available && (world.owned || world.trialing || current === world.id);
+      const selected = this.selectedPreference === world.id;
+      const runner = world.signatureCharacterId ? 'Requires Narendra Modi ownership, or an available equipped runner trial.' : '';
+      const requirement = world.owned ? world.signatureCharacterId ? 'OWNED · SIGNATURE WORLD' : world.unlock === 'FREE' ? 'FREE · OWNED' : 'OWNED'
+        : world.trialing ? 'RUNNER TRIAL · NOT PERMANENTLY OWNED' : runner || `LOCKED · ${world.coinCost.toLocaleString()} coins`;
+      const selectable = canSelect ? `data-env-id="${world.id}" aria-pressed="${selected}"` : `data-shop-world="${world.id}" data-world-action="PREVIEW"`;
+      return `<article class="env-world-card ${selected ? 'selected' : ''} ${current === world.id ? 'equipped' : ''}" data-world-id="${world.id}" style="--world-accent: ${world.accentColor}">
+        <button class="env-card-option ${selected ? 'selected' : ''} env-world-select" ${selectable} ${world.available ? '' : 'disabled'}>
+          <span class="env-preview"><img src="${world.previewImage}" alt="${world.displayName}" loading="lazy"><span class="env-world-badge">${world.signatureLabel || world.rarity}</span></span>
+          <span class="env-world-copy"><strong>${world.displayName}</strong><span class="env-world-subtitle">${world.subtitle || world.tagline || ''}</span>
+            <span class="env-description">${world.description}</span><span class="env-selection-label">${stateLabel(world.id) || (canSelect ? 'SELECT WORLD' : 'PREVIEW WORLD')}</span></span>
+        </button>
+        <div class="env-world-details"><p>${requirement}</p><span class="env-world-feature">${world.features[0] || ''}</span></div>
+        <div class="env-world-actions">${!world.available ? '<button class="env-button secondary" disabled>UNAVAILABLE</button>'
+          : current === world.id ? '<button class="env-button equipped" disabled>EQUIPPED</button>'
+          : canSelect ? `<button class="env-button primary" data-equip-env="${world.id}">EQUIP</button>`
+          : world.signatureCharacterId ? `<button class="env-button secondary" data-shop-world="${world.id}" data-world-action="PREVIEW">VIEW UNLOCK REQUIREMENT</button>`
+          : `<button class="env-button buy" data-shop-world="${world.id}" data-world-action="BUY" ${coins >= world.coinCost ? '' : 'disabled'}>BUY — ${world.coinCost.toLocaleString()} 🪙</button>${coins < world.coinCost ? `<span class="env-funds-note">Need ${(world.coinCost - coins).toLocaleString()} more coins</span>` : ''}`}
+          ${!canSelect ? `<button class="env-button secondary" data-shop-world="${world.id}" data-world-action="PREVIEW">PREVIEW</button>` : ''}
+        </div></article>`;
+    }).join('')}</div>
+    <p class="env-library-note">EXPLORE PREMIUM WORLDS IN SHOP · Purchases use the same wallet and ownership everywhere. Changes made while paused apply to the next run.</p>`;
+    list.querySelectorAll<HTMLElement>('[data-env-id]').forEach(card => card.addEventListener('click', () => {
+      const id = card.getAttribute('data-env-id') as EnvironmentSelection;
+      if (id !== 'DYNAMIC' && !progression.isThemeUnlocked(id)) return;
+      this.selectedPreference = id;
+      this.render();
+    }));
+    if (typeof list.querySelector === 'function') {
+      list.querySelectorAll<HTMLElement>('[data-equip-env]').forEach(button => button.addEventListener('click', () => {
+        this.selectedPreference = button.dataset.equipEnv as EnvironmentSelection;
+        this.applySelection();
+      }));
+      list.querySelectorAll<HTMLElement>('[data-shop-world]').forEach(button => button.addEventListener('click', () => {
+        EventBus.getInstance().emit('OPEN_WORLD_SHOP', button.dataset.shopWorld, button.dataset.worldAction);
+      }));
+      list.querySelector('[data-action="open-shop-worlds"]')?.addEventListener('click', () => EventBus.getInstance().emit('OPEN_SHOP', 'WORLDS'));
+      if (focusKey) {
+        const replacement = [...list.querySelectorAll<HTMLElement>('button')].find(button => Object.entries(focusKey).every(([key, value]) => button.dataset[key] === value));
+        replacement?.focus({ preventScroll: true });
+      }
+    }
+    list.scrollTop = scrollTop;
   }
 
   private applySelection(): void {
-    if (!this.envManager.savePreference(this.selectedPreference)) {
-      const list = document.getElementById('env-options-list');
-      if (list) {
-        const error = document.createElement('p');
-        error.setAttribute('role', 'alert');
-        error.textContent = 'Could not save world selection. Please try again.';
-        list.appendChild(error);
-      }
+    const result = ProgressionManager.getInstance().equipTheme(this.selectedPreference);
+    if (!result.success) {
+      const feedback = document.getElementById('env-feedback');
+      if (feedback) { feedback.textContent = result.message; feedback.classList.remove('hidden'); }
       return;
     }
-
-    if (this.onSelectCallback) {
-      this.onSelectCallback(this.selectedPreference);
-    }
-
+    this.onSelectCallback?.(this.selectedPreference);
     this.hide();
   }
 }
