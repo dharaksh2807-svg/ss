@@ -10925,3 +10925,109 @@ input:focus-visible {
   #environment-modal #env-confirm-btn { grid-column: 1 / -1; grid-row: 1; }
   #environment-modal #env-options-list { padding-right: 6px; }
 }
+
+/* Task 6 — progression dashboard. Keep shared gameplay/HUD styles untouched. */
+#missions-modal { padding: 20px; background: rgba(5, 10, 19, .82); }
+#missions-modal .missions-modal-card {
+  width: min(1120px, 100%); max-width: 1120px; height: min(820px, calc(100dvh - 40px)); max-height: calc(100dvh - 40px);
+  padding: 24px; overflow: hidden; background: #101a2b; border: 1px solid #344158; border-radius: 22px;
+  box-shadow: 0 24px 80px #0008; text-align: left; color: #edf3fc;
+}
+#missions-modal .missions-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-shrink: 0; margin-bottom: 20px; }
+#missions-modal .missions-heading { min-width: 0; }
+#missions-modal .missions-eyebrow { font: 700 10px/1.4 var(--font-ui); color: #82dce7; letter-spacing: 1px; }
+#missions-modal .modal-title { margin: 5px 0 0; font: 400 28px/1.2 var(--font-display); letter-spacing: .4px; text-shadow: none; }
+#missions-modal .missions-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+#missions-modal .missions-wallet { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid #78622b; background: #1c2636; border-radius: 10px; color: #ffcf68; font: 700 14px/1.4 var(--font-ui); font-variant-numeric: tabular-nums; }
+#missions-modal .missions-control { min-height: 40px; padding: 9px 14px; border-radius: 9px; background: #25354c; border: 1px solid #4b617c; color: #e3edf9; font: 700 12px/1.4 var(--font-ui); cursor: pointer; }
+#missions-modal .missions-close { min-width: 40px; padding: 9px; font-size: 16px; }
+#missions-modal #missions-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex-shrink: 0; gap: 6px; padding: 5px; margin-bottom: 18px; border: 1px solid #2a374c; border-radius: 13px; background: #0b1321; overflow: visible; }
+#missions-modal .missions-tab-btn { min-width: 0; min-height: 44px; padding: 10px 8px; font: 700 12px/1.4 var(--font-ui); letter-spacing: .2px; color: #b6c4d9; border-radius: 9px; white-space: normal; }
+#missions-modal .missions-tab-btn.active { background: #67d9e9; color: #08202a; box-shadow: none; }
+#missions-modal #missions-content { display: block; flex: 1; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 0 10px 8px 0; scrollbar-gutter: stable; touch-action: pan-y; overscroll-behavior: contain; }
+#missions-modal .missions-tab-header { margin: 0 0 18px; padding: 0; text-align: left; }
+#missions-modal .set-title { font: 700 21px/1.3 var(--font-ui); }
+#missions-modal .mission-set-badge { padding: 0; gap: 8px; margin-bottom: 6px; background: transparent; border: 0; }
+#missions-modal .badge-icon { font-size: 22px; }
+#missions-modal .tab-subtitle { margin-top: 6px; font: 400 14px/1.5 var(--font-ui); color: #afc1d8; }
+#missions-modal .mission-cards-list, #missions-modal .season-milestones-track { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 16px; }
+#missions-modal .progression-card, #missions-modal .season-milestone-card { min-width: 0; background: #162237; border: 1px solid #32425a; border-radius: 14px; padding: 18px; gap: 14px; box-shadow: none; transform: none; opacity: 1; }
+#missions-modal .progression-card:hover { background: #162237; transform: none; box-shadow: none; }
+#missions-modal .card-complete, #missions-modal .season-milestone-card.unlocked { border-color: #43876f; }
+#missions-modal .card-claimed, #missions-modal .season-milestone-card.claimed { background: #142329; opacity: 1; }
+#missions-modal .card-header { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px 12px; align-items: start; }
+#missions-modal .card-icon { width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; font-size: 23px; }
+#missions-modal .card-title-group { min-width: 0; }
+#missions-modal .card-title { font: 700 18px/1.3 var(--font-ui); letter-spacing: 0; overflow-wrap: anywhere; }
+#missions-modal .card-desc { margin-top: 5px; font: 400 13px/1.5 var(--font-ui); color: #b6c6db; }
+#missions-modal .card-header > .status-pill { grid-column: 2; justify-self: start; }
+#missions-modal .status-pill { font: 700 10px/1.4 var(--font-ui); letter-spacing: .4px; padding: 4px 7px; border: 1px solid #465a73; border-radius: 5px; white-space: normal; box-shadow: none; animation: none; }
+#missions-modal .status-active { background: #243248; color: #c5d2e5; }
+#missions-modal .status-complete { background: #193e35; color: #9eebc5; border-color: #43876f; }
+#missions-modal .status-claimed { background: #203a35; color: #b0d6c7; border-color: #3b6556; }
+#missions-modal .card-progress-area { margin-top: auto; gap: 7px; }
+#missions-modal .progress-labels { gap: 12px; font: 600 12px/1.45 var(--font-ui); color: #c4d4e8; font-variant-numeric: tabular-nums; }
+#missions-modal .progress-labels > :last-child { flex-shrink: 0; }
+#missions-modal .progress-bar-track { height: 8px; background: #091421; border: 0; border-radius: 5px; }
+#missions-modal .progress-bar-fill { background: #64d6e5; transition: none; }
+#missions-modal .progress-bar-fill.fill-bronze { background: #d5a06d; }
+#missions-modal .progress-bar-fill.fill-silver { background: #bcccdc; }
+#missions-modal .progress-bar-fill.fill-gold { background: #ffcf68; }
+#missions-modal .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; margin-top: 0; border-top: 1px solid #2d4057; }
+#missions-modal .reward-tag { font: 600 12px/1.5 var(--font-ui); color: #ffcf68; letter-spacing: 0; }
+#missions-modal .btn-claim { min-height: 40px; padding: 10px 14px; border-radius: 8px; font: 700 12px/1.4 var(--font-ui); letter-spacing: 0; white-space: normal; background: #253044; color: #afbdd0; border: 1px solid #46536a; box-shadow: none; transform: none; animation: none; }
+#missions-modal .btn-claim.claimable { background: #99e7bd; color: #0a2e21; border-color: #c3f5da; }
+#missions-modal .btn-claim.claimable:hover { background: #c3f5da; transform: none; box-shadow: none; }
+#missions-modal .btn-claim.claimed { background: #203a35; color: #b0d6c7; border-color: #3b6556; }
+#missions-modal .daily-meta-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; }
+#missions-modal .daily-date-badge, #missions-modal .daily-timer-badge { padding: 9px 12px; border: 1px solid #344b63; border-radius: 9px; background: #16283b; font: 600 13px/1.4 var(--font-ui); }
+#missions-modal .countdown-text { font: 700 14px/1.4 var(--font-ui); color: #a0e8ee; font-variant-numeric: tabular-nums; }
+#missions-modal .achievement-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 16px; font: 500 12px/1.5 var(--font-ui); color: #adbed5; }
+#missions-modal .achievement-toolbar label { font-size: 10px; font-weight: 700; letter-spacing: .6px; }
+#missions-modal #achievement-category { min-height: 40px; padding: 8px 30px 8px 10px; border: 1px solid #4b617c; border-radius: 8px; background: #25354c; color: #edf3fc; font: 600 13px/1.4 var(--font-ui); }
+#missions-modal .achievement-category { display: block; margin-bottom: 5px; font: 700 10px/1.4 var(--font-ui); color: #92dce5; letter-spacing: .6px; }
+#missions-modal .achievement-title-row { flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+#missions-modal .tier-pill { font: 700 10px/1.4 var(--font-ui); border-radius: 5px; box-shadow: none; }
+#missions-modal .tier-badges-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+#missions-modal .tier-indicator { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border: 1px solid #405168; border-radius: 7px; font: 400 11px/1.4 var(--font-ui); color: #c0cee0; overflow-wrap: anywhere; }
+#missions-modal .tier-indicator strong { font-size: 10px; }
+#missions-modal .tier-indicator.claimed { color: #b0d6c7; background: #203a35; }
+#missions-modal .tier-indicator.unlocked { color: #9eebc5; background: #193e35; }
+#missions-modal .season-banner-card { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 18px; border: 1px solid #426078; border-radius: 14px; background: #172c3e; box-shadow: none; }
+#missions-modal .season-eyebrow { font: 700 10px/1.4 var(--font-ui); color: #82dce7; letter-spacing: .8px; }
+#missions-modal .season-title { font: 700 22px/1.3 var(--font-ui); margin: 5px 0; }
+#missions-modal .season-theme, #missions-modal .season-dates { font: 400 13px/1.5 var(--font-ui); color: #b6c6db; }
+#missions-modal .season-token-tally { display: flex; align-items: center; padding: 10px; gap: 10px; background: #101e30; border-radius: 10px; }
+#missions-modal .token-count { font: 700 25px/1.2 var(--font-ui); }
+#missions-modal .token-label { font: 600 10px/1.4 var(--font-ui); }
+#missions-modal .season-milestone-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; }
+#missions-modal .milestone-cost { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font: 700 13px/1.4 var(--font-ui); color: #a5e6f1; }
+#missions-modal .milestone-reward-icon { font-size: 30px; }
+#missions-modal .milestone-tag { font: 700 10px/1.4 var(--font-ui); color: #a7bdd7; }
+#missions-modal .milestone-name { font: 700 18px/1.3 var(--font-ui); color: #edf3fc; }
+#missions-modal .milestone-progress, #missions-modal .milestone-action { grid-column: 1 / -1; }
+#missions-modal .milestone-action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+#missions-modal .missions-feedback { flex-shrink: 0; margin: 12px 0 0; padding: 9px 12px; border: 1px solid #40576e; border-radius: 8px; background: #1a3043; color: #d6e8f4; font: 500 12px/1.4 var(--font-ui); }
+#missions-modal :is(button, select):focus-visible { outline: 3px solid #eafaff; outline-offset: -3px; }
+@media (max-width: 760px) { #missions-modal .mission-cards-list, #missions-modal .season-milestones-track { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  #missions-modal { padding: 10px; }
+  #missions-modal .missions-modal-card { height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); padding: 16px; border-radius: 17px; }
+  #missions-modal .missions-header { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 14px; }
+  #missions-modal .modal-title { font-size: 24px; }
+  #missions-modal .missions-header-actions { justify-content: space-between; gap: 6px; }
+  #missions-modal .missions-wallet { padding: 8px 10px; font-size: 13px; }
+  #missions-modal #missions-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 14px; }
+  #missions-modal .missions-tab-btn { font-size: 11px; min-height: 40px; padding: 8px 4px; }
+  #missions-modal .progression-card, #missions-modal .season-milestone-card { padding: 14px; }
+  #missions-modal .card-title { font-size: 17px; }
+  #missions-modal .set-title { font-size: 19px; }
+  #missions-modal .card-footer { align-items: stretch; flex-direction: column; gap: 10px; }
+  #missions-modal .card-footer .btn-claim { width: 100%; }
+  #missions-modal .tier-badges-row { grid-template-columns: minmax(0, 1fr); }
+  #missions-modal .tier-indicator { display: block; }
+  #missions-modal .tier-indicator strong { display: block; margin-bottom: 3px; }
+  #missions-modal .season-banner-card { padding: 14px; }
+  #missions-modal .season-title { font-size: 20px; }
+  #missions-modal #missions-content { padding-right: 6px; }
+}

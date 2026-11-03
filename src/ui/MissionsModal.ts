@@ -2,7 +2,7 @@ import { EventBus, EVENTS } from '../core/EventBus';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { UpgradeManager } from '../player/UpgradeManager';
 import { ACHIEVEMENTS } from '../progression/MissionCatalog';
-import { AchievementTier } from '../progression/ProgressionTypes';
+import { AchievementDefinition, AchievementTier } from '../progression/ProgressionTypes';
 
 export type MissionsTab = 'MISSIONS' | 'DAILY' | 'ACHIEVEMENTS' | 'SEASON';
 
@@ -14,7 +14,8 @@ export class MissionsModal {
   private closeBtn: HTMLButtonElement;
   private progression: ProgressionManager;
   private currentTab: MissionsTab = 'MISSIONS';
-  private timerInterval: any = null;
+  private timerInterval: ReturnType<typeof setInterval> | null = null;
+  private achievementCategory: AchievementDefinition['category'] | 'ALL' = 'ALL';
 
   constructor() {
     this.progression = ProgressionManager.getInstance();
@@ -27,28 +28,26 @@ export class MissionsModal {
       el.className = 'screen-overlay hidden';
       el.innerHTML = `
         <div class="modal-card glassmorphic missions-modal-card">
-          <div class="missions-header">
-            <h2 class="modal-title">OBJECTIVES & PROGRESSION</h2>
-            <div class="shop-wallet-badge">
-              <span>🪙 COINS:</span>
-              <span id="missions-wallet-coins">0</span>
-            </div>
-          </div>
+          <header class="missions-header">
+            <div class="missions-heading"><span class="missions-eyebrow">METRO RUNNER · YOUR PROGRESS</span>
+              <h2 class="modal-title">OBJECTIVES & PROGRESSION</h2></div>
+            <div class="missions-header-actions"><div class="missions-wallet"><span>🪙</span><span id="missions-wallet-coins">0</span></div>
+              <button id="missions-home-btn" class="missions-control">HOME</button>
+              <button id="missions-close-btn" class="missions-control missions-close" aria-label="Close objectives and return to previous screen">✕</button></div>
+          </header>
 
           <!-- Navigation Tabs -->
-          <div class="missions-nav-tabs" id="missions-tabs">
+          <nav class="missions-nav-tabs" id="missions-tabs" aria-label="Progression sections">
             <button class="missions-tab-btn active" data-tab="MISSIONS">🎯 MISSIONS</button>
             <button class="missions-tab-btn" data-tab="DAILY">📅 DAILY</button>
             <button class="missions-tab-btn" data-tab="ACHIEVEMENTS">🏆 ACHIEVEMENTS</button>
             <button class="missions-tab-btn" data-tab="SEASON">✨ SEASON PASS</button>
-          </div>
+          </nav>
 
           <!-- Main Tab Content Container -->
           <div class="missions-tab-content custom-scroll" id="missions-content"></div>
 
-          <div class="modal-buttons" style="margin-top: 16px;">
-            <button id="missions-close-btn" class="btn btn-primary">DONE</button>
-          </div>
+          <p id="missions-feedback" class="missions-feedback hidden" role="status" aria-live="polite"></p>
         </div>
       `;
       document.getElementById('ui-overlay')?.appendChild(el);
@@ -68,6 +67,8 @@ export class MissionsModal {
       this.hide();
     });
 
+    document.getElementById('missions-home-btn')?.addEventListener('click', () => EventBus.getInstance().emit('GO_TO_MENU'));
+
     // Tab buttons click
     this.tabsContainer.addEventListener('click', (e) => {
       const target = (e.target as HTMLElement).closest('.missions-tab-btn') as HTMLButtonElement;
@@ -81,6 +82,9 @@ export class MissionsModal {
     bus.on('WALLET_UPDATED', () => {
       this.updateWallet();
     });
+    for (const event of [EVENTS.MISSION_COMPLETED, EVENTS.DAILY_COMPLETED, EVENTS.ACHIEVEMENT_UNLOCKED, EVENTS.REWARD_CLAIMED]) {
+      bus.on(event, () => { if (!this.element.classList.contains('hidden')) this.render(); });
+    }
   }
 
   public switchTab(tab: MissionsTab): void {
@@ -89,15 +93,20 @@ export class MissionsModal {
     btns.forEach((btn) => {
       if ((btn as HTMLElement).dataset.tab === tab) {
         btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
       } else {
         btn.classList.remove('active');
+        btn.removeAttribute('aria-current');
       }
     });
 
     this.render();
+    this.contentContainer.scrollTop = 0;
+    document.getElementById('missions-feedback')?.classList.add('hidden');
   }
 
   public show(): void {
+    document.getElementById('missions-feedback')?.classList.add('hidden');
     this.updateWallet();
     this.render();
     this.element.classList.remove('hidden');
@@ -134,6 +143,9 @@ export class MissionsModal {
   }
 
   public render(): void {
+    const scrollTop = this.contentContainer.scrollTop;
+    const focused = document.activeElement as HTMLElement | null;
+    const focusKey = focused && this.contentContainer.contains(focused) ? { ...focused.dataset } : null;
     this.updateWallet();
 
     switch (this.currentTab) {
@@ -150,6 +162,11 @@ export class MissionsModal {
         this.renderSeasonTab();
         break;
     }
+    if (focusKey && Object.keys(focusKey).length) {
+      const next = [...this.contentContainer.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')].find(button => Object.entries(focusKey).every(([key, value]) => button.dataset[key] === value));
+      (next || this.tabsContainer.querySelector<HTMLElement>('.active'))?.focus({ preventScroll: true });
+    }
+    this.contentContainer.scrollTop = scrollTop;
   }
 
   // --- 1. Missions Tab ---
@@ -170,7 +187,6 @@ export class MissionsModal {
     `;
 
     for (const mission of missions) {
-      const pct = Math.min(100, Math.floor((mission.progress / mission.target) * 100));
       const isCompleted = mission.completed;
       const isClaimed = mission.claimed;
 
@@ -181,12 +197,12 @@ export class MissionsModal {
         statusBadge = '<span class="status-pill status-claimed">CLAIMED ✓</span>';
         actionBtn = '<button class="btn-claim claimed" disabled>CLAIMED</button>';
       } else if (isCompleted) {
-        statusBadge = '<span class="status-pill status-complete pulse-anim">COMPLETED!</span>';
-        actionBtn = `<button class="btn-claim claimable pulse-anim" data-action="claim-mission" data-id="${mission.id}">CLAIM ${mission.rewardCoins} 🪙</button>`;
+        statusBadge = '<span class="status-pill status-complete">COMPLETED!</span>';
+        actionBtn = `<button class="btn-claim claimable" data-action="claim-mission" data-id="${mission.id}">CLAIM ${mission.rewardCoins} 🪙</button>`;
       }
 
       html += `
-        <div class="progression-card ${isCompleted ? 'card-complete' : ''} ${isClaimed ? 'card-claimed' : ''}">
+        <div data-objective-id="${mission.id}" class="progression-card ${isCompleted ? 'card-complete' : ''} ${isClaimed ? 'card-claimed' : ''}">
           <div class="card-header">
             <div class="card-icon">🎯</div>
             <div class="card-title-group">
@@ -196,15 +212,7 @@ export class MissionsModal {
             ${statusBadge}
           </div>
 
-          <div class="card-progress-area">
-            <div class="progress-labels">
-              <span>Progress: ${Math.floor(mission.progress).toLocaleString()} / ${mission.target.toLocaleString()}</span>
-              <span>${pct}%</span>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill" style="width: ${pct}%"></div>
-            </div>
-          </div>
+          ${this.progressMarkup(mission.progress, mission.target, mission.title)}
 
           <div class="card-footer">
             <span class="reward-tag">REWARD: +${mission.rewardCoins} COINS</span>
@@ -240,7 +248,6 @@ export class MissionsModal {
     `;
 
     for (const challenge of state.dailyChallenges) {
-      const pct = Math.min(100, Math.floor((challenge.progress / challenge.target) * 100));
       const isCompleted = challenge.completed;
       const isClaimed = challenge.claimed;
 
@@ -251,12 +258,12 @@ export class MissionsModal {
         statusBadge = '<span class="status-pill status-claimed">CLAIMED ✓</span>';
         actionBtn = '<button class="btn-claim claimed" disabled>CLAIMED</button>';
       } else if (isCompleted) {
-        statusBadge = '<span class="status-pill status-complete pulse-anim">READY!</span>';
-        actionBtn = `<button class="btn-claim claimable pulse-anim" data-action="claim-daily" data-id="${challenge.id}">CLAIM ${challenge.rewardCoins} 🪙</button>`;
+        statusBadge = '<span class="status-pill status-complete">READY!</span>';
+        actionBtn = `<button class="btn-claim claimable" data-action="claim-daily" data-id="${challenge.id}">CLAIM ${challenge.rewardCoins} 🪙</button>`;
       }
 
       html += `
-        <div class="progression-card ${isCompleted ? 'card-complete' : ''} ${isClaimed ? 'card-claimed' : ''}">
+        <div data-objective-id="${challenge.id}" class="progression-card ${isCompleted ? 'card-complete' : ''} ${isClaimed ? 'card-claimed' : ''}">
           <div class="card-header">
             <div class="card-icon">${challenge.badgeIcon}</div>
             <div class="card-title-group">
@@ -266,15 +273,7 @@ export class MissionsModal {
             ${statusBadge}
           </div>
 
-          <div class="card-progress-area">
-            <div class="progress-labels">
-              <span>Progress: ${Math.floor(challenge.progress).toLocaleString()} / ${challenge.target.toLocaleString()}</span>
-              <span>${pct}%</span>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill" style="width: ${pct}%"></div>
-            </div>
-          </div>
+          ${this.progressMarkup(challenge.progress, challenge.target, challenge.title)}
 
           <div class="card-footer">
             <span class="reward-tag">DAILY BONUS: +${challenge.rewardCoins} COINS</span>
@@ -292,16 +291,20 @@ export class MissionsModal {
   // --- 3. Achievements Tab ---
   private renderAchievementsTab(): void {
     const state = this.progression.getState();
+    const achievements = ACHIEVEMENTS.filter(def => this.achievementCategory === 'ALL' || def.category === this.achievementCategory);
 
     let html = `
       <div class="missions-tab-header">
         <h3 class="set-title">HALL OF RECORDS</h3>
         <p class="tab-subtitle">Permanent milestones tracking your all-time career achievements.</p>
       </div>
+      <div class="achievement-toolbar"><label for="achievement-category">CATEGORY</label>
+        <select id="achievement-category">${['ALL', ...new Set(ACHIEVEMENTS.map(def => def.category))].map(category => `<option value="${category}" ${this.achievementCategory === category ? 'selected' : ''}>${category === 'ALL' ? 'All achievements' : this.categoryLabel(category)}</option>`).join('')}</select>
+        <span>Showing ${achievements.length} of ${ACHIEVEMENTS.length} achievements · Bronze, Silver and Gold tiers</span></div>
       <div class="mission-cards-list">
     `;
 
-    for (const def of ACHIEVEMENTS) {
+    for (const def of achievements) {
       const achState = state.achievements[def.id] || {
         currentProgress: 0,
         completedTiers: [],
@@ -317,7 +320,6 @@ export class MissionsModal {
       const allGoldClaimed = achState.claimedTiers.includes('GOLD');
 
       const progressVal = achState.currentProgress;
-      const pct = allGoldClaimed ? 100 : Math.min(100, Math.floor((progressVal / tierConfig.target) * 100));
 
       const isTierComplete = achState.completedTiers.includes(currentTier);
       const isTierClaimed = achState.claimedTiers.includes(currentTier);
@@ -326,31 +328,25 @@ export class MissionsModal {
       if (allGoldClaimed) {
         actionBtn = '<button class="btn-claim claimed" disabled>MAX TIER ✓</button>';
       } else if (isTierComplete && !isTierClaimed) {
-        actionBtn = `<button class="btn-claim claimable pulse-anim" data-action="claim-achievement" data-id="${def.id}" data-tier="${currentTier}">CLAIM ${tierConfig.rewardCoins} 🪙</button>`;
+        actionBtn = `<button class="btn-claim claimable" data-action="claim-achievement" data-id="${def.id}" data-tier="${currentTier}">CLAIM ${tierConfig.rewardCoins} 🪙</button>`;
       }
 
       html += `
-        <div class="progression-card ${allGoldClaimed ? 'card-claimed' : isTierComplete ? 'card-complete' : ''}">
+        <div data-achievement-id="${def.id}" class="progression-card ${allGoldClaimed ? 'card-claimed' : isTierComplete ? 'card-complete' : ''}">
           <div class="card-header">
             <div class="card-icon">${def.badgeIcon}</div>
             <div class="card-title-group">
+              <span class="achievement-category">${this.categoryLabel(def.category)}</span>
               <div class="achievement-title-row">
                 <h3 class="card-title">${def.title}</h3>
                 <span class="tier-pill tier-${currentTier.toLowerCase()}">${currentTier}</span>
               </div>
               <p class="card-desc">${def.description}</p>
             </div>
+            <span class="status-pill ${allGoldClaimed ? 'status-claimed' : isTierComplete ? 'status-complete' : 'status-active'}">${allGoldClaimed ? 'ALL TIERS CLAIMED' : isTierComplete ? 'READY TO CLAIM' : 'IN PROGRESS'}</span>
           </div>
 
-          <div class="card-progress-area">
-            <div class="progress-labels">
-              <span>Progress: ${Math.floor(progressVal).toLocaleString()} / ${tierConfig.target.toLocaleString()}</span>
-              <span>${pct}%</span>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill fill-${currentTier.toLowerCase()}" style="width: ${pct}%"></div>
-            </div>
-          </div>
+          ${this.progressMarkup(progressVal, tierConfig.target, def.title, `fill-${currentTier.toLowerCase()}`)}
 
           <div class="tier-badges-row">
             ${def.tiers.map(t => {
@@ -361,12 +357,12 @@ export class MissionsModal {
               if (claimed) cls += ' claimed';
               else if (completed) cls += ' unlocked';
               else if (active) cls += ' in-progress';
-              return `<span class="${cls}">${t.tier}: ${t.target.toLocaleString()}</span>`;
+              return `<span class="${cls}"><strong>${t.tier} · ${claimed ? 'CLAIMED' : completed ? 'READY' : 'TARGET'}</strong><span>${t.target.toLocaleString()} · ${this.rewardLabel(t.rewardCoins, t.rewardKeys)}</span></span>`;
             }).join('')}
           </div>
 
           <div class="card-footer">
-            <span class="reward-tag">TIER REWARD: +${tierConfig.rewardCoins.toLocaleString()} COINS</span>
+            <span class="reward-tag">TIER REWARD: +${this.rewardLabel(tierConfig.rewardCoins, tierConfig.rewardKeys)}</span>
             ${actionBtn}
           </div>
         </div>
@@ -375,6 +371,12 @@ export class MissionsModal {
 
     html += `</div>`;
     this.contentContainer.innerHTML = html;
+    this.contentContainer.querySelector<HTMLSelectElement>('#achievement-category')?.addEventListener('change', event => {
+      this.achievementCategory = (event.target as HTMLSelectElement).value as typeof this.achievementCategory;
+      this.render();
+      this.contentContainer.scrollTop = 0;
+      this.contentContainer.querySelector<HTMLElement>('#achievement-category')?.focus({ preventScroll: true });
+    });
     this.attachClaimListeners();
   }
 
@@ -419,11 +421,11 @@ export class MissionsModal {
         actionBtn = '<button class="btn-claim claimed" disabled>CLAIMED ✓</button>';
       } else if (isUnlocked) {
         statusCls = 'unlocked';
-        actionBtn = `<button class="btn-claim claimable pulse-anim" data-action="claim-season" data-index="${m.milestoneIndex}">CLAIM REWARD</button>`;
+        actionBtn = `<button class="btn-claim claimable" data-action="claim-season" data-index="${m.milestoneIndex}">CLAIM REWARD</button>`;
       }
 
       html += `
-        <div class="season-milestone-card ${statusCls}">
+        <div data-milestone="${m.milestoneIndex}" class="season-milestone-card ${statusCls}">
           <div class="milestone-cost">
             <span class="token-cost-icon">💎</span>
             <span>${m.tokensRequired}</span>
@@ -436,9 +438,8 @@ export class MissionsModal {
             <h4 class="milestone-name">${m.rewardLabel}</h4>
           </div>
 
-          <div class="milestone-action">
-            ${actionBtn}
-          </div>
+          <div class="milestone-progress">${this.progressMarkup(tokens, m.tokensRequired, `Season stage ${m.milestoneIndex + 1}`)}</div>
+          <div class="milestone-action"><span class="status-pill ${isClaimed ? 'status-claimed' : isUnlocked ? 'status-complete' : 'status-active'}">${isClaimed ? 'CLAIMED' : isUnlocked ? 'READY TO CLAIM' : 'LOCKED'}</span>${actionBtn}</div>
         </div>
       `;
     }
@@ -448,47 +449,44 @@ export class MissionsModal {
     this.attachClaimListeners();
   }
 
-  // --- Attach Event Listeners to Claim Buttons ---
-  private attachClaimListeners(): void {
-    const claimBtns = this.contentContainer.querySelectorAll('[data-action]');
-    claimBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const el = e.currentTarget as HTMLElement;
-        const action = el.dataset.action;
+  private categoryLabel(category: string): string {
+    const labels: Record<string, string> = { DISTANCE: 'Distance', COINS: 'Coins', RUNS: 'Runs', JUMPS: 'Jumps', SLIDES: 'Slides', EVASIONS: 'Evasions', HOVERBOARD: 'Hoverboards', HIGHSCORE: 'High scores' };
+    return labels[category] || category;
+  }
 
-        if (action === 'claim-mission') {
-          const id = el.dataset.id!;
-          const res = this.progression.claimMissionReward(id);
-          if (res.success) {
-            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
-            EventBus.getInstance().emit('WALLET_UPDATED');
-            this.render();
-          }
-        } else if (action === 'claim-daily') {
-          const id = el.dataset.id!;
-          const res = this.progression.claimDailyReward(id);
-          if (res.success) {
-            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
-            EventBus.getInstance().emit('WALLET_UPDATED');
-            this.render();
-          }
-        } else if (action === 'claim-achievement') {
-          const id = el.dataset.id!;
-          const tier = el.dataset.tier as AchievementTier;
-          const res = this.progression.claimAchievementReward(id, tier);
-          if (res.success) {
-            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
-            EventBus.getInstance().emit('WALLET_UPDATED');
-            this.render();
-          }
-        } else if (action === 'claim-season') {
-          const index = parseInt(el.dataset.index!, 10);
-          const res = this.progression.claimSeasonMilestone(index);
-          if (res.success) {
-            EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
-            EventBus.getInstance().emit('WALLET_UPDATED');
-            this.render();
-          }
+  private rewardLabel(coins: number, keys = 0): string {
+    return `${coins.toLocaleString()} COINS${keys > 0 ? ` + ${keys} ${keys === 1 ? 'KEY' : 'KEYS'}` : ''}`;
+  }
+
+  private progressMarkup(value: number, target: number, label: string, color = ''): string {
+    const pct = Math.min(100, Math.max(0, Math.floor(value / target * 100)));
+    return `<div class="card-progress-area"><div class="progress-labels"><span>Progress: ${Math.floor(value).toLocaleString()} / ${target.toLocaleString()}</span><span>${pct}%</span></div>
+      <div class="progress-bar-track" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${Math.min(target, Math.max(0, value))}">
+        <div class="progress-bar-fill ${color}" style="width: ${pct}%"></div></div></div>`;
+  }
+
+  private attachClaimListeners(): void {
+    this.contentContainer.querySelectorAll<HTMLButtonElement>('.btn-claim[data-action]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        const { action, id, tier, index } = button.dataset;
+        let success = false;
+        let message = 'Reward is not ready or has already been claimed.';
+        if (action === 'claim-mission') success = this.progression.claimMissionReward(id!).success;
+        else if (action === 'claim-daily') success = this.progression.claimDailyReward(id!).success;
+        else if (action === 'claim-achievement') success = this.progression.claimAchievementReward(id!, tier as AchievementTier).success;
+        else if (action === 'claim-season') {
+          const result = this.progression.claimSeasonMilestone(Number(index));
+          success = result.success;
+          message = result.message;
+        }
+        this.render();
+        const feedback = document.getElementById('missions-feedback');
+        if (feedback) { feedback.textContent = success ? 'Reward claimed. Your progress is saved.' : message; feedback.classList.remove('hidden'); }
+        if (success) {
+          EventBus.getInstance().emit(EVENTS.REWARD_CLAIMED);
+          EventBus.getInstance().emit('WALLET_UPDATED');
         }
       });
     });
