@@ -22,8 +22,8 @@ export class CameraController {
 
   // Lobby mode staging
   private isLobbyMode: boolean = true;
-  private lobbyTargetPos = new THREE.Vector3(0.35, 1.45, 3.8);
-  private lobbyLookTarget = new THREE.Vector3(0, 0.95, -1.0);
+  private lobbyTargetPos = new THREE.Vector3(0.35, 1.48, 3.85);
+  private lobbyLookTarget = new THREE.Vector3(0, 0.98, -1.0);
 
   // Opening cinematic sequence camera state
   private isIntroMode: boolean = false;
@@ -326,15 +326,14 @@ export class CameraController {
 
       if (isPortrait) {
         // Step back further and higher to comfortably frame full runner in mobile portrait
-        this.lobbyTargetPos.set(0.25 + sway, 1.85 + bob, 5.6);
-        this.lobbyLookTarget.set(0, 1.15, -0.6);
+        this.lobbyTargetPos.set(0.20 + sway, 1.95 + bob, 5.8);
+        this.lobbyLookTarget.set(0, 1.20, -0.6);
       } else {
-        this.lobbyTargetPos.set(0.35 + sway, 1.45 + bob, 3.8);
-        this.lobbyLookTarget.set(0, 0.95, -1.0);
+        this.lobbyTargetPos.set(0.35 + sway, 1.48 + bob, 3.85);
+        this.lobbyLookTarget.set(0, 0.98, -1.0);
       }
 
-      const lerpFactor = 1.0 - Math.exp(-5.0 * dt);
-      this.currentPosition.lerp(this.lobbyTargetPos, lerpFactor);
+      this.currentPosition.copy(this.lobbyTargetPos);
       this.camera.position.copy(this.currentPosition);
       this.camera.lookAt(this.lobbyLookTarget);
       return;

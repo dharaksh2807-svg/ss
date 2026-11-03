@@ -236,6 +236,13 @@ export class Game {
       });
     }
 
+    // Initialize track & environment for lobby backdrop
+    this.player.reset();
+    this.trackManager.reset();
+    const menuEnvId = this.trackManager.getActiveEnvironment();
+    const menuTheme = EnvironmentManager.getInstance().getTheme(menuEnvId);
+    this.worldScene.applyEnvironment(menuTheme);
+
     // Stage hero character in Lobby pose facing the camera
     this.player.mesh.rotation.y = Math.PI - 0.2;
     this.cameraController.setLobbyMode(true);
@@ -994,7 +1001,7 @@ export class Game {
       this.frameTimes.push(rawDt * 1000);
     }
     // Clamp delta-time to avoid simulation instability (e.g. tab switching)
-    const dt = Math.min(rawDt, 0.08);
+    const dt = Math.max(0, Math.min(rawDt, 0.08));
 
     // Developer Physics Test Arena Pause / Step Frame check
     if (this.devTestArena && this.devTestArena.isSimulationPaused()) {

@@ -206,22 +206,26 @@ export class ShopModal {
     const isDynamicOptedIn = this.progression.getState().includePremiumThemesInDynamic;
 
     container.innerHTML = `
-      <div class="worlds-store-header">
-        <div class="worlds-header-info">
-          <span class="modal-badge-tag cyan-tag">DISTRICT ATLAS</span>
-          <h3 class="worlds-header-title">RAILWAY REALMS & WORLDS</h3>
-          <p class="worlds-header-desc">
+      <div class="worlds-store-header-card">
+        <div class="worlds-header-intro">
+          <div class="modal-badge-tag cyan-tag">DISTRICT ATLAS</div>
+          <h3 class="worlds-store-title">RAILWAY REALMS & WORLDS</h3>
+          <p class="worlds-store-desc">
             Discover and permanently unlock world realms. Each world brings original 3D architecture, atmosphere, and distinct maglev trains.
           </p>
         </div>
-        <div class="worlds-dynamic-toggle-box">
-          <label class="switch-control" for="premium-dynamic-toggle">
-            <input type="checkbox" data-premium-dynamic id="premium-dynamic-toggle" ${isDynamicOptedIn ? 'checked' : ''}>
-            <span class="switch-slider"></span>
-          </label>
-          <div class="toggle-text">
-            <label for="premium-dynamic-toggle" class="toggle-title">Include Owned Premium Worlds in Dynamic Districts</label>
-            <span class="toggle-subtitle">Blends your owned premium worlds into procedural endless district transitions. Locked worlds are always strictly excluded.</span>
+        <div class="dynamic-districts-feature-card">
+          <div class="dynamic-toggle-left">
+            <div class="dynamic-toggle-badge">ENDLESS MODE FEATURE</div>
+            <h4 class="dynamic-toggle-title">Dynamic Districts</h4>
+            <p class="dynamic-toggle-desc">Procedurally transition through all owned worlds every 800m during endless runs.</p>
+          </div>
+          <div class="dynamic-toggle-right">
+            <label class="switch-control" for="premium-dynamic-toggle">
+              <input type="checkbox" data-premium-dynamic id="premium-dynamic-toggle" ${isDynamicOptedIn ? 'checked' : ''}>
+              <span class="switch-slider"></span>
+            </label>
+            <span class="dynamic-status-label ${isDynamicOptedIn ? 'status-enabled' : 'status-disabled'}">${isDynamicOptedIn ? 'ENABLED' : 'DISABLED'}</span>
           </div>
         </div>
       </div>
@@ -818,7 +822,7 @@ export class ShopModal {
   // --- Characters Direct Roster ---
   private renderCharacters(container: HTMLElement): void {
     const list = document.createElement('div');
-    list.className = 'shop-grid';
+    list.className = 'shop-grid characters-shop-grid';
     const chars = getAllCharacters();
     const coins = this.upgradeManager.getCoins();
 
@@ -831,64 +835,111 @@ export class ShopModal {
       const freeRuns = this.progression.getCharacterFreeRuns(char.id);
 
       const card = document.createElement('div');
+      card.dataset.charId = char.id;
 
       if (isLegendary) {
-        card.className = `shop-card-item char-shop-card legendary-character-card ${isUnlocked ? 'owned' : ''}`;
+        const legendaryImg = char.previewImage || (char.id === 'char_modi' ? '/characters/modi/three_quarter.png' : '/characters/rahul_gandhi/three_quarter.png');
+        card.className = `shop-card-item char-shop-card legendary-character-card ${isUnlocked ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}`;
         card.innerHTML = `
-          <div class="legendary-banner-strip">
-            <span class="legendary-tag">👑 LEGENDARY RUNNER</span>
-            ${isUnlocked ? '<span class="status-pill owned-pill">✓ OWNED</span>' : `<span class="status-pill price-pill">${cost.toLocaleString()} 🪙</span>`}
-          </div>
-          <div class="legendary-preview-wrap">
-            <img src="${char.previewImage || '/characters/modi/three_quarter.png'}" alt="${char.name}" class="legendary-char-img" />
-          </div>
-          <div class="item-meta">
-            <div class="item-header-row">
-              <span class="item-name legendary-name">${char.name}</span>
-              <span class="rarity-badge legendary-badge">LEGENDARY</span>
+          <div class="legendary-portrait-col">
+            <div class="legendary-portrait-frame">
+              <div class="legendary-radial-glow"></div>
+              <img src="${legendaryImg}" alt="${char.name}" class="legendary-char-img" loading="lazy" />
+              <div class="legendary-portrait-badge">
+                <span class="legendary-crown-icon">👑</span>
+                <span class="legendary-badge-text">LEGENDARY</span>
+              </div>
             </div>
-            <div class="item-sub legendary-sub">${char.title}</div>
-            <div class="item-bio-snippet">${char.bio}</div>
-            ${!isUnlocked && freeRuns > 0 ? `<div class="trial-counter-pill">Free Trials Remaining: ${freeRuns}/5</div>` : ''}
           </div>
-          <div class="item-action-area legendary-action-area">
-            ${isEquipped 
-              ? `<button class="arcade-btn btn-equipped" disabled>${isUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${freeRuns} LEFT)`}</button>`
-              : isUnlocked
-              ? `<button class="arcade-btn btn-primary" data-equip-char="${char.id}">⚡ EQUIP</button>`
-              : (freeRuns > 0)
-              ? `<button class="arcade-btn btn-primary" data-trial-char="${char.id}">⚡ TRY FREE</button>
-                 <button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
-                   UNLOCK — ${cost.toLocaleString()} 🪙
-                 </button>`
-              : `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}">
-                  UNLOCK — ${cost.toLocaleString()} 🪙
-                </button>`
-            }
-            <button class="arcade-btn btn-secondary" data-view-char="${char.id}">🔍 3D PREVIEW</button>
+
+          <div class="legendary-content-col">
+            <div class="legendary-banner-strip">
+              <span class="legendary-tag">👑 LEGENDARY RUNNER</span>
+              <div class="legendary-status-wrap">
+                ${isEquipped 
+                  ? '<span class="status-pill equipped-pill">✓ EQUIPPED</span>' 
+                  : isUnlocked 
+                  ? '<span class="status-pill owned-pill">✓ OWNED</span>' 
+                  : `<span class="status-pill price-pill">${cost.toLocaleString()} 🪙</span>`}
+              </div>
+            </div>
+
+            <div class="legendary-header-block">
+              <div class="legendary-name-row">
+                <h3 class="legendary-name">${char.name}</h3>
+                <span class="rarity-badge legendary-badge">LEGENDARY</span>
+              </div>
+              <div class="legendary-sub">${char.title}</div>
+            </div>
+
+            <p class="legendary-bio">${char.bio}</p>
+
+            ${!isUnlocked && freeRuns > 0 ? `
+              <div class="legendary-trial-notice">
+                <span class="trial-fire-icon">🔥</span>
+                <span class="trial-counter-pill">Free Trials Remaining: ${freeRuns}/5</span>
+                <span class="trial-desc">Experience this signature runner before purchasing!</span>
+              </div>
+            ` : ''}
+
+            <div class="item-action-area legendary-action-area">
+              ${isEquipped 
+                ? `<button class="arcade-btn btn-equipped" disabled>${isUnlocked ? '✓ EQUIPPED' : `✓ FREE TRIAL (${freeRuns} LEFT)`}</button>`
+                : isUnlocked
+                ? `<button class="arcade-btn btn-primary" data-equip-char="${char.id}">⚡ EQUIP</button>`
+                : (freeRuns > 0)
+                ? `<button class="arcade-btn btn-primary" data-trial-char="${char.id}">⚡ TRY FREE (${freeRuns} LEFT)</button>
+                   <button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}" ${canAfford ? '' : 'disabled'}>
+                     UNLOCK — ${cost.toLocaleString()} 🪙
+                   </button>`
+                : `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'}" data-buy-char="${char.id}" ${canAfford ? '' : 'disabled'}>
+                    UNLOCK — ${cost.toLocaleString()} 🪙
+                  </button>`
+              }
+              <button class="arcade-btn btn-secondary" data-view-char="${char.id}">🔍 3D SHOWROOM</button>
+            </div>
           </div>
         `;
       } else {
-        card.className = `shop-card-item char-shop-card ${isUnlocked ? 'owned' : ''}`;
+        card.className = `shop-card-item char-shop-card standard-runner-card ${isUnlocked ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}`;
         card.innerHTML = `
-          <div class="item-icon-box cyan-glow">${char.portraitIcon}</div>
-          <div class="item-meta">
-            <div class="item-name">${char.name}</div>
-            <div class="item-sub">${char.title}</div>
-            <div class="item-bio-snippet">${char.personality}</div>
+          <div class="standard-runner-visual-box char-theme-${char.id}">
+            <div class="runner-backdrop-glow"></div>
+            <div class="runner-avatar-icon">${char.portraitIcon}</div>
+            <div class="runner-badges-row">
+              <span class="runner-rarity-pill rarity-${(char.rarity || 'COMMON').toLowerCase()}">${char.rarity || 'STANDARD'}</span>
+              ${isEquipped ? '<span class="runner-status-tag tag-equipped">EQUIPPED</span>' : (isUnlocked ? '<span class="runner-status-tag tag-unlocked">UNLOCKED</span>' : '')}
+            </div>
           </div>
-          <div class="item-action-area">
+
+          <div class="standard-runner-body">
+            <div class="standard-runner-name-block">
+              <h4 class="standard-runner-name">${char.name}</h4>
+              <div class="standard-runner-subtitle">${char.title}</div>
+            </div>
+
+            <p class="standard-runner-bio">${char.personality || char.bio}</p>
+
+            <div class="standard-runner-price-row">
+              <span class="price-row-label">STATUS</span>
+              <span class="price-row-value ${isUnlocked ? 'price-owned' : 'price-gold'}">
+                ${isUnlocked ? '✓ IN ROSTER' : (char.unlock.type === 'FREE' ? 'FREE SURFER' : `${cost.toLocaleString()} 🪙`)}
+              </span>
+            </div>
+          </div>
+
+          <div class="standard-runner-footer">
             ${isEquipped 
-              ? `<button class="arcade-btn btn-equipped" disabled>EQUIPPED</button>`
+              ? `<button class="arcade-btn btn-equipped full-width" disabled>✓ EQUIPPED</button>`
               : isUnlocked
-              ? `<button class="arcade-btn btn-secondary" data-equip-char="${char.id}">EQUIP</button>`
+              ? `<button class="arcade-btn btn-secondary full-width" data-equip-char="${char.id}">⚡ EQUIP</button>`
               : char.unlock.type === 'COINS'
-              ? `<button class="arcade-btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" data-buy-char="${char.id}">
+              ? `<button class="arcade-btn ${canAfford ? 'btn-gold pulse-btn' : 'btn-disabled'} full-width" data-buy-char="${char.id}" ${canAfford ? '' : 'disabled'}>
                   ${cost.toLocaleString()} 🪙
                 </button>`
-              : `<button class="arcade-btn btn-disabled" disabled>🔒 ${char.unlock.description}</button>`
+              : `<button class="arcade-btn btn-disabled full-width" disabled>🔒 ${char.unlock.description}</button>`
             }
-            <button class="arcade-btn btn-ghost" data-view-char="${char.id}">3D VIEW</button>
+            <button class="arcade-btn btn-ghost full-width preview-btn" data-view-char="${char.id}">🔍 3D PREVIEW</button>
           </div>
         `;
       }
@@ -969,6 +1020,7 @@ export class ShopModal {
       const canAfford = coins >= cost;
 
       const card = document.createElement('div');
+      card.dataset.boardId = board.id;
       card.className = `shop-card-item board-shop-card ${isUnlocked ? 'owned' : ''}`;
       card.innerHTML = `
         <div class="item-icon-box purple-glow">${board.icon}</div>
