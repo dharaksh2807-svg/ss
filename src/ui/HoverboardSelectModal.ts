@@ -80,9 +80,64 @@ export class HoverboardSelectModal {
     this.upgradeManager = UpgradeManager.getInstance();
     this.hoverboardManager = HoverboardManager.getInstance();
 
+    this.setupLayout();
     this.init3DScene();
     this.setupEventListeners();
     this.setupInteraction();
+  }
+
+  private setupLayout(): void {
+    this.element.classList.add('showroom-overlay');
+    this.element.setAttribute('role', 'dialog');
+    this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'board-showroom-title');
+    const panel = this.element.querySelector<HTMLElement>('.modal-card')!;
+    panel.classList.add('showroom-panel');
+    const heading = panel.querySelector<HTMLElement>('.showroom-main-title')!;
+    heading.id = 'board-showroom-title';
+    heading.textContent = 'Board showroom';
+    const badge = panel.querySelector<HTMLElement>('.showroom-badge')!;
+    badge.textContent = 'METRO RUNNER · CUSTOMIZE';
+    badge.removeAttribute('style');
+    this.closeBtn.textContent = '← Back';
+    this.closeBtn.setAttribute('aria-label', 'Back to previous screen');
+    const home = document.createElement('button');
+    home.id = 'board-home-btn';
+    home.className = 'showroom-home-btn';
+    home.textContent = 'Home';
+    home.addEventListener('click', () => EventBus.getInstance().emit('GO_TO_MENU'));
+    this.closeBtn.after(home);
+
+    const footer = panel.querySelector<HTMLElement>('.showroom-action-footer')!;
+    const note = document.createElement('div');
+    note.id = 'board-action-note';
+    note.className = 'showroom-action-note';
+    const actions = document.createElement('div');
+    actions.className = 'showroom-primary-actions';
+    actions.appendChild(this.actionBtn);
+    const feedback = document.createElement('p');
+    feedback.id = 'board-feedback';
+    feedback.className = 'showroom-feedback';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    footer.replaceChildren(note, actions, feedback);
+    panel.appendChild(footer); // Keep the action outside the scrolling details on every viewport.
+    const pack = panel.querySelector<HTMLElement>('.charges-pack-card')!;
+    pack.querySelector<HTMLElement>('.pack-title')!.textContent = `+${HOVERBOARD_CHARGES_PACK.count} board charges`;
+    pack.querySelector<HTMLElement>('.pack-sub')!.textContent = 'Consumable deployments. Does not unlock a board.';
+    this.buyChargesBtn.textContent = `BUY ${HOVERBOARD_CHARGES_PACK.count} CHARGES — ${HOVERBOARD_CHARGES_PACK.cost.toLocaleString()} 🪙`;
+    const packNote = document.createElement('p');
+    packNote.id = 'board-charge-note';
+    packNote.className = 'showroom-charge-note';
+    pack.appendChild(packNote);
+    const viewport = panel.querySelector<HTMLElement>('.showroom-viewport-container')!;
+    viewport.querySelector<HTMLElement>('.drag-hint span')!.textContent = 'Drag to rotate · 360°';
+    new ResizeObserver(() => { if (this.isRendering) this.resizeViewport(); }).observe(viewport);
+  }
+
+  private setFeedback(message: string, error = false): void {
+    const feedback = this.element.querySelector<HTMLElement>('#board-feedback');
+    if (feedback) { feedback.textContent = message; feedback.dataset.tone = error ? 'error' : 'success'; }
   }
 
   private init3DScene(): void {
@@ -217,6 +272,7 @@ export class HoverboardSelectModal {
     if (!this.canvas) return;
 
     const onPointerDown = (clientX: number) => {
+      if (!this.isRendering) return;
       this.isDragging = true;
       this.dragStartX = clientX;
       this.dragStartRotation = this.turntableRotationY;
@@ -271,6 +327,7 @@ export class HoverboardSelectModal {
   public show(): void {
     if (this.isRendering) return;
     this.element.classList.remove('hidden');
+    this.setFeedback('');
 
     // Update wallet and charges
     this.updateWalletDisplay(this.upgradeManager.getCoins());
@@ -302,6 +359,8 @@ export class HoverboardSelectModal {
     }
     this.element.classList.add('hidden');
     this.isRendering = false;
+    this.isDragging = false;
+    this.dragVelocity = 0;
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -318,6 +377,7 @@ export class HoverboardSelectModal {
   }
 
   public navigateBoard(direction: number): void {
+    this.setFeedback('');
     this.currentBoardIndex = (this.currentBoardIndex + direction + this.boards.length) % this.boards.length;
     this.renderBoardTabs();
     this.updateBoardView();
@@ -325,6 +385,7 @@ export class HoverboardSelectModal {
 
   public selectBoardByIndex(index: number): void {
     if (index >= 0 && index < this.boards.length) {
+      this.setFeedback('');
       this.currentBoardIndex = index;
       this.renderBoardTabs();
       this.updateBoardView();
@@ -333,6 +394,7 @@ export class HoverboardSelectModal {
 
   private renderBoardTabs(): void {
     if (!this.boardTabsEl) return;
+    const hadFocus = this.boardTabsEl.contains(document.activeElement);
     this.boardTabsEl.innerHTML = '';
 
     this.boards.forEach((board, idx) => {
@@ -340,6 +402,9 @@ export class HoverboardSelectModal {
       const isSelected = idx === this.currentBoardIndex;
 
       const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.dataset.boardId = board.id;
+      tab.setAttribute('aria-pressed', String(idx === this.currentBoardIndex));
       tab.className = `char-tab ${isSelected ? 'active' : ''}`;
       tab.innerHTML = `
         <span class="char-tab-icon">${board.icon}</span>
@@ -353,6 +418,7 @@ export class HoverboardSelectModal {
 
       this.boardTabsEl.appendChild(tab);
     });
+    if (hadFocus) this.boardTabsEl.querySelector<HTMLElement>('.active')?.focus({ preventScroll: true });
   }
 
   private updateBoardView(): void {
@@ -443,12 +509,19 @@ export class HoverboardSelectModal {
   private updatePreviewBoard(boardId: HoverboardId): void {
     if (!this.previewBoardGroup) return;
 
-    // Dispose old preview
+    if (this.currentPreviewBuilt?.definition.id === boardId) return;
+
+    // Dispose the geometry and materials owned by the replaced preview.
     while (this.previewBoardGroup.children.length > 0) {
       const child = this.previewBoardGroup.children[0];
       this.previewBoardGroup.remove(child);
     }
     if (this.currentPreviewBuilt) {
+      const geometries = new Set<THREE.BufferGeometry>();
+      this.currentPreviewBuilt.group.traverse(object => {
+        if ((object as THREE.Mesh).isMesh) geometries.add((object as THREE.Mesh).geometry);
+      });
+      for (const geometry of geometries) geometry.dispose();
       for (const mat of this.currentPreviewBuilt.materials) {
         mat.dispose();
       }
@@ -465,6 +538,8 @@ export class HoverboardSelectModal {
     const equippedBoardId = this.progression.getSelectedBoard();
     const isCurrentlyEquipped = isUnlocked && board.id === equippedBoardId;
     const coins = this.upgradeManager.getCoins();
+    const note = this.element.querySelector<HTMLElement>('#board-action-note');
+    if (note) note.textContent = `${board.name} · ${isUnlocked ? 'Permanently owned' : 'Permanent board unlock'} · Charges sold separately`;
 
     if (isCurrentlyEquipped) {
       this.actionBtn.textContent = '✓ EQUIPPED';
@@ -477,11 +552,11 @@ export class HoverboardSelectModal {
       if (board.unlock.type === 'COINS') {
         const cost = board.unlock.cost || 0;
         const canAfford = coins >= cost;
-        this.actionBtn.textContent = `UNLOCK FOR ${cost.toLocaleString()} 🪙`;
+        this.actionBtn.textContent = `BUY BOARD — ${cost.toLocaleString()} 🪙`;
         this.actionBtn.className = `btn btn-action ${canAfford ? 'purchase' : 'disabled'}`;
         this.actionBtn.disabled = !canAfford;
       } else {
-        this.actionBtn.textContent = `🔒 ${board.unlock.description}`;
+        this.actionBtn.textContent = `LOCKED — ${board.unlock.description}`;
         this.actionBtn.className = 'btn btn-action disabled';
         this.actionBtn.disabled = true;
       }
@@ -495,40 +570,36 @@ export class HoverboardSelectModal {
   }
 
   private handleActionButtonClick(): void {
+    if (this.actionBtn.disabled) return;
     const board = this.boards[this.currentBoardIndex];
     if (!board) return;
-
-    const isUnlocked = this.progression.isBoardUnlocked(board.id);
-
-    if (!isUnlocked) {
-      // Purchase Board
-      const res = this.progression.purchaseBoard(board.id);
-      if (res.success) {
-        this.updateWalletDisplay(this.upgradeManager.getCoins());
-        this.renderBoardTabs();
-        this.updateBoardView();
-      }
-      return;
-    }
-
-    // Equip
-    this.progression.equipBoard(board.id);
+    const result = this.progression.isBoardUnlocked(board.id)
+      ? this.progression.equipBoard(board.id) : this.progression.purchaseBoard(board.id);
+    this.setFeedback(result.message, !result.success);
+    this.updateWalletDisplay(this.upgradeManager.getCoins());
     this.renderBoardTabs();
     this.updateBoardView();
   }
 
   private handleBuyChargesClick(): void {
-    const res = this.progression.purchaseHoverboardCharges();
-    if (res.success) {
-      this.updateWalletDisplay(this.upgradeManager.getCoins());
-      this.updateChargesDisplay(this.progression.getHoverboardCharges());
-    }
+    if (this.buyChargesBtn.disabled) return;
+    const before = this.upgradeManager.getCoins();
+    const result = this.progression.purchaseHoverboardCharges();
+    this.updateWalletDisplay(this.upgradeManager.getCoins());
+    this.updateChargesDisplay(this.progression.getHoverboardCharges());
+    this.setFeedback(result.success
+      ? `Spent ${(before - this.upgradeManager.getCoins()).toLocaleString()} coins · Received ${HOVERBOARD_CHARGES_PACK.count} charges.`
+      : result.message, !result.success);
   }
 
   private updateWalletDisplay(coins: number): void {
     if (this.walletCoinsEl) {
       this.walletCoinsEl.textContent = `🪙 ${coins.toLocaleString()}`;
     }
+    const shortfall = Math.max(0, HOVERBOARD_CHARGES_PACK.cost - coins);
+    this.buyChargesBtn.disabled = shortfall > 0;
+    const note = this.element.querySelector<HTMLElement>('#board-charge-note');
+    if (note) note.textContent = shortfall ? `Need ${shortfall.toLocaleString()} more coins` : 'Adds charges to your inventory. Permanent board ownership stays the same.';
   }
 
   private updateChargesDisplay(charges: number): void {

@@ -80,9 +80,65 @@ export class CharacterSelectModal {
     this.progression = ProgressionManager.getInstance();
     this.upgradeManager = UpgradeManager.getInstance();
 
+    this.setupLayout();
     this.init3DScene();
     this.setupEventListeners();
     this.setupInteraction();
+  }
+
+  private setupLayout(): void {
+    this.element.classList.add('showroom-overlay');
+    this.element.setAttribute('role', 'dialog');
+    this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'char-showroom-title');
+    const panel = this.element.querySelector<HTMLElement>('.modal-card')!;
+    panel.classList.add('showroom-panel');
+    const heading = panel.querySelector<HTMLElement>('.showroom-main-title')!;
+    heading.id = 'char-showroom-title';
+    heading.textContent = 'Runner showroom';
+    const badge = panel.querySelector<HTMLElement>('.showroom-badge')!;
+    badge.textContent = 'METRO RUNNER · CUSTOMIZE';
+    badge.removeAttribute('style');
+    this.closeBtn.textContent = '← Back';
+    this.closeBtn.setAttribute('aria-label', 'Back to previous screen');
+    const home = document.createElement('button');
+    home.id = 'char-home-btn';
+    home.className = 'showroom-home-btn';
+    home.textContent = 'Home';
+    home.addEventListener('click', () => EventBus.getInstance().emit('GO_TO_MENU'));
+    this.closeBtn.after(home);
+
+    const footer = panel.querySelector<HTMLElement>('.showroom-action-footer')!;
+    const note = document.createElement('div');
+    note.id = 'char-action-note';
+    note.className = 'showroom-action-note';
+    const actions = document.createElement('div');
+    actions.className = 'showroom-primary-actions';
+    actions.appendChild(this.actionBtn);
+    const trial = document.createElement('button');
+    trial.id = 'char-trial-btn';
+    trial.className = 'showroom-trial-btn';
+    trial.hidden = true;
+    trial.addEventListener('click', () => this.handleTrialClick());
+    actions.appendChild(trial);
+    const feedback = document.createElement('p');
+    feedback.id = 'char-feedback';
+    feedback.className = 'showroom-feedback';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    footer.replaceChildren(note, actions, feedback);
+    panel.appendChild(footer); // Keep the action outside the scrolling details on every viewport.
+    const viewport = panel.querySelector<HTMLElement>('.showroom-viewport-container')!;
+    const angles = panel.querySelector<HTMLElement>('#char-view-angles')!;
+    angles.setAttribute('aria-label', 'Preview camera angles');
+    panel.insertBefore(angles, panel.querySelector('.showroom-stage-layout'));
+    viewport.querySelector<HTMLElement>('.drag-hint span')!.textContent = 'Drag to rotate · 360°';
+    new ResizeObserver(() => { if (this.isRendering) this.resizeViewport(); }).observe(viewport);
+  }
+
+  private setFeedback(message: string, error = false): void {
+    const feedback = this.element.querySelector<HTMLElement>('#char-feedback');
+    if (feedback) { feedback.textContent = message; feedback.dataset.tone = error ? 'error' : 'success'; }
   }
 
   private init3DScene(): void {
@@ -166,6 +222,9 @@ export class CharacterSelectModal {
     for (const event of ['CHARACTER_EQUIPPED', 'CHARACTER_UNLOCKED', 'OUTFIT_UNLOCKED', 'KEYS_UPDATED']) {
       bus.on(event, () => {
         if (!this.isRendering) return;
+        if (event === 'CHARACTER_EQUIPPED' && this.characters[this.currentCharacterIndex].id === this.progression.getSelectedCharacter()) {
+          this.selectedOutfitId = this.progression.getSelectedOutfit(this.progression.getSelectedCharacter());
+        }
         this.renderCharacterTabs();
         this.updateCharacterView();
       });
@@ -254,6 +313,7 @@ export class CharacterSelectModal {
     if (!this.canvas) return;
 
     const onPointerDown = (clientX: number) => {
+      if (!this.isRendering) return;
       this.isDragging = true;
       this.dragStartX = clientX;
       this.dragStartRotation = this.turntableRotationY;
@@ -305,6 +365,7 @@ export class CharacterSelectModal {
   public show(targetCharId?: string): void {
     if (this.isRendering) return;
     this.element.classList.remove('hidden');
+    this.setFeedback('');
     this.updateWalletDisplay(this.upgradeManager.getCoins());
 
     // Select specified character or currently equipped character
@@ -334,6 +395,8 @@ export class CharacterSelectModal {
     }
     this.element.classList.add('hidden');
     this.isRendering = false;
+    this.isDragging = false;
+    this.dragVelocity = 0;
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -350,6 +413,7 @@ export class CharacterSelectModal {
   }
 
   private navigateCharacter(direction: number): void {
+    this.setFeedback('');
     this.currentCharacterIndex = (this.currentCharacterIndex + direction + this.characters.length) % this.characters.length;
     const currentChar = this.characters[this.currentCharacterIndex];
     this.selectedOutfitId = this.progression.getSelectedOutfit(currentChar.id);
@@ -365,10 +429,14 @@ export class CharacterSelectModal {
 
   private renderCharacterTabs(): void {
     if (!this.characterTabsEl) return;
+    const hadFocus = this.characterTabsEl.contains(document.activeElement);
     this.characterTabsEl.innerHTML = '';
 
     this.characters.forEach((char, idx) => {
       const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.dataset.charId = char.id;
+      tab.setAttribute('aria-pressed', String(idx === this.currentCharacterIndex));
       tab.className = `char-tab ${idx === this.currentCharacterIndex ? 'active' : ''}`;
       const isUnlocked = this.progression.isCharacterUnlocked(char.id);
 
@@ -379,6 +447,7 @@ export class CharacterSelectModal {
       `;
 
       tab.addEventListener('click', () => {
+        this.setFeedback('');
         this.currentCharacterIndex = idx;
         this.selectedOutfitId = this.progression.getSelectedOutfit(char.id);
         this.turntableTargetRotationY = Math.PI;
@@ -389,6 +458,7 @@ export class CharacterSelectModal {
 
       this.characterTabsEl.appendChild(tab);
     });
+    if (hadFocus) this.characterTabsEl.querySelector<HTMLElement>('.active')?.focus({ preventScroll: true });
   }
 
   private updateCharacterView(): void {
@@ -415,8 +485,11 @@ export class CharacterSelectModal {
     if (isEquipped) {
       this.charStatusEl.textContent = 'ACTIVE RUNNER';
       this.charStatusEl.className = 'status-badge active-badge';
+    } else if (char.id === equippedCharId && this.progression.getCharacterFreeRuns(char.id) > 0) {
+      this.charStatusEl.textContent = 'TRIAL ACTIVE';
+      this.charStatusEl.className = 'status-badge active-badge';
     } else if (isCharUnlocked) {
-      this.charStatusEl.textContent = 'UNLOCKED';
+      this.charStatusEl.textContent = 'OWNED';
       this.charStatusEl.className = 'status-badge unlocked-badge';
     } else {
       this.charStatusEl.textContent = 'LOCKED';
@@ -487,6 +560,8 @@ export class CharacterSelectModal {
 
   private renderOutfitsList(char: CharacterDefinition): void {
     if (!this.outfitListEl) return;
+    const focusedOutfit = this.outfitListEl.contains(document.activeElement)
+      ? (document.activeElement as HTMLElement).dataset.outfitId : undefined;
     this.outfitListEl.innerHTML = '';
 
     char.outfits.forEach((outfit) => {
@@ -495,7 +570,10 @@ export class CharacterSelectModal {
       const equippedOutfitId = this.progression.getSelectedOutfit(char.id);
       const isEquipped = isOutfitUnlocked && outfit.id === equippedOutfitId && char.id === this.progression.getSelectedCharacter();
 
-      const card = document.createElement('div');
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.dataset.outfitId = outfit.id;
+      card.setAttribute('aria-pressed', String(isSelected));
       card.className = `outfit-card ${isSelected ? 'selected' : ''} ${isOutfitUnlocked ? 'unlocked' : 'locked'}`;
 
       let badgeHtml = '';
@@ -519,16 +597,19 @@ export class CharacterSelectModal {
       `;
 
       card.addEventListener('click', () => {
+        this.setFeedback('');
         this.selectedOutfitId = outfit.id;
         this.updateCharacterView();
       });
 
       this.outfitListEl.appendChild(card);
     });
+    if (focusedOutfit) this.outfitListEl.querySelector<HTMLElement>(`[data-outfit-id="${focusedOutfit}"]`)?.focus({ preventScroll: true });
   }
 
   private updatePreviewModel(characterId: any, outfitId: string): void {
     if (this.previewModel) {
+      if (this.previewModel.getCharacterId() === characterId && this.previewModel.getOutfitId() === outfitId) return;
       this.previewModel.applyCharacter(characterId, outfitId);
     } else {
       this.previewModel = new CharacterModel(characterId, outfitId);
@@ -545,6 +626,15 @@ export class CharacterSelectModal {
     const isCurrentlyEquipped = isCharUnlocked && char.id === equippedCharId && selectedOutfit.id === equippedOutfitId;
     const coins = this.upgradeManager.getCoins();
 
+    const freeRuns = this.progression.getCharacterFreeRuns(char.id);
+    const trial = this.element.querySelector<HTMLButtonElement>('#char-trial-btn');
+    if (trial) {
+      trial.hidden = isCharUnlocked || freeRuns <= 0 || char.id === equippedCharId;
+      trial.textContent = `TRY FREE · ${freeRuns} LEFT`;
+    }
+    const note = this.element.querySelector<HTMLElement>('#char-action-note');
+    if (note) note.textContent = `${char.name} · ${selectedOutfit.name}${isCharUnlocked ? ' · Runner owned' : ' · Runner not owned'}`;
+
     if (isCurrentlyEquipped) {
       this.actionBtn.textContent = '✓ EQUIPPED';
       this.actionBtn.className = 'btn btn-action equipped';
@@ -553,29 +643,20 @@ export class CharacterSelectModal {
     }
 
     if (!isCharUnlocked) {
-      // Character is locked
-      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
-      if (freeRuns > 0) {
-        if (char.id === equippedCharId) {
-          this.actionBtn.textContent = `✓ FREE TRIAL ACTIVE (${freeRuns} LEFT)`;
-          this.actionBtn.className = 'btn btn-action equipped';
-          this.actionBtn.disabled = true;
-          return;
-        }
-        this.actionBtn.textContent = `⚡ EQUIP FREE RUN (${freeRuns} LEFT)`;
-        this.actionBtn.className = 'btn btn-action equip';
-        this.actionBtn.disabled = false;
+      if (char.id === equippedCharId && freeRuns > 0) {
+        this.actionBtn.textContent = `TRIAL ACTIVE · ${freeRuns} LEFT`;
+        this.actionBtn.className = 'btn btn-action equipped';
+        this.actionBtn.disabled = true;
         return;
       }
-
       if (char.unlock.type === 'COINS') {
         const cost = char.unlock.cost || 0;
         const canAfford = coins >= cost;
-        this.actionBtn.textContent = `UNLOCK FOR ${cost.toLocaleString()} 🪙`;
+        this.actionBtn.textContent = `BUY RUNNER — ${cost.toLocaleString()} 🪙`;
         this.actionBtn.className = `btn btn-action ${canAfford ? 'purchase' : 'disabled'}`;
         this.actionBtn.disabled = !canAfford;
       } else {
-        this.actionBtn.textContent = `🔒 ${char.unlock.description}`;
+        this.actionBtn.textContent = `LOCKED — ${char.unlock.description}`;
         this.actionBtn.className = 'btn btn-action disabled';
         this.actionBtn.disabled = true;
       }
@@ -587,11 +668,11 @@ export class CharacterSelectModal {
       if (selectedOutfit.unlock.type === 'COINS') {
         const cost = selectedOutfit.unlock.cost || 0;
         const canAfford = coins >= cost;
-        this.actionBtn.textContent = `UNLOCK OUTFIT (${cost.toLocaleString()} 🪙)`;
+        this.actionBtn.textContent = `BUY OUTFIT — ${cost.toLocaleString()} 🪙`;
         this.actionBtn.className = `btn btn-action ${canAfford ? 'purchase' : 'disabled'}`;
         this.actionBtn.disabled = !canAfford;
       } else {
-        this.actionBtn.textContent = `🔒 ${selectedOutfit.unlock.description}`;
+        this.actionBtn.textContent = `LOCKED — ${selectedOutfit.unlock.description}`;
         this.actionBtn.className = 'btn btn-action disabled';
         this.actionBtn.disabled = true;
       }
@@ -604,51 +685,38 @@ export class CharacterSelectModal {
     this.actionBtn.disabled = false;
   }
 
+  private handleTrialClick(): void {
+    const char = this.characters[this.currentCharacterIndex];
+    const result = this.progression.equipCharacter(char.id, this.selectedOutfitId);
+    this.setFeedback(result.message, !result.success);
+    if (result.success) this.syncEquippedStyle(char.id);
+    this.renderCharacterTabs();
+    this.updateCharacterView();
+  }
+
+  private syncEquippedStyle(charId: string): void {
+    const style = CharacterModel.getRunningStyleForCharacter(charId);
+    localStorage.setItem('metro_running_style', style);
+    EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, style);
+  }
+
   private handleActionButtonClick(): void {
+    if (this.actionBtn.disabled) return;
     const char = this.characters[this.currentCharacterIndex];
     if (!char) return;
-
-    const isCharUnlocked = this.progression.isCharacterUnlocked(char.id);
-    const selectedOutfit = char.outfits.find((o) => o.id === this.selectedOutfitId) || char.outfits[0];
-    const isOutfitUnlocked = this.progression.isOutfitUnlocked(char.id, selectedOutfit.id);
-
-    if (!isCharUnlocked) {
-      const freeRuns = this.progression.getCharacterFreeRuns(char.id);
-      if (freeRuns > 0) {
-        const res = this.progression.equipCharacter(char.id, selectedOutfit.id);
-        if (res.success) {
-          const charStyle = CharacterModel.getRunningStyleForCharacter(char.id);
-          localStorage.setItem('metro_running_style', charStyle);
-          EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, charStyle);
-          this.updateCharacterView();
-        }
-        return;
-      }
-      // Purchase Character
-      const res = this.progression.purchaseCharacter(char.id);
-      if (res.success) {
-        this.updateWalletDisplay(this.upgradeManager.getCoins());
-        this.renderCharacterTabs();
-        this.updateCharacterView();
-      }
-      return;
+    const outfit = char.outfits.find(item => item.id === this.selectedOutfitId) || char.outfits[0];
+    let result: { success: boolean; message: string };
+    if (!this.progression.isCharacterUnlocked(char.id)) {
+      result = this.progression.purchaseCharacter(char.id);
+      if (result.success) this.selectedOutfitId = this.progression.getSelectedOutfit(char.id);
+    } else if (!this.progression.isOutfitUnlocked(char.id, outfit.id)) {
+      result = this.progression.purchaseOutfit(char.id, outfit.id);
+    } else {
+      result = this.progression.equipCharacter(char.id, outfit.id);
     }
-
-    if (!isOutfitUnlocked) {
-      // Purchase Outfit
-      const res = this.progression.purchaseOutfit(char.id, selectedOutfit.id);
-      if (res.success) {
-        this.updateWalletDisplay(this.upgradeManager.getCoins());
-        this.updateCharacterView();
-      }
-      return;
-    }
-
-    // Equip
-    this.progression.equipCharacter(char.id, selectedOutfit.id);
-    const charStyle = CharacterModel.getRunningStyleForCharacter(char.id);
-    localStorage.setItem('metro_running_style', charStyle);
-    EventBus.getInstance().emit(EVENTS.RUNNING_STYLE_CHANGED, charStyle);
+    this.setFeedback(result.message, !result.success);
+    if (result.success) this.syncEquippedStyle(char.id);
+    this.updateWalletDisplay(this.upgradeManager.getCoins());
     this.renderCharacterTabs();
     this.updateCharacterView();
   }
