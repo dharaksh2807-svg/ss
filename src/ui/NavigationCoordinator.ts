@@ -20,6 +20,8 @@ export class NavigationCoordinator {
   constructor(private bus: EventBus, private origin: () => ScreenId | undefined) {
     this.unsubscribe.push(bus.on(EVENTS.UI_BACK, (id: ScreenId) => this.back(id)));
     window.addEventListener('keydown', this.onEscape, true);
+    document.addEventListener('touchstart', this.onMenuTouch, { passive: true });
+    document.addEventListener('touchmove', this.onMenuTouch, { passive: true });
   }
 
   public register(id: ScreenId, view: View, event?: string, payload?: (value: any) => any): void {
@@ -73,7 +75,21 @@ export class NavigationCoordinator {
     this.clear();
     for (const off of this.unsubscribe) off();
     window.removeEventListener('keydown', this.onEscape, true);
+    document.removeEventListener('touchstart', this.onMenuTouch);
+    document.removeEventListener('touchmove', this.onMenuTouch);
   }
+
+  // Let native menu scrolling finish before the window's gameplay gesture listener.
+  // Bubble phase preserves showroom canvas gestures and control handlers at their target.
+  private onMenuTouch = (event: TouchEvent): void => {
+    if (!(event.target instanceof Node)) return;
+    for (const view of this.views.values()) {
+      if (!view.element.classList.contains('hidden') && view.element.contains(event.target)) {
+        event.stopPropagation();
+        return;
+      }
+    }
+  };
 
   private focus(view: View, previous?: HTMLElement): void {
     const target = previous?.isConnected && view.element.contains(previous)

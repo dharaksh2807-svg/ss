@@ -26,6 +26,9 @@ export class HUD {
   private scoreEl: HTMLElement;
   private coinEl: HTMLElement;
   private multiplierEl: HTMLElement;
+  private distanceEl: HTMLElement | null;
+  private keysEl: HTMLElement | null;
+  private distance: number = 0;
   private powerupContainer: HTMLElement;
   private feedbackStack: HTMLElement | null;
   private pauseBtn: HTMLButtonElement;
@@ -70,6 +73,8 @@ export class HUD {
     this.container = document.getElementById('hud') as HTMLDivElement;
     this.scoreEl = document.getElementById('hud-score')!;
     this.coinEl = document.getElementById('hud-coins')!;
+    this.distanceEl = document.getElementById('hud-distance');
+    this.keysEl = document.getElementById('hud-keys');
     this.coinBadgeEl = document.getElementById('hud-coin-badge');
     this.multiplierEl = document.getElementById('hud-multiplier')!;
     this.powerupContainer = document.getElementById('hud-powerups')!;
@@ -117,7 +122,7 @@ export class HUD {
       toastEl = document.createElement('div');
       toastEl.id = 'hud-toast-container';
       toastEl.className = 'hud-toast-container';
-      this.container.appendChild(toastEl);
+      (document.getElementById('hud-notices') || this.container).appendChild(toastEl);
     }
     this.toastContainerEl = toastEl;
 
@@ -139,6 +144,15 @@ export class HUD {
     bus.on(EVENTS.SCORE_UPDATED, (score: number) => {
       this.score = score;
       this.scoreEl.textContent = Math.floor(score).toLocaleString();
+    });
+
+    // Presentation counter follows the same per-run distance steps as Player.
+    bus.on(EVENTS.DISTANCE_TRAVELED, (step: number) => {
+      this.distance += step;
+      if (this.distanceEl) this.distanceEl.textContent = `${Math.floor(this.distance).toLocaleString()} m`;
+    });
+    bus.on(EVENTS.KEYS_UPDATED, () => {
+      if (this.keysEl) this.keysEl.textContent = ProgressionManager.getInstance().getKeys().toLocaleString();
     });
 
     bus.on(EVENTS.COIN_COLLECTED, () => {
@@ -701,6 +715,7 @@ export class HUD {
   }
 
   public show(): void {
+    if (this.keysEl) this.keysEl.textContent = ProgressionManager.getInstance().getKeys().toLocaleString();
     this.container.classList.remove('hidden');
     this.portraitRenderer.syncFromProgression();
   }
@@ -720,6 +735,9 @@ export class HUD {
   public reset(): void {
     this.clearAllTimeouts();
     this.score = 0;
+    this.distance = 0;
+    if (this.distanceEl) this.distanceEl.textContent = '0 m';
+    if (this.keysEl) this.keysEl.textContent = ProgressionManager.getInstance().getKeys().toLocaleString();
     this.coins = 0;
     this.multiplier = 1;
     this.scoreEl.textContent = '0';

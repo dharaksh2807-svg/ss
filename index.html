@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Metro Runner 3D — Subway Endless Runner</title>
     <meta name="description" content="A high-performance 3D Endless Runner game built with TypeScript, Three.js, and WebGL." />
     <!-- Google Fonts for arcade typography -->
@@ -82,14 +82,22 @@
           </button>
         </div>
 
+        <div class="hud-run-meta" aria-label="Run distance and key wallet">
+          <span>DISTANCE <strong id="hud-distance">0 m</strong></span>
+          <span>KEYS <strong id="hud-keys">0</strong></span>
+        </div>
+
         <!-- Powerup Duration Cards (Top-center horizontal cluster) -->
         <div id="hud-powerups" class="hud-powerups-stack"></div>
 
+        <div id="hud-notices" class="hud-notices">
         <!-- Instant Pickup Confirmation Banner -->
         <div id="hud-pickup-toast" class="hud-pickup-toast hidden"></div>
 
         <!-- Floating Performance Feedback Badges (Streak, Precision, Near-miss) -->
         <div id="hud-feedback-stack" class="hud-feedback-stack"></div>
+
+        </div>
 
         <!-- On-Screen Hoverboard Deploy Button (Touch and Desktop Quick-Trigger) -->
         <button id="hud-board-btn" class="hud-board-btn" aria-label="Deploy Hoverboard" title="Deploy Hoverboard [SPACE]">

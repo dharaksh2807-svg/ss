@@ -16,7 +16,12 @@ class ElementFake {
 }
 const keys = new Set<Function>();
 (globalThis as any).HTMLElement = ElementFake;
-(globalThis as any).document = { activeElement: null, querySelector: () => null };
+(globalThis as any).Node = ElementFake;
+const touchListeners = new Map<string, Function>();
+(globalThis as any).document = { activeElement: null, querySelector: () => null,
+  addEventListener: (type: string, fn: Function) => touchListeners.set(type, fn),
+  removeEventListener: (type: string) => touchListeners.delete(type),
+};
 (globalThis as any).window = {
   addEventListener: (_type: string, callback: Function) => keys.add(callback),
   removeEventListener: (_type: string, callback: Function) => keys.delete(callback),
@@ -106,6 +111,14 @@ root = 'START';
 for (let i = 0; i < 30; i++) { bus.emit('OPEN_CHARACTERS'); bus.emit(EVENTS.UI_BACK, 'CHARACTERS'); }
 assert.equal(keys.size, 1);
 nav.clear(); visible();
-nav.dispose(); assert.equal(keys.size, 0);
+views.get('SHOP')!.hidden = false;
+let stopped = 0;
+for (const fn of touchListeners.values()) fn({ target: views.get('SHOP'), stopPropagation() { stopped++; } });
+assert.equal(stopped, 2, 'visible menu gestures stop before gameplay listeners');
+views.get('SHOP')!.hidden = true;
+for (const fn of touchListeners.values()) fn({ target: views.get('SHOP'), stopPropagation() { stopped++; } });
+assert.equal(stopped, 2, 'hidden menus do not consume gameplay gestures');
+assert.equal(touchListeners.size, 2, 'repeated entry does not add gesture listeners');
+nav.dispose(); assert.equal(keys.size, 0); assert.equal(touchListeners.size, 0);
 bus.emit('OPEN_SHOP'); visible();
 console.log('VERDICT: PASS — navigation origins, nested category entry, focus, Escape priority, idempotence and cleanup');
