@@ -572,7 +572,7 @@ export class TrackManager {
     };
     const flight = this.aerialCoinManager?.isJetpackFlightActive() || false;
     if (worldZ === 0) {
-      chunk.populate(pattern, worldZ, theme, isTransition, undefined, peers);
+      chunk.populate(pattern, worldZ, theme, isTransition, undefined, peers, playerSpeed);
       const clear = CONSTANTS.LANE_INDICES.filter((lane) => !pattern.obstacles.some((obs) => obs.lane === lane));
       const first = clear[Math.floor(this.rng() * clear.length)] ?? 0;
       this.trafficOrder = [first, ...this.shuffle(CONSTANTS.LANE_INDICES.filter((lane) => lane !== first))];
@@ -600,7 +600,7 @@ export class TrackManager {
       const rooftopPattern = RooftopRoutePlanner.createTrackPattern(plan);
       const proof = ReachabilityValidator.validateRooftopRoute(plan, playerSpeed, undefined, mode);
 
-      if (proof.solvable && chunk.populate(rooftopPattern, worldZ, theme, isTransition, undefined, peers)) {
+      if (proof.solvable && chunk.populate(rooftopPattern, worldZ, theme, isTransition, undefined, peers, playerSpeed)) {
         this.activeRooftopPlan = plan;
         this.rooftopStartTime = this.elapsedTime;
         this.nextRooftopAllowedZ = Math.abs(worldZ) + plan.totalLength + (mode === 'HARD' ? 140.0 : 160.0);
@@ -654,7 +654,7 @@ export class TrackManager {
             { type: 'COIN', lane: 1, zOffset: 20.0, count: 6, spacing: 3.0 }
           ]
         };
-        chunk.populate(forkPattern, worldZ, theme, false);
+        chunk.populate(forkPattern, worldZ, theme, false, undefined, peers, playerSpeed);
         this.commitPattern(forkPattern, Math.abs(worldZ));
         return forkPattern;
       }
@@ -682,7 +682,7 @@ export class TrackManager {
             { type: 'COIN', lane: 1, zOffset: 22.0, count: 8, spacing: 2.4 }
           ]
         };
-        chunk.populate(industrialPattern, worldZ, industrialTheme, false);
+        chunk.populate(industrialPattern, worldZ, industrialTheme, false, undefined, peers, playerSpeed);
         this.commitPattern(industrialPattern, Math.abs(worldZ));
         return industrialPattern;
       } else if (committedRoute === 'ROUTE_A_MAIN_METRO') {
@@ -699,7 +699,7 @@ export class TrackManager {
             { type: 'SNEAKERS', lane: 0, zOffset: 52.0 }
           ]
         };
-        chunk.populate(mainlinePattern, worldZ, metroTheme, false);
+        chunk.populate(mainlinePattern, worldZ, metroTheme, false, undefined, peers, playerSpeed);
         this.commitPattern(mainlinePattern, Math.abs(worldZ));
         return mainlinePattern;
       }
@@ -784,7 +784,7 @@ export class TrackManager {
       }
       if (this.encounterDebugEnabled && parked(candidate).length) this.encounterMetrics.staticAttempts++;
       chunk.isAerialCorridor = flight && (!!candidate.isTunnel || theme.id === 'UNDERGROUND_METRO');
-      if (!chunk.populate(candidate, worldZ, theme, isTransition, speed, peers)) {
+      if (!chunk.populate(candidate, worldZ, theme, isTransition, speed, peers, playerSpeed)) {
         if (this.encounterDebugEnabled) this.encounterMetrics.occupancyRejections++;
         return null;
       }
@@ -1268,6 +1268,25 @@ export class TrackManager {
       }
     }
 
+    // A published rigid gangway remains valid only while both physical decks co-move.
+    for (const chunk of this.chunks) for (const obs of chunk.obstacles) {
+      if (!obs.roofSegments?.some(seg => seg.connectionObstacleId)) continue;
+      obs.roofSegments = obs.roofSegments.filter(seg => {
+        if (!seg.connectionObstacleId) return true;
+        const target = this.findObstacleById(seg.connectionObstacleId);
+        const velocity = obs.isMoving ? obs.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED : 0;
+        const targetVelocity = target?.isMoving ? target.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED : 0;
+        const touchesTarget = target?.roofSegments?.some(deck => deck.kind === 'CARRIAGE' &&
+          deck.collider.min.z <= seg.collider.max.z && deck.collider.max.z >= seg.collider.min.z);
+        if (target?.active && target.lane === obs.lane && touchesTarget && Math.abs(velocity - targetVelocity) < 1e-6) return true;
+        if (seg.connectionMesh) {
+          obs.group.remove(seg.connectionMesh);
+          this.obstacleFactory.disposeGroup(seg.connectionMesh as THREE.Group);
+        }
+        return false;
+      });
+    }
+
     let targetGroundY: number = CONSTANTS.PLAYER_BASE_Y;
     let foundSupport = false;
     let supportedObstacleId: string | null = null;
@@ -1390,11 +1409,7 @@ export class TrackManager {
             }
 
             if (inValidSegment) {
-              const isSupportedByThisTrain = player.getActiveSupportObstacleId() === obs.id ||
-                (Boolean(obs.carriageGroupId) && player.getActiveSupportGroupId() === obs.carriageGroupId) ||
-                (Boolean(obs.routeGroupId) && player.getActiveSupportGroupId() === obs.routeGroupId);
-
-              if (player.position.y >= roofY - 0.55 || isSupportedByThisTrain) {
+              if (player.position.y >= roofY - 0.55) {
                 targetGroundY = roofY;
                 foundSupport = true;
                 supportedObstacleId = obs.id;
@@ -1568,7 +1583,11 @@ export class TrackManager {
           }
         }
 
-        let hasDirectCollision = lethalBox.intersectsBox(playerBox);
+        // A composition envelope includes open air. Only its actual hulls/equipment are lethal.
+        let hasDirectCollision = obs.type === 'TRAIN_COMPOSITION' && obs.bodySegments?.length
+          ? obs.bodySegments.some(seg => seg.collider.intersectsBox(playerBox)) ||
+            Boolean(obs.rooftopObstacles?.some(ro => !ro.cleared && ro.collider.intersectsBox(playerBox)))
+          : lethalBox.intersectsBox(playerBox);
 
         // Continuous swept collision for fast-moving oncoming obstacles (prevents tunneling through player at high speeds or frame spikes)
         let hasSweptCollision = false;
@@ -1580,31 +1599,35 @@ export class TrackManager {
             const trainDeltaZ = chunk.chunkZ + obs.group.position.z - obs.previousWorldZ;
             // Sweep the runner relative to the moving body. Testing the two swept
             // world bounds separately gives false hits for parallel motion.
-            let entry = 0;
-            let exit = 1;
-            let frontEntry = -Infinity;
-            for (const axis of ['x', 'y', 'z'] as const) {
-              const end = player.position[axis];
-              const start = (prevPos?.[axis] ?? (axis === 'z' ? previousPlayerZ ?? end : end))
-                + (axis === 'z' ? trainDeltaZ : 0);
-              const delta = end - start;
-              const min = lethalBox.min[axis] - (playerBox.max[axis] - end);
-              const max = lethalBox.max[axis] - (playerBox.min[axis] - end);
-              if (Math.abs(delta) < 1e-9) {
-                if (start < min || start > max) { exit = -1; break; }
-              } else {
-                const a = (min - start) / delta;
-                const b = (max - start) / delta;
-                if (axis === 'z' && delta < 0 && start >= max) frontEntry = b;
-                entry = Math.max(entry, Math.min(a, b));
-                exit = Math.min(exit, Math.max(a, b));
-                if (entry > exit) break;
+            const sweptBoxes = obs.type === 'TRAIN_COMPOSITION' && obs.bodySegments?.length
+              ? obs.bodySegments.map(segment => segment.collider) : [lethalBox];
+            for (const sweptBox of sweptBoxes) {
+              let entry = 0;
+              let exit = 1;
+              let frontEntry = -Infinity;
+              for (const axis of ['x', 'y', 'z'] as const) {
+                const end = player.position[axis];
+                const start = (prevPos?.[axis] ?? (axis === 'z' ? previousPlayerZ ?? end : end))
+                  + (axis === 'z' ? trainDeltaZ : 0);
+                const delta = end - start;
+                const min = sweptBox.min[axis] - (playerBox.max[axis] - end);
+                const max = sweptBox.max[axis] - (playerBox.min[axis] - end);
+                if (Math.abs(delta) < 1e-9) {
+                  if (start < min || start > max) { exit = -1; break; }
+                } else {
+                  const a = (min - start) / delta;
+                  const b = (max - start) / delta;
+                  if (axis === 'z' && delta < 0 && start >= max) frontEntry = b;
+                  entry = Math.max(entry, Math.min(a, b));
+                  exit = Math.min(exit, Math.max(a, b));
+                  if (entry > exit) break;
+                }
               }
+              hasSweptCollision ||= entry <= exit;
+              // Classify the first contact, rather than treating a frontal hit as a
+              // side glance after the runner has advanced inside the body this frame.
+              hasFrontalImpact ||= entry <= exit && frontEntry >= entry - 1e-8;
             }
-            hasSweptCollision = entry <= exit;
-            // Classify the first contact, rather than treating a frontal hit as a
-            // side glance after the runner has advanced inside the body this frame.
-            hasFrontalImpact = hasSweptCollision && frontEntry >= entry - 1e-8;
           }
         }
 
@@ -2140,6 +2163,9 @@ export class TrackManager {
       currentSupportGroupId: player ? player.getActiveSupportGroupId() : null,
       activeRooftopRouteId: plan ? plan.id : null,
       routeSeed: plan ? plan.seed : null,
+      trackSeed: this.currentSeed,
+      trainInterfaces: this.chunks.flatMap(chunk => chunk.obstacles.filter(obs => obs.active).flatMap(obs =>
+        (obs.group.userData.roofInterfaces ?? []).map((gap: unknown) => ({ chunkIndex: Math.round(-chunk.chunkZ / CONSTANTS.CHUNK_LENGTH), sourceId: obs.id, gap })))),
       routeArchetype: plan ? plan.archetype : null,
       difficultyTier: plan ? plan.tier : null,
       currentRouteLeg: currentSupport?.routeLegId || null,

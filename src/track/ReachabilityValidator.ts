@@ -1,3 +1,4 @@
+import { TrainGapPolicy } from './TrainGapPolicy';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { ObstacleType } from './ObstacleFactory';
 import { RooftopRoutePlan } from './RooftopRoutePlanner';
@@ -715,14 +716,27 @@ export class ReachabilityValidator {
           }
         }
       } else if (transfer.kind === 'LONGITUDINAL_GAP_JUMP') {
-        // Gap hop must clear deliberate gap
-        const jumpAirDist = playerSpeed * CONSTANTS.JUMP_DURATION;
-        const gapDist = 3.5;
-        if (jumpAirDist < gapDist) {
-          return {
-            solvable: false,
-            reason: `Player speed ${playerSpeed}m/s yields jump distance ${jumpAirDist.toFixed(1)}m which cannot clear ${gapDist}m gap`
-          };
+        const source = plan.legs.find(leg => leg.id === transfer.sourceLegId);
+        const target = plan.legs.find(leg => leg.id === transfer.targetLegId);
+        if (!source || !target) return { solvable: false, reason: 'Missing gap transfer roof' };
+        const gap = target.chunkRelativeZ - source.chunkRelativeZ - source.length;
+        const decision = TrainGapPolicy.classify({ gap, playerSpeed,
+          sourceLength: source.composition.carriages.at(-1)!.length,
+          targetLength: target.composition.carriages[0].length,
+          takeoffObstacles: source.composition.rooftopObstacles.map(o => ({
+            start: source.length / 2 + o.localOffsetZ - o.length / 2,
+            end: source.length / 2 + o.localOffsetZ + o.length / 2
+          })),
+          landingObstacles: target.composition.rooftopObstacles.map(o => ({
+            start: target.length / 2 - o.localOffsetZ - o.length / 2,
+            end: target.length / 2 - o.localOffsetZ + o.length / 2
+          })) });
+        if (decision.classification !== 'EXPLICIT_JUMP') return { solvable: false, reason: decision.reason };
+        const sourceEnd = source.chunkRelativeZ + source.length;
+        if (transfer.windowStartZ < sourceEnd - decision.takeoffMax - 0.01 ||
+            transfer.windowEndZ > sourceEnd - decision.takeoffMin + 0.01 ||
+            transfer.windowEndZ - transfer.windowStartZ < playerSpeed * TrainGapPolicy.INPUT_WINDOW_SECONDS) {
+          return { solvable: false, reason: 'Advertised takeoff window lacks supported ballistic landing' };
         }
       }
 

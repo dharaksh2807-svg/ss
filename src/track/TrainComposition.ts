@@ -151,14 +151,14 @@ export const TRAIN_COMPOSITIONS: Record<string, TrainCompositionDef> = {
         id: 'car_1_mid_coach',
         type: 'PASSENGER_COACH',
         length: 16.0,
-        localOffsetZ: 0,
+        localOffsetZ: -1.0,
         hasRamp: false
       },
       {
         id: 'car_2_rear_coach',
         type: 'CABOOSE_END',
         length: 16.0,
-        localOffsetZ: -17.2,
+        localOffsetZ: -18.2,
         hasRamp: false
       }
     ],
@@ -202,21 +202,21 @@ export const TRAIN_COMPOSITIONS: Record<string, TrainCompositionDef> = {
         id: 'car_1_mid_coach_a',
         type: 'PASSENGER_COACH',
         length: 16.0,
-        localOffsetZ: 8.6,
+        localOffsetZ: 7.6,
         hasRamp: false
       },
       {
         id: 'car_2_mid_coach_b',
         type: 'PASSENGER_COACH',
         length: 16.0,
-        localOffsetZ: -8.6,
+        localOffsetZ: -9.6,
         hasRamp: false
       },
       {
         id: 'car_3_rear_coach',
         type: 'LOCOMOTIVE_REAR_RAMP',
         length: 16.0,
-        localOffsetZ: -25.8,
+        localOffsetZ: -26.8,
         hasRamp: false,
         hasExitRamp: true
       }
@@ -225,7 +225,7 @@ export const TRAIN_COMPOSITIONS: Record<string, TrainCompositionDef> = {
       {
         id: 'roof_ac_car1',
         type: 'ROOFTOP_AC_HURDLE',
-        localOffsetZ: 8.6,
+        localOffsetZ: 7.6,
         height: 0.65,
         length: 1.8,
         width: 1.6
@@ -233,7 +233,7 @@ export const TRAIN_COMPOSITIONS: Record<string, TrainCompositionDef> = {
       {
         id: 'roof_vent_car2',
         type: 'ROOFTOP_VENT',
-        localOffsetZ: -8.6,
+        localOffsetZ: -9.6,
         height: 0.50,
         length: 1.4,
         width: 1.4

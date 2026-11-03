@@ -1,3 +1,4 @@
+import { TrainGapPolicy } from './TrainGapPolicy';
 import * as THREE from 'three';
 import { captureSharedResources, disposeObjectResources, RenderResource } from '../scene/ResourceDisposal';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
@@ -112,6 +113,8 @@ export interface TrainRoofSegment {
   collider: THREE.Box3;
   surfaceY: number;
   kind: 'CARRIAGE' | 'GANGWAY';
+  connectionObstacleId?: string;
+  connectionMesh?: THREE.Object3D;
 }
 
 export interface TrainBodySegment {
@@ -2139,7 +2142,7 @@ export class ObstacleFactory {
     // 1. Central Walkable Anti-Slip Runway Catwalk (Exacting Y = 4.35m top surface)
     // Thickness = 0.14m, centered at Y = 4.28m, so top face is exactly at 4.35m!
     const catwalkWidth = 1.7;
-    const catwalkGeo = new THREE.BoxGeometry(catwalkWidth, 0.14, bodyLength * 0.98, 1, 1, bodySegs);
+    const catwalkGeo = new THREE.BoxGeometry(catwalkWidth, 0.14, bodyLength, 1, 1, bodySegs);
     const catwalk = new THREE.Mesh(catwalkGeo, this.trainWalkwayMat);
     catwalk.position.set(0, 4.28, 0);
     catwalk.receiveShadow = true;
@@ -2147,7 +2150,7 @@ export class ObstacleFactory {
 
     // Yellow safety edge boundaries along catwalk sides (solid yellow lines for instant readability)
     [-catwalkWidth * 0.5, catwalkWidth * 0.5].forEach((cx) => {
-      const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, bodyLength * 0.98, 1, 1, bodySegs);
+      const edgeGeo = new THREE.BoxGeometry(0.06, 0.14, bodyLength, 1, 1, bodySegs);
       const edge = new THREE.Mesh(edgeGeo, this.hazardYellowMat);
       edge.position.set(cx, 4.28, 0);
       group.add(edge);
@@ -2159,6 +2162,9 @@ export class ObstacleFactory {
     rearThreshold.position.set(0, 4.28, -bodyLength * 0.485);
     rearThreshold.receiveShadow = true;
     group.add(rearThreshold);
+    const frontThreshold = rearThreshold.clone();
+    frontThreshold.position.z *= -1;
+    group.add(frontThreshold);
 
     if (variant === 'MODERN_METRO') {
       // 2 Low-profile aerodynamic HVAC Pods
@@ -2934,6 +2940,23 @@ export class ObstacleFactory {
    * Composes authentic individual carriages with inter-carriage accordion gangways,
    * tightlock couplers, uninterrupted 4.35m catwalk plates, and optional rooftop obstacles
    */
+  public createRoofGangway(width: number, length: number): THREE.Group {
+    const group = new THREE.Group();
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(width, 0.14, length), this.trainWalkwayMat);
+    plate.position.y = 4.28;
+    plate.receiveShadow = true;
+    group.add(plate);
+    for (const x of [-width / 2, width / 2]) {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, length), this.hazardYellowMat);
+      edge.position.set(x, 4.28, 0);
+      group.add(edge);
+    }
+    const bellow = new THREE.Mesh(new THREE.BoxGeometry(width * 0.7, 2.4, length), this.trainDarkRubberMat);
+    bellow.position.y = 1.8;
+    group.add(bellow);
+    return group;
+  }
+
   public createTrainComposition(
     composition: TrainCompositionDef,
     colorHex: number = CONSTANTS.COLORS.TRAIN_BODY_1,
@@ -3300,7 +3323,7 @@ export class ObstacleFactory {
       const gap = Math.abs((c1.localOffsetZ - c1.length * 0.5) - (c2.localOffsetZ + c2.length * 0.5));
 
       // Gangway accordion connection (for standard coupled carriages with gap <= 2.0m)
-      if (gap <= 2.0) {
+      if (TrainGapPolicy.classify({ gap, sourceLength: c1.length, targetLength: c2.length, playerSpeed: CONSTANTS.INITIAL_SPEED }).classification === 'CONTINUOUS_SUPPORT') {
         // Accordion rubber bellow sleeve
         const bellowGeo = new THREE.BoxGeometry(w * 0.54, 2.4, gap + 0.1);
         const bellow = new THREE.Mesh(bellowGeo, this.trainDarkRubberMat);
@@ -3319,6 +3342,7 @@ export class ObstacleFactory {
         const bridge = new THREE.Mesh(bridgeGeo, this.trainWalkwayMat);
         bridge.position.set(0, 4.28, junctionZ);
         bridge.receiveShadow = true;
+        bridge.name = `roof_gangway_${i}`;
         masterGroup.add(bridge);
 
         // Yellow safety edge plates along bridge (solid yellow for readability)

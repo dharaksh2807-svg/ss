@@ -1,3 +1,4 @@
+import { TrainGapPolicy } from './TrainGapPolicy';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { TrainCompositionTier, TrainCompositionDef, TRAIN_COMPOSITIONS } from './TrainComposition';
 import { TrackPattern, PatternObstacle, PatternCollectible } from './ObstaclePatterns';
@@ -348,14 +349,26 @@ export class RooftopRoutePlanner {
       }
 
       case 'GAP_HOP': {
-        // Train A (with ramp) -> Longitudinal Gap (3.25m - 3.5m) -> Train B (same lane) -> Exit
-        const gapSize = 3.5;
+        // Train A -> measured, speed-adapted opening -> Train B in the same lane.
         const distA = Math.max(28.0, requiredTraversableDistance * 0.48);
         const distB = Math.max(28.0, requiredTraversableDistance * 0.52);
 
         const compA = this.selectCompositionForDistance(distA, tier, true, false);
         const compB = this.selectCompositionForDistance(distB, tier, false, true);
 
+        const gapProof = TrainGapPolicy.planJump(compA.carriages[compA.carriages.length - 1].length,
+          compB.carriages[0].length, speed);
+        if (gapProof.classification !== 'EXPLICIT_JUMP') {
+          return this.planRoute({ ...options, forcedArchetype: 'RAMP_RUN_EXIT' });
+        }
+        const gapSize = gapProof.gap;
+        // Keep equipment clear of the takeoff, descent and recovery corridor.
+        compA.rooftopObstacles = compA.rooftopObstacles.filter(o =>
+          compA.totalLength / 2 + o.localOffsetZ - o.length / 2 >
+          gapProof.reactionLeadDistance + speed * TrainGapPolicy.INPUT_WINDOW_SECONDS + TrainGapPolicy.EDGE_MARGIN);
+        compB.rooftopObstacles = compB.rooftopObstacles.filter(o =>
+          compB.totalLength / 2 - o.localOffsetZ - o.length / 2 >
+          gapProof.landingMax + speed * 0.35 + TrainGapPolicy.EDGE_MARGIN);
         const legAId = `${routeId}_leg_0`;
         const legBId = `${routeId}_leg_1`;
         const trainBStart = compA.totalLength + gapSize;
@@ -389,9 +402,9 @@ export class RooftopRoutePlanner {
           sourceLane: entryLane,
           targetLane: entryLane,
           kind: 'LONGITUDINAL_GAP_JUMP',
-          windowStartZ: compA.totalLength - 2.5,
-          windowEndZ: compA.totalLength,
-          landingZ: trainBStart + 2.0,
+          windowStartZ: compA.totalLength - gapProof.takeoffMax,
+          windowEndZ: compA.totalLength - gapProof.takeoffMin,
+          landingZ: trainBStart + (gapProof.landingMin + gapProof.landingMax) / 2,
           requiredAirtime: 0.60
         });
         break;
@@ -491,7 +504,7 @@ export class RooftopRoutePlanner {
       obstacles.push({
         type: 'TRAIN_COMPOSITION',
         lane: leg.lane,
-        zOffset: legZ,
+        zOffset: legZ + leg.length / 2,
         length: leg.length,
         hasRamp: leg.entryType === 'RAMP',
         hasExitRamp: leg.exitType === 'END_RAMP',
@@ -519,8 +532,10 @@ export class RooftopRoutePlanner {
         collectibles.push(CoinPatternLibrary.createRooftopRun(xfer.targetLane, landZ, 4, 2.2));
       } else if (xfer.kind === 'LONGITUDINAL_GAP_JUMP') {
         // Ballistic gap arc
-        const gapTakeoffZ = baseZ + xfer.windowStartZ - 1.0;
-        collectibles.push(CoinPatternLibrary.createCarriageGapJumpArc(xfer.sourceLane, gapTakeoffZ, 5, 1.8));
+        const takeoffZ = (xfer.windowStartZ + xfer.windowEndZ) / 2;
+        const arcSpan = xfer.landingZ - takeoffZ;
+        collectibles.push(CoinPatternLibrary.createCarriageGapJumpArc(xfer.sourceLane,
+          baseZ + takeoffZ + arcSpan / 2, 5, arcSpan / 4));
         const landZ = baseZ + xfer.landingZ + 3.0;
         collectibles.push(CoinPatternLibrary.createRooftopRun(xfer.sourceLane, landZ, 4, 2.2));
       }

@@ -1,3 +1,4 @@
+import { TrainGapPolicy } from './TrainGapPolicy';
 import * as THREE from 'three';
 import { CONSTANTS, LaneIndex } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
@@ -1461,7 +1462,8 @@ export class TrackChunk {
     theme: EnvironmentTheme | string = this.currentTheme,
     isTransition: boolean = false,
     dynamicTrainSpeed?: number,
-    placementPeers: readonly TrackChunk[] = []
+    placementPeers: readonly TrackChunk[] = [],
+    playerSpeed: number = CONSTANTS.INITIAL_SPEED
   ): boolean {
     const previous = {
       chunkZ: this.chunkZ, theme: this.currentTheme, transition: this.isTransitionPortal,
@@ -1496,8 +1498,11 @@ export class TrackChunk {
       box.max.y > 0.5 && box.min.x < corridorEdge && box.max.x > -corridorEdge
     );
 
-    // Clear previous dynamic items
-    this.clearDynamicItems();
+    // Retain the old geometry until the candidate passes validation, so rejection
+    // cannot destroy a recycled chunk's authoritative support surfaces.
+    for (const item of [...previous.obstacles, ...previous.collectibles]) this.group.remove(item.group);
+    this.obstacles = [];
+    this.collectibles = [];
     this.chunkHadCollision = false;
 
     // Spawn Obstacles from pattern
@@ -1732,10 +1737,8 @@ export class TrackChunk {
             )
           });
 
-          const isFirstCar = car === compDef.carriages[0];
-          const isLastCar = car === compDef.carriages[compDef.carriages.length - 1];
-          const segMinZ = isLastCar ? Math.min(carWorldCenterZ - carHalfD, worldCenterZ - halfD) - 0.20 : carWorldCenterZ - carHalfD - 0.15;
-          const segMaxZ = isFirstCar ? Math.max(carWorldCenterZ + carHalfD, worldCenterZ + halfD) + 0.20 : carWorldCenterZ + carHalfD + 0.15;
+          const segMinZ = carWorldCenterZ - carHalfD;
+          const segMaxZ = carWorldCenterZ + carHalfD;
 
           roofSegments.push({
             id: `${obstacleId}_roof_${car.id}`,
@@ -1757,7 +1760,7 @@ export class TrackChunk {
           const junctionZ = (c1.localOffsetZ - c1.length * 0.5 + c2.localOffsetZ + c2.length * 0.5) * 0.5;
           const gap = Math.abs((c1.localOffsetZ - c1.length * 0.5) - (c2.localOffsetZ + c2.length * 0.5));
 
-          if (gap <= 2.0) {
+          if (TrainGapPolicy.classify({ gap, sourceLength: c1.length, targetLength: c2.length, playerSpeed }).classification === 'CONTINUOUS_SUPPORT') {
             const gangwayWorldCenterZ = worldCenterZ + junctionZ;
             const gangwayHalfD = (gap + 0.2) * 0.5;
             roofSegments.push({
@@ -1798,10 +1801,13 @@ export class TrackChunk {
           carriageId: 'main',
           collider: bodyCollider.clone()
         });
+        const deckCollider = roofCollider.clone();
+        deckCollider.min.z = worldCenterZ - halfD;
+        deckCollider.max.z = worldCenterZ + halfD;
         roofSegments.push({
           id: `${obstacleId}_roof_main`,
           carriageId: 'main',
-          collider: roofCollider.clone(),
+          collider: deckCollider,
           surfaceY: 4.35,
           kind: 'CARRIAGE'
         });
@@ -1855,7 +1861,10 @@ export class TrackChunk {
     }
 
     // Reject the entire unpublished layout; never remove an encountered obstacle.
-    if (this.hasMovingTrainPathConflict(placementPeers)) {
+    const gapCueLanes = new Set<number>((pattern?.collectibles ?? [])
+      .filter((c: any) => c.archetype === 'JUMP_ARC' && (c.yOffset ?? 0) >= CONSTANTS.TRAIN_HEIGHT)
+      .map((c: any) => c.lane));
+    if (this.hasMovingTrainPathConflict(placementPeers) || !this.connectTrainRoofs(placementPeers, playerSpeed, gapCueLanes)) {
       this.clearDynamicItems();
       this.decorativeGroup.clear();
       this.decorativeGroup.add(...previous.scenery);
@@ -1873,6 +1882,12 @@ export class TrackChunk {
       for (const item of [...this.obstacles, ...this.collectibles]) this.group.add(item.group);
       return false;
     }
+
+    for (const obs of previous.obstacles) {
+      SkillComboManager.getInstance().clearScoredObstacle(obs.id);
+      this.obstacleFactory.disposeGroup(obs.group);
+    }
+    for (const col of previous.collectibles) this.collectibleFactory.disposeGroup(col.group);
 
     for (const obs of this.obstacles) {
       const z = this.chunkZ + obs.group.position.z;
@@ -2201,6 +2216,86 @@ export class TrackChunk {
       col.collider.min.set(worldX - r, worldY - r, worldZ - r);
       col.collider.max.set(worldX + r, worldY + r, worldZ + r);
     }
+  }
+
+  /** Validate real adjacent decks, including peers from earlier chunks, before publication. */
+  private connectTrainRoofs(peers: readonly TrackChunk[], playerSpeed: number, gapCueLanes: ReadonlySet<number>): boolean {
+    const trains = [this, ...peers.filter(p => p !== this)].flatMap(chunk =>
+      chunk.obstacles.filter(obs => obs.active && obs.roofSegments?.length).map(obs => ({ chunk, obs })));
+    for (const lane of [-1, 0, 1]) {
+      const decks = trains.filter(t => t.obs.lane === lane).flatMap(t => t.obs.roofSegments!
+        .filter(seg => seg.kind === 'CARRIAGE').map(seg => ({ ...t, seg })))
+        .sort((a,b) => b.seg.collider.max.z - a.seg.collider.max.z);
+      for (let i = 0; i < decks.length - 1; i++) {
+        const source = decks[i], target = decks[i + 1];
+        if (source.chunk !== this && target.chunk !== this) continue;
+        const gap = source.seg.collider.min.z - target.seg.collider.max.z;
+        // Overlapping envelopes in separate lanes are irrelevant; overlapping solid roofs
+        // within one route are a placement error, never a longitudinal transfer.
+        if (gap < -0.01) {
+          if (source.obs.routeGroupId && source.obs.routeGroupId === target.obs.routeGroupId) return false;
+          continue;
+        }
+        const v1 = source.obs.isMoving ? source.obs.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED : 0;
+        const v2 = target.obs.isMoving ? target.obs.velocityZ ?? CONSTANTS.MOVING_TRAIN_SPEED : 0;
+        const maxTransfer = (playerSpeed + Math.max(v1, v2, 0)) * CONSTANTS.JUMP_DURATION;
+        // Widely separated trains have no rooftop transfer cue; ordinary avoidance validation applies.
+        const hasTransferCue = source.obs === target.obs || gapCueLanes.has(lane) ||
+          Boolean(source.obs.routeGroupId && source.obs.routeGroupId === target.obs.routeGroupId);
+        if (gap > maxTransfer && !hasTransferCue) continue;
+        const edge = target.seg.collider.max.z;
+        const decision = TrainGapPolicy.classify({ gap, playerSpeed, sourceVelocityZ: v1, targetVelocityZ: v2,
+          sourceLength: source.seg.collider.max.z - source.seg.collider.min.z,
+          targetLength: target.seg.collider.max.z - target.seg.collider.min.z,
+          landingObstacles: target.obs.rooftopObstacles?.map(o => ({ start: edge - o.collider.max.z, end: edge - o.collider.min.z })),
+          takeoffObstacles: source.obs.rooftopObstacles?.map(o => ({ start: o.collider.min.z - source.seg.collider.min.z,
+            end: o.collider.max.z - source.seg.collider.min.z })) });
+        if (decision.classification === 'REJECTED_LAYOUT') {
+          // Category C: an unmistakably open separation may be bypassed via a clear
+          // adjacent lane. Never advertise it as a jump or attach a physical bridge.
+          const cue = source.obs.routeGroupId || source.obs === target.obs || source.obs.hasRamp ||
+            gapCueLanes.has(lane);
+          const lead = (playerSpeed + v1) * CONSTANTS.DIFFICULTY_CONFIG.MIN_SAFE_REACTION_TIME;
+          const readable = gap > TrainGapPolicy.MAX_COUPLER_SPAN &&
+            TrainGapPolicy.projectedOpening(gap, lead) >= TrainGapPolicy.MIN_OPEN_PIXELS;
+          const avoidance = !cue && readable && [-1, 0, 1].some(otherLane => {
+              if (Math.abs(otherLane - lane) !== 1) return false;
+              const x = CONSTANTS.LANES[otherLane as LaneIndex];
+              return !trains.some(t => t.obs.lane === otherLane &&
+                t.obs.collider.max.z >= target.seg.collider.min.z && t.obs.collider.min.z <= source.seg.collider.min.z + lead) &&
+                ![this, ...peers].some(chunk => chunk.obstacles.some(o => o.active &&
+                  o.collider.min.x <= x + CONSTANTS.PLAYER_WIDTH / 2 && o.collider.max.x >= x - CONSTANTS.PLAYER_WIDTH / 2 &&
+                  o.collider.max.z >= target.seg.collider.min.z && o.collider.min.z <= source.seg.collider.min.z + lead));
+            });
+          if (!avoidance) return false;
+          continue;
+        }
+        if (source.chunk === this) {
+          const diagnostics = source.obs.group.userData.roofInterfaces ??= [];
+          diagnostics.push({ targetId: target.obs.id, lane, sourceEdgeZ: source.seg.collider.min.z,
+            targetEdgeZ: edge, sourceVelocityZ: v1, targetVelocityZ: v2, ...decision });
+        }
+        if (decision.classification !== 'CONTINUOUS_SUPPORT' || source.obs === target.obs || gap <= 0) continue;
+        // Own cross-chunk bridges in the unpublished chunk; never mutate an existing peer.
+        const owner = source.chunk === this ? source : target;
+        const other = owner === source ? target : source;
+        const minX = Math.max(source.seg.collider.min.x, target.seg.collider.min.x) + 0.15;
+        const maxX = Math.min(source.seg.collider.max.x, target.seg.collider.max.x) - 0.15;
+        const centerZ = (source.seg.collider.min.z + edge) / 2;
+        const roofY = owner.seg.surfaceY;
+        const mesh = this.obstacleFactory.createRoofGangway(maxX - minX, gap + 0.2);
+        mesh.name = `roof_connection_${other.obs.id}`;
+        mesh.position.set((minX + maxX) / 2 - owner.obs.group.position.x, 0,
+          centerZ - this.chunkZ - owner.obs.group.position.z);
+        owner.obs.group.add(mesh);
+        owner.obs.roofSegments!.push({ id: `${owner.obs.id}_connection_${other.obs.id}`,
+          carriageId: 'connection', kind: 'GANGWAY', surfaceY: roofY,
+          connectionObstacleId: other.obs.id, connectionMesh: mesh,
+          collider: new THREE.Box3(new THREE.Vector3(minX, roofY - 0.6, edge - 0.1),
+            new THREE.Vector3(maxX, roofY + 1.05, source.seg.collider.min.z + 0.1)) });
+      }
+    }
+    return true;
   }
 
   /** All-time linear occupancy check: no discrete frame sampling or speed-dependent gaps. */
