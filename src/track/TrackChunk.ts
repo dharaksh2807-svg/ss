@@ -25,6 +25,12 @@ export class TrackChunk {
   public patternName: string = '';
   public decorativeGroup: THREE.Group;
 
+  // Continuous Lateral Terrain Foundations (72.7m wide on each side)
+  public leftTerrainMesh!: THREE.Mesh;
+  public rightTerrainMesh!: THREE.Mesh;
+  private static terrainGeo: THREE.BoxGeometry | null = null;
+  private static terrainMaterialCache: Map<string, { left: THREE.Material; right: THREE.Material }> = new Map();
+
   // Environment and theme state
   public currentTheme: EnvironmentTheme = MODERN_METRO_THEME;
   public isTransitionPortal: boolean = false;
@@ -366,6 +372,247 @@ export class TrackChunk {
     };
   }
 
+  public static getTerrainMaterials(themeId: string): { left: THREE.Material; right: THREE.Material } {
+    if (TrackChunk.terrainMaterialCache.has(themeId)) {
+      return TrackChunk.terrainMaterialCache.get(themeId)!;
+    }
+
+    const curved = CurvedShaderManager.getInstance();
+    let leftMat: THREE.MeshStandardMaterial;
+    let rightMat: THREE.MeshStandardMaterial;
+
+    switch (themeId) {
+      case 'VIP_EXPRESS': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getIndianSandstoneTexture(),
+          color: 0xc89b65,
+          roughness: 0.85,
+          metalness: 0.10
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'RAHULVERSE': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getIndianSandstoneTexture(),
+          color: 0xba8852,
+          roughness: 0.88,
+          metalness: 0.08
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'MIDNIGHT_VELVET': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getDarkGraniteTexture(),
+          color: 0x181e28,
+          roughness: 0.40,
+          metalness: 0.35
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'CHRONO_KINGDOM': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getClockworkFloorTexture(),
+          color: 0x483a28,
+          roughness: 0.60,
+          metalness: 0.65
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'INFERNO_EXPRESS': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getVolcanicBasaltTexture(),
+          color: 0x221310,
+          roughness: 0.92,
+          metalness: 0.15
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'JURASSIC_RUSH': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getJungleLoamTexture(),
+          color: 0x28381c,
+          roughness: 0.92,
+          metalness: 0.05
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'VIVA_HEAT': {
+        const promenadeMat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getIndianSandstoneTexture(),
+          color: 0x8a2c34,
+          roughness: 0.75,
+          metalness: 0.15
+        });
+        curved.applyCurvature(promenadeMat);
+
+        const sandMat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getTropicalSandTexture(),
+          color: 0xe8ca95,
+          roughness: 0.90,
+          metalness: 0.05
+        });
+        curved.applyCurvature(sandMat);
+
+        leftMat = promenadeMat; // Left: Festive coastal promenade
+        rightMat = sandMat;      // Right: Sunlit beach sand
+        break;
+      }
+      case 'HISTORIC_QUARTER': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getCobblestoneTexture(),
+          color: 0x3d352c,
+          roughness: 0.85,
+          metalness: 0.10
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'UNDERGROUND_METRO': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getConcreteTexture(),
+          color: 0x1e2736,
+          roughness: 0.85,
+          metalness: 0.25
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'NEON_INDUSTRIAL': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getConcreteTexture(),
+          color: 0x25272e,
+          roughness: 0.65,
+          metalness: 0.45
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'NEON_RAINLINE': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getConcreteTexture(),
+          color: 0x0f172a,
+          roughness: 0.30,
+          metalness: 0.55
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'ORBITAL_HALO': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getDiamondPlateTexture(),
+          color: 0x1e293b,
+          roughness: 0.40,
+          metalness: 0.80
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'ABYSSAL_GLASSLINE': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getStoneMasonryTexture(),
+          color: 0x031e33,
+          roughness: 0.75,
+          metalness: 0.20
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'DOOMSDAY_LAST_TRANSIT': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getBallastTexture(),
+          color: 0x1b1513,
+          roughness: 0.95,
+          metalness: 0.10
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'PHANTOM_LINE': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getCobblestoneTexture(),
+          color: 0x0d1f27,
+          roughness: 0.85,
+          metalness: 0.15
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      case 'HAUNTED_CARNIVAL': {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getCobblestoneTexture(),
+          color: 0x1d122c,
+          roughness: 0.85,
+          metalness: 0.15
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+      default: {
+        const mat = new THREE.MeshStandardMaterial({
+          map: TextureGenerator.getConcreteTexture(),
+          color: 0x3e4c59,
+          roughness: 0.80,
+          metalness: 0.20
+        });
+        curved.applyCurvature(mat);
+        leftMat = mat;
+        rightMat = mat;
+        break;
+      }
+    }
+
+    const pair = { left: leftMat, right: rightMat };
+    TrackChunk.terrainMaterialCache.set(themeId, pair);
+    return pair;
+  }
+
+  public updateTerrainTheme(theme: EnvironmentTheme | string): void {
+    const themeId = typeof theme === 'string' ? theme : theme.id;
+    const pair = TrackChunk.getTerrainMaterials(themeId);
+    if (this.leftTerrainMesh) {
+      this.leftTerrainMesh.material = pair.left;
+    }
+    if (this.rightTerrainMesh) {
+      this.rightTerrainMesh.material = pair.right;
+    }
+  }
+
   private buildStaticTrackGeometry(): void {
     const mats = TrackChunk.sharedMaterials!;
     const roadbedWidth = CONSTANTS.LANE_WIDTH * 3 + 2.8; // 13.6m
@@ -393,6 +640,29 @@ export class TrackChunk {
     rightCurb.position.set(roadbedWidth * 0.5 + curbWidth * 0.5, 0.05, -this.length * 0.5);
     rightCurb.receiveShadow = true;
     this.group.add(rightCurb);
+
+    // 2.5 Continuous Lateral Terrain Foundations (72.7m wide on each side, spanning out to X = +/-80m)
+    const curbEdge = roadbedWidth * 0.5 + curbWidth; // 7.30m
+    const terrainWidth = 80.0 - curbEdge; // 72.7m
+    const terrainHeight = 2.5; // Solid 2.5m thick vertical foundation block
+
+    if (!TrackChunk.terrainGeo) {
+      TrackChunk.terrainGeo = new THREE.BoxGeometry(terrainWidth, terrainHeight, this.length, 4, 1, chunkSegs);
+    }
+
+    const initialTerrainMats = TrackChunk.getTerrainMaterials(this.currentTheme.id);
+
+    this.leftTerrainMesh = new THREE.Mesh(TrackChunk.terrainGeo, initialTerrainMats.left);
+    this.leftTerrainMesh.name = 'chunk_left_terrain';
+    this.leftTerrainMesh.position.set(-curbEdge - terrainWidth * 0.5, -terrainHeight * 0.5, -this.length * 0.5);
+    this.leftTerrainMesh.receiveShadow = true;
+    this.group.add(this.leftTerrainMesh);
+
+    this.rightTerrainMesh = new THREE.Mesh(TrackChunk.terrainGeo, initialTerrainMats.right);
+    this.rightTerrainMesh.name = 'chunk_right_terrain';
+    this.rightTerrainMesh.position.set(curbEdge + terrainWidth * 0.5, -terrainHeight * 0.5, -this.length * 0.5);
+    this.rightTerrainMesh.receiveShadow = true;
+    this.group.add(this.rightTerrainMesh);
 
     // 3. Rails & Wooden Sleepers with Tie Plates for all 3 lanes using InstancedMesh
     const sleeperSpacing = 1.4;
@@ -469,6 +739,7 @@ export class TrackChunk {
   public buildEnvironmentScenery(theme: EnvironmentTheme, isTransition: boolean = false): void {
     this.currentTheme = theme;
     this.isTransitionPortal = isTransition;
+    this.updateTerrainTheme(theme);
     const director = EnvironmentDirector.getInstance();
     const chunkIndex = Math.round(Math.abs(this.chunkZ / this.length));
     const seed = (this as any).scenerySeed || director.computeScenerySeed(chunkIndex, this.chunkZ);
@@ -1477,6 +1748,8 @@ export class TrackChunk {
     const resolvedTheme: EnvironmentTheme = typeof theme === 'string'
       ? (theme === 'HISTORIC_QUARTER' ? HISTORIC_QUARTER_THEME : (theme === 'UNDERGROUND_METRO' ? UNDERGROUND_METRO_THEME : (theme === 'NEON_INDUSTRIAL' ? NEON_INDUSTRIAL_THEME : MODERN_METRO_THEME)))
       : theme;
+
+    this.updateTerrainTheme(resolvedTheme);
 
     this.isTunnel = !!pattern?.isTunnel;
     this.tunnelPortal = pattern?.tunnelPortal || 'NONE';

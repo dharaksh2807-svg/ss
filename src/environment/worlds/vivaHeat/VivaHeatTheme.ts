@@ -43,7 +43,7 @@ export const VIVA_HEAT_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0x4a044e,  // Warm fuchsia-wine sunset haze
-    density: 0.0016   // Subtle haze preserving razor-sharp obstacle visibility
+    density: 0.0028   // Subtle haze preserving razor-sharp obstacle visibility
   },
   sun: {
     color: 0xffedd5,  // Warm golden sunset celestial illumination

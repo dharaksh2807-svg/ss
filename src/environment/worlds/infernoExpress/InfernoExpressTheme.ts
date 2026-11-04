@@ -42,7 +42,7 @@ export const INFERNO_EXPRESS_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0x1f0a0d,  // Deep volcanic smoke haze
-    density: 0.0017   // Atmospheric without obscuring obstacle readability
+    density: 0.0028   // Atmospheric without obscuring obstacle readability
   },
   sun: {
     color: 0xff7733,  // Radiant molten volcanic glare

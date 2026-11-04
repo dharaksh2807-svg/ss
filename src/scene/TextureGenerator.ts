@@ -5581,6 +5581,293 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Indian Sandstone Paving Texture (Warm Dholpur sandstone slabs with chisel grain)
+   */
+  public static getIndianSandstoneTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_indian_sandstone', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Warm sandstone base
+      ctx.fillStyle = '#b88a58';
+      ctx.fillRect(0, 0, size, size);
+
+      // Large flagstone blocks
+      const slabW = 128;
+      const slabH = 64;
+      const colors = ['#be925f', '#b08250', '#c89d6c', '#a87a46', '#c49662'];
+
+      for (let y = 0; y < size; y += slabH) {
+        const row = Math.floor(y / slabH);
+        const xOffset = (row % 2) * (slabW / 2);
+        for (let x = -slabW; x < size + slabW; x += slabW) {
+          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+          ctx.fillRect(x + xOffset + 2, y + 2, slabW - 4, slabH - 4);
+
+          // Subtle chisel grain noise inside block
+          for (let p = 0; p < 25; p++) {
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+            ctx.fillRect(x + xOffset + 4 + Math.random() * (slabW - 8), y + 4 + Math.random() * (slabH - 8), 2, 2);
+          }
+
+          // Mortar joint border
+          ctx.strokeStyle = '#85633e';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + xOffset + 1, y + 1, slabW - 2, slabH - 2);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 16);
+      return tex;
+    });
+  }
+
+  /**
+   * Luxury Dark Nero Marquina Granite Texture
+   */
+  public static getDarkGraniteTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_dark_granite', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep polished obsidian/charcoal base
+      ctx.fillStyle = '#141820';
+      ctx.fillRect(0, 0, size, size);
+
+      // Fine crystalline marble veining
+      ctx.strokeStyle = 'rgba(235, 240, 255, 0.22)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        let vx = Math.random() * size;
+        let vy = 0;
+        ctx.moveTo(vx, vy);
+        while (vy < size) {
+          vx += (Math.random() - 0.5) * 45;
+          vy += 20 + Math.random() * 35;
+          ctx.lineTo(vx, vy);
+        }
+        ctx.stroke();
+      }
+
+      // Subtle gold mineral flecks
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.35)';
+      for (let i = 0; i < 150; i++) {
+        ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 16);
+      return tex;
+    });
+  }
+
+  /**
+   * Clockwork Foundation Plate Texture (Riveted antique brass & iron decking)
+   */
+  public static getClockworkFloorTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_clockwork_floor', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark antique bronze base
+      ctx.fillStyle = '#32281c';
+      ctx.fillRect(0, 0, size, size);
+
+      // Modular metal plate grid
+      const tileSize = 128;
+      for (let y = 0; y < size; y += tileSize) {
+        for (let x = 0; x < size; x += tileSize) {
+          ctx.fillStyle = (x + y) % (tileSize * 2) === 0 ? '#3d3224' : '#2b2318';
+          ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+
+          // Central recessed gear ring
+          ctx.strokeStyle = '#5a4933';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x + tileSize * 0.5, y + tileSize * 0.5, tileSize * 0.28, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Corner brass rivets
+          ctx.fillStyle = '#c5a059';
+          const rivetR = 3;
+          const pad = 10;
+          [
+            [x + pad, y + pad],
+            [x + tileSize - pad, y + pad],
+            [x + pad, y + tileSize - pad],
+            [x + tileSize - pad, y + tileSize - pad]
+          ].forEach(([rx, ry]) => {
+            ctx.beginPath();
+            ctx.arc(rx, ry, rivetR, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 16);
+      return tex;
+    });
+  }
+
+  /**
+   * Scorched Volcanic Basalt & Magma Fissure Texture
+   */
+  public static getVolcanicBasaltTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_volcanic_basalt', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep soot obsidian base
+      ctx.fillStyle = '#120b0a';
+      ctx.fillRect(0, 0, size, size);
+
+      // Rough basalt rock facets
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 4 + Math.random() * 12;
+        ctx.fillStyle = Math.random() > 0.5 ? '#1a100d' : '#0c0706';
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Glowing subterranean magma fissures
+      ctx.strokeStyle = '#ff4500';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#ff2200';
+      ctx.shadowBlur = 8;
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        let fx = Math.random() * size;
+        let fy = 0;
+        ctx.moveTo(fx, fy);
+        while (fy < size) {
+          fx += (Math.random() - 0.5) * 60;
+          fy += 25 + Math.random() * 40;
+          ctx.lineTo(fx, fy);
+        }
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 16);
+      return tex;
+    });
+  }
+
+  /**
+   * Prehistoric Jungle Loam & Mossy Bedrock Texture
+   */
+  public static getJungleLoamTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_jungle_loam', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep dark primeval earth
+      ctx.fillStyle = '#1c2415';
+      ctx.fillRect(0, 0, size, size);
+
+      // Mossy green patches
+      const mossColors = ['#28381c', '#334724', '#202e17', '#3f562c'];
+      for (let i = 0; i < 300; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 8 + Math.random() * 24;
+        ctx.fillStyle = mossColors[Math.floor(Math.random() * mossColors.length)];
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Ancient embedded river pebbles
+      const pebbleColors = ['#4a4538', '#5c5445', '#333027'];
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        ctx.fillStyle = pebbleColors[Math.floor(Math.random() * pebbleColors.length)];
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.5 + Math.random() * 3, 2 + Math.random() * 2, Math.random() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 20);
+      return tex;
+    });
+  }
+
+  /**
+   * Tropical Beach Sand & Coastal Shell Sediment Texture
+   */
+  public static getTropicalSandTexture(): THREE.Texture {
+    return this.getOrCreate('terrain_tropical_sand', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Sunlit warm golden sand base
+      ctx.fillStyle = '#deb887';
+      ctx.fillRect(0, 0, size, size);
+
+      // Gentle wind/wave ripples
+      ctx.strokeStyle = 'rgba(210, 168, 115, 0.45)';
+      ctx.lineWidth = 3;
+      for (let y = 0; y < size; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= size; x += 32) {
+          ctx.lineTo(x, y + Math.sin(x * 0.05) * 6);
+        }
+        ctx.stroke();
+      }
+
+      // Fine golden mineral speckles
+      for (let i = 0; i < 800; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255, 245, 220, 0.35)' : 'rgba(180, 140, 90, 0.3)';
+        ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 20);
+      return tex;
+    });
+  }
 }
 
 

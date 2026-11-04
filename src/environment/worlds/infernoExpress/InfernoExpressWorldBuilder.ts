@@ -558,6 +558,13 @@ export class InfernoExpressWorldBuilder {
     gateGroup.name = 'citadel_furnace_blast_gate';
     gateGroup.position.set(0, 17.5, -chunkLength * 0.5);
 
+    // Towering armored blast furnace jambs grounding the gate into the volcanic bedrock
+    [-1, 1].forEach((side) => {
+      const jamb = new THREE.Mesh(this.getBox(3.5, 17.5, 4.0), this.scorchedIronMat);
+      jamb.position.set(side * (roadbedWidth * 0.5 + 4.8), -8.75, 0);
+      gateGroup.add(jamb);
+    });
+
     const interiorGlow = new THREE.Mesh(this.getPlane(8.0, 5.0), this.furnaceFireMat);
     interiorGlow.position.set(0, 0, -0.4);
     gateGroup.add(interiorGlow);
@@ -729,6 +736,13 @@ export class InfernoExpressWorldBuilder {
 
     const archSpan = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 1.4, 4.0), this.titaniumArmorMat);
     archGroup.add(archSpan);
+
+    // Towering basalt pylons anchoring the suspension arch to bedrock
+    [-1, 1].forEach((side) => {
+      const pylon = new THREE.Mesh(this.getBox(3.4, 17.5, 3.8), this.blackObsidianMat);
+      pylon.position.set(side * (roadbedWidth * 0.5 + 4.8), -8.75, 0);
+      archGroup.add(pylon);
+    });
 
     const archTrim = new THREE.Mesh(this.getBox(roadbedWidth + 12.4, 0.4, 4.2), this.moltenMagmaMat);
     archTrim.position.y = 0.8;

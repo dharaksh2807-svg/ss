@@ -540,6 +540,13 @@ export class ChronoKingdomWorldBuilder {
     bridgeGroup.name = 'retractable_brass_skybridge';
     bridgeGroup.position.set(0, 18.5, -chunkLength * 0.5);
 
+    // Supporting heavy brass clockwork towers anchoring the bridge to ground
+    [-1, 1].forEach((side) => {
+      const pylon = new THREE.Mesh(this.getBox(3.4, 18.5, 3.8), this.darkBronzeMat);
+      pylon.position.set(side * (roadbedWidth * 0.5 + 4.8), -9.25, 0);
+      bridgeGroup.add(pylon);
+    });
+
     const leftSpan = new THREE.Mesh(this.getBox(6.5, 1.2, 3.5), this.antiqueGoldMat);
     leftSpan.position.set(-6.0, 0, 0);
     bridgeGroup.add(leftSpan);
@@ -802,9 +809,20 @@ export class ChronoKingdomWorldBuilder {
     districtC.add(observatoryGroup);
 
     // 6. Suspended Filigree Observation Catwalks (spanning high at Y = 16.0m)
+    const catwalkGroup = new THREE.Group();
+    catwalkGroup.name = 'observation_catwalk';
+    catwalkGroup.position.set(0, 16.5, -chunkLength * 0.7);
+
     const catwalk = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 0.8, 3.0), this.antiqueGoldMat);
-    catwalk.position.set(0, 16.5, -chunkLength * 0.7);
-    districtC.add(catwalk);
+    catwalkGroup.add(catwalk);
+
+    [-1, 1].forEach((side) => {
+      const col = new THREE.Mesh(this.getBox(2.8, 16.5, 3.2), this.darkIronstoneMat);
+      col.position.set(side * (roadbedWidth * 0.5 + 4.8), -8.25, 0);
+      catwalkGroup.add(col);
+    });
+
+    districtC.add(catwalkGroup);
   }
 
   // =========================================================================

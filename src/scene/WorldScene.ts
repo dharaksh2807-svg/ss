@@ -67,6 +67,7 @@ export class WorldScene {
   private cloudMaterial: THREE.MeshStandardMaterial | null = null;
   public playerContactShadow: THREE.Mesh;
   public rainParticles: THREE.Points | null = null;
+  public infiniteSubterraneanBed!: THREE.Mesh;
   public currentAtmospherePreset: AtmospherePreset = 'CLEAR_DAYLIGHT';
   private currentConfig: QualityConfig;
 
@@ -141,18 +142,19 @@ export class WorldScene {
     this.fillLight.position.set(-24, 28, 14);
     this.scene.add(this.fillLight);
 
-    // Modern asphalt transit ground beneath tracks and lobby camera
-    const stationGroundGeo = new THREE.PlaneGeometry(80, 80);
-    const stationGroundMat = new THREE.MeshStandardMaterial({
+    // Continuous infinite subterranean foundation bed beneath tracks and lateral scenery
+    const subBedGeo = new THREE.PlaneGeometry(360, 1200);
+    const subBedMat = new THREE.MeshStandardMaterial({
       color: 0x263238,
-      roughness: 0.85,
-      metalness: 0.2
+      roughness: 0.90,
+      metalness: 0.15
     });
-    const stationGround = new THREE.Mesh(stationGroundGeo, stationGroundMat);
-    stationGround.rotation.x = -Math.PI / 2;
-    stationGround.position.set(0, -0.28, 0);
-    stationGround.receiveShadow = true;
-    this.scene.add(stationGround);
+    this.infiniteSubterraneanBed = new THREE.Mesh(subBedGeo, subBedMat);
+    this.infiniteSubterraneanBed.name = 'infinite_subterranean_bed';
+    this.infiniteSubterraneanBed.rotation.x = -Math.PI / 2;
+    this.infiniteSubterraneanBed.position.set(0, -0.32, 0);
+    this.infiniteSubterraneanBed.receiveShadow = true;
+    this.scene.add(this.infiniteSubterraneanBed);
 
     // 2. Vibrant Daytime Sky Dome
     this.skyMesh = this.createSkyDome();
@@ -1729,6 +1731,31 @@ export class WorldScene {
       this.cloudsGroup.visible = this.currentConfig.cloudsVisible && cloudOpacity > 0.01;
     }
 
+    // 7. Continuous subterranean foundation bed color
+    if (this.infiniteSubterraneanBed) {
+      const getThemeGroundColor = (id: string): number => {
+        switch (id) {
+          case 'INFERNO_EXPRESS': return 0x140806;
+          case 'JURASSIC_RUSH': return 0x1a2612;
+          case 'VIP_EXPRESS':
+          case 'RAHULVERSE': return 0x8a623a;
+          case 'MIDNIGHT_VELVET': return 0x121720;
+          case 'CHRONO_KINGDOM': return 0x2c2214;
+          case 'VIVA_HEAT': return 0x7c2626;
+          case 'ORBITAL_HALO': return 0x0f172a;
+          case 'ABYSSAL_GLASSLINE': return 0x021626;
+          case 'DOOMSDAY_LAST_TRANSIT': return 0x140f0d;
+          case 'HISTORIC_QUARTER': return 0x2c2620;
+          default: return 0x263238;
+        }
+      };
+      const baseGround = getThemeGroundColor(base.id);
+      const targetGround = getThemeGroundColor(targetTheme.id);
+      (this.infiniteSubterraneanBed.material as THREE.MeshStandardMaterial).color.copy(
+        EnvironmentManager.lerpColor(baseGround, targetGround, t)
+      );
+    }
+
     if (t >= 0.999) {
       this.currentTheme = targetTheme;
       this.prevTheme = null;
@@ -1925,6 +1952,12 @@ export class WorldScene {
     this.skyMesh.position.z = playerZ;
     this.cloudsGroup.position.z = playerZ;
     this.skylineGroup.position.z = playerZ;
+
+    // Continuous subterranean ground bed tracks player along run corridor
+    if (this.infiniteSubterraneanBed) {
+      this.infiniteSubterraneanBed.position.z = playerZ - 360.0;
+      this.infiniteSubterraneanBed.position.x = 0;
+    }
 
     // Subtle cloud drift
     this.cloudsGroup.rotation.y += 0.00015;

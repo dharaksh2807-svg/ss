@@ -34,7 +34,7 @@ export const MIDNIGHT_VELVET_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0x120a1c,  // Muted violet velvet night haze
-    density: 0.0018
+    density: 0.0028
   },
   sun: {
     color: 0xffeedd,  // Silvery champagne moonlight

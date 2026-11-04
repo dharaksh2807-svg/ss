@@ -268,7 +268,7 @@ export const CONSTANTS = {
 
   // Track Chunks & Procedural Generation
   CHUNK_LENGTH: 80.0, // Length of each track segment in meters
-  ACTIVE_CHUNKS: 6, // Number of concurrent chunks in scene (~480m view distance)
+  ACTIVE_CHUNKS: 8, // Number of concurrent chunks in scene (~640m view distance, beyond 600m camera far plane)
   DESPAWN_DISTANCE_BEHIND: 40.0, // Distance behind player before recycling chunk
 
   // Obstacle Dimensions

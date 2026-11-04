@@ -42,7 +42,7 @@ export const JURASSIC_RUSH_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0x14402e,  // Dense prehistoric jungle mist
-    density: 0.0016   // Atmospheric depth preserving high obstacle visibility
+    density: 0.0028   // Atmospheric depth preserving high obstacle visibility
   },
   sun: {
     color: 0xfef08a,  // Warm golden prehistoric sunlight

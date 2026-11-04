@@ -529,6 +529,10 @@ export class JurassicRushWorldBuilder {
     });
 
     // 3. Sprinting Raptor Pack racing along elevated canyon ridgeline (X = 22m, Y = 12m)
+    const raptorTerrace = new THREE.Mesh(this.getBox(12.0, 12.2, 28.0), this.canyonRockMat);
+    raptorTerrace.position.set(wallX + 13.5, 6.0, -chunkLength * 0.5);
+    districtC.add(raptorTerrace);
+
     const raptorPack = this.buildRaptorPack(wallX + 13.5, 12.0, -chunkLength * 0.5);
     districtC.add(raptorPack.group);
     director.registerRaptorPack(
@@ -547,6 +551,13 @@ export class JurassicRushWorldBuilder {
 
     const bridgeSpan = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 0.6, 2.5), this.treeBarkMat);
     bridgeGroup.add(bridgeSpan);
+
+    // Monumental canyon rock abutment towers grounding the bridge into the earth
+    [-1, 1].forEach((side) => {
+      const tower = new THREE.Mesh(this.getBox(3.6, 18.0, 3.8), this.canyonRockMat);
+      tower.position.set(side * (roadbedWidth * 0.5 + 4.8), -9.0, 0);
+      bridgeGroup.add(tower);
+    });
 
     [-1.2, 1.2].forEach((rz) => {
       const rope = new THREE.Mesh(this.getCylinder(0.08, 0.08, roadbedWidth + 12.0, 6), this.amberCurbMat);
@@ -618,6 +629,10 @@ export class JurassicRushWorldBuilder {
     });
 
     // 3. Gigantic Apex Carnivore (Tyrannosaur) Roaring from Rocky Outcrop (|X| = 24m, Y = 14m)
+    const predatorPinnacle = new THREE.Mesh(this.getBox(14.0, 14.5, 18.0), this.templeStoneMat);
+    predatorPinnacle.position.set(wallX + 15.0, 7.0, -chunkLength * 0.5);
+    districtD.add(predatorPinnacle);
+
     const apexPredator = this.buildApexCarnivore(wallX + 15.0, 14.0, -chunkLength * 0.5);
     districtD.add(apexPredator.group);
     director.registerCarnivore(
@@ -636,6 +651,13 @@ export class JurassicRushWorldBuilder {
 
     const stoneArch = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 1.4, 4.0), this.templeStoneMat);
     archGroup.add(stoneArch);
+
+    // Massive stone pillars anchoring the megalithic arch down to ground
+    [-1, 1].forEach((side) => {
+      const archPillar = new THREE.Mesh(this.getBox(3.4, 17.5, 3.8), this.templeStoneMat);
+      archPillar.position.set(side * (roadbedWidth * 0.5 + 4.8), -8.75, 0);
+      archGroup.add(archPillar);
+    });
 
     const ivyTrim = new THREE.Mesh(this.getBox(roadbedWidth + 12.4, 0.4, 4.2), this.jungleLeafMat);
     ivyTrim.position.y = 0.8;

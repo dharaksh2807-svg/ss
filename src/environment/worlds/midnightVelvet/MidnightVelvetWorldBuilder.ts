@@ -638,6 +638,15 @@ export class MidnightVelvetWorldBuilder {
     const palm = new THREE.Group();
     palm.position.set(x, y, z);
 
+    // Solid Dark Granite & Brass Planter Collar embedding palm firmly into ground
+    const planter = new THREE.Mesh(this.getCylinder(0.7, 0.9, 0.4, 6), this.darkGraniteMat);
+    planter.position.y = 0.2;
+    palm.add(planter);
+
+    const brassRim = new THREE.Mesh(this.getCylinder(0.72, 0.72, 0.08, 6), this.goldMetalMat);
+    brassRim.position.y = 0.4;
+    palm.add(brassRim);
+
     // Curved Trunk
     const trunk = new THREE.Mesh(this.getCylinder(0.22, 0.35, 6.5, 6), this.darkGraniteMat);
     trunk.position.set(0, 3.25, 0);

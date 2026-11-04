@@ -34,7 +34,7 @@ export const RAHULVERSE_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0xe0f2fe,  // Crisp morning horizon haze
-    density: 0.0016
+    density: 0.0028
   },
   sun: {
     color: 0xffedd5,  // Bright energetic morning sunlight

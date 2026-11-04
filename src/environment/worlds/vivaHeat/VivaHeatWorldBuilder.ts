@@ -657,6 +657,11 @@ export class VivaHeatWorldBuilder {
         const tree = new THREE.Group();
         tree.position.set(px, 0, z);
 
+        // Solid Terracotta Planter Collar embedding tree firmly into the ground
+        const planter = new THREE.Mesh(this.getCylinder(0.75, 0.95, 0.45, 8), this.velvetCrimsonMat);
+        planter.position.y = 0.22;
+        tree.add(planter);
+
         // Ringed Bronze Trunk
         const trunk = new THREE.Mesh(this.getCylinder(0.22, 0.38, trunkH, 8), this.palmTrunkMat);
         trunk.position.y = trunkH * 0.5;

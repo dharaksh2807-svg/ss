@@ -42,7 +42,7 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0x1c1719,  // Atmospheric bronze steam haze
-    density: 0.0016   // Subtle haze that maintains crisp obstacle visibility
+    density: 0.0028   // Subtle haze that maintains crisp obstacle visibility
   },
   sun: {
     color: 0xffdf99,  // Warm golden celestial spotlight

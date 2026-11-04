@@ -729,7 +729,7 @@ export const VIP_EXPRESS_THEME: EnvironmentTheme = {
   },
   fog: {
     color: 0xfef3c7,  // Soft warm ivory-gold afternoon haze
-    density: 0.0018
+    density: 0.0030
   },
   sun: {
     color: 0xfffbeb,  // Bright dignified golden sunlight
