@@ -1016,7 +1016,7 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH') {
+      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH' || themeId === 'VIVA_HEAT') {
         variant = 'STREAMLINED_EXPRESS';
       } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL') {
         variant = 'CLASSIC_TRANSIT';
@@ -1035,7 +1035,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'CHRONO_KINGDOM') {
+    if (themeId === 'VIVA_HEAT') {
+      accentColor = 0xff2d55;
+    } else if (themeId === 'CHRONO_KINGDOM') {
       accentColor = 0xd4af37;
     } else if (themeId === 'INFERNO_EXPRESS') {
       accentColor = 0xf97316;
@@ -1077,33 +1079,41 @@ export class ObstacleFactory {
     const isChronoKingdom = themeId === 'CHRONO_KINGDOM';
     const isInfernoExpress = themeId === 'INFERNO_EXPRESS';
     const isJurassicRush = themeId === 'JURASSIC_RUSH';
-    const trainColor = isChronoKingdom
-      ? (colorHex === 0xb87333 ? 0xb87333 : (colorHex === 0x1a2332 ? 0x1a2332 : 0x2b1810))
-      : (isInfernoExpress
-        ? (colorHex === 0x0a0a0d ? 0x0a0a0d : (colorHex === 0x27272a ? 0x27272a : 0x18181b))
-        : (isJurassicRush
-          ? (colorHex === 0x27272a ? 0x27272a : (colorHex === 0x4d5d36 ? 0x4d5d36 : 0x3f4f2c))
-          : (isMidnightVelvet
-            ? (colorHex === 0x4a0e17 ? 0x4a0e17 : (colorHex === 0x0f172a ? 0x0f172a : 0x0a0a12))
-            : (isRahulverse
-              ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
-              : (isVip
-                ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
-                : (isHaunted
-                  ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
-                  : (isPhantom
-                    ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
-                  : (isDoomsday
-                    ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
-                    : (isAbyssal
-                      ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-                      : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex)))))))))));
+    const isVivaHeat = themeId === 'VIVA_HEAT';
+    const trainColor = isVivaHeat
+      ? (colorHex === 0xff2d55 ? 0xff2d55 : (colorHex === 0x1f0310 ? 0x1f0310 : 0x881337))
+      : (isChronoKingdom
+        ? (colorHex === 0xb87333 ? 0xb87333 : (colorHex === 0x1a2332 ? 0x1a2332 : 0x2b1810))
+        : (isInfernoExpress
+          ? (colorHex === 0x0a0a0d ? 0x0a0a0d : (colorHex === 0x27272a ? 0x27272a : 0x18181b))
+          : (isJurassicRush
+            ? (colorHex === 0x27272a ? 0x27272a : (colorHex === 0x4d5d36 ? 0x4d5d36 : 0x3f4f2c))
+            : (isMidnightVelvet
+              ? (colorHex === 0x4a0e17 ? 0x4a0e17 : (colorHex === 0x0f172a ? 0x0f172a : 0x0a0a12))
+              : (isRahulverse
+                ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
+                : (isVip
+                  ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
+                  : (isHaunted
+                    ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
+                    : (isPhantom
+                      ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+                    : (isDoomsday
+                      ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
+                      : (isAbyssal
+                        ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
+                        : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))))))))))));
     let trainRoughness = 0.28;
     let trainMetalness = 0.52;
     let emissiveHex = colorHex;
     let emissiveScale = 0.04;
 
-    if (isChronoKingdom) {
+    if (isVivaHeat) {
+      trainRoughness = 0.20;
+      trainMetalness = 0.85;
+      emissiveHex = 0xff2d55;
+      emissiveScale = 0.05;
+    } else if (isChronoKingdom) {
       trainRoughness = 0.32;
       trainMetalness = 0.82;
       emissiveHex = 0xd4af37;
@@ -3026,9 +3036,12 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH' || themeId === 'VIVA_HEAT' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'CHRONO_KINGDOM') {
+      if (themeId === 'VIVA_HEAT') {
+        const vivaColors = [0x881337, 0xff2d55, 0x1f0310];
+        carColor = vivaColors[i % vivaColors.length];
+      } else if (themeId === 'CHRONO_KINGDOM') {
         const chronoColors = [0x2b1810, 0xb87333, 0x1a2332];
         carColor = chronoColors[i % chronoColors.length];
       } else if (themeId === 'INFERNO_EXPRESS') {
@@ -3067,7 +3080,9 @@ export class ObstacleFactory {
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'CHRONO_KINGDOM') {
+      if (themeId === 'VIVA_HEAT') {
+        accentColor = 0xff2d55;
+      } else if (themeId === 'CHRONO_KINGDOM') {
         accentColor = 0xd4af37;
       } else if (themeId === 'INFERNO_EXPRESS') {
         accentColor = 0xf97316;
@@ -3100,10 +3115,10 @@ export class ObstacleFactory {
       const isHaunted = themeId === 'HAUNTED_CARNIVAL';
       const bodyMat = new THREE.MeshStandardMaterial({
         color: variant === 'CLASSIC_TRANSIT' && !isPhantom && !isHaunted ? 0xd0d5dd : carColor,
-        roughness: isHaunted ? 0.35 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (themeId === 'INFERNO_EXPRESS' ? 0.72 : (themeId === 'CHRONO_KINGDOM' ? 0.32 : (themeId === 'JURASSIC_RUSH' ? 0.65 : (themeId === 'MIDNIGHT_VELVET' ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28)))))))),
-        metalness: isHaunted ? 0.65 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (themeId === 'INFERNO_EXPRESS' ? 0.85 : (themeId === 'CHRONO_KINGDOM' ? 0.82 : (themeId === 'JURASSIC_RUSH' ? 0.45 : (themeId === 'MIDNIGHT_VELVET' ? 0.75 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52)))))))),
+        roughness: isHaunted ? 0.35 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.65 : (themeId === 'INFERNO_EXPRESS' ? 0.72 : (themeId === 'CHRONO_KINGDOM' ? 0.32 : (themeId === 'JURASSIC_RUSH' ? 0.65 : (themeId === 'VIVA_HEAT' ? 0.20 : (themeId === 'MIDNIGHT_VELVET' ? 0.18 : (variant === 'CLASSIC_TRANSIT' ? 0.28 : (variant === 'STREAMLINED_EXPRESS' ? 0.22 : 0.28))))))))),
+        metalness: isHaunted ? 0.65 : (isPhantom ? 0.65 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.70 : (themeId === 'INFERNO_EXPRESS' ? 0.85 : (themeId === 'CHRONO_KINGDOM' ? 0.82 : (themeId === 'JURASSIC_RUSH' ? 0.45 : (themeId === 'VIVA_HEAT' ? 0.85 : (themeId === 'MIDNIGHT_VELVET' ? 0.75 : (variant === 'CLASSIC_TRANSIT' ? 0.85 : (variant === 'STREAMLINED_EXPRESS' ? 0.60 : 0.52))))))))),
         // Subtle livery self-glow so body reads under any ambient level
-        emissive: new THREE.Color(carColor).multiplyScalar(isHaunted ? 0.05 : (isPhantom ? 0.05 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'INFERNO_EXPRESS' ? 0.06 : (themeId === 'CHRONO_KINGDOM' ? 0.05 : (themeId === 'JURASSIC_RUSH' ? 0.04 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04)))))))),
+        emissive: new THREE.Color(carColor).multiplyScalar(isHaunted ? 0.05 : (isPhantom ? 0.05 : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0.05 : (themeId === 'INFERNO_EXPRESS' ? 0.06 : (themeId === 'CHRONO_KINGDOM' ? 0.05 : (themeId === 'JURASSIC_RUSH' ? 0.04 : (themeId === 'VIVA_HEAT' ? 0.06 : (themeId === 'ABYSSAL_GLASSLINE' ? 0.05 : (themeId === 'ORBITAL_HALO' ? 0.05 : 0.04))))))))),
         emissiveIntensity: 1.0
       });
       this.curvedManager.applyCurvature(bodyMat);

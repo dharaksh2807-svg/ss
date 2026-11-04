@@ -17,6 +17,7 @@ import {
   CHRONO_KINGDOM_THEME,
   INFERNO_EXPRESS_THEME,
   JURASSIC_RUSH_THEME,
+  VIVA_HEAT_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -41,6 +42,7 @@ export class EnvironmentRegistry {
     this.register(CHRONO_KINGDOM_THEME);
     this.register(INFERNO_EXPRESS_THEME);
     this.register(JURASSIC_RUSH_THEME);
+    this.register(VIVA_HEAT_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

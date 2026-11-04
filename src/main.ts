@@ -9,6 +9,8 @@ import { DailyChallengeManager } from './core/DailyChallengeManager';
 import { PhotoModeController } from './scene/PhotoModeController';
 import { SecretRouteDirector } from './track/SecretRouteDirector';
 import { JunctionDirector } from './track/JunctionDirector';
+import { EnvironmentManager } from './environment/EnvironmentConfig';
+import { FeverDirector } from './environment/worlds/vivaHeat/FeverDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -21,6 +23,18 @@ if (isDeveloperMode()) {
   (window as any).__PHOTO_MODE__ = PhotoModeController.getInstance();
   (window as any).__SECRET_ROUTES__ = SecretRouteDirector.getInstance();
   (window as any).__JUNCTIONS__ = JunctionDirector.getInstance();
+  (window as any).__FEVER_DIRECTOR__ = FeverDirector.getInstance();
+  (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
+    EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
+  };
+
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preview = urlParams.get('world') || urlParams.get('preview');
+    if (preview && preview.toUpperCase() === 'VIVA_HEAT') {
+      EnvironmentManager.getInstance().setDevPreviewEnvironment('VIVA_HEAT');
+    }
+  }
 }
 
 // Initialize the game once DOM is loaded

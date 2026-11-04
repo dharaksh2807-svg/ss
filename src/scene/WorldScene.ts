@@ -13,6 +13,7 @@ import { MidnightVelvetEventDirector } from '../environment/worlds/midnightVelve
 import { ChronoKingdomEventDirector } from '../environment/worlds/chronoKingdom/ChronoKingdomEventDirector';
 import { InfernoExpressEventDirector } from '../environment/worlds/infernoExpress/InfernoExpressEventDirector';
 import { JurassicRushEventDirector } from '../environment/worlds/jurassicRush/JurassicRushEventDirector';
+import { FeverDirector } from '../environment/worlds/vivaHeat/FeverDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2137,6 +2138,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'JURASSIC_RUSH') {
       const delta = dt || 0.016;
       JurassicRushEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'VIVA_HEAT') {
+      const delta = dt || 0.016;
+      FeverDirector.getInstance().update(delta, true);
     }
   }
 

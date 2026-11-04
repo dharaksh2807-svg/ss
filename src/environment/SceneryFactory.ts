@@ -11,6 +11,7 @@ import { MidnightVelvetWorldBuilder } from './worlds/midnightVelvet/MidnightVelv
 import { ChronoKingdomWorldBuilder } from './worlds/chronoKingdom/ChronoKingdomWorldBuilder';
 import { InfernoExpressWorldBuilder } from './worlds/infernoExpress/InfernoExpressWorldBuilder';
 import { JurassicRushWorldBuilder } from './worlds/jurassicRush/JurassicRushWorldBuilder';
+import { VivaHeatWorldBuilder } from './worlds/vivaHeat/VivaHeatWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1582,6 +1583,8 @@ export class SceneryFactory {
       this.buildInfernoExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'JURASSIC_RUSH') {
       this.buildJurassicRushScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'VIVA_HEAT') {
+      this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -7683,6 +7686,24 @@ export class SceneryFactory {
     jurassicGroup.name = 'jurassic_rush_scenery';
     JurassicRushWorldBuilder.getInstance().buildDistrictScenery(jurassicGroup, roadbedWidth, chunkLength, seed, detail);
     group.add(jurassicGroup);
+  }
+
+  // =========================================================================
+  // VIVA HEAT: THE FORBIDDEN FESTIVAL
+  // =========================================================================
+
+  private buildVivaHeatScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const vivaGroup = new THREE.Group();
+    vivaGroup.name = 'viva_heat_scenery';
+    VivaHeatWorldBuilder.getInstance().buildDistrictScenery(vivaGroup, roadbedWidth, chunkLength, seed, detail);
+    group.add(vivaGroup);
   }
 
   /**

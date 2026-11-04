@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { isDeveloperMode } from '../core/Constants';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET' | 'CHRONO_KINGDOM' | 'INFERNO_EXPRESS' | 'JURASSIC_RUSH';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET' | 'CHRONO_KINGDOM' | 'INFERNO_EXPRESS' | 'JURASSIC_RUSH' | 'VIVA_HEAT';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -784,6 +785,8 @@ export { INFERNO_EXPRESS_THEME } from './worlds/infernoExpress/InfernoExpressThe
 import { INFERNO_EXPRESS_THEME } from './worlds/infernoExpress/InfernoExpressTheme';
 export { JURASSIC_RUSH_THEME } from './worlds/jurassicRush/JurassicRushTheme';
 import { JURASSIC_RUSH_THEME } from './worlds/jurassicRush/JurassicRushTheme';
+export { VIVA_HEAT_THEME } from './worlds/vivaHeat/VivaHeatTheme';
+import { VIVA_HEAT_THEME } from './worlds/vivaHeat/VivaHeatTheme';
 
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
@@ -801,12 +804,14 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MIDNIGHT_VELVET: MIDNIGHT_VELVET_THEME,
   CHRONO_KINGDOM: CHRONO_KINGDOM_THEME,
   INFERNO_EXPRESS: INFERNO_EXPRESS_THEME,
-  JURASSIC_RUSH: JURASSIC_RUSH_THEME
+  JURASSIC_RUSH: JURASSIC_RUSH_THEME,
+  VIVA_HEAT: VIVA_HEAT_THEME
 };
 
 export class EnvironmentManager {
   private static instance: EnvironmentManager;
   private currentEnvironment: EnvironmentId = 'MODERN_METRO';
+  private devPreviewEnvironment: EnvironmentId | null = null;
   private constructor() {}
 
   public static getInstance(): EnvironmentManager {
@@ -814,6 +819,14 @@ export class EnvironmentManager {
       EnvironmentManager.instance = new EnvironmentManager();
     }
     return EnvironmentManager.instance;
+  }
+
+  public setDevPreviewEnvironment(id: EnvironmentId | null): void {
+    this.devPreviewEnvironment = id;
+  }
+
+  public getDevPreviewEnvironment(): EnvironmentId | null {
+    return this.devPreviewEnvironment;
   }
 
   public loadPreference(): void {
@@ -833,6 +846,9 @@ export class EnvironmentManager {
   }
 
   public getStartingEnvironment(): EnvironmentId {
+    if (this.devPreviewEnvironment && isDeveloperMode() && EnvironmentRegistry.getInstance().has(this.devPreviewEnvironment)) {
+      return this.devPreviewEnvironment;
+    }
     const preference = this.getSelectionPreference();
     const registry = EnvironmentRegistry.getInstance();
     return preference !== 'DYNAMIC' && registry.has(preference)
