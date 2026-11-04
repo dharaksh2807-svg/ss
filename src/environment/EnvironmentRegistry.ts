@@ -13,6 +13,7 @@ import {
   HAUNTED_CARNIVAL_THEME,
   VIP_EXPRESS_THEME,
   RAHULVERSE_THEME,
+  MIDNIGHT_VELVET_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -33,6 +34,7 @@ export class EnvironmentRegistry {
     this.register(HAUNTED_CARNIVAL_THEME);
     this.register(VIP_EXPRESS_THEME);
     this.register(RAHULVERSE_THEME);
+    this.register(MIDNIGHT_VELVET_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {

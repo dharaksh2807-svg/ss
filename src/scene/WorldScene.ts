@@ -9,6 +9,7 @@ import { TextureGenerator } from './TextureGenerator';
 import { SeededRandom } from '../environment/SceneryFactory';
 import { VipComedyEventDirector } from '../environment/VipComedyEventDirector';
 import { RahulComedyEventDirector } from '../environment/worlds/rahulverse/RahulComedyEventDirector';
+import { MidnightVelvetEventDirector } from '../environment/worlds/midnightVelvet/MidnightVelvetEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2113,6 +2114,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'RAHULVERSE') {
       const delta = dt || 0.016;
       RahulComedyEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'MIDNIGHT_VELVET') {
+      const delta = dt || 0.016;
+      MidnightVelvetEventDirector.getInstance().update(delta, true);
     }
   }
 

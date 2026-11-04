@@ -30,6 +30,7 @@
     "test:haunted-carnival": "npx tsx test/haunted-carnival-world.test.ts",
     "test:vip-express": "npx tsx test/vip-express-world.test.ts",
     "test:rahulverse": "npx tsx test/rahulverse-world.test.ts",
+    "test:midnight-velvet": "npx tsx test/midnight-velvet-world.test.ts",
     "test:dev-grant": "npx tsx test/developer-coin-grant.test.ts",
     "test:encounters": "npx tsx test/environmental-encounters.test.ts",
     "test:audit": "npx tsx test/task4-worldgen-audit.test.ts",

@@ -5230,6 +5230,357 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  // =========================================================================
+  // MIDNIGHT VELVET: AFTER DARK PREMIUM WORLD TEXTURES
+  // =========================================================================
+
+  /**
+   * District A: Velvet Boulevard Luxury Nightclub & Hotel Signs
+   */
+  public static getVelvetBoulevardSignTexture(variant: number = 0): THREE.Texture {
+    const key = `midnight_velvet_boulevard_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep obsidian-burgundy velvet lacquer
+      ctx.fillStyle = '#0a0812';
+      ctx.fillRect(0, 0, w, h);
+
+      // Art Deco double gold border
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(16, 16, w - 32, h - 32);
+
+      // Gold corner triangles (Art Deco motif)
+      ctx.fillStyle = '#d4af37';
+      [[16, 16], [w - 16, 16], [16, h - 16], [w - 16, h - 16]].forEach(([cx, cy]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Header Banner
+      ctx.fillStyle = '#1c0f24';
+      ctx.fillRect(20, 20, w - 40, 50);
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(20, 20, w - 40, 50);
+
+      const signs = [
+        ['⚜️ LE VELOURS ⚜️', 'EXCLUSIVE AFTER-DARK CLUB', '★ VIP RESERVATIONS ONLY ★'],
+        ['✦ HOTEL ROYALE ✦', 'PREMIER LUXURY PENTHOUSES', '★ CONCIERGE & VALET 24/7 ★'],
+        ['★ CLUB PRIVÉ ★', 'CHAMPAGNE SALON & SOCIETY', '★ PRIVATE ACCESS CARD REQUIRED ★'],
+        ['💎 MAISON VENDÔME 💎', 'HAUTE JOAILLERIE & DIAMONDS', '★ TIMELESS ART DECO MASTERY ★']
+      ];
+      const s = signs[variant % signs.length];
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '900 24px "Cinzel", "Georgia", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s[0], w * 0.5, 54);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px "Cinzel", "Trebuchet MS", sans-serif';
+      ctx.fillText(s[1], w * 0.5, 126);
+
+      ctx.fillStyle = '#d4af37';
+      ctx.font = '14px monospace';
+      ctx.fillText(s[2], w * 0.5, 185);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District B: Moonlight Marina Yacht Club & Waterfront Signage
+   */
+  public static getMoonlightMarinaSignTexture(variant: number = 0): THREE.Texture {
+    const key = `midnight_velvet_marina_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep ocean navy
+      ctx.fillStyle = '#06101e';
+      ctx.fillRect(0, 0, w, h);
+
+      // Brushed brass & silver border
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      const signs = [
+        ['⚓ MOONLIGHT MARINA ⚓', 'YACHT CLUB & PRIVATE BASIN', '★ BERTHS 1 THROUGH 48 ★'],
+        ['🥂 PIER 24 CHAMPAGNE 🥂', 'WATERFRONT PROMENADE & BARS', '★ OCEAN SKYLINE TERRACES ★'],
+        ['⛵ L\'AZUR REGATTA ⛵', 'MIDNIGHT LUXURY CRUISES', '★ FIRST CLASS HARBOR PASSAGE ★'],
+        ['✦ VILLA BELLERIVE ✦', 'EXCLUSIVE WATERFRONT ESTATES', '★ PRIVATE BOAT SLIPS ★']
+      ];
+      const s = signs[variant % signs.length];
+
+      ctx.fillStyle = '#0c1a2e';
+      ctx.fillRect(20, 20, w - 40, 50);
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = '900 22px "Cinzel", "Georgia", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s[0], w * 0.5, 54);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px "Cinzel", sans-serif';
+      ctx.fillText(s[1], w * 0.5, 126);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '14px monospace';
+      ctx.fillText(s[2], w * 0.5, 185);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District C: The Golden Hour Club Rooftop Lounge Signage
+   */
+  public static getGoldenHourClubSignTexture(variant: number = 0): THREE.Texture {
+    const key = `midnight_velvet_golden_hour_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Rich midnight burgundy
+      ctx.fillStyle = '#180410';
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold sunburst pattern
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+      ctx.strokeStyle = '#ec4899'; // Subtle electric pink accent
+      ctx.lineWidth = 2;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      const signs = [
+        ['✨ THE GOLDEN HOUR ✨', 'ROOFTOP AFTER-DARK SOCIETY', '★ SKYLINE DANCE TERRACE ★'],
+        ['🍸 VELOURS SALON 🍸', 'VINTAGE CHAMPAGNE & JAZZ', '★ SOPHISTICATED NIGHTLIFE ★'],
+        ['★ PENTHOUSE CLUB 40 ★', 'PANORAMIC METROPOLIS VIEWS', '★ STRICT EVENING ATTIRE ★'],
+        ['⚡ AFTER HOURS ⚡', 'MUSIC UNTIL THE SUN RISES', '★ SOUNDTRACK OF THE METROPOLIS ★']
+      ];
+      const s = signs[variant % signs.length];
+
+      ctx.fillStyle = '#2d061e';
+      ctx.fillRect(20, 20, w - 40, 50);
+
+      ctx.fillStyle = '#f472b6';
+      ctx.font = '900 24px "Cinzel", "Georgia", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s[0], w * 0.5, 54);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 20px "Cinzel", sans-serif';
+      ctx.fillText(s[1], w * 0.5, 126);
+
+      ctx.fillStyle = '#ec4899';
+      ctx.font = '14px monospace';
+      ctx.fillText(s[2], w * 0.5, 185);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District D: Midnight Grand Monumental Concourse & Clock Signs
+   */
+  public static getMidnightGrandSignTexture(variant: number = 0): THREE.Texture {
+    const key = `midnight_velvet_grand_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Polished dark marble
+      ctx.fillStyle = '#0c0c12';
+      ctx.fillRect(0, 0, w, h);
+
+      // Fluted brass frame
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(16, 16, w - 32, h - 32);
+
+      const signs = [
+        ['🏛️ MIDNIGHT GRAND TERMINAL 🏛️', 'TRACKS 1 TO 16 · CONCOURSE LUXE', '★ ALL LUXURY TRAINS ON TIME ★'],
+        ['🕰️ THE ORIENT OVERNIGHT 🕰️', 'FIRST CLASS SLEEPER SALOONS', '★ LUXURY INTERCITY SERVICE ★'],
+        ['✦ CLOCK TOWER PAVILION ✦', 'CENTRAL TRANSIT MEZZANINE', '★ RENDEZVOUS AT THE CLOCK ★'],
+        ['⚜️ PULLMAN PARLOUR CARS ⚜️', 'CONTINENTAL LUXURY TRANSIT', '★ CHAMPAGNE SALOON SERVICE ★']
+      ];
+      const s = signs[variant % signs.length];
+
+      ctx.fillStyle = '#161622';
+      ctx.fillRect(20, 20, w - 40, 50);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '900 22px "Cinzel", "Georgia", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s[0], w * 0.5, 54);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px "Cinzel", sans-serif';
+      ctx.fillText(s[1], w * 0.5, 126);
+
+      ctx.fillStyle = '#d4af37';
+      ctx.font = '14px monospace';
+      ctx.fillText(s[2], w * 0.5, 185);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Gorgeous cratered full moon texture for Moonlight Marina
+   */
+  public static getMoonTexture(): THREE.Texture {
+    return this.getOrCreate('midnight_velvet_giant_moon', () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Transparent bg
+      ctx.clearRect(0, 0, size, size);
+
+      const center = size * 0.5;
+      const radius = size * 0.42;
+
+      // Outer radial glow
+      const glowGrad = ctx.createRadialGradient(center, center, radius * 0.7, center, center, size * 0.5);
+      glowGrad.addColorStop(0, 'rgba(254, 240, 138, 0.45)');
+      glowGrad.addColorStop(0.5, 'rgba(254, 240, 138, 0.15)');
+      glowGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Moon body
+      const moonGrad = ctx.createRadialGradient(center - radius * 0.25, center - radius * 0.25, radius * 0.1, center, center, radius);
+      moonGrad.addColorStop(0, '#ffffff');
+      moonGrad.addColorStop(0.4, '#fef9c3');
+      moonGrad.addColorStop(0.8, '#fde047');
+      moonGrad.addColorStop(1, '#eab308');
+
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.fillStyle = moonGrad;
+      ctx.fill();
+
+      // Soft crater mares
+      ctx.fillStyle = 'rgba(161, 98, 7, 0.18)';
+      const craters = [
+        [center - 50, center - 40, 55],
+        [center + 45, center - 20, 65],
+        [center - 20, center + 55, 75],
+        [center + 60, center + 40, 45],
+        [center - 70, center + 10, 35]
+      ];
+      craters.forEach(([cx, cy, r]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Art Deco Gilded Fretwork / Chevron Lattice Texture
+   */
+  public static getArtDecoFretworkTexture(): THREE.Texture {
+    return this.getOrCreate('midnight_velvet_deco_fretwork', () => {
+      const w = 256;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Dark lacquer
+      ctx.fillStyle = '#0d0d14';
+      ctx.fillRect(0, 0, w, h);
+
+      // Gilded geometric chevrons & diamond fans
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 3;
+
+      for (let y = 0; y < h; y += 64) {
+        for (let x = 0; x < w; x += 64) {
+          // Diamond
+          ctx.beginPath();
+          ctx.moveTo(x + 32, y);
+          ctx.lineTo(x + 64, y + 32);
+          ctx.lineTo(x + 32, y + 64);
+          ctx.lineTo(x, y + 32);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Inner rays
+          ctx.beginPath();
+          ctx.moveTo(x + 32, y + 32);
+          ctx.lineTo(x + 32, y);
+          ctx.moveTo(x + 32, y + 32);
+          ctx.lineTo(x + 64, y + 32);
+          ctx.moveTo(x + 32, y + 32);
+          ctx.lineTo(x + 32, y + 64);
+          ctx.moveTo(x + 32, y + 32);
+          ctx.lineTo(x, y + 32);
+          ctx.stroke();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+  }
 }
 
 

@@ -90,12 +90,12 @@ function resetState(coins = 50000) {
 resetState();
 
 const allWorlds = getWorlds(progression.getState());
-check(allWorlds.length === 11, `Expected 11 total worlds in catalog, got ${allWorlds.length}`);
+check(allWorlds.length === 13, `Expected 13 total worlds in catalog, got ${allWorlds.length}`);
 
 const freeWorlds = allWorlds.filter((w) => w.unlock === 'FREE');
 const premiumWorlds = allWorlds.filter((w) => w.unlock === 'COINS');
-check(freeWorlds.length === 5, `Expected 5 free/bundled worlds, got ${freeWorlds.length}`);
-check(premiumWorlds.length === 6, `Expected 6 premium worlds, got ${premiumWorlds.length}`);
+check(freeWorlds.length === 6, `Expected 6 free/bundled worlds, got ${freeWorlds.length}`);
+check(premiumWorlds.length === 7, `Expected 7 premium worlds, got ${premiumWorlds.length}`);
 
 // 2. Verify all 10 world preview screenshots exist on disk and have metadata
 const publicDir = path.resolve(process.cwd(), 'public');

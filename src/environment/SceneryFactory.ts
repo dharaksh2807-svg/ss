@@ -7,6 +7,7 @@ import { LandmarkType, SmallMomentType } from './EnvironmentalEncounterDirector'
 import { SceneryPool } from './SceneryPool';
 import { VipSatireWorldBuilder } from './VipSatireWorldBuilder';
 import { RahulSatireWorldBuilder } from './worlds/rahulverse/RahulSatireWorldBuilder';
+import { MidnightVelvetWorldBuilder } from './worlds/midnightVelvet/MidnightVelvetWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1570,6 +1571,8 @@ export class SceneryFactory {
       this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'RAHULVERSE') {
       this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'MIDNIGHT_VELVET') {
+      this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -4790,6 +4793,30 @@ export class SceneryFactory {
       portalGroup.add(beam);
       group.add(portalGroup);
       return;
+    } else if (theme.id === 'MIDNIGHT_VELVET') {
+      // --- Midnight Velvet Art Deco Gateway Portal ---
+      const pylonGeo = new THREE.BoxGeometry(3.6, portalH, 4.0);
+      [-spanW * 0.5 - 1.2, spanW * 0.5 + 1.2].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.2, metalness: 0.4 }));
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        portalGroup.add(pylon);
+
+        const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.2, 4.2), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.25 }));
+        goldTrim.position.set(px, portalH - 0.6, portalZ);
+        portalGroup.add(goldTrim);
+      });
+
+      const lintelGeo = new THREE.BoxGeometry(spanW + 8.5, 3.2, 4.4);
+      const lintel = new THREE.Mesh(lintelGeo, new THREE.MeshStandardMaterial({ color: 0x4a0e17, roughness: 0.7 }));
+      lintel.position.set(0, portalH + 1.6, portalZ);
+      portalGroup.add(lintel);
+
+      const cornice = new THREE.Mesh(new THREE.BoxGeometry(spanW + 9.5, 1.0, 5.0), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.88, roughness: 0.2 }));
+      cornice.position.set(0, portalH + 3.6, portalZ);
+      portalGroup.add(cornice);
+
+      group.add(portalGroup);
+      return;
     }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
@@ -7572,6 +7599,27 @@ export class SceneryFactory {
     RahulSatireWorldBuilder.getInstance().buildDistrictScenery(rahulGroup, roadbedWidth, chunkLength, seed, detail);
 
     group.add(rahulGroup);
+  }
+
+  // =========================================================================
+  // MIDNIGHT VELVET: AFTER DARK (Premium Luxury Nightlife World)
+  // =========================================================================
+
+  private buildMidnightVelvetScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const velvetGroup = new THREE.Group();
+    velvetGroup.name = 'midnight_velvet_scenery';
+
+    // Delegate to the 4 distinct luxury Art Deco nightlife districts
+    MidnightVelvetWorldBuilder.getInstance().buildDistrictScenery(velvetGroup, roadbedWidth, chunkLength, seed, detail);
+
+    group.add(velvetGroup);
   }
 
   /**

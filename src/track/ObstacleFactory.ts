@@ -1016,7 +1016,7 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE') {
+      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET') {
         variant = 'STREAMLINED_EXPRESS';
       } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL') {
         variant = 'CLASSIC_TRANSIT';
@@ -1035,7 +1035,9 @@ export class ObstacleFactory {
 
     // Pick accent color
     let accentColor = 0xffd600;
-    if (themeId === 'RAHULVERSE') {
+    if (themeId === 'MIDNIGHT_VELVET') {
+      accentColor = 0xd4af37;
+    } else if (themeId === 'RAHULVERSE') {
       accentColor = 0x38bdf8;
     } else if (themeId === 'VIP_EXPRESS') {
       accentColor = 0xf59e0b;
@@ -1065,19 +1067,22 @@ export class ObstacleFactory {
     const isHaunted = themeId === 'HAUNTED_CARNIVAL';
     const isVip = themeId === 'VIP_EXPRESS';
     const isRahulverse = themeId === 'RAHULVERSE';
-    const trainColor = isRahulverse
-      ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
-      : (isVip
-        ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
-        : (isHaunted
-          ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
-          : (isPhantom
-            ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+    const isMidnightVelvet = themeId === 'MIDNIGHT_VELVET';
+    const trainColor = isMidnightVelvet
+      ? (colorHex === 0x4a0e17 ? 0x4a0e17 : (colorHex === 0x0f172a ? 0x0f172a : 0x0a0a12))
+      : (isRahulverse
+        ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
+        : (isVip
+          ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
+          : (isHaunted
+            ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
+            : (isPhantom
+              ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
             : (isDoomsday
               ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
               : (isAbyssal
                 ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-                : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex)))))));
+                : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))))))));
     let trainRoughness = 0.28;
     let trainMetalness = 0.52;
     let emissiveHex = colorHex;
@@ -2986,9 +2991,12 @@ export class ObstacleFactory {
       carriageGroup.name = comp.id;
       carriageGroup.position.z = comp.localOffsetZ;
 
-      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
+      const variant = comp.variant || (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' ? 'STREAMLINED_EXPRESS' : (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' ? 'CLASSIC_TRANSIT' : variants[(this.trainSpawnCounter++) % variants.length]));
       let carColor = comp.colorHex || colorHex;
-      if (themeId === 'RAHULVERSE') {
+      if (themeId === 'MIDNIGHT_VELVET') {
+        const velvetColors = [0x0a0a12, 0x4a0e17, 0x0f172a];
+        carColor = velvetColors[i % velvetColors.length];
+      } else if (themeId === 'RAHULVERSE') {
         const yatraColors = [0xffffff, 0x0284c7, 0x16a34a];
         carColor = yatraColors[i % yatraColors.length];
       } else if (themeId === 'VIP_EXPRESS') {
@@ -3015,7 +3023,9 @@ export class ObstacleFactory {
       }
 
       let accentColor = 0xffd600;
-      if (themeId === 'RAHULVERSE') {
+      if (themeId === 'MIDNIGHT_VELVET') {
+        accentColor = 0xd4af37;
+      } else if (themeId === 'RAHULVERSE') {
         accentColor = 0x38bdf8;
       } else if (themeId === 'VIP_EXPRESS') {
         accentColor = 0xf59e0b;

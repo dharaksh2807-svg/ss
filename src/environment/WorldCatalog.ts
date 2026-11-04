@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -128,6 +128,17 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     signatureCharacterId: 'char_rahul_gandhi',
     signatureLabel: 'RAHUL SIGNATURE WORLD',
     isSignatureWorld: true
+  },
+  {
+    id: 'MIDNIGHT_VELVET', environmentId: 'MIDNIGHT_VELVET', displayName: 'Midnight Velvet: After Dark',
+    description: 'An exclusive, ultra-luxury after-dark metropolis featuring breathtaking Art Deco towers, champagne gold accents, moonlight yacht marinas, vibrant rooftop lounges, and the monumental Midnight Grand railway terminal.',
+    subtitle: 'Luxury After Dark',
+    tagline: 'Classic Art Deco towers, champagne gold facades, luxury yacht marinas, and exclusive midnight clubs.',
+    rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 15000, keyCost: null, previewReference: 'environment:MIDNIGHT_VELVET',
+    previewImage: '/worlds/midnight_velvet.png',
+    features: ['Art Deco Grandeur', 'Moonlight Marina', 'The Golden Hour Club', 'Midnight Grand Terminal'],
+    implemented: true, available: true, dynamicEligible: true, icon: '🍸', accentColor: '#d4af37'
   }
 ];
 
