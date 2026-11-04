@@ -10,6 +10,12 @@ import { PhotoModeController } from './scene/PhotoModeController';
 import { SecretRouteDirector } from './track/SecretRouteDirector';
 import { JunctionDirector } from './track/JunctionDirector';
 import { EnvironmentManager } from './environment/EnvironmentConfig';
+import { VipComedyEventDirector } from './environment/VipComedyEventDirector';
+import { RahulComedyEventDirector } from './environment/worlds/rahulverse/RahulComedyEventDirector';
+import { MidnightVelvetEventDirector } from './environment/worlds/midnightVelvet/MidnightVelvetEventDirector';
+import { ChronoKingdomEventDirector } from './environment/worlds/chronoKingdom/ChronoKingdomEventDirector';
+import { InfernoExpressEventDirector } from './environment/worlds/infernoExpress/InfernoExpressEventDirector';
+import { JurassicRushEventDirector } from './environment/worlds/jurassicRush/JurassicRushEventDirector';
 import { FeverDirector } from './environment/worlds/vivaHeat/FeverDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
@@ -23,6 +29,12 @@ if (isDeveloperMode()) {
   (window as any).__PHOTO_MODE__ = PhotoModeController.getInstance();
   (window as any).__SECRET_ROUTES__ = SecretRouteDirector.getInstance();
   (window as any).__JUNCTIONS__ = JunctionDirector.getInstance();
+  (window as any).__VIP_DIRECTOR__ = VipComedyEventDirector.getInstance();
+  (window as any).__RAHUL_DIRECTOR__ = RahulComedyEventDirector.getInstance();
+  (window as any).__MIDNIGHT_DIRECTOR__ = MidnightVelvetEventDirector.getInstance();
+  (window as any).__CHRONO_DIRECTOR__ = ChronoKingdomEventDirector.getInstance();
+  (window as any).__INFERNO_DIRECTOR__ = InfernoExpressEventDirector.getInstance();
+  (window as any).__JURASSIC_DIRECTOR__ = JurassicRushEventDirector.getInstance();
   (window as any).__FEVER_DIRECTOR__ = FeverDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
