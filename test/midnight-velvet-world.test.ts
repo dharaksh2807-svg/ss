@@ -184,12 +184,35 @@ check(velvetTrain.userData.isTrain === true, 'userData.isTrain is true');
 check(velvetTrain.userData.variant === 'STREAMLINED_EXPRESS', 'Midnight Velvet uses STREAMLINED_EXPRESS variant');
 
 // =========================================================================
-// Suite 6: Animated Nightlife Event Director Update & Reduced Motion
+// Suite 6: Animated Nightlife Event Director Update & Memory Leak Pruning
 // =========================================================================
-console.log('\n--- Suite 6: Animated Nightlife Event Director Update ---');
+console.log('\n--- Suite 6: Animated Nightlife Event Director Update & Memory Leak Pruning ---');
 
 const director = MidnightVelvetEventDirector.getInstance();
 check(director !== undefined, 'MidnightVelvetEventDirector instance exists');
+
+// Verify public diagnostic getters
+check(typeof director.getMotorcadeCarCount() === 'number', 'Director has getMotorcadeCarCount');
+check(typeof director.getPartyDancerCount() === 'number', 'Director has getPartyDancerCount');
+check(typeof director.getSearchlightCount() === 'number', 'Director has getSearchlightCount');
+check(typeof director.getMarinaYachtCount() === 'number', 'Director has getMarinaYachtCount');
+check(typeof director.getHotelMarqueeCount() === 'number', 'Director has getHotelMarqueeCount');
+check(typeof director.getClockTowerCount() === 'number', 'Director has getClockTowerCount');
+check(typeof director.getTotalActiveElements() === 'number', 'Director has getTotalActiveElements');
+
+// Test memory leak fix: detached recycled objects must be automatically pruned
+const tempParent = new THREE.Group();
+const tempCar = new THREE.Group();
+tempParent.add(tempCar);
+
+director.registerMotorcadeCar(tempCar);
+const countBeforePrune = director.getMotorcadeCarCount();
+
+// Detach from parent (simulating chunk clearDecorativeGroup)
+tempParent.remove(tempCar);
+director.update(0.016, true);
+const countAfterPrune = director.getMotorcadeCarCount();
+check(countAfterPrune < countBeforePrune, 'Detached objects are successfully pruned on update, resolving memory leak');
 
 // Update with normal motion
 director.update(0.016, true);

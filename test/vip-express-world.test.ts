@@ -19,6 +19,7 @@ import { CurvedWorldManager } from '../src/scene/CurvedWorld';
 import { WorldScene } from '../src/scene/WorldScene';
 import { ProgressionManager } from '../src/progression/ProgressionManager';
 import { getCharacterById } from '../src/characters/CharacterCatalog';
+import { VipComedyEventDirector } from '../src/environment/VipComedyEventDirector';
 
 const PROGRESSION_STORAGE_KEY = 'metro_progression_v1';
 
@@ -283,6 +284,34 @@ sceneryFactory.buildScenery(gFull, VIP_EXPRESS_THEME, -80, false, false, 'NONE',
 let countRecycled = 0;
 gFull.traverse((o) => { if ((o as THREE.Mesh).isMesh) countRecycled++; });
 check(countRecycled === countFull, `Scenery properly clears and replaces without memory leaks (${countRecycled} === ${countFull})`);
+
+// =========================================================================
+// Suite 9: VipComedyEventDirector Diagnostics & Leak Pruning
+// =========================================================================
+console.log('\n--- Suite 9: VipComedyEventDirector Diagnostics & Leak Pruning ---');
+
+const director = VipComedyEventDirector.getInstance();
+check(typeof director.getScissorsCount() === 'number', 'Director has getScissorsCount');
+check(typeof director.getDebatersCount() === 'number', 'Director has getDebatersCount');
+check(typeof director.getSteamCount() === 'number', 'Director has getSteamCount');
+check(typeof director.getFlashCount() === 'number', 'Director has getFlashCount');
+check(typeof director.getHelicopterCount() === 'number', 'Director has getHelicopterCount');
+check(typeof director.getGavelCount() === 'number', 'Director has getGavelCount');
+check(typeof director.getTotalActiveElements() === 'number', 'Director has getTotalActiveElements');
+
+// Test detached pruning
+const tempGroup = new THREE.Group();
+const tempBladeL = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+const tempBladeR = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+tempGroup.add(tempBladeL);
+tempGroup.add(tempBladeR);
+director.registerScissors(tempBladeL, tempBladeR);
+const countBefore = director.getScissorsCount();
+tempGroup.remove(tempBladeL);
+tempGroup.remove(tempBladeR);
+director.update(0.016, true);
+const countAfter = director.getScissorsCount();
+check(countAfter < countBefore, 'Detached recycled objects are automatically pruned from director');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} VIP_EXPRESS SIGNATURE WORLD TESTS PASSED!`);

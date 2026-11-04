@@ -107,8 +107,21 @@ export class RahulSatireWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = RahulComedyEventDirector.getInstance();
 
-    // Determine district (direct index if 0..4 for testing, or cycled every 4 chunks in running world)
-    const districtIndex = (seed >= 0 && seed < 5) ? seed : (Math.floor(Math.abs(seed) / 4) % 5);
+    // Determine district:
+    // If seed is 0..4 (used in unit test suites), respect it directly.
+    // In live gameplay, group.parent position.z tracks distance: sustain 400m thematic stretches!
+    let districtIndex: number;
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+
+    if (seed >= 0 && seed < 5) {
+      districtIndex = seed;
+    } else if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
+    } else {
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 5;
+    }
 
     switch (districtIndex) {
       case 0:
@@ -264,6 +277,19 @@ export class RahulSatireWorldBuilder {
 
     group.add(archGroup);
 
+    // Distant Scenic Mountain Ridges along Yatra route
+    [-1, 1].forEach((side) => {
+      const ridgeGroup = new THREE.Group();
+      ridgeGroup.position.set(side * 34.0, 0, -chunkLength * 0.5);
+      for (let m = 0; m < 3; m++) {
+        const peak = new THREE.Mesh(this.getCylinder(0.2, 8.0, 14.0 + m * 2.0, 4), this.parliamentSandstoneMat);
+        peak.position.set(0, 7.0 + m, (m - 1) * 22.0);
+        peak.rotation.y = m * 0.5;
+        ridgeGroup.add(peak);
+      }
+      group.add(ridgeGroup);
+    });
+
     // Satirical District Banners
     const bannerTex = TextureGenerator.getYatraNeverEndsSignTexture(rng.int(0, 3));
     const banner = new THREE.Mesh(this.getBox(5.0, 1.4, 0.08), new THREE.MeshBasicMaterial({ map: bannerTex }));
@@ -382,6 +408,25 @@ export class RahulSatireWorldBuilder {
 
     director.registerFlyingPapers(paperGroup, papers);
     group.add(paperGroup);
+
+    // Revolving Coalition Door Gag at X = 16.0m
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(16.0, 0.6, -chunkLength * 0.25);
+    const doorFrame = new THREE.Mesh(this.getCylinder(2.0, 2.0, 3.6, 12), this.woodMat);
+    doorFrame.position.y = 1.8;
+    doorGroup.add(doorFrame);
+
+    const rotorGroup = new THREE.Group();
+    rotorGroup.position.y = 1.8;
+    for (let wing = 0; wing < 4; wing++) {
+      const panel = new THREE.Mesh(this.getBox(0.08, 3.2, 1.8), this.parliamentSandstoneMat);
+      panel.rotation.y = wing * (Math.PI / 2);
+      panel.position.set(Math.cos(wing * (Math.PI / 2)) * 0.9, 0, Math.sin(wing * (Math.PI / 2)) * 0.9);
+      rotorGroup.add(panel);
+    }
+    doorGroup.add(rotorGroup);
+    director.registerRevolvingDoor(rotorGroup, 1.2);
+    group.add(doorGroup);
   }
 
   // =========================================================================

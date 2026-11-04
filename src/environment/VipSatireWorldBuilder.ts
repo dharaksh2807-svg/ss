@@ -104,8 +104,18 @@ export class VipSatireWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = VipComedyEventDirector.getInstance();
 
-    // Determine district (5 districts cycled every 4 chunks or by seed)
-    const districtIndex = Math.floor(Math.abs(seed) / 4) % 5;
+    // Determine district:
+    // When in live track with attached chunk holding world coordinates, maintain 400m sustained thematic districts!
+    let districtIndex: number;
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+
+    if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
+    } else {
+      districtIndex = (seed >= 0 && seed < 5) ? seed : (Math.floor(Math.abs(seed) / 4) % 5);
+    }
 
     // Check if this chunk is the test harness seed (12345) or needs baseline test objects
     const isTestSeed = seed === 12345;
@@ -181,22 +191,52 @@ export class VipSatireWorldBuilder {
         signMesh.position.set(0, 2.8, 0.3);
         stallGroup.add(signMesh);
 
-        // Giant Steaming Kettle on Counter
-        const kettle = new THREE.Mesh(this.getCylinder(0.38, 0.44, 0.65, 10), this.brassKettleMat);
+        // Giant Steaming Kettle on Counter (Sculpted with brass dome, spout, arched handle)
+        const kettle = new THREE.Mesh(this.getCylinder(0.38, 0.44, 0.65, 12), this.brassKettleMat);
         kettle.position.set(-0.8, 1.45, 0);
         stallGroup.add(kettle);
 
+        // Kettle Dome Lid
+        const lid = new THREE.Mesh(this.getCylinder(0.24, 0.38, 0.18, 10), this.brassKettleMat);
+        lid.position.set(-0.8, 1.82, 0);
+        stallGroup.add(lid);
+
         // Kettle Spout
-        const spout = new THREE.Mesh(this.getCylinder(0.06, 0.12, 0.35, 8), this.brassKettleMat);
+        const spout = new THREE.Mesh(this.getCylinder(0.06, 0.12, 0.38, 8), this.brassKettleMat);
         spout.position.set(-0.48, 1.62, 0);
         spout.rotation.z = -0.65;
         stallGroup.add(spout);
 
-        // Kettle Handle
-        const handle = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.5, 6), this.parliamentWoodMat);
-        handle.position.set(-0.8, 1.88, 0);
+        // Kettle Curved Handle
+        const handle = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.6, 6), this.parliamentWoodMat);
+        handle.position.set(-0.8, 1.98, 0);
         handle.rotation.z = Math.PI / 2;
         stallGroup.add(handle);
+
+        // Wire Rack with 4 Glass Tumblers
+        const rack = new THREE.Mesh(this.getBox(0.9, 0.15, 0.5), this.goldMetalMat);
+        rack.position.set(-0.1, 1.15, 0);
+        stallGroup.add(rack);
+        for (let g = 0; g < 4; g++) {
+          const gx = -0.38 + g * 0.25;
+          const glass = new THREE.Mesh(this.getCylinder(0.07, 0.05, 0.22, 6), this.teaGlassMat);
+          glass.position.set(gx, 1.3, 0);
+          stallGroup.add(glass);
+        }
+
+        // Traditional Terracotta Kulhad Cups
+        for (let k = 0; k < 2; k++) {
+          const kulhad = new THREE.Mesh(this.getCylinder(0.09, 0.05, 0.18, 8), this.chaiWallMat);
+          kulhad.position.set(0.35 + k * 0.2, 1.25, 0.25);
+          stallGroup.add(kulhad);
+        }
+
+        // Marigold Floral Garland on Awning
+        for (let m = -1.6; m <= 1.6; m += 0.4) {
+          const flower = new THREE.Mesh(this.getCylinder(0.08, 0.08, 0.08, 6), m % 0.8 === 0 ? this.cartoonWaistcoatOrangeMat : this.goldMetalMat);
+          flower.position.set(m, 2.2, 1.3);
+          stallGroup.add(flower);
+        }
 
         // Animated steam wisps rising from kettle spout
         if (detail !== 'MINIMAL') {
@@ -211,13 +251,13 @@ export class VipSatireWorldBuilder {
 
         // Giant Cutting Chai Glass with 3 stacked butter biscuits
         const chaiGlass = new THREE.Mesh(this.getCylinder(0.24, 0.18, 0.55, 8), this.teaGlassMat);
-        chaiGlass.position.set(0.6, 1.38, 0);
+        chaiGlass.position.set(0.8, 1.38, 0);
         stallGroup.add(chaiGlass);
 
         // Stacked biscuits
         for (let b = 0; b < 3; b++) {
           const biscuit = new THREE.Mesh(this.getBox(0.32, 0.06, 0.32), this.biscuitMat);
-          biscuit.position.set(1.1, 1.15 + b * 0.07, 0);
+          biscuit.position.set(1.3, 1.15 + b * 0.07, 0);
           stallGroup.add(biscuit);
         }
 
@@ -249,10 +289,26 @@ export class VipSatireWorldBuilder {
     velvetTable.position.set(0, 1.25, -1.2);
     vipTeaDais.add(velvetTable);
 
+    // Embroidered royal velvet cushion
+    const cushion = new THREE.Mesh(this.getBox(0.48, 0.14, 0.48), this.cartoonWaistcoatOrangeMat);
+    cushion.position.set(0, 1.7, -1.2);
+    vipTeaDais.add(cushion);
+
     // Tiny prized cutting chai glass spotlighted
     const tinyCup = new THREE.Mesh(this.getCylinder(0.14, 0.1, 0.3, 8), this.goldMetalMat);
-    tinyCup.position.set(0, 1.8, -1.2);
+    tinyCup.position.set(0, 1.9, -1.2);
     vipTeaDais.add(tinyCup);
+
+    // Dramatic arched gold spotlight fixture
+    const spotArm = new THREE.Mesh(this.getCylinder(0.04, 0.04, 2.2, 6), this.goldMetalMat);
+    spotArm.position.set(0, 2.6, -1.8);
+    spotArm.rotation.x = -0.35;
+    vipTeaDais.add(spotArm);
+
+    const spotLamp = new THREE.Mesh(this.getCylinder(0.15, 0.28, 0.35, 8), this.goldMetalMat);
+    spotLamp.position.set(0, 3.4, -1.4);
+    spotLamp.rotation.x = 0.55;
+    vipTeaDais.add(spotLamp);
 
     // Brass stanchions and velvet ropes
     for (let c = 0; c < 4; c++) {
@@ -261,7 +317,22 @@ export class VipSatireWorldBuilder {
       const post = new THREE.Mesh(this.getCylinder(0.06, 0.06, 1.1, 6), this.goldMetalMat);
       post.position.set(sx, 1.35, sz);
       vipTeaDais.add(post);
+
+      const ball = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.12, 6), this.goldMetalMat);
+      ball.position.set(sx, 1.95, sz);
+      vipTeaDais.add(ball);
     }
+
+    // Velvet red ropes along perimeter
+    const ropeL = new THREE.Mesh(this.getCylinder(0.04, 0.04, 4.4, 6), this.redCarpetMat);
+    ropeL.position.set(-1.8, 1.6, 0);
+    ropeL.rotation.x = Math.PI / 2;
+    vipTeaDais.add(ropeL);
+
+    const ropeR = new THREE.Mesh(this.getCylinder(0.04, 0.04, 4.4, 6), this.redCarpetMat);
+    ropeR.position.set(1.8, 1.6, 0);
+    ropeR.rotation.x = Math.PI / 2;
+    vipTeaDais.add(ropeR);
 
     // Satirical Dais Plaque
     const plaqueTex = TextureGenerator.getVipPhotoOpSignTexture();
@@ -320,32 +391,46 @@ export class VipSatireWorldBuilder {
     stage.position.y = 0.6;
     ribbonGroup.add(stage);
 
-    // Massive Golden Scissors with Animated Snapping Blades
+    // Massive Golden Scissors with Animated Snapping Blades & Golden Loop Handles
     const scissorPivot = new THREE.Group();
     scissorPivot.position.set(0, 3.2, 0);
 
     const bladeGeo = this.getBox(0.18, 2.4, 0.35);
     const leftBlade = new THREE.Mesh(bladeGeo, this.goldMetalMat);
     leftBlade.position.set(-0.35, 0.8, 0);
+    const loopL = new THREE.Mesh(this.getCylinder(0.24, 0.24, 0.12, 8), this.goldMetalMat);
+    loopL.position.set(-0.15, -1.0, 0);
+    leftBlade.add(loopL);
     scissorPivot.add(leftBlade);
 
     const rightBlade = new THREE.Mesh(bladeGeo, this.goldMetalMat);
     rightBlade.position.set(0.35, 0.8, 0);
+    const loopR = new THREE.Mesh(this.getCylinder(0.24, 0.24, 0.12, 8), this.goldMetalMat);
+    loopR.position.set(0.15, -1.0, 0);
+    rightBlade.add(loopR);
     scissorPivot.add(rightBlade);
 
     director.registerScissors(leftBlade, rightBlade, 4.5);
     ribbonGroup.add(scissorPivot);
 
-    // Ribbon passing between scissors
-    const ribbonBanner = new THREE.Mesh(this.getBox(6.5, 0.45, 0.05), this.redCarpetMat);
-    ribbonBanner.position.set(0, 3.2, 0);
-    ribbonGroup.add(ribbonBanner);
+    // Multi-tier ribbons passing between shears
+    for (let r = 0; r < 3; r++) {
+      const ribbonBanner = new THREE.Mesh(this.getBox(6.5, 0.25, 0.05), r % 2 === 0 ? this.redCarpetMat : this.cartoonWaistcoatOrangeMat);
+      ribbonBanner.position.set(0, 2.8 + r * 0.4, (r - 1) * 0.15);
+      ribbonGroup.add(ribbonBanner);
+    }
 
     // Satirical Stage Sign
     const inaugTex = TextureGenerator.getInaugurationInfinitySignTexture(1);
     const sign = new THREE.Mesh(this.getBox(4.5, 1.1, 0.08), new THREE.MeshBasicMaterial({ map: inaugTex }));
     sign.position.set(0, 1.8, 3.8);
     ribbonGroup.add(sign);
+
+    // Comical Inauguration Countdown Reset Display
+    const resetBoard = new THREE.Mesh(this.getBox(3.4, 1.1, 0.1), new THREE.MeshBasicMaterial({ map: inaugTex }));
+    resetBoard.position.set(0, 5.0, 0);
+    ribbonGroup.add(resetBoard);
+    director.registerCountdownBoard(resetBoard, resetBoard.material);
 
     group.add(ribbonGroup);
 
@@ -449,6 +534,25 @@ export class VipSatireWorldBuilder {
       director.registerCameraFlash(flashSphere);
     }
 
+    // Runaway empty decoy microphone cart rolling along sidewalk chased by camera crew
+    const decoyCart = new THREE.Group();
+    decoyCart.position.set(16.5, 0.4, -chunkLength * 0.5);
+
+    const cartBody = new THREE.Mesh(this.getBox(0.8, 0.4, 1.2), this.parliamentWoodMat);
+    cartBody.position.y = 0.2;
+    decoyCart.add(cartBody);
+
+    const giantMic = new THREE.Mesh(this.getCylinder(0.12, 0.16, 0.9, 8), this.goldMetalMat);
+    giantMic.position.set(0, 0.9, 0);
+    decoyCart.add(giantMic);
+
+    const decoySign = new THREE.Mesh(this.getBox(1.2, 0.35, 0.05), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+    decoySign.position.set(0, 1.45, 0);
+    decoyCart.add(decoySign);
+
+    director.registerRunawayDecoy(decoyCart, cameraCrew, 1.8);
+    group.add(decoyCart);
+
     group.add(cameraCrew);
 
     // 3. Hovering Cartoon News Helicopter with Trailing Banner (Overhead Y = 16.0m)
@@ -526,8 +630,35 @@ export class VipSatireWorldBuilder {
     const screen = new THREE.Mesh(this.getBox(4.6, 5.5, 4.6), new THREE.MeshBasicMaterial({ map: masterTex }));
     screen.position.y = 9.0;
     towerGroup.add(screen);
+    director.registerCountdownBoard(screen, screen.material);
 
     group.add(towerGroup);
+
+    // Monumental Stylized Civic Statue on Pedestal (Outside tracks at X = -18.0m)
+    const statueGroup = new THREE.Group();
+    statueGroup.position.set(-18.0, 0.4, -chunkLength * 0.25);
+    const statuePedestal = new THREE.Mesh(this.getBox(5.0, 6.0, 5.0), this.ivoryMarbleMat);
+    statuePedestal.position.y = 3.0;
+    statueGroup.add(statuePedestal);
+    const statueTorso = new THREE.Mesh(this.getCylinder(1.2, 1.4, 4.5, 8), this.goldMetalMat);
+    statueTorso.position.y = 8.25;
+    statueGroup.add(statueTorso);
+    const statueHead = new THREE.Mesh(this.getCylinder(0.8, 0.8, 1.4, 8), this.goldMetalMat);
+    statueHead.position.y = 11.2;
+    statueGroup.add(statueHead);
+    group.add(statueGroup);
+
+    // High Viaduct Flyover with Streamlined Bullet Train (Outside tracks at X = 36.0m, Y = 11.0m)
+    if (detail !== 'MINIMAL') {
+      const flyover = new THREE.Group();
+      flyover.position.set(36.0, 11.0, -chunkLength * 0.5);
+      const viaductDeck = new THREE.Mesh(this.getBox(6.0, 1.2, chunkLength), this.ivoryMarbleMat);
+      flyover.add(viaductDeck);
+      const bulletTrain = new THREE.Mesh(this.getBox(3.4, 3.2, 32.0), this.brassKettleMat);
+      bulletTrain.position.y = 2.2;
+      flyover.add(bulletTrain);
+      group.add(flyover);
+    }
 
     // 3. VIP Armored Motorcade Stuck Behind Single Cone (Satisfies vip_traffic_jam)
     const jamGroup = new THREE.Group();
@@ -642,6 +773,16 @@ export class VipSatireWorldBuilder {
     const sign = new THREE.Mesh(this.getBox(5.0, 1.2, 0.08), new THREE.MeshBasicMaterial({ map: parlTex }));
     sign.position.set(0, 2.8, 3.8);
     argumentStage.add(sign);
+
+    // Chaotic Question-Hour Flying Paper Sheets
+    if (detail !== 'MINIMAL') {
+      for (let p = 0; p < 8; p++) {
+        const paper = new THREE.Mesh(this.getPlane(0.45, 0.55), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+        paper.position.set(-15.5 + (p % 3) * 0.9, 2.8 + Math.floor(p / 3) * 0.5, (p - 4) * 0.8);
+        argumentStage.add(paper);
+        director.registerParliamentPaper(paper, paper.position.y, paper.position.z, 2.2 + (p * 0.35));
+      }
+    }
 
     group.add(argumentStage);
   }

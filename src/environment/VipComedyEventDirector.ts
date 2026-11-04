@@ -44,6 +44,27 @@ export interface AnimatedGavel {
   timer: number;
 }
 
+export interface AnimatedParliamentPaper {
+  mesh: THREE.Object3D;
+  baseY: number;
+  baseZ: number;
+  speed: number;
+  phase: number;
+}
+
+export interface AnimatedCountdownBoard {
+  mesh: THREE.Object3D;
+  material: THREE.Material;
+  timer: number;
+}
+
+export interface AnimatedRunawayDecoy {
+  group: THREE.Object3D;
+  cameraCrew: THREE.Object3D;
+  baseZ: number;
+  speed: number;
+}
+
 /**
  * VipComedyEventDirector
  * Dedicated coordinator for procedural, animated political satire gags
@@ -58,9 +79,13 @@ export class VipComedyEventDirector {
   private flashList: AnimatedCameraFlash[] = [];
   private helicopterList: AnimatedHelicopter[] = [];
   private gavelList: AnimatedGavel[] = [];
+  private papersList: AnimatedParliamentPaper[] = [];
+  private countdownList: AnimatedCountdownBoard[] = [];
+  private runawayList: AnimatedRunawayDecoy[] = [];
 
   private globalClock: number = 0;
   private isEnabled: boolean = true;
+  private regCounter: number = 0;
 
   private constructor() {}
 
@@ -71,12 +96,17 @@ export class VipComedyEventDirector {
     return VipComedyEventDirector.instance;
   }
 
+  private getDeterministicPhase(): number {
+    this.regCounter = (this.regCounter + 1) % 1000;
+    return ((this.regCounter * 1.6180339887) % 1) * Math.PI * 2;
+  }
+
   public registerScissors(leftBlade: THREE.Object3D, rightBlade: THREE.Object3D, speed: number = 3.5): void {
     this.scissorsList.push({
       leftBlade,
       rightBlade,
       speed,
-      offset: Math.random() * Math.PI
+      offset: this.getDeterministicPhase() * 0.5
     });
   }
 
@@ -86,26 +116,28 @@ export class VipComedyEventDirector {
       arm2,
       head,
       speed,
-      phase: Math.random() * Math.PI * 2
+      phase: this.getDeterministicPhase()
     });
   }
 
   public registerSteam(mesh: THREE.Object3D, height: number = 4.0): void {
+    const phase = this.getDeterministicPhase();
     this.steamList.push({
       mesh,
       initialY: mesh.position.y,
       maxY: mesh.position.y + height,
-      speedY: 1.8 + Math.random() * 0.8,
-      phase: Math.random() * Math.PI * 2
+      speedY: 1.8 + ((phase / (Math.PI * 2)) * 0.8),
+      phase
     });
   }
 
   public registerCameraFlash(mesh: THREE.Object3D, light?: THREE.PointLight): void {
+    const phase = this.getDeterministicPhase();
     this.flashList.push({
       mesh,
       light,
       flashTimer: 0,
-      nextFlash: 0.2 + Math.random() * 0.8
+      nextFlash: 0.2 + ((phase / (Math.PI * 2)) * 0.8)
     });
   }
 
@@ -115,15 +147,58 @@ export class VipComedyEventDirector {
       rotor,
       baseY: group.position.y,
       baseX: group.position.x,
-      phase: Math.random() * Math.PI
+      phase: this.getDeterministicPhase() * 0.5
     });
   }
 
   public registerGavel(mesh: THREE.Object3D): void {
     this.gavelList.push({
       mesh,
-      timer: Math.random() * 2.0
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 2.0
     });
+  }
+
+  public registerParliamentPaper(mesh: THREE.Object3D, baseY: number, baseZ: number, speed: number = 2.5): void {
+    this.papersList.push({
+      mesh,
+      baseY,
+      baseZ,
+      speed,
+      phase: this.getDeterministicPhase()
+    });
+  }
+
+  public registerCountdownBoard(mesh: THREE.Object3D, material: THREE.Material): void {
+    this.countdownList.push({
+      mesh,
+      material,
+      timer: 0
+    });
+  }
+
+  public registerRunawayDecoy(group: THREE.Object3D, cameraCrew: THREE.Object3D, speed: number = 1.2): void {
+    this.runawayList.push({
+      group,
+      cameraCrew,
+      baseZ: group.position.z,
+      speed
+    });
+  }
+
+  // --- Public Diagnostics Getters ---
+  public getScissorsCount(): number { return this.scissorsList.length; }
+  public getDebatersCount(): number { return this.debatersList.length; }
+  public getSteamCount(): number { return this.steamList.length; }
+  public getFlashCount(): number { return this.flashList.length; }
+  public getHelicopterCount(): number { return this.helicopterList.length; }
+  public getGavelCount(): number { return this.gavelList.length; }
+  public getPapersCount(): number { return this.papersList.length; }
+  public getCountdownCount(): number { return this.countdownList.length; }
+  public getRunawayDecoyCount(): number { return this.runawayList.length; }
+  public getTotalActiveElements(): number {
+    return this.scissorsList.length + this.debatersList.length + this.steamList.length +
+      this.flashList.length + this.helicopterList.length + this.gavelList.length +
+      this.papersList.length + this.countdownList.length + this.runawayList.length;
   }
 
   public clear(): void {
@@ -133,7 +208,30 @@ export class VipComedyEventDirector {
     this.flashList = [];
     this.helicopterList = [];
     this.gavelList = [];
+    this.papersList = [];
+    this.countdownList = [];
+    this.runawayList = [];
     this.globalClock = 0;
+  }
+
+  /**
+   * Prunes detached objects whose parents were severed when chunks were recycled.
+   * This completely prevents unbounded object accumulation.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.scissorsList = this.scissorsList.filter(s => isAttached(s.leftBlade) && isAttached(s.rightBlade));
+    this.debatersList = this.debatersList.filter(d => isAttached(d.arm1) && isAttached(d.arm2));
+    this.steamList = this.steamList.filter(st => isAttached(st.mesh));
+    this.flashList = this.flashList.filter(f => isAttached(f.mesh));
+    this.helicopterList = this.helicopterList.filter(h => isAttached(h.group) && isAttached(h.rotor));
+    this.gavelList = this.gavelList.filter(g => isAttached(g.mesh));
+    this.papersList = this.papersList.filter(p => isAttached(p.mesh));
+    this.countdownList = this.countdownList.filter(c => isAttached(c.mesh));
+    this.runawayList = this.runawayList.filter(r => isAttached(r.group));
   }
 
   /**
@@ -141,6 +239,9 @@ export class VipComedyEventDirector {
    */
   public update(dt: number, isVipActive: boolean = true): void {
     if (!this.isEnabled || !isVipActive) return;
+
+    // Prune any elements whose chunks have been recycled
+    this.pruneDetached();
 
     const delta = Math.min(dt || 0.016, 0.1);
     this.globalClock += delta;
@@ -192,13 +293,14 @@ export class VipComedyEventDirector {
       }
     }
 
-    // 4. Animate Camera Paparazzi Flashes
+    // 4. Animate Camera Paparazzi Flashes (deterministic timing)
     for (let i = 0; i < this.flashList.length; i++) {
       const f = this.flashList[i];
       f.flashTimer += delta;
       if (f.flashTimer >= f.nextFlash) {
         f.flashTimer = 0;
-        f.nextFlash = 0.25 + Math.random() * 0.75;
+        const pseudoRand = ((i * 1.618033 + this.globalClock * 0.8) % 1);
+        f.nextFlash = 0.25 + pseudoRand * 0.75;
         f.mesh.visible = true;
         if (f.light) {
           f.light.intensity = 3.5;
@@ -236,6 +338,37 @@ export class VipComedyEventDirector {
         // SLAM down!
         g.mesh.rotation.x = 0.10;
       }
+    }
+
+    // 7. Animate Question Hour Flying Papers
+    if (!isReducedMotion) {
+      for (let i = 0; i < this.papersList.length; i++) {
+        const p = this.papersList[i];
+        const pt = (this.globalClock * p.speed + p.phase);
+        p.mesh.position.y = p.baseY + Math.abs(Math.sin(pt * 1.6)) * 1.2;
+        p.mesh.position.z = p.baseZ + Math.cos(pt * 1.2) * 1.5;
+        p.mesh.rotation.x = pt * 2.0;
+        p.mesh.rotation.y = pt * 1.5;
+        p.mesh.rotation.z = pt * 0.8;
+      }
+    }
+
+    // 8. Animate Announcement Countdown Board
+    for (let i = 0; i < this.countdownList.length; i++) {
+      const c = this.countdownList[i];
+      c.timer += delta;
+      // Pulse scale slightly every second
+      const beat = 1.0 + Math.abs(Math.sin(c.timer * Math.PI)) * 0.04;
+      c.mesh.scale.set(beat, beat, beat);
+    }
+
+    // 9. Animate Runaway Decoy & Frantic Camera Crew Chase
+    for (let i = 0; i < this.runawayList.length; i++) {
+      const r = this.runawayList[i];
+      const cycle = Math.sin(this.globalClock * r.speed);
+      r.group.position.z = r.baseZ + cycle * 4.5;
+      // Camera crew frantically turns to track the decoy
+      r.cameraCrew.rotation.y = -cycle * 0.35;
     }
   }
 }

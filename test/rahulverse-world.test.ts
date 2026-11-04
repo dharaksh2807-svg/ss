@@ -204,12 +204,43 @@ check(rahulTrain.userData.isTrain === true, 'userData.isTrain is true');
 check(rahulTrain.userData.variant === 'STREAMLINED_EXPRESS', 'Rahulverse uses STREAMLINED_EXPRESS variant');
 
 // =========================================================================
-// Suite 6: Comedy Event Director Animation Update & Reduced Motion
+// Suite 6: Comedy Event Director Animation Update & Memory Leak Pruning
 // =========================================================================
-console.log('\n--- Suite 6: Comedy Event Director Animation Update ---');
+console.log('\n--- Suite 6: Comedy Event Director Animation Update & Memory Leak Pruning ---');
 
 const director = RahulComedyEventDirector.getInstance();
 check(director !== undefined, 'RahulComedyEventDirector instance exists');
+
+// Verify public diagnostic getters
+check(typeof director.getFlipBoardCount() === 'number', 'Director has getFlipBoardCount');
+check(typeof director.getRunawayMicCount() === 'number', 'Director has getRunawayMicCount');
+check(typeof director.getFlyingPapersCount() === 'number', 'Director has getFlyingPapersCount');
+check(typeof director.getRevolvingDoorCount() === 'number', 'Director has getRevolvingDoorCount');
+check(typeof director.getMiddleSeatDisputeCount() === 'number', 'Director has getMiddleSeatDisputeCount');
+check(typeof director.getMultiversePortalCount() === 'number', 'Director has getMultiversePortalCount');
+check(typeof director.getShoeMonumentCount() === 'number', 'Director has getShoeMonumentCount');
+check(typeof director.getPuzzlePieceCount() === 'number', 'Director has getPuzzlePieceCount');
+check(typeof director.getMediaCongaLineCount() === 'number', 'Director has getMediaCongaLineCount');
+check(typeof director.getTimerMeshCount() === 'number', 'Director has getTimerMeshCount');
+check(typeof director.getTotalActiveElements() === 'number', 'Director has getTotalActiveElements');
+
+// Test memory leak fix: detached recycled objects must be automatically pruned
+const tempParent = new THREE.Group();
+const tempPivot = new THREE.Group();
+const tempMesh1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+const tempMesh2 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+tempPivot.add(tempMesh1);
+tempPivot.add(tempMesh2);
+tempParent.add(tempPivot);
+
+director.registerFlipBoard(tempPivot, tempMesh1, tempMesh2);
+const countBeforePrune = director.getFlipBoardCount();
+
+// Detach from parent (simulating chunk clearDecorativeGroup)
+tempParent.remove(tempPivot);
+director.update(0.016, true);
+const countAfterPrune = director.getFlipBoardCount();
+check(countAfterPrune < countBeforePrune, 'Detached objects are successfully pruned on update, resolving memory leak');
 
 // Update with normal motion
 director.update(0.016, true);

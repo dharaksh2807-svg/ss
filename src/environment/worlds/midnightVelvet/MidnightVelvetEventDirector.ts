@@ -97,10 +97,40 @@ export class MidnightVelvetEventDirector {
     this.clockTowers.push({ pendulum, minuteHand });
   }
 
+  // --- Diagnostics Getters ---
+  public getMotorcadeCarCount(): number { return this.motorcadeCars.length; }
+  public getPartyDancerCount(): number { return this.partyDancers.length; }
+  public getSearchlightCount(): number { return this.searchlights.length; }
+  public getMarinaYachtCount(): number { return this.marinaYachts.length; }
+  public getHotelMarqueeCount(): number { return this.hotelMarquees.length; }
+  public getClockTowerCount(): number { return this.clockTowers.length; }
+  public getTotalActiveElements(): number {
+    return this.motorcadeCars.length + this.partyDancers.length + this.searchlights.length +
+      this.marinaYachts.length + this.hotelMarquees.length + this.clockTowers.length;
+  }
+
+  /**
+   * Automatically prunes detached objects from recycled chunks, preventing memory leaks.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.motorcadeCars = this.motorcadeCars.filter(c => isAttached(c.group));
+    this.partyDancers = this.partyDancers.filter(d => isAttached(d.group));
+    this.searchlights = this.searchlights.filter(s => isAttached(s.group));
+    this.marinaYachts = this.marinaYachts.filter(y => isAttached(y.group));
+    this.hotelMarquees = this.hotelMarquees.filter(m => m.bulbs.length > 0 && isAttached(m.bulbs[0]));
+    this.clockTowers = this.clockTowers.filter(ct => isAttached(ct.pendulum));
+  }
+
   // --- Animation Update Loop ---
 
   public update(delta: number, isActive: boolean = true): void {
     if (!isActive || delta <= 0) return;
+
+    this.pruneDetached();
 
     const reducedMotion = SettingsManager.getInstance().isReducedMotion();
     this.globalTime += delta;

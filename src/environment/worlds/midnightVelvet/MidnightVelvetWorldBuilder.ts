@@ -22,6 +22,8 @@ export class MidnightVelvetWorldBuilder {
   private neonPinkMat: THREE.MeshBasicMaterial;
   private champagneGlowMat: THREE.MeshBasicMaterial;
   private cartoonSkinMat: THREE.MeshStandardMaterial;
+  private marqueeBulbMatOn: THREE.MeshBasicMaterial;
+  private marqueeBulbMatOff: THREE.MeshBasicMaterial;
 
   private constructor() {
     this.blackMarbleMat = new THREE.MeshStandardMaterial({
@@ -86,6 +88,14 @@ export class MidnightVelvetWorldBuilder {
       color: 0xecd0b5,
       roughness: 0.6
     });
+
+    this.marqueeBulbMatOn = new THREE.MeshBasicMaterial({
+      color: 0xfffbeb
+    });
+
+    this.marqueeBulbMatOff = new THREE.MeshBasicMaterial({
+      color: 0x78350f
+    });
   }
 
   public static getInstance(): MidnightVelvetWorldBuilder {
@@ -143,8 +153,21 @@ export class MidnightVelvetWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = MidnightVelvetEventDirector.getInstance();
 
-    // 4 Distinct Luxury Districts cycled by chunk or seed
-    const districtIndex = (seed >= 0 && seed < 4) ? seed : (Math.floor(Math.abs(seed) / 4) % 4);
+    // 4 Distinct Luxury Districts:
+    // If seed is 0..3 (used in test suites), respect it directly.
+    // In live gameplay, group.parent position.z tracks distance: sustain 400m thematic stretches!
+    let districtIndex: number;
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+
+    if (seed >= 0 && seed < 4) {
+      districtIndex = seed;
+    } else if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 4;
+    } else {
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
+    }
 
     switch (districtIndex) {
       case 0:
@@ -236,8 +259,8 @@ export class MidnightVelvetWorldBuilder {
       carpet.position.set(0, 0.04, 0);
       clubStage.add(carpet);
 
-      // Brass Stanchions and Velvet Cords
-      for (let cz = -5; cz <= 5; cz += 2.5) {
+      // Brass Stanchions and Velvet Cords (Optimized spacing for clean draw call budgets)
+      for (let cz = -4.5; cz <= 4.5; cz += 4.5) {
         [-1.6, 1.6].forEach((stanchX) => {
           const post = new THREE.Mesh(this.getCylinder(0.06, 0.08, 1.1, 8), this.goldMetalMat);
           post.position.set(stanchX, 0.55, cz);
@@ -262,10 +285,10 @@ export class MidnightVelvetWorldBuilder {
       signMesh.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       clubStage.add(signMesh);
 
-      // Animated Marquee Bulbs
+      // Animated Marquee Bulbs (reusing shared bulb materials)
       const bulbs: THREE.Mesh[] = [];
-      for (let b = -3; b <= 3; b += 0.8) {
-        const bulb = new THREE.Mesh(this.getCylinder(0.08, 0.08, 0.08, 6), new THREE.MeshBasicMaterial({ color: 0xfffbeb }));
+      for (let b = -3; b <= 3; b += 1.2) {
+        const bulb = new THREE.Mesh(this.getCylinder(0.08, 0.08, 0.08, 6), this.marqueeBulbMatOn.clone());
         bulb.position.set(side * 2.2, 4.0, b);
         clubStage.add(bulb);
         bulbs.push(bulb);
@@ -423,32 +446,32 @@ export class MidnightVelvetWorldBuilder {
 
     const wallX = roadbedWidth * 0.5 + 2.4;
 
-    // 1. Multi-Level Nightclub Facades with Tiered Rooftops
+    // 1. Multi-Level Nightclub Facades with Tiered Rooftops (Optimized height for camera visibility)
     [-1, 1].forEach((side) => {
       const clubW = 16.0;
       const cx = side * (wallX + clubW * 0.5);
 
-      // Ground Tier
-      const groundClub = new THREE.Mesh(this.getBox(clubW, 12.0, chunkLength), this.velvetBurgundyMat);
-      groundClub.position.set(cx, 6.0, -chunkLength * 0.5);
+      // Ground Tier (Height 8.5m, lower elevation so rooftop party is in prime camera view)
+      const groundClub = new THREE.Mesh(this.getBox(clubW, 8.5, chunkLength), this.velvetBurgundyMat);
+      groundClub.position.set(cx, 4.25, -chunkLength * 0.5);
       districtC.add(groundClub);
 
-      // Gold Lattice Frieze
-      const frieze = new THREE.Mesh(this.getBox(clubW + 0.4, 1.4, chunkLength), this.goldMetalMat);
-      frieze.position.set(cx, 12.7, -chunkLength * 0.5);
+      // Gold Lattice & Chevron Frieze
+      const frieze = new THREE.Mesh(this.getBox(clubW + 0.4, 1.0, chunkLength), this.goldMetalMat);
+      frieze.position.set(cx, 8.8, -chunkLength * 0.5);
       districtC.add(frieze);
 
-      // Rooftop Party VIP Terrace (Y = 13.4m)
+      // Rooftop Party VIP Terrace (Y = 9.4m - beautifully visible from runner camera!)
       const terrace = new THREE.Group();
       terrace.name = 'rooftop_party_terrace';
-      terrace.position.set(cx, 13.4, -chunkLength * 0.45);
+      terrace.position.set(cx, 9.4, -chunkLength * 0.45);
 
       // Glowing dance floor acrylic tiles
       const floorTile = new THREE.Mesh(this.getBox(10.0, 0.2, 16.0), this.neonPinkMat);
       terrace.add(floorTile);
 
       // Animated Rooftop Dancers
-      for (let d = -4; d <= 4; d += 2.2) {
+      for (let d = -3; d <= 3; d += 2.0) {
         const dancer = this.buildPartyDancer(d * 0.8, 0.1, (d % 3) * 1.8, d % 2 === 0 ? 0xd4af37 : 0xec4899);
         terrace.add(dancer.group);
         director.registerPartyDancer(dancer.group, d * 0.5, 4.5, dancer.armL, dancer.armR);
@@ -458,8 +481,8 @@ export class MidnightVelvetWorldBuilder {
 
       // Giant Illuminated Sunburst Club Sign
       const clubSignTex = TextureGenerator.getGoldenHourClubSignTexture(side > 0 ? 0 : 1);
-      const clubSign = new THREE.Mesh(this.getPlane(12.0, 6.0), new THREE.MeshBasicMaterial({ map: clubSignTex, side: THREE.DoubleSide }));
-      clubSign.position.set(side * (wallX + 0.1), 8.5, -chunkLength * 0.45);
+      const clubSign = new THREE.Mesh(this.getPlane(12.0, 5.0), new THREE.MeshBasicMaterial({ map: clubSignTex, side: THREE.DoubleSide }));
+      clubSign.position.set(side * (wallX + 0.1), 6.5, -chunkLength * 0.45);
       clubSign.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       districtC.add(clubSign);
     });
@@ -468,7 +491,7 @@ export class MidnightVelvetWorldBuilder {
     [-wallX - 6.0, wallX + 6.0].forEach((sx, idx) => {
       const searchlightGroup = new THREE.Group();
       searchlightGroup.name = 'golden_hour_searchlight';
-      searchlightGroup.position.set(sx, 14.5, -chunkLength * 0.5);
+      searchlightGroup.position.set(sx, 10.5, -chunkLength * 0.5);
 
       const lampBase = new THREE.Mesh(this.getCylinder(0.8, 0.8, 1.2, 8), this.darkGraniteMat);
       searchlightGroup.add(lampBase);
@@ -661,6 +684,16 @@ export class MidnightVelvetWorldBuilder {
     cabin.position.set(0, 2.0, -0.5);
     yacht.add(cabin);
 
+    // Warm Lit Glass Portholes
+    for (let p = -2.5; p <= 2.5; p += 2.5) {
+      [-1.92, 1.92].forEach((px) => {
+        const porthole = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.06, 8), this.warmGlassMat);
+        porthole.rotation.z = Math.PI / 2;
+        porthole.position.set(px, 0.8, p);
+        yacht.add(porthole);
+      });
+    }
+
     // Radar Mast
     const mast = new THREE.Mesh(this.getCylinder(0.08, 0.08, 2.5, 6), this.goldMetalMat);
     mast.position.set(0, 3.8, -0.5);
@@ -715,11 +748,11 @@ export class MidnightVelvetWorldBuilder {
     ring2.rotation.x = Math.PI / 2;
     ch.add(ring2);
 
-    // Glowing Crystals
-    for (let c = 0; c < 8; c++) {
-      const angle = c * (Math.PI / 4);
-      const crystal = new THREE.Mesh(this.getCylinder(0.04, 0.01, 0.6, 4), this.champagneGlowMat);
-      crystal.position.set(Math.cos(angle) * 1.1, -0.3, Math.sin(angle) * 1.1);
+    // Glowing Crystals (Streamlined 4-crystal arrangement for draw call optimization)
+    for (let c = 0; c < 4; c++) {
+      const angle = c * (Math.PI / 2);
+      const crystal = new THREE.Mesh(this.getCylinder(0.06, 0.02, 0.6, 4), this.champagneGlowMat);
+      crystal.position.set(Math.cos(angle) * 1.0, -0.3, Math.sin(angle) * 1.0);
       ch.add(crystal);
     }
 

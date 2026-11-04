@@ -132,11 +132,51 @@ export class RahulComedyEventDirector {
     this.timerMeshes.push(timer);
   }
 
+  // --- Public Diagnostics Getters ---
+  public getFlipBoardCount(): number { return this.flipBoards.length; }
+  public getRunawayMicCount(): number { return this.runawayMics.length; }
+  public getFlyingPapersCount(): number { return this.flyingPapers.length; }
+  public getRevolvingDoorCount(): number { return this.revolvingDoors.length; }
+  public getMiddleSeatDisputeCount(): number { return this.middleSeatDisputes.length; }
+  public getMultiversePortalCount(): number { return this.multiversePortals.length; }
+  public getShoeMonumentCount(): number { return this.shoeMonuments.length; }
+  public getPuzzlePieceCount(): number { return this.puzzlePieces.length; }
+  public getMediaCongaLineCount(): number { return this.mediaCongaLines.length; }
+  public getTimerMeshCount(): number { return this.timerMeshes.length; }
+  public getTotalActiveElements(): number {
+    return this.flipBoards.length + this.runawayMics.length + this.flyingPapers.length +
+      this.revolvingDoors.length + this.middleSeatDisputes.length + this.multiversePortals.length +
+      this.shoeMonuments.length + this.puzzlePieces.length + this.mediaCongaLines.length +
+      this.timerMeshes.length;
+  }
+
+  /**
+   * Prunes detached objects whose parent chunks were recycled, fixing memory leak.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.flipBoards = this.flipBoards.filter(fb => isAttached(fb.pivotGroup));
+    this.runawayMics = this.runawayMics.filter(rm => isAttached(rm.armGroup));
+    this.flyingPapers = this.flyingPapers.filter(fp => isAttached(fp.paperGroup));
+    this.revolvingDoors = this.revolvingDoors.filter(rd => isAttached(rd.rotorGroup));
+    this.middleSeatDisputes = this.middleSeatDisputes.filter(msd => isAttached(msd.chair1) && isAttached(msd.chair2));
+    this.multiversePortals = this.multiversePortals.filter(mp => isAttached(mp.ringMesh));
+    this.shoeMonuments = this.shoeMonuments.filter(sm => isAttached(sm.toeMesh));
+    this.puzzlePieces = this.puzzlePieces.filter(pp => isAttached(pp.pieceL) && isAttached(pp.pieceR));
+    this.mediaCongaLines = this.mediaCongaLines.filter(mcl => isAttached(mcl));
+    this.timerMeshes = this.timerMeshes.filter(tm => isAttached(tm));
+  }
+
   /**
    * Main animation loop update hook
    */
   public update(dt: number, isWorldActive: boolean = true): void {
     if (!this.isEnabled || !isWorldActive) return;
+
+    this.pruneDetached();
 
     const delta = Math.min(dt || 0.016, 0.1);
     this.globalClock += delta;
