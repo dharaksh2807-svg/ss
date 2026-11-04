@@ -60,6 +60,18 @@ export class VipSatireWorldBuilder {
   private flashLightMat: THREE.MeshBasicMaterial;
   private tricolorGreenMat: THREE.MeshStandardMaterial;
 
+  // Authentic Indian Urban Architecture Materials
+  private haveliYellowPlasterMat: THREE.MeshStandardMaterial;
+  private haveliTerracottaMat: THREE.MeshStandardMaterial;
+  private haveliSandstoneMat: THREE.MeshStandardMaterial;
+  private haveliWoodMat: THREE.MeshStandardMaterial;
+  private windowGlassLitMat: THREE.MeshStandardMaterial;
+  private studioGlassMat: THREE.MeshStandardMaterial;
+  private awningStripeOrangeMat: THREE.MeshStandardMaterial;
+  private awningStripeMaroonMat: THREE.MeshStandardMaterial;
+  private awningStripeGreenMat: THREE.MeshStandardMaterial;
+  private chhatriDomeMat: THREE.MeshStandardMaterial;
+
   private constructor() {
     this.terracottaMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.85 });
     this.jaliStoneMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.75 });
@@ -76,7 +88,8 @@ export class VipSatireWorldBuilder {
     this.ivoryMarbleMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.30 });
     this.sandstoneMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.80 });
     this.mediaScreenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, emissive: 0x0369a1, emissiveIntensity: 0.4 });
-    this.cyberGlassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.85 });
+    // Replaced pitch-black cyberGlassMat with bright studio glass featuring illuminated ambient accents
+    this.cyberGlassMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.3, metalness: 0.4, emissive: 0x0f172a, emissiveIntensity: 0.25 });
     this.parliamentWoodMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.55 });
     this.parliamentGreenMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.75 });
     this.cartoonNpcSkinMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
@@ -90,6 +103,18 @@ export class VipSatireWorldBuilder {
     this.cartoonHairBlackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
     this.flashLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.tricolorGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+
+    // Initializing Indian Urban Architecture Materials
+    this.haveliYellowPlasterMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.85 });
+    this.haveliTerracottaMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.82 });
+    this.haveliSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.78 });
+    this.haveliWoodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.70 });
+    this.windowGlassLitMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 0.75, roughness: 0.2 });
+    this.studioGlassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 });
+    this.awningStripeOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.75 });
+    this.awningStripeMaroonMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.75 });
+    this.awningStripeGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
+    this.chhatriDomeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5, metalness: 0.25 });
   }
 
   public static getInstance(): VipSatireWorldBuilder {
@@ -440,6 +465,246 @@ export class VipSatireWorldBuilder {
   }
 
   // =========================================================================
+  // MODULAR INDIAN URBAN ARCHITECTURE BUILDER
+  // =========================================================================
+
+  /**
+   * Builds rich, multi-tiered Indian urban streetscapes with setbacks,
+   * ground-floor bazaar shopfronts, striped market awnings, cantilevered jharokha
+   * balconies, glowing warm window grids, rooftop chhatris, and open courtyards.
+   * Completely replaces monolithic black slabs and empty voids!
+   */
+  public buildIndianUrbanFacade(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    side: number,
+    districtIndex: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const wallX = roadbedWidth * 0.5 + 2.2;
+    // Setback building facade line: X = 24.0m, front face at X = 20.5m (outside track envelope |X| <= 4.2m)
+    const facadeX = side * (wallX + 16.5);
+    const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
+
+    // Three articulated architectural modules per side with open courtyard gaps
+    const buildingDefs = [
+      { z: -14, length: 16, stories: 3, roofType: 'CHHATRI' },
+      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : (districtIndex === 1 ? 'PEDIMENT' : 'KANGURA')) },
+      { z: -66, length: 16, stories: 3, roofType: 'CHHATRI' }
+    ];
+
+    buildingDefs.forEach((bDef, bIdx) => {
+      const bGroup = new THREE.Group();
+      bGroup.position.set(facadeX, 0, bDef.z);
+      bGroup.rotation.y = facingAngle;
+
+      const bWidth = bDef.length;
+      const bDepth = 7.0;
+      const storyH = 4.8;
+      const totalH = bDef.stories * storyH;
+
+      // Select district palette
+      let wallMat: THREE.MeshStandardMaterial;
+      if (districtIndex === 0) {
+        // Chai Pe Charcha: Warm Jaipur ochre plaster & terracotta
+        wallMat = bIdx % 2 === 0 ? this.haveliYellowPlasterMat : this.haveliTerracottaMat;
+      } else if (districtIndex === 1) {
+        // Inauguration Infinity: Grand imperial ivory marble & golden sandstone
+        wallMat = bIdx % 2 === 0 ? this.ivoryMarbleMat : this.haveliSandstoneMat;
+      } else if (districtIndex === 2) {
+        // Breaking News: High-tech cobalt media studio facade with illuminated window grids
+        wallMat = bIdx === 1 ? this.studioGlassMat : this.haveliSandstoneMat;
+      } else if (districtIndex === 3) {
+        // Masterstroke Megacity: Futuristic civic towers with sandstone base
+        wallMat = bIdx % 2 === 0 ? this.haveliSandstoneMat : this.ivoryMarbleMat;
+      } else {
+        // Parliament Mayhem: Classical red sandstone & parliament wood trim
+        wallMat = bIdx % 2 === 0 ? this.haveliTerracottaMat : this.sandstoneMat;
+      }
+
+      // 1. Ground Floor Plinth & Main Mass
+      const mainBuilding = new THREE.Mesh(this.getBox(bWidth, totalH, bDepth), wallMat);
+      mainBuilding.position.y = totalH * 0.5;
+      bGroup.add(mainBuilding);
+
+      // Carved Sandstone Stringcourse Ledges between floors
+      for (let s = 1; s <= bDef.stories; s++) {
+        const cornice = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.45, bDepth + 0.6), this.sandstoneMat);
+        cornice.position.y = s * storyH;
+        bGroup.add(cornice);
+      }
+
+      // In MINIMAL tier, retain massing and cornice ledges for visual silhouette while maintaining lightweight budget
+      if (detail === 'MINIMAL') {
+        group.add(bGroup);
+        return;
+      }
+
+      // 2. Ground-Floor Bazaar Shops with Wooden Shutters & Striped Market Awnings
+      const shopCount = Math.floor(bWidth / 5.0);
+      const shopSpacing = bWidth / (shopCount + 1);
+      const awningMats = [this.awningStripeOrangeMat, this.awningStripeMaroonMat, this.awningStripeGreenMat];
+
+      for (let sh = 0; sh < shopCount; sh++) {
+        const shopX = -bWidth * 0.5 + (sh + 1) * shopSpacing;
+
+        // Recessed wooden shop opening & sign
+        const shopDoor = new THREE.Mesh(this.getBox(2.6, 3.2, 0.4), this.haveliWoodMat);
+        shopDoor.position.set(shopX, 1.6, bDepth * 0.5 + 0.1);
+        bGroup.add(shopDoor);
+
+        // Lit shop doorway
+        const shopGlow = new THREE.Mesh(this.getBox(1.8, 2.4, 0.05), this.windowGlassLitMat);
+        shopGlow.position.set(shopX, 1.4, bDepth * 0.5 + 0.22);
+        bGroup.add(shopGlow);
+
+        // Projecting Sloped Striped Market Awning
+        const awningMat = awningMats[(sh + bIdx) % awningMats.length];
+        const awning = new THREE.Mesh(this.getBox(3.0, 0.08, 1.6), awningMat);
+        awning.position.set(shopX, 3.4, bDepth * 0.5 + 0.75);
+        awning.rotation.x = 0.28; // sloped down toward street
+        bGroup.add(awning);
+      }
+
+      // 3. Cantilevered Jharokha Balconies on Upper Floors
+      for (let s = 1; s < bDef.stories; s++) {
+        const floorY = s * storyH;
+        const jharokhaCount = Math.floor(bWidth / 5.5);
+        const jSpacing = bWidth / (jharokhaCount + 1);
+
+        for (let j = 0; j < jharokhaCount; j++) {
+          const jX = -bWidth * 0.5 + (j + 1) * jSpacing;
+
+          // Jharokha Base Platform
+          const jBase = new THREE.Mesh(this.getBox(2.0, 0.35, 1.2), this.sandstoneMat);
+          jBase.position.set(jX, floorY + 0.6, bDepth * 0.5 + 0.6);
+          bGroup.add(jBase);
+
+          // Support Corbel Brackets
+          [-0.7, 0.7].forEach((bx) => {
+            const bracket = new THREE.Mesh(this.getBox(0.22, 0.60, 0.7), this.sandstoneMat);
+            bracket.position.set(jX + bx, floorY + 0.2, bDepth * 0.5 + 0.35);
+            bGroup.add(bracket);
+          });
+
+          // Pierced Jali Balustrade Railing
+          const railing = new THREE.Mesh(this.getBox(2.0, 0.85, 0.12), this.jaliStoneMat);
+          railing.position.set(jX, floorY + 1.15, bDepth * 0.5 + 1.15);
+          bGroup.add(railing);
+
+          // Arched Sun Canopy over Balcony
+          const canopy = new THREE.Mesh(this.getCylinder(0.15, 1.1, 0.38, 6), this.chhatriDomeMat);
+          canopy.position.set(jX, floorY + 2.7, bDepth * 0.5 + 0.6);
+          bGroup.add(canopy);
+
+          // Glowing Arched Window behind Jharokha
+          const win = new THREE.Mesh(this.getBox(1.3, 1.7, 0.05), this.windowGlassLitMat);
+          win.position.set(jX, floorY + 1.8, bDepth * 0.5 + 0.05);
+          bGroup.add(win);
+        }
+      }
+
+      // 4. Rooftop Crowns: Rajasthani Chhatris or Kangura Battlements or Antennas
+      if (bDef.roofType === 'CHHATRI') {
+        const chhatriPositions = [-bWidth * 0.28, bWidth * 0.28];
+        chhatriPositions.forEach((cx) => {
+          const cGroup = new THREE.Group();
+          cGroup.position.set(cx, totalH, bDepth * 0.5 - 1.0);
+
+          // 4 Sandstone Pillars
+          [-0.6, 0.6].forEach((px) => {
+            [-0.6, 0.6].forEach((pz) => {
+              const pil = new THREE.Mesh(this.getCylinder(0.07, 0.10, 1.8, 6), this.sandstoneMat);
+              pil.position.set(px, 0.9, pz);
+              cGroup.add(pil);
+            });
+          });
+
+          // Domed Cupola Roof
+          const dome = new THREE.Mesh(this.getCylinder(0.08, 0.95, 1.0, 8), this.chhatriDomeMat);
+          dome.position.y = 2.3;
+          cGroup.add(dome);
+
+          // Golden Kalash Finial Spire
+          const finial = new THREE.Mesh(this.getCylinder(0.025, 0.07, 0.7, 6), this.goldMetalMat);
+          finial.position.y = 3.1;
+          cGroup.add(finial);
+
+          bGroup.add(cGroup);
+        });
+      } else if (bDef.roofType === 'BROADCAST_TOWER') {
+        // High-Tech Media Transmission Tower & Satellite Dish
+        const towerGroup = new THREE.Group();
+        towerGroup.position.set(0, totalH, 0);
+
+        const mast = new THREE.Mesh(this.getCylinder(0.18, 0.5, 8.0, 6), this.tinRoofMat);
+        mast.position.y = 4.0;
+        towerGroup.add(mast);
+
+        const beacon = new THREE.Mesh(this.getSphere(0.3, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        beacon.position.y = 8.2;
+        towerGroup.add(beacon);
+
+        const dish = new THREE.Mesh(this.getCylinder(1.2, 0.15, 0.35, 8), this.ivoryMarbleMat);
+        dish.position.set(2.0, 1.8, 0);
+        dish.rotation.z = 0.55;
+        towerGroup.add(dish);
+
+        bGroup.add(towerGroup);
+      } else if (bDef.roofType === 'PEDIMENT') {
+        // Grand Classical Pediment with Ashoka Emblem Disc
+        const pediment = new THREE.Mesh(this.getCylinder(0.2, 3.2, 1.4, 3), this.ivoryMarbleMat);
+        pediment.position.set(0, totalH + 0.7, bDepth * 0.5);
+        pediment.rotation.z = Math.PI;
+        bGroup.add(pediment);
+
+        const emblem = new THREE.Mesh(this.getCylinder(0.5, 0.5, 0.1, 12), this.goldMetalMat);
+        emblem.position.set(0, totalH + 0.6, bDepth * 0.5 + 0.2);
+        emblem.rotation.x = Math.PI / 2;
+        bGroup.add(emblem);
+      } else {
+        // Stepped Kangura Battlements along Roof Edge
+        for (let k = -bWidth * 0.44; k <= bWidth * 0.44; k += 1.6) {
+          const battlement = new THREE.Mesh(this.getBox(0.8, 0.7, 0.25), this.sandstoneMat);
+          battlement.position.set(k, totalH + 0.35, bDepth * 0.5);
+          bGroup.add(battlement);
+        }
+      }
+
+      group.add(bGroup);
+    });
+
+    if (detail === 'MINIMAL') return;
+
+    // 5. Open Courtyard Setbacks: Mughal ornamental archways and glowing lamps
+    const courtyardZs = [-25.5, -53.5];
+    courtyardZs.forEach((cyZ) => {
+      const cyGroup = new THREE.Group();
+      cyGroup.position.set(facadeX + (side > 0 ? -1.5 : 1.5), 0, cyZ);
+
+      const gateL = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.sandstoneMat);
+      gateL.position.set(0, 2.4, -2.2);
+      cyGroup.add(gateL);
+
+      const gateR = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.sandstoneMat);
+      gateR.position.set(0, 2.4, 2.2);
+      cyGroup.add(gateR);
+
+      const lintel = new THREE.Mesh(this.getBox(0.7, 0.6, 5.2), this.sandstoneMat);
+      lintel.position.set(0, 5.0, 0);
+      cyGroup.add(lintel);
+
+      const lamp = new THREE.Mesh(this.getSphere(0.35, 6), this.windowGlassLitMat);
+      lamp.position.set(0, 4.4, 0);
+      cyGroup.add(lamp);
+
+      group.add(cyGroup);
+    });
+  }
+
+  // =========================================================================
   // DISTRICT A — CHAI PE CHARCHA: THE MEGA SUMMIT
   // =========================================================================
   public buildChaiPeCharchaDistrict(
@@ -452,8 +717,10 @@ export class VipSatireWorldBuilder {
   ): void {
     const wallX = roadbedWidth * 0.5 + 2.2; // Safe ~7.5m outside tracks
 
-    // 1. Terracotta Promenade with Sandstone Jali Screens on both sides
+    // 1. Terracotta Promenade with Sandstone Jali Screens and Authentic Haveli Facades
     [-1, 1].forEach((side) => {
+      // Modular Indian Streetscape behind the promenade
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 0, rng, detail);
       const sidewalkW = 9.5;
       const sx = side * (wallX + sidewalkW * 0.5);
       const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, 0.6, chunkLength), this.terracottaMat);
@@ -678,6 +945,9 @@ export class VipSatireWorldBuilder {
 
     // 1. Endless Red-Carpet Marble Promenades
     [-1, 1].forEach((side) => {
+      // Modular Indian Imperial Architecture with colonnades and setbacks
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 1, rng, detail);
+
       const concourseW = 9.0;
       const cx = side * (wallX + concourseW * 0.5);
       const concourse = new THREE.Mesh(this.getBox(concourseW, 0.8, chunkLength), this.ivoryMarbleMat);
@@ -814,19 +1084,15 @@ export class VipSatireWorldBuilder {
   ): void {
     const wallX = roadbedWidth * 0.5 + 2.4;
 
-    // 1. High-Tech Media Studio Towers
+    // 1. High-Tech Media Studio Towers & Articulated Broadcast Center
     [-1, 1].forEach((side) => {
-      const buildingW = 10.5;
-      const bx = side * (wallX + buildingW * 0.5 + 0.5);
+      // Articulated media complex with transmission towers, open courtyards, and zero monolithic black walls
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 2, rng, detail);
 
-      const tower = new THREE.Mesh(this.getBox(buildingW, 28.0, chunkLength), this.cyberGlassMat);
-      tower.position.set(bx, 14.0, -chunkLength * 0.5);
-      group.add(tower);
-
-      // Giant Glowing LED Media Screen
+      // Giant Glowing LED Media Screen mounted cleanly on the central broadcast studio facade
       const screenTex = TextureGenerator.getBreakingNewsScreenTexture(side > 0 ? 0 : 2);
-      const screen = new THREE.Mesh(this.getPlane(26.0, 13.0), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
-      screen.position.set(side * (wallX + 0.1), 11.5, -chunkLength * 0.5);
+      const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
+      screen.position.set(side * (wallX + 1.2), 11.5, -chunkLength * 0.5);
       screen.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       group.add(screen);
     });
@@ -935,6 +1201,9 @@ export class VipSatireWorldBuilder {
 
     // 1. Futuristic Golden Marble Plaza Promenades
     [-1, 1].forEach((side) => {
+      // High-Tech Indian Civic Architecture with solar spires and setbacks
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 3, rng, detail);
+
       const plazaW = 10.0;
       const px = side * (wallX + plazaW * 0.5);
       const plaza = new THREE.Mesh(this.getBox(plazaW, 0.8, chunkLength), this.ivoryMarbleMat);
@@ -1071,6 +1340,9 @@ export class VipSatireWorldBuilder {
 
     // 1. Circular Colonnade Parliament Galleries on sides
     [-1, 1].forEach((side) => {
+      // Classical Parliament Rotunda Facades and civic galleries
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 4, rng, detail);
+
       const gallW = 10.5;
       const gx = side * (wallX + gallW * 0.5);
       const gallery = new THREE.Mesh(this.getBox(gallW, 1.0, chunkLength), this.parliamentWoodMat);

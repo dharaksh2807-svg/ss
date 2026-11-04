@@ -303,6 +303,13 @@ export class RahulSatireWorldBuilder {
   private saffronWaistcoatMat: THREE.MeshStandardMaterial;
   private royalBlueMat: THREE.MeshStandardMaterial;
 
+  // Authentic Surreal Yatra Architecture Materials
+  private yatraYellowMat: THREE.MeshStandardMaterial;
+  private yatraLitWindowMat: THREE.MeshStandardMaterial;
+  private mediaStudioGlassMat: THREE.MeshStandardMaterial;
+  private yatraAwningMat: THREE.MeshStandardMaterial;
+  private yatraBannerGreenMat: THREE.MeshStandardMaterial;
+
   private constructor() {
     this.roadbedWallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
     this.yatraWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
@@ -313,7 +320,8 @@ export class RahulSatireWorldBuilder {
     this.parliamentSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.8 });
     this.parliamentGreenMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.6 });
     this.woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 });
-    this.mediaBlueMat = new THREE.MeshStandardMaterial({ color: 0x0c4a6e, roughness: 0.3, metalness: 0.4 });
+    // Bright vibrant media blue instead of pitch-black
+    this.mediaBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e40af, roughness: 0.35, metalness: 0.3, emissive: 0x0f172a, emissiveIntensity: 0.2 });
     this.neonMagentaMat = new THREE.MeshStandardMaterial({ color: 0xd946ef, roughness: 0.2, metalness: 0.5 });
     this.neonCyanMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     this.neonPinkMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
@@ -326,6 +334,13 @@ export class RahulSatireWorldBuilder {
     this.darkSuitMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.7 });
     this.saffronWaistcoatMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.6 });
     this.royalBlueMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5 });
+
+    // Initializing Surreal Yatra Architecture Materials
+    this.yatraYellowMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.75 });
+    this.yatraLitWindowMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 0.75, roughness: 0.2 });
+    this.mediaStudioGlassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 });
+    this.yatraAwningMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75 });
+    this.yatraBannerGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.75 });
   }
 
   public static getInstance(): RahulSatireWorldBuilder {
@@ -423,6 +438,191 @@ export class RahulSatireWorldBuilder {
   }
 
   // =========================================================================
+  // SURREAL YATRA ARCHITECTURE BUILDER
+  // =========================================================================
+
+  /**
+   * Builds rich, modular, articulated surreal political architecture with setbacks,
+   * campaign pavilions, cantilevered press galleries, glowing window bands,
+   * striped awnings, rooftop transmission antennas, and open courtyards.
+   * Completely eliminates monolithic black/dark walls and empty voids!
+   */
+  public buildSurrealYatraFacade(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    side: number,
+    districtIndex: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const wallX = roadbedWidth * 0.5 + 2.5;
+    // Setback building facade line: X = 24.5m, front face at X = 21.0m (outside track envelope |X| <= 4.2m)
+    const facadeX = side * (wallX + 17.0);
+    const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
+
+    // Three articulated modules per side with open courtyard gaps
+    const buildingDefs = [
+      { z: -14, length: 16, stories: 3, roofType: 'PAVILION' },
+      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : 'MILESTONE') },
+      { z: -66, length: 16, stories: 3, roofType: 'PAVILION' }
+    ];
+
+    buildingDefs.forEach((bDef, bIdx) => {
+      const bGroup = new THREE.Group();
+      bGroup.position.set(facadeX, 0, bDef.z);
+      bGroup.rotation.y = facingAngle;
+
+      const bWidth = bDef.length;
+      const bDepth = 7.0;
+      const storyH = 4.8;
+      const totalH = bDef.stories * storyH;
+
+      // Select district palette
+      let wallMat: THREE.MeshStandardMaterial;
+      if (districtIndex === 0) {
+        // Yatra Never Ends: Saffron, White & Green Vernacular
+        wallMat = bIdx % 2 === 0 ? this.yatraWhiteMat : this.yatraOrangeMat;
+      } else if (districtIndex === 1) {
+        // Parliament Pandemonium: Sandstone & Royal Blue
+        wallMat = bIdx % 2 === 0 ? this.parliamentSandstoneMat : this.royalBlueMat;
+      } else if (districtIndex === 2) {
+        // Press Conference Panic: High-tech Media Studio Glass & Deep Navy
+        wallMat = bIdx === 1 ? this.mediaStudioGlassMat : this.mediaBlueMat;
+      } else if (districtIndex === 3) {
+        // Alliance Rollercoaster: Festive Carnival Magenta & Yellow
+        wallMat = bIdx % 2 === 0 ? this.neonMagentaMat : this.yatraYellowMat;
+      } else {
+        // Political Multiverse: Deep Cosmic Navy & Sandstone
+        wallMat = bIdx % 2 === 0 ? this.mediaBlueMat : this.parliamentSandstoneMat;
+      }
+
+      // 1. Ground Floor Plinth & Main Mass
+      const mainBuilding = new THREE.Mesh(this.getBox(bWidth, totalH, bDepth), wallMat);
+      mainBuilding.position.y = totalH * 0.5;
+      bGroup.add(mainBuilding);
+
+      // Carved Stringcourse Ledges between floors
+      for (let s = 1; s <= bDef.stories; s++) {
+        const cornice = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.45, bDepth + 0.6), this.parliamentSandstoneMat);
+        cornice.position.y = s * storyH;
+        bGroup.add(cornice);
+      }
+
+      // In MINIMAL tier, retain massing and cornice ledges for visual silhouette while maintaining lightweight budget
+      if (detail === 'MINIMAL') {
+        group.add(bGroup);
+        return;
+      }
+
+      // 2. Ground-Floor Campaign Centers with Striped Awnings
+      const stallCount = Math.floor(bWidth / 5.0);
+      const stallSpacing = bWidth / (stallCount + 1);
+      const awningMats = [this.yatraOrangeMat, this.yatraWhiteMat, this.yatraGreenMat];
+
+      for (let sh = 0; sh < stallCount; sh++) {
+        const stallX = -bWidth * 0.5 + (sh + 1) * stallSpacing;
+
+        const door = new THREE.Mesh(this.getBox(2.6, 3.2, 0.4), this.woodMat);
+        door.position.set(stallX, 1.6, bDepth * 0.5 + 0.1);
+        bGroup.add(door);
+
+        const glow = new THREE.Mesh(this.getBox(1.8, 2.4, 0.05), this.yatraLitWindowMat);
+        glow.position.set(stallX, 1.4, bDepth * 0.5 + 0.22);
+        bGroup.add(glow);
+
+        const awningMat = awningMats[(sh + bIdx) % awningMats.length];
+        const awning = new THREE.Mesh(this.getBox(3.0, 0.08, 1.6), awningMat);
+        awning.position.set(stallX, 3.4, bDepth * 0.5 + 0.75);
+        awning.rotation.x = 0.28;
+        bGroup.add(awning);
+      }
+
+      // 3. Cantilevered Press Galleries on Upper Floors
+      for (let s = 1; s < bDef.stories; s++) {
+        const floorY = s * storyH;
+        const galleryCount = Math.floor(bWidth / 5.5);
+        const gSpacing = bWidth / (galleryCount + 1);
+
+        for (let g = 0; g < galleryCount; g++) {
+          const gX = -bWidth * 0.5 + (g + 1) * gSpacing;
+
+          const gBase = new THREE.Mesh(this.getBox(2.0, 0.35, 1.2), this.parliamentSandstoneMat);
+          gBase.position.set(gX, floorY + 0.6, bDepth * 0.5 + 0.6);
+          bGroup.add(gBase);
+
+          const railing = new THREE.Mesh(this.getBox(2.0, 0.85, 0.12), this.goldMetalMat);
+          railing.position.set(gX, floorY + 1.15, bDepth * 0.5 + 1.15);
+          bGroup.add(railing);
+
+          const win = new THREE.Mesh(this.getBox(1.4, 1.8, 0.05), this.yatraLitWindowMat);
+          win.position.set(gX, floorY + 1.8, bDepth * 0.5 + 0.05);
+          bGroup.add(win);
+        }
+      }
+
+      // 4. Rooftops: Broadcast Towers or Milestone Crowns
+      if (bDef.roofType === 'BROADCAST_TOWER') {
+        const towerGroup = new THREE.Group();
+        towerGroup.position.set(0, totalH, 0);
+
+        const mast = new THREE.Mesh(this.getCylinder(0.18, 0.5, 8.0, 6), this.silverMat);
+        mast.position.y = 4.0;
+        towerGroup.add(mast);
+
+        const beacon = new THREE.Mesh(this.getSphere(0.3, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        beacon.position.y = 8.2;
+        towerGroup.add(beacon);
+
+        const dish = new THREE.Mesh(this.getCylinder(1.2, 0.15, 0.35, 8), this.yatraWhiteMat);
+        dish.position.set(2.0, 1.8, 0);
+        dish.rotation.z = 0.55;
+        towerGroup.add(dish);
+
+        bGroup.add(towerGroup);
+      } else {
+        // Decorative Tri-Color Milestone Arch Crown
+        const archCrown = new THREE.Mesh(this.getBox(4.0, 1.2, 0.8), this.yatraOrangeMat);
+        archCrown.position.set(0, totalH + 0.6, bDepth * 0.5 - 0.5);
+        bGroup.add(archCrown);
+
+        const archDome = new THREE.Mesh(this.getCylinder(0.1, 1.2, 0.8, 6), this.yatraGreenMat);
+        archDome.position.set(0, totalH + 1.6, bDepth * 0.5 - 0.5);
+        bGroup.add(archDome);
+      }
+
+      group.add(bGroup);
+    });
+
+    if (detail === 'MINIMAL') return;
+
+    // 5. Open Courtyard Setbacks: Milestone arches and festival lamps
+    const courtyardZs = [-25.5, -53.5];
+    courtyardZs.forEach((cyZ) => {
+      const cyGroup = new THREE.Group();
+      cyGroup.position.set(facadeX + (side > 0 ? -1.5 : 1.5), 0, cyZ);
+
+      const postL = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
+      postL.position.set(0, 2.4, -2.2);
+      cyGroup.add(postL);
+
+      const postR = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
+      postR.position.set(0, 2.4, 2.2);
+      cyGroup.add(postR);
+
+      const lintel = new THREE.Mesh(this.getBox(0.7, 0.6, 5.2), this.yatraOrangeMat);
+      lintel.position.set(0, 5.0, 0);
+      cyGroup.add(lintel);
+
+      const lamp = new THREE.Mesh(this.getSphere(0.35, 6), this.yatraLitWindowMat);
+      lamp.position.set(0, 4.4, 0);
+      cyGroup.add(lamp);
+
+      group.add(cyGroup);
+    });
+  }
+
+  // =========================================================================
   // DISTRICT A — YATRA NEVER ENDS
   // =========================================================================
   public buildYatraNeverEndsDistrict(
@@ -442,6 +642,9 @@ export class RahulSatireWorldBuilder {
 
     // 1. Streetscape sidewalks with vernacular buildings & cheering crowds
     [-1, 1].forEach((side) => {
+      // Articulated Surreal Yatra Streetscape behind promenade
+      this.buildSurrealYatraFacade(districtA, roadbedWidth, chunkLength, side, 0, rng, detail);
+
       const walkW = 12.0;
       const wx = side * (wallX + walkW * 0.5);
       const walk = new THREE.Mesh(this.getBox(walkW, 0.6, chunkLength), this.parliamentSandstoneMat);
@@ -725,6 +928,9 @@ export class RahulSatireWorldBuilder {
 
     // 1. Parliamentary Colonnade Galleries with Green Leather Benches
     [-1, 1].forEach((side) => {
+      // Articulated Parliament Gallery Facade behind colonnade
+      this.buildSurrealYatraFacade(districtB, roadbedWidth, chunkLength, side, 1, rng, detail);
+
       const gallW = 12.0;
       const gx = side * (wallX + gallW * 0.5);
       const gallery = new THREE.Mesh(this.getBox(gallW, 1.2, chunkLength), this.parliamentSandstoneMat);
@@ -890,19 +1096,15 @@ export class RahulSatireWorldBuilder {
 
     const wallX = roadbedWidth * 0.5 + 2.4;
 
-    // 1. High-Tech Media Studio Towers with 16x9 Video Walls
+    // 1. High-Tech Media Studio Towers & Articulated Press Center
     [-1, 1].forEach((side) => {
-      const buildingW = 10.0;
-      const bx = side * (wallX + buildingW * 0.5 + 0.5);
+      // Articulated media studio complex with transmission towers, open courtyards, and zero monolithic black walls
+      this.buildSurrealYatraFacade(districtC, roadbedWidth, chunkLength, side, 2, rng, detail);
 
-      const tower = new THREE.Mesh(this.getBox(buildingW, 26.0, chunkLength), this.mediaBlueMat);
-      tower.position.set(bx, 13.0, -chunkLength * 0.5);
-      group.add(tower);
-
-      // Giant Glowing LED Media Screen facing tracks
+      // Giant Glowing LED Media Screen facing tracks mounted on the central studio facade
       const screenTex = TextureGenerator.getPressConferencePanicSignTexture(side > 0 ? 0 : 2);
       const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
-      screen.position.set(side * (wallX + 0.1), 11.0, -chunkLength * 0.5);
+      screen.position.set(side * (wallX + 1.2), 11.0, -chunkLength * 0.5);
       screen.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       group.add(screen);
     });
@@ -1070,6 +1272,11 @@ export class RahulSatireWorldBuilder {
     group.add(districtD);
 
     const wallX = roadbedWidth * 0.5 + 2.4;
+
+    // Articulated Surreal Carnival Facades behind the rollercoasters
+    [-1, 1].forEach((side) => {
+      this.buildSurrealYatraFacade(districtD, roadbedWidth, chunkLength, side, 3, rng, detail);
+    });
 
     // 1. Festive Rollercoaster Carnival Overhead Arches (strictly Y >= 9.6m)
     for (let z = 15; z < chunkLength - 15; z += 40) {
@@ -1248,6 +1455,11 @@ export class RahulSatireWorldBuilder {
     const districtE = new THREE.Group();
     districtE.name = 'district_e_political_multiverse';
     group.add(districtE);
+
+    // Articulated Surreal Multiverse Facades behind quantum monuments
+    [-1, 1].forEach((side) => {
+      this.buildSurrealYatraFacade(districtE, roadbedWidth, chunkLength, side, 4, rng, detail);
+    });
 
     // 1. Cosmic Floating Spires & Dimensional Quantum Obelisks
     [-1, 1].forEach((side) => {

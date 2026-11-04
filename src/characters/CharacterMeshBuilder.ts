@@ -144,6 +144,7 @@ export class CharacterMeshBuilder {
 
     // Spine / Upper Torso
     const spineGroup = new THREE.Group();
+    spineGroup.name = 'spineGroup';
     spineGroup.position.set(0, 0.15, 0);
     hipsGroup.add(spineGroup);
 
@@ -170,6 +171,7 @@ export class CharacterMeshBuilder {
 
     // Head Group
     const headGroup = new THREE.Group();
+    headGroup.name = 'headGroup';
     headGroup.position.set(0, torsoHeight + 0.08, 0);
     spineGroup.add(headGroup);
 
@@ -188,6 +190,7 @@ export class CharacterMeshBuilder {
       secondaryMat,
       accentMat
     });
+    backpackGroup.name = 'backpackGroup';
     backpackGroup.position.set(0, torsoHeight * 0.52, 0.22);
     spineGroup.add(backpackGroup);
 
@@ -498,14 +501,21 @@ export class CharacterMeshBuilder {
       spineGroup.add(rightPauldron);
 
     } else if (characterId === 'char_modi') {
-      // NARENDRA MODI: Tailored Nehru Waistcoat over Traditional Kurta
-      // 1. Mandarin collar band around neck
+      // NARENDRA MODI: Tailored Nehru Waistcoat over Traditional Kurta (Full 360-degree tailored detailing)
+      // 1. Mandarin collar band around neck (360-degree continuous collar)
       const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.08, 16, 1, true);
       const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
       collar.position.set(0, height * 0.96, 0);
       spineGroup.add(collar);
 
-      // 2. Central placket and button row (facing -Z)
+      // Back collar rim accent
+      const backCollarRimGeo = new THREE.TorusGeometry(topRadius * 0.72, 0.025, 6, 16, Math.PI);
+      const backCollarRim = new THREE.Mesh(backCollarRimGeo, mats.primaryMat);
+      backCollarRim.rotation.x = -Math.PI / 2;
+      backCollarRim.position.set(0, height * 0.98, 0.02);
+      spineGroup.add(backCollarRim);
+
+      // 2. Front central placket and button row (facing -Z)
       const placketGeo = new THREE.BoxGeometry(0.04, height * 0.88, 0.015);
       const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
       placket.position.set(0, height * 0.50, -topRadius * 0.98);
@@ -516,8 +526,8 @@ export class CharacterMeshBuilder {
       buttonGeo.rotateX(Math.PI / 2);
       const buttonMat = new THREE.MeshStandardMaterial({
         color: outfit.colors.details,
-        metalness: 0.8,
-        roughness: 0.3
+        metalness: 0.85,
+        roughness: 0.25
       });
       for (let b = 0; b < 5; b++) {
         const btn = new THREE.Mesh(buttonGeo, buttonMat);
@@ -531,6 +541,33 @@ export class CharacterMeshBuilder {
       const pocketSquare = new THREE.Mesh(pocketSquareGeo, mats.accentMat);
       pocketSquare.position.set(-0.11, height * 0.72, -topRadius * 0.98);
       spineGroup.add(pocketSquare);
+
+      // 4. TAILORED REAR DETAILING (Facing camera +Z): Central spine seam, darts & vents
+      const backSeamGeo = new THREE.BoxGeometry(0.014, height * 0.86, 0.015);
+      const backSeam = new THREE.Mesh(backSeamGeo, buttonMat);
+      backSeam.position.set(0, height * 0.50, topRadius * 0.98);
+      spineGroup.add(backSeam);
+
+      // Left & right tailored back princess darts for distinguished silhouette
+      [-topRadius * 0.46, topRadius * 0.46].forEach((xOff) => {
+        const dartGeo = new THREE.BoxGeometry(0.008, height * 0.68, 0.012);
+        const dart = new THREE.Mesh(dartGeo, buttonMat);
+        dart.position.set(xOff, height * 0.52, topRadius * 0.97);
+        spineGroup.add(dart);
+      });
+
+      // Split vent at lower waistcoat hem
+      const ventGeo = new THREE.BoxGeometry(0.02, height * 0.18, 0.02);
+      const vent = new THREE.Mesh(ventGeo, mats.primaryMat);
+      vent.position.set(0, height * 0.10, topRadius * 0.99);
+      spineGroup.add(vent);
+
+      // 5. TRADITIONAL KHADI KURTA HEM extending naturally below waistcoat
+      const kurtaHemGeo = new THREE.CylinderGeometry(topRadius * 0.94, topRadius * 1.02, 0.14, 16);
+      const kurtaHemMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.82 });
+      const kurtaHem = new THREE.Mesh(kurtaHemGeo, kurtaHemMat);
+      kurtaHem.position.set(0, -0.04, 0);
+      spineGroup.add(kurtaHem);
     } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
       if (outfit.features?.hasNehruKurta) {
         // Traditional Khadi Kurta-Pajama with Mandarin collar
@@ -625,19 +662,26 @@ export class CharacterMeshBuilder {
         medal.position.set(-0.06, height * 0.68, -topRadius * 1.02);
         spineGroup.add(medal);
       } else {
-        // DEFAULT / CLASSIC: Signature White Polo Shirt with open collar placket
+        // DEFAULT / CLASSIC: Signature White Polo Shirt with open collar placket (Full 360-degree athletic detailing)
         const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.07, 16, 1, true);
         const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
         collar.position.set(0, height * 0.96, 0);
         spineGroup.add(collar);
 
-        // Button placket down chest
+        // Rear polo collar rib band (visible from behind +Z)
+        const backPoloRimGeo = new THREE.TorusGeometry(topRadius * 0.72, 0.024, 6, 16, Math.PI);
+        const backPoloRim = new THREE.Mesh(backPoloRimGeo, mats.primaryMat);
+        backPoloRim.rotation.x = -Math.PI / 2;
+        backPoloRim.position.set(0, height * 0.97, 0.02);
+        spineGroup.add(backPoloRim);
+
+        // Button placket down chest (facing -Z)
         const placketGeo = new THREE.BoxGeometry(0.045, height * 0.45, 0.015);
         const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
         placket.position.set(0, height * 0.72, -topRadius * 0.98);
         spineGroup.add(placket);
 
-        // White collar tips
+        // White collar tips (front)
         const tipGeo = new THREE.ConeGeometry(0.04, 0.09, 3);
         tipGeo.rotateZ(0.4);
         const tipL = new THREE.Mesh(tipGeo, mats.primaryMat);
@@ -648,6 +692,21 @@ export class CharacterMeshBuilder {
         tipR.rotation.z = -0.4;
         tipR.position.set(0.08, height * 0.92, -topRadius * 0.99);
         spineGroup.add(tipR);
+
+        // Athletic Back Yoke Seam across upper shoulder blades (facing +Z)
+        const yokeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+        const yokeGeo = new THREE.BoxGeometry(topRadius * 1.5, 0.012, 0.012);
+        const yoke = new THREE.Mesh(yokeGeo, yokeMat);
+        yoke.position.set(0, height * 0.82, topRadius * 0.96);
+        spineGroup.add(yoke);
+
+        // Subtle side athletic piping seams
+        [-topRadius * 0.65, topRadius * 0.65].forEach((xOff) => {
+          const sideSeamGeo = new THREE.BoxGeometry(0.008, height * 0.75, 0.01);
+          const sideSeam = new THREE.Mesh(sideSeamGeo, yokeMat);
+          sideSeam.position.set(xOff, height * 0.45, 0);
+          spineGroup.add(sideSeam);
+        });
       }
     }
   }
@@ -899,16 +958,39 @@ export class CharacterMeshBuilder {
       headGroup.add(rightFin);
 
     } else if (characterId === 'char_modi') {
-      // NARENDRA MODI: Groomed silver-white hair, distinguished trimmed beard, and metallic spectacles
-      // 1. Swept silver-white hair volume
-      const hairDomeGeo = new THREE.SphereGeometry(0.265, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62);
+      // NARENDRA MODI: Groomed silver-white hair (Full 360-degree sculpted volume), distinguished beard & metallic spectacles
+      // 1. Swept silver-white hair volume covering full skull & sides
+      const hairDomeGeo = new THREE.SphereGeometry(0.268, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.82);
       hairDomeGeo.scale(1.0, 1.15, 1.08);
       const hairDome = new THREE.Mesh(hairDomeGeo, mats.hairOrHelmetMat);
       hairDome.position.set(0, 0.07, 0.01);
       hairDome.castShadow = true;
       headGroup.add(hairDome);
 
-      // Swept hair strands
+      // Lower back occipital & nape hair volume (eliminates any bald patches from behind +Z)
+      const napeHairGeo = new THREE.SphereGeometry(0.258, 18, 12, -Math.PI * 0.5, Math.PI, Math.PI * 0.35, Math.PI * 0.55);
+      napeHairGeo.scale(1.05, 1.12, 1.18);
+      const napeHair = new THREE.Mesh(napeHairGeo, mats.hairOrHelmetMat);
+      napeHair.position.set(0, -0.03, 0.06);
+      napeHair.castShadow = true;
+      headGroup.add(napeHair);
+
+      // Sculpted horizontal swept wave ridges across back of head (+Z) visible directly from camera
+      for (let r = 0; r < 3; r++) {
+        const waveGeo = new THREE.TorusGeometry(0.22 - r * 0.025, 0.032, 8, 16, Math.PI * 0.85);
+        const wave = new THREE.Mesh(waveGeo, mats.hairOrHelmetMat);
+        wave.rotation.x = 0.30 + r * 0.15;
+        wave.position.set(0, 0.11 - r * 0.07, 0.13 + r * 0.03);
+        headGroup.add(wave);
+      }
+
+      // Sculpted neckline contour at the nape
+      const necklineGeo = new THREE.CylinderGeometry(0.14, 0.16, 0.06, 12, 1, false, 0, Math.PI);
+      const neckline = new THREE.Mesh(necklineGeo, mats.hairOrHelmetMat);
+      neckline.position.set(0, -0.11, 0.02);
+      headGroup.add(neckline);
+
+      // Front swept hair strands (facing -Z)
       const strandGeo = new THREE.ConeGeometry(0.045, 0.14, 6);
       for (let s = -2; s <= 2; s++) {
         const strand = new THREE.Mesh(strandGeo, mats.hairOrHelmetMat);
@@ -968,15 +1050,38 @@ export class CharacterMeshBuilder {
       templeR.position.set(0.13, 0.04, -0.13);
       headGroup.add(templeR);
     } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
-      // RAHUL GANDHI: Swept dark wavy hair and trimmed dark beard
-      const hairDomeGeo = new THREE.SphereGeometry(0.265, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62);
-      hairDomeGeo.scale(1.0, 1.12, 1.05);
+      // RAHUL GANDHI: Swept dark wavy hair (Full 360-degree volume) and trimmed dark beard
+      const hairDomeGeo = new THREE.SphereGeometry(0.268, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.82);
+      hairDomeGeo.scale(1.0, 1.12, 1.06);
       const hairDome = new THREE.Mesh(hairDomeGeo, mats.hairOrHelmetMat);
       hairDome.position.set(0, 0.07, 0.01);
       hairDome.castShadow = true;
       headGroup.add(hairDome);
 
-      // Swept hair strands
+      // Lower back occipital & nape hair volume
+      const napeHairGeo = new THREE.SphereGeometry(0.258, 18, 12, -Math.PI * 0.5, Math.PI, Math.PI * 0.35, Math.PI * 0.55);
+      napeHairGeo.scale(1.04, 1.10, 1.15);
+      const napeHair = new THREE.Mesh(napeHairGeo, mats.hairOrHelmetMat);
+      napeHair.position.set(0, -0.03, 0.05);
+      napeHair.castShadow = true;
+      headGroup.add(napeHair);
+
+      // Rear wavy hair ridges visible from behind +Z
+      for (let r = 0; r < 2; r++) {
+        const waveGeo = new THREE.TorusGeometry(0.21 - r * 0.03, 0.030, 8, 16, Math.PI * 0.82);
+        const wave = new THREE.Mesh(waveGeo, mats.hairOrHelmetMat);
+        wave.rotation.x = 0.28 + r * 0.16;
+        wave.position.set(0, 0.10 - r * 0.08, 0.13 + r * 0.03);
+        headGroup.add(wave);
+      }
+
+      // Sculpted neckline contour at the nape
+      const necklineGeo = new THREE.CylinderGeometry(0.14, 0.16, 0.06, 12, 1, false, 0, Math.PI);
+      const neckline = new THREE.Mesh(necklineGeo, mats.hairOrHelmetMat);
+      neckline.position.set(0, -0.11, 0.02);
+      headGroup.add(neckline);
+
+      // Front swept hair strands
       const strandGeo = new THREE.ConeGeometry(0.042, 0.13, 6);
       for (let s = -2; s <= 2; s++) {
         const strand = new THREE.Mesh(strandGeo, mats.hairOrHelmetMat);
@@ -1211,44 +1316,90 @@ export class CharacterMeshBuilder {
       pack.add(turbR);
 
     } else if (characterId === 'char_modi') {
-      // NARENDRA MODI: Streamlined Statesman Tech Satchel
-      const bagGeo = new THREE.BoxGeometry(0.32, 0.36, 0.11);
+      // NARENDRA MODI: Tailored Statesman Leather Satchel with Golden Ashoka Chakra Emblem
+      const bagGeo = new THREE.BoxGeometry(0.34, 0.38, 0.12);
       const bag = new THREE.Mesh(bagGeo, mats.primaryMat);
       bag.castShadow = true;
       pack.add(bag);
 
-      // Satchel metallic trim and clasps
-      const claspGeo = new THREE.BoxGeometry(0.035, 0.04, 0.015);
-      const claspMat = new THREE.MeshStandardMaterial({
+      // Gold satchel top flap trim
+      const flapTrimGeo = new THREE.BoxGeometry(0.36, 0.025, 0.135);
+      const goldMat = new THREE.MeshStandardMaterial({
         color: outfit.colors.details,
-        metalness: 0.9,
-        roughness: 0.2
+        metalness: 0.92,
+        roughness: 0.18
+      });
+      const flapTrim = new THREE.Mesh(flapTrimGeo, goldMat);
+      flapTrim.position.set(0, 0.18, 0.01);
+      pack.add(flapTrim);
+
+      // Polished bronze/gold buckle clasps
+      const claspGeo = new THREE.BoxGeometry(0.04, 0.05, 0.02);
+      [-0.10, 0.10].forEach((cx) => {
+        const clasp = new THREE.Mesh(claspGeo, goldMat);
+        clasp.position.set(cx, -0.06, 0.065);
+        pack.add(clasp);
       });
 
-      const claspL = new THREE.Mesh(claspGeo, claspMat);
-      claspL.position.set(-0.09, -0.05, 0.06);
-      pack.add(claspL);
+      // EMBOSSED GOLDEN ASHOKA CHAKRA EMBLEM (Facing main camera +Z)
+      const chakraRingGeo = new THREE.TorusGeometry(0.075, 0.010, 8, 24);
+      const chakraRing = new THREE.Mesh(chakraRingGeo, goldMat);
+      chakraRing.position.set(0, 0.04, 0.065);
+      pack.add(chakraRing);
 
-      const claspR = new THREE.Mesh(claspGeo, claspMat);
-      claspR.position.set(0.09, -0.05, 0.06);
-      pack.add(claspR);
+      const chakraHubGeo = new THREE.CylinderGeometry(0.020, 0.020, 0.012, 12);
+      chakraHubGeo.rotateX(Math.PI / 2);
+      const chakraHub = new THREE.Mesh(chakraHubGeo, goldMat);
+      chakraHub.position.set(0, 0.04, 0.065);
+      pack.add(chakraHub);
 
-      // Saffron/gold emblem strip
-      const stripGeo = new THREE.BoxGeometry(0.24, 0.02, 0.01);
+      // 12 radiating golden spokes (6 rotated bars)
+      const spokeGeo = new THREE.BoxGeometry(0.005, 0.13, 0.008);
+      for (let s = 0; s < 6; s++) {
+        const spoke = new THREE.Mesh(spokeGeo, goldMat);
+        spoke.position.set(0, 0.04, 0.065);
+        spoke.rotation.z = (s * Math.PI) / 6;
+        pack.add(spoke);
+      }
+
+      // Saffron/gold emblem accent strip
+      const stripGeo = new THREE.BoxGeometry(0.26, 0.018, 0.01);
       const strip = new THREE.Mesh(stripGeo, mats.accentMat);
-      strip.position.set(0, 0.06, 0.06);
+      strip.position.set(0, -0.12, 0.065);
       pack.add(strip);
     } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
-      // RAHUL GANDHI: Athletic compact sports runner pack
-      const bagGeo = new THREE.BoxGeometry(0.28, 0.34, 0.10);
+      // RAHUL GANDHI: Athletic compact sports runner pack with Tri-Color Accents
+      const bagGeo = new THREE.BoxGeometry(0.30, 0.36, 0.11);
       const bag = new THREE.Mesh(bagGeo, mats.secondaryMat);
       bag.castShadow = true;
       pack.add(bag);
 
-      const stripeGeo = new THREE.BoxGeometry(0.04, 0.28, 0.015);
-      const stripe = new THREE.Mesh(stripeGeo, mats.primaryMat);
-      stripe.position.set(0, 0, 0.055);
-      pack.add(stripe);
+      // Saffron, White, Green vertical racing stripe down center
+      const saffronMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
+      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 });
+      const greenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+
+      const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.30, 0.012), saffronMat);
+      stripeL.position.set(-0.026, 0, 0.06);
+      pack.add(stripeL);
+
+      const stripeM = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.30, 0.012), whiteMat);
+      stripeM.position.set(0, 0, 0.06);
+      pack.add(stripeM);
+
+      const stripeR = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.30, 0.012), greenMat);
+      stripeR.position.set(0.026, 0, 0.06);
+      pack.add(stripeR);
+
+      // Dual zip pull tabs
+      const zipMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 });
+      const zipGeo = new THREE.BoxGeometry(0.02, 0.04, 0.015);
+      const zip1 = new THREE.Mesh(zipGeo, zipMat);
+      zip1.position.set(-0.08, 0.16, 0.06);
+      pack.add(zip1);
+      const zip2 = new THREE.Mesh(zipGeo, zipMat);
+      zip2.position.set(0.08, 0.16, 0.06);
+      pack.add(zip2);
     }
 
     return pack;
