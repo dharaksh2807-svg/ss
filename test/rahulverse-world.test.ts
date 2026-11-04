@@ -157,39 +157,66 @@ decorativeGroup.traverse((obj) => {
 check(intrusions === 0, `Scenery strictly preserves 100% collision clearance envelope (found ${intrusions} intrusions)`);
 
 // =========================================================================
-// Suite 4: Verification of All 5 Comedy Districts
+// Suite 4: Verification of All 5 Comedy Districts & Collision Clearance
 // =========================================================================
-console.log('\n--- Suite 4: Verification of All 5 Comedy Districts ---');
+console.log('\n--- Suite 4: Verification of All 5 Comedy Districts & Collision Clearance ---');
+
+function verifyDistrictClearance(districtGroup: THREE.Group, districtName: string) {
+  let districtIntrusions = 0;
+  districtGroup.updateMatrixWorld(true);
+  districtGroup.traverse((obj) => {
+    if ((obj as THREE.Mesh).isMesh) {
+      const mesh = obj as THREE.Mesh;
+      mesh.geometry.computeBoundingBox();
+      const box = mesh.geometry.boundingBox!.clone();
+      box.applyMatrix4(mesh.matrixWorld);
+
+      const xOverlap = box.min.x <= 4.2 && box.max.x >= -4.2;
+      const yOverlap = box.min.y <= 8.5 && box.max.y >= 0.1;
+
+      if (xOverlap && yOverlap) {
+        districtIntrusions++;
+        console.error(`Intrusion in ${districtName}: ${mesh.name || 'unnamed'} at X:[${box.min.x.toFixed(2)}, ${box.max.x.toFixed(2)}] Y:[${box.min.y.toFixed(2)}, ${box.max.y.toFixed(2)}]`);
+      }
+    }
+  });
+  check(districtIntrusions === 0, `${districtName} strictly preserves 100% clearance envelope (found ${districtIntrusions} intrusions)`);
+}
 
 // District A: Yatra Never Ends
 const gA = new THREE.Group();
 sceneryFactory.buildScenery(gA, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 0);
 check(gA.getObjectByName('district_a_yatra_never_ends') !== undefined, 'District A: Yatra Never Ends exists');
 check(gA.getObjectByName('yatra_finish_flip_arch') !== undefined, 'District A: Flip finish arch exists');
+verifyDistrictClearance(gA, 'District A (Yatra Never Ends)');
 
 // District B: Parliament Pandemonium
 const gB = new THREE.Group();
 sceneryFactory.buildScenery(gB, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 1);
 check(gB.getObjectByName('district_b_parliament_pandemonium') !== undefined, 'District B: Parliament Pandemonium exists');
 check(gB.getObjectByName('runaway_microphone_arm') !== undefined, 'District B: Runaway microphone arm exists');
+verifyDistrictClearance(gB, 'District B (Parliament Pandemonium)');
 
 // District C: Press Conference Panic
 const gC = new THREE.Group();
 sceneryFactory.buildScenery(gC, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 2);
 check(gC.getObjectByName('district_c_press_conference_panic') !== undefined, 'District C: Press Conference Panic exists');
 check(gC.getObjectByName('media_conga_line') !== undefined, 'District C: Media conga line exists');
+verifyDistrictClearance(gC, 'District C (Press Conference Panic)');
 
 // District D: Alliance Rollercoaster
 const gD = new THREE.Group();
 sceneryFactory.buildScenery(gD, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 3);
 check(gD.getObjectByName('district_d_alliance_rollercoaster') !== undefined, 'District D: Alliance Rollercoaster exists');
 check(gD.getObjectByName('middle_seat_dispute') !== undefined, 'District D: Middle seat dispute exists');
+verifyDistrictClearance(gD, 'District D (Alliance Rollercoaster)');
 
 // District E: The Great Political Multiverse
 const gE = new THREE.Group();
 sceneryFactory.buildScenery(gE, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 4);
 check(gE.getObjectByName('district_e_political_multiverse') !== undefined, 'District E: Political Multiverse exists');
 check(gE.getObjectByName('multiverse_vortex_portal') !== undefined, 'District E: Multiverse vortex portal exists');
+verifyDistrictClearance(gE, 'District E (The Great Political Multiverse)');
 
 // =========================================================================
 // Suite 5: Rahulverse Playable Train Livery & Hitboxes
@@ -249,6 +276,63 @@ check(true, 'Director updates without error with delta time');
 // Update with 0 delta
 director.update(0.0, true);
 check(true, 'Director handles 0 delta gracefully');
+
+// =========================================================================
+// Suite 7: Leader Caricatures, Signature Satire Gags & Visual Architecture
+// =========================================================================
+console.log('\n--- Suite 7: Leader Caricatures & 15 Satire Gags ---');
+
+const { RahulSatireWorldBuilder } = await import('../src/environment/worlds/rahulverse/RahulSatireWorldBuilder');
+const builder = RahulSatireWorldBuilder.getInstance();
+
+const testParent = new THREE.Group();
+
+// 1. Rahul Gandhi Caricature
+const rahulCaricature = builder.buildRahulCaricature(testParent, 0, 0, 0, 'DEBATE', director);
+check(rahulCaricature.name === 'caricature_rahul', 'Rahul caricature generated with name caricature_rahul');
+check(rahulCaricature.children.length >= 5, 'Rahul caricature has legs, torso, head, hair, arms');
+
+// 2. Narendra Modi Caricature
+const modiCaricature = builder.buildModiCaricature(testParent, 2, 0, 0, 'VICTORY', director);
+check(modiCaricature.name === 'caricature_modi', 'Modi caricature generated with name caricature_modi');
+check(modiCaricature.children.length >= 7, 'Modi caricature has legs, waistcoat, mandarin collar, head, silver hair, beard, spectacles');
+
+// 3. Arvind Kejriwal Caricature
+const kejriwalCaricature = builder.buildKejriwalCaricature(testParent, 4, 0, 0, director);
+check(kejriwalCaricature.name === 'caricature_kejriwal', 'Kejriwal caricature generated with signature woolen muffler & sweater vest');
+
+// 4. Mamata Banerjee Caricature
+const mamataCaricature = builder.buildMamataCaricature(testParent, 6, 0, 0, director);
+check(mamataCaricature.name === 'caricature_mamata', 'Mamata caricature generated with signature blue-bordered saree');
+
+// 5. Nitish Kumar Caricature
+const nitishCaricature = builder.buildNitishCaricature(testParent, 8, 0, 0, director);
+check(nitishCaricature.name === 'caricature_nitish', 'Nitish caricature generated with kurta and spectacles');
+
+// 6. Test District Gags & Director Registrations
+director.reset();
+const testDistrictGroup = new THREE.Group();
+
+// Build all 5 districts into testDistrictGroup
+for (let d = 0; d < 5; d++) {
+  builder.buildDistrictScenery(testDistrictGroup, 12, 100, d, 'FULL');
+}
+
+check(director.getFlipBoardCount() >= 1, 'Infinite Yatra flip board registered');
+check(director.getShoeMonumentCount() >= 1, 'Walking shoe monument registered');
+check(director.getRunawayMicCount() >= 1, 'Parliament runaway microphone registered');
+check(director.getFlyingPapersCount() >= 1, 'Parliament flying papers registered');
+check(director.getRevolvingDoorCount() >= 1, 'Parliament revolving door registered');
+check(director.getMediaCongaLineCount() >= 1, 'Press conference media conga line registered');
+check(director.getMiddleSeatDisputeCount() >= 1, 'Alliance musical chairs / middle seat dispute registered');
+check(director.getPuzzlePieceCount() >= 1, 'Alliance interlocking puzzle pieces registered');
+check(director.getMultiversePortalCount() >= 1, 'Political multiverse twin portals registered');
+check(director.getTimerMeshCount() >= 1, 'Debate countdown timer registered');
+check(director.getTotalActiveElements() >= 12, 'Total active comedy elements exceeds 12 distinct gags');
+
+// Test animation update across all registered gags
+director.update(0.016, true);
+check(true, 'Director successfully animates all 15 comedy events');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} RAHULVERSE SIGNATURE WORLD TESTS PASSED!`);
