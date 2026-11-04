@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { PRACTICE_MODULES } from '../practice/PracticeCatalog';
 import { PracticeController } from '../practice/PracticeController';
 import { PracticeModuleId, PracticeMedal } from '../practice/PracticeTypes';
@@ -12,7 +12,6 @@ export class PracticeModal {
 
   private selectedModuleId: PracticeModuleId = 'THREE_LANE_MOVEMENT';
   private isHarder: boolean = false;
-  private previousScreen: string | null = null;
 
   constructor(private practiceController: PracticeController, private onLaunch: (moduleId: PracticeModuleId, isHarder: boolean) => void) {
     let el = document.getElementById('practice-modal');
@@ -80,24 +79,20 @@ export class PracticeModal {
       this.render();
     });
 
-    EventBus.getInstance().on('OPEN_PRACTICE', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
-    });
+
   }
 
   public show(): void {
     this.render();
-    document.getElementById('start-screen')?.classList.add('hidden');
     this.element.classList.remove('hidden');
   }
 
   public hide(restorePrevious: boolean = true): void {
-    this.element.classList.add('hidden');
     if (restorePrevious) {
-      document.getElementById('start-screen')?.classList.remove('hidden');
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'PRACTICE');
+      return;
     }
-    this.previousScreen = null;
+    this.element.classList.add('hidden');
   }
 
   private render(): void {

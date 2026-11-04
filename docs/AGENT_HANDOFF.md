@@ -1,6 +1,10 @@
 # METRO RUNNER 3D — UI ARCHITECTURE HANDOFF
 
-## Latest completion — Task 8 (2026-11-04)
+## Latest completion — Task 9 (2026-11-04)
+
+The final UI/release audit repaired confirmed secondary-navigation, refresh-like scene resets, focus restoration, direct Achievements routing, compact Daily Rewards access, and requested-board preview defects. See [Task 9 audit](TASK9_RELEASE_AUDIT.md) for reproductions, evidence, save isolation, performance measurements and hardware limits. Secondary screens now use NavigationCoordinator; call hide(false) for lifecycle cleanup and UI_BACK for Back/Close. Profile exposes Daily Rewards on compact layouts. Shop board previews pass a boardId. No progression/economy/gameplay rules changed.
+
+## Prior completion — Task 8 (2026-11-04)
 
 Universal keyboard/touch/standard-gamepad input, portrait framing, lifecycle pause/resume, and context recovery are implemented. See [Task 8 verification and controls](TASK8_INPUT_VERIFICATION.md) for mappings, executed tests, limitations, and the bounded scope. InputManager owns device adaptation and board buttons; Player still owns all movement. Game owns lifecycle interruption handling. NavigationCoordinator already owns Escape; the older findings below describe the earlier UI audit and are not a current bug list. No procedural generation or collision behavior changed. Physical mobile hardware, Safari, controllers, and native consoles were not certified.
 

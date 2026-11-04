@@ -169,7 +169,6 @@ export class Game {
     this.profileModal = new ProfileModal();
     this.dailyRewardModal = new DailyRewardModal();
     this.environmentSelectModal = new EnvironmentSelectModal();
-    this.navigation = this.setupNavigation();
     this.reviveManager = ReviveManager.getInstance();
     this.reviveModal = new ReviveModal();
     this.dailyChallengeModal = new DailyChallengeModal();
@@ -181,6 +180,7 @@ export class Game {
 
     this.practiceController = new PracticeController(this.player, this.trackManager, () => this.goToMenu());
     this.practiceModal = new PracticeModal(this.practiceController, (modId, isHarder) => this.startPractice(modId, isHarder));
+    this.navigation = this.setupNavigation();
     this.devTestArena = new DevTestArena(
       this.worldScene.scene,
       this.player,
@@ -684,8 +684,8 @@ export class Game {
     this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);
     this.hoverboardSelectModal.hide(false);
-    this.profileModal.hide();
-    this.dailyRewardModal.hide();
+    this.profileModal.hide(false);
+    this.dailyRewardModal.hide(false);
     this.dailyChallengeModal.hide(false);
     this.photoModeModal.hide();
     this.environmentSelectModal.hide(false);
@@ -741,13 +741,22 @@ export class Game {
       hide: () => this.characterSelectModal.hide(false)
     }, 'OPEN_CHARACTERS', value => typeof value === 'object' ? value?.charId
       : ['START', 'PAUSE', 'SHOP', 'GAMEOVER'].includes(value) ? undefined : value);
-    nav.register('BOARDS', { element: element('hoverboard-select-modal'), show: () => this.hoverboardSelectModal.show(), hide: () => this.hoverboardSelectModal.hide(false) }, 'OPEN_BOARDS');
+    nav.register('BOARDS', { element: element('hoverboard-select-modal'), show: boardId => this.hoverboardSelectModal.show(boardId), hide: () => this.hoverboardSelectModal.hide(false) }, 'OPEN_BOARDS', value => typeof value === 'object' ? value?.boardId : undefined);
     nav.register('WORLDS', { element: element('environment-modal'), show: () => this.environmentSelectModal.show(), hide: () => this.environmentSelectModal.hide(false) }, 'OPEN_ENVIRONMENT_SELECT');
-    nav.register('MISSIONS', { element: element('missions-modal'), show: () => this.missionsModal.show(), hide: () => this.missionsModal.hide(false) }, 'OPEN_MISSIONS');
+    nav.register('MISSIONS', { element: element('missions-modal'), show: tab => {
+      if (tab) this.missionsModal.switchTab(tab);
+      this.missionsModal.show();
+    }, hide: () => this.missionsModal.hide(false) }, 'OPEN_MISSIONS', value =>
+      ['MISSIONS', 'DAILY', 'ACHIEVEMENTS', 'SEASON'].includes(value?.tab) ? value.tab : undefined);
     nav.register('SETTINGS', {
       element: element('settings-modal'), show: () => this.settingsModal.show(),
       hide: () => this.settingsModal.hide(false), escape: () => this.settingsModal.handleEscape()
     }, 'OPEN_SETTINGS');
+    nav.register('EVENTS', { element: element('events-modal'), show: () => this.eventSelectModal.show(), hide: () => this.eventSelectModal.hide(false) }, 'OPEN_EVENTS');
+    nav.register('PRACTICE', { element: element('practice-modal'), show: () => this.practiceModal.show(), hide: () => this.practiceModal.hide(false) }, 'OPEN_PRACTICE');
+    nav.register('PROFILE', { element: element('profile-modal'), show: () => this.profileModal.show(), hide: () => this.profileModal.hide(false) }, 'OPEN_PROFILE');
+    nav.register('DAILY_REWARDS', { element: element('daily-reward-modal'), show: () => this.dailyRewardModal.show(), hide: () => this.dailyRewardModal.hide(false) }, 'OPEN_DAILY_REWARDS');
+    nav.register('DAILY_CHALLENGE', { element: element('daily-challenge-modal'), show: () => this.dailyChallengeModal.show(), hide: () => this.dailyChallengeModal.hide(false) }, EVENTS.OPEN_DAILY_CHALLENGE);
     return nav;
   }
 
@@ -794,13 +803,13 @@ export class Game {
     this.devBugReportModal.setAutoOpenCrashReport(false);
     this.shopModal.hide(false);
     this.missionsModal.hide(false);
-    this.eventSelectModal.hide();
+    this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);
     this.hoverboardSelectModal.hide(false);
-    this.profileModal.hide();
-    this.dailyRewardModal.hide();
+    this.profileModal.hide(false);
+    this.dailyRewardModal.hide(false);
     this.environmentSelectModal.hide(false);
-    this.practiceModal.hide();
+    this.practiceModal.hide(false);
     this.practiceController.exit();
     this.photoModeModal.hide();
     this.startScreen.show();
@@ -819,6 +828,7 @@ export class Game {
   }
 
   public startPractice(moduleId: PracticeModuleId, isHarder: boolean = false): void {
+    this.navigation.clear();
     this.activeGameMode = 'PRACTICE';
     this.progression.setActiveGameMode('PRACTICE');
 
@@ -844,8 +854,8 @@ export class Game {
     this.eventSelectModal.hide(false);
     this.characterSelectModal.hide(false);
     this.hoverboardSelectModal.hide(false);
-    this.profileModal.hide();
-    this.dailyRewardModal.hide();
+    this.profileModal.hide(false);
+    this.dailyRewardModal.hide(false);
     this.practiceModal.hide(false);
 
     // Practice mode uses dedicated objective overlay

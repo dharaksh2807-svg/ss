@@ -5,7 +5,6 @@ export class DailyChallengeModal {
   private element: HTMLElement;
   private manager = DailyChallengeManager.getInstance();
   private eventBus = EventBus.getInstance();
-  private previousScreen: string | null = null;
   private previewedImport: DailyCourseChallenge | null = null;
 
   constructor() {
@@ -20,10 +19,7 @@ export class DailyChallengeModal {
     this.renderSkeleton();
     this.bindEvents();
 
-    this.eventBus.on(EVENTS.OPEN_DAILY_CHALLENGE, (fromScreen?: string) => {
-      this.previousScreen = fromScreen || 'START';
-      this.show();
-    });
+
   }
 
   private renderSkeleton(): void {
@@ -169,11 +165,11 @@ export class DailyChallengeModal {
   }
 
   public hide(restorePrevious: boolean = true): void {
-    this.element.classList.add('hidden');
-    if (restorePrevious && this.previousScreen === 'START') {
-      document.getElementById('start-screen')?.classList.remove('hidden');
+    if (restorePrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'DAILY_CHALLENGE');
+      return;
     }
-    this.previousScreen = null;
+    this.element.classList.add('hidden');
   }
 
   private renderTodayData(): void {

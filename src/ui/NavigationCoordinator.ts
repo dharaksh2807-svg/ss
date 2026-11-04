@@ -1,6 +1,6 @@
 import { EventBus, EVENTS } from '../core/EventBus';
 
-type ScreenId = 'START' | 'PAUSE' | 'GAMEOVER' | 'SHOP' | 'CHARACTERS' | 'BOARDS' | 'WORLDS' | 'MISSIONS' | 'SETTINGS';
+type ScreenId = 'START' | 'PAUSE' | 'GAMEOVER' | 'SHOP' | 'CHARACTERS' | 'BOARDS' | 'WORLDS' | 'MISSIONS' | 'SETTINGS' | 'EVENTS' | 'PRACTICE' | 'PROFILE' | 'DAILY_REWARDS' | 'DAILY_CHALLENGE';
 interface View {
   element: HTMLElement;
   show: (payload?: any) => void;
@@ -92,8 +92,15 @@ export class NavigationCoordinator {
   };
 
   private focus(view: View, previous?: HTMLElement): void {
-    const target = previous?.isConnected && view.element.contains(previous)
-      ? previous : view.element.querySelector<HTMLElement>('button:not(:disabled), [tabindex="0"]') || view.element;
+    // Some views rebuild their controls while restoring fresh wallet/profile data.
+    let restored = previous?.isConnected ? previous : previous?.id ? document.getElementById(previous.id) : null;
+    const identity = Object.entries(previous?.dataset || {});
+    if (!restored && previous && identity.length) {
+      restored = Array.from(view.element.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], [role="button"], [tabindex="0"]'))
+        .find(candidate => candidate.tagName === previous.tagName && identity.every(([key, value]) => candidate.dataset[key] === value)) || null;
+    }
+    const target = restored && view.element.contains(restored)
+      ? restored : view.element.querySelector<HTMLElement>('button:not(:disabled), [tabindex="0"]') || view.element;
     if (target === view.element) target.tabIndex = -1;
     target.focus({ preventScroll: true });
   }

@@ -29,7 +29,7 @@ const touchListeners = new Map<string, Function>();
 const bus = new EventBus();
 let root: any = 'START';
 const nav = new NavigationCoordinator(bus, () => root);
-const ids = ['START', 'PAUSE', 'GAMEOVER', 'SHOP', 'CHARACTERS', 'BOARDS', 'WORLDS', 'MISSIONS', 'SETTINGS'] as const;
+const ids = ['START', 'PAUSE', 'GAMEOVER', 'SHOP', 'CHARACTERS', 'BOARDS', 'WORLDS', 'MISSIONS', 'SETTINGS', 'EVENTS', 'PRACTICE', 'PROFILE', 'DAILY_REWARDS', 'DAILY_CHALLENGE'] as const;
 const views = new Map(ids.map(id => [id, new ElementFake()]));
 const shows: Record<string, number> = {};
 let category = 'FEATURED';
@@ -61,7 +61,7 @@ function escape(repeat = false) {
   for (const key of keys) key({ key: 'Escape', repeat, preventDefault() {}, stopImmediatePropagation() { consumed = true; } });
   return consumed;
 }
-for (const id of ['SHOP', 'CHARACTERS', 'BOARDS', 'WORLDS', 'MISSIONS'] as const) {
+for (const id of ['SHOP', 'CHARACTERS', 'BOARDS', 'WORLDS', 'MISSIONS', 'EVENTS', 'PRACTICE', 'PROFILE', 'DAILY_REWARDS', 'DAILY_CHALLENGE'] as const) {
   views.get('START')!.hidden = false;
   views.get('START')!.focus();
   bus.emit('OPEN_' + id);
@@ -121,4 +121,16 @@ assert.equal(stopped, 2, 'hidden menus do not consume gameplay gestures');
 assert.equal(touchListeners.size, 2, 'repeated entry does not add gesture listeners');
 nav.dispose(); assert.equal(keys.size, 0); assert.equal(touchListeners.size, 0);
 bus.emit('OPEN_SHOP'); visible();
+// Returning through a view rerender restores the equivalent control, not a detached node.
+const rebuiltBus = new EventBus();
+const rebuiltNav = new NavigationCoordinator(rebuiltBus, () => 'PROFILE');
+const parent = new ElementFake(), oldButton = Object.assign(new ElementFake(), { id: 'daily-rewards' });
+const newButton = Object.assign(new ElementFake(), { id: 'daily-rewards' });
+parent.contains = other => [parent, oldButton, newButton].includes(other as ElementFake);
+(globalThis as any).document.getElementById = (id: string) => id === 'daily-rewards' ? newButton : null;
+rebuiltNav.register('PROFILE', { element: parent as any, show: () => { oldButton.isConnected = false; }, hide() {} });
+rebuiltNav.register('DAILY_REWARDS', { element: new ElementFake() as any, show() {}, hide() {} });
+oldButton.focus(); rebuiltNav.open('DAILY_REWARDS'); rebuiltNav.back();
+assert.equal((globalThis as any).document.activeElement, newButton, 'focus restored after parent rerenders');
+rebuiltNav.dispose();
 console.log('VERDICT: PASS — navigation origins, nested category entry, focus, Escape priority, idempotence and cleanup');

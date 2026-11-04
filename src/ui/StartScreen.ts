@@ -498,33 +498,30 @@ export class StartScreen {
 
     if (this.missionsBtn) {
       this.missionsBtn.addEventListener('click', () => {
-        this.eventBus.emit('OPEN_MISSIONS', 'START');
+        this.eventBus.emit('OPEN_MISSIONS', { tab: 'MISSIONS' });
       });
     }
 
     if (this.achievementsBtn) {
       this.achievementsBtn.addEventListener('click', () => {
-        this.eventBus.emit('OPEN_MISSIONS', 'START');
+        this.eventBus.emit('OPEN_MISSIONS', { tab: 'ACHIEVEMENTS' });
       });
     }
 
     if (this.eventsBtn) {
       this.eventsBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_EVENTS', 'START');
       });
     }
 
     if (this.practiceBtn) {
       this.practiceBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_PRACTICE', 'START');
       });
     }
 
     if (this.profileBtn) {
       this.profileBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_PROFILE', 'START');
       });
     }
@@ -537,7 +534,6 @@ export class StartScreen {
     const profilePill = document.getElementById('lobby-profile-pill');
     if (profilePill) {
       profilePill.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_PROFILE', 'START');
       });
     }
@@ -559,7 +555,6 @@ export class StartScreen {
     // Side Widgets
     if (this.dailyRewardBtn) {
       this.dailyRewardBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_DAILY_REWARDS', 'START');
       });
     }
@@ -573,7 +568,6 @@ export class StartScreen {
     const dailyChallengeBtn = document.getElementById('lobby-daily-challenge-btn');
     if (dailyChallengeBtn) {
       dailyChallengeBtn.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit(EVENTS.OPEN_DAILY_CHALLENGE, 'START');
       });
     }
@@ -581,7 +575,6 @@ export class StartScreen {
     const eventSnippet = document.getElementById('lobby-event-snippet');
     if (eventSnippet) {
       eventSnippet.addEventListener('click', () => {
-        this.hide();
         this.eventBus.emit('OPEN_EVENTS', 'START');
       });
     }

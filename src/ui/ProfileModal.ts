@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { EventBus, EVENTS } from '../core/EventBus';
 import { ProgressionManager } from '../progression/ProgressionManager';
 import { UpgradeManager } from '../player/UpgradeManager';
 import { getCharacterById } from '../characters/CharacterCatalog';
@@ -9,7 +9,6 @@ export class ProfileModal {
   private progression = ProgressionManager.getInstance();
   private upgradeManager = UpgradeManager.getInstance();
   private eventBus = EventBus.getInstance();
-  private previousScreen: string | null = null;
 
   constructor() {
     let el = document.getElementById('profile-modal');
@@ -20,14 +19,6 @@ export class ProfileModal {
       document.getElementById('ui-overlay')?.appendChild(el);
     }
     this.element = el;
-    this.setupEvents();
-  }
-
-  private setupEvents(): void {
-    this.eventBus.on('OPEN_PROFILE', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
-    });
   }
 
   public show(): void {
@@ -36,14 +27,14 @@ export class ProfileModal {
     this.element.focus();
   }
 
-  public hide(): void {
+  public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      this.eventBus.emit(EVENTS.UI_BACK, 'PROFILE');
+      return;
+    }
     if (this.element.classList.contains('hidden')) return;
     this.element.classList.add('hidden');
-    const prev = this.previousScreen;
-    this.previousScreen = null;
-    if (prev === 'START') {
-      this.eventBus.emit('GO_TO_MENU');
-    }
+
   }
 
   public isVisible(): boolean {
@@ -225,12 +216,15 @@ export class ProfileModal {
         </div>
 
         <div class="modal-footer-row">
+          <button id="profile-daily-rewards-btn" class="arcade-btn btn-secondary">DAILY REWARDS</button>
           <button id="profile-done-btn" class="arcade-btn btn-primary">
             DONE
           </button>
         </div>
       </div>
     `;
+
+    this.element.querySelector('#profile-daily-rewards-btn')?.addEventListener('click', () => this.eventBus.emit('OPEN_DAILY_REWARDS'));
 
     const closeBtn = this.element.querySelector('#profile-close-btn') as HTMLButtonElement;
     if (closeBtn) {

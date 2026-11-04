@@ -10,7 +10,6 @@ export class EventSelectModal {
   private closeBtn: HTMLButtonElement;
   private progression: ProgressionManager;
   private selectedMode: GameMode = 'NORMAL';
-  private previousScreen: string | null = null;
 
   constructor() {
     this.progression = ProgressionManager.getInstance();
@@ -62,9 +61,7 @@ export class EventSelectModal {
     });
 
     const openDc = () => {
-      const prev = this.previousScreen;
-      this.hide(false);
-      EventBus.getInstance().emit(EVENTS.OPEN_DAILY_CHALLENGE, prev || 'START');
+      EventBus.getInstance().emit(EVENTS.OPEN_DAILY_CHALLENGE);
     };
 
     document.getElementById('events-dc-banner')?.addEventListener('click', openDc);
@@ -77,11 +74,7 @@ export class EventSelectModal {
       this.launchSelectedMode();
     });
 
-    const bus = EventBus.getInstance();
-    bus.on('OPEN_EVENTS', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
-    });
+
   }
 
   public show(): void {
@@ -96,11 +89,11 @@ export class EventSelectModal {
   }
 
   public hide(restorePrevious: boolean = true): void {
-    this.element.classList.add('hidden');
-    if (restorePrevious && this.previousScreen === 'START') {
-      document.getElementById('start-screen')?.classList.remove('hidden');
+    if (restorePrevious) {
+      EventBus.getInstance().emit(EVENTS.UI_BACK, 'EVENTS');
+      return;
     }
-    this.previousScreen = null;
+    this.element.classList.add('hidden');
   }
 
   private render(): void {

@@ -324,7 +324,7 @@ export class HoverboardSelectModal {
     window.addEventListener('touchend', onPointerUp);
   }
 
-  public show(): void {
+  public show(targetBoardId?: string): void {
     if (this.isRendering) return;
     this.element.classList.remove('hidden');
     this.setFeedback('');
@@ -333,8 +333,8 @@ export class HoverboardSelectModal {
     this.updateWalletDisplay(this.upgradeManager.getCoins());
     this.updateChargesDisplay(this.progression.getHoverboardCharges());
 
-    // Sync selected board index
-    const equippedBoardId = this.progression.getSelectedBoard();
+    // Preview the requested product; Home still opens the equipped board.
+    const equippedBoardId = targetBoardId || this.progression.getSelectedBoard();
     const idx = this.boards.findIndex((b) => b.id === equippedBoardId);
     this.currentBoardIndex = idx >= 0 ? idx : 0;
 

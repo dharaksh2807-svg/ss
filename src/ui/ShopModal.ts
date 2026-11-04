@@ -723,7 +723,7 @@ export class ShopModal {
       this.showToast(result.message, !result.success);
       this.renderCategoryContent();
     }));
-    container.querySelectorAll<HTMLElement>('[data-view-board]').forEach(button => button.addEventListener('click', () => this.eventBus.emit('OPEN_BOARDS', 'SHOP')));
+    container.querySelectorAll<HTMLElement>('[data-view-board]').forEach(button => button.addEventListener('click', () => this.eventBus.emit('OPEN_BOARDS', { source: 'SHOP', boardId: button.dataset.viewBoard })));
   }
 
   private bindShopButtons(container: HTMLElement): void {

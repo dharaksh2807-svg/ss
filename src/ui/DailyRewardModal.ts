@@ -7,7 +7,6 @@ export class DailyRewardModal {
   private dailyManager = DailyRewardManager.getInstance();
   private upgradeManager = UpgradeManager.getInstance();
   private eventBus = EventBus.getInstance();
-  private previousScreen: string | null = null;
   private timerInterval: any = null;
 
   constructor() {
@@ -19,14 +18,6 @@ export class DailyRewardModal {
       document.getElementById('ui-overlay')?.appendChild(el);
     }
     this.element = el;
-    this.setupEvents();
-  }
-
-  private setupEvents(): void {
-    this.eventBus.on('OPEN_DAILY_REWARDS', (fromScreen?: string) => {
-      this.previousScreen = fromScreen || null;
-      this.show();
-    });
   }
 
   public show(): void {
@@ -36,17 +27,16 @@ export class DailyRewardModal {
     this.startCountdownTimer();
   }
 
-  public hide(): void {
+  public hide(restorePrevious: boolean = true): void {
+    if (restorePrevious) {
+      this.eventBus.emit(EVENTS.UI_BACK, 'DAILY_REWARDS');
+      return;
+    }
     if (this.element.classList.contains('hidden')) return;
     this.element.classList.add('hidden');
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
-    }
-    const prev = this.previousScreen;
-    this.previousScreen = null;
-    if (prev === 'START') {
-      this.eventBus.emit('GO_TO_MENU');
     }
   }
 
