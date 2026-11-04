@@ -209,6 +209,11 @@ assert.ok(dancer.group.getObjectByName('festival_carnival_dancer'), 'Festival Ca
 assert.ok(dancer.dancer.armL && dancer.dancer.armR, 'Dancer has articulated dual arms');
 pass('Character 3: Festival Carnival Dancer with feathered wings & Latin dance choreo');
 
+const avantGarde = VivaHeatCharacters.createAvantGardeModel(0, 0, 0);
+assert.ok(avantGarde.group.getObjectByName('avant_garde_model'), 'Avant-Garde Couturier Model created');
+assert.ok(avantGarde.dancer.armL, 'Model has articulated arm holding clutch');
+pass('Character 4: Avant-Garde Couturier Model with architectural winged cape & clutch');
+
 // ============================================================================
 // SUITE 6: VIVA HEAT TRAIN AESTHETIC & LIVERY HOOK
 // ============================================================================
@@ -272,11 +277,37 @@ pass('Dev preview mechanism safely activates VIVA_HEAT without touching player s
 console.log('\n--- Suite 8: Teardown & Lifecycle Cleanup ---');
 
 director.reset();
+
+// Verify detached object pruning on chunk recycling
+const temporaryChunk = new THREE.Group();
+builder.buildScarletSunset(temporaryChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+const activeBeforePrune = director.getTotalActiveElements();
+assert.ok(activeBeforePrune > 0, 'Active elements registered before prune');
+
+// Simulate chunk recycling via recursive child release
+function releaseGroup(g: THREE.Group) {
+  while (g.children.length > 0) {
+    const child = g.children[0];
+    g.remove(child);
+    if (child instanceof THREE.Group) {
+      releaseGroup(child);
+    }
+  }
+}
+releaseGroup(temporaryChunk);
+
+// Running director update triggers pruneDetached()
+director.update(0.016, true);
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Detached objects pruned on chunk recycle');
+pass('Detached objects cleanly pruned from registries during chunk recycling');
+
+director.reset();
 assert.strictEqual(director.getFlowerCount(), 0, 'Flowers reset');
 assert.strictEqual(director.getDancerCount(), 0, 'Dancers reset');
 assert.strictEqual(director.getYachtCount(), 0, 'Yachts reset');
 assert.strictEqual(director.getSkybeamCount(), 0, 'Skybeams reset');
 assert.strictEqual(director.getSunLandmarkCount(), 0, 'Sun landmarks reset');
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Fever director reset() cleanly disposes all references');
 
 console.log('\n=======================================================');

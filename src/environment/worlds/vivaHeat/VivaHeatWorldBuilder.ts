@@ -287,6 +287,20 @@ export class VivaHeatWorldBuilder {
     oceanMesh.position.set(wallX + oceanW * 0.5 + 4.0, -1.2, -chunkLength * 0.5);
     seasideGroup.add(oceanMesh);
 
+    // Sunset Specular Reflection Band on Ocean Surface
+    const sunReflection = new THREE.Mesh(
+      this.getPlane(16.0, chunkLength * 1.4),
+      new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.28,
+        side: THREE.DoubleSide
+      })
+    );
+    sunReflection.rotation.x = -Math.PI * 0.5;
+    sunReflection.position.set(wallX + 34.0, -1.18, -chunkLength * 0.5);
+    seasideGroup.add(sunReflection);
+
     // Polished Coral Marble Seaside Boardwalk Promenade
     const walkW = 10.0;
     const boardwalk = new THREE.Mesh(this.getBox(walkW, 0.45, chunkLength), this.coralMarbleMat);
@@ -364,6 +378,11 @@ export class VivaHeatWorldBuilder {
     cabin.position.set(0, 2.0, -1.0);
     yacht.add(cabin);
 
+    // Upper VIP Sun Deck with Coral Marble
+    const upperDeck = new THREE.Mesh(this.getBox(2.6, 1.2, 5.5), this.coralMarbleMat);
+    upperDeck.position.set(0, 3.2, -1.5);
+    yacht.add(upperDeck);
+
     // Golden Observation Railings
     const deckRail = new THREE.Mesh(this.getBox(3.8, 0.6, 16.5), this.sunsetGoldMat);
     deckRail.position.set(0, 1.9, 0);
@@ -378,6 +397,12 @@ export class VivaHeatWorldBuilder {
     sail.position.set(1.5, 7.5, 0.5);
     sail.rotation.y = 0.35;
     yacht.add(sail);
+
+    // Festive Pennant Streamers
+    const pennant = new THREE.Mesh(this.getPlane(0.35, 4.5), this.coralMarbleMat);
+    pennant.position.set(0, 8.5, -1.5);
+    pennant.rotation.z = Math.PI * 0.5;
+    yacht.add(pennant);
 
     return yacht;
   }
@@ -401,6 +426,26 @@ export class VivaHeatWorldBuilder {
     const promenade = new THREE.Mesh(this.getBox(walkW, 0.55, chunkLength), this.velvetCrimsonMat);
     promenade.position.set(boulevardX - walkW * 0.5, 0.28, -chunkLength * 0.5);
     boulevard.add(promenade);
+
+    // Colonnade of Fluted Marble Pillars with Golden Capitals along inland walkway
+    for (let z = -chunkLength * 0.85; z <= -chunkLength * 0.15; z += 18.0) {
+      const colGroup = new THREE.Group();
+      colGroup.position.set(boulevardX - 1.2, 0, z);
+
+      const pillar = new THREE.Mesh(this.getCylinder(0.35, 0.42, 6.5, 8), this.coralMarbleMat);
+      pillar.position.y = 3.25;
+      colGroup.add(pillar);
+
+      const cap = new THREE.Mesh(this.getBox(1.1, 0.3, 1.1), this.sunsetGoldMat);
+      cap.position.y = 6.6;
+      colGroup.add(cap);
+
+      const archLantern = new THREE.Mesh(this.getSphere(0.35, 8), this.amberLanternMat);
+      archLantern.position.set(0, 5.8, 0.6);
+      colGroup.add(archLantern);
+
+      boulevard.add(colGroup);
+    }
 
     // Grand Raised Festival Dance Stage
     const stageW = 12.0;
@@ -452,6 +497,16 @@ export class VivaHeatWorldBuilder {
     const maestro = VivaHeatCharacters.createMasqueradeMaestro(stageW * 0.38, stageH + 0.25, 4.0);
     stageGroup.add(maestro.group);
     director.registerAdultDancer(maestro.dancer);
+
+    // 4. Avant-Garde Couturier Model posing at the fashion runway apex
+    const runwayModel = VivaHeatCharacters.createAvantGardeModel(0, stageH + 0.25, 6.0);
+    stageGroup.add(runwayModel.group);
+    director.registerAdultDancer(runwayModel.dancer);
+
+    // Fashion Runway Extension with Gilded Trim
+    const runwayPlinth = new THREE.Mesh(this.getBox(3.4, 0.22, 6.5), this.sunsetGoldMat);
+    runwayPlinth.position.set(0, stageH + 0.11, 4.0);
+    stageGroup.add(runwayPlinth);
 
     // Stage Spotlights & Skybeams (sweeping theatrical beams)
     [-stageW * 0.45, stageW * 0.45].forEach((lx, idx) => {
@@ -529,14 +584,14 @@ export class VivaHeatWorldBuilder {
       stamenGlowOrb.position.set(0, 0, 0.8);
       headCenter.add(stamenGlowOrb);
 
-      // 6 Sculpted Curved Petals
+      // 6 Outer Sculpted Curved Petals + 6 Inner Staggered Petals (Double-Layer Bloom)
       const petals: THREE.Object3D[] = [];
       for (let p = 0; p < 6; p++) {
         const petalPivot = new THREE.Group();
         const pAngle = (p * Math.PI) / 3;
         petalPivot.rotation.z = pAngle;
 
-        // Curved Petal Blade (Lotus / Hibiscus petal shape)
+        // Curved Outer Petal Blade
         const petalBlade = new THREE.Mesh(this.getBox(1.6, 5.2, 0.18), this.kineticPetalMat);
         petalBlade.position.set(0, 3.2, 0);
         petalBlade.rotation.x = 0.25;
@@ -549,6 +604,18 @@ export class VivaHeatWorldBuilder {
         petalPivot.add(petalBlade);
         headCenter.add(petalPivot);
         petals.push(petalPivot);
+
+        // Inner Petal Layer (staggered by 30 deg, orchid coral)
+        const innerPivot = new THREE.Group();
+        innerPivot.rotation.z = pAngle + Math.PI / 6;
+
+        const innerBlade = new THREE.Mesh(this.getBox(1.1, 3.8, 0.14), this.coralMarbleMat);
+        innerBlade.position.set(0, 2.4, 0.18);
+        innerBlade.rotation.x = 0.35;
+        innerPivot.add(innerBlade);
+
+        headCenter.add(innerPivot);
+        petals.push(innerPivot);
       }
 
       director.registerKineticFlower({
@@ -582,7 +649,10 @@ export class VivaHeatWorldBuilder {
     for (let z = -chunkLength * 0.9; z <= -chunkLength * 0.1; z += palmStep) {
       [-1, 1].forEach((side) => {
         const px = side * (wallX - 0.2); // Placed at ~8.2m, completely clear of |X| <= 4.2m!
-        const trunkH = 8.5 + rng.range(-0.8, 1.2);
+        const rangeVal = typeof (rng as any).range === 'function'
+          ? (rng as any).range(-0.8, 1.2)
+          : (typeof rng.next === 'function' ? (rng.next() * 2.0 - 0.8) : 0);
+        const trunkH = 8.5 + rangeVal;
 
         const tree = new THREE.Group();
         tree.position.set(px, 0, z);
@@ -659,6 +729,17 @@ export class VivaHeatWorldBuilder {
       streamer.position.set(rx, apexH - 2.8, archZ);
       streamer.rotation.y = 0.2;
       archGroup.add(streamer);
+    });
+
+    // Suspended warm amber festival lanterns (Positioned at Y = 9.4m, strictly above Y <= 8.5m running zone!)
+    [-2.8, 2.8].forEach((lx) => {
+      const cord = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.8, 4), this.sunsetGoldMat);
+      cord.position.set(lx, apexH - 0.4, archZ);
+      archGroup.add(cord);
+
+      const lantern = new THREE.Mesh(this.getSphere(0.32, 8), this.amberLanternMat);
+      lantern.position.set(lx, apexH - 0.8, archZ);
+      archGroup.add(lantern);
     });
 
     parent.add(archGroup);

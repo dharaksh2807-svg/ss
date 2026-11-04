@@ -87,6 +87,9 @@ export class FeverDirector {
   private sparkSpawnTimer: number = 0;
 
   private constructor() {
+    if (typeof window !== 'undefined') {
+      (window as any).__FEVER_DIRECTOR__ = this;
+    }
     this.initEventListeners();
     this.initSparkPool();
   }
@@ -96,6 +99,19 @@ export class FeverDirector {
       this.instance = new FeverDirector();
     }
     return this.instance;
+  }
+
+  /**
+   * Prunes detached objects whose chunk parents were recycled.
+   * Completely prevents memory leaks during infinite runs.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => !!(obj && obj.parent);
+    this.flowers = this.flowers.filter((f) => isAttached(f.group));
+    this.dancers = this.dancers.filter((d) => isAttached(d.group));
+    this.skybeams = this.skybeams.filter((b) => isAttached(b.group));
+    this.yachts = this.yachts.filter((y) => isAttached(y.group));
+    this.sunLandmarks = this.sunLandmarks.filter((s) => isAttached(s.group));
   }
 
   private initEventListeners(): void {
@@ -223,10 +239,17 @@ export class FeverDirector {
     return this.sunLandmarks.length;
   }
 
+  public getTotalActiveElements(): number {
+    return this.flowers.length + this.dancers.length + this.skybeams.length +
+           this.yachts.length + this.sunLandmarks.length;
+  }
+
   // --- Main Per-Frame Update Loop ---
 
   public update(delta: number, isCurrentTheme: boolean = true): void {
     if (!isCurrentTheme) return;
+
+    this.pruneDetached();
 
     const dt = Math.min(delta, 0.1);
     this.globalTime += dt;
@@ -236,6 +259,7 @@ export class FeverDirector {
     }
 
     // Determine State from Progression
+    const previousState = this.currentState;
     if (!this.forcedState) {
       if (this.cooldownTimer > 0) {
         this.currentState = 'ARRIVAL';
@@ -249,6 +273,11 @@ export class FeverDirector {
         this.currentState = 'ARRIVAL';
       }
     }
+
+    if (this.currentState !== previousState) {
+      this.stateProgress = 0.0;
+    }
+    this.stateProgress = Math.min(1.0, this.stateProgress + dt * 1.5);
 
     const state = this.getState();
     const reducedMotion = SettingsManager.getInstance().isReducedMotion();

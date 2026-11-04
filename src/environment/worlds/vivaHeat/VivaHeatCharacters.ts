@@ -111,11 +111,17 @@ export class VivaHeatCharacters {
     skirt.position.y = 0.58;
     group.add(skirt);
 
-    // Flared Mermaid Tail ruffles
+    // Flared Mermaid Tail ruffles & Trailing Gossamer Train
     const flareGeo = new THREE.ConeGeometry(0.68, 0.35, 12);
     const flare = new THREE.Mesh(flareGeo, mats.coralGownMat);
     flare.position.y = 0.18;
     group.add(flare);
+
+    // Trailing Evening Gown Train extending gracefully behind
+    const trainMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.85), mats.velvetBurgundyMat);
+    trainMesh.position.set(0, 0.04, -0.45);
+    trainMesh.rotation.x = -0.15;
+    group.add(trainMesh);
 
     // Articulated Torso Node (for hip and spine sways)
     const torsoNode = new THREE.Group();
@@ -439,6 +445,98 @@ export class VivaHeatCharacters {
       dressSwish: swishNode,
       phaseOffset: Math.random() * Math.PI * 2,
       tempo: 3.2,
+      baseY: y
+    };
+
+    return { group, dancer };
+  }
+
+  /**
+   * 4. THE AVANT-GARDE COUTURIER / RUNWAY MODEL
+   * Striking high-fashion silhouette with asymmetrical architectural winged cape,
+   * gold choker, and confident runway pose
+   */
+  public static createAvantGardeModel(
+    x: number,
+    y: number,
+    z: number
+  ): { group: THREE.Group; dancer: AdultDancer } {
+    const mats = this.getMaterials();
+    const group = new THREE.Group();
+    group.name = 'avant_garde_model';
+    group.position.set(x, y, z);
+
+    // Sleek Columnar Gown in Coral Scarlet & Velvet Maroon
+    const gown = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.45, 1.25, 10), mats.coralGownMat);
+    gown.position.y = 0.62;
+    group.add(gown);
+
+    // Torso Node
+    const torsoNode = new THREE.Group();
+    torsoNode.position.y = 1.25;
+    group.add(torsoNode);
+
+    const bodice = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.19, 0.52, 10), mats.velvetBurgundyMat);
+    bodice.position.y = 0.26;
+    torsoNode.add(bodice);
+
+    // Asymmetrical Architectural Winged Cape (High Fashion)
+    const cape = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.95, 0.12), mats.fuchsiaPlumageMat);
+    cape.position.set(-0.25, 0.55, -0.12);
+    cape.rotation.z = -0.35;
+    torsoNode.add(cape);
+
+    // Polished Sunset Gold Collar & Choker
+    const choker = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.16, 8), mats.goldJewelryMat);
+    choker.position.y = 0.56;
+    torsoNode.add(choker);
+
+    // Head Node
+    const headNode = new THREE.Group();
+    headNode.position.y = 0.62;
+    torsoNode.add(headNode);
+
+    const headGeo = new THREE.SphereGeometry(0.17, 10, 10);
+    headGeo.scale(1.0, 1.25, 1.05);
+    const head = new THREE.Mesh(headGeo, mats.skinWarm);
+    head.position.y = 0.24;
+    headNode.add(head);
+
+    // Geometric Metallic Sunglasses / Visor
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 0.20), mats.maskBlackMat);
+    visor.position.set(0, 0.26, 0.06);
+    headNode.add(visor);
+
+    // Left Arm (holding gold designer clutch)
+    const armL = new THREE.Group();
+    armL.position.set(-0.32, 0.48, 0);
+    torsoNode.add(armL);
+
+    const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.55, 6), mats.skinWarm);
+    armLMesh.position.y = -0.22;
+    armL.add(armLMesh);
+
+    const clutch = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.22), mats.goldJewelryMat);
+    clutch.position.set(0, -0.42, 0.08);
+    armL.add(clutch);
+
+    // Right Arm (resting on hip)
+    const armR = new THREE.Group();
+    armR.position.set(0.32, 0.48, 0);
+    torsoNode.add(armR);
+
+    const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.55, 6), mats.skinWarm);
+    armRMesh.position.y = -0.22;
+    armR.add(armRMesh);
+
+    const dancer: AdultDancer = {
+      group,
+      torso: torsoNode,
+      head: headNode,
+      armL,
+      armR,
+      phaseOffset: Math.random() * Math.PI * 2,
+      tempo: 2.0,
       baseY: y
     };
 
