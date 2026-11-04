@@ -4422,6 +4422,370 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  /**
+   * Satirical Chai Stall Billboard Textures (District A: Chai Pe Charcha Chaos)
+   */
+  public static getChaiPeCharchaSignTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_chai_sign_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Warm terracotta / Indian street masala chai storefront palette
+      const bgs = ['#7c2d12', '#9a3412', '#451a03', '#831843'];
+      ctx.fillStyle = bgs[variant % bgs.length];
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold / marigold frame border
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      // Chai cup icon on left
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(42, 60, 20, 0, Math.PI);
+      ctx.lineTo(58, 45);
+      ctx.lineTo(26, 45);
+      ctx.closePath();
+      ctx.fill();
+
+      // Steam wisps
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(35, 40);
+      ctx.bezierCurveTo(32, 30, 42, 25, 36, 18);
+      ctx.moveTo(48, 40);
+      ctx.bezierCurveTo(45, 30, 55, 25, 49, 18);
+      ctx.stroke();
+
+      ctx.textAlign = 'center';
+      const headlines = [
+        '★ SHRI CHAIWALA JUNCTION ★',
+        '★ NATIONAL CHAI SUMMIT ★',
+        '★ BREAKING CHAI REPORT ★',
+        '★ SPECIAL CUTTING CHAI ★'
+      ];
+      const punchlines = [
+        '10,000 DEBATES · 0 DECISIONS MADE',
+        'TEA STILL PENDING · SOLUTION COMING SOON',
+        'BISCUIT FALLS INTO CHAI: INQUIRY ORDERED',
+        'HOT MASALA CHAI · COLD ELECTION PROMISES'
+      ];
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 26px "Trebuchet MS", "Outfit", sans-serif';
+      ctx.fillText(headlines[variant % 4], w * 0.5 + 14, 52);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px "Courier New", monospace';
+      ctx.letterSpacing = '1px';
+      ctx.fillText(punchlines[variant % 4], w * 0.5 + 14, 98);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('• 100% CERTIFIED POLITICAL STEAM • SIP PEACEFULLY •', w * 0.5 + 14, 134);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Satirical Inauguration Infinity Textures (District B: Inauguration Infinity)
+   */
+  public static getInaugurationInfinitySignTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_inauguration_sign_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Deep ceremonial sapphire / royal red
+      const bgs = ['#1e1b4b', '#831843', '#064e3b', '#1e3a8a'];
+      ctx.fillStyle = bgs[variant % bgs.length];
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold rosette ceremonial borders
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      const titles = [
+        '★ GRAND OPENING CELEBRATION ★',
+        '★ OFFICIAL SCISSORS CEREMONY ★',
+        '★ HIGH-LEVEL DIRECTIVE ★',
+        '★ RE-RE-RE-INAUGURATION ★'
+      ];
+      const subs = [
+        'INAUGURATION OF THE PREVIOUS INAUGURATION',
+        'CEREMONY FOR OFFICIAL RIBBON-CUTTING SCISSORS',
+        'COMMITTEE FORMED TO DECIDE NEXT RIBBON COLOR',
+        'PROJECT 12% COMPLETE · CELEBRATION 100%'
+      ];
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 25px "Trebuchet MS", "Outfit", sans-serif';
+      ctx.fillText(titles[variant % 4], w * 0.5, 52);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 15px "Courier New", monospace';
+      ctx.letterSpacing = '0.5px';
+      ctx.fillText(subs[variant % 4], w * 0.5, 96);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('✂ RED CARPET EXTENDED TO INFINITY ✂ PLEASE APPLAUD ON CUE ✂', w * 0.5, 134);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Satirical Breaking News Video Screen Textures (District C: Breaking News Boulevard)
+   */
+  public static getBreakingNewsScreenTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_breaking_news_sign_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // TV Studio electric blue & emergency red
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, w, h);
+
+      // Top Red "BREAKING NEWS" banner
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(0, 0, w, 44);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🔴 BREAKING NEWS • 24/7 SLAPSTICK 🔴', w * 0.5, 32);
+
+      // Center debate panel grid: 4 colorful cartoon commentator boxes
+      const colors = ['#1e3a8a', '#991b1b', '#065f46', '#854d0e'];
+      const names = ['ANCHOR DRAMA', 'PANEL 1 (SHOUTING)', 'PANEL 2 (LOUDER)', 'EXPERT ON CHAI'];
+      for (let i = 0; i < 4; i++) {
+        const bx = 16 + (i % 2) * 242;
+        const by = 54 + Math.floor(i / 2) * 64;
+        ctx.fillStyle = colors[i];
+        ctx.fillRect(bx, by, 238, 58);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, by, 238, 58);
+
+        // Cartoon face dot
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(bx + 24, by + 28, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(names[i], bx + 48, by + 26);
+        ctx.fillStyle = '#93c5fd';
+        ctx.font = '10px monospace';
+        ctx.fillText('SPEECH: "UNACCEPTABLE!"', bx + 48, by + 44);
+      }
+
+      // Bottom Scrolling ticker banner
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(0, 190, w, 66);
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+
+      const tickers = [
+        'EXCLUSIVE: TRAIN ARRIVES ON TIME — NATION SHOCKED, INQUIRY ORDERED',
+        'SPECIAL REPORT: 12 EXPERTS EXPLAIN WHY NOBODY KNOWS WHAT HAPPENED',
+        'PRIME TIME BATTLE: 8 ANCHORS SHOUT SIMULTANEOUSLY AT ONE EMPTY CHAIR',
+        'ALERT: ANOTHER BREAKING NEWS ANNOUNCING IMMINENT BREAKING NEWS'
+      ];
+
+      ctx.font = '900 14px "Courier New", monospace';
+      ctx.fillText(tickers[variant % 4], w * 0.5, 218);
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('WEATHER: 100% CHANCE OF NOISE • LIVE RATINGS: MAXIMUM ABSURDITY', w * 0.5, 242);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Satirical Masterstroke Megacity Textures (District D: Masterstroke Megacity)
+   */
+  public static getMasterstrokeMegacitySignTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_masterstroke_sign_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // High-tech gold & cyber black
+      ctx.fillStyle = '#030712';
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold circuitry lines
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      const headlines = [
+        '⚡ MASTERSTROKE STATUS: 99% ⚡',
+        '⚡ OFFICIAL CIVIC DECLARATION ⚡',
+        '⚡ VIP PROTOCOL NOTICE ⚡',
+        '⚡ TRANSIT ROUTE OPTIMIZATION ⚡'
+      ];
+      const punchlines = [
+        'PLEASE STAND BY FOR NEXT DRAMATIC ANNOUNCEMENT',
+        'NEW ANNOUNCEMENT REGARDING UPCOMING ANNOUNCEMENT',
+        'VIP SELFIE ZONE AHEAD — QUEUE STARTS YESTERDAY',
+        'VIP MOTORCADE: 2 KM • PUBLIC DETOUR: 200 KM'
+      ];
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 24px "Trebuchet MS", "Outfit", sans-serif';
+      ctx.fillText(headlines[variant % 4], w * 0.5, 52);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.fillText(punchlines[variant % 4], w * 0.5, 96);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('COUNTDOWN: [03... 02... 01... RESETTING COUNTDOWN] • HIGH-SPEED GLORY', w * 0.5, 134);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Satirical Parliament & Opposition Mayhem Textures (District E: Parliament Mayhem)
+   */
+  public static getParliamentMayhemSignTexture(variant: number = 0): THREE.Texture {
+    const key = `vip_parliament_sign_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Regal Westminster green & mahogany
+      const bgs = ['#064e3b', '#1e3a8a', '#450a0a', '#172554'];
+      ctx.fillStyle = bgs[variant % bgs.length];
+      ctx.fillRect(0, 0, w, h);
+
+      // Brass colonnade trim
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(12, 12, w - 24, h - 24);
+
+      const headers = [
+        '🏛️ NATIONAL ARGUMENT CHAMPIONSHIP 🏛️',
+        '🏛️ POINT OF ORDER EMERGENCY 🏛️',
+        '🏛️ OFFICIAL DEBATE VERDICT 🏛️',
+        '🏛️ OPPOSITION STRATEGY SUMMIT 🏛️'
+      ];
+      const subs = [
+        'QUESTION ASKED — ANSWER TAKING SCENIC ROUTE',
+        'POINT OF ORDER! ORDER NOT FOUND (HTTP 404)',
+        'BOTH SIDES CLAIM 100% VICTORY ON OWN CHANNELS',
+        'WALKOUT IN PROGRESS — PROCEEDINGS RESUME FOR SNACKS'
+      ];
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 23px "Trebuchet MS", "Outfit", sans-serif';
+      ctx.fillText(headers[variant % 4], w * 0.5, 52);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.fillText(subs[variant % 4], w * 0.5, 96);
+
+      ctx.fillStyle = '#6ee7b7';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('SPEAKER GAVEL: *SLAM SLAM SLAM* • PLEASE DRINK CHAI CALMLY', w * 0.5, 134);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * Trailing News Helicopter Banner Texture
+   */
+  public static getVipHelicopterBannerTexture(): THREE.Texture {
+    return this.getOrCreate('vip_helicopter_banner', () => {
+      const w = 512;
+      const h = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ BREAKING NEWS: SOMETHING IS HAPPENING! ⚡', w * 0.5, 42);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
 }
 
 

@@ -943,6 +943,18 @@ export class CharacterModel {
     // Left arm swings back when sinT > 0 (armSwing > 0), so leftForearm bends more then
     this.targetLeftForearmRot.set(-0.42 - Math.max(0, armSwing) * 0.52, 0, 0);
     this.targetRightForearmRot.set(-0.42 - Math.max(0, -armSwing) * 0.52, 0, 0);
+
+    // Narendra Modi: Charismatic subtle wave or spectacle adjustment flourish during running
+    if (this.currentCharacterId === 'char_modi') {
+      const flourishCycle = (this.animTime * 0.35) % 8.0;
+      if (flourishCycle > 6.0 && flourishCycle < 7.8) {
+        const waveProgress = Math.sin(((flourishCycle - 6.0) / 1.8) * Math.PI);
+        const wave = Math.sin(this.animTime * 6.0) * 0.22 * waveProgress;
+        this.targetRightArmRot.set(-1.85 * waveProgress, 0, 0.45 * waveProgress + wave);
+        this.targetRightForearmRot.set(-0.75 * waveProgress, 0, 0);
+        this.targetHeadRot.y += 0.14 * waveProgress; // Side-eye to camera/crowd
+      }
+    }
   }
 
   private computeJumpTakeoffTarget(): void {
@@ -1173,6 +1185,15 @@ export class CharacterModel {
     this.targetRightLegRot.set(-0.28 - Math.sin(t * 5.5) * 0.22, 0, 0.04);
     this.targetLeftCalfRot.set(0.35 + Math.max(0, Math.sin(t * 5.5)) * 0.45, 0, 0);
     this.targetRightCalfRot.set(0.35 + Math.max(0, -Math.sin(t * 5.5)) * 0.45, 0, 0);
+
+    // Narendra Modi: Comedic near-miss reaction holding onto metallic spectacles!
+    if (this.currentCharacterId === 'char_modi') {
+      this.targetHeadRot.set(-0.25, -wobble * 0.5, 0.12);
+      this.targetRightArmRot.set(-1.65, 0.2, 0.28);
+      this.targetRightForearmRot.set(-1.85, 0, 0);
+      this.targetLeftArmRot.set(-1.45, -0.2, -0.28);
+      this.targetLeftForearmRot.set(-1.75, 0, 0);
+    }
   }
 
   private computeCrashTarget(): void {
@@ -1198,6 +1219,27 @@ export class CharacterModel {
     this.targetLeftCalfRot.set(0.16, 0, 0);
     this.targetRightLegRot.set(0.12, 0, 0.18);
     this.targetRightCalfRot.set(0.14, 0, 0);
+
+    // Narendra Modi: Celebratory Namaste & Selfie victory pose
+    if (this.currentCharacterId === 'char_modi') {
+      const victoryCycle = (this.animTime * 0.5) % 6.0;
+      if (victoryCycle < 3.0) {
+        // Dramatic selfie pose: holding phone high, looking up proudly
+        this.targetRightArmRot.set(-2.25, 0.35, 0.55);
+        this.targetRightForearmRot.set(-0.65, 0, 0);
+        this.targetLeftArmRot.set(0.25, 0, -0.35);
+        this.targetLeftForearmRot.set(-0.85, 0, 0);
+        this.targetHeadRot.set(-0.18, 0.22, -0.08);
+      } else {
+        // Triumphant Folded-Hands Namaste
+        this.targetHeadRot.set(-0.12, 0, 0);
+        this.targetLeftArmRot.set(-0.75, 0.45, -0.45);
+        this.targetLeftForearmRot.set(-1.45, 0, 0);
+        this.targetRightArmRot.set(-0.75, -0.45, 0.45);
+        this.targetRightForearmRot.set(-1.45, 0, 0);
+      }
+      return;
+    }
 
     // Right arm triumphantly raised high in victory pump
     this.targetRightArmRot.set(-2.40, 0, 0.35);
@@ -1238,6 +1280,35 @@ export class CharacterModel {
       this.targetRightArmRot.set(0.1, 0, 0.2);
       this.targetLeftForearmRot.set(-0.2, 0, 0);
       this.targetRightForearmRot.set(-0.2, 0, 0);
+    } else if (this.currentCharacterId === 'char_modi') {
+      // Modi Expressive Idle: Cycles smoothly between Folded-Hands Namaste, adjusting spectacles, and charismatic crowd wave
+      const cycle = (this.animTime * 0.3) % 9.0;
+      if (cycle < 3.5) {
+        // 1. Folded-Hands Namaste (Arms pressed together at chest, slight gracious bow)
+        this.targetSpineRot.set(0.08, 0, 0);
+        this.targetHeadRot.set(-0.06, 0, 0);
+        this.targetLeftArmRot.set(-0.65, 0.45, -0.45);
+        this.targetLeftForearmRot.set(-1.45, 0, 0);
+        this.targetRightArmRot.set(-0.65, -0.45, 0.45);
+        this.targetRightForearmRot.set(-1.45, 0, 0);
+      } else if (cycle < 6.0) {
+        // 2. Adjusting Metallic Spectacles (Right hand touches glasses rim, left hand on satchel)
+        this.targetSpineRot.set(-0.02, 0.05, 0);
+        this.targetHeadRot.set(-0.04, -0.12, 0.08); // Keen appraisal tilt
+        this.targetRightArmRot.set(-1.55, 0.25, 0.35);
+        this.targetRightForearmRot.set(-1.85, 0, 0);
+        this.targetLeftArmRot.set(0.15, 0, -0.35);
+        this.targetLeftForearmRot.set(-0.45, 0, 0);
+      } else {
+        // 3. Charismatic Crowd Wave (Right arm raised high, waving side to side)
+        const wave = Math.sin(this.animTime * 4.0) * 0.28;
+        this.targetSpineRot.set(-0.04, 0.12, 0);
+        this.targetHeadRot.set(-0.08, 0.18, 0);
+        this.targetRightArmRot.set(-2.15, 0, 0.35 + wave);
+        this.targetRightForearmRot.set(-0.65, 0, 0);
+        this.targetLeftArmRot.set(0.12, 0, -0.30);
+        this.targetLeftForearmRot.set(-0.35, 0, 0);
+      }
     } else {
       this.targetLeftArmRot.set(0.05, 0, -0.25);
       this.targetRightArmRot.set(-0.1, 0, 0.3);

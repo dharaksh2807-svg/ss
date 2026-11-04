@@ -5,6 +5,7 @@ import { TextureGenerator } from '../scene/TextureGenerator';
 import { EnvironmentTheme, EnvironmentId } from './EnvironmentConfig';
 import { LandmarkType, SmallMomentType } from './EnvironmentalEncounterDirector';
 import { SceneryPool } from './SceneryPool';
+import { VipSatireWorldBuilder } from './VipSatireWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -7515,32 +7516,21 @@ export class SceneryFactory {
     const vipGroup = new THREE.Group();
     vipGroup.name = 'vip_express_scenery';
 
-    // 1. Red-carpeted ceremonial concourses, ivory balustrades & golden stanchions
-    this.buildVipConcoursesAndBanners(vipGroup, roadbedWidth, chunkLength, rng, detail);
+    // Delegate to the 5 distinct political comedy districts!
+    VipSatireWorldBuilder.getInstance().buildDistrictScenery(vipGroup, roadbedWidth, chunkLength, seed, detail);
 
-    // 2. High overhead ceremonial arches (clearance >= 9.5m strictly above 8.5m running envelope)
-    this.buildVipOverheadArches(vipGroup, roadbedWidth, chunkLength, rng, detail);
-
-    // 3. Trackside ceremonial set dressing & floral garlands
-    if (detail !== 'MINIMAL') {
-      this.buildVipTracksideDecorations(vipGroup, roadbedWidth, chunkLength, rng, detail);
-    }
-
-    // 4. The 6 Background Comedy Events (Always deterministic and non-intrusive)
-    this.buildVipComedyEvents(vipGroup, roadbedWidth, chunkLength, rng, detail);
-
-    // 5. Deterministic Landmark Encounter (Seeded variation across runs)
+    // Deterministic Landmark Encounter (Seeded variation across runs)
     const landmarkChoice = Math.abs(seed) % 4;
     const landmarkZ = -chunkLength * 0.5;
 
     if (landmarkChoice === 0) {
-      this.buildVipCeremonialPlaza(vipGroup, chunkLength, landmarkZ, rng);
+      VipSatireWorldBuilder.getInstance().buildCeremonialPlaza(vipGroup, chunkLength, landmarkZ, rng);
     } else if (landmarkChoice === 1) {
-      this.buildVipPressEnclosure(vipGroup, chunkLength, landmarkZ, rng);
+      VipSatireWorldBuilder.getInstance().buildPressEnclosure(vipGroup, chunkLength, landmarkZ, rng);
     } else if (landmarkChoice === 2) {
-      this.buildVipSecretariatColonnade(vipGroup, chunkLength, landmarkZ, rng);
+      VipSatireWorldBuilder.getInstance().buildSecretariatColonnade(vipGroup, chunkLength, landmarkZ, rng);
     } else {
-      this.buildVipConvoyHelipad(vipGroup, chunkLength, landmarkZ, rng);
+      VipSatireWorldBuilder.getInstance().buildConvoyHelipad(vipGroup, chunkLength, landmarkZ, rng);
     }
 
     group.add(vipGroup);

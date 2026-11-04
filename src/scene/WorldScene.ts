@@ -7,6 +7,7 @@ import { EnvironmentTheme, EnvironmentManager, MODERN_METRO_THEME, HISTORIC_QUAR
 import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDirector';
 import { TextureGenerator } from './TextureGenerator';
 import { SeededRandom } from '../environment/SceneryFactory';
+import { VipComedyEventDirector } from '../environment/VipComedyEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2103,6 +2104,9 @@ export class WorldScene {
         }
         this.vipConfettiGeo.attributes.position.needsUpdate = true;
       }
+
+      // Update VipComedyEventDirector animated satire gags across districts
+      VipComedyEventDirector.getInstance().update(delta, true);
     }
   }
 

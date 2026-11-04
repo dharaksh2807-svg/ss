@@ -254,6 +254,7 @@ export class Game {
     this.cameraController.setLobbyMode(true);
 
     this.setupEvents();
+    this.syncChaserArchetype();
     this.setupLifecycle();
     this.inputManager.setEnabled(false);
     this.startScreen.show();
@@ -353,6 +354,9 @@ export class Game {
     bus.on('GRAPHICS_QUALITY_CHANGED', (quality: 'HIGH' | 'MEDIUM' | 'LOW') => {
       this.worldScene.setGraphicsQuality(quality);
     });
+
+    bus.on('CHARACTER_EQUIPPED', () => this.syncChaserArchetype());
+    bus.on('ENVIRONMENT_PREFERENCE_CHANGED', () => this.syncChaserArchetype());
 
     bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode(), false));
     bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode, false));
@@ -634,6 +638,7 @@ export class Game {
     this.soundManager.setEnvironmentAmbience(startEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
+    this.syncChaserArchetype(startEnvId);
     this.cameraController.reset(this.player.position);
 
     // Initialize Bug Snapshot Context for current run
@@ -821,10 +826,25 @@ export class Game {
     this.soundManager.setEnvironmentAmbience(menuEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
+    this.syncChaserArchetype(menuEnvId);
     this.openingSequence.skip();
     this.player.mesh.rotation.y = Math.PI - 0.2;
     this.cameraController.reset(this.player.position);
     this.inputManager.setEnabled(false);
+  }
+
+  private syncChaserArchetype(envId?: string): void {
+    const activeEnvId = envId || this.trackManager.getActiveEnvironment();
+    const effectiveChar = this.progression.normalizeCharacterId(this.progression.getSelectedCharacter());
+    if (effectiveChar === 'char_modi') {
+      this.chaser.setChaserArchetype('RAHUL_RIVAL');
+    } else if (effectiveChar === 'char_rahul_gandhi') {
+      this.chaser.setChaserArchetype('MODI_RIVAL');
+    } else if (activeEnvId === 'VIP_EXPRESS') {
+      this.chaser.setChaserArchetype('VIP_SECURITY');
+    } else {
+      this.chaser.setChaserArchetype('OFFICER');
+    }
   }
 
   public startPractice(moduleId: PracticeModuleId, isHarder: boolean = false): void {

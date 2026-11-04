@@ -24,6 +24,12 @@ export type ChaserMode =
   | 'NEAR_MISS'
   | 'CAUGHT';
 
+export type ChaserArchetype =
+  | 'OFFICER'
+  | 'RAHUL_RIVAL'
+  | 'MODI_RIVAL'
+  | 'VIP_SECURITY';
+
 export class ChaserModel {
   public mesh: THREE.Group;
 
@@ -41,6 +47,13 @@ export class ChaserModel {
   private rightLegGroup: THREE.Group;
   private rightCalfGroup: THREE.Group;
   private shadowMesh: THREE.Mesh;
+
+  // Visual archetype meshes & state
+  private archetype: ChaserArchetype = 'OFFICER';
+  private torsoMesh?: THREE.Mesh;
+  private pelvisMesh?: THREE.Mesh;
+  private tieMesh?: THREE.Mesh;
+  private badgeMesh?: THREE.Mesh;
 
   // State management
   private actionState: ChaserActionState = 'IDLE';
@@ -147,6 +160,7 @@ export class ChaserModel {
     const pelvisMesh = new THREE.Mesh(pelvisGeo, pantsMat);
     pelvisMesh.castShadow = true;
     pelvisMesh.receiveShadow = true;
+    this.pelvisMesh = pelvisMesh;
     this.hipsGroup.add(pelvisMesh);
 
     // Duty Belt
@@ -186,6 +200,7 @@ export class ChaserModel {
     torsoMesh.position.y = torsoHeight * 0.5;
     torsoMesh.castShadow = true;
     torsoMesh.receiveShadow = true;
+    this.torsoMesh = torsoMesh;
     this.spineGroup.add(torsoMesh);
 
     // White Shirt V-Neck & Dark Tie
@@ -197,6 +212,7 @@ export class ChaserModel {
     const tieGeo = new THREE.BoxGeometry(0.05, 0.22, 0.03);
     const tieMesh = new THREE.Mesh(tieGeo, tieMat);
     tieMesh.position.set(0, torsoHeight * 0.68, 0.29);
+    this.tieMesh = tieMesh;
     this.spineGroup.add(tieMesh);
 
     // Gold Buttons down jacket
@@ -212,6 +228,7 @@ export class ChaserModel {
     const badgeMesh = new THREE.Mesh(badgeGeo, badgeGoldMat);
     badgeMesh.position.set(0.14, torsoHeight * 0.72, 0.28);
     badgeMesh.rotation.y = -0.15;
+    this.badgeMesh = badgeMesh;
     this.spineGroup.add(badgeMesh);
 
     // Gold Epaulettes (Shoulder rank straps)
@@ -386,6 +403,41 @@ export class ChaserModel {
 
     // Initial standby configuration
     this.reset();
+  }
+
+  public getArchetype(): ChaserArchetype {
+    return this.archetype;
+  }
+
+  public setChaserArchetype(archetype: ChaserArchetype): void {
+    this.archetype = archetype;
+    this.mesh.userData.archetype = archetype;
+
+    if (archetype === 'RAHUL_RIVAL') {
+      // Signature white polo shirt and athletic navy track trousers
+      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0xf8fafc);
+      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e3a8a);
+      if (this.tieMesh) this.tieMesh.visible = false;
+      if (this.badgeMesh) this.badgeMesh.visible = false;
+    } else if (archetype === 'MODI_RIVAL') {
+      // Saffron/orange waistcoat over white kurta
+      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0xea580c);
+      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0xffffff);
+      if (this.tieMesh) this.tieMesh.visible = false;
+      if (this.badgeMesh) this.badgeMesh.visible = false;
+    } else if (archetype === 'VIP_SECURITY') {
+      // Dark slate VIP security safari suit
+      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e293b);
+      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e293b);
+      if (this.tieMesh) this.tieMesh.visible = false;
+      if (this.badgeMesh) this.badgeMesh.visible = false;
+    } else {
+      // Standard Transit Officer Thorne
+      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1a2b49);
+      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x334155);
+      if (this.tieMesh) this.tieMesh.visible = true;
+      if (this.badgeMesh) this.badgeMesh.visible = true;
+    }
   }
 
   public reset(): void {
