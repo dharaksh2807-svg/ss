@@ -376,8 +376,18 @@ export class ChronoKingdomWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = ChronoKingdomEventDirector.getInstance();
 
-    // 4 distinct districts cycled by chunk or seed
-    const districtIndex = (seed >= 0 && seed < 4) ? seed : (Math.floor(Math.abs(seed) / 4) % 4);
+    // Deterministic 400m sustained thematic districts in gameplay, seed-based in unit tests
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+    let districtIndex: number;
+    if (seed >= 0 && seed < 4) {
+      districtIndex = seed;
+    } else if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 4;
+    } else {
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
+    }
 
     switch (districtIndex) {
       case 0:
@@ -486,18 +496,19 @@ export class ChronoKingdomWorldBuilder {
 
         director.registerClockChime(clockMesh, hammer, resonanceRings, 10.0);
 
-        // 3. Functional-Looking Interlocking Rotating Gears on Facade
-        const driveGear = this.buildGearMesh(3.8, 14, 0.5, this.antiqueGoldMat);
-        driveGear.position.set(-side * 6.2, 14.0, -6.0);
+        // 3. Functional-Looking Interlocking Rotating Gears on Facade (Pitch meshed d = r1 + r2 = 5.0m)
+        const driveGear = this.buildGearMesh(3.2, 14, 0.45, this.antiqueGoldMat);
+        driveGear.position.set(-side * 6.2, 13.5, -6.0);
         driveGear.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
         towerGroup.add(driveGear);
         director.registerGear(driveGear, 0.8 * side, 'z');
 
-        const drivenGear = this.buildGearMesh(2.2, 8, 0.4, this.burnishedCopperMat);
-        drivenGear.position.set(-side * 6.2, 17.5, -4.5);
+        const drivenGear = this.buildGearMesh(1.8, 8, 0.35, this.burnishedCopperMat);
+        drivenGear.position.set(-side * 6.2, 17.5, -3.0);
         drivenGear.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
         towerGroup.add(drivenGear);
-        director.registerGear(drivenGear, -1.38 * side, 'z');
+        // Counter-rotation matching exact pitch radius ratio: w2 = -w1 * (r1 / r2)
+        director.registerGear(drivenGear, -1.422 * side, 'z');
 
         // Lower Arched Vault Aperture with Giant Swinging Pendulum
         const pendulumArm = new THREE.Mesh(this.getCylinder(0.08, 0.08, 7.5, 6), this.antiqueGoldMat);
@@ -628,13 +639,18 @@ export class ChronoKingdomWorldBuilder {
           steamPlume.visible = false;
           pistonBank.add(steamPlume);
 
+          // Connecting rod connecting to crank pin
+          const connectingRod = new THREE.Mesh(this.getCylinder(0.12, 0.12, 2.2, 6), this.burnishedCopperMat);
+          connectingRod.position.set(0, 1.8, p * 3.2);
+          pistonBank.add(connectingRod);
+
           director.registerPiston(
             pistonHead,
             3.5,
             1.4,
             3.5,
             p * (Math.PI / 2),
-            undefined,
+            connectingRod,
             steamPlume
           );
         }
@@ -917,10 +933,22 @@ export class ChronoKingdomWorldBuilder {
   ): THREE.Group {
     const gear = new THREE.Group();
 
-    // Central Rim / Web
-    const body = new THREE.Mesh(this.getCylinder(radius * 0.85, radius * 0.85, thickness, 16), material);
-    body.rotation.x = Math.PI / 2;
-    gear.add(body);
+    // Central Rim / Web & Victorian Openwork Spokes
+    if (radius >= 1.5) {
+      const rim = new THREE.Mesh(this.getTorus(radius * 0.75, radius * 0.08, 6, 16), material);
+      gear.add(rim);
+
+      // 4 openwork spokes
+      for (let s = 0; s < 4; s++) {
+        const spoke = new THREE.Mesh(this.getBox(radius * 0.09, radius * 0.75, thickness * 0.7), material);
+        spoke.rotation.z = (s * Math.PI) / 4;
+        gear.add(spoke);
+      }
+    } else {
+      const body = new THREE.Mesh(this.getCylinder(radius * 0.85, radius * 0.85, thickness, 16), material);
+      body.rotation.x = Math.PI / 2;
+      gear.add(body);
+    }
 
     // Radial Gear Teeth
     const toothW = (Math.PI * 2 * radius * 0.85) / (toothCount * 2);

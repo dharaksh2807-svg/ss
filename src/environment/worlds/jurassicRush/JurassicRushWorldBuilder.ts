@@ -305,7 +305,18 @@ export class JurassicRushWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = JurassicRushEventDirector.getInstance();
 
-    const districtIndex = (seed >= 0 && seed < 4) ? seed : (Math.floor(Math.abs(seed) / 4) % 4);
+    // Deterministic 400m sustained thematic districts in gameplay, seed-based in unit tests
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+    let districtIndex: number;
+    if (seed >= 0 && seed < 4) {
+      districtIndex = seed;
+    } else if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 4;
+    } else {
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
+    }
 
     switch (districtIndex) {
       case 0:

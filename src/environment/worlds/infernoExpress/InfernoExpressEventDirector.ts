@@ -66,13 +66,34 @@ export class InfernoExpressEventDirector {
 
   private globalTime: number = 0;
 
-  private constructor() {}
+  private constructor() {
+    if (typeof window !== 'undefined') {
+      (window as any).__INFERNO_DIRECTOR__ = this;
+    }
+  }
 
   public static getInstance(): InfernoExpressEventDirector {
     if (!this.instance) {
       this.instance = new InfernoExpressEventDirector();
     }
     return this.instance;
+  }
+
+  /**
+   * Prunes detached objects whose chunk parents were recycled.
+   * Completely prevents unbounded accumulation over long runs.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.volcanoes = this.volcanoes.filter(v => isAttached(v.craterMesh));
+    this.waterfalls = this.waterfalls.filter(w => isAttached(w.fallMesh));
+    this.chains = this.chains.filter(c => isAttached(c.chainGroup));
+    this.geysers = this.geysers.filter(g => isAttached(g.geyserMesh));
+    this.collapsingRocks = this.collapsingRocks.filter(r => isAttached(r.monolithMesh));
+    this.blastDoors = this.blastDoors.filter(b => isAttached(b.leftDoor));
   }
 
   public reset(): void {
@@ -204,6 +225,8 @@ export class InfernoExpressEventDirector {
 
   public update(delta: number, isCurrentTheme: boolean = true): void {
     if (!isCurrentTheme || delta <= 0) return;
+
+    this.pruneDetached();
 
     const clampedDelta = Math.min(delta, 0.1);
     this.globalTime += clampedDelta;
@@ -366,4 +389,8 @@ export class InfernoExpressEventDirector {
   public getGeyserCount(): number { return this.geysers.length; }
   public getCollapsingRockCount(): number { return this.collapsingRocks.length; }
   public getBlastDoorCount(): number { return this.blastDoors.length; }
+  public getTotalActiveElements(): number {
+    return this.volcanoes.length + this.waterfalls.length + this.chains.length +
+           this.geysers.length + this.collapsingRocks.length + this.blastDoors.length;
+  }
 }

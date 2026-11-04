@@ -287,12 +287,38 @@ pass(`Showcase locomotive dimensions (${trainSize.x.toFixed(1)}m x ${trainSize.y
 console.log('\n--- Suite 7: Teardown & Lifecycle Cleanup ---');
 
 director.reset();
+
+// Verify detached object pruning
+const temporaryChunk = new THREE.Group();
+builder.buildLostJungleDistrict(temporaryChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+const activeBeforePrune = director.getTotalActiveElements();
+assert.ok(activeBeforePrune > 0, 'Active elements registered before prune');
+
+// Simulate chunk recycling via recursive child release
+function releaseGroup(g: THREE.Group) {
+  while (g.children.length > 0) {
+    const child = g.children[0];
+    g.remove(child);
+    if (child instanceof THREE.Group) {
+      releaseGroup(child);
+    }
+  }
+}
+releaseGroup(temporaryChunk);
+
+// Running director update triggers pruneDetached()
+director.update(0.016, true);
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Detached objects pruned on chunk recycle');
+pass('Detached objects cleanly pruned from registries during chunk recycling');
+
+director.reset();
 assert.strictEqual(director.getSauropodCount(), 0, 'Sauropods reset');
 assert.strictEqual(director.getCarnivoreCount(), 0, 'Carnivores reset');
 assert.strictEqual(director.getRaptorPackCount(), 0, 'Raptors reset');
 assert.strictEqual(director.getPterosaurCount(), 0, 'Pterosaurs reset');
 assert.strictEqual(director.getHerbivoreHerdCount(), 0, 'Herbivores reset');
 assert.strictEqual(director.getCuriousWatcherCount(), 0, 'Curious watchers reset');
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Event director reset() cleanly disposes all references');
 
 console.log('\n=======================================================');

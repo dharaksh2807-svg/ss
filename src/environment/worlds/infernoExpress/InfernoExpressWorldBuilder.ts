@@ -309,7 +309,18 @@ export class InfernoExpressWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = InfernoExpressEventDirector.getInstance();
 
-    const districtIndex = (seed >= 0 && seed < 4) ? seed : (Math.floor(Math.abs(seed) / 4) % 4);
+    // Deterministic 400m sustained thematic districts in gameplay, seed-based in unit tests
+    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      ? group.parent.position.z
+      : 0;
+    let districtIndex: number;
+    if (seed >= 0 && seed < 4) {
+      districtIndex = seed;
+    } else if (worldZ !== 0) {
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 4;
+    } else {
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
+    }
 
     switch (districtIndex) {
       case 0:
@@ -361,6 +372,15 @@ export class InfernoExpressWorldBuilder {
     lavaOcean.rotation.x = -Math.PI / 2;
     lavaOcean.position.set(0, -3.5, -chunkLength * 0.5);
     districtA.add(lavaOcean);
+
+    // Floating semi-solidified obsidian crust plates across the lava sea
+    [-1, 1].forEach((side) => {
+      [0.2, 0.5, 0.8].forEach((ratio, idx) => {
+        const crustPlate = new THREE.Mesh(this.getBox(12.0 + idx * 2.0, 0.2, 14.0), this.blackObsidianMat);
+        crustPlate.position.set(side * (wallX + 16.0 + idx * 4.0), -3.38, -chunkLength * ratio);
+        districtA.add(crustPlate);
+      });
+    });
 
     [-1, 1].forEach((side) => {
       // 2. Suspended Steel Viaduct Walkway with Glowing Magma Curbs

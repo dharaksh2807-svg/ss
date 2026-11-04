@@ -285,6 +285,31 @@ pass(`Showcase train dimensions (${trainSize.x.toFixed(1)}m x ${trainSize.y.toFi
 console.log('\n--- Suite 7: Teardown & Lifecycle Cleanup ---');
 
 director.reset();
+
+// Verify detached object pruning
+const temporaryChunk = new THREE.Group();
+builder.buildGrandClockworkCapital(temporaryChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+const activeBeforePrune = director.getTotalActiveElements();
+assert.ok(activeBeforePrune > 0, 'Active elements registered before prune');
+
+// Simulate chunk recycling via recursive child release
+function releaseGroup(g: THREE.Group) {
+  while (g.children.length > 0) {
+    const child = g.children[0];
+    g.remove(child);
+    if (child instanceof THREE.Group) {
+      releaseGroup(child);
+    }
+  }
+}
+releaseGroup(temporaryChunk);
+
+// Running director update triggers pruneDetached()
+director.update(0.016, true);
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Detached objects pruned on chunk recycle');
+pass('Detached objects cleanly pruned from registries during chunk recycling');
+
+director.reset();
 assert.strictEqual(director.getGearCount(), 0, 'Gears reset');
 assert.strictEqual(director.getChimeCount(), 0, 'Chimes reset');
 assert.strictEqual(director.getBridgeCount(), 0, 'Bridges reset');
@@ -292,6 +317,7 @@ assert.strictEqual(director.getPistonCount(), 0, 'Pistons reset');
 assert.strictEqual(director.getObservatoryCount(), 0, 'Observatories reset');
 assert.strictEqual(director.getSkybridgeTrainCount(), 0, 'Skybridge trains reset');
 assert.strictEqual(director.getTimePortalCount(), 0, 'Time portals reset');
+assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Event director reset() cleanly disposes all references');
 
 console.log('\n=======================================================');

@@ -84,13 +84,34 @@ export class JurassicRushEventDirector {
 
   private globalTime: number = 0;
 
-  private constructor() {}
+  private constructor() {
+    if (typeof window !== 'undefined') {
+      (window as any).__JURASSIC_DIRECTOR__ = this;
+    }
+  }
 
   public static getInstance(): JurassicRushEventDirector {
     if (!this.instance) {
       this.instance = new JurassicRushEventDirector();
     }
     return this.instance;
+  }
+
+  /**
+   * Prunes detached objects whose chunk parents were recycled.
+   * Completely prevents unbounded accumulation over long runs.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.sauropods = this.sauropods.filter(s => isAttached(s.group));
+    this.carnivores = this.carnivores.filter(c => isAttached(c.group));
+    this.raptorPacks = this.raptorPacks.filter(r => isAttached(r.packGroup));
+    this.pterosaurs = this.pterosaurs.filter(p => isAttached(p.group));
+    this.herbivoreHerds = this.herbivoreHerds.filter(h => isAttached(h.herdGroup));
+    this.curiousWatchers = this.curiousWatchers.filter(w => isAttached(w.dinosaurGroup));
   }
 
   public reset(): void {
@@ -246,6 +267,8 @@ export class JurassicRushEventDirector {
   public update(delta: number, isCurrentTheme: boolean = true): void {
     if (!isCurrentTheme || delta <= 0) return;
 
+    this.pruneDetached();
+
     const clampedDelta = Math.min(delta, 0.1);
     this.globalTime += clampedDelta;
 
@@ -389,4 +412,8 @@ export class JurassicRushEventDirector {
   public getPterosaurCount(): number { return this.pterosaurs.length; }
   public getHerbivoreHerdCount(): number { return this.herbivoreHerds.length; }
   public getCuriousWatcherCount(): number { return this.curiousWatchers.length; }
+  public getTotalActiveElements(): number {
+    return this.sauropods.length + this.carnivores.length + this.raptorPacks.length +
+           this.pterosaurs.length + this.herbivoreHerds.length + this.curiousWatchers.length;
+  }
 }

@@ -76,13 +76,35 @@ export class ChronoKingdomEventDirector {
 
   private globalTime: number = 0;
 
-  private constructor() {}
+  private constructor() {
+    if (typeof window !== 'undefined') {
+      (window as any).__CHRONO_DIRECTOR__ = this;
+    }
+  }
 
   public static getInstance(): ChronoKingdomEventDirector {
     if (!this.instance) {
       this.instance = new ChronoKingdomEventDirector();
     }
     return this.instance;
+  }
+
+  /**
+   * Prunes detached objects whose chunk parents were recycled.
+   * Completely prevents unbounded accumulation over long runs.
+   */
+  private pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      return !!(obj && obj.parent);
+    };
+
+    this.gears = this.gears.filter(g => isAttached(g.mesh));
+    this.chimes = this.chimes.filter(c => isAttached(c.clockFaceMesh));
+    this.bridges = this.bridges.filter(b => isAttached(b.group));
+    this.pistons = this.pistons.filter(p => isAttached(p.pistonHead));
+    this.observatories = this.observatories.filter(o => isAttached(o.outerRing));
+    this.skybridgeTrains = this.skybridgeTrains.filter(t => isAttached(t.group));
+    this.timePortals = this.timePortals.filter(p => isAttached(p.outerRing));
   }
 
   /**
@@ -231,6 +253,8 @@ export class ChronoKingdomEventDirector {
 
   public update(delta: number, isCurrentTheme: boolean = true): void {
     if (!isCurrentTheme || delta <= 0) return;
+
+    this.pruneDetached();
 
     const clampedDelta = Math.min(delta, 0.1);
     this.globalTime += clampedDelta;
@@ -384,7 +408,7 @@ export class ChronoKingdomEventDirector {
     }
   }
 
-  // Getters for test verification
+  // Getters for test verification and telemetry
   public getGearCount(): number { return this.gears.length; }
   public getChimeCount(): number { return this.chimes.length; }
   public getBridgeCount(): number { return this.bridges.length; }
@@ -392,4 +416,9 @@ export class ChronoKingdomEventDirector {
   public getObservatoryCount(): number { return this.observatories.length; }
   public getSkybridgeTrainCount(): number { return this.skybridgeTrains.length; }
   public getTimePortalCount(): number { return this.timePortals.length; }
+  public getTotalActiveElements(): number {
+    return this.gears.length + this.chimes.length + this.bridges.length +
+           this.pistons.length + this.observatories.length +
+           this.skybridgeTrains.length + this.timePortals.length;
+  }
 }
