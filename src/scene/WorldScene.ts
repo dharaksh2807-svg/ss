@@ -10,6 +10,9 @@ import { SeededRandom } from '../environment/SceneryFactory';
 import { VipComedyEventDirector } from '../environment/VipComedyEventDirector';
 import { RahulComedyEventDirector } from '../environment/worlds/rahulverse/RahulComedyEventDirector';
 import { MidnightVelvetEventDirector } from '../environment/worlds/midnightVelvet/MidnightVelvetEventDirector';
+import { ChronoKingdomEventDirector } from '../environment/worlds/chronoKingdom/ChronoKingdomEventDirector';
+import { InfernoExpressEventDirector } from '../environment/worlds/infernoExpress/InfernoExpressEventDirector';
+import { JurassicRushEventDirector } from '../environment/worlds/jurassicRush/JurassicRushEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2119,6 +2122,21 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'MIDNIGHT_VELVET') {
       const delta = dt || 0.016;
       MidnightVelvetEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'CHRONO_KINGDOM') {
+      const delta = dt || 0.016;
+      ChronoKingdomEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
+      const delta = dt || 0.016;
+      InfernoExpressEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'JURASSIC_RUSH') {
+      const delta = dt || 0.016;
+      JurassicRushEventDirector.getInstance().update(delta, true);
     }
   }
 

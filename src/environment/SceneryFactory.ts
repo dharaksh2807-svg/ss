@@ -8,6 +8,9 @@ import { SceneryPool } from './SceneryPool';
 import { VipSatireWorldBuilder } from './VipSatireWorldBuilder';
 import { RahulSatireWorldBuilder } from './worlds/rahulverse/RahulSatireWorldBuilder';
 import { MidnightVelvetWorldBuilder } from './worlds/midnightVelvet/MidnightVelvetWorldBuilder';
+import { ChronoKingdomWorldBuilder } from './worlds/chronoKingdom/ChronoKingdomWorldBuilder';
+import { InfernoExpressWorldBuilder } from './worlds/infernoExpress/InfernoExpressWorldBuilder';
+import { JurassicRushWorldBuilder } from './worlds/jurassicRush/JurassicRushWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1573,6 +1576,12 @@ export class SceneryFactory {
       this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'MIDNIGHT_VELVET') {
       this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'CHRONO_KINGDOM') {
+      this.buildChronoKingdomScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'INFERNO_EXPRESS') {
+      this.buildInfernoExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'JURASSIC_RUSH') {
+      this.buildJurassicRushScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -7620,6 +7629,60 @@ export class SceneryFactory {
     MidnightVelvetWorldBuilder.getInstance().buildDistrictScenery(velvetGroup, roadbedWidth, chunkLength, seed, detail);
 
     group.add(velvetGroup);
+  }
+
+  // =========================================================================
+  // CHRONO KINGDOM: THE CLOCKWORK EMPIRE
+  // =========================================================================
+
+  private buildChronoKingdomScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const chronoGroup = new THREE.Group();
+    chronoGroup.name = 'chrono_kingdom_scenery';
+    ChronoKingdomWorldBuilder.getInstance().buildDistrictScenery(chronoGroup, roadbedWidth, chunkLength, seed, detail);
+    group.add(chronoGroup);
+  }
+
+  // =========================================================================
+  // INFERNO EXPRESS: RAILS THROUGH HELLFIRE
+  // =========================================================================
+
+  private buildInfernoExpressScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const infernoGroup = new THREE.Group();
+    infernoGroup.name = 'inferno_express_scenery';
+    InfernoExpressWorldBuilder.getInstance().buildDistrictScenery(infernoGroup, roadbedWidth, chunkLength, seed, detail);
+    group.add(infernoGroup);
+  }
+
+  // =========================================================================
+  // JURASSIC RUSH: THE LOST WORLD RAILWAY
+  // =========================================================================
+
+  private buildJurassicRushScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const jurassicGroup = new THREE.Group();
+    jurassicGroup.name = 'jurassic_rush_scenery';
+    JurassicRushWorldBuilder.getInstance().buildDistrictScenery(jurassicGroup, roadbedWidth, chunkLength, seed, detail);
+    group.add(jurassicGroup);
   }
 
   /**

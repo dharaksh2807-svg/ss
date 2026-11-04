@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET' | 'CHRONO_KINGDOM' | 'INFERNO_EXPRESS' | 'JURASSIC_RUSH';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -139,6 +139,39 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     previewImage: '/worlds/midnight_velvet.png',
     features: ['Art Deco Grandeur', 'Moonlight Marina', 'The Golden Hour Club', 'Midnight Grand Terminal'],
     implemented: true, available: true, dynamicEligible: true, icon: '🍸', accentColor: '#d4af37'
+  },
+  {
+    id: 'CHRONO_KINGDOM', environmentId: 'CHRONO_KINGDOM', displayName: 'Chrono Kingdom',
+    description: 'A colossal steampunk clockwork empire where steam-powered trains race through majestic mechanical cities of moving gears, golden towers, glowing furnaces, and celestial observatories.',
+    subtitle: 'The Clockwork Empire',
+    tagline: 'Race through colossal steampunk cities of moving gears, golden clocktowers, and celestial observatories.',
+    rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 18000, keyCost: null, previewReference: 'environment:CHRONO_KINGDOM',
+    previewImage: '/worlds/chrono_kingdom.png',
+    features: ['Grand Clockwork Capital', 'Time Foundry', 'Chrono Observatory', 'Fractured Time Rifts'],
+    implemented: true, available: true, dynamicEligible: true, icon: '⚙️', accentColor: '#d4af37'
+  },
+  {
+    id: 'INFERNO_EXPRESS', environmentId: 'INFERNO_EXPRESS', displayName: 'Inferno Express',
+    description: 'An intense, spectacular fantasy volcanic railway world where trains race across lava oceans, obsidian fortresses, colossal magma cataracts, and glowing foundry machinery.',
+    subtitle: 'Rails Through Hellfire',
+    tagline: 'Race across glowing lava seas, towering obsidian citadels, and volcanic ashfall summits.',
+    rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 18000, keyCost: null, previewReference: 'environment:INFERNO_EXPRESS',
+    previewImage: '/worlds/inferno_express.png',
+    features: ['Molten Lava Ocean', 'Obsidian Citadel', 'Magma Foundry', 'Ashfall Summit'],
+    implemented: true, available: true, dynamicEligible: true, icon: '🌋', accentColor: '#f97316'
+  },
+  {
+    id: 'JURASSIC_RUSH', environmentId: 'JURASSIC_RUSH', displayName: 'Jurassic Rush',
+    description: 'An exhilarating prehistoric railway world filled with colossal dinosaurs, ancient jungle waterfalls, dramatic canyon gorges, mysterious megalithic ruins, and rugged expedition trains.',
+    subtitle: 'The Lost World Railway',
+    tagline: 'Thunder through prehistoric jungles, waterfall canyons, ancient ruins, and dinosaur encounters.',
+    rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 18000, keyCost: null, previewReference: 'environment:JURASSIC_RUSH',
+    previewImage: '/worlds/jurassic_rush.png',
+    features: ['Lost Jungle Canopy', 'Valley of Giants', 'Raptor Canyon', 'Ancient Sanctuary'],
+    implemented: true, available: true, dynamicEligible: true, icon: '🦖', accentColor: '#10b981'
   }
 ];
 

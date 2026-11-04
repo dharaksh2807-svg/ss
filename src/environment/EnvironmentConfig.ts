@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE' | 'MIDNIGHT_VELVET' | 'CHRONO_KINGDOM' | 'INFERNO_EXPRESS' | 'JURASSIC_RUSH';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -778,6 +778,12 @@ export { RAHULVERSE_THEME } from './worlds/rahulverse/RahulverseTheme';
 import { RAHULVERSE_THEME } from './worlds/rahulverse/RahulverseTheme';
 export { MIDNIGHT_VELVET_THEME } from './worlds/midnightVelvet/MidnightVelvetTheme';
 import { MIDNIGHT_VELVET_THEME } from './worlds/midnightVelvet/MidnightVelvetTheme';
+export { CHRONO_KINGDOM_THEME } from './worlds/chronoKingdom/ChronoKingdomTheme';
+import { CHRONO_KINGDOM_THEME } from './worlds/chronoKingdom/ChronoKingdomTheme';
+export { INFERNO_EXPRESS_THEME } from './worlds/infernoExpress/InfernoExpressTheme';
+import { INFERNO_EXPRESS_THEME } from './worlds/infernoExpress/InfernoExpressTheme';
+export { JURASSIC_RUSH_THEME } from './worlds/jurassicRush/JurassicRushTheme';
+import { JURASSIC_RUSH_THEME } from './worlds/jurassicRush/JurassicRushTheme';
 
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
@@ -792,7 +798,10 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   HAUNTED_CARNIVAL: HAUNTED_CARNIVAL_THEME,
   VIP_EXPRESS: VIP_EXPRESS_THEME,
   RAHULVERSE: RAHULVERSE_THEME,
-  MIDNIGHT_VELVET: MIDNIGHT_VELVET_THEME
+  MIDNIGHT_VELVET: MIDNIGHT_VELVET_THEME,
+  CHRONO_KINGDOM: CHRONO_KINGDOM_THEME,
+  INFERNO_EXPRESS: INFERNO_EXPRESS_THEME,
+  JURASSIC_RUSH: JURASSIC_RUSH_THEME
 };
 
 export class EnvironmentManager {

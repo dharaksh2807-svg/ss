@@ -14,6 +14,9 @@ import {
   VIP_EXPRESS_THEME,
   RAHULVERSE_THEME,
   MIDNIGHT_VELVET_THEME,
+  CHRONO_KINGDOM_THEME,
+  INFERNO_EXPRESS_THEME,
+  JURASSIC_RUSH_THEME,
   ENVIRONMENTS
 } from './EnvironmentConfig';
 
@@ -35,6 +38,9 @@ export class EnvironmentRegistry {
     this.register(VIP_EXPRESS_THEME);
     this.register(RAHULVERSE_THEME);
     this.register(MIDNIGHT_VELVET_THEME);
+    this.register(CHRONO_KINGDOM_THEME);
+    this.register(INFERNO_EXPRESS_THEME);
+    this.register(JURASSIC_RUSH_THEME);
   }
 
   public static getInstance(): EnvironmentRegistry {
