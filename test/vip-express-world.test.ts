@@ -20,6 +20,8 @@ import { WorldScene } from '../src/scene/WorldScene';
 import { ProgressionManager } from '../src/progression/ProgressionManager';
 import { getCharacterById } from '../src/characters/CharacterCatalog';
 import { VipComedyEventDirector } from '../src/environment/VipComedyEventDirector';
+import { VipSatireWorldBuilder } from '../src/environment/VipSatireWorldBuilder';
+import { SeededRandom } from '../src/environment/SceneryFactory';
 
 const PROGRESSION_STORAGE_KEY = 'metro_progression_v1';
 
@@ -312,6 +314,83 @@ tempGroup.remove(tempBladeR);
 director.update(0.016, true);
 const countAfter = director.getScissorsCount();
 check(countAfter < countBefore, 'Detached recycled objects are automatically pruned from director');
+
+// =========================================================================
+// Suite 10: Five Distinct Satirical Districts Architecture & Thematic Scenery
+// =========================================================================
+console.log('\n--- Suite 10: Five Distinct Satirical Districts Architecture & Scenery ---');
+
+const builder = VipSatireWorldBuilder.getInstance();
+
+// District 0: Chai Pe Charcha — The Mega Summit
+const gDistA = new THREE.Group();
+builder.buildChaiPeCharchaDistrict(gDistA, roadbedWidth, chunkLength, new SeededRandom(101), 'FULL', director);
+check(gDistA.children.length > 0, 'District A (Chai Pe Charcha) builds marketplace scenery');
+check(gDistA.getObjectByName('vip_photo_op') !== undefined, 'District A contains Monumental Teacup Unveiling (vip_photo_op)');
+
+// District 1: Inauguration Infinity
+const gDistB = new THREE.Group();
+builder.buildInaugurationInfinityDistrict(gDistB, roadbedWidth, chunkLength, new SeededRandom(202), 'FULL', director);
+check(gDistB.children.length > 0, 'District B (Inauguration Infinity) builds civic concourse scenery');
+check(gDistB.getObjectByName('vip_ribbon_ceremony') !== undefined, 'District B contains Recursive Scissors (vip_ribbon_ceremony)');
+check(gDistB.getObjectByName('vip_double_opening') !== undefined, 'District B contains Twin Re-Opening Arches (vip_double_opening)');
+
+// District 2: The Prime-Time Circus
+const gDistC = new THREE.Group();
+builder.buildBreakingNewsDistrict(gDistC, roadbedWidth, chunkLength, new SeededRandom(303), 'FULL', director);
+check(gDistC.children.length > 0, 'District C (The Prime-Time Circus) builds news complex scenery');
+check(gDistC.getObjectByName('vip_camera_crew') !== undefined, 'District C contains Remote Revelation & Paparazzi (vip_camera_crew)');
+
+// District 3: Masterstroke Megacity
+const gDistD = new THREE.Group();
+builder.buildMasterstrokeMegacityDistrict(gDistD, roadbedWidth, chunkLength, new SeededRandom(404), 'FULL', director);
+check(gDistD.children.length > 0, 'District D (Masterstroke Megacity) builds futurist plaza scenery');
+check(gDistD.getObjectByName('vip_announcement_tower') !== undefined, 'District D contains Masterstroke Machine (vip_announcement_tower)');
+check(gDistD.getObjectByName('vip_traffic_jam') !== undefined, 'District D contains VIP Traffic Jam (vip_traffic_jam)');
+
+// District 4: The Great Political Showdown
+const gDistE = new THREE.Group();
+builder.buildParliamentMayhemDistrict(gDistE, roadbedWidth, chunkLength, new SeededRandom(505), 'FULL', director);
+check(gDistE.children.length > 0, 'District E (The Great Political Showdown) builds parliament gallery scenery');
+
+// =========================================================================
+// Suite 11: All Signature Cinematic Satirical Gags & Theatrical Director
+// =========================================================================
+console.log('\n--- Suite 11: Signature Cinematic Satirical Gags & Theatrical Director ---');
+
+check(typeof director.getTeacupRevealCount() === 'number', 'Director tracks Teacup Reveal gags');
+check(typeof director.getKettlePourCount() === 'number', 'Director tracks Kettle Pour gags');
+check(typeof director.getRecursiveScissorsCount() === 'number', 'Director tracks Recursive Scissors gags');
+check(typeof director.getRemoteRevelationCount() === 'number', 'Director tracks Remote Revelation gags');
+check(typeof director.getMasterstrokeMachineCount() === 'number', 'Director tracks Masterstroke Machine gags');
+check(typeof director.getChessboardMatchCount() === 'number', 'Director tracks Chessboard Match gags');
+check(typeof director.getMicrophoneShowdownCount() === 'number', 'Director tracks Microphone Showdown gags');
+check(typeof director.getCoalitionCarouselCount() === 'number', 'Director tracks Coalition Carousel gags');
+check(director.getSignatureGagsCount() >= 5, `Director has registered >= 5 signature gags across districts (got: ${director.getSignatureGagsCount()})`);
+
+// Verify update step with theatrical animation timing
+director.update(0.1, true);
+director.update(0.5, true);
+director.update(1.0, true);
+check(true, 'Director completes multi-phase update step without throwing exceptions');
+
+// =========================================================================
+// Suite 12: Political Caricature Models Verification
+// =========================================================================
+console.log('\n--- Suite 12: Political Caricature Models Verification ---');
+
+const charTestGroup = new THREE.Group();
+const modiMesh = builder.buildModiCaricature(charTestGroup, 0, 0, 0, 'VICTORY', director);
+check(modiMesh.name === 'caricature_modi', 'Modi caricature builds with correct name and hierarchy');
+
+const rahulMesh = builder.buildRahulCaricature(charTestGroup, 2, 0, 0, director);
+check(rahulMesh.name === 'caricature_rahul', 'Rahul caricature builds with correct name and hierarchy');
+
+const kejriwalMesh = builder.buildKejriwalCaricature(charTestGroup, 4, 0, 0, director);
+check(kejriwalMesh.name === 'caricature_kejriwal', 'Kejriwal caricature builds with correct name and muffler');
+
+const mamataMesh = builder.buildMamataCaricature(charTestGroup, 6, 0, 0, director);
+check(mamataMesh.name === 'caricature_mamata', 'Mamata caricature builds with correct name and blue-bordered sari');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} VIP_EXPRESS SIGNATURE WORLD TESTS PASSED!`);

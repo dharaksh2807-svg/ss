@@ -65,14 +65,106 @@ export interface AnimatedRunawayDecoy {
   speed: number;
 }
 
+// ---------------------------------------------------------------------------
+// SIGNATURE CINEMATIC SATIRE GAG INTERFACES (MITRON EXPRESS 2.0)
+// ---------------------------------------------------------------------------
+
+/** Gag 1: Monumental Teacup Unveiling (District A) */
+export interface AnimatedTeacupReveal {
+  curtainLeft: THREE.Object3D;
+  curtainRight: THREE.Object3D;
+  pedestalCup: THREE.Object3D;
+  spotlights: THREE.Object3D[];
+  vips: THREE.Object3D[];
+  timer: number;
+}
+
+/** Gag 2: Kettle Mechanical Pourer & Arguing VIPs (District A) */
+export interface AnimatedKettlePour {
+  kettleGroup: THREE.Object3D;
+  kettleSpout: THREE.Object3D;
+  teaStream: THREE.Object3D;
+  politicianL: THREE.Object3D;
+  politicianR: THREE.Object3D;
+  vendorGlass: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 3: Recursive Scissors Inauguration (District B) */
+export interface AnimatedRecursiveScissors {
+  shears1L: THREE.Object3D;
+  shears1R: THREE.Object3D;
+  shears2L: THREE.Object3D;
+  shears2R: THREE.Object3D;
+  craneGroup: THREE.Object3D;
+  rapidRibbonArm: THREE.Object3D;
+  ribbonMesh: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 4: Prime-Time Remote Revelation (District C) */
+export interface AnimatedRemoteRevelation {
+  vaultLid: THREE.Object3D;
+  craneWinch: THREE.Object3D;
+  remoteMesh: THREE.Object3D;
+  debateScreens: THREE.Object3D[];
+  anchorNPC: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 5: Masterstroke Loading Machine (District D) */
+export interface AnimatedMasterstrokeMachine {
+  vaultDoorL: THREE.Object3D;
+  vaultDoorR: THREE.Object3D;
+  dialNeedle: THREE.Object3D;
+  steamHiss: THREE.Object3D;
+  deliveryArm: THREE.Object3D;
+  tinyObject: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 6: Giant Political Chessboard (District D) */
+export interface AnimatedChessboardMatch {
+  craneGantry: THREE.Object3D;
+  grandPiece: THREE.Object3D;
+  teaVendorCart: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 7: Microphone Showdown & Self-Interview (District E) */
+export interface AnimatedMicrophoneShowdown {
+  centerMic: THREE.Object3D;
+  micLeft: THREE.Object3D;
+  micRight: THREE.Object3D;
+  leaderLeft: THREE.Object3D;
+  leaderRight: THREE.Object3D;
+  timer: number;
+}
+
+/** Gag 8: Coalition Musical-Chairs Carousel (District E) */
+export interface AnimatedCoalitionCarousel {
+  carouselPlatform: THREE.Object3D;
+  nitishChair: THREE.Object3D;
+  politicians: THREE.Object3D[];
+  timer: number;
+}
+
 /**
  * VipComedyEventDirector
  * Dedicated coordinator for procedural, animated political satire gags
  * across all five comedy districts in the Mitron Express / VIP Express signature world.
+ *
+ * Implements theatrical, readable comic timing:
+ * 1. Setup / Anticipation (calm before the storm, builds curiosity)
+ * 2. Unexpected Twist (the absurd mechanical or situational shift)
+ * 3. Theatrical Punchline (the hilarious reveal)
+ * 4. Slapstick Reaction Hold (gives the runner time to laugh)
+ * 5. Deterministic reset & cooldown
  */
 export class VipComedyEventDirector {
   private static instance: VipComedyEventDirector;
 
+  // Background ambient comic elements
   private scissorsList: AnimatedScissor[] = [];
   private debatersList: AnimatedDebater[] = [];
   private steamList: AnimatedSteam[] = [];
@@ -82,6 +174,16 @@ export class VipComedyEventDirector {
   private papersList: AnimatedParliamentPaper[] = [];
   private countdownList: AnimatedCountdownBoard[] = [];
   private runawayList: AnimatedRunawayDecoy[] = [];
+
+  // Signature cinematic satirical gags
+  private teacupRevealList: AnimatedTeacupReveal[] = [];
+  private kettlePourList: AnimatedKettlePour[] = [];
+  private recursiveScissorsList: AnimatedRecursiveScissors[] = [];
+  private remoteRevelationList: AnimatedRemoteRevelation[] = [];
+  private masterstrokeMachineList: AnimatedMasterstrokeMachine[] = [];
+  private chessboardMatchList: AnimatedChessboardMatch[] = [];
+  private microphoneShowdownList: AnimatedMicrophoneShowdown[] = [];
+  private coalitionCarouselList: AnimatedCoalitionCarousel[] = [];
 
   private globalClock: number = 0;
   private isEnabled: boolean = true;
@@ -100,6 +202,10 @@ export class VipComedyEventDirector {
     this.regCounter = (this.regCounter + 1) % 1000;
     return ((this.regCounter * 1.6180339887) % 1) * Math.PI * 2;
   }
+
+  // =========================================================================
+  // BASELINE REGISTRATION (Preserves all existing contracts)
+  // =========================================================================
 
   public registerScissors(leftBlade: THREE.Object3D, rightBlade: THREE.Object3D, speed: number = 3.5): void {
     this.scissorsList.push({
@@ -185,6 +291,146 @@ export class VipComedyEventDirector {
     });
   }
 
+  // =========================================================================
+  // SIGNATURE CINEMATIC SATIRE GAG REGISTRATIONS
+  // =========================================================================
+
+  public registerTeacupReveal(
+    curtainLeft: THREE.Object3D,
+    curtainRight: THREE.Object3D,
+    pedestalCup: THREE.Object3D,
+    spotlights: THREE.Object3D[],
+    vips: THREE.Object3D[]
+  ): void {
+    this.teacupRevealList.push({
+      curtainLeft,
+      curtainRight,
+      pedestalCup,
+      spotlights,
+      vips,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
+  public registerKettlePour(
+    kettleGroup: THREE.Object3D,
+    kettleSpout: THREE.Object3D,
+    teaStream: THREE.Object3D,
+    politicianL: THREE.Object3D,
+    politicianR: THREE.Object3D,
+    vendorGlass: THREE.Object3D
+  ): void {
+    this.kettlePourList.push({
+      kettleGroup,
+      kettleSpout,
+      teaStream,
+      politicianL,
+      politicianR,
+      vendorGlass,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 7.0
+    });
+  }
+
+  public registerRecursiveScissors(
+    shears1L: THREE.Object3D,
+    shears1R: THREE.Object3D,
+    shears2L: THREE.Object3D,
+    shears2R: THREE.Object3D,
+    craneGroup: THREE.Object3D,
+    rapidRibbonArm: THREE.Object3D,
+    ribbonMesh: THREE.Object3D
+  ): void {
+    this.recursiveScissorsList.push({
+      shears1L,
+      shears1R,
+      shears2L,
+      shears2R,
+      craneGroup,
+      rapidRibbonArm,
+      ribbonMesh,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
+    });
+  }
+
+  public registerRemoteRevelation(
+    vaultLid: THREE.Object3D,
+    craneWinch: THREE.Object3D,
+    remoteMesh: THREE.Object3D,
+    debateScreens: THREE.Object3D[],
+    anchorNPC: THREE.Object3D
+  ): void {
+    this.remoteRevelationList.push({
+      vaultLid,
+      craneWinch,
+      remoteMesh,
+      debateScreens,
+      anchorNPC,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
+  public registerMasterstrokeMachine(
+    vaultDoorL: THREE.Object3D,
+    vaultDoorR: THREE.Object3D,
+    dialNeedle: THREE.Object3D,
+    steamHiss: THREE.Object3D,
+    deliveryArm: THREE.Object3D,
+    tinyObject: THREE.Object3D
+  ): void {
+    this.masterstrokeMachineList.push({
+      vaultDoorL,
+      vaultDoorR,
+      dialNeedle,
+      steamHiss,
+      deliveryArm,
+      tinyObject,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 7.5
+    });
+  }
+
+  public registerChessboardMatch(
+    craneGantry: THREE.Object3D,
+    grandPiece: THREE.Object3D,
+    teaVendorCart: THREE.Object3D
+  ): void {
+    this.chessboardMatchList.push({
+      craneGantry,
+      grandPiece,
+      teaVendorCart,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
+    });
+  }
+
+  public registerMicrophoneShowdown(
+    centerMic: THREE.Object3D,
+    micLeft: THREE.Object3D,
+    micRight: THREE.Object3D,
+    leaderLeft: THREE.Object3D,
+    leaderRight: THREE.Object3D
+  ): void {
+    this.microphoneShowdownList.push({
+      centerMic,
+      micLeft,
+      micRight,
+      leaderLeft,
+      leaderRight,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
+    });
+  }
+
+  public registerCoalitionCarousel(
+    carouselPlatform: THREE.Object3D,
+    nitishChair: THREE.Object3D,
+    politicians: THREE.Object3D[]
+  ): void {
+    this.coalitionCarouselList.push({
+      carouselPlatform,
+      nitishChair,
+      politicians,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
+    });
+  }
+
   // --- Public Diagnostics Getters ---
   public getScissorsCount(): number { return this.scissorsList.length; }
   public getDebatersCount(): number { return this.debatersList.length; }
@@ -195,10 +441,29 @@ export class VipComedyEventDirector {
   public getPapersCount(): number { return this.papersList.length; }
   public getCountdownCount(): number { return this.countdownList.length; }
   public getRunawayDecoyCount(): number { return this.runawayList.length; }
+
+  // New cinematic getters
+  public getTeacupRevealCount(): number { return this.teacupRevealList.length; }
+  public getKettlePourCount(): number { return this.kettlePourList.length; }
+  public getRecursiveScissorsCount(): number { return this.recursiveScissorsList.length; }
+  public getRemoteRevelationCount(): number { return this.remoteRevelationList.length; }
+  public getMasterstrokeMachineCount(): number { return this.masterstrokeMachineList.length; }
+  public getChessboardMatchCount(): number { return this.chessboardMatchList.length; }
+  public getMicrophoneShowdownCount(): number { return this.microphoneShowdownList.length; }
+  public getCoalitionCarouselCount(): number { return this.coalitionCarouselList.length; }
+
+  public getSignatureGagsCount(): number {
+    return this.teacupRevealList.length + this.kettlePourList.length +
+      this.recursiveScissorsList.length + this.remoteRevelationList.length +
+      this.masterstrokeMachineList.length + this.chessboardMatchList.length +
+      this.microphoneShowdownList.length + this.coalitionCarouselList.length;
+  }
+
   public getTotalActiveElements(): number {
     return this.scissorsList.length + this.debatersList.length + this.steamList.length +
       this.flashList.length + this.helicopterList.length + this.gavelList.length +
-      this.papersList.length + this.countdownList.length + this.runawayList.length;
+      this.papersList.length + this.countdownList.length + this.runawayList.length +
+      this.getSignatureGagsCount();
   }
 
   public reset(): void {
@@ -215,6 +480,16 @@ export class VipComedyEventDirector {
     this.papersList = [];
     this.countdownList = [];
     this.runawayList = [];
+
+    this.teacupRevealList = [];
+    this.kettlePourList = [];
+    this.recursiveScissorsList = [];
+    this.remoteRevelationList = [];
+    this.masterstrokeMachineList = [];
+    this.chessboardMatchList = [];
+    this.microphoneShowdownList = [];
+    this.coalitionCarouselList = [];
+
     this.globalClock = 0;
   }
 
@@ -236,6 +511,15 @@ export class VipComedyEventDirector {
     this.papersList = this.papersList.filter(p => isAttached(p.mesh));
     this.countdownList = this.countdownList.filter(c => isAttached(c.mesh));
     this.runawayList = this.runawayList.filter(r => isAttached(r.group));
+
+    this.teacupRevealList = this.teacupRevealList.filter(g => isAttached(g.curtainLeft) && isAttached(g.pedestalCup));
+    this.kettlePourList = this.kettlePourList.filter(g => isAttached(g.kettleGroup) && isAttached(g.politicianL));
+    this.recursiveScissorsList = this.recursiveScissorsList.filter(g => isAttached(g.shears1L) && isAttached(g.craneGroup));
+    this.remoteRevelationList = this.remoteRevelationList.filter(g => isAttached(g.vaultLid) && isAttached(g.remoteMesh));
+    this.masterstrokeMachineList = this.masterstrokeMachineList.filter(g => isAttached(g.vaultDoorL) && isAttached(g.deliveryArm));
+    this.chessboardMatchList = this.chessboardMatchList.filter(g => isAttached(g.craneGantry) && isAttached(g.grandPiece));
+    this.microphoneShowdownList = this.microphoneShowdownList.filter(g => isAttached(g.centerMic) && isAttached(g.leaderLeft));
+    this.coalitionCarouselList = this.coalitionCarouselList.filter(g => isAttached(g.carouselPlatform) && isAttached(g.nitishChair));
   }
 
   /**
@@ -255,7 +539,11 @@ export class VipComedyEventDirector {
 
     const motionMultiplier = isReducedMotion ? 0.35 : 1.0;
 
-    // 1. Animate Ceremonial Scissors (Snip snip snip)
+    // =======================================================================
+    // 1. BASELINE AMBIENT ANIMATIONS
+    // =======================================================================
+
+    // Ceremonial Scissors snip
     for (let i = 0; i < this.scissorsList.length; i++) {
       const s = this.scissorsList[i];
       const angle = Math.abs(Math.sin((this.globalClock + s.offset) * s.speed * motionMultiplier)) * 0.42;
@@ -263,7 +551,7 @@ export class VipComedyEventDirector {
       s.rightBlade.rotation.z = -angle;
     }
 
-    // 2. Animate Debater Cartoon NPCs (Gesticulating, waving hands, nodding in dramatic dispute)
+    // Debater Cartoon NPCs (Gesticulating, nodding)
     for (let i = 0; i < this.debatersList.length; i++) {
       const d = this.debatersList[i];
       const cycle = (this.globalClock * d.speed + d.phase) * motionMultiplier;
@@ -279,7 +567,7 @@ export class VipComedyEventDirector {
       }
     }
 
-    // 3. Animate Chai Steam Wisps (billowing upward, oscillating, scaling)
+    // Chai Steam Wisps
     if (!isReducedMotion) {
       for (let i = 0; i < this.steamList.length; i++) {
         const st = this.steamList[i];
@@ -297,7 +585,7 @@ export class VipComedyEventDirector {
       }
     }
 
-    // 4. Animate Camera Paparazzi Flashes (deterministic timing)
+    // Camera Paparazzi Flashes
     for (let i = 0; i < this.flashList.length; i++) {
       const f = this.flashList[i];
       f.flashTimer += delta;
@@ -306,18 +594,14 @@ export class VipComedyEventDirector {
         const pseudoRand = ((i * 1.618033 + this.globalClock * 0.8) % 1);
         f.nextFlash = 0.25 + pseudoRand * 0.75;
         f.mesh.visible = true;
-        if (f.light) {
-          f.light.intensity = 3.5;
-        }
+        if (f.light) f.light.intensity = 3.5;
       } else if (f.mesh.visible && f.flashTimer > 0.08) {
         f.mesh.visible = false;
-        if (f.light) {
-          f.light.intensity = 0;
-        }
+        if (f.light) f.light.intensity = 0;
       }
     }
 
-    // 5. Animate News Helicopter (Spinning rotors, hovering bob & bank)
+    // News Helicopter
     for (let i = 0; i < this.helicopterList.length; i++) {
       const h = this.helicopterList[i];
       h.rotor.rotation.y += delta * 28.0;
@@ -327,24 +611,21 @@ export class VipComedyEventDirector {
       h.group.rotation.x = Math.cos(this.globalClock * 0.8 + h.phase) * 0.04;
     }
 
-    // 6. Animate Parliament Gavel (Lifts up, hovers, then SLAMS down!)
+    // Parliament Gavel
     for (let i = 0; i < this.gavelList.length; i++) {
       const g = this.gavelList[i];
       g.timer += delta;
-      const cycle = g.timer % 2.4; // 2.4-second cycle
+      const cycle = g.timer % 2.4;
       if (cycle < 1.8) {
-        // Slowly rise back up
         g.mesh.rotation.x = -0.55 + (cycle / 1.8) * 0.15;
       } else if (cycle < 2.0) {
-        // Dramatic raise high
-        g.mesh.rotation.x = -0.85;
+        g.mesh.rotation.x = -0.85; // Raise high
       } else {
-        // SLAM down!
-        g.mesh.rotation.x = 0.10;
+        g.mesh.rotation.x = 0.10; // SLAM!
       }
     }
 
-    // 7. Animate Question Hour Flying Papers
+    // Question Hour Flying Papers
     if (!isReducedMotion) {
       for (let i = 0; i < this.papersList.length; i++) {
         const p = this.papersList[i];
@@ -357,22 +638,298 @@ export class VipComedyEventDirector {
       }
     }
 
-    // 8. Animate Announcement Countdown Board
+    // Announcement Countdown Board
     for (let i = 0; i < this.countdownList.length; i++) {
       const c = this.countdownList[i];
       c.timer += delta;
-      // Pulse scale slightly every second
       const beat = 1.0 + Math.abs(Math.sin(c.timer * Math.PI)) * 0.04;
       c.mesh.scale.set(beat, beat, beat);
     }
 
-    // 9. Animate Runaway Decoy & Frantic Camera Crew Chase
+    // Runaway Decoy & Camera Crew Chase
     for (let i = 0; i < this.runawayList.length; i++) {
       const r = this.runawayList[i];
       const cycle = Math.sin(this.globalClock * r.speed);
       r.group.position.z = r.baseZ + cycle * 4.5;
-      // Camera crew frantically turns to track the decoy
       r.cameraCrew.rotation.y = -cycle * 0.35;
+    }
+
+    // =======================================================================
+    // 2. SIGNATURE CINEMATIC SATIRE GAG ANIMATIONS
+    // =======================================================================
+
+    // GAG 1: Monumental Teacup Unveiling (District A)
+    // 6.0 second cycle: Fanfare (0-2s) -> Curtain Parting (2-3s) -> Tiny Cup Spotlight (3-4.5s) -> Wild Selfie Celebration (4.5-6s)
+    for (let i = 0; i < this.teacupRevealList.length; i++) {
+      const g = this.teacupRevealList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 2.0) {
+        // Closed curtains, building anticipation
+        g.curtainLeft.position.x = -1.5;
+        g.curtainRight.position.x = 1.5;
+        g.pedestalCup.scale.set(1.0, 1.0, 1.0);
+        g.vips.forEach(vip => {
+          vip.rotation.z = Math.sin(this.globalClock * 3.0) * 0.05;
+          vip.position.y = 0;
+        });
+      } else if (cycle < 3.2) {
+        // Dramatic curtain sweep open
+        const t = (cycle - 2.0) / 1.2;
+        g.curtainLeft.position.x = -1.5 - t * 2.5;
+        g.curtainRight.position.x = 1.5 + t * 2.5;
+      } else if (cycle < 4.5) {
+        // The Punchline: Curtains wide open, tiny teacup highlighted!
+        g.curtainLeft.position.x = -4.0;
+        g.curtainRight.position.x = 4.0;
+        // Subtle golden glow pulse on tiny cup
+        const pulse = 1.0 + Math.sin(this.globalClock * 8.0) * 0.15;
+        g.pedestalCup.scale.set(pulse, pulse, pulse);
+        // Spotlights sweeping down onto tiny cup
+        g.spotlights.forEach((spot, idx) => {
+          spot.rotation.x = 0.5 + Math.sin(this.globalClock * 4.0 + idx) * 0.08;
+        });
+      } else {
+        // Euphoric celebration: VIPs jumping up and taking selfies
+        const jump = Math.abs(Math.sin(this.globalClock * 9.0)) * 0.35;
+        g.vips.forEach((vip, idx) => {
+          vip.position.y = jump * ((idx % 2 === 0) ? 1.0 : 0.8);
+          vip.rotation.y = Math.sin(this.globalClock * 5.0 + idx) * 0.25;
+        });
+      }
+    }
+
+    // GAG 2: Kettle Mechanical Pourer & Arguing VIPs (District A)
+    // 7.0 second cycle: Kettle Tilts (0-2s) -> Tea Stream Pours (2-3.5s) -> VIPs Dive & Collide (3.5-5s) -> Tea Vendor Wins (5-7s)
+    for (let i = 0; i < this.kettlePourList.length; i++) {
+      const g = this.kettlePourList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 7.0;
+
+      if (cycle < 2.0) {
+        // Upright kettle heating up
+        g.kettleGroup.rotation.z = 0;
+        g.teaStream.visible = false;
+        g.politicianL.position.x = -1.8;
+        g.politicianR.position.x = 1.8;
+      } else if (cycle < 3.5) {
+        // Dramatic tilt & pouring tea stream
+        const tilt = Math.min(1.0, (cycle - 2.0) / 0.8) * 0.45;
+        g.kettleGroup.rotation.z = -tilt;
+        g.teaStream.visible = true;
+        g.teaStream.scale.y = Math.sin((cycle - 2.0) * 3.0) * 0.2 + 1.0;
+        // VIP politicians start leaning forward competitively
+        g.politicianL.position.x = -1.8 + (cycle - 2.0) * 0.6;
+        g.politicianR.position.x = 1.8 - (cycle - 2.0) * 0.6;
+      } else if (cycle < 5.0) {
+        // Politicians collide headfirst under spout!
+        g.kettleGroup.rotation.z = -0.45;
+        g.teaStream.visible = true;
+        g.politicianL.position.x = -0.4;
+        g.politicianL.rotation.z = 0.35; // Knocked back
+        g.politicianR.position.x = 0.4;
+        g.politicianR.rotation.z = -0.35;
+        // Tea vendor smoothly holds cup right in between them
+        g.vendorGlass.position.y = 0.45 + Math.sin(this.globalClock * 3.0) * 0.05;
+      } else {
+        // Recovery & bewildered politician expressions
+        g.kettleGroup.rotation.z = 0;
+        g.teaStream.visible = false;
+        g.politicianL.rotation.z = 0;
+        g.politicianR.rotation.z = 0;
+      }
+    }
+
+    // GAG 3: Recursive Scissors Inauguration (District B)
+    // 6.5 second cycle: First Shears Snip (0-2s) -> Crane Shears Descend (2-3.8s) -> Second Shears Cut (3.8-5s) -> Rapid Ribbon Arm snaps new ribbon (5-6.5s)
+    for (let i = 0; i < this.recursiveScissorsList.length; i++) {
+      const g = this.recursiveScissorsList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 2.0) {
+        // Primary shears snip at ribbon
+        const snip = Math.abs(Math.sin(cycle * 4.0)) * 0.38;
+        g.shears1L.rotation.z = snip;
+        g.shears1R.rotation.z = -snip;
+        g.craneGroup.position.y = 4.5; // Crane shears high above
+        g.rapidRibbonArm.rotation.z = 1.4; // Arm hidden below
+        g.ribbonMesh.visible = true;
+      } else if (cycle < 3.8) {
+        // Massive diamond crane shears lower down over primary shears!
+        const t = (cycle - 2.0) / 1.8;
+        g.craneGroup.position.y = 4.5 - t * 3.2;
+        // Crane shears open wide
+        g.shears2L.rotation.z = 0.55;
+        g.shears2R.rotation.z = -0.55;
+      } else if (cycle < 5.0) {
+        // Crane shears inaugural cut on primary shears!
+        const snip = Math.abs(Math.sin((cycle - 3.8) * 5.0)) * 0.55;
+        g.shears2L.rotation.z = snip;
+        g.shears2R.rotation.z = -snip;
+        g.ribbonMesh.visible = false; // Ribbon cut!
+      } else {
+        // Automated pneumatic arm whips out, restores fresh ribbon!
+        const t = (cycle - 5.0) / 1.5;
+        g.rapidRibbonArm.rotation.z = 1.4 - t * 1.4;
+        if (cycle > 5.8) {
+          g.ribbonMesh.visible = true; // Instantly replaced!
+        }
+      }
+    }
+
+    // GAG 4: Prime-Time Remote Revelation (District C)
+    // 6.0 second cycle: Building Revelation (0-2s) -> Crane Hoists Vault Dome (2-3.5s) -> Remote Exposed (3.5-4.8s) -> Studio Pandemonium (4.8-6s)
+    for (let i = 0; i < this.remoteRevelationList.length; i++) {
+      const g = this.remoteRevelationList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 2.0) {
+        g.vaultLid.position.y = 0.6; // Closed vault
+        g.anchorNPC.rotation.y = Math.sin(this.globalClock * 4.0) * 0.15;
+      } else if (cycle < 3.5) {
+        // Vault dome raised high by crane
+        const t = (cycle - 2.0) / 1.5;
+        g.vaultLid.position.y = 0.6 + t * 3.8;
+        g.remoteMesh.rotation.y += delta * 4.0;
+      } else if (cycle < 4.8) {
+        // Remote spotlighted on rotating pedestal!
+        g.vaultLid.position.y = 4.4;
+        g.remoteMesh.rotation.y += delta * 6.0;
+        // Anchor gestures frantically at the remote
+        g.anchorNPC.rotation.x = -0.3 + Math.sin(this.globalClock * 8.0) * 0.15;
+      } else {
+        // All screens shake, anchor holds head
+        g.debateScreens.forEach((scr, idx) => {
+          scr.position.y = 11.0 + Math.sin(this.globalClock * 12.0 + idx) * 0.12;
+        });
+        g.anchorNPC.rotation.z = Math.sin(this.globalClock * 10.0) * 0.25;
+      }
+    }
+
+    // GAG 5: Masterstroke Loading Machine (District D)
+    // 7.5 second cycle: Computing 85% (0-2.5s) -> Critical 99.9% (2.5-4.2s) -> Vault Slide (4.2-5.5s) -> Spoon Delivery (5.5-7.5s)
+    for (let i = 0; i < this.masterstrokeMachineList.length; i++) {
+      const g = this.masterstrokeMachineList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 7.5;
+
+      if (cycle < 2.5) {
+        // Dial ticking upward
+        g.dialNeedle.rotation.z = -1.2 + (cycle / 2.5) * 1.8;
+        g.vaultDoorL.position.x = -1.1;
+        g.vaultDoorR.position.x = 1.1;
+        g.deliveryArm.position.z = -1.0;
+        g.steamHiss.scale.set(0.2, 0.2, 0.2);
+      } else if (cycle < 4.2) {
+        // Needle vibrating near 99.9%, steam huffing
+        g.dialNeedle.rotation.z = 0.6 + Math.sin(this.globalClock * 18.0) * 0.08;
+        const steamScale = 1.0 + Math.sin(this.globalClock * 12.0) * 0.35;
+        g.steamHiss.scale.set(steamScale, steamScale, steamScale);
+      } else if (cycle < 5.5) {
+        // Vault doors slide apart with heavy hydraulic hissing
+        const t = (cycle - 4.2) / 1.3;
+        g.vaultDoorL.position.x = -1.1 - t * 1.6;
+        g.vaultDoorR.position.x = 1.1 + t * 1.6;
+        g.deliveryArm.position.z = -1.0 + t * 2.2;
+      } else {
+        // Tiny wooden tea-stirring spoon proudly presented on cushion!
+        g.deliveryArm.position.z = 1.2;
+        g.tinyObject.rotation.y += delta * 2.0;
+        g.tinyObject.scale.set(1.2, 1.2, 1.2);
+      }
+    }
+
+    // GAG 6: Giant Political Chessboard (District D)
+    // 8.0 second cycle: Crane positions King (0-3s) -> Grand Strategy (3-4.5s) -> Chai Vendor Rolls In (4.5-6.5s) -> Tea Checkmate (6.5-8s)
+    for (let i = 0; i < this.chessboardMatchList.length; i++) {
+      const g = this.chessboardMatchList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 8.0;
+
+      if (cycle < 3.0) {
+        const t = cycle / 3.0;
+        g.craneGantry.position.x = Math.sin(t * Math.PI) * 2.5;
+        g.grandPiece.position.y = 1.8 + Math.cos(t * Math.PI) * 0.6;
+        g.teaVendorCart.position.z = 8.0; // Vendor outside board
+      } else if (cycle < 4.5) {
+        g.grandPiece.position.y = 0.9; // King placed on square
+        g.teaVendorCart.position.z = 8.0 - (cycle - 3.0) * 3.5; // Vendor rolls across board!
+      } else if (cycle < 6.5) {
+        // Vendor right in the center of the grand chessboard!
+        g.teaVendorCart.position.z = 2.5;
+        g.grandPiece.rotation.y += delta * 5.0; // Grand piece spun around by cart
+      } else {
+        // Tea placed on King's square, vendor rolls away
+        g.teaVendorCart.position.z = 2.5 - (cycle - 6.5) * 3.0;
+      }
+    }
+
+    // GAG 7: Microphone Showdown & Self-Interview (District E)
+    // 6.5 second cycle: Leaders Approach (0-2s) -> Mic Rises High (2-3.5s) -> Side Mics Sprout (3.5-5s) -> Mics Interview Each Other (5-6.5s)
+    for (let i = 0; i < this.microphoneShowdownList.length; i++) {
+      const g = this.microphoneShowdownList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 2.0) {
+        // Leaders rushing forward to center
+        g.leaderLeft.position.x = -1.8 + (cycle / 2.0) * 0.9;
+        g.leaderRight.position.x = 1.8 - (cycle / 2.0) * 0.9;
+        g.centerMic.position.y = 1.4;
+        g.micLeft.scale.set(0.01, 0.01, 0.01);
+        g.micRight.scale.set(0.01, 0.01, 0.01);
+      } else if (cycle < 3.5) {
+        // Center mic stretches high into the air!
+        const t = (cycle - 2.0) / 1.5;
+        g.centerMic.position.y = 1.4 + t * 2.4;
+        // Leaders looking up baffled
+        g.leaderLeft.rotation.x = -0.4;
+        g.leaderRight.rotation.x = -0.4;
+      } else if (cycle < 5.0) {
+        // Side microphones sprout from floor
+        const t = (cycle - 3.5) / 1.5;
+        g.micLeft.scale.set(t, t, t);
+        g.micRight.scale.set(t, t, t);
+      } else {
+        // Microphones turn toward each other and begin nodding / interviewing each other!
+        g.micLeft.rotation.y = 0.6 + Math.sin(this.globalClock * 6.0) * 0.25;
+        g.micRight.rotation.y = -0.6 - Math.sin(this.globalClock * 6.0) * 0.25;
+        g.centerMic.rotation.z = Math.sin(this.globalClock * 5.0) * 0.18;
+      }
+    }
+
+    // GAG 8: Coalition Musical-Chairs Carousel (District E)
+    // 8.0 second cycle: Carousel Rotation (0-4s) -> Gavel Strike Stop (4-5s) -> Nitish Chair Swivel (5-6.5s) -> Scramble (6.5-8s)
+    for (let i = 0; i < this.coalitionCarouselList.length; i++) {
+      const g = this.coalitionCarouselList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 8.0;
+
+      if (cycle < 4.0) {
+        // Carousel rotating, politicians marching
+        g.carouselPlatform.rotation.y += delta * 1.5;
+        g.politicians.forEach((p, idx) => {
+          p.rotation.y = Math.sin(this.globalClock * 4.0 + idx) * 0.2;
+        });
+      } else if (cycle < 5.0) {
+        // Abrupt halt on gavel strike!
+        g.politicians.forEach(p => {
+          p.rotation.x = 0.25; // Bracing
+        });
+      } else if (cycle < 6.8) {
+        // Nitish chair does a 180-degree swivel from one side of coalition to other!
+        const t = (cycle - 5.0) / 1.8;
+        g.nitishChair.rotation.y = t * Math.PI;
+      } else {
+        // Scramble recovery
+        g.politicians.forEach((p, idx) => {
+          p.rotation.x = 0;
+          p.position.y = Math.abs(Math.sin(this.globalClock * 6.0 + idx)) * 0.15;
+        });
+      }
     }
   }
 }
