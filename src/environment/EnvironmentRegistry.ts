@@ -60,6 +60,7 @@ export class EnvironmentRegistry {
   public get(id: EnvironmentId | string): EnvironmentTheme {
     const theme = this.themes.get(id as EnvironmentId);
     if (theme) return theme;
+    console.warn(`[EnvironmentRegistry] Unknown environment ID "${id}", falling back to MODERN_METRO`);
     return MODERN_METRO_THEME;
   }
 
@@ -80,7 +81,12 @@ export class EnvironmentRegistry {
     return theme ? [...theme.allowedTransitions] : [];
   }
 
-  public getNextRandomTransition(currentId: EnvironmentId, rng: () => number, excludePrevious?: EnvironmentId, eligibleIds: readonly EnvironmentId[] = this.getAllIds()): EnvironmentId {
+  public getNextRandomTransition(
+    currentId: EnvironmentId,
+    rng: () => number,
+    excludePrevious?: EnvironmentId,
+    eligibleIds: readonly EnvironmentId[] = this.getAllIds().filter((id) => id !== 'VIVA_HEAT')
+  ): EnvironmentId {
     const current = this.get(currentId);
     let candidates = current.allowedTransitions.filter((id) => id !== currentId && this.has(id) && eligibleIds.includes(id));
     if (excludePrevious && candidates.length > 1) {

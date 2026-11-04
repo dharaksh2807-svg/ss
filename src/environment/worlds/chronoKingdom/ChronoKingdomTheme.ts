@@ -32,7 +32,9 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     'HAUNTED_CARNIVAL',
     'VIP_EXPRESS',
     'RAHULVERSE',
-    'MIDNIGHT_VELVET'
+    'MIDNIGHT_VELVET',
+    'INFERNO_EXPRESS',
+    'JURASSIC_RUSH'
   ],
   sky: {
     top: 0x071126,    // Celestial midnight sapphire

@@ -32,7 +32,9 @@ export const JURASSIC_RUSH_THEME: EnvironmentTheme = {
     'HAUNTED_CARNIVAL',
     'VIP_EXPRESS',
     'RAHULVERSE',
-    'MIDNIGHT_VELVET'
+    'MIDNIGHT_VELVET',
+    'CHRONO_KINGDOM',
+    'INFERNO_EXPRESS'
   ],
   sky: {
     top: 0x032b1e,    // Deep prehistoric jungle canopy twilight

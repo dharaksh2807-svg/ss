@@ -22,7 +22,11 @@ export const RAHULVERSE_THEME: EnvironmentTheme = {
     'DOOMSDAY_LAST_TRANSIT',
     'PHANTOM_LINE',
     'HAUNTED_CARNIVAL',
-    'VIP_EXPRESS'
+    'VIP_EXPRESS',
+    'MIDNIGHT_VELVET',
+    'CHRONO_KINGDOM',
+    'INFERNO_EXPRESS',
+    'JURASSIC_RUSH'
   ],
   sky: {
     top: 0x0284c7,    // Brilliant clear open-air yatra cyan/blue

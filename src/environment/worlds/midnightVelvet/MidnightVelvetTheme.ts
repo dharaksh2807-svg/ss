@@ -23,7 +23,10 @@ export const MIDNIGHT_VELVET_THEME: EnvironmentTheme = {
     'PHANTOM_LINE',
     'HAUNTED_CARNIVAL',
     'VIP_EXPRESS',
-    'RAHULVERSE'
+    'RAHULVERSE',
+    'CHRONO_KINGDOM',
+    'INFERNO_EXPRESS',
+    'JURASSIC_RUSH'
   ],
   sky: {
     top: 0x050711,    // Deep midnight obsidian with subtle navy undertone

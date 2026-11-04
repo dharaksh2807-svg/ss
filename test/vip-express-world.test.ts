@@ -48,7 +48,7 @@ console.log('--- Suite 1: Theme Identity, Catalog & Registry ---');
 
 check(VIP_EXPRESS_THEME !== undefined, 'VIP_EXPRESS_THEME is defined');
 check(VIP_EXPRESS_THEME.id === 'VIP_EXPRESS', 'Theme ID is VIP_EXPRESS');
-check(VIP_EXPRESS_THEME.displayName.includes('VIP Express'), 'Theme displayName is VIP Express');
+check(VIP_EXPRESS_THEME.displayName.includes('Mitron Express') || VIP_EXPRESS_THEME.displayName.includes('VIP Express'), 'Theme displayName is Mitron Express / VIP Express');
 check(ENVIRONMENTS['VIP_EXPRESS'] === VIP_EXPRESS_THEME, 'VIP_EXPRESS is registered in ENVIRONMENTS');
 
 const registry = EnvironmentRegistry.getInstance();

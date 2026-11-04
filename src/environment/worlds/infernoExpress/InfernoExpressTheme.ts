@@ -32,7 +32,9 @@ export const INFERNO_EXPRESS_THEME: EnvironmentTheme = {
     'HAUNTED_CARNIVAL',
     'VIP_EXPRESS',
     'RAHULVERSE',
-    'MIDNIGHT_VELVET'
+    'MIDNIGHT_VELVET',
+    'CHRONO_KINGDOM',
+    'JURASSIC_RUSH'
   ],
   sky: {
     top: 0x0f0407,    // Deep volcanic void abyss

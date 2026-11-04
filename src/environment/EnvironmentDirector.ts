@@ -7,6 +7,13 @@ import { DistrictPlanner, TransitionProgress } from './DistrictPlanner';
 import { SceneryFactory } from './SceneryFactory';
 import { SceneryPool } from './SceneryPool';
 import { EnvironmentalEncounterDirector, LandmarkType, SmallMomentType, AtmospherePreset } from './EnvironmentalEncounterDirector';
+import { VipComedyEventDirector } from './VipComedyEventDirector';
+import { RahulComedyEventDirector } from './worlds/rahulverse/RahulComedyEventDirector';
+import { MidnightVelvetEventDirector } from './worlds/midnightVelvet/MidnightVelvetEventDirector';
+import { ChronoKingdomEventDirector } from './worlds/chronoKingdom/ChronoKingdomEventDirector';
+import { InfernoExpressEventDirector } from './worlds/infernoExpress/InfernoExpressEventDirector';
+import { JurassicRushEventDirector } from './worlds/jurassicRush/JurassicRushEventDirector';
+import { FeverDirector } from './worlds/vivaHeat/FeverDirector';
 import type { TrackChunk } from '../track/TrackChunk';
 import type { WorldScene } from '../scene/WorldScene';
 
@@ -69,11 +76,22 @@ export class EnvironmentDirector {
     return EnvironmentDirector.instance;
   }
 
+  public resetWorldDirectors(): void {
+    VipComedyEventDirector.getInstance().reset();
+    RahulComedyEventDirector.getInstance().reset();
+    MidnightVelvetEventDirector.getInstance().reset();
+    ChronoKingdomEventDirector.getInstance().reset();
+    InfernoExpressEventDirector.getInstance().reset();
+    JurassicRushEventDirector.getInstance().reset();
+    FeverDirector.getInstance().reset();
+  }
+
   public setRunSeed(seed: number, isDebug: boolean = false): void {
     this.runSeed = seed >>> 0;
     this.isDebugSeed = isDebug;
     this.planner.reset(this.runSeed);
     EnvironmentalEncounterDirector.getInstance().setRunSeed(this.runSeed);
+    this.resetWorldDirectors();
     this.activeChunksMeta.clear();
     this.transitionEventEmittedForPortalZ = null;
     this.changedEventEmittedForPortalZ = null;

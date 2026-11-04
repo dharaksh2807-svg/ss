@@ -9,7 +9,7 @@ import type { EnvironmentTheme } from '../../EnvironmentConfig';
  * Palette: Saturated Coral Scarlet, Radiant Sunset Gold, Velvet Crimson, Orchid, and Warm Amber
  */
 export const VIVA_HEAT_THEME: EnvironmentTheme = {
-  id: 'VIVA_HEAT' as any,
+  id: 'VIVA_HEAT',
   displayName: 'Viva Heat',
   subtitle: 'The Forbidden Festival',
   description: 'An ultra-glamorous high-fashion fantasy festival where the coastline comes alive with kinetic floral sculptures, coastal sunset boulevards, luxury yachts, and pulsating theatrical fever.',

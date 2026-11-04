@@ -102,9 +102,9 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     implemented: true, available: true, dynamicEligible: true, icon: '🎃', accentColor: '#f97316'
   },
   {
-    id: 'VIP_EXPRESS', environmentId: 'VIP_EXPRESS', displayName: 'VIP Express: The Great Inauguration',
+    id: 'VIP_EXPRESS', environmentId: 'VIP_EXPRESS', displayName: 'Mitron Express',
     description: 'A grand fictional VIP ceremonial concourse featuring futuristic civic architecture, red-carpet walkways, endless ribbon cuttings, paparazzi chaos, and comedic political celebrations.',
-    subtitle: 'Ceremonial VIP Concourse',
+    subtitle: 'The Great Inauguration',
     tagline: 'High-speed inaugural rails through grand plazas, endless ribbons, and paparazzi frenzy.',
     rarity: 'LEGENDARY',
     unlock: 'FREE', coinCost: 0, keyCost: null, previewReference: 'environment:VIP_EXPRESS',
@@ -182,6 +182,26 @@ export interface WorldProgress {
   unlockedCharacters?: readonly string[];
   selectedCharacter?: string;
   modiFreeRuns?: number;
+  rahulTrialsRemaining?: number;
+  rahulFreeRuns?: number;
+}
+
+function normalizeCharacterId(charId?: string): string | undefined {
+  if (!charId) return undefined;
+  if (charId === 'rahul_gandhi' || charId === 'char_rahul_gandhi') return 'char_rahul_gandhi';
+  if (charId === 'modi' || charId === 'char_modi') return 'char_modi';
+  return charId;
+}
+
+function getSignatureTrialRuns(signatureCharId: string, progress: WorldProgress): number {
+  const norm = normalizeCharacterId(signatureCharId);
+  if (norm === 'char_modi') {
+    return progress.modiFreeRuns ?? 0;
+  }
+  if (norm === 'char_rahul_gandhi') {
+    return progress.rahulTrialsRemaining ?? progress.rahulFreeRuns ?? 0;
+  }
+  return 0;
 }
 
 const FREE_WORLD_METADATA: Record<string, { previewImage: string; subtitle: string; tagline: string; features: string[] }> = {
@@ -246,7 +266,9 @@ export function isWorldAvailable(world: WorldDefinition): boolean {
 
 export function isThemePermanentlyOwned(world: WorldDefinition, progress: WorldProgress): boolean {
   if (world.signatureCharacterId) {
-    const ownsChar = progress.unlockedCharacters?.includes(world.signatureCharacterId) ?? false;
+    const ownsChar = (progress.unlockedCharacters ?? []).some((id) => {
+      return normalizeCharacterId(id) === world.signatureCharacterId;
+    });
     const hasTheme = progress.unlockedThemes.includes(world.id);
     return ownsChar || hasTheme;
   }
@@ -256,10 +278,11 @@ export function isThemePermanentlyOwned(world: WorldDefinition, progress: WorldP
 export function getWorlds(progress: WorldProgress) {
   return getWorldCatalog().map((world) => {
     const isOwned = isThemePermanentlyOwned(world, progress);
+    const selectedNorm = normalizeCharacterId(progress.selectedCharacter);
     const isTrialing = !!world.signatureCharacterId &&
       !isOwned &&
-      progress.selectedCharacter === world.signatureCharacterId &&
-      (progress.modiFreeRuns ?? 0) > 0;
+      selectedNorm === world.signatureCharacterId &&
+      getSignatureTrialRuns(world.signatureCharacterId, progress) > 0;
 
     return {
       ...world,

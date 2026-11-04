@@ -18,7 +18,7 @@ function saveScreenshotSync(buffer, filename) {
 }
 
 const WORLDS = [
-  { id: 'VIP_EXPRESS', name: 'VIP Express / Mitron Express', charId: 'char_modi', skinId: 'modi_classic' },
+  { id: 'VIP_EXPRESS', name: 'Mitron Express: The Great Inauguration', charId: 'char_modi', skinId: 'modi_classic' },
   { id: 'RAHULVERSE', name: 'Rahulverse: The Never-Ending Yatra', charId: 'char_rahul_gandhi', skinId: 'rahul_classic' },
   { id: 'MIDNIGHT_VELVET', name: 'Midnight Velvet: After Dark' },
   { id: 'CHRONO_KINGDOM', name: 'Chrono Kingdom: The Clockwork Empire' },

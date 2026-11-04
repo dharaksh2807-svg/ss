@@ -201,6 +201,10 @@ export class VipComedyEventDirector {
       this.papersList.length + this.countdownList.length + this.runawayList.length;
   }
 
+  public reset(): void {
+    this.clear();
+  }
+
   public clear(): void {
     this.scissorsList = [];
     this.debatersList = [];
