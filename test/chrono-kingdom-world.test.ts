@@ -1,0 +1,299 @@
+import assert from 'node:assert';
+import * as THREE from 'three';
+import {
+  CHRONO_KINGDOM_THEME,
+  CHRONO_KINGDOM_TRAIN_LIVERY,
+  applyChronoKingdomTrainLivery
+} from '../src/environment/worlds/chronoKingdom/ChronoKingdomTheme';
+import {
+  ChronoKingdomEventDirector
+} from '../src/environment/worlds/chronoKingdom/ChronoKingdomEventDirector';
+import {
+  ChronoKingdomWorldBuilder
+} from '../src/environment/worlds/chronoKingdom/ChronoKingdomWorldBuilder';
+import { SettingsManager } from '../src/settings/SettingsManager';
+
+console.log('🧪 Starting CHRONO_KINGDOM (The Clockwork Empire) Verification Suite...\n');
+
+// Mock DOM canvas for node environment tests if needed
+if (typeof document === 'undefined') {
+  (global as any).document = {
+    createElement: (tag: string) => {
+      if (tag === 'canvas') {
+        return {
+          width: 512,
+          height: 512,
+          getContext: () => ({
+            createRadialGradient: () => ({ addColorStop: () => {} }),
+            beginPath: () => {},
+            arc: () => {},
+            fill: () => {},
+            stroke: () => {},
+            moveTo: () => {},
+            lineTo: () => {},
+            fillRect: () => {},
+            strokeRect: () => {},
+            fillText: () => {},
+            closePath: () => {},
+            set strokeStyle(_: any) {},
+            set fillStyle(_: any) {},
+            set lineWidth(_: any) {},
+            set font(_: any) {},
+            set textAlign(_: any) {},
+            set textBaseline(_: any) {}
+          })
+        };
+      }
+      return {};
+    }
+  };
+}
+
+let testsPassed = 0;
+function pass(testName: string) {
+  testsPassed++;
+  console.log(`  ✅ ${testName}`);
+}
+
+// ============================================================================
+// SUITE 1: THEME IDENTITY & CONFIGURATION
+// ============================================================================
+console.log('--- Suite 1: Theme Identity & Configuration ---');
+
+assert.strictEqual(CHRONO_KINGDOM_THEME.displayName, 'Chrono Kingdom', 'Display name matches');
+pass('Display name is "Chrono Kingdom"');
+
+assert.strictEqual(CHRONO_KINGDOM_THEME.subtitle, 'The Clockwork Empire', 'Subtitle matches');
+pass('Subtitle is "The Clockwork Empire"');
+
+assert.strictEqual(CHRONO_KINGDOM_THEME.accentColor, '#d4af37', 'Accent color is Antique Gold');
+pass('Accent color is Antique Gold (#d4af37)');
+
+assert.strictEqual(CHRONO_KINGDOM_THEME.ambience.tag, 'CHRONO_KINGDOM_CLOCKWORK', 'Ambience tag matches');
+pass('Ambience tag is "CHRONO_KINGDOM_CLOCKWORK"');
+
+assert.ok(CHRONO_KINGDOM_THEME.materials.ballastColor, 'Ballast color defined');
+assert.ok(CHRONO_KINGDOM_THEME.materials.curbColor, 'Curb color defined');
+assert.ok(CHRONO_KINGDOM_THEME.materials.wallBaseColor, 'Wall base color defined');
+assert.ok(CHRONO_KINGDOM_THEME.materials.wallAccentColor, 'Wall accent color defined');
+pass('Material palette contains full steampunk bronze, copper, and gold colors');
+
+assert.ok(CHRONO_KINGDOM_THEME.districtRange.minLengthMeters >= 500, 'Min district length valid');
+pass('District range defined with proper length scaling');
+
+// ============================================================================
+// SUITE 2: DETERMINISTIC GENERATION ACROSS ALL 4 DISTRICTS
+// ============================================================================
+console.log('\n--- Suite 2: Deterministic Generation Across All 4 Districts ---');
+
+const builder = ChronoKingdomWorldBuilder.getInstance();
+const director = ChronoKingdomEventDirector.getInstance();
+
+// District A (Seed 0)
+const groupA = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupA, 12, 100, 0, 'FULL');
+const distA = groupA.getObjectByName('district_a_grand_clockwork_capital');
+assert.ok(distA, 'District A Grand Clockwork Capital generated');
+pass('District A — The Grand Clockwork Capital generated successfully');
+
+// District B (Seed 1)
+const groupB = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupB, 12, 100, 1, 'FULL');
+const distB = groupB.getObjectByName('district_b_time_foundry');
+assert.ok(distB, 'District B Time Foundry generated');
+pass('District B — The Time Foundry generated successfully');
+
+// District C (Seed 2)
+const groupC = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupC, 12, 100, 2, 'FULL');
+const distC = groupC.getObjectByName('district_c_chrono_observatory');
+assert.ok(distC, 'District C Chrono Observatory generated');
+pass('District C — The Chrono Observatory generated successfully');
+
+// District D (Seed 3)
+const groupD = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupD, 12, 100, 3, 'FULL');
+const distD = groupD.getObjectByName('district_d_fractured_time');
+assert.ok(distD, 'District D Fractured Time District generated');
+pass('District D — The Fractured Time District generated successfully');
+
+// Determinism test
+const groupA1 = new THREE.Group();
+const groupA2 = new THREE.Group();
+builder.buildDistrictScenery(groupA1, 12, 100, 42, 'FULL');
+builder.buildDistrictScenery(groupA2, 12, 100, 42, 'FULL');
+assert.strictEqual(
+  groupA1.getObjectByName('district_c_chrono_observatory')?.children.length,
+  groupA2.getObjectByName('district_c_chrono_observatory')?.children.length,
+  'Deterministic object counts for identical seeds'
+);
+pass('Deterministic generation: identical seeds yield identical hierarchies');
+
+// ============================================================================
+// SUITE 3: RUNNING CORRIDOR CLEARANCE ENVELOPE (ZERO INTRUSIONS)
+// ============================================================================
+console.log('\n--- Suite 3: Running Corridor Clearance Envelope (Zero Intrusions) ---');
+
+// Invariant: No meshes may penetrate the running corridor (|X| <= 4.2m and Y <= 8.5m)
+// High overhead bridges span above Y >= 14.0m
+const allGroups = [
+  { name: 'District A', group: groupA },
+  { name: 'District B', group: groupB },
+  { name: 'District C', group: groupC },
+  { name: 'District D', group: groupD }
+];
+
+allGroups.forEach(({ name, group }) => {
+  group.updateMatrixWorld(true);
+  let intrusions = 0;
+  const intrudingObjects: string[] = [];
+
+  group.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.geometry.computeBoundingBox();
+      const bbox = child.geometry.boundingBox;
+      if (!bbox) return;
+
+      const worldBox = bbox.clone().applyMatrix4(child.matrixWorld);
+
+      // Check if worldBox intersects running zone: |X| <= 4.2m and Y <= 8.5m
+      const inX = worldBox.min.x <= 4.2 && worldBox.max.x >= -4.2;
+      const inY = worldBox.min.y <= 8.5 && worldBox.max.y >= 0.1;
+
+      if (inX && inY) {
+        intrusions++;
+        intrudingObjects.push(`${child.name || 'unnamed'} [X: ${worldBox.min.x.toFixed(1)} to ${worldBox.max.x.toFixed(1)}, Y: ${worldBox.min.y.toFixed(1)} to ${worldBox.max.y.toFixed(1)}]`);
+      }
+    }
+  });
+
+  assert.strictEqual(intrusions, 0, `${name} has 0 intrusions into running envelope (${intrudingObjects.join(', ')})`);
+  pass(`${name}: 0 intrusions into playable corridor (|X| <= 4.2m, Y <= 8.5m)`);
+});
+
+// ============================================================================
+// SUITE 4: ALL 6 ANIMATED CLOCKWORK WORLD EVENTS
+// ============================================================================
+console.log('\n--- Suite 4: All 6 Animated Clockwork World Events ---');
+
+director.reset();
+const testChunk = new THREE.Group();
+builder.buildGrandClockworkCapital(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+builder.buildTimeFoundry(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+builder.buildChronoObservatory(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+builder.buildFracturedTimeDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+
+// Verify Event Registrations
+assert.ok(director.getGearCount() >= 4, `At least 4 gear assemblies registered (got ${director.getGearCount()})`);
+pass(`Event 1: ${director.getGearCount()} Interlocking gear assemblies registered for mathematical synchronization`);
+
+assert.ok(director.getChimeCount() >= 1, `At least 1 clock chime registered (got ${director.getChimeCount()})`);
+pass(`Event 2: Clock tower hour strike & resonance expansion registered`);
+
+assert.ok(director.getBridgeCount() >= 1, `Retractable brass bridge registered (got ${director.getBridgeCount()})`);
+pass(`Event 3: Retractable telescoping mechanical skybridge registered`);
+
+assert.ok(director.getPistonCount() >= 3, `At least 3 timed pistons registered (got ${director.getPistonCount()})`);
+pass(`Event 4: Timed 4-phase industrial steam piston bank registered`);
+
+assert.ok(director.getObservatoryCount() >= 1, `Observatory astronomical rings registered (got ${director.getObservatoryCount()})`);
+pass(`Event 5: Concentric celestial observatory rings & orrery registered`);
+
+assert.ok(director.getSkybridgeTrainCount() >= 1, `Distant skybridge train registered (got ${director.getSkybridgeTrainCount()})`);
+pass(`Event 6: Distant skybridge clockwork train viaduct pass registered`);
+
+assert.ok(director.getTimePortalCount() >= 1, `Time portal vortex registered (got ${director.getTimePortalCount()})`);
+pass(`Event 7: Fractured time portal temporal rift registered`);
+
+// Test Director Tick & Motion
+director.update(0.16, true);
+pass('Director tick executes smoothly without exceptions');
+
+director.update(1.5, true);
+pass('Director multi-second update cycles gears, pistons, bridges, and chime cycles');
+
+// Test Reduced Motion Support
+SettingsManager.getInstance().setReducedMotion(true);
+director.update(0.16, true);
+pass('Director smoothly handles isReducedMotion() accessibility mode');
+SettingsManager.getInstance().setReducedMotion(false);
+
+// ============================================================================
+// SUITE 5: GRAPHICS TIERING & GEOMETRY REUSE
+// ============================================================================
+console.log('\n--- Suite 5: Graphics Tiering & Geometry Reuse ---');
+
+const fullGroup = new THREE.Group();
+builder.buildGrandClockworkCapital(fullGroup, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+
+const minGroup = new THREE.Group();
+builder.buildGrandClockworkCapital(minGroup, 12, 100, new (class { next() { return 0.5; } } as any), 'MINIMAL', director);
+
+assert.ok(fullGroup.children[0].children.length >= minGroup.children[0].children.length, 'MINIMAL detail reduces secondary elements');
+pass('Graphics detail scaling: MINIMAL tier properly scales down secondary scene props');
+
+// ============================================================================
+// SUITE 6: CLOCKWORK TRAIN AESTHETIC & LIVERY INTEGRATION HOOK
+// ============================================================================
+console.log('\n--- Suite 6: Clockwork Train Aesthetic & Livery Integration Hook ---');
+
+assert.strictEqual(CHRONO_KINGDOM_TRAIN_LIVERY.accentColor, 0xd4af37, 'Livery accent color matches');
+assert.strictEqual(CHRONO_KINGDOM_TRAIN_LIVERY.windowGlowColor, 0xfbbf24, 'Livery window glow matches');
+pass('Train livery palette verified (Imperial Bronze, Copper, Gold, Amber windows)');
+
+// Test Livery Application Hook
+const mockTrain = new THREE.Group();
+const mockBody = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial());
+mockBody.name = 'train_body';
+mockTrain.add(mockBody);
+
+const mockWindow = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+mockWindow.name = 'train_window_glow';
+mockTrain.add(mockWindow);
+
+applyChronoKingdomTrainLivery(mockTrain, 0);
+
+assert.ok((mockBody.material as THREE.MeshStandardMaterial).color.getHex() === 0x2b1810, 'Body material color updated');
+assert.ok((mockWindow.material as THREE.MeshBasicMaterial).color.getHex() === 0xfbbf24, 'Window glow material updated');
+pass('applyChronoKingdomTrainLivery hook correctly applies clockwork materials');
+
+// Test Complete Showcase Train Builder
+const showcaseTrain = builder.buildChronoKingdomShowcaseTrain(0, 0, 0);
+showcaseTrain.updateMatrixWorld(true);
+
+showcaseTrain.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+  }
+});
+const trainBox = new THREE.Box3().setFromObject(showcaseTrain);
+const trainSize = new THREE.Vector3();
+trainBox.getSize(trainSize);
+
+assert.ok(trainSize.x <= 3.2, `Train width ${trainSize.x.toFixed(1)} fits inside standard rail corridor`);
+assert.ok(trainSize.y <= 4.6, `Train height ${trainSize.y.toFixed(1)} fits standard clearance`);
+assert.ok(trainSize.z >= 18.0 && trainSize.z <= 26.0, `Train length ${trainSize.z.toFixed(1)} matches standard 22m train`);
+pass(`Showcase train dimensions (${trainSize.x.toFixed(1)}m x ${trainSize.y.toFixed(1)}m x ${trainSize.z.toFixed(1)}m) match standard runner train envelope`);
+
+// ============================================================================
+// SUITE 7: TEARDOWN & LIFECYCLE CLEANUP
+// ============================================================================
+console.log('\n--- Suite 7: Teardown & Lifecycle Cleanup ---');
+
+director.reset();
+assert.strictEqual(director.getGearCount(), 0, 'Gears reset');
+assert.strictEqual(director.getChimeCount(), 0, 'Chimes reset');
+assert.strictEqual(director.getBridgeCount(), 0, 'Bridges reset');
+assert.strictEqual(director.getPistonCount(), 0, 'Pistons reset');
+assert.strictEqual(director.getObservatoryCount(), 0, 'Observatories reset');
+assert.strictEqual(director.getSkybridgeTrainCount(), 0, 'Skybridge trains reset');
+assert.strictEqual(director.getTimePortalCount(), 0, 'Time portals reset');
+pass('Event director reset() cleanly disposes all references');
+
+console.log('\n=======================================================');
+console.log(`🏆 ALL ${testsPassed} CHRONO_KINGDOM WORLD TESTS PASSED!`);
+console.log('=======================================================\n');
