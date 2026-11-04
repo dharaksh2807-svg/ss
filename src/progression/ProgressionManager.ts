@@ -600,6 +600,12 @@ export class ProgressionManager {
       if (this.getRahulTrialsRemaining() <= 0) {
         this.state.selectedCharacter = 'char_jax';
         this.eventBus.emit('CHARACTER_EQUIPPED', { charId: 'char_jax', outfitId: 'jax_classic' });
+        if (this.state.selectedTheme === 'RAHULVERSE') {
+          const prior = this.state.priorThemeBeforeSignature || 'DYNAMIC';
+          this.state.selectedTheme = prior;
+          this.state.priorThemeBeforeSignature = undefined;
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+        }
       }
     }
 
@@ -1066,6 +1072,19 @@ export class ProgressionManager {
           this.state.priorThemeBeforeSignature = undefined;
           this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
         }
+      } else if ((norm === 'char_rahul_gandhi' || norm === 'rahul_gandhi') && previousChar !== 'char_rahul_gandhi' && previousChar !== 'rahul_gandhi') {
+        if (this.state.selectedTheme !== 'RAHULVERSE') {
+          this.state.priorThemeBeforeSignature = this.state.selectedTheme;
+          this.state.selectedTheme = 'RAHULVERSE';
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', 'RAHULVERSE');
+        }
+      } else if ((previousChar === 'char_rahul_gandhi' || previousChar === 'rahul_gandhi') && norm !== 'char_rahul_gandhi' && norm !== 'rahul_gandhi') {
+        if (this.state.selectedTheme === 'RAHULVERSE' && this.state.priorThemeBeforeSignature) {
+          const prior = this.state.priorThemeBeforeSignature;
+          this.state.selectedTheme = prior;
+          this.state.priorThemeBeforeSignature = undefined;
+          this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+        }
       }
 
       this.saveState();
@@ -1090,6 +1109,19 @@ export class ProgressionManager {
       }
     } else if (previousChar === 'char_modi' && norm !== 'char_modi') {
       if (this.state.selectedTheme === 'VIP_EXPRESS' && this.state.priorThemeBeforeSignature) {
+        const prior = this.state.priorThemeBeforeSignature;
+        this.state.selectedTheme = prior;
+        this.state.priorThemeBeforeSignature = undefined;
+        this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', prior);
+      }
+    } else if ((norm === 'char_rahul_gandhi' || norm === 'rahul_gandhi') && previousChar !== 'char_rahul_gandhi' && previousChar !== 'rahul_gandhi') {
+      if (this.state.selectedTheme !== 'RAHULVERSE') {
+        this.state.priorThemeBeforeSignature = this.state.selectedTheme;
+        this.state.selectedTheme = 'RAHULVERSE';
+        this.eventBus.emit('ENVIRONMENT_PREFERENCE_CHANGED', 'RAHULVERSE');
+      }
+    } else if ((previousChar === 'char_rahul_gandhi' || previousChar === 'rahul_gandhi') && norm !== 'char_rahul_gandhi' && norm !== 'rahul_gandhi') {
+      if (this.state.selectedTheme === 'RAHULVERSE' && this.state.priorThemeBeforeSignature) {
         const prior = this.state.priorThemeBeforeSignature;
         this.state.selectedTheme = prior;
         this.state.priorThemeBeforeSignature = undefined;
@@ -1341,8 +1373,8 @@ export class ProgressionManager {
       if (!this.isThemeUnlocked(id)) return { success: false, message: 'World is locked' };
     }
     const previous = this.state.selectedTheme;
-    // When equipping VIP_EXPRESS, save prior theme if not already VIP_EXPRESS
-    if (id === 'VIP_EXPRESS' && previous !== 'VIP_EXPRESS') {
+    // When equipping signature worlds (VIP_EXPRESS or RAHULVERSE), save prior theme if not already that signature theme
+    if ((id === 'VIP_EXPRESS' || id === 'RAHULVERSE') && previous !== id) {
       this.state.priorThemeBeforeSignature = previous;
     }
     this.state.selectedTheme = id as WorldSelection;

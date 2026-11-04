@@ -4786,6 +4786,450 @@ export class TextureGenerator {
       return tex;
     });
   }
+
+  // =========================================================================
+  // RAHULVERSE: THE NEVER-ENDING YATRA (Political Satire Textures)
+  // =========================================================================
+
+  /**
+   * District A: Yatra Never Ends Sign & Milestone Textures
+   */
+  public static getYatraNeverEndsSignTexture(variant: number = 0): THREE.Texture {
+    const key = `rahul_yatra_never_ends_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Vibrant tricolor & open-road palette
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(0, 0, w, h);
+
+      // Gold/white roadside border
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+
+      // Header ribbon
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(16, 16, w - 32, 52);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏃 THE NEVER-ENDING YATRA 🏃', w * 0.5, 52);
+
+      // Main joke message
+      const jokes = [
+        ['FINAL DESTINATION: 2 KM', 'NEW FINAL DESTINATION: 4,000 KM', '★ SNEAKERS WEAR OUT FIRST ★'],
+        ['YATRA COMPLETED!', 'NEXT YATRA UNLOCKED IMMEDIATELY', '★ PLEASE DRINK CHAI AND CONTINUE ★'],
+        ['SHORTCUT DISCOVERED:', 'ANOTHER 2,500 KM DETOUR', '★ ROUTE CERTIFIED BY ENTHUSIASM ★'],
+        ['WALKING SIMULATOR:', 'POLITICAL COMEDY EDITION', '★ STEP COUNT: OVER 99,000,000 ★']
+      ];
+      const j = jokes[variant % jokes.length];
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(j[0], w * 0.5, 114);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '900 20px monospace';
+      ctx.fillText(j[1], w * 0.5, 162);
+
+      // Footer
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(16, 192, w - 32, 46);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 222);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District A: Animated Flip Board (Finish Line -> Start of Next Yatra)
+   */
+  public static getFinishLineFlipTexture(isStart: boolean = false): THREE.Texture {
+    const key = `rahul_finish_flip_${isStart ? 'start' : 'finish'}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      if (!isStart) {
+        // FINISH LINE
+        ctx.fillStyle = '#16a34a'; // Green celebration
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(6, 6, w - 12, h - 12);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 32px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🏁 FINISH LINE: CONGRATULATIONS! 🏁', w * 0.5, 54);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText('PREPARE FOR MECHANICAL ARCH ROTATION...', w * 0.5, 96);
+      } else {
+        // START OF NEXT YATRA
+        ctx.fillStyle = '#ea580c'; // Vibrant orange
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(6, 6, w - 12, h - 12);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 30px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚩 START OF NEXT YATRA 🚩', w * 0.5, 54);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText('NEXT ADVENTURE STARTS NOW • PLEASE KEEP WALKING', w * 0.5, 96);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District A: Absurd Continental Yatra Route Map
+   */
+  public static getYatraMapTexture(): THREE.Texture {
+    return this.getOrCreate('rahul_yatra_route_map', () => {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Parchment / navigation grid background
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(0, 0, w, h);
+
+      // Grid lines
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < w; x += 64) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 64) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Border
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+
+      // Title
+      ctx.fillStyle = '#78350f';
+      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('OFFICIAL YATRA NAVIGATION MAP', w * 0.5, 46);
+
+      // Crazy winding route path
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([12, 6]);
+      ctx.beginPath();
+      ctx.moveTo(80, 440);
+      ctx.bezierCurveTo(120, 320, 380, 400, 240, 240);
+      ctx.bezierCurveTo(140, 120, 360, 180, 420, 80);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Waypoints
+      const waypoints = [
+        { x: 80, y: 440, label: 'START (SOUTH)' },
+        { x: 300, y: 340, label: 'CHAI BREAK #412' },
+        { x: 240, y: 240, label: 'WRONG TURN (VIA MARS)' },
+        { x: 420, y: 80, label: 'NEW START LINE' }
+      ];
+      waypoints.forEach((pt) => {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText(pt.label, pt.x, pt.y - 18);
+      });
+
+      // Funny stamp
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '900 18px monospace';
+      ctx.fillText('★ STATUS: STILL WALKING ★', w * 0.5, 485);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District B: Parliament Pandemonium Sign Textures
+   */
+  public static getParliamentPandemoniumSignTexture(variant: number = 0): THREE.Texture {
+    const key = `rahul_parliament_pandemonium_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+
+      // Gold crest header
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏛️ PARLIAMENT PANDEMONIUM 🏛️', w * 0.5, 46);
+
+      const jokes = [
+        ['QUESTION HOUR:', 'ANSWER SOLD SEPARATELY', '★ MICROPHONE STATUS: RUNNING AWAY ★'],
+        ['DISCUSSION STARTED:', 'CONCLUSION 404 NOT FOUND', '★ PLEASE STAND BY FOR ADJOURNMENT ★'],
+        ['ORDER IN THE HOUSE!', 'EVERYONE HAS A VALID POINT', '★ NEXT SPEECH IN 3 SECONDS ★'],
+        ['DEBATE CLOCK ACTIVE:', 'RESETTING TO 10:00 ENDLESSLY', '★ EXTRA TIME GRANTED FOR CHAI ★']
+      ];
+      const j = jokes[variant % jokes.length];
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(j[0], w * 0.5, 115);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '900 20px monospace';
+      ctx.fillText(j[1], w * 0.5, 160);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 215);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District C: Press Conference Panic Video Screen Textures
+   */
+  public static getPressConferencePanicSignTexture(variant: number = 0): THREE.Texture {
+    const key = `rahul_press_conference_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#0c4a6e';
+      ctx.fillRect(0, 0, w, h);
+
+      // Breaking header
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(0, 0, w, 44);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ 24/7 LIVE MEDIA PANIC ⚡', w * 0.5, 32);
+
+      // 4 Pundit / Reporter tiles
+      const colors = ['#0369a1', '#b91c1c', '#047857', '#a16207'];
+      const headers = ['REPORTER 1', 'REPORTER 2', 'CAMERA CREW A', 'CAMERA CREW B'];
+      const sub = ['"QUESTION!"', '"FOLLOW-UP!"', '"FILMING CREW B"', '"FILMING CREW A"'];
+      for (let i = 0; i < 4; i++) {
+        const bx = 16 + (i % 2) * 242;
+        const by = 52 + Math.floor(i / 2) * 62;
+        ctx.fillStyle = colors[i];
+        ctx.fillRect(bx, by, 238, 56);
+        ctx.strokeStyle = '#7dd3fc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, by, 238, 56);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(headers[i], bx + 18, by + 24);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '11px monospace';
+        ctx.fillText(sub[i], bx + 18, by + 42);
+      }
+
+      // Scrolling Ticker at bottom
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(0, 185, w, 71);
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      const tickers = [
+        'EXCLUSIVE: 17 JOURNALISTS ASK 18 OPINIONS AT ONCE',
+        'BREAKING: RUNAWAY MICROPHONE SPOTTED HEADING TOWARD RAILWAY',
+        'SPECIAL REPORT: 4-HOUR DEBATE ON GEOPOLITICS OF A TEACUP',
+        'PRESS CONFERENCE CONFIRMED ABOUT SCHEDULING NEXT PRESS CONFERENCE'
+      ];
+      ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
+      ctx.fillText(tickers[variant % tickers.length], w * 0.5, 218);
+      ctx.font = '11px monospace';
+      ctx.fillText('LIVE RATING: 100% MAXIMUM VOLUME • ZERO CONCLUSIONS', w * 0.5, 238);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District D: Alliance Rollercoaster Billboard Textures
+   */
+  public static getAllianceRollercoasterSignTexture(variant: number = 0): THREE.Texture {
+    const key = `rahul_alliance_rollercoaster_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Carnival amusement park palette
+      ctx.fillStyle = '#581c87';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+
+      // Header
+      ctx.fillStyle = '#ec4899';
+      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎢 ALLIANCE ROLLERCOASTER PARK 🎢', w * 0.5, 46);
+
+      const jokes = [
+        ['ALLIANCE STATUS:', "IT'S EXTREMELY COMPLICATED", '★ SEAT SHARING: EXPERT PUZZLE MODE ★'],
+        ['POLITICAL MUSICAL CHAIRS:', 'WHO SITS IN THE MIDDLE?', '★ ROTATING CHAIRS DEPLOYED ★'],
+        ['COALITION MEETING:', 'SCHEDULED TO PLAN NEXT MEETING', '★ EVERYONE AGREES TO DISAGREE ★'],
+        ['HANDSHAKE MONUMENT:', 'SMILE FOR CAMERA // NOW DEBATE', '★ ALLIANCE LOOP COMPLETE ★']
+      ];
+      const j = jokes[variant % jokes.length];
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(j[0], w * 0.5, 114);
+
+      ctx.fillStyle = '#f472b6';
+      ctx.font = '900 20px monospace';
+      ctx.fillText(j[1], w * 0.5, 160);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 215);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
+
+  /**
+   * District E: The Great Political Multiverse Cosmic Textures
+   */
+  public static getPoliticalMultiverseSignTexture(variant: number = 0): THREE.Texture {
+    const key = `rahul_political_multiverse_${variant % 4}`;
+    return this.getOrCreate(key, () => {
+      const w = 512;
+      const h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Cosmic dark purple nebula
+      ctx.fillStyle = '#090514';
+      ctx.fillRect(0, 0, w, h);
+
+      // Starfield dots
+      ctx.fillStyle = '#ffffff';
+      for (let s = 0; s < 45; s++) {
+        const sx = (s * 47) % w;
+        const sy = (s * 31) % h;
+        ctx.fillRect(sx, sy, (s % 3) + 1, (s % 3) + 1);
+      }
+
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+
+      // Hologram glowing cyan header
+      ctx.fillStyle = '#6b21a8';
+      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌌 POLITICAL MULTIVERSE 🌌', w * 0.5, 46);
+
+      const jokes = [
+        ['MULTIVERSE DIMENSION #404:', 'EVERY DEBATE ENDS ON TIME!', '★ WARNING: UNSTABLE FICTION ★'],
+        ['DIMENSIONAL PORTAL:', 'NEW RAILWAY UNLOCKED AHEAD', '★ JOURNEY IS MATHEMATICALLY INFINITE ★'],
+        ['QUANTUM ALLIANCE:', 'MODI & RAHUL TAKE SELFIE SIMULTANEOUSLY', '★ DOUBLE TROPHY ACHIEVED ★'],
+        ['COSMIC STATUS:', 'MISSION COMPLETE? NOT SO FAST!', '★ THE YATRA TRANSCENDS TIME ★']
+      ];
+      const j = jokes[variant % jokes.length];
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(j[0], w * 0.5, 114);
+
+      ctx.fillStyle = '#c084fc';
+      ctx.font = '900 20px monospace';
+      ctx.fillText(j[1], w * 0.5, 160);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '14px monospace';
+      ctx.fillText(j[2], w * 0.5, 215);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    });
+  }
 }
 
 

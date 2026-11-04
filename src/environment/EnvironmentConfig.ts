@@ -3,7 +3,7 @@ import { ProgressionManager } from '../progression/ProgressionManager';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 import type { WorldSelection } from './WorldCatalog';
 
-export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS';
+export type EnvironmentId = 'MODERN_METRO' | 'HISTORIC_QUARTER' | 'UNDERGROUND_METRO' | 'NEON_INDUSTRIAL' | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE';
 export type EnvironmentSelection = WorldSelection;
 
 export interface EnvironmentTheme {
@@ -774,6 +774,9 @@ export const VIP_EXPRESS_THEME: EnvironmentTheme = {
   }
 };
 
+export { RAHULVERSE_THEME } from './worlds/rahulverse/RahulverseTheme';
+import { RAHULVERSE_THEME } from './worlds/rahulverse/RahulverseTheme';
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   MODERN_METRO: MODERN_METRO_THEME,
   HISTORIC_QUARTER: HISTORIC_QUARTER_THEME,
@@ -785,7 +788,8 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentTheme> = {
   DOOMSDAY_LAST_TRANSIT: DOOMSDAY_LAST_TRANSIT_THEME,
   PHANTOM_LINE: PHANTOM_LINE_THEME,
   HAUNTED_CARNIVAL: HAUNTED_CARNIVAL_THEME,
-  VIP_EXPRESS: VIP_EXPRESS_THEME
+  VIP_EXPRESS: VIP_EXPRESS_THEME,
+  RAHULVERSE: RAHULVERSE_THEME
 };
 
 export class EnvironmentManager {

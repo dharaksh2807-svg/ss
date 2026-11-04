@@ -532,29 +532,123 @@ export class CharacterMeshBuilder {
       pocketSquare.position.set(-0.11, height * 0.72, -topRadius * 0.98);
       spineGroup.add(pocketSquare);
     } else if (characterId === 'char_rahul_gandhi' || (characterId as string) === 'rahul_gandhi') {
-      // RAHUL GANDHI: Signature White Polo Shirt with open collar placket
-      const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.07, 16, 1, true);
-      const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
-      collar.position.set(0, height * 0.96, 0);
-      spineGroup.add(collar);
+      if (outfit.features?.hasNehruKurta) {
+        // Traditional Khadi Kurta-Pajama with Mandarin collar
+        const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.08, 16, 1, true);
+        const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+        collar.position.set(0, height * 0.96, 0);
+        spineGroup.add(collar);
 
-      // Button placket down chest
-      const placketGeo = new THREE.BoxGeometry(0.045, height * 0.45, 0.015);
-      const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
-      placket.position.set(0, height * 0.72, -topRadius * 0.98);
-      spineGroup.add(placket);
+        const placketGeo = new THREE.BoxGeometry(0.04, height * 0.65, 0.015);
+        const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
+        placket.position.set(0, height * 0.60, -topRadius * 0.98);
+        spineGroup.add(placket);
 
-      // White collar tips
-      const tipGeo = new THREE.ConeGeometry(0.04, 0.09, 3);
-      tipGeo.rotateZ(0.4);
-      const tipL = new THREE.Mesh(tipGeo, mats.primaryMat);
-      tipL.position.set(-0.08, height * 0.92, -topRadius * 0.99);
-      spineGroup.add(tipL);
+        const btnGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.006, 8);
+        btnGeo.rotateX(Math.PI / 2);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.5 });
+        for (let b = 0; b < 4; b++) {
+          const btn = new THREE.Mesh(btnGeo, btnMat);
+          btn.position.set(0, height * (0.42 + b * 0.12), -topRadius * 0.995);
+          spineGroup.add(btn);
+        }
+      } else if (outfit.features?.hasWinterVestMuffler) {
+        // Thermal Puffer Vest & Crimson Muffler
+        const vestGeo = new THREE.CylinderGeometry(topRadius * 1.06, topRadius * 0.98, height * 0.92, 16);
+        const vestMat = new THREE.MeshStandardMaterial({ color: outfit.colors.primary, roughness: 0.6 });
+        const vest = new THREE.Mesh(vestGeo, vestMat);
+        vest.position.set(0, height * 0.50, 0);
+        spineGroup.add(vest);
 
-      const tipR = new THREE.Mesh(tipGeo, mats.primaryMat);
-      tipR.rotation.z = -0.4;
-      tipR.position.set(0.08, height * 0.92, -topRadius * 0.99);
-      spineGroup.add(tipR);
+        // Crimson woolen muffler wrapped around neck & trailing down chest
+        const mufflerNeckGeo = new THREE.TorusGeometry(0.18, 0.045, 10, 16);
+        mufflerNeckGeo.rotateX(Math.PI / 2);
+        const mufflerMat = new THREE.MeshStandardMaterial({ color: outfit.colors.secondary, roughness: 0.8 });
+        const mufflerNeck = new THREE.Mesh(mufflerNeckGeo, mufflerMat);
+        mufflerNeck.position.set(0, height * 0.95, 0);
+        spineGroup.add(mufflerNeck);
+
+        // Trailing muffler tail
+        const tailGeo = new THREE.BoxGeometry(0.07, height * 0.55, 0.03);
+        const tail = new THREE.Mesh(tailGeo, mufflerMat);
+        tail.position.set(-0.06, height * 0.65, -topRadius * 1.05);
+        tail.rotation.z = -0.12;
+        spineGroup.add(tail);
+      } else if (outfit.features?.hasParliamentBandhgala) {
+        // Midnight Navy Bandhgala Jacket with golden brass buttons & Constitution booklet
+        const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.08, 16, 1, true);
+        const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+        collar.position.set(0, height * 0.96, 0);
+        spineGroup.add(collar);
+
+        const placketGeo = new THREE.BoxGeometry(0.04, height * 0.88, 0.015);
+        const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
+        placket.position.set(0, height * 0.50, -topRadius * 0.98);
+        spineGroup.add(placket);
+
+        const buttonGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.008, 10);
+        buttonGeo.rotateX(Math.PI / 2);
+        const buttonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.25 });
+        for (let b = 0; b < 5; b++) {
+          const btn = new THREE.Mesh(buttonGeo, buttonMat);
+          btn.position.set(0, height * (0.30 + b * 0.12), -topRadius * 0.995);
+          spineGroup.add(btn);
+        }
+
+        // Pocket-sized Constitution booklet in breast pocket
+        const bookletGeo = new THREE.BoxGeometry(0.06, 0.08, 0.02);
+        const bookletMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4 });
+        const booklet = new THREE.Mesh(bookletGeo, bookletMat);
+        booklet.position.set(-0.11, height * 0.72, -topRadius * 0.98);
+        booklet.rotation.z = 0.1;
+        spineGroup.add(booklet);
+      } else if (outfit.features?.hasLegendaryTricolorSash) {
+        // Legendary Tricolor Marathon Sash across chest
+        const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.07, 16, 1, true);
+        const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+        collar.position.set(0, height * 0.96, 0);
+        spineGroup.add(collar);
+
+        // Saffron, White, Green diagonal sash
+        const sashGeo = new THREE.BoxGeometry(0.09, height * 1.05, 0.018);
+        const sashMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
+        const sash = new THREE.Mesh(sashGeo, sashMat);
+        sash.position.set(0, height * 0.52, -topRadius * 0.99);
+        sash.rotation.z = -0.55;
+        spineGroup.add(sash);
+
+        // Golden marathon medal
+        const medalGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.012, 16);
+        medalGeo.rotateX(Math.PI / 2);
+        const medalMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.2 });
+        const medal = new THREE.Mesh(medalGeo, medalMat);
+        medal.position.set(-0.06, height * 0.68, -topRadius * 1.02);
+        spineGroup.add(medal);
+      } else {
+        // DEFAULT / CLASSIC: Signature White Polo Shirt with open collar placket
+        const collarGeo = new THREE.CylinderGeometry(0.165, 0.175, 0.07, 16, 1, true);
+        const collar = new THREE.Mesh(collarGeo, mats.primaryMat);
+        collar.position.set(0, height * 0.96, 0);
+        spineGroup.add(collar);
+
+        // Button placket down chest
+        const placketGeo = new THREE.BoxGeometry(0.045, height * 0.45, 0.015);
+        const placket = new THREE.Mesh(placketGeo, mats.primaryMat);
+        placket.position.set(0, height * 0.72, -topRadius * 0.98);
+        spineGroup.add(placket);
+
+        // White collar tips
+        const tipGeo = new THREE.ConeGeometry(0.04, 0.09, 3);
+        tipGeo.rotateZ(0.4);
+        const tipL = new THREE.Mesh(tipGeo, mats.primaryMat);
+        tipL.position.set(-0.08, height * 0.92, -topRadius * 0.99);
+        spineGroup.add(tipL);
+
+        const tipR = new THREE.Mesh(tipGeo, mats.primaryMat);
+        tipR.rotation.z = -0.4;
+        tipR.position.set(0.08, height * 0.92, -topRadius * 0.99);
+        spineGroup.add(tipR);
+      }
     }
   }
 

@@ -778,10 +778,12 @@ export class StartScreen {
         }
       }
 
-      // If Modi is selected but VIP Express is not equipped, show signature prompt
+      // If Modi or Rahul is selected but signature world is not equipped, show signature prompt
       const selectedChar = this.progression.getSelectedCharacter();
       if (selectedChar === 'char_modi' && envPref !== 'VIP_EXPRESS') {
         envSubEl.textContent = '🏛️ Tap to play in Modi\'s VIP Express';
+      } else if ((selectedChar === 'char_rahul_gandhi' || (selectedChar as string) === 'rahul_gandhi') && envPref !== 'RAHULVERSE') {
+        envSubEl.textContent = '🏃 Tap to run in Rahul\'s Never-Ending Yatra';
       }
     }
 

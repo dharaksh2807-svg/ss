@@ -6,6 +6,7 @@ import { EnvironmentTheme, EnvironmentId } from './EnvironmentConfig';
 import { LandmarkType, SmallMomentType } from './EnvironmentalEncounterDirector';
 import { SceneryPool } from './SceneryPool';
 import { VipSatireWorldBuilder } from './VipSatireWorldBuilder';
+import { RahulSatireWorldBuilder } from './worlds/rahulverse/RahulSatireWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1567,6 +1568,8 @@ export class SceneryFactory {
       this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'VIP_EXPRESS') {
       this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+    } else if (theme.id === 'RAHULVERSE') {
+      this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -4773,6 +4776,20 @@ export class SceneryFactory {
 
       group.add(portalGroup);
       return;
+    } else if (theme.id === 'RAHULVERSE') {
+      // --- Yatra Grand Gateway Portal (Rahulverse: The Never-Ending Yatra) ---
+      const pylonGeo = new THREE.BoxGeometry(3.6, portalH, 4.0);
+      [-spanW * 0.5 - 1.2, spanW * 0.5 + 1.2].forEach((px) => {
+        const pylon = new THREE.Mesh(pylonGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+        pylon.position.set(px, portalH * 0.5, portalZ);
+        portalGroup.add(pylon);
+      });
+      const beamGeo = new THREE.BoxGeometry(spanW + 5.5, 1.4, 2.2);
+      const beam = new THREE.Mesh(beamGeo, new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+      beam.position.set(0, portalH + 0.7, portalZ);
+      portalGroup.add(beam);
+      group.add(portalGroup);
+      return;
     }
 
     // Monumental ashlar stone gateway pylons flanking tracks (X ~ ±6.8, height ~ 18m)
@@ -7534,6 +7551,27 @@ export class SceneryFactory {
     }
 
     group.add(vipGroup);
+  }
+
+  // =========================================================================
+  // RAHULVERSE: THE NEVER-ENDING YATRA (Rahul Gandhi Signature World)
+  // =========================================================================
+
+  private buildRahulverseScenery(
+    group: THREE.Group,
+    roadbedWidth: number,
+    curbWidth: number,
+    chunkLength: number,
+    seed: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    const rahulGroup = new THREE.Group();
+    rahulGroup.name = 'rahulverse_scenery';
+
+    // Delegate to the 5 distinct political comedy districts!
+    RahulSatireWorldBuilder.getInstance().buildDistrictScenery(rahulGroup, roadbedWidth, chunkLength, seed, detail);
+
+    group.add(rahulGroup);
   }
 
   /**

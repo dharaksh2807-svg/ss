@@ -41,6 +41,10 @@ export interface OutfitDefinition {
     hasKurtaWaistcoat?: boolean;
     hasWhitePoloNavyPants?: boolean;
     hasBeard?: boolean;
+    hasNehruKurta?: boolean;
+    hasWinterVestMuffler?: boolean;
+    hasParliamentBandhgala?: boolean;
+    hasLegendaryTricolorSash?: boolean;
   };
 }
 
@@ -553,6 +557,98 @@ export const CHARACTER_CATALOG: CharacterDefinition[] = [
         features: {
           hasWhitePoloNavyPants: true,
           hasBeard: true
+        }
+      },
+      {
+        id: 'rahul_kurta',
+        name: 'Grassroots Kurta-Pajama',
+        tagline: 'Traditional Khadi Kurta & Pajama',
+        description: 'Pure white hand-spun khadi kurta-pajama with a Mandarin collar and rolled-up sleeves for grassroots rally sprints.',
+        icon: '🥻',
+        previewImage: '/characters/rahul_gandhi/front.png',
+        unlock: { type: 'COINS', cost: 15000, description: '15,000 Coins' },
+        colors: {
+          primary: 0xfafafa,     // Pure white khadi kurta
+          secondary: 0xffffff,   // White piping
+          pants: 0xf5f5f5,       // White pajama
+          accent: 0x0284c7,      // Cyan athletic accents
+          hairOrHelmet: 0x222222,
+          skin: 0xd9a27c,
+          details: 0xcccccc
+        },
+        features: {
+          hasWhitePoloNavyPants: false,
+          hasBeard: true,
+          hasNehruKurta: true
+        }
+      },
+      {
+        id: 'rahul_winter',
+        name: 'Winter Yatra Edition',
+        tagline: 'High-Altitude Puffer Vest & Muffler',
+        description: 'Navy padded thermal jacket over white thermal long-sleeve, crimson woolen muffler, and reinforced all-terrain sneakers.',
+        icon: '🧣',
+        previewImage: '/characters/rahul_gandhi/front.png',
+        unlock: { type: 'COINS', cost: 25000, description: '25,000 Coins' },
+        colors: {
+          primary: 0x0f172a,     // Deep navy thermal vest
+          secondary: 0xe11d48,   // Crimson woolen muffler
+          pants: 0x1e293b,       // Padded navy trousers
+          accent: 0x0ea5e9,      // Ice cyan trim
+          hairOrHelmet: 0x222222,
+          skin: 0xd9a27c,
+          details: 0xef4444
+        },
+        features: {
+          hasWhitePoloNavyPants: false,
+          hasBeard: true,
+          hasWinterVestMuffler: true
+        }
+      },
+      {
+        id: 'rahul_parliament',
+        name: 'Parliament Edition',
+        tagline: 'Formal Bandhgala & Constitution Pocket Dossier',
+        description: 'Midnight navy bandhgala tailored jacket with brass emblem buttons and pocket-sized Constitution notebook.',
+        icon: '📜',
+        previewImage: '/characters/rahul_gandhi/front.png',
+        unlock: { type: 'COINS', cost: 40000, description: '40,000 Coins' },
+        colors: {
+          primary: 0x1e3a8a,     // Midnight navy bandhgala
+          secondary: 0xd97706,   // Golden brass buttons
+          pants: 0x172554,       // Formal dark trousers
+          accent: 0xf59e0b,      // Amber pocket notebook
+          hairOrHelmet: 0x222222,
+          skin: 0xd9a27c,
+          details: 0xfbbf24
+        },
+        features: {
+          hasWhitePoloNavyPants: false,
+          hasBeard: true,
+          hasParliamentBandhgala: true
+        }
+      },
+      {
+        id: 'rahul_legend',
+        name: 'Never-Ending Yatra Legend',
+        tagline: 'Golden Compass & Tricolor Marathon Sash',
+        description: 'Radiant golden yatra marathon sash, glowing trail sneakers, and ceremonial victory tricolor ribbon.',
+        icon: '👑',
+        previewImage: '/characters/rahul_gandhi/front.png',
+        unlock: { type: 'COINS', cost: 75000, description: '75,000 Coins' },
+        colors: {
+          primary: 0xffffff,     // Brilliant white rally tunic
+          secondary: 0xf97316,   // Tricolor orange ribbon
+          pants: 0x15803d,       // Tricolor green piping trousers
+          accent: 0x38bdf8,      // Radiant cyan speed trails
+          hairOrHelmet: 0x222222,
+          skin: 0xd9a27c,
+          details: 0xfacc15      // Golden medal
+        },
+        features: {
+          hasWhitePoloNavyPants: false,
+          hasBeard: true,
+          hasLegendaryTricolorSash: true
         }
       }
     ]

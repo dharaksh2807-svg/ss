@@ -8,6 +8,7 @@ import type { AtmospherePreset } from '../environment/EnvironmentalEncounterDire
 import { TextureGenerator } from './TextureGenerator';
 import { SeededRandom } from '../environment/SceneryFactory';
 import { VipComedyEventDirector } from '../environment/VipComedyEventDirector';
+import { RahulComedyEventDirector } from '../environment/worlds/rahulverse/RahulComedyEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2107,6 +2108,11 @@ export class WorldScene {
 
       // Update VipComedyEventDirector animated satire gags across districts
       VipComedyEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'RAHULVERSE') {
+      const delta = dt || 0.016;
+      RahulComedyEventDirector.getInstance().update(delta, true);
     }
   }
 

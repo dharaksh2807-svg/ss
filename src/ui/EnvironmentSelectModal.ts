@@ -89,7 +89,11 @@ export class EnvironmentSelectModal {
     <div class="env-world-grid">${worlds.map(world => {
       const canSelect = world.available && (world.owned || world.trialing || current === world.id);
       const selected = this.selectedPreference === world.id;
-      const runner = world.signatureCharacterId ? 'Requires Narendra Modi ownership, or an available equipped runner trial.' : '';
+      const runner = world.signatureCharacterId
+        ? (world.signatureCharacterId === 'char_rahul_gandhi'
+          ? 'Requires Rahul Gandhi ownership, or an available equipped runner trial.'
+          : 'Requires Narendra Modi ownership, or an available equipped runner trial.')
+        : '';
       const requirement = world.owned ? world.signatureCharacterId ? 'OWNED · SIGNATURE WORLD' : world.unlock === 'FREE' ? 'FREE · OWNED' : 'OWNED'
         : world.trialing ? 'RUNNER TRIAL · NOT PERMANENTLY OWNED' : runner || `LOCKED · ${world.coinCost.toLocaleString()} coins`;
       const selectable = canSelect ? `data-env-id="${world.id}" aria-pressed="${selected}"` : `data-shop-world="${world.id}" data-world-action="PREVIEW"`;

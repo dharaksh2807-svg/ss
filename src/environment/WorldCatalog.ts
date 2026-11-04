@@ -2,7 +2,7 @@ import type { EnvironmentId } from './EnvironmentConfig';
 import { EnvironmentRegistry } from './EnvironmentRegistry';
 
 export const FREE_WORLD_IDS = ['MODERN_METRO', 'HISTORIC_QUARTER', 'UNDERGROUND_METRO', 'NEON_INDUSTRIAL'] as const satisfies readonly EnvironmentId[];
-export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS';
+export type WorldId = EnvironmentId | 'NEON_RAINLINE' | 'ORBITAL_HALO' | 'ABYSSAL_GLASSLINE' | 'DOOMSDAY_LAST_TRANSIT' | 'PHANTOM_LINE' | 'HAUNTED_CARNIVAL' | 'VIP_EXPRESS' | 'RAHULVERSE';
 export type WorldSelection = WorldId | 'DYNAMIC';
 
 export interface WorldDefinition {
@@ -113,6 +113,20 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     implemented: true, available: true, dynamicEligible: false, icon: '🏛️', accentColor: '#f59e0b',
     signatureCharacterId: 'char_modi',
     signatureLabel: 'MODI SIGNATURE WORLD',
+    isSignatureWorld: true
+  },
+  {
+    id: 'RAHULVERSE', environmentId: 'RAHULVERSE', displayName: 'Rahulverse: The Never-Ending Yatra',
+    description: 'An absurdly entertaining, epic political-satire journey across five distinct comedy districts: endless walking yatras, parliamentary pandemonium, press conference panic, alliance rollercoasters, and the political multiverse.',
+    subtitle: 'The Never-Ending Yatra',
+    tagline: 'Run across vibrant Indian streets, runaway microphones, media scrums, and endless political adventures.',
+    rarity: 'LEGENDARY',
+    unlock: 'FREE', coinCost: 0, keyCost: null, previewReference: 'environment:RAHULVERSE',
+    previewImage: '/worlds/rahulverse.png',
+    features: ['Infinite Yatra Finish Lines', 'Runaway Microphones', 'Alliance Rollercoasters'],
+    implemented: true, available: true, dynamicEligible: false, icon: '🚩', accentColor: '#38bdf8',
+    signatureCharacterId: 'char_rahul_gandhi',
+    signatureLabel: 'RAHUL SIGNATURE WORLD',
     isSignatureWorld: true
   }
 ];

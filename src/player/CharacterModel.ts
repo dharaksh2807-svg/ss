@@ -955,6 +955,18 @@ export class CharacterModel {
         this.targetHeadRot.y += 0.14 * waveProgress; // Side-eye to camera/crowd
       }
     }
+
+    // Rahul Gandhi: Athletic marathoner stride with open-palm wave flourish and side spectator nods
+    if (this.currentCharacterId === 'char_rahul_gandhi' || (this.currentCharacterId as string) === 'rahul_gandhi') {
+      const flourishCycle = (this.animTime * 0.35) % 7.5;
+      if (flourishCycle > 5.5 && flourishCycle < 7.2) {
+        const waveProgress = Math.sin(((flourishCycle - 5.5) / 1.7) * Math.PI);
+        const wave = Math.sin(this.animTime * 6.5) * 0.20 * waveProgress;
+        this.targetLeftArmRot.set(-1.75 * waveProgress, 0, -0.40 * waveProgress - wave);
+        this.targetLeftForearmRot.set(-0.70 * waveProgress, 0, 0);
+        this.targetHeadRot.y -= 0.16 * waveProgress; // Looking towards crowds along track
+      }
+    }
   }
 
   private computeJumpTakeoffTarget(): void {
@@ -1194,6 +1206,15 @@ export class CharacterModel {
       this.targetLeftArmRot.set(-1.45, -0.2, -0.28);
       this.targetLeftForearmRot.set(-1.75, 0, 0);
     }
+
+    // Rahul Gandhi: Double-take comedic disbelief reaction holding balance with open arms
+    if (this.currentCharacterId === 'char_rahul_gandhi' || (this.currentCharacterId as string) === 'rahul_gandhi') {
+      this.targetHeadRot.set(-0.15, wobble * 0.8, -0.10);
+      this.targetLeftArmRot.set(-0.85, 0.25, -0.75);
+      this.targetLeftForearmRot.set(-1.25, 0, 0);
+      this.targetRightArmRot.set(-0.85, -0.25, 0.75);
+      this.targetRightForearmRot.set(-1.25, 0, 0);
+    }
   }
 
   private computeCrashTarget(): void {
@@ -1233,6 +1254,27 @@ export class CharacterModel {
       } else {
         // Triumphant Folded-Hands Namaste
         this.targetHeadRot.set(-0.12, 0, 0);
+        this.targetLeftArmRot.set(-0.75, 0.45, -0.45);
+        this.targetLeftForearmRot.set(-1.45, 0, 0);
+        this.targetRightArmRot.set(-0.75, -0.45, 0.45);
+        this.targetRightForearmRot.set(-1.45, 0, 0);
+      }
+      return;
+    }
+
+    // Rahul Gandhi: Celebratory Yatra Finisher V-pump & Namaste
+    if (this.currentCharacterId === 'char_rahul_gandhi' || (this.currentCharacterId as string) === 'rahul_gandhi') {
+      const victoryCycle = (this.animTime * 0.5) % 6.0;
+      if (victoryCycle < 3.0) {
+        // Triumphant Double Fist / V-Pump into the sky
+        this.targetRightArmRot.set(-2.40, 0.20, 0.45);
+        this.targetRightForearmRot.set(-0.50, 0, 0);
+        this.targetLeftArmRot.set(-2.40, -0.20, -0.45);
+        this.targetLeftForearmRot.set(-0.50, 0, 0);
+        this.targetHeadRot.set(-0.25, 0, 0);
+      } else {
+        // Respectful Namaste & bow
+        this.targetHeadRot.set(-0.10, 0, 0);
         this.targetLeftArmRot.set(-0.75, 0.45, -0.45);
         this.targetLeftForearmRot.set(-1.45, 0, 0);
         this.targetRightArmRot.set(-0.75, -0.45, 0.45);
@@ -1308,6 +1350,43 @@ export class CharacterModel {
         this.targetRightForearmRot.set(-0.65, 0, 0);
         this.targetLeftArmRot.set(0.12, 0, -0.30);
         this.targetLeftForearmRot.set(-0.35, 0, 0);
+      }
+    } else if (this.currentCharacterId === 'char_rahul_gandhi' || (this.currentCharacterId as string) === 'rahul_gandhi') {
+      // Rahul Gandhi Expressive Idle: Smoothly cycles between friendly crowd wave, looking for microphone with comical shrug, folded-hands Namaste, and energetic runner warm-up stretch
+      const cycle = (this.animTime * 0.3) % 10.0;
+      if (cycle < 2.5) {
+        // 1. Energetic friendly crowd wave (raised arm, open palm wave)
+        const wave = Math.sin(this.animTime * 5.0) * 0.25;
+        this.targetSpineRot.set(-0.02, 0.10, 0);
+        this.targetHeadRot.set(-0.04, 0.15, 0);
+        this.targetRightArmRot.set(-2.0, 0, 0.30 + wave);
+        this.targetRightForearmRot.set(-0.55, 0, 0);
+        this.targetLeftArmRot.set(0.15, 0, -0.28);
+        this.targetLeftForearmRot.set(-0.30, 0, 0);
+      } else if (cycle < 5.0) {
+        // 2. Comical "Where is the microphone?" shrug gesture (both palms open, head tilted, wondering shrug)
+        this.targetSpineRot.set(-0.05, 0, 0);
+        this.targetHeadRot.set(0.12, 0.15, -0.05);
+        this.targetLeftArmRot.set(-0.45, 0.30, -0.65);
+        this.targetLeftForearmRot.set(-1.10, 0, 0);
+        this.targetRightArmRot.set(-0.45, -0.30, 0.65);
+        this.targetRightForearmRot.set(-1.10, 0, 0);
+      } else if (cycle < 7.5) {
+        // 3. Respectful Folded-Hands Namaste to greeting crowd
+        this.targetSpineRot.set(0.06, 0, 0);
+        this.targetHeadRot.set(-0.05, 0, 0);
+        this.targetLeftArmRot.set(-0.65, 0.40, -0.42);
+        this.targetLeftForearmRot.set(-1.42, 0, 0);
+        this.targetRightArmRot.set(-0.65, -0.40, 0.42);
+        this.targetRightForearmRot.set(-1.42, 0, 0);
+      } else {
+        // 4. Sprinter ready stance & focus
+        this.targetSpineRot.set(-0.04, -0.08, 0);
+        this.targetHeadRot.set(-0.02, -0.10, 0.05);
+        this.targetLeftArmRot.set(-1.20, 0.15, -0.35);
+        this.targetLeftForearmRot.set(-1.60, 0, 0);
+        this.targetRightArmRot.set(0.10, 0, 0.25);
+        this.targetRightForearmRot.set(-0.40, 0, 0);
       }
     } else {
       this.targetLeftArmRot.set(0.05, 0, -0.25);
