@@ -61,6 +61,7 @@ export interface SettingsState {
   runningStyle: 'CLASSIC' | 'REVERSE';
   facialPortrait: boolean;
   showFps: boolean;
+  politicalChaserMode: 'AUTO' | 'RIVAL' | 'OFFICER';
 }
 
 export const DEFAULT_KEY_BINDINGS: KeyBindings = {
@@ -346,6 +347,17 @@ export class SettingsManager {
     this.eventBus.emit('SETTINGS_UPDATED', this.state);
   }
 
+  public setPoliticalChaserMode(mode: 'AUTO' | 'RIVAL' | 'OFFICER'): void {
+    this.state.politicalChaserMode = mode;
+    this.saveState();
+    this.eventBus.emit('POLITICAL_CHASER_MODE_CHANGED', mode);
+    this.eventBus.emit('SETTINGS_UPDATED', this.state);
+  }
+
+  public getPoliticalChaserMode(): 'AUTO' | 'RIVAL' | 'OFFICER' {
+    return this.state.politicalChaserMode || 'AUTO';
+  }
+
   public resetAllToDefaults(): void {
     this.state = this.getDefaultState();
     this.saveState();
@@ -485,7 +497,8 @@ export class SettingsManager {
       openingCinematic: 'FIRST_ONLY',
       runningStyle: 'CLASSIC',
       facialPortrait: true,
-      showFps: false
+      showFps: false,
+      politicalChaserMode: 'AUTO'
     };
   }
 

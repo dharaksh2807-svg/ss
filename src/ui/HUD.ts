@@ -272,6 +272,10 @@ export class HUD {
       }
     });
 
+    bus.on('POLITICAL_NEWS_ALERT', (news: any) => {
+      this.showPoliticalNewsAlert(news);
+    });
+
     bus.on('FPS_DISPLAY_TOGGLED', (enabled: boolean) => {
       this.fpsCounterEl?.classList.toggle('hidden', !enabled);
     });
@@ -953,6 +957,57 @@ export class HUD {
         if (toast.parentElement) toast.parentElement.removeChild(toast);
       }, 400);
     }, 2500);
+  }
+
+  public showPoliticalNewsAlert(news: { headline: string; subtitle?: string; tickerCategory?: string }): void {
+    if (!this.toastContainerEl || !news || !news.headline) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'political-news-toast glassmorphic slide-down-anim';
+    toast.style.cssText = [
+      'position: fixed',
+      'top: 13%',
+      'left: 50%',
+      'transform: translateX(-50%)',
+      'background: linear-gradient(135deg, rgba(220, 38, 38, 0.92), rgba(180, 83, 9, 0.92))',
+      'backdrop-filter: blur(8px)',
+      'border: 1px solid rgba(251, 191, 36, 0.7)',
+      'border-radius: 10px',
+      'padding: 8px 18px',
+      'color: #ffffff',
+      'font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(245, 158, 11, 0.4)',
+      'z-index: 10000',
+      'pointer-events: none',
+      'display: flex',
+      'flex-direction: column',
+      'align-items: center',
+      'gap: 3px',
+      'max-width: 90vw',
+      'text-align: center'
+    ].join(';');
+
+    const cat = news.tickerCategory || 'SATIRE BREAKING';
+    const sub = news.subtitle ? `<div style="font-size: 11px; opacity: 0.9; font-weight: 500;">${news.subtitle}</div>` : '';
+
+    toast.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="background: #fbbf24; color: #111827; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.8px;">${cat}</span>
+        <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">${news.headline}</span>
+      </div>
+      ${sub}
+    `;
+
+    this.toastContainerEl.appendChild(toast);
+
+    this.safeTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-10px)';
+      toast.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      this.safeTimeout(() => {
+        if (toast.parentElement) toast.parentElement.removeChild(toast);
+      }, 360);
+    }, 2800);
   }
 
   public triggerCoinBump(): void {

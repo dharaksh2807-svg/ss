@@ -92,6 +92,7 @@ export class SettingsModal {
   private qualitySelect: HTMLSelectElement | null;
   private introSelect: HTMLSelectElement | null;
   private facialPortraitCheckbox: HTMLInputElement | null;
+  private politicalChaserSelect: HTMLSelectElement | null;
   private runningStyleSelect: HTMLSelectElement | null;
   private runningStyleBadgeEl: HTMLElement | null;
   private resolvedBadgeEl: HTMLElement | null;
@@ -149,6 +150,7 @@ export class SettingsModal {
     this.qualitySelect = document.getElementById('setting-graphics-quality') as HTMLSelectElement | null;
     this.introSelect = document.getElementById('setting-opening-cinematic') as HTMLSelectElement | null;
     this.facialPortraitCheckbox = document.getElementById('setting-facial-portrait') as HTMLInputElement | null;
+    this.politicalChaserSelect = document.getElementById('setting-political-chaser') as HTMLSelectElement | null;
     this.runningStyleSelect = document.getElementById('setting-running-style') as HTMLSelectElement | null;
     this.runningStyleBadgeEl = document.getElementById('setting-running-style-badge');
     this.resolvedBadgeEl = document.getElementById('setting-graphics-resolved-badge');
@@ -698,6 +700,14 @@ export class SettingsModal {
       });
     }
 
+    if (this.politicalChaserSelect) {
+      this.politicalChaserSelect.value = this.settingsManager.getPoliticalChaserMode();
+      this.politicalChaserSelect.addEventListener('change', () => {
+        const mode = (this.politicalChaserSelect!.value as 'AUTO' | 'RIVAL' | 'OFFICER') || 'AUTO';
+        this.settingsManager.setPoliticalChaserMode(mode);
+      });
+    }
+
     if (this.runningStyleSelect) {
       const savedStyle = localStorage.getItem('metro_running_style') || 'CLASSIC';
       this.runningStyleSelect.value = savedStyle;
@@ -714,6 +724,10 @@ export class SettingsModal {
   }
 
   private refreshRunningStyleUI(): void {
+    if (this.politicalChaserSelect) {
+      this.politicalChaserSelect.value = this.settingsManager.getPoliticalChaserMode();
+    }
+
     if (this.runningStyleSelect) {
       const style = localStorage.getItem('metro_running_style') || 'CLASSIC';
       this.runningStyleSelect.value = style;

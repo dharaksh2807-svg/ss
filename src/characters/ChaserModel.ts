@@ -30,6 +30,14 @@ export type ChaserArchetype =
   | 'MODI_RIVAL'
   | 'VIP_SECURITY';
 
+export type ChaserCosmeticReaction = 
+  | 'NONE'
+  | 'NAMASTE_SHRUG'
+  | 'SELFIE_FLASH'
+  | 'CAMERA_WAVE'
+  | 'MICROPHONE_DUCK'
+  | 'PRESS_CONFERENCE_ENTER';
+
 export class ChaserModel {
   public mesh: THREE.Group;
 
@@ -54,6 +62,23 @@ export class ChaserModel {
   private pelvisMesh?: THREE.Mesh;
   private tieMesh?: THREE.Mesh;
   private badgeMesh?: THREE.Mesh;
+
+  // Archetype Accessory Groups
+  private officerCapGroup?: THREE.Group;
+  private officerRadioGroup?: THREE.Group;
+  private officerEpaulettesGroup?: THREE.Group;
+  private officerWhistleMesh?: THREE.Mesh;
+  private modiHeadGroup?: THREE.Group;
+  private modiChestGroup?: THREE.Group;
+  private rahulHeadGroup?: THREE.Group;
+  private vipHeadGroup?: THREE.Group;
+  private selfiePhoneGroup?: THREE.Group;
+  private selfieFlashMesh?: THREE.Mesh;
+
+  // Cosmetic Rivalry Reactions
+  private cosmeticReaction: ChaserCosmeticReaction = 'NONE';
+  private cosmeticTimer: number = 0;
+  private cosmeticDuration: number = 1.6;
 
   // State management
   private actionState: ChaserActionState = 'IDLE';
@@ -176,17 +201,19 @@ export class ChaserModel {
     this.hipsGroup.add(buckleMesh);
 
     // Walkie-Talkie on left hip
+    this.officerRadioGroup = new THREE.Group();
     const radioGeo = new THREE.BoxGeometry(0.08, 0.14, 0.06);
     const radioMesh = new THREE.Mesh(radioGeo, radioMat);
     radioMesh.position.set(-0.28, 0.10, 0.05);
     radioMesh.rotation.z = 0.15;
-    this.hipsGroup.add(radioMesh);
+    this.officerRadioGroup.add(radioMesh);
 
     // Radio Antenna
     const antGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.12, 6);
     const antMesh = new THREE.Mesh(antGeo, radioMat);
     antMesh.position.set(-0.28, 0.22, 0.05);
-    this.hipsGroup.add(antMesh);
+    this.officerRadioGroup.add(antMesh);
+    this.hipsGroup.add(this.officerRadioGroup);
 
     // Spine & Torso Group
     this.spineGroup = new THREE.Group();
@@ -232,16 +259,28 @@ export class ChaserModel {
     this.spineGroup.add(badgeMesh);
 
     // Gold Epaulettes (Shoulder rank straps)
+    this.officerEpaulettesGroup = new THREE.Group();
     const epauletteGeo = new THREE.BoxGeometry(0.12, 0.03, 0.18);
     const leftEpaulette = new THREE.Mesh(epauletteGeo, badgeGoldMat);
     leftEpaulette.position.set(-0.29, torsoHeight * 0.94, 0);
     leftEpaulette.rotation.z = -0.12;
-    this.spineGroup.add(leftEpaulette);
+    this.officerEpaulettesGroup.add(leftEpaulette);
 
     const rightEpaulette = new THREE.Mesh(epauletteGeo, badgeGoldMat);
     rightEpaulette.position.set(0.29, torsoHeight * 0.94, 0);
     rightEpaulette.rotation.z = 0.12;
-    this.spineGroup.add(rightEpaulette);
+    this.officerEpaulettesGroup.add(rightEpaulette);
+    this.spineGroup.add(this.officerEpaulettesGroup);
+
+    // Modi Chest Pocket Square (for MODI_RIVAL)
+    this.modiChestGroup = new THREE.Group();
+    this.modiChestGroup.name = 'chaser_modi_chest';
+    this.modiChestGroup.visible = false;
+    const saffronMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.6 });
+    const pocketSquare = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02), saffronMat);
+    pocketSquare.position.set(-0.14, torsoHeight * 0.72, 0.28);
+    this.modiChestGroup.add(pocketSquare);
+    this.spineGroup.add(this.modiChestGroup);
 
     // Head Group
     this.headGroup = new THREE.Group();
@@ -261,28 +300,77 @@ export class ChaserModel {
     headMesh.castShadow = true;
     this.headGroup.add(headMesh);
 
-    // Peaked Officer Cap
+    // Officer Peaked Cap Group (Crown, Band, Crest, Visor)
+    this.officerCapGroup = new THREE.Group();
     const capCrownGeo = new THREE.CylinderGeometry(0.24, 0.20, 0.16, 16);
     const capCrown = new THREE.Mesh(capCrownGeo, uniformMat);
     capCrown.position.set(0, 0.38, 0);
     capCrown.rotation.x = -0.05;
-    this.headGroup.add(capCrown);
+    this.officerCapGroup.add(capCrown);
 
-    // Gold Cap Band
     const capBandGeo = new THREE.CylinderGeometry(0.205, 0.205, 0.04, 16);
     const capBand = new THREE.Mesh(capBandGeo, badgeGoldMat);
     capBand.position.set(0, 0.32, 0.01);
-    this.headGroup.add(capBand);
+    this.officerCapGroup.add(capBand);
 
-    // Gold Cap Crest Emblem
     const crestGeo = new THREE.BoxGeometry(0.06, 0.06, 0.02);
     const crestMesh = new THREE.Mesh(crestGeo, badgeGoldMat);
     crestMesh.position.set(0, 0.35, 0.21);
-    this.headGroup.add(crestMesh);
+    this.officerCapGroup.add(crestMesh);
 
-    // Black Glossy Visor Brim
     const visorGeo = new THREE.CylinderGeometry(0.23, 0.24, 0.025, 14, 1, false, 0, Math.PI);
     const visorMesh = new THREE.Mesh(visorGeo, visorMat);
+    visorMesh.position.set(0, 0.31, 0.14);
+    visorMesh.rotation.x = 0.25;
+    this.officerCapGroup.add(visorMesh);
+    this.headGroup.add(this.officerCapGroup);
+
+    // Narendra Modi Rival Head Accessories (Hair, Beard, Glasses, Mandarin Collar)
+    this.modiHeadGroup = new THREE.Group();
+    this.modiHeadGroup.name = 'chaser_modi_head';
+    this.modiHeadGroup.visible = false;
+    const silverHairMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+    const modiHair = new THREE.Mesh(new THREE.SphereGeometry(0.23, 8, 8), silverHairMat);
+    modiHair.position.set(0, 0.36, -0.04);
+    this.modiHeadGroup.add(modiHair);
+
+    const modiBeard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.18), silverHairMat);
+    modiBeard.position.set(0, 0.14, 0.14);
+    this.modiHeadGroup.add(modiBeard);
+
+    const goldSpecsMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.8 });
+    const modiSpecs = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.04), goldSpecsMat);
+    modiSpecs.position.set(0, 0.26, 0.16);
+    this.modiHeadGroup.add(modiSpecs);
+
+    const modiCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.10, 8), saffronMat);
+    modiCollar.position.set(0, 0.02, 0);
+    this.modiHeadGroup.add(modiCollar);
+    this.headGroup.add(this.modiHeadGroup);
+
+    // Rahul Gandhi Rival Head Accessories (Dark Hair, Open Collar)
+    this.rahulHeadGroup = new THREE.Group();
+    this.rahulHeadGroup.name = 'chaser_rahul_head';
+    this.rahulHeadGroup.visible = false;
+    const darkHairMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    const rahulHair = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), darkHairMat);
+    rahulHair.position.set(0, 0.36, -0.02);
+    this.rahulHeadGroup.add(rahulHair);
+
+    const rahulCollar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.06), shirtWhiteMat);
+    rahulCollar.position.set(0, 0.02, 0.12);
+    this.rahulHeadGroup.add(rahulCollar);
+    this.headGroup.add(this.rahulHeadGroup);
+
+    // VIP Security Head Accessories (Dark Sunglasses, Earpiece)
+    this.vipHeadGroup = new THREE.Group();
+    this.vipHeadGroup.name = 'chaser_vip_head';
+    this.vipHeadGroup.visible = false;
+    const darkGlassesMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.2, metalness: 0.8 });
+    const sunglasses = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.09, 0.04), darkGlassesMat);
+    sunglasses.position.set(0, 0.26, 0.15);
+    this.vipHeadGroup.add(sunglasses);
+    this.headGroup.add(this.vipHeadGroup);
     visorMesh.position.set(0, 0.31, 0.14);
     visorMesh.rotation.x = 0.25;
     this.headGroup.add(visorMesh);
@@ -345,7 +433,24 @@ export class ChaserModel {
     const whistleMesh = new THREE.Mesh(whistleGeo, badgeGoldMat);
     whistleMesh.position.set(0, -0.34, 0.04);
     whistleMesh.rotation.x = Math.PI / 2;
+    this.officerWhistleMesh = whistleMesh;
     this.rightForearmGroup.add(whistleMesh);
+
+    // Selfie Smartphone for Rivalry Gags
+    this.selfiePhoneGroup = new THREE.Group();
+    this.selfiePhoneGroup.name = 'chaser_selfie_phone';
+    this.selfiePhoneGroup.visible = false;
+    const phoneMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.02), badgeGoldMat);
+    phoneMesh.position.set(0, -0.34, 0.08);
+    phoneMesh.rotation.x = Math.PI * 0.45;
+    this.selfiePhoneGroup.add(phoneMesh);
+
+    const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    this.selfieFlashMesh = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), flashMat);
+    this.selfieFlashMesh.position.set(0, -0.34, 0.11);
+    this.selfieFlashMesh.visible = false;
+    this.selfiePhoneGroup.add(this.selfieFlashMesh);
+    this.rightForearmGroup.add(this.selfiePhoneGroup);
 
     // Articulated Legs
     const hipOffset = 0.15;
@@ -409,35 +514,62 @@ export class ChaserModel {
     return this.archetype;
   }
 
+  public getChaserArchetype(): ChaserArchetype {
+    return this.archetype;
+  }
+
   public setChaserArchetype(archetype: ChaserArchetype): void {
     this.archetype = archetype;
     this.mesh.userData.archetype = archetype;
 
-    if (archetype === 'RAHUL_RIVAL') {
-      // Signature white polo shirt and athletic navy track trousers
-      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0xf8fafc);
-      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e3a8a);
-      if (this.tieMesh) this.tieMesh.visible = false;
-      if (this.badgeMesh) this.badgeMesh.visible = false;
-    } else if (archetype === 'MODI_RIVAL') {
+    const isModi = archetype === 'MODI_RIVAL';
+    const isRahul = archetype === 'RAHUL_RIVAL';
+    const isVip = archetype === 'VIP_SECURITY';
+    const isOfficer = archetype === 'OFFICER';
+
+    // Toggle accessory group visibility cleanly
+    if (this.officerCapGroup) this.officerCapGroup.visible = isOfficer;
+    if (this.officerRadioGroup) this.officerRadioGroup.visible = isOfficer;
+    if (this.officerEpaulettesGroup) this.officerEpaulettesGroup.visible = isOfficer;
+    if (this.officerWhistleMesh) this.officerWhistleMesh.visible = isOfficer;
+    if (this.tieMesh) this.tieMesh.visible = isOfficer;
+    if (this.badgeMesh) this.badgeMesh.visible = isOfficer;
+
+    if (this.modiHeadGroup) this.modiHeadGroup.visible = isModi;
+    if (this.modiChestGroup) this.modiChestGroup.visible = isModi;
+    if (this.rahulHeadGroup) this.rahulHeadGroup.visible = isRahul;
+    if (this.vipHeadGroup) this.vipHeadGroup.visible = isVip;
+
+    if (isModi) {
       // Saffron/orange waistcoat over white kurta
       if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0xea580c);
       if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0xffffff);
-      if (this.tieMesh) this.tieMesh.visible = false;
-      if (this.badgeMesh) this.badgeMesh.visible = false;
-    } else if (archetype === 'VIP_SECURITY') {
+    } else if (isRahul) {
+      // Signature white polo shirt and athletic navy track trousers
+      if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0xf8fafc);
+      if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e3a8a);
+    } else if (isVip) {
       // Dark slate VIP security safari suit
       if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e293b);
       if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1e293b);
-      if (this.tieMesh) this.tieMesh.visible = false;
-      if (this.badgeMesh) this.badgeMesh.visible = false;
     } else {
       // Standard Transit Officer Thorne
       if (this.torsoMesh) (this.torsoMesh.material as THREE.MeshStandardMaterial).color.setHex(0x1a2b49);
       if (this.pelvisMesh) (this.pelvisMesh.material as THREE.MeshStandardMaterial).color.setHex(0x334155);
-      if (this.tieMesh) this.tieMesh.visible = true;
-      if (this.badgeMesh) this.badgeMesh.visible = true;
     }
+  }
+
+  public triggerCosmeticReaction(reaction: ChaserCosmeticReaction, duration: number = 1.6): void {
+    this.cosmeticReaction = reaction;
+    this.cosmeticDuration = duration;
+    this.cosmeticTimer = reaction === 'NONE' ? 0 : duration;
+    if (this.selfiePhoneGroup) {
+      this.selfiePhoneGroup.visible = (reaction === 'SELFIE_FLASH');
+    }
+  }
+
+  public getCosmeticReaction(): ChaserCosmeticReaction {
+    return this.cosmeticTimer > 0 ? this.cosmeticReaction : 'NONE';
   }
 
   public reset(): void {
@@ -793,6 +925,74 @@ export class ChaserModel {
         this.leftCalfGroup.rotation.set(0, 0, 0);
         this.rightCalfGroup.rotation.set(0, 0, 0);
         break;
+      }
+    }
+
+    // 5. Overlay Cosmetic Rivalry Reactions
+    if (this.cosmeticTimer > 0) {
+      this.cosmeticTimer -= dt;
+      const progress = Math.max(0, this.cosmeticTimer / this.cosmeticDuration);
+      const u = Math.sin(Math.PI * (1.0 - progress)); // Smooth bell curve easing
+
+      switch (this.cosmeticReaction) {
+        case 'NAMASTE_SHRUG': {
+          if (this.archetype === 'MODI_RIVAL') {
+            // Dramatic victory Namaste wave while running
+            this.rightArmGroup.rotation.set(1.15 * u, 0.35 * u, 0.15 * u);
+            this.rightForearmGroup.rotation.set(-1.45 * u, 0, 0);
+            this.headGroup.rotation.y = Math.sin(t * 3.5) * 0.18 * u;
+          } else if (this.archetype === 'RAHUL_RIVAL') {
+            // Comedic shrug: arms thrown wide, palms open, head tilted
+            this.leftArmGroup.rotation.set(0.35 * u, 0, -0.65 * u);
+            this.rightArmGroup.rotation.set(0.35 * u, 0, 0.65 * u);
+            this.leftForearmGroup.rotation.set(-0.85 * u, 0, 0);
+            this.rightForearmGroup.rotation.set(-0.85 * u, 0, 0);
+            this.headGroup.rotation.z = -0.22 * u;
+          }
+          break;
+        }
+
+        case 'SELFIE_FLASH': {
+          // Raises phone with camera flash snapshot
+          this.rightArmGroup.rotation.set(-1.25 * u, 0.25 * u, 0.15 * u);
+          this.rightForearmGroup.rotation.set(-0.25 * u, 0, 0);
+          if (this.selfiePhoneGroup) {
+            this.selfiePhoneGroup.visible = true;
+          }
+          if (this.selfieFlashMesh) {
+            this.selfieFlashMesh.visible = u > 0.5 && Math.sin(t * 24.0) > 0;
+          }
+          this.headGroup.rotation.y = -0.25 * u;
+          break;
+        }
+
+        case 'CAMERA_WAVE': {
+          // Waves to side media camera
+          this.headGroup.rotation.y = 0.55 * u;
+          this.rightArmGroup.rotation.set(-1.45 * u, 0, 0.35 * u);
+          this.rightForearmGroup.rotation.set(-0.35 * u, Math.sin(t * 12.0) * 0.3 * u, 0);
+          break;
+        }
+
+        case 'MICROPHONE_DUCK': {
+          // Ducks under imaginary overhead boom mic
+          this.spineGroup.rotation.x += 0.35 * u;
+          this.headGroup.rotation.x -= 0.30 * u;
+          break;
+        }
+
+        case 'PRESS_CONFERENCE_ENTER': {
+          // Formal nod and confident forward stride gesture
+          this.headGroup.rotation.x = Math.sin(t * 4.0) * 0.12 * u;
+          this.leftArmGroup.rotation.set(-0.6 * u, 0, -0.2 * u);
+          break;
+        }
+      }
+
+      if (this.cosmeticTimer <= 0) {
+        this.cosmeticReaction = 'NONE';
+        if (this.selfiePhoneGroup) this.selfiePhoneGroup.visible = false;
+        if (this.selfieFlashMesh) this.selfieFlashMesh.visible = false;
       }
     }
   }

@@ -54,6 +54,8 @@ import { BugReproductionLoader } from '../debug/BugReproductionLoader';
 import { DebugVisualizer } from '../debug/DebugVisualizer';
 import { DevBugReportModal } from '../ui/DevBugReportModal';
 import { BugSnapshotPackage } from '../debug/BugSnapshotTypes';
+import { PoliticalComedySystem } from '../environment/comedy/PoliticalComedySystem';
+import { SettingsManager } from '../settings/SettingsManager';
 
 export type GameLifecycleState = 'MENU' | 'PLAYING' | 'PAUSED' | 'DYING' | 'REVIVE_OFFER' | 'GAMEOVER' | 'REPLAY';
 
@@ -99,6 +101,7 @@ export class Game {
   private devBugReportModal: DevBugReportModal;
 
   private progression: ProgressionManager;
+  private settingsManager: SettingsManager = SettingsManager.getInstance();
   private lifecycleState: GameLifecycleState = 'MENU';
   private lastTime: number = 0;
   private contextLost = false;
@@ -210,6 +213,8 @@ export class Game {
       (window as any).__METRO_GAME__ = this;
       (window as any).__GRAPHICS_MANAGER__ = graphics;
       (window as any).__SOUND_MANAGER__ = this.soundManager;
+      (window as any).__SETTINGS_MANAGER__ = SettingsManager.getInstance();
+      (window as any).__POLITICAL_COMEDY__ = PoliticalComedySystem.getInstance();
       (window as any).__ENV_DIRECTOR__ = EnvironmentDirector.getInstance();
       (window as any).__TOGGLE_WORLD_GEN_DEBUG__ = () => {
         (window as any).__DEBUG_WORLD_GEN__ = !(window as any).__DEBUG_WORLD_GEN__;
@@ -357,6 +362,8 @@ export class Game {
 
     bus.on('CHARACTER_EQUIPPED', () => this.syncChaserArchetype());
     bus.on('ENVIRONMENT_PREFERENCE_CHANGED', () => this.syncChaserArchetype());
+    bus.on('POLITICAL_CHASER_MODE_CHANGED', () => this.syncChaserArchetype());
+    bus.on('SETTINGS_UPDATED', () => this.syncChaserArchetype());
 
     bus.on(EVENTS.GAME_START, () => this.startRun(this.progression.getActiveGameMode(), false));
     bus.on('START_MODE_RUN', (mode: GameMode) => this.startRun(mode, false));
@@ -638,6 +645,7 @@ export class Game {
     this.soundManager.setEnvironmentAmbience(startEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
+    PoliticalComedySystem.getInstance().reset();
     this.syncChaserArchetype(startEnvId);
     this.cameraController.reset(this.player.position);
 
@@ -826,6 +834,7 @@ export class Game {
     this.soundManager.setEnvironmentAmbience(menuEnvId);
     this.locomotionVFX.reset();
     this.chaser.reset();
+    PoliticalComedySystem.getInstance().reset();
     this.syncChaserArchetype(menuEnvId);
     this.openingSequence.skip();
     this.player.mesh.rotation.y = Math.PI - 0.2;
@@ -836,6 +845,13 @@ export class Game {
   private syncChaserArchetype(envId?: string): void {
     const activeEnvId = envId || this.trackManager.getActiveEnvironment();
     const effectiveChar = this.progression.normalizeCharacterId(this.progression.getSelectedCharacter());
+    const chaserPref = this.settingsManager.getPoliticalChaserMode();
+
+    if (chaserPref === 'OFFICER') {
+      this.chaser.setChaserArchetype('OFFICER');
+      return;
+    }
+
     if (effectiveChar === 'char_modi') {
       this.chaser.setChaserArchetype('RAHUL_RIVAL');
     } else if (effectiveChar === 'char_rahul_gandhi') {
@@ -1172,6 +1188,7 @@ export class Game {
         this.player.update(effectiveDt);
         this.chaser.update(effectiveDt, this.player.position, this.player.speed, this.player.groundY);
         this.locomotionVFX.update(effectiveDt, this.player);
+        PoliticalComedySystem.getInstance().update(effectiveDt, this.player, this.chaser, this.trackManager.getActiveEnvironment());
         this.trackManager.update(this.player, effectiveDt, now / 1000);
         this.practiceController.update(effectiveDt);
         this.worldScene.updateSunPosition(this.player.position.z, this.player.speed);
@@ -1207,6 +1224,7 @@ export class Game {
         this.player.update(dt);
         this.chaser.update(dt, this.player.position, this.player.speed, this.player.groundY);
         this.locomotionVFX.update(dt, this.player);
+        PoliticalComedySystem.getInstance().update(dt, this.player, this.chaser, this.trackManager.getActiveEnvironment());
 
         // 4. Update track chunks and collision detection
         this.trackManager.update(this.player, dt, now / 1000);
