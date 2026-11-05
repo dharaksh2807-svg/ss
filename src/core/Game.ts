@@ -1307,6 +1307,7 @@ export class Game {
         this.player.isSliding,
         this.player.isTunnelEnclosed
       );
+      this.cameraController.resolveNearCameraOcclusion(this.worldScene.scene, this.player.position);
     }
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)

@@ -2460,6 +2460,13 @@ export class TrackChunk {
             }
           }
         }
+
+        // Bounded camera clearance: Once the moving train has fully cleared the runner,
+        // hide its visual group so it never collides with or occludes the follow camera behind the runner.
+        const updatedRearZ = updatedWorldZ - halfD;
+        if (updatedRearZ > playerZ + 0.5) {
+          obs.group.visible = false;
+        }
       }
     }
 

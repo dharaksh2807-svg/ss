@@ -41,6 +41,12 @@ export class CameraController {
   private photoLookTarget = new THREE.Vector3();
   private savedFov: number = CONSTANTS.CAMERA_FOV;
 
+  // Near-Camera Bounded Occlusion Handling
+  private occludedObjects: Set<THREE.Object3D> = new Set();
+  private static readonly _tempVec = new THREE.Vector3();
+  private static readonly _tempBox = new THREE.Box3();
+  private static readonly _tempClosestPt = new THREE.Vector3();
+
   constructor() {
     const aspect = typeof window !== 'undefined' && window.innerHeight > 0
       ? window.innerWidth / window.innerHeight
@@ -384,9 +390,19 @@ export class CameraController {
     // Provides an expressive 3/4 side profile view revealing facial profile, hair/cap, and outfit details.
     // Safety fallback: smoothly return to center chase in narrow tunnels, on train roofs, or in jetpack flight.
     const motionScale = this.settingsManager.getCameraMotionMultiplier();
-    const isUnsafeForOffset = isTunnelEnclosed || groundY >= 4.0 || isJetpackFlight || this.shakeTrauma > 0.35;
+    const effectiveElevation = Math.max(groundY, playerPos.y);
+    const isRooftopLevel = groundY >= 3.8 || effectiveElevation >= 4.0;
+    const isUnsafeForOffset = isTunnelEnclosed || isRooftopLevel || isJetpackFlight || this.shakeTrauma > 0.35;
     if (isCharFocus && !isUnsafeForOffset) {
-      this.targetLateralOffset = (isPortrait ? 0.58 : 0.70) * motionScale;
+      if (playerPos.x > 1.8) {
+        // In the right lane: do not push further right into lateral scenery / curb!
+        this.targetLateralOffset = 0;
+      } else if (playerPos.x < -1.8) {
+        // In the left lane: do not push further left into lateral scenery / curb!
+        this.targetLateralOffset = 0;
+      } else {
+        this.targetLateralOffset = (isPortrait ? 0.58 : 0.70) * motionScale;
+      }
     } else {
       this.targetLateralOffset = 0;
     }
@@ -414,12 +430,16 @@ export class CameraController {
       targetCamY = cameraBaseY + baseOffsetY;
       targetLookY = cameraBaseY + baseLookY;
 
-      // Train rooftop enhanced perspective: extend lookahead and elevate more for clear forward hazard visibility
-      if (groundY >= 4.0) {
-        targetCamY += 0.55;      // Increased from 0.35 for better rooftop composition
-        targetCamOffsetZ += 0.65;
-        targetLookAheadZ -= 3.5;
-        targetLookY += 0.45;     // Increased from 0.30 for improved sightline to ahead hazards
+      // Train rooftop and ramp climbing perspective: smoothly scale elevation as runner ascends
+      // Ensures camera stays comfortably above train roof decks (4.35m) and catwalks/pantographs
+      if (effectiveElevation > 1.2) {
+        const roofBlend = Math.min(1.0, Math.max(0, (effectiveElevation - 1.2) / 2.8));
+        targetCamY += 0.55 * roofBlend;
+        targetCamOffsetZ += 0.65 * roofBlend;
+        targetLookAheadZ -= 3.5 * roofBlend;
+        targetLookY += 0.45 * roofBlend;
+        // Authoritative minimum height clearance above the support plane
+        targetCamY = Math.max(targetCamY, effectiveElevation + (isCharFocus ? 3.12 : CONSTANTS.CAMERA_OFFSET_Y));
       }
 
       // Subtle dynamic camera dip during slide for enhanced tactile action feedback
@@ -442,7 +462,11 @@ export class CameraController {
     const framing = this.getViewportFraming();
     targetCamOffsetZ += framing.extraZ;
     // Narrow views center the track so both outer lanes stay readable during lane switches.
-    this.targetPosition.x = (playerPos.x + this.currentLateralOffset) * framing.follow;
+    let targetX = (playerPos.x + this.currentLateralOffset) * framing.follow;
+    // Bounded camera corridor: clamp |X| <= 3.8 to prevent camera penetration into lateral scenery or curbs
+    const maxLateral = 3.8 * (framing.follow || 1.0);
+    targetX = Math.max(-maxLateral, Math.min(maxLateral, targetX));
+    this.targetPosition.x = targetX;
     this.targetPosition.y = targetCamY;
     this.targetPosition.z = playerPos.z + targetCamOffsetZ;
 
@@ -482,6 +506,11 @@ export class CameraController {
   }
 
   public reset(playerPos: THREE.Vector3): void {
+    for (const obj of this.occludedObjects) {
+      obj.visible = true;
+    }
+    this.occludedObjects.clear();
+
     this.shakeTrauma = 0;
     this.landingDipOffset = 0;
     this.isGameOverMode = false;
@@ -502,6 +531,54 @@ export class CameraController {
       );
       this.camera.position.copy(this.currentPosition);
     }
+  }
+
+  /**
+   * Bounded near-camera occlusion handling:
+   * Selectively hides/fades confirmed near-camera occluders that are located BEHIND
+   * the runner (or lateral scenery) while strictly preserving 100% visibility of active
+   * hazards ahead of the runner.
+   */
+  public resolveNearCameraOcclusion(scene: THREE.Scene, playerPos: THREE.Vector3): void {
+    // 1. Restore visibility of objects occluded in previous frame
+    for (const obj of this.occludedObjects) {
+      obj.visible = true;
+    }
+    this.occludedObjects.clear();
+
+    if (this.isLobbyMode || this.isIntroMode || this.isPhotoMode) return;
+
+    const camPos = this.camera.position;
+    const nearDistSq = 2.4 * 2.4;
+
+    // 2. Scan scene for objects that penetrate the near camera volume
+    scene.traverse((obj) => {
+      if (!obj.visible) return;
+      if (obj.name?.includes('player') || obj.name?.includes('char_') || obj === this.camera) return;
+
+      const userData = obj.userData;
+      if (userData?.isTrain || userData?.isObstacle || obj.name?.includes('coach') || obj.name?.includes('car_') || obj.name?.includes('chunk_')) {
+        obj.getWorldPosition(CameraController._tempVec);
+
+        // Fast Z rejection: check objects within 25.0m of camera along Z (covers long coach bodies)
+        if (Math.abs(CameraController._tempVec.z - camPos.z) < 25.0) {
+          CameraController._tempBox.setFromObject(obj);
+          const isCamInside = CameraController._tempBox.containsPoint(camPos);
+          CameraController._tempBox.clampPoint(camPos, CameraController._tempClosestPt);
+          const distSq = camPos.distanceToSquared(CameraController._tempClosestPt);
+
+          // Confirmed near-camera penetration:
+          if (isCamInside || distSq < nearDistSq) {
+            // CRITICAL INVARIANT: NEVER occlude an active oncoming hazard ahead of the runner.
+            // An object is safe to hide ONLY if its front is behind or level with the runner (bbox.min.z > playerPos.z - 0.2).
+            if (CameraController._tempBox.min.z > playerPos.z - 0.2) {
+              obj.visible = false;
+              this.occludedObjects.add(obj);
+            }
+          }
+        }
+      }
+    });
   }
 
   public onResize(): void {

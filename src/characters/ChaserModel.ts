@@ -789,8 +789,10 @@ export class ChaserModel {
     this.mesh.position.set(this.currentX, this.currentY, chaserZ);
 
     // Frustum / Distance Visibility optimization
-    // If chaser is far back in standby (> 13.5m) and in DISTANT state, hide mesh to save draw calls
-    if (this.chaseState === 'DISTANT' && this.currentDistanceZ >= 13.5) {
+    // If chaser is far back in standby (> 13.5m) and in DISTANT state, hide mesh to save draw calls.
+    // Also hide if passing directly through the camera plane to prevent camera lens clipping.
+    const distToCamZ = Math.abs(this.currentDistanceZ - CONSTANTS.CAMERA_OFFSET_Z);
+    if ((this.chaseState === 'DISTANT' && this.currentDistanceZ >= 13.5) || distToCamZ < 1.6) {
       this.mesh.visible = false;
     } else {
       this.mesh.visible = true;
