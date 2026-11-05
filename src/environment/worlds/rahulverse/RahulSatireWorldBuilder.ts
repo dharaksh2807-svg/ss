@@ -871,6 +871,29 @@ export class RahulSatireWorldBuilder {
     archGroup.add(confettiGroup);
 
     director.registerFlipBoard(flipPivot, finishMesh, startMesh, confettiGroup, armGroup, particles);
+
+    // GATE A: Motorized Ratchet Gear on pillar
+    const ratchetGear = new THREE.Mesh(this.getCylinder(0.65, 0.65, 0.25, 8), this.goldMetalMat);
+    ratchetGear.position.set(roadbedWidth * 0.5 + 2.8, archH * 0.5, 1.0);
+    ratchetGear.rotation.x = Math.PI / 2;
+    archGroup.add(ratchetGear);
+
+    // GATE A: Animated Unrolling Accordion Map stretching toward the horizon
+    const accordionMap = new THREE.Mesh(this.getBox(3.4, 0.1, 8.5), this.yatraOrangeMat);
+    accordionMap.position.set(roadbedWidth * 0.5 + 4.2, 0.6, -4.0);
+    archGroup.add(accordionMap);
+
+    // GATE A: Animated Running Rahul Caricature sprinting toward finish line along sidewalk
+    const runnerRahul = this.buildRahulCaricature(archGroup, roadbedWidth * 0.5 + 4.2, 0.6, -12.0, 'RUN', director);
+
+    // White Sweat Towel
+    const towel = new THREE.Mesh(this.getBox(0.25, 0.45, 0.08), this.yatraWhiteMat);
+    towel.position.set(0, 1.2, 0.2);
+    towel.visible = false;
+    runnerRahul.add(towel);
+
+    director.registerNeverEndingYatra(archGroup, flipPivot, ratchetGear, accordionMap, runnerRahul, towel);
+
     archGroup.add(flipPivot);
     group.add(archGroup);
 
@@ -907,6 +930,9 @@ export class RahulSatireWorldBuilder {
       }
       group.add(ridgeGroup);
     });
+
+    // CROSSOVER GAG: THE HUG LOOP (East side at X = +16.5m, Z = -chunkLength * 0.85)
+    this.buildHugLoopStage(group, 16.5, 0.6, -chunkLength * 0.85, director);
   }
 
   // =========================================================================
@@ -1077,6 +1103,12 @@ export class RahulSatireWorldBuilder {
     doorGroup.add(rotorGroup);
     director.registerRevolvingDoor(rotorGroup, 1.4);
     group.add(doorGroup);
+
+    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (East side at X = +16.5m, Z = -chunkLength * 0.75)
+    this.buildParliamentHugAndWinkStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+
+    // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
+    this.buildMicrophoneChaosStage(group, -16.5, 0.6, -chunkLength * 0.85, director);
   }
 
   // =========================================================================
@@ -1254,6 +1286,12 @@ export class RahulSatireWorldBuilder {
 
     director.registerTeacupDebate(steamPuffs, deb1, deb2);
     group.add(teacupStage);
+
+    // GATE B HERO GAG: THE GREAT PRESS SCRUM DAISY-CHAIN (West side at X = -16.5m, Z = -chunkLength * 0.75)
+    this.buildPressScrumStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
+
+    // CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST (East side at X = +16.5m, Z = -chunkLength * 0.75)
+    this.buildSelfieBattleStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -1439,6 +1477,12 @@ export class RahulSatireWorldBuilder {
     marquee.position.set(-15.5, 3.2, -chunkLength * 0.65);
     marquee.rotation.y = Math.PI * 0.4;
     group.add(marquee);
+
+    // 5. Gate B Hero Gag: The Alliance Musical Chairs & Nitish 360 Spin
+    this.buildAllianceChairsRunawayStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+
+    // 6. Crossover Gag: The Microphone Chase
+    this.buildMicrophoneChaseStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -1610,6 +1654,9 @@ export class RahulSatireWorldBuilder {
 
     director.registerCosmicMicLaunch(rocketMicGroup, exhaustCone, oHead, 1.2);
     group.add(launchPad);
+
+    // 4. Crossover Gag: The Party Office Mix-Up
+    this.buildPartyOfficeMixupStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -1863,6 +1910,567 @@ export class RahulSatireWorldBuilder {
 
     parent.add(char);
     return char;
+  }
+
+  // =========================================================================
+  // GATE A & GATE B POLITICAL MEME UNIVERSE SCENES & CROSSOVERS
+  // =========================================================================
+
+  /**
+   * GATE A: The Parliament Hug & Wink
+   * Parliamentary green bench chamber with seated Modi, walking Rahul who wraps him in a cartoon bear hug,
+   * pops a floating heart and makes Modi's spectacles jump, then turns to the player camera to deliver
+   * an iconic wink with arched eyebrow and yellow sparkle star while the gallery cameraman topples backwards!
+   */
+  public buildParliamentHugAndWinkStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_parliament_hug_and_wink';
+    stage.position.set(x, y, z);
+
+    // Sandstone Plinth & Green Leather Floor
+    const plinth = new THREE.Mesh(this.getBox(9.0, 0.8, 9.0), this.parliamentSandstoneMat);
+    plinth.position.y = 0.4;
+    stage.add(plinth);
+
+    const greenFloor = new THREE.Mesh(this.getBox(8.2, 0.06, 8.2), this.parliamentGreenMat);
+    greenFloor.position.set(0, 0.83, 0);
+    stage.add(greenFloor);
+
+    // Treasury Bench with Seated Modi on Left
+    const treasuryBench = new THREE.Mesh(this.getBox(2.2, 1.1, 1.4), this.parliamentGreenMat);
+    treasuryBench.position.set(-0.7, 1.1, 0);
+    stage.add(treasuryBench);
+
+    // Modi Caricature in Seated Pose
+    const modi = new THREE.Group();
+    modi.name = 'seated_modi';
+    modi.position.set(-0.7, 0.8, 0);
+
+    const mLegs = new THREE.Mesh(this.getBox(0.44, 0.5, 0.4), this.yatraWhiteMat);
+    mLegs.position.y = 0.25;
+    modi.add(mLegs);
+
+    const mTorso = new THREE.Mesh(this.getBox(0.52, 0.65, 0.38), this.saffronWaistcoatMat);
+    mTorso.position.y = 0.85;
+    modi.add(mTorso);
+
+    const mHead = new THREE.Mesh(this.getCylinder(0.21, 0.19, 0.38, 10), this.cartoonSkinMat);
+    mHead.position.y = 1.45;
+    modi.add(mHead);
+
+    const mHair = new THREE.Mesh(this.getSphere(0.23, 8), this.cartoonHairSilverMat);
+    mHair.position.set(0, 1.62, -0.04);
+    modi.add(mHair);
+
+    const mBeard = new THREE.Mesh(this.getBox(0.28, 0.22, 0.18), this.cartoonHairSilverMat);
+    mBeard.position.set(0, 1.34, 0.14);
+    modi.add(mBeard);
+
+    // Articulated Spectacles that pop up in surprise
+    const specs = new THREE.Mesh(this.getBox(0.36, 0.08, 0.04), this.goldMetalMat);
+    specs.position.set(0, 1.52, 0.20);
+    modi.add(specs);
+    stage.add(modi);
+
+    // Rahul Caricature that strides across floor & winks
+    const rahul = new THREE.Group();
+    rahul.name = 'striding_rahul';
+    rahul.position.set(-2.8, 0.8, 0);
+
+    const rLegs = new THREE.Mesh(this.getBox(0.42, 0.8, 0.32), this.darkSuitMat);
+    rLegs.position.y = 0.4;
+    rahul.add(rLegs);
+
+    const rTorso = new THREE.Mesh(this.getBox(0.48, 0.7, 0.34), this.yatraWhiteMat);
+    rTorso.position.y = 1.1;
+    rahul.add(rTorso);
+
+    const rHead = new THREE.Mesh(this.getCylinder(0.19, 0.19, 0.38, 10), this.cartoonSkinMat);
+    rHead.position.y = 1.65;
+    rahul.add(rHead);
+
+    const rHair = new THREE.Mesh(this.getSphere(0.22, 8), this.cartoonHairDarkMat);
+    rHair.position.set(0, 1.8, -0.02);
+    rahul.add(rHair);
+
+    // Left Eyebrow for arched winking
+    const eyebrowL = new THREE.Mesh(this.getBox(0.12, 0.03, 0.03), this.cartoonHairDarkMat);
+    eyebrowL.position.set(-0.08, 1.78, 0.20);
+    rahul.add(eyebrowL);
+
+    // Left Eyelid that snaps shut
+    const eyelidL = new THREE.Mesh(this.getBox(0.10, 0.06, 0.02), this.cartoonSkinMat);
+    eyelidL.position.set(-0.08, 1.70, 0.21);
+    rahul.add(eyelidL);
+
+    // Tooth sparkle star (pops up at corner of wink smile)
+    const sparkleStar = new THREE.Group();
+    sparkleStar.position.set(0.22, 1.65, 0.25);
+    const sBeam1 = new THREE.Mesh(this.getBox(0.35, 0.05, 0.03), this.neonCyanMat);
+    sparkleStar.add(sBeam1);
+    const sBeam2 = new THREE.Mesh(this.getBox(0.05, 0.35, 0.03), this.neonCyanMat);
+    sparkleStar.add(sBeam2);
+    sparkleStar.visible = false;
+    rahul.add(sparkleStar);
+
+    // Arms
+    const rArmL = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
+    rArmL.position.set(-0.34, 1.15, 0);
+    rahul.add(rArmL);
+
+    const rArmR = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
+    rArmR.position.set(0.34, 1.15, 0);
+    rahul.add(rArmR);
+    stage.add(rahul);
+
+    // Cartoon Floating Heart Mesh
+    const heartMesh = new THREE.Mesh(this.getSphere(0.45, 8), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5 }));
+    heartMesh.position.set(-0.7, 3.2, 0);
+    heartMesh.scale.set(0.01, 0.01, 0.01);
+    stage.add(heartMesh);
+
+    // Press Gallery Scaffold in background with Cameraman that topples backwards!
+    const galleryGroup = new THREE.Group();
+    galleryGroup.position.set(2.8, 0.8, -2.5);
+
+    const gallRailing = new THREE.Mesh(this.getBox(2.8, 1.2, 0.2), this.goldMetalMat);
+    gallRailing.position.set(0, 0.6, 0);
+    galleryGroup.add(gallRailing);
+
+    // Cameraman Tripod
+    const tripod = new THREE.Mesh(this.getCylinder(0.06, 0.16, 1.4, 5), this.silverMat);
+    tripod.position.set(0, 1.3, 0.4);
+    galleryGroup.add(tripod);
+
+    const cameraBox = new THREE.Mesh(this.getBox(0.35, 0.25, 0.5), this.darkSuitMat);
+    cameraBox.position.set(0, 2.05, 0.4);
+    galleryGroup.add(cameraBox);
+
+    // Cameraman Figure that falls backwards
+    const cameraman = new THREE.Group();
+    cameraman.position.set(0, 0.6, -0.2);
+
+    const cBody = new THREE.Mesh(this.getBox(0.42, 0.65, 0.28), this.royalBlueMat);
+    cBody.position.y = 0.75;
+    cameraman.add(cBody);
+
+    const cHead = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonSkinMat);
+    cHead.position.y = 1.25;
+    cameraman.add(cHead);
+    galleryGroup.add(cameraman);
+    stage.add(galleryGroup);
+
+    director.registerParliamentHugAndWink(
+      rahul,
+      modi,
+      specs,
+      cameraman,
+      tripod,
+      eyebrowL,
+      eyelidL,
+      sparkleStar,
+      heartMesh
+    );
+
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * GATE B: Parliamentary Microphone Chaos
+   * Round conference table with gooseneck microphones on wheels that duck, stretch, and debate each other!
+   */
+  public buildMicrophoneChaosStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_mic_chaos';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.0, 0.8, 8.0), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    // Central Debating Table
+    const table = new THREE.Mesh(this.getCylinder(2.4, 2.5, 0.9, 12), this.woodMat);
+    table.position.y = 1.25;
+    stage.add(table);
+
+    // 4 Animated Gooseneck Mics on table
+    const mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[] = [];
+    for (let m = 0; m < 4; m++) {
+      const ang = (m / 4) * Math.PI * 2;
+      const mGroup = new THREE.Group();
+      mGroup.position.set(Math.cos(ang) * 1.4, 1.7, Math.sin(ang) * 1.4);
+
+      const mBase = new THREE.Mesh(this.getBox(0.3, 0.1, 0.3), this.goldMetalMat);
+      mGroup.add(mBase);
+
+      const stem = new THREE.Mesh(this.getCylinder(0.04, 0.05, 1.1, 6), this.silverMat);
+      stem.position.y = 0.55;
+      mGroup.add(stem);
+
+      const head = new THREE.Mesh(this.getSphere(0.12, 8), this.yatraBlueMat);
+      head.position.y = 1.1;
+      mGroup.add(head);
+
+      stage.add(mGroup);
+      mics.push({ group: mGroup, stem, head });
+    }
+
+    director.registerMicrophoneChaos(stage, mics);
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * GATE B: The Great Press Scrum Daisy-Chain
+   * 4 reporters arranged in a circle, each holding a mic to the next reporter's mouth!
+   */
+  public buildPressScrumStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_press_scrum';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.0, 0.8, 8.0), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[] = [];
+    const radius = 2.0;
+
+    for (let r = 0; r < 4; r++) {
+      const ang = (r / 4) * Math.PI * 2;
+      const rGroup = new THREE.Group();
+      rGroup.position.set(Math.cos(ang) * radius, 0.8, Math.sin(ang) * radius);
+
+      const rTorso = new THREE.Mesh(this.getBox(0.42, 0.65, 0.28), this.royalBlueMat);
+      rTorso.position.y = 0.75;
+      rGroup.add(rTorso);
+
+      const rHead = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonSkinMat);
+      rHead.position.y = 1.25;
+      rGroup.add(rHead);
+
+      // Arm lunging with microphone
+      const micArm = new THREE.Mesh(this.getBox(0.1, 0.1, 0.65), this.goldMetalMat);
+      micArm.position.set(0.2, 0.9, 0.35);
+      rGroup.add(micArm);
+
+      const micHead = new THREE.Mesh(this.getSphere(0.12, 6), this.yatraOrangeMat);
+      micHead.position.set(0.2, 0.9, 0.7);
+      rGroup.add(micHead);
+
+      rGroup.rotation.y = ang + Math.PI * 0.5; // Facing the next reporter in circle
+      stage.add(rGroup);
+
+      reporters.push({ group: rGroup, micArm, baseAngle: ang + Math.PI * 0.5 });
+    }
+
+    director.registerPressScrum(stage, reporters);
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * GATE B: The Alliance Musical Chairs with Running Legs
+   * Round conference table with Nitish in 360-degree swivel chair and chairs that run away with legs!
+   */
+  public buildAllianceChairsRunawayStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_alliance_chairs_runaway';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    // Large Round Conference Table
+    const table = new THREE.Mesh(this.getCylinder(2.6, 2.7, 0.9, 16), this.woodMat);
+    table.position.y = 1.25;
+    stage.add(table);
+
+    // Nitish Chair in Center with 360° Swivel
+    const nitishChairGroup = new THREE.Group();
+    nitishChairGroup.position.set(0, 1.3, 0);
+
+    const nSeat = new THREE.Mesh(this.getBox(0.9, 0.8, 0.9), this.parliamentGreenMat);
+    nSeat.position.y = 0.4;
+    nitishChairGroup.add(nSeat);
+
+    // Nitish Caricature seated on chair
+    this.buildNitishCaricature(nitishChairGroup, 0, 0.4, 0, director);
+    stage.add(nitishChairGroup);
+
+    // 4 Runaway Chairs with Mechanical Legs
+    const runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[] = [];
+    for (let c = 0; c < 4; c++) {
+      const cAng = (c / 4) * Math.PI * 2;
+      const cGroup = new THREE.Group();
+      cGroup.position.set(Math.cos(cAng) * 3.2, 0.8, Math.sin(cAng) * 3.2);
+
+      const cSeat = new THREE.Mesh(this.getBox(0.7, 0.7, 0.7), this.neonMagentaMat);
+      cSeat.position.y = 0.6;
+      cGroup.add(cSeat);
+
+      // Running Legs on chair
+      const legL = new THREE.Mesh(this.getCylinder(0.06, 0.06, 0.7, 6), this.goldMetalMat);
+      legL.position.set(-0.25, 0.35, 0);
+      cGroup.add(legL);
+
+      const legR = new THREE.Mesh(this.getCylinder(0.06, 0.06, 0.7, 6), this.goldMetalMat);
+      legR.position.set(0.25, 0.35, 0);
+      cGroup.add(legR);
+
+      stage.add(cGroup);
+      runningChairs.push({ chair: cGroup, legL, legR, baseAngle: cAng });
+    }
+
+    director.registerAllianceChairsRunaway(stage, nitishChairGroup, runningChairs);
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * CROSSOVER 1: The Hug Loop
+   */
+  public buildHugLoopStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_crossover_hug_loop';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const turntable = new THREE.Group();
+    turntable.position.set(0, 0.8, 0);
+
+    const plat = new THREE.Mesh(this.getCylinder(3.4, 3.6, 0.25, 16), this.yatraOrangeMat);
+    plat.position.y = 0.12;
+    turntable.add(plat);
+
+    const modiFig = this.buildModiCaricature(turntable, -1.2, 0.25, 0, 'DEBATE', director);
+    const rahulFig = this.buildRahulCaricature(turntable, 1.2, 0.25, 0, 'DEBATE', director);
+
+    const heartIcon = new THREE.Mesh(this.getSphere(0.4, 8), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5 }));
+    heartIcon.position.set(0, 2.8, 0);
+    heartIcon.scale.set(0.01, 0.01, 0.01);
+    turntable.add(heartIcon);
+
+    stage.add(turntable);
+    director.registerHugLoop(turntable, modiFig, rahulFig, heartIcon);
+
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * CROSSOVER 2: The Selfie Battle & Chai Vendor Twist
+   */
+  public buildSelfieBattleStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_crossover_selfie_battle';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const modi = this.buildModiCaricature(stage, -2.2, 0.8, 0, 'VICTORY', director);
+    const rahul = this.buildRahulCaricature(stage, 2.2, 0.8, 0, 'VICTORY', director);
+
+    const vendor = new THREE.Group();
+    vendor.name = 'chai_vendor_hero';
+    vendor.position.set(0, 0.8, 0);
+
+    const vTorso = new THREE.Mesh(this.getBox(0.42, 0.65, 0.28), this.woodMat);
+    vTorso.position.y = 0.75;
+    vendor.add(vTorso);
+
+    const vHead = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonSkinMat);
+    vHead.position.y = 1.25;
+    vendor.add(vHead);
+
+    const vKettle = new THREE.Mesh(this.getCylinder(0.18, 0.22, 0.35, 8), this.goldMetalMat);
+    vKettle.position.set(0.35, 0.8, 0.25);
+    vendor.add(vKettle);
+    stage.add(vendor);
+
+    const drone = new THREE.Group();
+    drone.position.set(0, 3.5, 1.5);
+
+    const dBody = new THREE.Mesh(this.getBox(0.65, 0.15, 0.65), this.goldMetalMat);
+    drone.add(dBody);
+
+    const lens = new THREE.Mesh(this.getCylinder(0.12, 0.14, 0.25, 8), this.neonCyanMat);
+    lens.position.set(0, -0.15, 0.2);
+    lens.rotation.x = Math.PI / 2;
+    drone.add(lens);
+
+    const flash = new THREE.Mesh(this.getSphere(0.8, 8), this.neonCyanMat);
+    flash.position.set(0, -0.2, 0.4);
+    flash.scale.set(0.01, 0.01, 0.01);
+    drone.add(flash);
+    stage.add(drone);
+
+    director.registerSelfieBattle(modi, rahul, drone, vendor, flash);
+
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * CROSSOVER 3: The Runaway Microphone Chase
+   */
+  public buildMicrophoneChaseStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_crossover_mic_chase';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(7.5, 0.8, 12.0), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const runway = new THREE.Mesh(this.getBox(3.0, 0.06, 11.0), this.yatraOrangeMat);
+    runway.position.set(0, 0.83, 0);
+    stage.add(runway);
+
+    const cart = new THREE.Group();
+    cart.name = 'rolling_microphone';
+    cart.position.set(0, 0.9, -3.5);
+
+    const cBody = new THREE.Mesh(this.getBox(0.6, 0.2, 0.8), this.woodMat);
+    cBody.position.y = 0.15;
+    cart.add(cBody);
+
+    [-0.3, 0.3].forEach(wx => {
+      [-0.25, 0.25].forEach(wz => {
+        const wheel = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.08, 8), this.silverMat);
+        wheel.position.set(wx, 0.12, wz);
+        wheel.rotation.z = Math.PI / 2;
+        cart.add(wheel);
+      });
+    });
+
+    const micStem = new THREE.Mesh(this.getCylinder(0.06, 0.08, 1.2, 8), this.goldMetalMat);
+    micStem.position.set(0, 0.8, 0);
+    cart.add(micStem);
+
+    const micBall = new THREE.Mesh(this.getSphere(0.18, 8), this.silverMat);
+    micBall.position.set(0, 1.45, 0);
+    cart.add(micBall);
+    stage.add(cart);
+
+    const modi = this.buildModiCaricature(stage, -0.8, 0.8, -5.0, 'CHASE', director);
+    const rahul = this.buildRahulCaricature(stage, 0.8, 0.8, -6.0, 'CHASE', director);
+
+    director.registerMicrophoneChase(cart, modi, rahul);
+
+    group.add(stage);
+    return stage;
+  }
+
+  /**
+   * CROSSOVER 4: The Party Office Mix-Up
+   */
+  public buildPartyOfficeMixupStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'rahul_crossover_office_mixup';
+    stage.position.set(x, y, z);
+
+    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const portal = new THREE.Group();
+    portal.position.set(0, 0.8, 0);
+
+    // Brass Top Canopy and Floor Plinth Rings
+    const canopy = new THREE.Mesh(this.getCylinder(1.9, 1.9, 0.25, 16), this.goldMetalMat);
+    canopy.position.y = 3.2;
+    portal.add(canopy);
+    const bottomRing = new THREE.Mesh(this.getCylinder(1.9, 1.9, 0.15, 16), this.silverMat);
+    bottomRing.position.y = 0.08;
+    portal.add(bottomRing);
+
+    // 4 Brass Corner Posts
+    for (let p = 0; p < 4; p++) {
+      const pAngle = (p * Math.PI) / 2 + Math.PI / 4;
+      const post = new THREE.Mesh(this.getCylinder(0.06, 0.06, 3.2, 6), this.goldMetalMat);
+      post.position.set(Math.cos(pAngle) * 1.85, 1.6, Math.sin(pAngle) * 1.85);
+      portal.add(post);
+    }
+
+    const wing1 = new THREE.Mesh(this.getBox(3.4, 3.0, 0.08), this.mediaStudioGlassMat);
+    wing1.position.y = 1.6;
+    portal.add(wing1);
+
+    const wing2 = new THREE.Mesh(this.getBox(0.08, 3.0, 3.4), this.mediaStudioGlassMat);
+    wing2.position.y = 1.6;
+    portal.add(wing2);
+    stage.add(portal);
+
+    const signA = new THREE.Mesh(this.getBox(2.2, 0.6, 0.08), this.saffronWaistcoatMat);
+    signA.position.set(-2.0, 3.2, 1.8);
+    stage.add(signA);
+
+    const signB = new THREE.Mesh(this.getBox(2.2, 0.6, 0.08), this.yatraBannerGreenMat);
+    signB.position.set(2.0, 3.2, 1.8);
+    stage.add(signB);
+
+    const pol = this.buildKejriwalCaricature(stage, 0, 0.8, 2.2, director);
+
+    director.registerPartyOfficeMixup(portal, pol, signA, signB);
+
+    group.add(stage);
+    return stage;
   }
 
   /**

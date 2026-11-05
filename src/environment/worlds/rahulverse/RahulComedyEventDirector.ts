@@ -107,6 +107,93 @@ export interface HandshakeStatueEvent {
   gears: THREE.Mesh[];
 }
 
+// ---------------------------------------------------------------------------
+// GATE A & GATE B POLITICAL MEME UNIVERSE GAG INTERFACES (RAHUL & CROSSOVERS)
+// ---------------------------------------------------------------------------
+
+/** Gate A: The Parliament Hug & Wink */
+export interface ParliamentHugAndWinkEvent {
+  rahulFigure: THREE.Group;
+  modiFigure: THREE.Group;
+  modiSpectacles: THREE.Object3D;
+  cameramanFigure: THREE.Group;
+  cameramanTripod: THREE.Object3D;
+  eyebrowL: THREE.Object3D;
+  eyelidL: THREE.Object3D;
+  sparkleStar: THREE.Object3D;
+  heartMesh: THREE.Object3D;
+  timer: number;
+}
+
+/** Gate A: The Never-Ending Yatra Mechanical Flip & Infinite Map */
+export interface NeverEndingYatraEvent {
+  archGroup: THREE.Group;
+  flipBanner: THREE.Object3D;
+  ratchetGear: THREE.Object3D;
+  accordionMap: THREE.Object3D;
+  runnerRahul: THREE.Group;
+  sweatTowel?: THREE.Object3D;
+  timer: number;
+}
+
+/** Gate B: Parliamentary Microphone Chaos */
+export interface MicrophoneChaosEvent {
+  tableGroup: THREE.Group;
+  mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[];
+  timer: number;
+}
+
+/** Gate B: The Great Press Scrum Daisy-Chain */
+export interface PressScrumEvent {
+  scrumGroup: THREE.Group;
+  reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[];
+  timer: number;
+}
+
+/** Gate B: The Alliance Musical Chairs with Running Legs */
+export interface AllianceChairsRunawayEvent {
+  tableGroup: THREE.Group;
+  nitishChair: THREE.Group;
+  runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[];
+  timer: number;
+}
+
+/** Crossover 1: The Hug Loop */
+export interface AnimatedHugLoop {
+  turntable: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  heartIcon: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 2: The Selfie Battle & Chai Vendor Twist */
+export interface AnimatedSelfieBattle {
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  cameraDrone: THREE.Object3D;
+  chaiVendor: THREE.Object3D;
+  flashLight: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 3: The Runaway Microphone Chase */
+export interface AnimatedMicrophoneChase {
+  rollingMic: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 4: The Party Office Mix-Up */
+export interface AnimatedPartyOfficeMixup {
+  revolvingPortal: THREE.Object3D;
+  politicianFigure: THREE.Object3D;
+  signA: THREE.Object3D;
+  signB: THREE.Object3D;
+  timer: number;
+}
+
 /**
  * RahulComedyEventDirector
  * Isolated singleton coordinating animated physical-comedy gags for Rahulverse: The Never-Ending Yatra.
@@ -139,6 +226,17 @@ export class RahulComedyEventDirector {
   private handshakeStatues: HandshakeStatueEvent[] = [];
   private clockHands: { hourHand: THREE.Mesh; minuteHand: THREE.Mesh }[] = [];
 
+  // Gate A, B & Crossover Gags
+  private parliamentHugAndWinks: ParliamentHugAndWinkEvent[] = [];
+  private neverEndingYatras: NeverEndingYatraEvent[] = [];
+  private microphoneChaoses: MicrophoneChaosEvent[] = [];
+  private pressScrums: PressScrumEvent[] = [];
+  private allianceChairsRunaways: AllianceChairsRunawayEvent[] = [];
+  private hugLoops: AnimatedHugLoop[] = [];
+  private selfieBattles: AnimatedSelfieBattle[] = [];
+  private microphoneChases: AnimatedMicrophoneChase[] = [];
+  private partyOfficeMixups: AnimatedPartyOfficeMixup[] = [];
+
   private constructor() {}
 
   public static getInstance(): RahulComedyEventDirector {
@@ -165,6 +263,17 @@ export class RahulComedyEventDirector {
     this.accordionMaps = [];
     this.handshakeStatues = [];
     this.clockHands = [];
+
+    this.parliamentHugAndWinks = [];
+    this.neverEndingYatras = [];
+    this.microphoneChaoses = [];
+    this.pressScrums = [];
+    this.allianceChairsRunaways = [];
+    this.hugLoops = [];
+    this.selfieBattles = [];
+    this.microphoneChases = [];
+    this.partyOfficeMixups = [];
+
     this.globalClock = 0;
   }
 
@@ -337,6 +446,112 @@ export class RahulComedyEventDirector {
     this.handshakeStatues.push({ handL, handR, gears });
   }
 
+  // =========================================================================
+  // GATE A & GATE B REGISTRATION METHODS
+  // =========================================================================
+
+  public registerParliamentHugAndWink(
+    rahulFigure: THREE.Group,
+    modiFigure: THREE.Group,
+    modiSpectacles: THREE.Object3D,
+    cameramanFigure: THREE.Group,
+    cameramanTripod: THREE.Object3D,
+    eyebrowL: THREE.Object3D,
+    eyelidL: THREE.Object3D,
+    sparkleStar: THREE.Object3D,
+    heartMesh: THREE.Object3D
+  ): void {
+    this.parliamentHugAndWinks.push({
+      rahulFigure,
+      modiFigure,
+      modiSpectacles,
+      cameramanFigure,
+      cameramanTripod,
+      eyebrowL,
+      eyelidL,
+      sparkleStar,
+      heartMesh,
+      timer: 0
+    });
+  }
+
+  public registerNeverEndingYatra(
+    archGroup: THREE.Group,
+    flipBanner: THREE.Object3D,
+    ratchetGear: THREE.Object3D,
+    accordionMap: THREE.Object3D,
+    runnerRahul: THREE.Group,
+    sweatTowel?: THREE.Object3D
+  ): void {
+    this.neverEndingYatras.push({
+      archGroup,
+      flipBanner,
+      ratchetGear,
+      accordionMap,
+      runnerRahul,
+      sweatTowel,
+      timer: 0
+    });
+  }
+
+  public registerMicrophoneChaos(
+    tableGroup: THREE.Group,
+    mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[]
+  ): void {
+    this.microphoneChaoses.push({ tableGroup, mics, timer: 0 });
+  }
+
+  public registerPressScrum(
+    scrumGroup: THREE.Group,
+    reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[]
+  ): void {
+    this.pressScrums.push({ scrumGroup, reporters, timer: 0 });
+  }
+
+  public registerAllianceChairsRunaway(
+    tableGroup: THREE.Group,
+    nitishChair: THREE.Group,
+    runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[]
+  ): void {
+    this.allianceChairsRunaways.push({ tableGroup, nitishChair, runningChairs, timer: 0 });
+  }
+
+  public registerHugLoop(
+    turntable: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D,
+    heartIcon: THREE.Object3D
+  ): void {
+    this.hugLoops.push({ turntable, modiFigure, rahulFigure, heartIcon, timer: 0 });
+  }
+
+  public registerSelfieBattle(
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D,
+    cameraDrone: THREE.Object3D,
+    chaiVendor: THREE.Object3D,
+    flashLight: THREE.Object3D
+  ): void {
+    this.selfieBattles.push({ modiFigure, rahulFigure, cameraDrone, chaiVendor, flashLight, timer: 0 });
+  }
+
+  public registerMicrophoneChase(
+    rollingMic: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D
+  ): void {
+    this.microphoneChases.push({ rollingMic, modiFigure, rahulFigure, timer: 0 });
+  }
+
+  public registerPartyOfficeMixup(
+    revolvingPortal: THREE.Object3D,
+    politicianFigure: THREE.Object3D,
+    signA: THREE.Object3D,
+    signB: THREE.Object3D
+  ): void {
+    this.partyOfficeMixups.push({ revolvingPortal, politicianFigure, signA, signB, timer: 0 });
+  }
+
   // --- Public Diagnostics Getters ---
   public getFlipBoardCount(): number { return this.flipBoards.length; }
   public getRunawayMicCount(): number { return this.runawayMics.length; }
@@ -348,12 +563,27 @@ export class RahulComedyEventDirector {
   public getPuzzlePieceCount(): number { return this.puzzlePieces.length; }
   public getMediaCongaLineCount(): number { return this.mediaCongaLines.length; }
   public getTimerMeshCount(): number { return this.timerMeshes.length; }
+
+  // Gate A, B & Crossover Getters
+  public getParliamentHugAndWinkCount(): number { return this.parliamentHugAndWinks.length; }
+  public getNeverEndingYatraCount(): number { return this.neverEndingYatras.length; }
+  public getMicrophoneChaosCount(): number { return this.microphoneChaoses.length; }
+  public getPressScrumCount(): number { return this.pressScrums.length; }
+  public getAllianceChairsRunawayCount(): number { return this.allianceChairsRunaways.length; }
+  public getHugLoopCount(): number { return this.hugLoops.length; }
+  public getSelfieBattleCount(): number { return this.selfieBattles.length; }
+  public getMicrophoneChaseCount(): number { return this.microphoneChases.length; }
+  public getPartyOfficeMixupCount(): number { return this.partyOfficeMixups.length; }
+
   public getTotalActiveElements(): number {
     return this.flipBoards.length + this.runawayMics.length + this.flyingPapers.length +
       this.revolvingDoors.length + this.middleSeatDisputes.length + this.multiversePortals.length +
       this.shoeMonuments.length + this.puzzlePieces.length + this.mediaCongaLines.length +
       this.timerMeshes.length + this.emptyChairDebates.length + this.teacupDebates.length +
-      this.cosmicMicLaunches.length + this.accordionMaps.length + this.handshakeStatues.length;
+      this.cosmicMicLaunches.length + this.accordionMaps.length + this.handshakeStatues.length +
+      this.parliamentHugAndWinks.length + this.neverEndingYatras.length + this.microphoneChaoses.length +
+      this.pressScrums.length + this.allianceChairsRunaways.length + this.hugLoops.length +
+      this.selfieBattles.length + this.microphoneChases.length + this.partyOfficeMixups.length;
   }
 
   /**
@@ -380,6 +610,16 @@ export class RahulComedyEventDirector {
     this.accordionMaps = this.accordionMaps.filter(am => am.segments.length > 0 && isAttached(am.segments[0].group));
     this.handshakeStatues = this.handshakeStatues.filter(hs => isAttached(hs.handL));
     this.clockHands = this.clockHands.filter(ch => isAttached(ch.hourHand));
+
+    this.parliamentHugAndWinks = this.parliamentHugAndWinks.filter(hw => isAttached(hw.rahulFigure) && isAttached(hw.modiFigure));
+    this.neverEndingYatras = this.neverEndingYatras.filter(ney => isAttached(ney.archGroup) && isAttached(ney.runnerRahul));
+    this.microphoneChaoses = this.microphoneChaoses.filter(mc => isAttached(mc.tableGroup));
+    this.pressScrums = this.pressScrums.filter(ps => isAttached(ps.scrumGroup));
+    this.allianceChairsRunaways = this.allianceChairsRunaways.filter(ac => isAttached(ac.tableGroup));
+    this.hugLoops = this.hugLoops.filter(hl => isAttached(hl.turntable) && isAttached(hl.modiFigure));
+    this.selfieBattles = this.selfieBattles.filter(sb => isAttached(sb.cameraDrone) && isAttached(sb.chaiVendor));
+    this.microphoneChases = this.microphoneChases.filter(mc => isAttached(mc.rollingMic) && isAttached(mc.modiFigure));
+    this.partyOfficeMixups = this.partyOfficeMixups.filter(pom => isAttached(pom.revolvingPortal) && isAttached(pom.politicianFigure));
   }
 
   /**
@@ -693,6 +933,249 @@ export class RahulComedyEventDirector {
       hs.handR.position.y = 3.8 + pump;
       for (let g = 0; g < hs.gears.length; g++) {
         hs.gears[g].rotation.z += delta * (g % 2 === 0 ? 3.5 : -3.5) * motionMultiplier;
+      }
+    }
+
+    // =======================================================================
+    // 16. GATE A & GATE B POLITICAL MEME UNIVERSE GAG ANIMATIONS
+    // =======================================================================
+
+    // GATE A: The Parliament Hug & Wink
+    // 7.0s cycle: Stride (0-2.2s) -> Bear Hug & Heart (2.2-3.8s) -> Turn & Wink + Cameraman Fall (3.8-5.4s) -> Recovery (5.4-7s)
+    for (let i = 0; i < this.parliamentHugAndWinks.length; i++) {
+      const g = this.parliamentHugAndWinks[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 7.0;
+
+      if (cycle < 2.2) {
+        // Stride across parliament floor
+        const t = cycle / 2.2;
+        g.rahulFigure.position.x = -2.8 + t * 2.1;
+        g.rahulFigure.rotation.y = Math.PI * 0.5;
+        g.rahulFigure.position.y = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.15;
+        g.modiSpectacles.position.y = 1.62; // Spectacles on Modi's face
+        g.heartMesh.scale.set(0.01, 0.01, 0.01);
+        g.eyebrowL.position.y = 0;
+        g.eyelidL.scale.y = 1.0;
+        g.sparkleStar.visible = false;
+        g.cameramanFigure.rotation.x = 0;
+        g.cameramanTripod.rotation.z = 0;
+      } else if (cycle < 3.8) {
+        // Bear Hug!
+        g.rahulFigure.position.x = -0.7;
+        g.rahulFigure.rotation.y = 0;
+        g.rahulFigure.position.y = 0;
+        // Modi spectacles pop up comically in surprise
+        g.modiSpectacles.position.y = 1.62 + Math.abs(Math.sin((cycle - 2.2) * 5.0)) * 0.25;
+        // Heart icon pulses above
+        const heartPulse = 1.0 + Math.sin(this.globalClock * 10.0) * 0.25;
+        g.heartMesh.scale.set(heartPulse, heartPulse, heartPulse);
+      } else if (cycle < 5.4) {
+        // The Turn & Iconic Wink directly to player camera!
+        g.rahulFigure.position.x = 0;
+        g.rahulFigure.rotation.y = 0;
+        g.heartMesh.scale.set(0.01, 0.01, 0.01);
+        g.modiSpectacles.position.y = 1.62;
+
+        // Eyebrow arches high, left eyelid snaps shut in wink
+        g.eyebrowL.position.y = 0.14;
+        g.eyelidL.scale.y = 0.1;
+
+        // Sparkle star pops and spins
+        g.sparkleStar.visible = true;
+        g.sparkleStar.rotation.z += delta * 6.0;
+        const spScale = 1.0 + Math.sin(this.globalClock * 12.0) * 0.25;
+        g.sparkleStar.scale.set(spScale, spScale, spScale);
+
+        // Cameraman in press gallery topples backwards in shock!
+        const fallT = Math.min(1.0, (cycle - 3.8) / 0.8);
+        g.cameramanFigure.rotation.x = -Math.PI * 0.45 * fallT;
+        g.cameramanTripod.rotation.z = -0.55 * fallT;
+      } else {
+        // Recovery
+        const recT = (cycle - 5.4) / 1.6;
+        g.eyebrowL.position.y = 0.14 * (1.0 - recT);
+        g.eyelidL.scale.y = 0.1 + recT * 0.9;
+        g.sparkleStar.visible = false;
+        g.cameramanFigure.rotation.x = -Math.PI * 0.45 * (1.0 - recT);
+        g.cameramanTripod.rotation.z = -0.55 * (1.0 - recT);
+      }
+    }
+
+    // GATE A: The Never-Ending Yatra Mechanical Flip & Infinite Map
+    // 6.5s cycle: Sprint (0-2.5s) -> Ratchet Spin & Flip (2.5-3.5s) -> Map Unroll & Double-Take (3.5-5s) -> Resume (5-6.5s)
+    for (let i = 0; i < this.neverEndingYatras.length; i++) {
+      const g = this.neverEndingYatras[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 2.5) {
+        // Sprint towards finish arch
+        const t = cycle / 2.5;
+        g.runnerRahul.position.z = -12.0 + t * 10.0;
+        g.runnerRahul.position.y = Math.abs(Math.sin(this.globalClock * 12.0)) * 0.2;
+        g.flipBanner.rotation.x = 0;
+        g.accordionMap.scale.z = 0.05;
+        if (g.sweatTowel) g.sweatTowel.visible = false;
+        g.runnerRahul.rotation.y = 0;
+      } else if (cycle < 3.5) {
+        // Ratchet gear spins furiously!
+        g.ratchetGear.rotation.z += delta * 18.0;
+        const flipT = (cycle - 2.5) / 1.0;
+        g.flipBanner.rotation.x = flipT * Math.PI; // 180° flip to STARTING LINE 2
+      } else if (cycle < 5.0) {
+        // Accordion map unrolls across horizon; runner does double take
+        g.flipBanner.rotation.x = Math.PI;
+        const mapT = (cycle - 3.5) / 1.5;
+        g.accordionMap.scale.z = 0.05 + mapT * 1.8;
+        // Head shakes left-right in classic cartoon double-take
+        g.runnerRahul.rotation.y = Math.sin(this.globalClock * 10.0) * 0.35;
+      } else {
+        // Wipes brow, shrugs, and jogs forward along loop!
+        g.flipBanner.rotation.x = Math.PI;
+        if (g.sweatTowel) g.sweatTowel.visible = true;
+        g.runnerRahul.rotation.y = 0;
+        const jogT = (cycle - 5.0) / 1.5;
+        g.runnerRahul.position.z = -2.0 + jogT * 3.0;
+        g.runnerRahul.position.y = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.15;
+      }
+    }
+
+    // GATE B: Parliamentary Microphone Chaos
+    for (let i = 0; i < this.microphoneChaoses.length; i++) {
+      const g = this.microphoneChaoses[i];
+      g.timer += delta * motionMultiplier;
+      g.mics.forEach((m, idx) => {
+        // Microphones bend, duck, and nod at each other in debate
+        const bend = Math.sin(this.globalClock * 4.0 + idx * 1.5) * 0.35;
+        m.stem.rotation.z = bend;
+        m.head.rotation.y = Math.sin(this.globalClock * 5.0 + idx) * 0.5;
+        if (m.wheels) {
+          m.wheels.rotation.x += delta * 4.0;
+        }
+      });
+    }
+
+    // GATE B: The Great Press Scrum Daisy-Chain
+    for (let i = 0; i < this.pressScrums.length; i++) {
+      const g = this.pressScrums[i];
+      g.timer += delta * motionMultiplier;
+      g.reporters.forEach((r, idx) => {
+        // Reporters interviewing each other in a circle, arms lunging forward with mics
+        const lunge = 0.3 + Math.sin(this.globalClock * 4.0 + idx * 1.2) * 0.15;
+        r.micArm.position.z = lunge;
+        r.group.rotation.y = r.baseAngle + Math.sin(this.globalClock * 3.0 + idx) * 0.15;
+      });
+    }
+
+    // GATE B: The Alliance Musical Chairs with Running Legs
+    for (let i = 0; i < this.allianceChairsRunaways.length; i++) {
+      const g = this.allianceChairsRunaways[i];
+      g.timer += delta * motionMultiplier;
+
+      // Nitish chair in 360-degree continuous swivel
+      g.nitishChair.rotation.y += delta * 2.5;
+
+      // Other chairs with legs scampering around table
+      g.runningChairs.forEach((rc, idx) => {
+        const scamper = this.globalClock * 3.0 + idx * 1.5;
+        rc.chair.position.x = Math.sin(scamper * 0.4 + rc.baseAngle) * 3.2;
+        rc.chair.position.z = Math.cos(scamper * 0.4 + rc.baseAngle) * 3.2;
+        rc.legL.rotation.x = Math.sin(scamper * 4.0) * 0.5;
+        rc.legR.rotation.x = -Math.sin(scamper * 4.0) * 0.5;
+      });
+    }
+
+    // CROSSOVERS (Shared Animation Logic)
+    for (let i = 0; i < this.hugLoops.length; i++) {
+      const g = this.hugLoops[i];
+      g.timer += delta * motionMultiplier;
+      g.turntable.rotation.y += delta * 1.2;
+
+      const cycle = g.timer % 6.0;
+      if (cycle > 2.2 && cycle < 4.2) {
+        g.modiFigure.position.x = -0.35;
+        g.rahulFigure.position.x = 0.35;
+        const pulse = 1.0 + Math.sin(this.globalClock * 10.0) * 0.25;
+        g.heartIcon.scale.set(pulse, pulse, pulse);
+      } else {
+        g.modiFigure.position.x = -1.2;
+        g.rahulFigure.position.x = 1.2;
+        g.heartIcon.scale.set(0.01, 0.01, 0.01);
+      }
+    }
+
+    for (let i = 0; i < this.selfieBattles.length; i++) {
+      const g = this.selfieBattles[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 3.0) {
+        g.cameraDrone.position.y = 3.5 + Math.sin(this.globalClock * 2.5) * 0.25;
+        g.cameraDrone.position.z = 2.0;
+        g.cameraDrone.rotation.x = 0.3;
+        g.modiFigure.rotation.y = 0.35;
+        g.rahulFigure.rotation.y = -0.35;
+        g.flashLight.scale.set(0.01, 0.01, 0.01);
+      } else if (cycle < 4.5) {
+        g.cameraDrone.position.y = 1.8;
+        g.cameraDrone.position.z = 1.2;
+        g.cameraDrone.rotation.x = 0;
+        const isFlash = (cycle - 3.0 < 0.25) || (cycle - 3.0 > 0.5 && cycle - 3.0 < 0.75);
+        if (isFlash) {
+          g.flashLight.scale.set(1.6, 1.6, 1.6);
+        } else {
+          g.flashLight.scale.set(0.01, 0.01, 0.01);
+        }
+      } else {
+        g.flashLight.scale.set(0.01, 0.01, 0.01);
+        g.chaiVendor.rotation.y = Math.sin(this.globalClock * 4.0) * 0.15;
+        g.modiFigure.rotation.y = 1.2;
+        g.rahulFigure.rotation.y = -1.2;
+      }
+    }
+
+    for (let i = 0; i < this.microphoneChases.length; i++) {
+      const g = this.microphoneChases[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 3.2) {
+        const t = cycle / 3.2;
+        g.rollingMic.position.z = -3.5 + t * 7.0;
+        g.rollingMic.rotation.y = 0;
+        g.modiFigure.position.z = g.rollingMic.position.z - 1.4;
+        g.rahulFigure.position.z = g.rollingMic.position.z - 2.2;
+        g.modiFigure.rotation.x = -0.4;
+        g.rahulFigure.rotation.x = -0.4;
+      } else if (cycle < 4.5) {
+        g.rollingMic.rotation.y = Math.PI;
+        g.rollingMic.rotation.z = Math.sin(this.globalClock * 12.0) * 0.22;
+        g.modiFigure.rotation.x = 0.3;
+        g.rahulFigure.rotation.x = 0.3;
+      } else {
+        const revT = (cycle - 4.5) / 2.0;
+        g.rollingMic.position.z = 3.5 - revT * 7.0;
+        g.modiFigure.rotation.y = Math.PI * 0.5;
+        g.rahulFigure.rotation.y = -Math.PI * 0.5;
+      }
+    }
+
+    for (let i = 0; i < this.partyOfficeMixups.length; i++) {
+      const g = this.partyOfficeMixups[i];
+      g.timer += delta * motionMultiplier;
+      g.revolvingPortal.rotation.y += delta * 2.2;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 2.0) {
+        g.politicianFigure.position.z = -2.0 + cycle;
+        g.politicianFigure.rotation.y = 0;
+      } else if (cycle < 4.0) {
+        g.politicianFigure.position.z = 0;
+        g.politicianFigure.rotation.y = (cycle - 2.0) * Math.PI;
+      } else {
+        g.politicianFigure.position.z = (cycle - 4.0) * 1.2;
+        g.politicianFigure.rotation.z = Math.sin(this.globalClock * 6.0) * 0.2;
       }
     }
   }

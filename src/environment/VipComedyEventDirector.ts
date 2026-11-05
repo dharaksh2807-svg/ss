@@ -149,6 +149,89 @@ export interface AnimatedCoalitionCarousel {
   timer: number;
 }
 
+// ---------------------------------------------------------------------------
+// GATE A & GATE B POLITICAL MEME UNIVERSE GAG INTERFACES (MODI & CROSSOVERS)
+// ---------------------------------------------------------------------------
+
+/** Gate A: The Mango Interview — Superstar Mango with Sunglasses & Swiveling Cameras */
+export interface AnimatedMangoInterview {
+  stageGroup: THREE.Object3D;
+  clocheMesh: THREE.Object3D;
+  mangoMesh: THREE.Object3D;
+  sunglassesMesh: THREE.Object3D;
+  cameras: THREE.Object3D[];
+  spotlights: THREE.Object3D[];
+  modiFigure: THREE.Object3D;
+  interviewerFigure: THREE.Object3D;
+  clipboardModi?: THREE.Object3D;
+  clipboardInterviewer?: THREE.Object3D;
+  sparkleMesh?: THREE.Object3D;
+  timer: number;
+}
+
+/** Gate B: The Kedarnath Meditation Photo-Shoot Paradox */
+export interface AnimatedMeditationParadox {
+  caveTurntable: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  cameraDollies: THREE.Object3D[];
+  softboxUmbrellas: THREE.Object3D[];
+  directorFigure?: THREE.Object3D;
+  timer: number;
+}
+
+/** Gate B: The 360° Camera Magnet */
+export interface AnimatedCameraMagnet {
+  modiFigure: THREE.Object3D;
+  photographers: { group: THREE.Object3D; camera: THREE.Object3D; baseAngle: number }[];
+  timer: number;
+}
+
+/** Gate B: The Hug Diplomacy Machine */
+export interface AnimatedHugDiplomacy {
+  hydraulicBase: THREE.Object3D;
+  armLeft: THREE.Object3D;
+  armRight: THREE.Object3D;
+  targetDignitary: THREE.Object3D;
+  heartIcon?: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 1: The Hug Loop */
+export interface AnimatedHugLoop {
+  turntable: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  heartIcon: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 2: The Selfie Battle & Chai Vendor Twist */
+export interface AnimatedSelfieBattle {
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  cameraDrone: THREE.Object3D;
+  chaiVendor: THREE.Object3D;
+  flashLight: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 3: The Runaway Microphone Chase */
+export interface AnimatedMicrophoneChase {
+  rollingMic: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  rahulFigure: THREE.Object3D;
+  timer: number;
+}
+
+/** Crossover 4: The Party Office Mix-Up */
+export interface AnimatedPartyOfficeMixup {
+  revolvingPortal: THREE.Object3D;
+  politicianFigure: THREE.Object3D;
+  signA: THREE.Object3D;
+  signB: THREE.Object3D;
+  timer: number;
+}
+
 /**
  * VipComedyEventDirector
  * Dedicated coordinator for procedural, animated political satire gags
@@ -184,6 +267,16 @@ export class VipComedyEventDirector {
   private chessboardMatchList: AnimatedChessboardMatch[] = [];
   private microphoneShowdownList: AnimatedMicrophoneShowdown[] = [];
   private coalitionCarouselList: AnimatedCoalitionCarousel[] = [];
+
+  // Meme Universe & Crossover Gags
+  private mangoInterviewList: AnimatedMangoInterview[] = [];
+  private meditationParadoxList: AnimatedMeditationParadox[] = [];
+  private cameraMagnetList: AnimatedCameraMagnet[] = [];
+  private hugDiplomacyList: AnimatedHugDiplomacy[] = [];
+  private hugLoopList: AnimatedHugLoop[] = [];
+  private selfieBattleList: AnimatedSelfieBattle[] = [];
+  private microphoneChaseList: AnimatedMicrophoneChase[] = [];
+  private partyOfficeMixupList: AnimatedPartyOfficeMixup[] = [];
 
   private globalClock: number = 0;
   private isEnabled: boolean = true;
@@ -431,6 +524,140 @@ export class VipComedyEventDirector {
     });
   }
 
+  // =========================================================================
+  // GATE A & GATE B REGISTRATION METHODS
+  // =========================================================================
+
+  public registerMangoInterview(
+    stageGroup: THREE.Object3D,
+    clocheMesh: THREE.Object3D,
+    mangoMesh: THREE.Object3D,
+    sunglassesMesh: THREE.Object3D,
+    cameras: THREE.Object3D[],
+    spotlights: THREE.Object3D[],
+    modiFigure: THREE.Object3D,
+    interviewerFigure: THREE.Object3D,
+    sparkleMesh?: THREE.Object3D
+  ): void {
+    this.mangoInterviewList.push({
+      stageGroup,
+      clocheMesh,
+      mangoMesh,
+      sunglassesMesh,
+      cameras,
+      spotlights,
+      modiFigure,
+      interviewerFigure,
+      sparkleMesh,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
+    });
+  }
+
+  public registerMeditationParadox(
+    caveTurntable: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    cameraDollies: THREE.Object3D[],
+    softboxUmbrellas: THREE.Object3D[],
+    directorFigure?: THREE.Object3D
+  ): void {
+    this.meditationParadoxList.push({
+      caveTurntable,
+      modiFigure,
+      cameraDollies,
+      softboxUmbrellas,
+      directorFigure,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 7.0
+    });
+  }
+
+  public registerCameraMagnet(
+    modiFigure: THREE.Object3D,
+    photographers: { group: THREE.Object3D; camera: THREE.Object3D; baseAngle: number }[]
+  ): void {
+    this.cameraMagnetList.push({
+      modiFigure,
+      photographers,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 5.0
+    });
+  }
+
+  public registerHugDiplomacy(
+    hydraulicBase: THREE.Object3D,
+    armLeft: THREE.Object3D,
+    armRight: THREE.Object3D,
+    targetDignitary: THREE.Object3D,
+    heartIcon?: THREE.Object3D
+  ): void {
+    this.hugDiplomacyList.push({
+      hydraulicBase,
+      armLeft,
+      armRight,
+      targetDignitary,
+      heartIcon,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
+  public registerHugLoop(
+    turntable: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D,
+    heartIcon: THREE.Object3D
+  ): void {
+    this.hugLoopList.push({
+      turntable,
+      modiFigure,
+      rahulFigure,
+      heartIcon,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
+  public registerSelfieBattle(
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D,
+    cameraDrone: THREE.Object3D,
+    chaiVendor: THREE.Object3D,
+    flashLight: THREE.Object3D
+  ): void {
+    this.selfieBattleList.push({
+      modiFigure,
+      rahulFigure,
+      cameraDrone,
+      chaiVendor,
+      flashLight,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
+  public registerMicrophoneChase(
+    rollingMic: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    rahulFigure: THREE.Object3D
+  ): void {
+    this.microphoneChaseList.push({
+      rollingMic,
+      modiFigure,
+      rahulFigure,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
+    });
+  }
+
+  public registerPartyOfficeMixup(
+    revolvingPortal: THREE.Object3D,
+    politicianFigure: THREE.Object3D,
+    signA: THREE.Object3D,
+    signB: THREE.Object3D
+  ): void {
+    this.partyOfficeMixupList.push({
+      revolvingPortal,
+      politicianFigure,
+      signA,
+      signB,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
+    });
+  }
+
   // --- Public Diagnostics Getters ---
   public getScissorsCount(): number { return this.scissorsList.length; }
   public getDebatersCount(): number { return this.debatersList.length; }
@@ -452,11 +679,25 @@ export class VipComedyEventDirector {
   public getMicrophoneShowdownCount(): number { return this.microphoneShowdownList.length; }
   public getCoalitionCarouselCount(): number { return this.coalitionCarouselList.length; }
 
+  // Gate A & B Getters
+  public getMangoInterviewCount(): number { return this.mangoInterviewList.length; }
+  public getMeditationParadoxCount(): number { return this.meditationParadoxList.length; }
+  public getCameraMagnetCount(): number { return this.cameraMagnetList.length; }
+  public getHugDiplomacyCount(): number { return this.hugDiplomacyList.length; }
+  public getHugLoopCount(): number { return this.hugLoopList.length; }
+  public getSelfieBattleCount(): number { return this.selfieBattleList.length; }
+  public getMicrophoneChaseCount(): number { return this.microphoneChaseList.length; }
+  public getPartyOfficeMixupCount(): number { return this.partyOfficeMixupList.length; }
+
   public getSignatureGagsCount(): number {
     return this.teacupRevealList.length + this.kettlePourList.length +
       this.recursiveScissorsList.length + this.remoteRevelationList.length +
       this.masterstrokeMachineList.length + this.chessboardMatchList.length +
-      this.microphoneShowdownList.length + this.coalitionCarouselList.length;
+      this.microphoneShowdownList.length + this.coalitionCarouselList.length +
+      this.mangoInterviewList.length + this.meditationParadoxList.length +
+      this.cameraMagnetList.length + this.hugDiplomacyList.length +
+      this.hugLoopList.length + this.selfieBattleList.length +
+      this.microphoneChaseList.length + this.partyOfficeMixupList.length;
   }
 
   public getTotalActiveElements(): number {
@@ -490,6 +731,15 @@ export class VipComedyEventDirector {
     this.microphoneShowdownList = [];
     this.coalitionCarouselList = [];
 
+    this.mangoInterviewList = [];
+    this.meditationParadoxList = [];
+    this.cameraMagnetList = [];
+    this.hugDiplomacyList = [];
+    this.hugLoopList = [];
+    this.selfieBattleList = [];
+    this.microphoneChaseList = [];
+    this.partyOfficeMixupList = [];
+
     this.globalClock = 0;
   }
 
@@ -520,6 +770,15 @@ export class VipComedyEventDirector {
     this.chessboardMatchList = this.chessboardMatchList.filter(g => isAttached(g.craneGantry) && isAttached(g.grandPiece));
     this.microphoneShowdownList = this.microphoneShowdownList.filter(g => isAttached(g.centerMic) && isAttached(g.leaderLeft));
     this.coalitionCarouselList = this.coalitionCarouselList.filter(g => isAttached(g.carouselPlatform) && isAttached(g.nitishChair));
+
+    this.mangoInterviewList = this.mangoInterviewList.filter(g => isAttached(g.stageGroup) && isAttached(g.clocheMesh));
+    this.meditationParadoxList = this.meditationParadoxList.filter(g => isAttached(g.caveTurntable) && isAttached(g.modiFigure));
+    this.cameraMagnetList = this.cameraMagnetList.filter(g => isAttached(g.modiFigure));
+    this.hugDiplomacyList = this.hugDiplomacyList.filter(g => isAttached(g.hydraulicBase) && isAttached(g.armLeft));
+    this.hugLoopList = this.hugLoopList.filter(g => isAttached(g.turntable) && isAttached(g.modiFigure));
+    this.selfieBattleList = this.selfieBattleList.filter(g => isAttached(g.cameraDrone) && isAttached(g.chaiVendor));
+    this.microphoneChaseList = this.microphoneChaseList.filter(g => isAttached(g.rollingMic) && isAttached(g.modiFigure));
+    this.partyOfficeMixupList = this.partyOfficeMixupList.filter(g => isAttached(g.revolvingPortal) && isAttached(g.politicianFigure));
   }
 
   /**
@@ -929,6 +1188,280 @@ export class VipComedyEventDirector {
           p.rotation.x = 0;
           p.position.y = Math.abs(Math.sin(this.globalClock * 6.0 + idx)) * 0.15;
         });
+      }
+    }
+
+    // =======================================================================
+    // 3. GATE A & GATE B POLITICAL MEME UNIVERSE GAG ANIMATIONS
+    // =======================================================================
+
+    // GATE A: The Mango Interview — Superstar Mango with Sunglasses & Swiveling Cameras
+    // 6.5s cycle: Setup (0-2s) -> Cloche Lift (2-3.2s) -> Camera Rush & Sunglasses (3.2-4.5s) -> Mango Superstar Hold (4.5-6.5s)
+    for (let i = 0; i < this.mangoInterviewList.length; i++) {
+      const g = this.mangoInterviewList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 2.0) {
+        // Setup: Cloche on table, leaders nodding in dignified interview
+        g.clocheMesh.position.y = 0.5;
+        g.sunglassesMesh.position.y = 4.0; // Sunglasses hidden high above
+        g.sunglassesMesh.scale.set(0.01, 0.01, 0.01);
+        g.mangoMesh.position.y = 0.2;
+        g.mangoMesh.rotation.y = 0;
+        if (g.sparkleMesh) g.sparkleMesh.visible = false;
+
+        // Leaders gesturing solemnly
+        g.modiFigure.rotation.x = -0.15 + Math.sin(this.globalClock * 3.0) * 0.08;
+        g.modiFigure.rotation.z = 0;
+        g.interviewerFigure.rotation.x = -0.15 + Math.cos(this.globalClock * 3.0) * 0.08;
+        g.interviewerFigure.rotation.z = 0;
+
+        // Cameras and spotlights aimed at leaders
+        if (g.cameras.length >= 2) {
+          g.cameras[0].rotation.y = -0.3;
+          g.cameras[1].rotation.y = 0.3;
+        }
+        g.spotlights.forEach(spot => {
+          spot.rotation.x = 0.3;
+        });
+      } else if (cycle < 3.2) {
+        // Twist: Cloche lifts majestically into the sky
+        const t = (cycle - 2.0) / 1.2;
+        g.clocheMesh.position.y = 0.5 + t * 2.8;
+        g.mangoMesh.position.y = 0.2 + t * 0.8;
+      } else if (cycle < 4.5) {
+        // Climax: Cloche high in air; cameras and spotlights violently snap to the mango!
+        g.clocheMesh.position.y = 3.3;
+        g.mangoMesh.position.y = 1.0;
+
+        // Cameras snap 180° away from leaders directly onto the mango!
+        g.cameras.forEach(cam => {
+          cam.rotation.y = 0;
+          cam.rotation.x = -0.25;
+        });
+        g.spotlights.forEach(spot => {
+          spot.rotation.x = 0.85; // Focused on mango pedestal
+        });
+
+        // Sunglasses drop down smoothly from above onto mango
+        const dropT = Math.min(1.0, (cycle - 3.2) / 0.8);
+        g.sunglassesMesh.position.y = 4.0 - dropT * 2.75;
+        g.sunglassesMesh.scale.set(dropT, dropT, dropT);
+      } else {
+        // Punchline: Mango is a superstar pop icon!
+        g.clocheMesh.position.y = 3.3;
+        const bob = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.18;
+        g.mangoMesh.position.y = 1.0 + bob;
+        g.mangoMesh.rotation.y += delta * 3.5;
+        g.sunglassesMesh.position.y = g.mangoMesh.position.y + 0.18;
+        g.sunglassesMesh.rotation.y = g.mangoMesh.rotation.y;
+        g.sunglassesMesh.scale.set(1.0, 1.0, 1.0);
+
+        if (g.sparkleMesh) {
+          g.sparkleMesh.visible = true;
+          g.sparkleMesh.rotation.z += delta * 4.0;
+          const spScale = 0.8 + Math.sin(this.globalClock * 10.0) * 0.3;
+          g.sparkleMesh.scale.set(spScale, spScale, spScale);
+        }
+
+        // Leaders frozen in comedic dropped-jaw double-take!
+        g.modiFigure.rotation.z = 0.25;
+        g.modiFigure.rotation.x = 0.35;
+        g.interviewerFigure.rotation.z = -0.25;
+        g.interviewerFigure.rotation.x = 0.35;
+      }
+    }
+
+    // GATE B: The Kedarnath Meditation Photo-Shoot Paradox
+    // 7.0s cycle: Cave continuously rotates on movie turntable while Modi remains motionless in meditation
+    for (let i = 0; i < this.meditationParadoxList.length; i++) {
+      const g = this.meditationParadoxList[i];
+      g.timer += delta * motionMultiplier;
+
+      // Turntable rotation
+      g.caveTurntable.rotation.y += delta * 0.35;
+
+      // Modi is completely motionless in serene lotus pose
+      g.modiFigure.rotation.set(0, 0, 0);
+
+      // Camera dollies glide smoothly back and forth on curved tracks around the cave
+      g.cameraDollies.forEach((dolly, idx) => {
+        dolly.position.x = Math.sin(this.globalClock * 1.5 + idx * 1.8) * 3.2;
+        dolly.position.z = Math.cos(this.globalClock * 1.5 + idx * 1.8) * 1.2;
+        dolly.rotation.y = -Math.sin(this.globalClock * 1.5 + idx * 1.8) * 0.45;
+      });
+
+      // Softbox umbrellas gently breathe warm lighting
+      g.softboxUmbrellas.forEach((umbrella, idx) => {
+        umbrella.rotation.z = Math.sin(this.globalClock * 2.0 + idx) * 0.08;
+      });
+
+      // Film Director waving megaphone frantically
+      if (g.directorFigure) {
+        g.directorFigure.rotation.y = Math.sin(this.globalClock * 4.5) * 0.35;
+        g.directorFigure.rotation.x = -0.2 + Math.cos(this.globalClock * 3.0) * 0.15;
+      }
+    }
+
+    // GATE B: The 360° Camera Magnet
+    // 5.0s cycle: Modi turns on podium; all photographers snap instantly in unison to keep framing
+    for (let i = 0; i < this.cameraMagnetList.length; i++) {
+      const g = this.cameraMagnetList[i];
+      g.timer += delta * motionMultiplier;
+      const modiAngle = Math.sin(this.globalClock * 1.6) * 1.2;
+      g.modiFigure.rotation.y = modiAngle;
+
+      g.photographers.forEach(p => {
+        // Photographers dynamically pivot their whole body and lens to match Modi
+        p.group.rotation.y = p.baseAngle - modiAngle * 0.65;
+        p.camera.position.z = 0.5 + Math.abs(Math.sin(this.globalClock * 4.0)) * 0.08;
+      });
+    }
+
+    // GATE B: The Hug Diplomacy Machine
+    // 6.0s cycle: Arms Open (0-2s) -> Squeeze Embrace (2-4s) -> Lift & Heart (4-5.2s) -> Release (5.2-6s)
+    for (let i = 0; i < this.hugDiplomacyList.length; i++) {
+      const g = this.hugDiplomacyList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 2.0) {
+        // Arms opening wide
+        const openT = cycle / 2.0;
+        g.armLeft.rotation.y = 0.8 * openT;
+        g.armRight.rotation.y = -0.8 * openT;
+        g.targetDignitary.position.y = 0.4;
+        if (g.heartIcon) g.heartIcon.scale.set(0.01, 0.01, 0.01);
+      } else if (cycle < 4.0) {
+        // Powerful hydraulic bear hug squeeze!
+        g.armLeft.rotation.y = -0.55;
+        g.armRight.rotation.y = 0.55;
+        g.targetDignitary.position.y = 0.4 + Math.sin(this.globalClock * 6.0) * 0.05;
+      } else if (cycle < 5.2) {
+        // Lift dignitary into the air with popping cartoon heart
+        g.targetDignitary.position.y = 0.85;
+        if (g.heartIcon) {
+          const hp = 1.0 + Math.sin(this.globalClock * 12.0) * 0.25;
+          g.heartIcon.scale.set(hp, hp, hp);
+        }
+      } else {
+        // Gentle setdown and release
+        const relT = (cycle - 5.2) / 0.8;
+        g.targetDignitary.position.y = 0.85 - relT * 0.45;
+        g.armLeft.rotation.y = -0.55 + relT * 0.55;
+        g.armRight.rotation.y = 0.55 - relT * 0.55;
+        if (g.heartIcon) g.heartIcon.scale.set(0.01, 0.01, 0.01);
+      }
+    }
+
+    // CROSSOVER 1: The Hug Loop
+    // 6.0s cycle: Continuous rotation bringing Modi and Rahul into synchronized cartoon hug
+    for (let i = 0; i < this.hugLoopList.length; i++) {
+      const g = this.hugLoopList[i];
+      g.timer += delta * motionMultiplier;
+      g.turntable.rotation.y += delta * 1.2;
+
+      const cycle = g.timer % 6.0;
+      if (cycle > 2.2 && cycle < 4.2) {
+        // Embrace!
+        g.modiFigure.position.x = -0.35;
+        g.rahulFigure.position.x = 0.35;
+        const pulse = 1.0 + Math.sin(this.globalClock * 10.0) * 0.25;
+        g.heartIcon.scale.set(pulse, pulse, pulse);
+      } else {
+        g.modiFigure.position.x = -1.2;
+        g.rahulFigure.position.x = 1.2;
+        g.heartIcon.scale.set(0.01, 0.01, 0.01);
+      }
+    }
+
+    // CROSSOVER 2: The Selfie Battle & Chai Vendor Twist
+    // 6.0s cycle: Pose (0-3s) -> Drone Swoops & Blinding Flash (3-4.5s) -> Vendor Smile & Bewilderment (4.5-6s)
+    for (let i = 0; i < this.selfieBattleList.length; i++) {
+      const g = this.selfieBattleList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 3.0) {
+        // Dramatic leader poses for drone
+        g.cameraDrone.position.y = 3.5 + Math.sin(this.globalClock * 2.5) * 0.25;
+        g.cameraDrone.position.z = 2.0;
+        g.cameraDrone.rotation.x = 0.3;
+        g.modiFigure.rotation.y = 0.35;
+        g.rahulFigure.rotation.y = -0.35;
+        g.flashLight.scale.set(0.01, 0.01, 0.01);
+      } else if (cycle < 4.5) {
+        // Drone swoops low between them and flashes at chai vendor!
+        g.cameraDrone.position.y = 1.8;
+        g.cameraDrone.position.z = 1.2;
+        g.cameraDrone.rotation.x = 0;
+
+        // Blinding camera flash
+        const isFlash = (cycle - 3.0 < 0.25) || (cycle - 3.0 > 0.5 && cycle - 3.0 < 0.75);
+        if (isFlash) {
+          g.flashLight.scale.set(1.6, 1.6, 1.6);
+        } else {
+          g.flashLight.scale.set(0.01, 0.01, 0.01);
+        }
+      } else {
+        // Punchline: Vendor beams happily, leaders turn heads in disbelief!
+        g.flashLight.scale.set(0.01, 0.01, 0.01);
+        g.chaiVendor.rotation.y = Math.sin(this.globalClock * 4.0) * 0.15;
+        g.modiFigure.rotation.y = 1.2; // Look at vendor
+        g.rahulFigure.rotation.y = -1.2; // Look at vendor
+      }
+    }
+
+    // CROSSOVER 3: The Runaway Microphone Chase
+    // 6.5s cycle: Chase (0-3.2s) -> Mic Stop & Tap (3.2-4.5s) -> Reverse Dash (4.5-6.5s)
+    for (let i = 0; i < this.microphoneChaseList.length; i++) {
+      const g = this.microphoneChaseList[i];
+      g.timer += delta * motionMultiplier;
+      const cycle = g.timer % 6.5;
+
+      if (cycle < 3.2) {
+        // Rolling mic leads the sprint
+        const t = cycle / 3.2;
+        g.rollingMic.position.z = -3.5 + t * 7.0;
+        g.rollingMic.rotation.y = 0;
+        g.modiFigure.position.z = g.rollingMic.position.z - 1.4;
+        g.rahulFigure.position.z = g.rollingMic.position.z - 2.2;
+        g.modiFigure.rotation.x = -0.4;
+        g.rahulFigure.rotation.x = -0.4;
+      } else if (cycle < 4.5) {
+        // Mic abruptly halts, spins to camera, taps its head!
+        g.rollingMic.rotation.y = Math.PI;
+        g.rollingMic.rotation.z = Math.sin(this.globalClock * 12.0) * 0.22;
+        // Leaders skid to a halt!
+        g.modiFigure.rotation.x = 0.3;
+        g.rahulFigure.rotation.x = 0.3;
+      } else {
+        // Mic zooms in reverse right past them!
+        const revT = (cycle - 4.5) / 2.0;
+        g.rollingMic.position.z = 3.5 - revT * 7.0;
+        g.modiFigure.rotation.y = Math.PI * 0.5;
+        g.rahulFigure.rotation.y = -Math.PI * 0.5;
+      }
+    }
+
+    // CROSSOVER 4: The Party Office Mix-Up
+    // 6.0s cycle: Politician enters revolving door, spins 360°, exits opposite party office looking confused!
+    for (let i = 0; i < this.partyOfficeMixupList.length; i++) {
+      const g = this.partyOfficeMixupList[i];
+      g.timer += delta * motionMultiplier;
+      g.revolvingPortal.rotation.y += delta * 2.2;
+      const cycle = g.timer % 6.0;
+
+      if (cycle < 2.0) {
+        g.politicianFigure.position.z = -2.0 + cycle;
+        g.politicianFigure.rotation.y = 0;
+      } else if (cycle < 4.0) {
+        g.politicianFigure.position.z = 0;
+        g.politicianFigure.rotation.y = (cycle - 2.0) * Math.PI;
+      } else {
+        g.politicianFigure.position.z = (cycle - 4.0) * 1.2;
+        g.politicianFigure.rotation.z = Math.sin(this.globalClock * 6.0) * 0.2; // Scratching head
       }
     }
   }
