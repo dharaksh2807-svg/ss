@@ -557,7 +557,7 @@ export class CameraController {
       if (obj.name?.includes('player') || obj.name?.includes('char_') || obj === this.camera) return;
 
       const userData = obj.userData;
-      if (userData?.isTrain || userData?.isObstacle || obj.name?.includes('coach') || obj.name?.includes('car_') || obj.name?.includes('chunk_')) {
+      if (userData?.isTrain || userData?.isObstacle || obj.name?.includes('coach') || obj.name?.includes('car_')) {
         obj.getWorldPosition(CameraController._tempVec);
 
         // Fast Z rejection: check objects within 25.0m of camera along Z (covers long coach bodies)

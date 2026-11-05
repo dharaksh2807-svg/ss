@@ -283,9 +283,11 @@ export class SceneryFactory {
     curved.applyCurvature(modernWhiteMat);
 
     const modernSteelMat = new THREE.MeshStandardMaterial({
-      color: 0x374151,
-      roughness: 0.42,
-      metalness: 0.75
+      color: 0x475569,
+      roughness: 0.52,
+      metalness: 0.25,
+      emissive: 0x111827,
+      emissiveIntensity: 0.15
     });
     curved.applyCurvature(modernSteelMat);
 
@@ -470,8 +472,10 @@ export class SceneryFactory {
     // Modern Metro Enhanced Materials
     const modernCurtainGlassMat = new THREE.MeshStandardMaterial({
       map: TextureGenerator.getCurtainWallGlassTexture(),
-      roughness: 0.15,
-      metalness: 0.85
+      roughness: 0.30,
+      metalness: 0.35,
+      emissive: 0x0f172a,
+      emissiveIntensity: 0.20
     });
     curved.applyCurvature(modernCurtainGlassMat);
 
@@ -1839,7 +1843,6 @@ export class SceneryFactory {
           // Main tower shaft
           const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.modernSteelMat);
           mainBody.position.y = bH * 0.5;
-          mainBody.castShadow = true;
           mainBody.receiveShadow = true;
           bGroup.add(mainBody);
 
@@ -1902,7 +1905,6 @@ export class SceneryFactory {
           // Tower body in sleek off-white architectural concrete
           const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.modernWhiteMat);
           mainBody.position.y = bH * 0.5;
-          mainBody.castShadow = true;
           mainBody.receiveShadow = true;
           bGroup.add(mainBody);
 
@@ -1948,7 +1950,7 @@ export class SceneryFactory {
 
           const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.modernConcreteMat);
           mainBody.position.y = bH * 0.5;
-          mainBody.castShadow = true;
+          mainBody.receiveShadow = true;
           bGroup.add(mainBody);
 
           // Station entrance canopy
@@ -1987,7 +1989,7 @@ export class SceneryFactory {
 
           const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.modernSteelMat);
           mainBody.position.y = bH * 0.5;
-          mainBody.castShadow = true;
+          mainBody.receiveShadow = true;
           bGroup.add(mainBody);
 
           // Angular glass prow projecting towards the railway
@@ -2024,7 +2026,6 @@ export class SceneryFactory {
 
     // Floor deck - slim composite deck preventing overhead camera occlusion
     const deck = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan, 0.42, bridgeWidth), mats.modernSteelMat);
-    deck.castShadow = true;
     deck.receiveShadow = true;
     bridgeGroup.add(deck);
 
@@ -2039,7 +2040,7 @@ export class SceneryFactory {
     // Sleek white aerodynamic roof canopy
     const roof = new THREE.Mesh(new THREE.BoxGeometry(bridgeSpan + 0.8, 0.4, bridgeWidth + 0.6), mats.modernWhiteMat);
     roof.position.set(0, 3.15, 0);
-    roof.castShadow = true;
+    roof.receiveShadow = true;
     bridgeGroup.add(roof);
 
     // Structural support pylons flanking the railway

@@ -2466,6 +2466,8 @@ export class TrackChunk {
         const updatedRearZ = updatedWorldZ - halfD;
         if (updatedRearZ > playerZ + 0.5) {
           obs.group.visible = false;
+        } else {
+          obs.group.visible = true;
         }
       }
     }

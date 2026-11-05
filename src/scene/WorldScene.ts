@@ -141,6 +141,7 @@ export class WorldScene {
     this.fillLight = new THREE.DirectionalLight(0xa0c4e8, 0.70);
     this.fillLight.position.set(-24, 28, 14);
     this.scene.add(this.fillLight);
+    this.scene.add(this.fillLight.target);
 
     // Continuous infinite subterranean foundation bed beneath tracks and lateral scenery
     const subBedGeo = new THREE.PlaneGeometry(360, 1200);
@@ -1947,6 +1948,8 @@ export class WorldScene {
     this.sunLight.target.updateMatrixWorld();
 
     this.fillLight.position.z = playerZ + 15;
+    this.fillLight.target.position.z = playerZ - 12;
+    this.fillLight.target.updateMatrixWorld();
 
     // Sky and skyline track player so horizon feels infinite
     this.skyMesh.position.z = playerZ;
