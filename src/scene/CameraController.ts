@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONSTANTS } from '../core/Constants';
 import { EventBus, EVENTS } from '../core/EventBus';
 import { SettingsManager } from '../settings/SettingsManager';
+import type { TrackChunk } from '../track/TrackChunk';
 
 export type CameraMode = 'CLASSIC' | 'CHARACTER_FOCUS';
 
@@ -41,11 +42,10 @@ export class CameraController {
   private photoLookTarget = new THREE.Vector3();
   private savedFov: number = CONSTANTS.CAMERA_FOV;
 
-  // Near-Camera Bounded Occlusion Handling
-  private occludedObjects: Set<THREE.Object3D> = new Set();
-  private static readonly _tempVec = new THREE.Vector3();
-  private static readonly _tempBox = new THREE.Box3();
-  private static readonly _tempClosestPt = new THREE.Vector3();
+  private readonly sightRay = new THREE.Ray();
+  private readonly cameraClearanceBox = new THREE.Box3();
+  private readonly cameraHit = new THREE.Vector3();
+  private cameraPullIn = 0;
 
   constructor() {
     const aspect = typeof window !== 'undefined' && window.innerHeight > 0
@@ -506,11 +506,7 @@ export class CameraController {
   }
 
   public reset(playerPos: THREE.Vector3): void {
-    for (const obj of this.occludedObjects) {
-      obj.visible = true;
-    }
-    this.occludedObjects.clear();
-
+    this.cameraPullIn = 0;
     this.shakeTrauma = 0;
     this.landingDipOffset = 0;
     this.isGameOverMode = false;
@@ -533,52 +529,80 @@ export class CameraController {
     }
   }
 
-  /**
-   * Bounded near-camera occlusion handling:
-   * Selectively hides/fades confirmed near-camera occluders that are located BEHIND
-   * the runner (or lateral scenery) while strictly preserving 100% visibility of active
-   * hazards ahead of the runner.
-   */
-  public resolveNearCameraOcclusion(scene: THREE.Scene, playerPos: THREE.Vector3): void {
-    // 1. Restore visibility of objects occluded in previous frame
-    for (const obj of this.occludedObjects) {
-      obj.visible = true;
-    }
-    this.occludedObjects.clear();
+  public avoidTrackOcclusion(
+    chunks: readonly TrackChunk[],
+    playerPos: THREE.Vector3,
+    targetLaneX: number,
+    isSliding: boolean,
+    dt: number
+  ): void {
+    if (this.isLobbyMode || this.isIntroMode || this.isPhotoMode || this.isGameOverMode) return;
 
-    if (this.isLobbyMode || this.isIntroMode || this.isPhotoMode) return;
-
-    const camPos = this.camera.position;
-    const nearDistSq = 2.4 * 2.4;
-
-    // 2. Scan scene for objects that penetrate the near camera volume
-    scene.traverse((obj) => {
-      if (!obj.visible) return;
-      if (obj.name?.includes('player') || obj.name?.includes('char_') || obj === this.camera) return;
-
-      const userData = obj.userData;
-      if (userData?.isTrain || userData?.isObstacle || obj.name?.includes('coach') || obj.name?.includes('car_')) {
-        obj.getWorldPosition(CameraController._tempVec);
-
-        // Fast Z rejection: check objects within 25.0m of camera along Z (covers long coach bodies)
-        if (Math.abs(CameraController._tempVec.z - camPos.z) < 25.0) {
-          CameraController._tempBox.setFromObject(obj);
-          const isCamInside = CameraController._tempBox.containsPoint(camPos);
-          CameraController._tempBox.clampPoint(camPos, CameraController._tempClosestPt);
-          const distSq = camPos.distanceToSquared(CameraController._tempClosestPt);
-
-          // Confirmed near-camera penetration:
-          if (isCamInside || distSq < nearDistSq) {
-            // CRITICAL INVARIANT: NEVER occlude an active oncoming hazard ahead of the runner.
-            // An object is safe to hide ONLY if its front is behind or level with the runner (bbox.min.z > playerPos.z - 0.2).
-            if (CameraController._tempBox.min.z > playerPos.z - 0.2) {
-              obj.visible = false;
-              this.occludedObjects.add(obj);
-            }
-          }
-        }
+    const position = this.camera.position;
+    const origin = this.sightRay.origin.copy(playerPos);
+    origin.y += isSliding ? 0.45 : 1.05;
+    const originalX = position.x;
+    let clearDistance = this.getClearCameraDistance(chunks);
+    if (clearDistance < position.distanceTo(origin)) {
+      // A centered portrait camera can sit behind a train in a neighboring lane.
+      // Try the runner's lane before shortening the distance to the runner.
+      position.x = playerPos.x;
+      const laneDistance = this.getClearCameraDistance(chunks);
+      if (laneDistance < clearDistance) {
+        position.x = originalX;
+      } else {
+        clearDistance = laneDistance;
+        this.currentPosition.x = position.x - this.shakeOffset.x;
       }
-    });
+    }
+
+    // Start drawing in during a lane change if the destination's view is blocked.
+    // Otherwise the camera could lose most of its portrait distance in one frame.
+    let anticipatedPullIn = 0;
+    if (Math.abs(targetLaneX - playerPos.x) > 0.05) {
+      const shoulderX = position.x;
+      origin.x = targetLaneX;
+      position.x = targetLaneX;
+      anticipatedPullIn = position.distanceTo(origin) - this.getClearCameraDistance(chunks);
+      origin.x = playerPos.x;
+      position.x = shoulderX;
+    }
+
+    const viewingDistance = position.distanceTo(origin);
+    const smoothedPullIn = THREE.MathUtils.damp(this.cameraPullIn, anticipatedPullIn, 13, dt);
+    this.cameraPullIn = Math.max(viewingDistance - clearDistance, Math.min(smoothedPullIn, viewingDistance - 1.2));
+    if (this.cameraPullIn < 0.001 && position.x === originalX) return;
+
+    const distance = Math.max(0, viewingDistance - this.cameraPullIn);
+    this.sightRay.direction.subVectors(position, origin).normalize();
+    position.copy(origin).addScaledVector(this.sightRay.direction, distance);
+    this.camera.lookAt(this.lookTarget);
+  }
+
+  private getClearCameraDistance(chunks: readonly TrackChunk[]): number {
+    const ray = this.sightRay;
+    const position = this.camera.position;
+    ray.direction.subVectors(position, ray.origin);
+    let clearDistance = ray.direction.length();
+    ray.direction.normalize();
+    const margin = 0.35;
+    for (const chunk of chunks) {
+      for (const obstacle of chunk.obstacles) {
+        if (!obstacle.active || !obstacle.group.visible) continue;
+        const collider = obstacle.collider;
+        if (collider.min.z > position.z + margin || collider.max.z < ray.origin.z - margin) continue;
+
+        const bounds = this.cameraClearanceBox.copy(collider);
+        if (obstacle.roofSurfaceY !== undefined) {
+          bounds.max.y = Math.max(bounds.max.y, obstacle.roofSurfaceY);
+        }
+        bounds.expandByScalar(margin);
+        if (bounds.containsPoint(ray.origin)) continue;
+        const hit = ray.intersectBox(bounds, this.cameraHit);
+        if (hit) clearDistance = Math.min(clearDistance, ray.origin.distanceTo(hit));
+      }
+    }
+    return clearDistance;
   }
 
   public onResize(): void {

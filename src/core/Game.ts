@@ -1307,7 +1307,15 @@ export class Game {
         this.player.isSliding,
         this.player.isTunnelEnclosed
       );
-      this.cameraController.resolveNearCameraOcclusion(this.worldScene.scene, this.player.position);
+      if (this.lifecycleState === 'PLAYING') {
+        this.cameraController.avoidTrackOcclusion(
+          this.trackManager.chunks,
+          this.player.position,
+          CONSTANTS.LANES[this.player.targetLane],
+          this.player.isSliding,
+          dt
+        );
+      }
     }
 
     // Collision Debug Visualization (Enabled only when window.__DEBUG_COLLIDERS__ is true)

@@ -143,15 +143,18 @@ export class WorldScene {
     this.scene.add(this.fillLight);
     this.scene.add(this.fillLight.target);
 
-    // Continuous infinite subterranean foundation bed beneath tracks and lateral scenery
+    // Draw the flat fallback between the sky and gameplay geometry so it cannot
+    // cover rails and terrain that bend below it in the curvature shader.
     const subBedGeo = new THREE.PlaneGeometry(360, 1200);
     const subBedMat = new THREE.MeshStandardMaterial({
       color: 0x263238,
       roughness: 0.90,
-      metalness: 0.15
+      metalness: 0.15,
+      depthWrite: false
     });
     this.infiniteSubterraneanBed = new THREE.Mesh(subBedGeo, subBedMat);
     this.infiniteSubterraneanBed.name = 'infinite_subterranean_bed';
+    this.infiniteSubterraneanBed.renderOrder = -1;
     this.infiniteSubterraneanBed.rotation.x = -Math.PI / 2;
     this.infiniteSubterraneanBed.position.set(0, -0.32, 0);
     this.infiniteSubterraneanBed.receiveShadow = true;
@@ -159,6 +162,7 @@ export class WorldScene {
 
     // 2. Vibrant Daytime Sky Dome
     this.skyMesh = this.createSkyDome();
+    this.skyMesh.renderOrder = -2;
     this.scene.add(this.skyMesh);
 
     // 3. Floating Stylized Cumulus Clouds
