@@ -1473,36 +1473,46 @@ export class WorldScene {
     const vipMat = this.vipExpressSkylineMaterial;
     const goldMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
 
-    // Distant Secretariat Palace Central Block (Z = -440m)
+    // Distant Secretariat Palace Architecture (Z = -440m)
+    // Flanking ceremonial palace wings with open central vista above track
     const palaceGroup = new THREE.Group();
     palaceGroup.position.set(0, 0, -440.0);
 
-    const palaceMain = new THREE.Mesh(new THREE.BoxGeometry(160.0, 48.0, 45.0), vipMat);
-    palaceMain.position.y = 24.0;
-    palaceGroup.add(palaceMain);
-
-    // Central Grand Dome
-    const vipDomeGeo = new THREE.SphereGeometry(22.0, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
-    const mainDome = new THREE.Mesh(vipDomeGeo, goldMat);
-    mainDome.position.set(0, 48.0, 0);
-    palaceGroup.add(mainDome);
-
-    // Golden Kalash Spire
-    const spireGeo = new THREE.ConeGeometry(3.5, 16.0, 8);
-    const vipSpire = new THREE.Mesh(spireGeo, goldMat);
-    vipSpire.position.set(0, 78.0, 0);
-    palaceGroup.add(vipSpire);
-
-    // Flanking neoclassical wing pavilions
-    [-110.0, 110.0].forEach((wx) => {
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(70.0, 36.0, 35.0), vipMat);
+    // Left and right monumental wings with colonnaded openings
+    [-85.0, 85.0].forEach((wx) => {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(60.0, 36.0, 35.0), vipMat);
       wing.position.set(wx, 18.0, 0);
       palaceGroup.add(wing);
 
-      const wingDome = new THREE.Mesh(new THREE.SphereGeometry(12.0, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), goldMat);
+      const wingDome = new THREE.Mesh(new THREE.SphereGeometry(14.0, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), goldMat);
       wingDome.position.set(wx, 36.0, 0);
       palaceGroup.add(wingDome);
     });
+
+    // Elevated Central Ceremonial Arch bridging high above the track
+    const centralArchL = new THREE.Mesh(new THREE.BoxGeometry(16.0, 42.0, 24.0), vipMat);
+    centralArchL.position.set(-24.0, 21.0, 0);
+    palaceGroup.add(centralArchL);
+
+    const centralArchR = new THREE.Mesh(new THREE.BoxGeometry(16.0, 42.0, 24.0), vipMat);
+    centralArchR.position.set(24.0, 21.0, 0);
+    palaceGroup.add(centralArchR);
+
+    const archLintel = new THREE.Mesh(new THREE.BoxGeometry(64.0, 10.0, 26.0), vipMat);
+    archLintel.position.set(0, 47.0, 0);
+    palaceGroup.add(archLintel);
+
+    // Central Grand Dome crowning high above the central arch
+    const vipDomeGeo = new THREE.SphereGeometry(22.0, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const mainDome = new THREE.Mesh(vipDomeGeo, goldMat);
+    mainDome.position.set(0, 52.0, 0);
+    palaceGroup.add(mainDome);
+
+    // Golden Kalash Spire
+    const spireGeo = new THREE.ConeGeometry(3.5, 18.0, 8);
+    const vipSpire = new THREE.Mesh(spireGeo, goldMat);
+    vipSpire.position.set(0, 83.0, 0);
+    palaceGroup.add(vipSpire);
 
     vipSkyline.add(palaceGroup);
 

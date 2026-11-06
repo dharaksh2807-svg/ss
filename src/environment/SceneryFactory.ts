@@ -1576,7 +1576,7 @@ export class SceneryFactory {
     } else if (theme.id === 'HAUNTED_CARNIVAL') {
       this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'VIP_EXPRESS') {
-      this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'RAHULVERSE') {
       this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'MIDNIGHT_VELVET') {
@@ -7567,14 +7567,15 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
     const rng = new SeededRandom(seed);
     const vipGroup = new THREE.Group();
     vipGroup.name = 'vip_express_scenery';
 
     // Delegate to the 5 distinct political comedy districts!
-    VipSatireWorldBuilder.getInstance().buildDistrictScenery(vipGroup, roadbedWidth, chunkLength, seed, detail);
+    VipSatireWorldBuilder.getInstance().buildDistrictScenery(vipGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
 
     // Deterministic Landmark Encounter (Seeded variation across runs)
     const landmarkChoice = Math.abs(seed) % 4;

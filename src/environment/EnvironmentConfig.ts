@@ -746,8 +746,8 @@ export const VIP_EXPRESS_THEME: EnvironmentTheme = {
     intensity: 1.25
   },
   skyline: {
-    color: 0x1e293b,  // Regal silhouette of monumental domes, obelisks and pavilions
-    opacity: 0.82,
+    color: 0xb45309,  // Warm golden sandstone silhouette of ceremonial domes and obelisks
+    opacity: 0.80,
     style: 'MODERN'
   },
   clouds: {

@@ -3,6 +3,7 @@ import { CONSTANTS } from '../core/Constants';
 import { SeededRandom } from './SceneryFactory';
 import { TextureGenerator } from '../scene/TextureGenerator';
 import { VipComedyEventDirector } from './VipComedyEventDirector';
+import { CurvedShaderManager } from '../scene/CurvedShader';
 
 /**
  * VipSatireWorldBuilder — Mitron Express 2.0: The Masterstroke Cinematic Universe
@@ -131,6 +132,45 @@ export class VipSatireWorldBuilder {
     this.awningStripeMaroonMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.75 });
     this.awningStripeGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
     this.chhatriDomeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5, metalness: 0.25 });
+
+    // CRITICAL FIX FOR FLOATING SCENERY:
+    // Bend all VIP world materials synchronously with track curvature shader!
+    const curved = CurvedShaderManager.getInstance();
+    const allMats: THREE.Material[] = [
+      this.terracottaMat, this.jaliStoneMat, this.tinRoofMat, this.brassKettleMat,
+      this.copperMat, this.teaGlassMat, this.teaLiquidMat, this.biscuitMat,
+      this.redCarpetMat, this.velvetCurtainMat, this.goldMetalMat, this.diamondMat,
+      this.ivoryMarbleMat, this.sandstoneMat, this.mediaScreenMat, this.cyberGlassMat,
+      this.parliamentWoodMat, this.parliamentGreenMat, this.cartoonNpcSkinMat,
+      this.cartoonKurtaWhiteMat, this.cartoonWaistcoatOrangeMat, this.cartoonPoloWhiteMat,
+      this.cartoonNavyPantsMat, this.cartoonMufflerBrownMat, this.cartoonSariBlueMat,
+      this.cartoonHairSilverMat, this.cartoonHairBlackMat, this.flashLightMat,
+      this.tricolorGreenMat, this.mangoGoldenMat, this.sunglassesBlackMat,
+      this.silverMetalMat, this.heartRedMat, this.sparkleYellowMat, this.caveStoneMat,
+      this.haveliYellowPlasterMat, this.haveliTerracottaMat, this.haveliSandstoneMat,
+      this.haveliWoodMat, this.windowGlassLitMat, this.studioGlassMat,
+      this.awningStripeOrangeMat, this.awningStripeMaroonMat, this.awningStripeGreenMat,
+      this.chhatriDomeMat
+    ];
+    allMats.forEach(m => curved.applyCurvature(m));
+  }
+
+  /**
+   * Helper to instantiate MeshBasicMaterial with track curvature applied
+   */
+  public createBasicMaterial(params: THREE.MeshBasicMaterialParameters): THREE.MeshBasicMaterial {
+    const mat = new THREE.MeshBasicMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
+  }
+
+  /**
+   * Helper to instantiate MeshStandardMaterial with track curvature applied
+   */
+  public createStandardMaterial(params: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial {
+    const mat = new THREE.MeshStandardMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
   }
 
   public static getInstance(): VipSatireWorldBuilder {
@@ -190,7 +230,8 @@ export class VipSatireWorldBuilder {
     roadbedWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZIn: number = 0
   ): void {
     const rng = new SeededRandom(seed);
     const director = VipComedyEventDirector.getInstance();
@@ -198,12 +239,14 @@ export class VipSatireWorldBuilder {
     // Determine district:
     // Sustained 400m thematic districts during active gameplay runs!
     let districtIndex: number;
-    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
-      ? group.parent.position.z
-      : 0;
+    const effectiveZ = (worldZIn !== 0 && seed !== 999)
+      ? worldZIn
+      : (group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+        ? group.parent.position.z
+        : 0);
 
-    if (worldZ !== 0) {
-      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
+    if (effectiveZ !== 0) {
+      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 5;
     } else {
       districtIndex = (seed >= 0 && seed < 5) ? seed : (Math.floor(Math.abs(seed) / 4) % 5);
     }
@@ -652,10 +695,15 @@ export class VipSatireWorldBuilder {
         wallMat = bIdx % 2 === 0 ? this.haveliTerracottaMat : this.sandstoneMat;
       }
 
-      // 1. Ground Floor Plinth & Main Mass
+      // 1. Ground Floor Plinth & Main Mass with Subsurface Foundation
       const mainBuilding = new THREE.Mesh(this.getBox(bWidth, totalH, bDepth), wallMat);
       mainBuilding.position.y = totalH * 0.5;
       bGroup.add(mainBuilding);
+
+      // Deep foundation plinth down to y = -4.0m to prevent floating scenery
+      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.6, 4.0, bDepth + 0.6), this.sandstoneMat);
+      plinth.position.y = -2.0;
+      bGroup.add(plinth);
 
       // Carved Sandstone Stringcourse Ledges between floors
       for (let s = 1; s <= bDef.stories; s++) {
@@ -771,7 +819,7 @@ export class VipSatireWorldBuilder {
         mast.position.y = 4.0;
         towerGroup.add(mast);
 
-        const beacon = new THREE.Mesh(this.getSphere(0.3, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        const beacon = new THREE.Mesh(this.getSphere(0.3, 6), this.createBasicMaterial({ color: 0xef4444 }));
         beacon.position.y = 8.2;
         towerGroup.add(beacon);
 
@@ -843,22 +891,25 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: VipComedyEventDirector
   ): void {
-    const wallX = roadbedWidth * 0.5 + 2.2; // Safe ~7.5m outside tracks
+    // Exact flush alignment with track curb (7.375m) - Zero void gaps!
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const sidewalkW = 24.0;
+    const sidewalkH = 4.3;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
 
     // 1. Terracotta Promenade with Sandstone Jali Screens and Authentic Haveli Facades
     [-1, 1].forEach((side) => {
       // Modular Indian Streetscape behind the promenade
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 0, rng, detail);
-      const sidewalkW = 9.5;
-      const sx = side * (wallX + sidewalkW * 0.5);
-      const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, 0.6, chunkLength), this.terracottaMat);
-      sidewalk.position.set(sx, 0.3, -chunkLength * 0.5);
+      const sx = side * (curbEdge + sidewalkW * 0.5);
+      const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.terracottaMat);
+      sidewalk.position.set(sx, sidewalkY, -chunkLength * 0.5);
       group.add(sidewalk);
 
       // Ornate Mughal Jali stone arches along outer promenade
       for (let z = 10; z < chunkLength - 10; z += 20) {
         const jaliArch = new THREE.Group();
-        jaliArch.position.set(side * (wallX + 8.5), 0.6, -z);
+        jaliArch.position.set(side * (curbEdge + 8.5), 0.6, -z);
 
         const pillarL = new THREE.Mesh(this.getCylinder(0.20, 0.25, 6.0, 6), this.sandstoneMat);
         pillarL.position.set(0, 3.0, -1.8);
@@ -878,7 +929,7 @@ export class VipSatireWorldBuilder {
       // Detailed Chai Stalls with Awning, Kettle, Biscuits, and Steam
       for (let zOffset = 8; zOffset < chunkLength - 8; zOffset += 24) {
         const stallGroup = new THREE.Group();
-        stallGroup.position.set(side * (wallX + 2.8), 0.6, -zOffset);
+        stallGroup.position.set(side * (curbEdge + 3.2), 0.6, -zOffset);
         stallGroup.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
 
         // Wooden Stall Counter
@@ -894,7 +945,7 @@ export class VipSatireWorldBuilder {
 
         // Signboard
         const signTex = TextureGenerator.getChaiPeCharchaSignTexture(Math.floor(zOffset / 24));
-        const signMesh = new THREE.Mesh(this.getBox(3.4, 0.9, 0.06), new THREE.MeshBasicMaterial({ map: signTex }));
+        const signMesh = new THREE.Mesh(this.getBox(3.4, 0.9, 0.06), this.createBasicMaterial({ map: signTex }));
         signMesh.position.set(0, 2.9, 0.3);
         stallGroup.add(signMesh);
 
@@ -911,7 +962,7 @@ export class VipSatireWorldBuilder {
         // Steam Wisps
         if (detail !== 'MINIMAL') {
           for (let s = 0; s < 3; s++) {
-            const steamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+            const steamMat = this.createBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
             const steamBall = new THREE.Mesh(this.getCylinder(0.12, 0.20, 0.28, 6), steamMat);
             steamBall.position.set(-0.38 + s * 0.08, 1.9 + s * 0.45, 0);
             stallGroup.add(steamBall);
@@ -943,12 +994,16 @@ export class VipSatireWorldBuilder {
     // 2. HERO GAG 1: THE MONUMENTAL TEACUP UNVEILING (Satisfies vip_photo_op, X < -14.0m)
     const teacupPavilion = new THREE.Group();
     teacupPavilion.name = 'vip_photo_op';
-    teacupPavilion.position.set(-17.5, 0.6, -chunkLength * 0.5);
+    teacupPavilion.position.set(-16.5, 0.6, -chunkLength * 0.5);
 
-    // Marble Dais & Red Carpet
+    // Marble Dais & Subsurface Foundation down to -4.0m
     const dais = new THREE.Mesh(this.getBox(8.5, 0.9, 8.5), this.ivoryMarbleMat);
     dais.position.y = 0.45;
     teacupPavilion.add(dais);
+
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    teacupPavilion.add(plinth);
 
     const carpet = new THREE.Mesh(this.getBox(2.6, 0.06, 8.0), this.redCarpetMat);
     carpet.position.set(0, 0.93, 0);
@@ -1005,7 +1060,7 @@ export class VipSatireWorldBuilder {
 
     // Plaque sign
     const plaqueTex = TextureGenerator.getVipPhotoOpSignTexture();
-    const plaque = new THREE.Mesh(this.getBox(3.8, 1.2, 0.08), new THREE.MeshBasicMaterial({ map: plaqueTex }));
+    const plaque = new THREE.Mesh(this.getBox(3.8, 1.2, 0.08), this.createBasicMaterial({ map: plaqueTex }));
     plaque.position.set(0, 2.2, 3.8);
     teacupPavilion.add(plaque);
 
@@ -1019,6 +1074,10 @@ export class VipSatireWorldBuilder {
       const baseRing = new THREE.Mesh(this.getCylinder(4.2, 4.6, 0.8, 12), this.sandstoneMat);
       baseRing.position.y = 0.4;
       kettleMonument.add(baseRing);
+
+      const kPlinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+      kPlinth.position.y = -2.0;
+      kettleMonument.add(kPlinth);
 
       // Colossal 6-meter Golden Kettle
       const kettlePivot = new THREE.Group();
@@ -1057,8 +1116,9 @@ export class VipSatireWorldBuilder {
       group.add(kettleMonument);
     }
 
-    // 4. GATE A HERO GAG: THE MANGO INTERVIEW (East side at X = +17.5m, Z = -chunkLength * 0.75)
-    this.buildMangoInterviewStage(group, 17.5, 0.6, -chunkLength * 0.75, director);
+    // 4. SIGNATURE COMEDY SCENE A: THE GREAT MANGO INTERVIEW
+    // Prominently placed on the East terrace at X = +11.2m (strictly clear of |X| <= 4.2m hazard corridor)
+    this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director);
   }
 
   // =========================================================================
@@ -1072,60 +1132,80 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: VipComedyEventDirector
   ): void {
-    const wallX = roadbedWidth * 0.5 + 2.0;
+    // Flush alignment with track curb (7.375m) - Zero void gaps!
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const sidewalkW = 24.0;
+    const sidewalkH = 4.3;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
 
     // 1. Endless Red-Carpet Marble Promenades
     [-1, 1].forEach((side) => {
       // Modular Indian Imperial Architecture with colonnades and setbacks
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 1, rng, detail);
 
-      const concourseW = 9.0;
-      const cx = side * (wallX + concourseW * 0.5);
-      const concourse = new THREE.Mesh(this.getBox(concourseW, 0.8, chunkLength), this.ivoryMarbleMat);
-      concourse.position.set(cx, 0.4, -chunkLength * 0.5);
+      const sx = side * (curbEdge + sidewalkW * 0.5);
+      const concourse = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.ivoryMarbleMat);
+      concourse.position.set(sx, sidewalkY, -chunkLength * 0.5);
       group.add(concourse);
 
       // Red carpet strip
       const carpet = new THREE.Mesh(this.getBox(2.8, 0.06, chunkLength), this.redCarpetMat);
-      carpet.position.set(side * (wallX + 2.2), 0.83, -chunkLength * 0.5);
+      carpet.position.set(side * (curbEdge + 2.4), 0.33, -chunkLength * 0.5);
       group.add(carpet);
 
       // Gold stanchions along carpet edge
       for (let z = 6; z < chunkLength - 6; z += 12) {
         const pole = new THREE.Mesh(this.getCylinder(0.06, 0.06, 1.2, 6), this.goldMetalMat);
-        pole.position.set(side * (wallX + 0.6), 1.4, -z);
+        pole.position.set(side * (curbEdge + 0.8), 0.9, -z);
         group.add(pole);
         const ball = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.12, 6), this.goldMetalMat);
-        ball.position.set(side * (wallX + 0.6), 2.05, -z);
+        ball.position.set(side * (curbEdge + 0.8), 1.55, -z);
         group.add(ball);
       }
     });
 
-    // 2. HERO GAG 3: RECURSIVE SCISSORS INAUGURATION (Satisfies vip_ribbon_ceremony, X < -15.0m)
+    // 2. SIGNATURE COMEDY SCENE B: THE NEVER-ENDING INAUGURATION (Satisfies vip_ribbon_ceremony, X < -15.0m)
     const ribbonGroup = new THREE.Group();
     ribbonGroup.name = 'vip_ribbon_ceremony';
-    ribbonGroup.position.set(-18.5, 0.8, -chunkLength * 0.4);
+    ribbonGroup.position.set(-16.5, 0.8, -chunkLength * 0.4);
 
-    const stage = new THREE.Mesh(this.getBox(9.0, 1.2, 9.0), this.ivoryMarbleMat);
+    // Deep Subsurface Foundation Plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(12.0, 4.0, 12.0), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    ribbonGroup.add(plinth);
+
+    const stage = new THREE.Mesh(this.getBox(10.5, 1.2, 10.5), this.ivoryMarbleMat);
     stage.position.y = 0.6;
     ribbonGroup.add(stage);
 
-    // Primary Ceremonial Scissors
-    const scissorPivot1 = new THREE.Group();
-    scissorPivot1.position.set(0, 3.2, 0);
+    // Grand Marquee Pavilion Canopy
+    const canopyRoof = new THREE.Mesh(this.getCylinder(0.2, 5.5, 2.0, 8), this.velvetCurtainMat);
+    canopyRoof.position.set(0, 7.5, 0);
+    ribbonGroup.add(canopyRoof);
 
-    const bladeGeo = this.getBox(0.20, 2.6, 0.35);
+    // 4 Saffron & Gold Corner Pillars supporting marquee
+    [[-4.2, -4.2], [4.2, -4.2], [-4.2, 4.2], [4.2, 4.2]].forEach(([px, pz]) => {
+      const pil = new THREE.Mesh(this.getCylinder(0.18, 0.22, 6.5, 6), this.goldMetalMat);
+      pil.position.set(px, 3.8, pz);
+      ribbonGroup.add(pil);
+    });
+
+    // Primary Ceremonial Scissors — Gargantuan 3.6m Golden Articulated Shears
+    const scissorPivot1 = new THREE.Group();
+    scissorPivot1.position.set(0, 3.4, 0);
+
+    const bladeGeo = this.getBox(0.24, 3.2, 0.4);
     const shears1L = new THREE.Mesh(bladeGeo, this.goldMetalMat);
-    shears1L.position.set(-0.35, 0.8, 0);
-    const loop1L = new THREE.Mesh(this.getCylinder(0.26, 0.26, 0.12, 8), this.goldMetalMat);
-    loop1L.position.set(-0.15, -1.1, 0);
+    shears1L.position.set(-0.45, 1.0, 0);
+    const loop1L = new THREE.Mesh(this.getCylinder(0.35, 0.35, 0.16, 8), this.goldMetalMat);
+    loop1L.position.set(-0.25, -1.3, 0);
     shears1L.add(loop1L);
     scissorPivot1.add(shears1L);
 
     const shears1R = new THREE.Mesh(bladeGeo, this.goldMetalMat);
-    shears1R.position.set(0.35, 0.8, 0);
-    const loop1R = new THREE.Mesh(this.getCylinder(0.26, 0.26, 0.12, 8), this.goldMetalMat);
-    loop1R.position.set(0.15, -1.1, 0);
+    shears1R.position.set(0.45, 1.0, 0);
+    const loop1R = new THREE.Mesh(this.getCylinder(0.35, 0.35, 0.16, 8), this.goldMetalMat);
+    loop1R.position.set(0.25, -1.3, 0);
     shears1R.add(loop1R);
     scissorPivot1.add(shears1R);
     ribbonGroup.add(scissorPivot1);
@@ -1152,44 +1232,68 @@ export class VipSatireWorldBuilder {
     rapidArm.position.set(3.2, 2.0, 0);
     ribbonGroup.add(rapidArm);
 
-    // The Ribbon Mesh
-    const ribbonMesh = new THREE.Mesh(this.getBox(6.8, 0.30, 0.05), this.redCarpetMat);
-    ribbonMesh.position.set(0, 3.0, 0);
+    // Multi-Layer Tri-color Ribbon Mesh (Saffron, White, Green)
+    const ribbonMesh = new THREE.Group();
+    ribbonMesh.name = 'tricolor_ribbons';
+    ribbonMesh.position.set(0, 3.2, 0);
+
+    const ribSaffron = new THREE.Mesh(this.getBox(7.2, 0.22, 0.05), this.cartoonWaistcoatOrangeMat);
+    ribSaffron.position.y = 0.26;
+    ribbonMesh.add(ribSaffron);
+
+    const ribWhite = new THREE.Mesh(this.getBox(7.2, 0.22, 0.05), this.cartoonKurtaWhiteMat);
+    ribWhite.position.y = 0;
+    ribbonMesh.add(ribWhite);
+
+    const ribGreen = new THREE.Mesh(this.getBox(7.2, 0.22, 0.05), this.tricolorGreenMat);
+    ribGreen.position.y = -0.26;
+    ribbonMesh.add(ribGreen);
+
     ribbonGroup.add(ribbonMesh);
 
-    // GATE A: Conveyor table with miniature robotic shears assembly line
-    const conveyorTable = new THREE.Mesh(this.getBox(3.8, 0.6, 1.4), this.tinRoofMat);
-    conveyorTable.position.set(0, 0.9, 2.2);
-    ribbonGroup.add(conveyorTable);
+    // THE COMEDIC PUNCHLINE:
+    // A Colossal 2.4m Royal Velvet & Gold Pedestal with ONE TINY CUTTING CHAI GLASS!
+    const grandPedestal = new THREE.Mesh(this.getCylinder(0.85, 1.1, 2.2, 12), this.goldMetalMat);
+    grandPedestal.position.set(0, 2.3, -1.8);
+    ribbonGroup.add(grandPedestal);
 
-    // Miniature robotic scissor arm on conveyor
-    const miniScissorL = new THREE.Mesh(this.getBox(0.08, 0.6, 0.1), this.silverMetalMat);
-    miniScissorL.position.set(-0.15, 1.4, 2.2);
-    ribbonGroup.add(miniScissorL);
-    const miniScissorR = new THREE.Mesh(this.getBox(0.08, 0.6, 0.1), this.silverMetalMat);
-    miniScissorR.position.set(0.15, 1.4, 2.2);
-    ribbonGroup.add(miniScissorR);
-    director.registerScissors(miniScissorL, miniScissorR, 8.0); // rapid miniature snip
+    const velvetCushion = new THREE.Mesh(this.getCylinder(0.7, 0.75, 0.18, 12), this.velvetCurtainMat);
+    velvetCushion.position.set(0, 3.45, -1.8);
+    ribbonGroup.add(velvetCushion);
 
-    // Spinning Ribbon Spool
-    const spool = new THREE.Mesh(this.getCylinder(0.35, 0.35, 0.4, 10), this.redCarpetMat);
-    spool.position.set(1.4, 1.4, 2.2);
-    spool.rotation.x = Math.PI / 2;
-    ribbonGroup.add(spool);
+    // The comically tiny street cutting-chai glass on the 2.4m throne!
+    const tinyCupGroup = new THREE.Group();
+    tinyCupGroup.name = 'tiny_inaugurated_item';
+    tinyCupGroup.position.set(0, 3.65, -1.8);
 
-    // Flanking Applauding Dignitaries
+    const teaGlass = new THREE.Mesh(this.getCylinder(0.12, 0.09, 0.24, 8), this.teaGlassMat);
+    teaGlass.position.y = 0.12;
+    tinyCupGroup.add(teaGlass);
+
+    const teaLiquid = new THREE.Mesh(this.getCylinder(0.10, 0.08, 0.16, 8), this.teaLiquidMat);
+    teaLiquid.position.y = 0.09;
+    tinyCupGroup.add(teaLiquid);
+
+    const biscuit = new THREE.Mesh(this.getBox(0.08, 0.08, 0.02), this.biscuitMat);
+    biscuit.position.set(0.05, 0.14, 0);
+    biscuit.rotation.z = 0.4;
+    tinyCupGroup.add(biscuit);
+    ribbonGroup.add(tinyCupGroup);
+
+    // Flanking Applauding Dignitaries & Modi Caricature in Grandstand
     if (detail === 'FULL') {
-      this.buildAmitShahCaricature(ribbonGroup, -2.6, 0.6, 1.8, director);
-      this.buildNitishCaricature(ribbonGroup, 2.6, 0.6, 1.8, director);
+      this.buildModiCaricature(ribbonGroup, 0, 1.2, 2.2, 'VICTORY', director);
+      this.buildAmitShahCaricature(ribbonGroup, -2.8, 1.2, 2.0, director);
+      this.buildNitishCaricature(ribbonGroup, 2.8, 1.2, 2.0, director);
     }
 
     director.registerScissors(shears1L, shears1R, 4.0);
     director.registerRecursiveScissors(shears1L, shears1R, shears2L, shears2R, craneGroup, rapidArm, ribbonMesh);
 
-    // Satirical Signboard
+    // High-contrast Satirical Signboard
     const inaugTex = TextureGenerator.getInaugurationInfinitySignTexture(1);
-    const sign = new THREE.Mesh(this.getBox(4.8, 1.2, 0.08), new THREE.MeshBasicMaterial({ map: inaugTex }));
-    sign.position.set(0, 1.8, 4.2);
+    const sign = new THREE.Mesh(this.getBox(5.0, 1.2, 0.08), this.createBasicMaterial({ map: inaugTex }));
+    sign.position.set(0, 2.2, 4.4);
     ribbonGroup.add(sign);
 
     group.add(ribbonGroup);
@@ -1212,13 +1316,13 @@ export class VipSatireWorldBuilder {
       arch.add(lintel);
 
       [-1, 1].forEach((pside) => {
-        const pillar = new THREE.Mesh(this.getBox(1.8, lintelY, 1.8), this.ivoryMarbleMat);
-        pillar.position.set(pside * (roadbedWidth * 0.5 + 2.6), lintelY * 0.5, 0);
+        const pillar = new THREE.Mesh(this.getBox(1.8, lintelY + 4.0, 1.8), this.ivoryMarbleMat);
+        pillar.position.set(pside * (roadbedWidth * 0.5 + 2.6), (lintelY - 4.0) * 0.5, 0);
         arch.add(pillar);
       });
 
       const archSignTex = TextureGenerator.getInaugurationInfinitySignTexture(idx === 0 ? 0 : 3);
-      const archSign = new THREE.Mesh(this.getBox(roadbedWidth + 2.5, 1.3, 0.08), new THREE.MeshBasicMaterial({ map: archSignTex }));
+      const archSign = new THREE.Mesh(this.getBox(roadbedWidth + 2.5, 1.3, 0.08), this.createBasicMaterial({ map: archSignTex }));
       archSign.position.set(0, lintelY + 0.1, 1.05);
       arch.add(archSign);
 
@@ -1242,17 +1346,26 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: VipComedyEventDirector
   ): void {
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    // Flush alignment with track curb (7.375m) - Zero void gaps!
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const sidewalkW = 24.0;
+    const sidewalkH = 4.3;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
 
     // 1. High-Tech Media Studio Towers & Articulated Broadcast Center
     [-1, 1].forEach((side) => {
       // Articulated media complex with transmission towers, open courtyards, and zero monolithic black walls
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 2, rng, detail);
 
+      const sx = side * (curbEdge + sidewalkW * 0.5);
+      const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.ivoryMarbleMat);
+      sidewalk.position.set(sx, sidewalkY, -chunkLength * 0.5);
+      group.add(sidewalk);
+
       // Giant Glowing LED Media Screen mounted cleanly on the central broadcast studio facade
       const screenTex = TextureGenerator.getBreakingNewsScreenTexture(side > 0 ? 0 : 2);
-      const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
-      screen.position.set(side * (wallX + 1.2), 11.5, -chunkLength * 0.5);
+      const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), this.createBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
+      screen.position.set(side * (curbEdge + 4.5), 11.5, -chunkLength * 0.5);
       screen.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       group.add(screen);
     });
@@ -1260,7 +1373,12 @@ export class VipSatireWorldBuilder {
     // 2. HERO GAG 5: PRIME-TIME REMOTE REVELATION & PAPARAZZI (Satisfies vip_camera_crew, X > 15.0m)
     const mediaStage = new THREE.Group();
     mediaStage.name = 'vip_camera_crew';
-    mediaStage.position.set(17.5, 0, -chunkLength * 0.5);
+    mediaStage.position.set(16.5, 0, -chunkLength * 0.5);
+
+    // Deep Subsurface Foundation Plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(10.0, 4.0, 10.0), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    mediaStage.add(plinth);
 
     const scaffold = new THREE.Mesh(this.getBox(8.0, 5.0, 8.0), this.tinRoofMat);
     scaffold.position.y = 2.5;
@@ -1311,7 +1429,7 @@ export class VipSatireWorldBuilder {
 
     // 3. Runaway Decoy Microphone Cart chased by Camera Crew
     const decoyCart = new THREE.Group();
-    decoyCart.position.set(17.5, 0.4, -chunkLength * 0.5);
+    decoyCart.position.set(16.5, 0.4, -chunkLength * 0.5);
 
     const cartBody = new THREE.Mesh(this.getBox(0.9, 0.4, 1.3), this.parliamentWoodMat);
     cartBody.position.y = 0.2;
@@ -1337,7 +1455,7 @@ export class VipSatireWorldBuilder {
       chopperGroup.add(rotor);
 
       const bannerTex = TextureGenerator.getVipHelicopterBannerTexture();
-      const bannerMesh = new THREE.Mesh(this.getBox(0.05, 1.8, 9.5), new THREE.MeshBasicMaterial({ map: bannerTex }));
+      const bannerMesh = new THREE.Mesh(this.getBox(0.05, 1.8, 9.5), this.createBasicMaterial({ map: bannerTex }));
       bannerMesh.position.set(0, -2.0, 6.0);
       chopperGroup.add(bannerMesh);
 
@@ -1363,23 +1481,23 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: VipComedyEventDirector
   ): void {
-    const wallX = roadbedWidth * 0.5 + 2.2;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const swWidth = 14.0;
 
     // 1. Futuristic Golden Marble Plaza Promenades
     [-1, 1].forEach((side) => {
       // High-Tech Indian Civic Architecture with solar spires and setbacks
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 3, rng, detail);
 
-      const plazaW = 10.0;
-      const px = side * (wallX + plazaW * 0.5);
-      const plaza = new THREE.Mesh(this.getBox(plazaW, 0.8, chunkLength), this.ivoryMarbleMat);
-      plaza.position.set(px, 0.4, -chunkLength * 0.5);
+      const px = side * (curbEdge + swWidth * 0.5);
+      const plaza = new THREE.Mesh(this.getBox(swWidth, 4.3, chunkLength), this.ivoryMarbleMat);
+      plaza.position.set(px, -1.85, -chunkLength * 0.5);
       group.add(plaza);
 
       // Cyber Spires with glowing crowns
       for (let z = 10; z < chunkLength - 10; z += 24) {
         const spire = new THREE.Mesh(this.getCylinder(0.25, 0.60, 14.0, 8), this.goldMetalMat);
-        spire.position.set(side * (wallX + 5.0), 7.4, -z);
+        spire.position.set(side * (curbEdge + 4.0), 7.4, -z);
         group.add(spire);
       }
     });
@@ -1389,6 +1507,11 @@ export class VipSatireWorldBuilder {
     towerGroup.name = 'vip_announcement_tower';
     towerGroup.position.set(-17.5, 0, -chunkLength * 0.65);
 
+    // Foundation plinth down to y = -4.0m
+    const towerPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 7.0), this.sandstoneMat);
+    towerPlinth.position.y = -2.0;
+    towerGroup.add(towerPlinth);
+
     // Monolith Computing Core
     const core = new THREE.Mesh(this.getBox(5.0, 15.0, 5.0), this.cyberGlassMat);
     core.position.y = 7.5;
@@ -1396,7 +1519,7 @@ export class VipSatireWorldBuilder {
 
     // Countdown Display
     const masterTex = TextureGenerator.getMasterstrokeMegacitySignTexture(0);
-    const screen = new THREE.Mesh(this.getBox(5.2, 5.8, 5.2), new THREE.MeshBasicMaterial({ map: masterTex }));
+    const screen = new THREE.Mesh(this.getBox(5.2, 5.8, 5.2), this.createBasicMaterial({ map: masterTex }));
     screen.position.y = 9.5;
     towerGroup.add(screen);
     director.registerCountdownBoard(screen, screen.material);
@@ -1416,7 +1539,7 @@ export class VipSatireWorldBuilder {
     towerGroup.add(dialNeedle);
 
     // Steam Hiss Mesh
-    const steamHiss = new THREE.Mesh(this.getSphere(0.6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
+    const steamHiss = new THREE.Mesh(this.getSphere(0.6, 6), this.createBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
     steamHiss.position.set(0, 4.0, 2.8);
     towerGroup.add(steamHiss);
 
@@ -1436,6 +1559,10 @@ export class VipSatireWorldBuilder {
     if (detail !== 'MINIMAL') {
       const chessGroup = new THREE.Group();
       chessGroup.position.set(-18.5, 0.4, -chunkLength * 0.25);
+
+      const chessPlinth = new THREE.Mesh(this.getBox(10.0, 4.0, 10.0), this.sandstoneMat);
+      chessPlinth.position.y = -2.0;
+      chessGroup.add(chessPlinth);
 
       const board = new THREE.Mesh(this.getBox(9.0, 0.6, 9.0), this.ivoryMarbleMat);
       board.position.y = 0.3;
@@ -1465,18 +1592,27 @@ export class VipSatireWorldBuilder {
     jamGroup.name = 'vip_traffic_jam';
     jamGroup.position.set(34.0, 0, -chunkLength * 0.5);
 
+    const jamPlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 24.0), this.sandstoneMat);
+    jamPlinth.position.y = -2.0;
+    jamGroup.add(jamPlinth);
+
+    const suvBodyMat = this.createStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 });
+    const redLightMat = this.createBasicMaterial({ color: 0xef4444 });
+    const blueLightMat = this.createBasicMaterial({ color: 0x3b82f6 });
+    const coneMat = this.createStandardMaterial({ color: 0xf97316 });
+
     for (let c = 0; c < 3; c++) {
       const suv = new THREE.Group();
       suv.position.set(0, 0.8, c * 6.5 - 6.5);
 
-      const body = new THREE.Mesh(this.getBox(2.2, 1.2, 4.2), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 }));
+      const body = new THREE.Mesh(this.getBox(2.2, 1.2, 4.2), suvBodyMat);
       suv.add(body);
 
-      const redLight = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.1, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      const redLight = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.1, 6), redLightMat);
       redLight.position.set(-0.35, 1.5, -0.2);
       suv.add(redLight);
 
-      const blueLight = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.1, 6), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
+      const blueLight = new THREE.Mesh(this.getCylinder(0.12, 0.12, 0.1, 6), blueLightMat);
       blueLight.position.set(0.35, 1.5, -0.2);
       suv.add(blueLight);
 
@@ -1484,17 +1620,17 @@ export class VipSatireWorldBuilder {
     }
 
     // The Single Tiny Orange Cone that stopped the entire armored motorcade!
-    const cone = new THREE.Mesh(this.getCylinder(0.04, 0.28, 0.75, 8), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+    const cone = new THREE.Mesh(this.getCylinder(0.04, 0.28, 0.75, 8), coneMat);
     cone.position.set(0, 0.38, -10.5);
     jamGroup.add(cone);
 
     group.add(jamGroup);
 
     // 5. GATE B HERO GAG: THE KEDARNATH MEDITATION PARADOX (East side at X = +18.5m, Z = -chunkLength * 0.35)
-    this.buildMeditationParadoxStage(group, 18.5, 0.6, -chunkLength * 0.35, director);
+    this.buildMeditationParadoxStage(group, 18.5, 0, -chunkLength * 0.35, director);
 
     // 6. CROSSOVER GAG: THE PARTY OFFICE MIX-UP (West side at X = -18.5m, Z = -chunkLength * 0.75)
-    this.buildPartyOfficeMixupStage(group, -18.5, 0.6, -chunkLength * 0.75, director);
+    this.buildPartyOfficeMixupStage(group, -18.5, 0, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -1508,30 +1644,34 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: VipComedyEventDirector
   ): void {
-    const wallX = roadbedWidth * 0.5 + 2.2;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const swWidth = 14.0;
 
     // 1. Circular Colonnade Parliament Galleries on sides
     [-1, 1].forEach((side) => {
       // Classical Parliament Rotunda Facades and civic galleries
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 4, rng, detail);
 
-      const gallW = 10.5;
-      const gx = side * (wallX + gallW * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(gallW, 1.0, chunkLength), this.parliamentWoodMat);
-      gallery.position.set(gx, 0.5, -chunkLength * 0.5);
+      const gx = side * (curbEdge + swWidth * 0.5);
+      const gallery = new THREE.Mesh(this.getBox(swWidth, 4.3, chunkLength), this.parliamentWoodMat);
+      gallery.position.set(gx, -1.85, -chunkLength * 0.5);
       group.add(gallery);
 
       // Green Leather Parliament Benches
       for (let z = 6; z < chunkLength - 6; z += 10) {
         const bench = new THREE.Mesh(this.getBox(3.0, 0.85, 1.2), this.parliamentGreenMat);
-        bench.position.set(side * (wallX + 3.2), 1.2, -z);
+        bench.position.set(side * (curbEdge + 4.2), 0.85, -z);
         group.add(bench);
       }
     });
 
     // 2. HERO GAG 9: PARLIAMENTARY ARENA & SELF-INTERVIEWING MICS
     const arenaStage = new THREE.Group();
-    arenaStage.position.set(-16.5, 0.5, -chunkLength * 0.5);
+    arenaStage.position.set(-16.5, 0, -chunkLength * 0.5);
+
+    const arenaPlinth = new THREE.Mesh(this.getBox(10.5, 4.0, 10.5), this.sandstoneMat);
+    arenaPlinth.position.y = -2.0;
+    arenaStage.add(arenaPlinth);
 
     const rostrum = new THREE.Mesh(this.getBox(9.0, 1.2, 9.0), this.parliamentWoodMat);
     rostrum.position.y = 0.6;
@@ -1579,14 +1719,15 @@ export class VipSatireWorldBuilder {
 
     // Satirical Arena Sign
     const parlTex = TextureGenerator.getParliamentMayhemSignTexture(0);
-    const sign = new THREE.Mesh(this.getBox(5.2, 1.2, 0.08), new THREE.MeshBasicMaterial({ map: parlTex }));
+    const sign = new THREE.Mesh(this.getBox(5.2, 1.2, 0.08), this.createBasicMaterial({ map: parlTex }));
     sign.position.set(0, 2.8, 4.2);
     arenaStage.add(sign);
 
     // Question Hour Flying Paper Sheets
     if (detail !== 'MINIMAL') {
+      const paperMat = this.createBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
       for (let p = 0; p < 8; p++) {
-        const paper = new THREE.Mesh(this.getPlane(0.45, 0.55), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+        const paper = new THREE.Mesh(this.getPlane(0.45, 0.55), paperMat);
         paper.position.set(-16.5 + (p % 3) * 0.9, 2.8 + Math.floor(p / 3) * 0.5, (p - 4) * 0.8);
         arenaStage.add(paper);
         director.registerParliamentPaper(paper, paper.position.y, paper.position.z, 2.2 + (p * 0.35));
@@ -1598,7 +1739,11 @@ export class VipSatireWorldBuilder {
     // 3. HERO GAG 10: COALITION MUSICAL-CHAIRS CAROUSEL (East side at X = +18.5m)
     if (detail === 'FULL') {
       const carouselGroup = new THREE.Group();
-      carouselGroup.position.set(18.5, 0.5, -chunkLength * 0.45);
+      carouselGroup.position.set(18.5, 0, -chunkLength * 0.45);
+
+      const carouselPlinth = new THREE.Mesh(this.getCylinder(5.0, 5.0, 4.0, 12), this.sandstoneMat);
+      carouselPlinth.position.y = -2.0;
+      carouselGroup.add(carouselPlinth);
 
       const carouselPlat = new THREE.Mesh(this.getCylinder(4.2, 4.6, 0.6, 12), this.parliamentWoodMat);
       carouselPlat.position.y = 0.3;
@@ -1620,7 +1765,7 @@ export class VipSatireWorldBuilder {
     }
 
     // 4. GATE B HERO GAG: THE HUG DIPLOMACY MACHINE (West side at X = -18.5m, Z = -chunkLength * 0.75)
-    this.buildHugDiplomacyStage(group, -18.5, 0.6, -chunkLength * 0.75, director);
+    this.buildHugDiplomacyStage(group, -18.5, 0, -chunkLength * 0.75, director);
 
     // 5. CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST (East side at X = +18.5m, Z = -chunkLength * 0.75)
     this.buildSelfieBattleStage(group, 18.5, 0.6, -chunkLength * 0.75, director);
@@ -1634,6 +1779,11 @@ export class VipSatireWorldBuilder {
     const plaza = new THREE.Group();
     plaza.name = 'vip_ceremonial_plaza';
     plaza.position.set(-18.5, 0, z);
+
+    // Foundation plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(10.5, 4.0, 10.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    plaza.add(plinth);
 
     const dais = new THREE.Mesh(this.getBox(9.5, 1.2, 9.5), this.ivoryMarbleMat);
     dais.position.y = 0.6;
@@ -1659,6 +1809,11 @@ export class VipSatireWorldBuilder {
     enclosure.name = 'vip_press_enclosure';
     enclosure.position.set(18.5, 0, z);
 
+    // Foundation plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    enclosure.add(plinth);
+
     const scaffold = new THREE.Mesh(this.getBox(8.5, 4.5, 8.5), this.tinRoofMat);
     scaffold.position.y = 2.25;
     enclosure.add(scaffold);
@@ -1670,6 +1825,11 @@ export class VipSatireWorldBuilder {
     const colonnade = new THREE.Group();
     colonnade.name = 'vip_secretariat_colonnade';
     colonnade.position.set(-20.5, 0, z);
+
+    // Foundation plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(7.5, 4.0, 13.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    colonnade.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(6.5, 1.2, 12.5), this.sandstoneMat);
     base.position.y = 0.6;
@@ -1689,6 +1849,11 @@ export class VipSatireWorldBuilder {
     const helipad = new THREE.Group();
     helipad.name = 'vip_convoy_helipad';
     helipad.position.set(22.5, 0, z);
+
+    // Foundation plinth down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getCylinder(6.0, 6.0, 4.0, 12), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    helipad.add(plinth);
 
     const pad = new THREE.Mesh(this.getCylinder(5.5, 5.5, 0.8, 12), this.terracottaMat);
     pad.position.y = 0.4;
@@ -1716,7 +1881,7 @@ export class VipSatireWorldBuilder {
   /**
    * GATE A: The Mango Interview — Superstar Mango with Sunglasses & Swiveling Cameras
    * Televised interview terrace set with gilded armchairs, cloche pedestal,
-   * golden mango superstar that puts on sunglasses while 4 camera cranes swivel onto it!
+   * glorious 2.4m golden mango superstar that puts on sunglasses while cameras swivel onto it!
    */
   public buildMangoInterviewStage(
     group: THREE.Group,
@@ -1729,32 +1894,37 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_mango_interview';
     stage.position.set(x, y, z);
 
+    // Subsurface Plinth Foundation down to y = -4.0m to guarantee 0 floating scenery
+    const plinth = new THREE.Mesh(this.getBox(11.0, 4.0, 11.0), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
+
     // Marble Podium Base
-    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.ivoryMarbleMat);
+    const base = new THREE.Mesh(this.getBox(9.5, 0.8, 9.5), this.ivoryMarbleMat);
     base.position.y = 0.4;
     stage.add(base);
 
     // Velvet Circular Carpet
-    const carpet = new THREE.Mesh(this.getCylinder(3.6, 3.6, 0.06, 16), this.redCarpetMat);
-    carpet.position.y = 0.83;
+    const carpet = new THREE.Mesh(this.getCylinder(4.2, 4.2, 0.08, 16), this.redCarpetMat);
+    carpet.position.y = 0.84;
     stage.add(carpet);
 
     // Gilded Armchairs Left & Right
-    const chairL = new THREE.Mesh(this.getBox(1.2, 1.4, 1.2), this.velvetCurtainMat);
-    chairL.position.set(-2.0, 1.2, 0);
+    const chairL = new THREE.Mesh(this.getBox(1.4, 1.6, 1.4), this.velvetCurtainMat);
+    chairL.position.set(-2.4, 1.2, 0);
     stage.add(chairL);
 
-    const chairR = new THREE.Mesh(this.getBox(1.2, 1.4, 1.2), this.velvetCurtainMat);
-    chairR.position.set(2.0, 1.2, 0);
+    const chairR = new THREE.Mesh(this.getBox(1.4, 1.6, 1.4), this.velvetCurtainMat);
+    chairR.position.set(2.4, 1.2, 0);
     stage.add(chairR);
 
     // Caricature Modi Seated in Left Armchair
-    const modiFigure = this.buildModiCaricature(stage, -2.0, 0.8, 0, 'DEBATE', director);
+    const modiFigure = this.buildModiCaricature(stage, -2.4, 0.8, 0, 'DEBATE', director);
 
-    // Interviewer Caricature Seated in Right Armchair (wearing blazer & holding clipboard)
+    // Interviewer Caricature Seated in Right Armchair (wearing blazer & holding microphone)
     const interviewerFigure = new THREE.Group();
     interviewerFigure.name = 'interviewer_figure';
-    interviewerFigure.position.set(2.0, 0.8, 0);
+    interviewerFigure.position.set(2.4, 0.8, 0);
     const intTorso = new THREE.Mesh(this.getBox(0.48, 0.65, 0.32), this.cartoonNavyPantsMat);
     intTorso.position.y = 1.0;
     interviewerFigure.add(intTorso);
@@ -1764,100 +1934,138 @@ export class VipSatireWorldBuilder {
     const intHair = new THREE.Mesh(this.getSphere(0.20, 8), this.cartoonHairBlackMat);
     intHair.position.set(0, 1.65, 0);
     interviewerFigure.add(intHair);
+    // Golden interviewer microphone
+    const intMic = new THREE.Mesh(this.getCylinder(0.04, 0.06, 0.35, 6), this.goldMetalMat);
+    intMic.position.set(-0.35, 1.25, 0.3);
+    intMic.rotation.x = -0.5;
+    interviewerFigure.add(intMic);
     const intPad = new THREE.Mesh(this.getBox(0.24, 0.32, 0.04), this.parliamentWoodMat);
-    intPad.position.set(-0.25, 1.1, 0.25);
+    intPad.position.set(-0.15, 1.0, 0.25);
     intPad.rotation.x = -0.5;
     interviewerFigure.add(intPad);
     stage.add(interviewerFigure);
 
-    // Central Ornate Table
-    const table = new THREE.Mesh(this.getCylinder(0.8, 0.8, 0.9, 12), this.goldMetalMat);
-    table.position.set(0, 1.25, 0);
+    // Central Ornate Golden Pedestal
+    const table = new THREE.Mesh(this.getCylinder(1.1, 1.3, 1.2, 12), this.goldMetalMat);
+    table.position.set(0, 1.4, 0);
     stage.add(table);
 
-    // Velvet Cushion on Table
-    const cushion = new THREE.Mesh(this.getCylinder(0.45, 0.5, 0.12, 10), this.velvetCurtainMat);
-    cushion.position.set(0, 1.74, 0);
+    // Velvet Cushion on Pedestal
+    const cushion = new THREE.Mesh(this.getCylinder(0.9, 1.0, 0.18, 12), this.velvetCurtainMat);
+    cushion.position.set(0, 2.05, 0);
     stage.add(cushion);
 
-    // The Golden Mango!
-    const mango = new THREE.Mesh(this.getSphere(0.28, 12), this.mangoGoldenMat);
-    mango.scale.set(0.9, 1.3, 0.8);
-    mango.position.set(0, 2.05, 0);
+    // THE GLORIOUS OVERSIZED GOLDEN MANGO (2.4m tall Alphonso pop celebrity!)
+    const mango = new THREE.Mesh(this.getSphere(0.95, 16), this.mangoGoldenMat);
+    mango.scale.set(1.0, 1.42, 0.92);
+    mango.position.set(0, 3.4, 0);
     stage.add(mango);
 
-    // Cool Black Sunglasses (initial position right above mango, animated)
+    // Green Mango Leafy Stem
+    const stem = new THREE.Mesh(this.getCylinder(0.06, 0.08, 0.5, 8), this.tricolorGreenMat);
+    stem.position.set(0, 4.85, 0);
+    stem.rotation.z = 0.25;
+    stage.add(stem);
+
+    const leaf = new THREE.Mesh(this.getBox(0.65, 0.04, 0.32), this.tricolorGreenMat);
+    leaf.position.set(0.3, 4.95, 0);
+    leaf.rotation.z = -0.3;
+    stage.add(leaf);
+
+    // Cool Celebrity Sunglasses (0.85m wide, drops down onto mango)
     const sunglasses = new THREE.Group();
     sunglasses.name = 'mango_sunglasses';
-    sunglasses.position.set(0, 4.0, 0);
-    const sunglassL = new THREE.Mesh(this.getBox(0.16, 0.10, 0.04), this.sunglassesBlackMat);
-    sunglassL.position.set(-0.10, 0, 0.22);
+    sunglasses.position.set(0, 6.0, 0);
+    const sunglassL = new THREE.Mesh(this.getBox(0.40, 0.24, 0.08), this.sunglassesBlackMat);
+    sunglassL.position.set(-0.25, 0, 0.85);
     sunglasses.add(sunglassL);
-    const sunglassR = new THREE.Mesh(this.getBox(0.16, 0.10, 0.04), this.sunglassesBlackMat);
-    sunglassR.position.set(0.10, 0, 0.22);
+    const sunglassR = new THREE.Mesh(this.getBox(0.40, 0.24, 0.08), this.sunglassesBlackMat);
+    sunglassR.position.set(0.25, 0, 0.85);
     sunglasses.add(sunglassR);
-    const sunglassBridge = new THREE.Mesh(this.getBox(0.08, 0.02, 0.03), this.sunglassesBlackMat);
-    sunglassBridge.position.set(0, 0.02, 0.22);
+    const sunglassBridge = new THREE.Mesh(this.getBox(0.18, 0.05, 0.06), this.sunglassesBlackMat);
+    sunglassBridge.position.set(0, 0.04, 0.85);
     sunglasses.add(sunglassBridge);
     stage.add(sunglasses);
 
-    // Silver Cloche (Serving Dome with top handle)
+    // Silver Cloche (Giant Banquet Serving Dome that lifts majestically)
     const cloche = new THREE.Group();
     cloche.name = 'interview_cloche';
-    cloche.position.set(0, 2.1, 0);
-    const dome = new THREE.Mesh(this.getCylinder(0.05, 0.42, 0.55, 12), this.silverMetalMat);
-    dome.position.y = 0.25;
+    cloche.position.set(0, 3.4, 0);
+    const dome = new THREE.Mesh(this.getCylinder(0.15, 1.35, 2.6, 16), this.silverMetalMat);
+    dome.position.y = 1.3;
     cloche.add(dome);
-    const handle = new THREE.Mesh(this.getSphere(0.08, 6), this.goldMetalMat);
-    handle.position.y = 0.58;
+    const handle = new THREE.Mesh(this.getSphere(0.22, 8), this.goldMetalMat);
+    handle.position.y = 2.7;
     cloche.add(handle);
     stage.add(cloche);
 
     // Sparkle Star (Yellow 4-point star for superstar moment)
     const sparkle = new THREE.Group();
     sparkle.name = 'mango_sparkle';
-    sparkle.position.set(0.35, 2.35, 0.25);
-    const ray1 = new THREE.Mesh(this.getBox(0.35, 0.06, 0.04), this.sparkleYellowMat);
+    sparkle.position.set(0.8, 3.8, 0.6);
+    const ray1 = new THREE.Mesh(this.getBox(0.8, 0.12, 0.06), this.sparkleYellowMat);
     sparkle.add(ray1);
-    const ray2 = new THREE.Mesh(this.getBox(0.06, 0.35, 0.04), this.sparkleYellowMat);
+    const ray2 = new THREE.Mesh(this.getBox(0.12, 0.8, 0.06), this.sparkleYellowMat);
     sparkle.add(ray2);
     sparkle.visible = false;
     stage.add(sparkle);
 
-    // 4 Television Studio Cameras on heavy tripods
+    // 4 Articulated Broadcast Studio Cameras on heavy tripods with telephoto lenses & red tally lights
     const cameras: THREE.Object3D[] = [];
     const camCoords = [
-      { x: -3.2, z: 2.5 },
-      { x: 3.2, z: 2.5 },
-      { x: -2.8, z: -2.5 },
-      { x: 2.8, z: -2.5 }
+      { x: -3.4, z: 2.8, ry: 0.5 },
+      { x: 3.4, z: 2.8, ry: -0.5 },
+      { x: -3.0, z: -2.8, ry: 2.4 },
+      { x: 3.0, z: -2.8, ry: -2.4 }
     ];
     camCoords.forEach((c) => {
       const camRig = new THREE.Group();
       camRig.position.set(c.x, 0.8, c.z);
-      const tripod = new THREE.Mesh(this.getCylinder(0.08, 0.2, 1.4, 5), this.tinRoofMat);
-      tripod.position.y = 0.7;
+      camRig.rotation.y = c.ry;
+
+      const tripod = new THREE.Mesh(this.getCylinder(0.08, 0.25, 1.6, 5), this.tinRoofMat);
+      tripod.position.y = 0.8;
       camRig.add(tripod);
-      const camBody = new THREE.Mesh(this.getBox(0.35, 0.25, 0.55), this.parliamentWoodMat);
-      camBody.position.y = 1.5;
+
+      const camBody = new THREE.Mesh(this.getBox(0.5, 0.38, 0.8), this.parliamentWoodMat);
+      camBody.position.y = 1.8;
       camRig.add(camBody);
-      const lens = new THREE.Mesh(this.getCylinder(0.1, 0.12, 0.25, 8), this.goldMetalMat);
-      lens.position.set(0, 1.5, 0.35);
+
+      const lens = new THREE.Mesh(this.getCylinder(0.14, 0.18, 0.45, 8), this.goldMetalMat);
+      lens.position.set(0, 1.8, 0.55);
       lens.rotation.x = Math.PI / 2;
       camRig.add(lens);
+
+      // Red recording tally light
+      const tally = new THREE.Mesh(this.getSphere(0.06, 6), this.createBasicMaterial({ color: 0xef4444 }));
+      tally.position.set(0, 2.05, 0.2);
+      camRig.add(tally);
+
+      // Flashing paparazzi camera flash
+      const flash = new THREE.Mesh(this.getCylinder(0.1, 0.1, 0.08, 6), this.flashLightMat);
+      flash.position.set(0.22, 2.0, 0.4);
+      camRig.add(flash);
+      director.registerCameraFlash(flash);
+
       stage.add(camRig);
       cameras.push(camRig);
     });
 
     // 2 Overhead Stage Spotlights
     const spotlights: THREE.Object3D[] = [];
-    [-2.5, 2.5].forEach((sx) => {
-      const spot = new THREE.Mesh(this.getCylinder(0.18, 0.32, 0.45, 8), this.goldMetalMat);
-      spot.position.set(sx, 4.2, 1.5);
+    [-2.8, 2.8].forEach((sx) => {
+      const spot = new THREE.Mesh(this.getCylinder(0.22, 0.38, 0.55, 8), this.goldMetalMat);
+      spot.position.set(sx, 4.8, 1.8);
       spot.rotation.x = 0.5;
       stage.add(spot);
       spotlights.push(spot);
     });
+
+    // Dramatic Studio Backdrop Signboard
+    const signTex = TextureGenerator.getChaiPeCharchaSignTexture(0);
+    const sign = new THREE.Mesh(this.getBox(5.0, 1.2, 0.08), this.createBasicMaterial({ map: signTex }));
+    sign.position.set(0, 4.6, -4.2);
+    stage.add(sign);
 
     director.registerMangoInterview(
       stage,
@@ -1890,6 +2098,11 @@ export class VipSatireWorldBuilder {
     const stage = new THREE.Group();
     stage.name = 'vip_meditation_paradox';
     stage.position.set(x, y, z);
+
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
 
     // Stone Platform Base
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.sandstoneMat);
@@ -2040,6 +2253,11 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_camera_magnet';
     stage.position.set(x, y, z);
 
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
+
     // Marble Podium Base
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.ivoryMarbleMat);
     base.position.y = 0.4;
@@ -2113,6 +2331,11 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_hug_diplomacy';
     stage.position.set(x, y, z);
 
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
+
     // Steel Platform Base
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.tinRoofMat);
     base.position.y = 0.4;
@@ -2176,6 +2399,11 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_hug_loop';
     stage.position.set(x, y, z);
 
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
+
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.ivoryMarbleMat);
     base.position.y = 0.4;
     stage.add(base);
@@ -2220,6 +2448,11 @@ export class VipSatireWorldBuilder {
     const stage = new THREE.Group();
     stage.name = 'vip_crossover_selfie_battle';
     stage.position.set(x, y, z);
+
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.sandstoneMat);
     base.position.y = 0.4;
@@ -2289,6 +2522,11 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_mic_chase';
     stage.position.set(x, y, z);
 
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(8.5, 4.0, 13.0), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
+
     const base = new THREE.Mesh(this.getBox(7.5, 0.8, 12.0), this.ivoryMarbleMat);
     base.position.y = 0.4;
     stage.add(base);
@@ -2350,6 +2588,11 @@ export class VipSatireWorldBuilder {
     const stage = new THREE.Group();
     stage.name = 'vip_crossover_office_mixup';
     stage.position.set(x, y, z);
+
+    // Subsurface Plinth Foundation down to y = -4.0m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.0;
+    stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.sandstoneMat);
     base.position.y = 0.4;

@@ -1203,11 +1203,11 @@ export class VipComedyEventDirector {
       const cycle = g.timer % 6.5;
 
       if (cycle < 2.0) {
-        // Setup: Cloche on table, leaders nodding in dignified interview
-        g.clocheMesh.position.y = 0.5;
-        g.sunglassesMesh.position.y = 4.0; // Sunglasses hidden high above
+        // Setup: Cloche covers mango on table, leaders nodding in dignified interview
+        g.clocheMesh.position.y = 2.1;
+        g.sunglassesMesh.position.y = 7.0; // Sunglasses hidden high above
         g.sunglassesMesh.scale.set(0.01, 0.01, 0.01);
-        g.mangoMesh.position.y = 0.2;
+        g.mangoMesh.position.y = 3.5;
         g.mangoMesh.rotation.y = 0;
         if (g.sparkleMesh) g.sparkleMesh.visible = false;
 
@@ -1226,14 +1226,14 @@ export class VipComedyEventDirector {
           spot.rotation.x = 0.3;
         });
       } else if (cycle < 3.2) {
-        // Twist: Cloche lifts majestically into the sky
+        // Twist: Cloche lifts majestically into the sky revealing the mango
         const t = (cycle - 2.0) / 1.2;
-        g.clocheMesh.position.y = 0.5 + t * 2.8;
-        g.mangoMesh.position.y = 0.2 + t * 0.8;
+        g.clocheMesh.position.y = 2.1 + t * 4.5;
+        g.mangoMesh.position.y = 3.5 + t * 0.4;
       } else if (cycle < 4.5) {
         // Climax: Cloche high in air; cameras and spotlights violently snap to the mango!
-        g.clocheMesh.position.y = 3.3;
-        g.mangoMesh.position.y = 1.0;
+        g.clocheMesh.position.y = 6.6;
+        g.mangoMesh.position.y = 3.9;
 
         // Cameras snap 180° away from leaders directly onto the mango!
         g.cameras.forEach(cam => {
@@ -1246,20 +1246,21 @@ export class VipComedyEventDirector {
 
         // Sunglasses drop down smoothly from above onto mango
         const dropT = Math.min(1.0, (cycle - 3.2) / 0.8);
-        g.sunglassesMesh.position.y = 4.0 - dropT * 2.75;
+        g.sunglassesMesh.position.y = 7.0 - dropT * 3.15;
         g.sunglassesMesh.scale.set(dropT, dropT, dropT);
       } else {
         // Punchline: Mango is a superstar pop icon!
-        g.clocheMesh.position.y = 3.3;
-        const bob = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.18;
-        g.mangoMesh.position.y = 1.0 + bob;
+        g.clocheMesh.position.y = 6.6;
+        const bob = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.22;
+        g.mangoMesh.position.y = 3.9 + bob;
         g.mangoMesh.rotation.y += delta * 3.5;
-        g.sunglassesMesh.position.y = g.mangoMesh.position.y + 0.18;
+        g.sunglassesMesh.position.y = g.mangoMesh.position.y - 0.05;
         g.sunglassesMesh.rotation.y = g.mangoMesh.rotation.y;
         g.sunglassesMesh.scale.set(1.0, 1.0, 1.0);
 
         if (g.sparkleMesh) {
           g.sparkleMesh.visible = true;
+          g.sparkleMesh.position.y = g.mangoMesh.position.y + 0.5;
           g.sparkleMesh.rotation.z += delta * 4.0;
           const spScale = 0.8 + Math.sin(this.globalClock * 10.0) * 0.3;
           g.sparkleMesh.scale.set(spScale, spScale, spScale);
