@@ -1578,7 +1578,7 @@ export class SceneryFactory {
     } else if (theme.id === 'VIP_EXPRESS') {
       this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'RAHULVERSE') {
-      this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'MIDNIGHT_VELVET') {
       this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'CHRONO_KINGDOM') {
@@ -7604,13 +7604,14 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
     const rahulGroup = new THREE.Group();
     rahulGroup.name = 'rahulverse_scenery';
 
     // Delegate to the 5 distinct political comedy districts!
-    RahulSatireWorldBuilder.getInstance().buildDistrictScenery(rahulGroup, roadbedWidth, chunkLength, seed, detail);
+    RahulSatireWorldBuilder.getInstance().buildDistrictScenery(rahulGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
 
     group.add(rahulGroup);
   }

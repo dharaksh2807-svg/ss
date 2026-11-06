@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SeededRandom } from '../../SceneryFactory';
 import { TextureGenerator } from '../../../scene/TextureGenerator';
 import { RahulComedyEventDirector } from './RahulComedyEventDirector';
+import { CurvedShaderManager } from '../../../scene/CurvedShader';
 
 /**
  * RahulverseTextureCache
@@ -22,6 +23,11 @@ class RahulverseTextureCache {
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.ClampToEdgeWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.generateMipmaps = true;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.anisotropy = 8;
+    tex.needsUpdate = true;
     this.textures.set(key, tex);
     return tex;
   }
@@ -341,6 +347,36 @@ export class RahulSatireWorldBuilder {
     this.mediaStudioGlassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 });
     this.yatraAwningMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75 });
     this.yatraBannerGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.75 });
+
+    // CRITICAL FIX: Apply track world-curvature shader to all Rahulverse materials!
+    // Without this, as the track curves downward along Y = -0.00045 * Z^2,
+    // all buildings and props stay unbent in view space, floating high in mid-air above the rails.
+    const allMaterials: THREE.Material[] = [
+      this.roadbedWallMat, this.yatraWhiteMat, this.yatraBlueMat, this.yatraOrangeMat,
+      this.yatraGreenMat, this.goldMetalMat, this.parliamentSandstoneMat, this.parliamentGreenMat,
+      this.woodMat, this.mediaBlueMat, this.neonMagentaMat, this.neonCyanMat, this.neonPinkMat,
+      this.cartoonSkinMat, this.cartoonHairDarkMat, this.cartoonHairSilverMat, this.paperWhiteMat,
+      this.redVelvetMat, this.silverMat, this.darkSuitMat, this.saffronWaistcoatMat,
+      this.royalBlueMat, this.yatraYellowMat, this.yatraLitWindowMat, this.mediaStudioGlassMat,
+      this.yatraAwningMat, this.yatraBannerGreenMat
+    ];
+
+    const curvedShader = CurvedShaderManager.getInstance();
+    allMaterials.forEach((mat) => {
+      curvedShader.applyCurvature(mat);
+    });
+  }
+
+  public createStandardMaterial(params: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial {
+    const mat = new THREE.MeshStandardMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
+  }
+
+  public createBasicMaterial(params: THREE.MeshBasicMaterialParameters): THREE.MeshBasicMaterial {
+    const mat = new THREE.MeshBasicMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
   }
 
   public static getInstance(): RahulSatireWorldBuilder {
@@ -399,15 +435,17 @@ export class RahulSatireWorldBuilder {
     roadbedWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZIn: number = 0
   ): void {
     const rng = new SeededRandom(seed);
     const director = RahulComedyEventDirector.getInstance();
 
     let districtIndex: number;
-    const worldZ = group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
-      ? group.parent.position.z
-      : 0;
+    let worldZ = (worldZIn !== 0 && seed !== 999) ? worldZIn : 0;
+    if (worldZ === 0 && group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0) {
+      worldZ = group.parent.position.z;
+    }
 
     if (seed >= 0 && seed < 5) {
       districtIndex = seed;
@@ -496,6 +534,11 @@ export class RahulSatireWorldBuilder {
         // Political Multiverse: Deep Cosmic Navy & Sandstone
         wallMat = bIdx % 2 === 0 ? this.mediaBlueMat : this.parliamentSandstoneMat;
       }
+
+      // 0. Subterranean Foundation Plinth down to Y = -4.0m (prevents floating scenery)
+      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.8, 4.0, bDepth + 0.8), this.parliamentSandstoneMat);
+      plinth.position.y = -2.0;
+      bGroup.add(plinth);
 
       // 1. Ground Floor Plinth & Main Mass
       const mainBuilding = new THREE.Mesh(this.getBox(bWidth, totalH, bDepth), wallMat);
@@ -602,6 +645,11 @@ export class RahulSatireWorldBuilder {
       const cyGroup = new THREE.Group();
       cyGroup.position.set(facadeX + (side > 0 ? -1.5 : 1.5), 0, cyZ);
 
+      // Subterranean Courtyard Foundation Plinth
+      const cyPlinth = new THREE.Mesh(this.getBox(3.2, 4.0, 6.2), this.parliamentSandstoneMat);
+      cyPlinth.position.y = -2.0;
+      cyGroup.add(cyPlinth);
+
       const postL = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
       postL.position.set(0, 2.4, -2.2);
       cyGroup.add(postL);
@@ -638,28 +686,28 @@ export class RahulSatireWorldBuilder {
     group.add(districtA);
 
     // Strict boundary: all roadside structures placed at |X| >= 8.5m
-    const wallX = roadbedWidth * 0.5 + 2.5;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Streetscape sidewalks with vernacular buildings & cheering crowds
+    // 1. Streetscape continuous sidewalks with vernacular buildings & cheering crowds
     [-1, 1].forEach((side) => {
       // Articulated Surreal Yatra Streetscape behind promenade
       this.buildSurrealYatraFacade(districtA, roadbedWidth, chunkLength, side, 0, rng, detail);
 
-      const walkW = 12.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.6, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, 0.3, -chunkLength * 0.5);
-      group.add(walk);
+      const walkW = 22.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      districtA.add(walk);
 
       // Cheerful cartoon cheering crowd lining sidewalks
       for (let z = 8; z < chunkLength - 8; z += 12) {
-        this.buildCheeringCrowdMember(group, side * (wallX + 1.8), 0.6, -z, side > 0);
+        this.buildCheeringCrowdMember(districtA, side * (curbEdge + 2.2), 0.6, -z, side > 0);
       }
 
       // Traditional Indian Highway Milestone Markers
       for (let z = 16; z < chunkLength - 16; z += 32) {
         const milestoneGroup = new THREE.Group();
-        milestoneGroup.position.set(side * (wallX + 1.2), 0.6, -z);
+        milestoneGroup.position.set(side * (curbEdge + 1.2), 0.6, -z);
 
         const base = new THREE.Mesh(this.getBox(0.9, 1.2, 0.45), this.yatraWhiteMat);
         base.position.y = 0.6;
@@ -670,13 +718,18 @@ export class RahulSatireWorldBuilder {
         cap.rotation.z = Math.PI / 2;
         milestoneGroup.add(cap);
 
-        group.add(milestoneGroup);
+        districtA.add(milestoneGroup);
       }
     });
 
-    // Roadside Chai & Snack Dhaba Kiosk at X = -15.5m
+    // 1a. Roadside Chai & Snack Dhaba Kiosk at X = -15.5m
     const dhabaGroup = new THREE.Group();
     dhabaGroup.position.set(-15.5, 0.6, -chunkLength * 0.2);
+
+    // Deep Subterranean Foundation Plinth
+    const dhabaPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 5.0), this.parliamentSandstoneMat);
+    dhabaPlinth.position.y = -2.0;
+    dhabaGroup.add(dhabaPlinth);
 
     const dhabaBase = new THREE.Mesh(this.getBox(6.5, 3.2, 4.5), this.parliamentSandstoneMat);
     dhabaBase.position.y = 1.6;
@@ -693,27 +746,147 @@ export class RahulSatireWorldBuilder {
     kettle.position.set(-1.5, 3.8, 1.0);
     dhabaGroup.add(kettle);
 
-    group.add(dhabaGroup);
+    districtA.add(dhabaGroup);
 
-    // 2. Animated Giant Walking Shoe Monument on Roadside Promenade
+    // 1b. 3D Open-Top Campaign Support Van with 4 Loudspeaker Horns & Supply Crates (East sidewalk)
+    const vanGroup = new THREE.Group();
+    vanGroup.name = 'rahul_campaign_van';
+    vanGroup.position.set(14.5, 0.6, -chunkLength * 0.25);
+
+    // Deep Subterranean Van Foundation Plinth
+    const vanPlinth = new THREE.Mesh(this.getBox(6.5, 4.0, 4.5), this.parliamentSandstoneMat);
+    vanPlinth.position.y = -2.0;
+    vanGroup.add(vanPlinth);
+
+    // Van Body (Campaign Navy & Saffron)
+    const vanBody = new THREE.Mesh(this.getBox(5.6, 2.2, 2.8), this.yatraBlueMat);
+    vanBody.position.y = 1.6;
+    vanGroup.add(vanBody);
+
+    const vanCab = new THREE.Mesh(this.getBox(2.2, 1.4, 2.6), this.yatraWhiteMat);
+    vanCab.position.set(1.5, 3.0, 0);
+    vanGroup.add(vanCab);
+
+    // Windshield
+    const windshield = new THREE.Mesh(this.getBox(0.1, 1.0, 2.4), this.mediaStudioGlassMat);
+    windshield.position.set(2.65, 3.0, 0);
+    vanGroup.add(windshield);
+
+    // 4 Wheels
+    [[-1.8, -1.3], [-1.8, 1.3], [1.6, -1.3], [1.6, 1.3]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.45, 12), this.darkSuitMat);
+      wheel.position.set(wx, 0.55, wz);
+      wheel.rotation.x = Math.PI / 2;
+      vanGroup.add(wheel);
+
+      const hubcap = new THREE.Mesh(this.getCylinder(0.22, 0.22, 0.48, 8), this.silverMat);
+      hubcap.position.set(wx, 0.55, wz);
+      hubcap.rotation.x = Math.PI / 2;
+      vanGroup.add(hubcap);
+    });
+
+    // Roof Luggage Rack with Spare Sneakers and Water Crates
+    const rack = new THREE.Mesh(this.getBox(2.8, 0.15, 2.4), this.silverMat);
+    rack.position.set(-1.0, 2.8, 0);
+    vanGroup.add(rack);
+
+    // Crates of water
+    const crate1 = new THREE.Mesh(this.getBox(0.9, 0.6, 0.8), this.yatraOrangeMat);
+    crate1.position.set(-1.4, 3.2, -0.6);
+    vanGroup.add(crate1);
+
+    const crate2 = new THREE.Mesh(this.getBox(0.9, 0.6, 0.8), this.yatraGreenMat);
+    crate2.position.set(-1.4, 3.2, 0.6);
+    vanGroup.add(crate2);
+
+    // Spare giant sneakers on rack
+    const spareSneaker = new THREE.Mesh(this.getBox(0.7, 0.4, 1.4), this.goldMetalMat);
+    spareSneaker.position.set(-0.6, 3.1, 0);
+    vanGroup.add(spareSneaker);
+
+    // 4 Golden Loudspeaker Horns angled outwards
+    const hornAngles = [-0.6, -0.2, 0.2, 0.6];
+    hornAngles.forEach((ang, hIdx) => {
+      const hornGroup = new THREE.Group();
+      hornGroup.position.set(0.2, 3.9, -1.0 + hIdx * 0.65);
+      hornGroup.rotation.y = ang;
+
+      const hornStem = new THREE.Mesh(this.getCylinder(0.08, 0.08, 0.5, 6), this.silverMat);
+      hornGroup.add(hornStem);
+
+      const hornCone = new THREE.Mesh(this.getCylinder(0.35, 0.1, 0.6, 10), this.goldMetalMat);
+      hornCone.position.set(0.3, 0.25, 0);
+      hornCone.rotation.z = -Math.PI / 2;
+      hornGroup.add(hornCone);
+
+      vanGroup.add(hornGroup);
+    });
+
+    // 2 Fluttering Tricolor Campaign Flags
+    [-0.8, 0.8].forEach((fz) => {
+      const mast = new THREE.Mesh(this.getCylinder(0.05, 0.05, 2.4, 6), this.silverMat);
+      mast.position.set(-2.5, 3.6, fz);
+      vanGroup.add(mast);
+
+      const flag = new THREE.Mesh(this.getBox(0.05, 0.7, 1.2), this.yatraOrangeMat);
+      flag.position.set(-2.5, 4.4, fz + 0.6);
+      vanGroup.add(flag);
+    });
+
+    districtA.add(vanGroup);
+
+    // 2. Animated Giant Golden Walking Shoe Monument on Motorized Treadmill
     const shoeGroup = new THREE.Group();
     shoeGroup.name = 'rahul_shoe_monument';
     shoeGroup.position.set(-16.0, 0.6, -chunkLength * 0.5);
 
-    const pedestal = new THREE.Mesh(this.getBox(7.0, 2.0, 7.0), this.parliamentSandstoneMat);
-    pedestal.position.y = 1.0;
+    // Deep Subterranean Treadmill Foundation Plinth
+    const shoePlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 8.5), this.parliamentSandstoneMat);
+    shoePlinth.position.y = -2.0;
+    shoeGroup.add(shoePlinth);
+
+    const pedestal = new THREE.Mesh(this.getBox(7.2, 1.4, 7.8), this.parliamentSandstoneMat);
+    pedestal.position.y = 0.7;
     shoeGroup.add(pedestal);
+
+    // High-Tech Treadmill Conveyor Base
+    const treadmillBase = new THREE.Mesh(this.getBox(4.4, 0.6, 7.2), this.darkSuitMat);
+    treadmillBase.position.y = 1.7;
+    shoeGroup.add(treadmillBase);
+
+    // Treadmill Belt (Conveyor surface)
+    const treadBelt = new THREE.Mesh(this.getBox(3.8, 0.05, 6.4), this.silverMat);
+    treadBelt.position.y = 2.03;
+    shoeGroup.add(treadBelt);
+
+    // Front Treadmill Control Console with LED Odometer
+    const consolePillarL = new THREE.Mesh(this.getCylinder(0.08, 0.08, 1.6, 6), this.silverMat);
+    consolePillarL.position.set(-1.8, 2.8, -3.2);
+    shoeGroup.add(consolePillarL);
+
+    const consolePillarR = new THREE.Mesh(this.getCylinder(0.08, 0.08, 1.6, 6), this.silverMat);
+    consolePillarR.position.set(1.8, 2.8, -3.2);
+    shoeGroup.add(consolePillarR);
+
+    const consoleTop = new THREE.Mesh(this.getBox(4.0, 0.5, 0.6), this.darkSuitMat);
+    consoleTop.position.set(0, 3.6, -3.2);
+    shoeGroup.add(consoleTop);
+
+    // Glowing LED Odometer Screen ("KM: 12,450")
+    const ledScreen = new THREE.Mesh(this.getBox(2.2, 0.35, 0.1), this.neonCyanMat);
+    ledScreen.position.set(0, 3.6, -2.88);
+    shoeGroup.add(ledScreen);
 
     // Animated walking shoe body group
     const walkerBodyGroup = new THREE.Group();
-    walkerBodyGroup.position.y = 2.0;
+    walkerBodyGroup.position.y = 2.1;
 
     // Colossal Sneaker Sole & Body
     const sole = new THREE.Mesh(this.getBox(3.4, 0.9, 6.2), this.yatraWhiteMat);
     sole.position.y = 0.45;
     walkerBodyGroup.add(sole);
 
-    const sneakerBody = new THREE.Mesh(this.getBox(3.0, 2.2, 5.4), this.yatraBlueMat);
+    const sneakerBody = new THREE.Mesh(this.getBox(3.0, 2.2, 5.4), this.goldMetalMat);
     sneakerBody.position.set(0, 1.9, -0.2);
     walkerBodyGroup.add(sneakerBody);
 
@@ -754,7 +927,7 @@ export class RahulSatireWorldBuilder {
 
     shoeGroup.add(walkerBodyGroup);
     director.registerShoeMonument(toeMesh, { legL, legR, armL, armR, bodyGroup: walkerBodyGroup, baseZ: 0 });
-    group.add(shoeGroup);
+    districtA.add(shoeGroup);
 
     // 3. Unfolding Accordion Route Map on Massive Surveyor Gantry at X = 16.5m
     const mapGantry = new THREE.Group();
@@ -950,36 +1123,36 @@ export class RahulSatireWorldBuilder {
     districtB.name = 'district_b_parliament_pandemonium';
     group.add(districtB);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Parliamentary Colonnade Galleries with Green Leather Benches
+    // 1. Parliamentary Colonnade Galleries with Green Leather Benches & Solid Sidewalks
     [-1, 1].forEach((side) => {
       // Articulated Parliament Gallery Facade behind colonnade
       this.buildSurrealYatraFacade(districtB, roadbedWidth, chunkLength, side, 1, rng, detail);
 
-      const gallW = 12.0;
-      const gx = side * (wallX + gallW * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(gallW, 1.2, chunkLength), this.parliamentSandstoneMat);
-      gallery.position.set(gx, 0.6, -chunkLength * 0.5);
-      group.add(gallery);
+      const gallW = 22.0;
+      const gx = side * (curbEdge + gallW * 0.5);
+      const gallery = new THREE.Mesh(this.getBox(gallW, 4.3, chunkLength), this.parliamentSandstoneMat);
+      gallery.position.set(gx, -1.85, -chunkLength * 0.5);
+      districtB.add(gallery);
 
       // Grand Sandstone Columns
       for (let z = 6; z < chunkLength - 6; z += 12) {
         const col = new THREE.Mesh(this.getCylinder(0.6, 0.6, 8.5, 8), this.parliamentSandstoneMat);
-        col.position.set(side * (wallX + 1.8), 4.85, -z);
-        group.add(col);
+        col.position.set(side * (curbEdge + 2.2), 4.85, -z);
+        districtB.add(col);
 
         // Ornate column capital
         const cap = new THREE.Mesh(this.getBox(1.6, 0.6, 1.6), this.parliamentSandstoneMat);
-        cap.position.set(side * (wallX + 1.8), 9.2, -z);
-        group.add(cap);
+        cap.position.set(side * (curbEdge + 2.2), 9.2, -z);
+        districtB.add(cap);
       }
 
       // Rows of Green Leather Parliament Benches
       for (let z = 8; z < chunkLength - 8; z += 10) {
         const bench = new THREE.Mesh(this.getBox(3.4, 0.9, 1.4), this.parliamentGreenMat);
-        bench.position.set(side * (wallX + 4.8), 1.5, -z);
-        group.add(bench);
+        bench.position.set(side * (curbEdge + 5.2), 1.5, -z);
+        districtB.add(bench);
       }
     });
 
@@ -987,6 +1160,11 @@ export class RahulSatireWorldBuilder {
     const micStage = new THREE.Group();
     micStage.name = 'runaway_microphone_arm';
     micStage.position.set(-16.0, 0.6, -chunkLength * 0.5);
+
+    // Deep Subterranean Foundation Plinth
+    const micPlinth = new THREE.Mesh(this.getBox(6.5, 4.0, 6.0), this.parliamentSandstoneMat);
+    micPlinth.position.y = -2.0;
+    micStage.add(micPlinth);
 
     // Mahogany Speaker Podium
     const podium = new THREE.Mesh(this.getBox(3.0, 1.8, 2.2), this.woodMat);
@@ -1018,7 +1196,8 @@ export class RahulSatireWorldBuilder {
     buttonGroup.position.set(0, 1.8, -1.2);
 
     const btnTex = RahulverseTextureCache.getPointOfOrderButtonTexture();
-    const btnMesh = new THREE.Mesh(this.getCylinder(0.9, 0.9, 0.35, 16), new THREE.MeshBasicMaterial({ map: btnTex }));
+    const btnMat = this.createBasicMaterial({ map: btnTex });
+    const btnMesh = new THREE.Mesh(this.getCylinder(0.9, 0.9, 0.35, 16), btnMat);
     buttonGroup.add(btnMesh);
     micStage.add(buttonGroup);
 
@@ -1027,18 +1206,24 @@ export class RahulSatireWorldBuilder {
     const debaterR = this.buildModiCaricature(micStage, 1.2, 0, 0, 'DEBATE', director);
 
     director.registerRunawayMic(armGroup, 2.2, 0, buttonGroup, debaterL, debaterR);
-    group.add(micStage);
+    districtB.add(micStage);
 
     // 3. Reverse Debate Countdown Clock with Backwards Spinning Hands
     const clockGroup = new THREE.Group();
     clockGroup.position.set(16.5, 0.6, -chunkLength * 0.5);
+
+    // Deep Subterranean Clock Plinth
+    const clockPlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
+    clockPlinth.position.y = -2.0;
+    clockGroup.add(clockPlinth);
 
     const clockStand = new THREE.Mesh(this.getBox(1.5, 5.5, 1.5), this.parliamentSandstoneMat);
     clockStand.position.y = 2.75;
     clockGroup.add(clockStand);
 
     const clockSignTex = TextureGenerator.getParliamentPandemoniumSignTexture(rng.int(0, 3));
-    const clockDisplay = new THREE.Mesh(this.getBox(5.0, 2.4, 0.25), new THREE.MeshBasicMaterial({ map: clockSignTex }));
+    const clockDisplayMat = this.createBasicMaterial({ map: clockSignTex });
+    const clockDisplay = new THREE.Mesh(this.getBox(5.0, 2.4, 0.25), clockDisplayMat);
     clockDisplay.position.set(0, 6.0, 0);
     clockDisplay.rotation.y = -Math.PI * 0.45;
     clockGroup.add(clockDisplay);
@@ -1058,7 +1243,74 @@ export class RahulSatireWorldBuilder {
     clockGroup.add(minuteHand);
 
     director.registerTimerMesh(clockDisplay, { hourHand, minuteHand });
-    group.add(clockGroup);
+    districtB.add(clockGroup);
+
+    // 3b. Strategy War-Room Pavilion with Giant Whiteboard Flowchart & Relaunch 5.0 Reset Button
+    const warRoomGroup = new THREE.Group();
+    warRoomGroup.name = 'rahul_strategy_war_room';
+    warRoomGroup.position.set(16.5, 0.6, -chunkLength * 0.35);
+
+    // Deep Subterranean War-Room Plinth
+    const warPlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 8.0), this.parliamentSandstoneMat);
+    warPlinth.position.y = -2.0;
+    warRoomGroup.add(warPlinth);
+
+    // Hardwood War-Room Platform
+    const warPlatform = new THREE.Mesh(this.getBox(7.5, 0.6, 7.5), this.woodMat);
+    warPlatform.position.y = 0.3;
+    warRoomGroup.add(warPlatform);
+
+    // Giant Whiteboard Flowchart on Wooden Studio Easel (5.0m x 2.8m)
+    const easelL = new THREE.Mesh(this.getCylinder(0.08, 0.08, 4.2, 6), this.woodMat);
+    easelL.position.set(-1.8, 2.1, -1.0);
+    easelL.rotation.z = -0.15;
+    warRoomGroup.add(easelL);
+
+    const easelR = new THREE.Mesh(this.getCylinder(0.08, 0.08, 4.2, 6), this.woodMat);
+    easelR.position.set(1.8, 2.1, -1.0);
+    easelR.rotation.z = 0.15;
+    warRoomGroup.add(easelR);
+
+    const wbTex = TextureGenerator.getStrategyWhiteboardTexture();
+    const wbMat = this.createBasicMaterial({ map: wbTex });
+    const whiteboard = new THREE.Mesh(this.getBox(5.0, 2.8, 0.15), wbMat);
+    whiteboard.position.set(0, 2.8, -0.8);
+    whiteboard.rotation.y = -Math.PI * 0.45;
+    warRoomGroup.add(whiteboard);
+
+    // Pedestal for the "RELAUNCH 5.0" Big Red Reset Button
+    const btnPedestal = new THREE.Mesh(this.getBox(2.2, 1.2, 2.2), this.redVelvetMat);
+    btnPedestal.position.set(0, 0.9, 1.2);
+    warRoomGroup.add(btnPedestal);
+
+    // Hazard-striped border ring around button
+    const hazardRing = new THREE.Mesh(this.getCylinder(1.0, 1.0, 0.15, 16), this.goldMetalMat);
+    hazardRing.position.set(0, 1.55, 1.2);
+    warRoomGroup.add(hazardRing);
+
+    // Massive Glowing Red Hemisphere "RELAUNCH 5.0" Reset Button
+    const bigRedButton = new THREE.Mesh(this.getSphere(0.75, 12), this.createStandardMaterial({
+      color: 0xef4444,
+      emissive: 0xdc2626,
+      emissiveIntensity: 0.6,
+      roughness: 0.2
+    }));
+    bigRedButton.position.set(0, 1.7, 1.2);
+    warRoomGroup.add(bigRedButton);
+
+    // 5-Tier Spinning Strategy Wheel on 4m Chrome Mast
+    const wheelMast = new THREE.Mesh(this.getCylinder(0.1, 0.1, 4.0, 6), this.silverMat);
+    wheelMast.position.set(-2.5, 2.0, 1.5);
+    warRoomGroup.add(wheelMast);
+
+    const wheelDials = [0xf97316, 0x16a34a, 0x38bdf8, 0xfacc15, 0xd946ef];
+    wheelDials.forEach((col, wIdx) => {
+      const dial = new THREE.Mesh(this.getCylinder(0.9 - wIdx * 0.12, 0.9 - wIdx * 0.12, 0.12, 10), this.createBasicMaterial({ color: col }));
+      dial.position.set(-2.5, 3.2 + wIdx * 0.18, 1.5);
+      warRoomGroup.add(dial);
+    });
+
+    districtB.add(warRoomGroup);
 
     // 4. Flying Parliament Documents Vortex (Placed over side galleries at X = -14m, outside track envelope)
     const paperGroup = new THREE.Group();
@@ -1126,25 +1378,149 @@ export class RahulSatireWorldBuilder {
     districtC.name = 'district_c_press_conference_panic';
     group.add(districtC);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. High-Tech Media Studio Towers & Articulated Press Center
+    // 1. High-Tech Media Studio Towers, Articulated Press Center & Continuous Sidewalks
     [-1, 1].forEach((side) => {
       // Articulated media studio complex with transmission towers, open courtyards, and zero monolithic black walls
       this.buildSurrealYatraFacade(districtC, roadbedWidth, chunkLength, side, 2, rng, detail);
 
-      // Giant Glowing LED Media Screen facing tracks mounted on the central studio facade
-      const screenTex = TextureGenerator.getPressConferencePanicSignTexture(side > 0 ? 0 : 2);
-      const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), new THREE.MeshBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
-      screen.position.set(side * (wallX + 1.2), 11.0, -chunkLength * 0.5);
-      screen.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
-      group.add(screen);
+      const walkW = 22.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      districtC.add(walk);
     });
+
+    // 1b. 3D OB Broadcast Satellite Van (Replacing giant billboard walls with high-production 3D set piece)
+    const vanGroup = new THREE.Group();
+    vanGroup.name = 'rahul_broadcast_van';
+    vanGroup.position.set(15.5, 0.6, -chunkLength * 0.5);
+
+    // Deep Subterranean Van Foundation Plinth
+    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 5.0), this.parliamentSandstoneMat);
+    vanPlinth.position.y = -2.0;
+    vanGroup.add(vanPlinth);
+
+    // Broadcast Truck Body
+    const truckBody = new THREE.Mesh(this.getBox(6.2, 2.6, 2.8), this.mediaBlueMat);
+    truckBody.position.y = 1.8;
+    vanGroup.add(truckBody);
+
+    const truckCab = new THREE.Mesh(this.getBox(2.2, 1.8, 2.6), this.yatraWhiteMat);
+    truckCab.position.set(2.0, 1.9, 0);
+    vanGroup.add(truckCab);
+
+    // Windshield
+    const windshield = new THREE.Mesh(this.getBox(0.1, 1.2, 2.3), this.mediaStudioGlassMat);
+    windshield.position.set(3.15, 2.1, 0);
+    vanGroup.add(windshield);
+
+    // 4 Heavy-duty Wheels
+    [[-1.8, -1.3], [-1.8, 1.3], [1.6, -1.3], [1.6, 1.3]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(this.getCylinder(0.6, 0.6, 0.45, 12), this.darkSuitMat);
+      wheel.position.set(wx, 0.6, wz);
+      wheel.rotation.x = Math.PI / 2;
+      vanGroup.add(wheel);
+
+      const hubcap = new THREE.Mesh(this.getCylinder(0.25, 0.25, 0.48, 8), this.silverMat);
+      hubcap.position.set(wx, 0.6, wz);
+      hubcap.rotation.x = Math.PI / 2;
+      vanGroup.add(hubcap);
+    });
+
+    // Roof-Mounted High-Gain Satellite Parabolic Dish (2.2m diameter)
+    const dishMast = new THREE.Mesh(this.getCylinder(0.15, 0.2, 1.2, 8), this.silverMat);
+    dishMast.position.set(-0.8, 3.7, 0);
+    vanGroup.add(dishMast);
+
+    const dishDish = new THREE.Mesh(this.getCylinder(1.2, 0.2, 0.35, 12), this.yatraWhiteMat);
+    dishDish.position.set(-0.8, 4.5, 0);
+    dishDish.rotation.z = 0.65;
+    vanGroup.add(dishDish);
+
+    // Feed horn receiver
+    const feedHorn = new THREE.Mesh(this.getCylinder(0.04, 0.08, 0.8, 6), this.goldMetalMat);
+    feedHorn.position.set(-0.4, 4.7, 0);
+    feedHorn.rotation.z = -0.8;
+    vanGroup.add(feedHorn);
+
+    // Flashing Red & Yellow Broadcast Beacons
+    const beaconR = new THREE.Mesh(this.getSphere(0.2, 8), this.createBasicMaterial({ color: 0xef4444 }));
+    beaconR.position.set(2.4, 3.3, -0.9);
+    vanGroup.add(beaconR);
+
+    const beaconY = new THREE.Mesh(this.getSphere(0.2, 8), this.createBasicMaterial({ color: 0xfacc15 }));
+    beaconY.position.set(2.4, 3.3, 0.9);
+    vanGroup.add(beaconY);
+
+    // Compact Mobile Field Monitor Stand showing crisp TV News Feed (3.6m x 2.0m instead of 24m billboard!)
+    const monitorGroup = new THREE.Group();
+    monitorGroup.position.set(2.2, 0, -2.4);
+
+    const monPlinth = new THREE.Mesh(this.getBox(4.0, 4.0, 1.0), this.parliamentSandstoneMat);
+    monPlinth.position.y = -2.0;
+    monitorGroup.add(monPlinth);
+
+    const monPole = new THREE.Mesh(this.getCylinder(0.08, 0.08, 2.0, 6), this.silverMat);
+    monPole.position.y = 1.0;
+    monitorGroup.add(monPole);
+
+    const screenTex = TextureGenerator.getPressConferencePanicSignTexture(0);
+    const screenMat = this.createBasicMaterial({ map: screenTex });
+    const screen = new THREE.Mesh(this.getBox(3.6, 2.0, 0.2), screenMat);
+    screen.position.set(0, 2.4, 0);
+    screen.rotation.y = -Math.PI * 0.45;
+    monitorGroup.add(screen);
+
+    vanGroup.add(monitorGroup);
+    districtC.add(vanGroup);
+
+    // 1c. The 20-Microphone Press Briefing Podium Scrum (West sidewalk)
+    const podiumScrumGroup = new THREE.Group();
+    podiumScrumGroup.name = 'rahul_podium_scrum';
+    podiumScrumGroup.position.set(-15.5, 0.6, -chunkLength * 0.25);
+
+    const scrumPlinth = new THREE.Mesh(this.getBox(5.0, 4.0, 4.0), this.parliamentSandstoneMat);
+    scrumPlinth.position.y = -2.0;
+    podiumScrumGroup.add(scrumPlinth);
+
+    const scrumPodium = new THREE.Mesh(this.getBox(2.4, 1.8, 1.4), this.woodMat);
+    scrumPodium.position.y = 0.9;
+    podiumScrumGroup.add(scrumPodium);
+
+    // 20 Microphones jammed onto podium in an exaggerated fan arc
+    const micColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899];
+    for (let m = 0; m < 20; m++) {
+      const angle = -0.9 + (m / 19) * 1.8;
+      const stem = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.7, 4), this.silverMat);
+      stem.position.set(Math.sin(angle) * 0.9, 2.0, -0.4 + Math.cos(angle) * 0.3);
+      stem.rotation.z = -angle * 0.4;
+      podiumScrumGroup.add(stem);
+
+      const micCap = new THREE.Mesh(this.getCylinder(0.06, 0.06, 0.18, 6), this.createBasicMaterial({ color: micColors[m % micColors.length] }));
+      micCap.position.set(stem.position.x, 2.35, stem.position.z);
+      podiumScrumGroup.add(micCap);
+    }
+
+    // 4 Paparazzi Strobe Lights
+    for (let f = 0; f < 4; f++) {
+      const flash = new THREE.Mesh(this.getSphere(0.18, 6), this.createBasicMaterial({ color: 0xffffff }));
+      flash.position.set(-1.2 + f * 0.8, 2.6, 0.8);
+      podiumScrumGroup.add(flash);
+    }
+
+    districtC.add(podiumScrumGroup);
 
     // 2. The 4-Member Media Conga Line (Reporter 1 -> Reporter 2 -> Cameraman -> Boom Operator)
     const congaGroup = new THREE.Group();
     congaGroup.name = 'media_conga_line';
     congaGroup.position.set(-15.5, 0.6, -chunkLength * 0.45);
+
+    // Deep Subterranean Conga Plinth
+    const congaPlinth = new THREE.Mesh(this.getBox(4.0, 4.0, 10.0), this.parliamentSandstoneMat);
+    congaPlinth.position.y = -2.0;
+    congaGroup.add(congaPlinth);
 
     for (let c = 0; c < 4; c++) {
       const member = new THREE.Group();
@@ -1199,11 +1575,16 @@ export class RahulSatireWorldBuilder {
     }
 
     director.registerMediaCongaLine(congaGroup);
-    group.add(congaGroup);
+    districtC.add(congaGroup);
 
     // 3. Signature Gag: TV News Anchor Interviewing Empty Chair at X = 16.5m
     const anchorStage = new THREE.Group();
     anchorStage.position.set(16.5, 0.6, -chunkLength * 0.3);
+
+    // Deep Subterranean Foundation Plinth
+    const anchorPlinth = new THREE.Mesh(this.getBox(7.2, 4.0, 7.2), this.parliamentSandstoneMat);
+    anchorPlinth.position.y = -2.0;
+    anchorStage.add(anchorPlinth);
 
     const stagePlatform = new THREE.Mesh(this.getCylinder(3.5, 3.5, 0.8, 16), this.woodMat);
     stagePlatform.position.y = 0.4;
@@ -1247,17 +1628,23 @@ export class RahulSatireWorldBuilder {
 
     // Comic speech bubble overhead
     const bubbleTex = RahulverseTextureCache.getEmptyChairSpeechBubbleTexture();
-    const bubbleMesh = new THREE.Mesh(this.getBox(3.4, 1.7, 0.1), new THREE.MeshBasicMaterial({ map: bubbleTex }));
+    const bubbleMat = this.createBasicMaterial({ map: bubbleTex });
+    const bubbleMesh = new THREE.Mesh(this.getBox(3.4, 1.7, 0.1), bubbleMat);
     bubbleMesh.position.set(0, 3.6, 0);
     bubbleMesh.rotation.y = -Math.PI * 0.45;
     anchorStage.add(bubbleMesh);
 
     director.registerEmptyChairDebate(anchorArmL, anchorArmR, anchorHead, emptyChair, bubbleMesh);
-    group.add(anchorStage);
+    districtC.add(anchorStage);
 
     // 4. Secondary Stage: "Storm in a Teacup" Debate Platform at X = -16.5m
     const teacupStage = new THREE.Group();
     teacupStage.position.set(-16.5, 0.6, -chunkLength * 0.65);
+
+    // Deep Subterranean Foundation Plinth
+    const teacupPlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
+    teacupPlinth.position.y = -2.0;
+    teacupStage.add(teacupPlinth);
 
     const teacupStand = new THREE.Mesh(this.getBox(5.0, 1.0, 5.0), this.parliamentSandstoneMat);
     teacupStand.position.y = 0.5;
@@ -1309,11 +1696,17 @@ export class RahulSatireWorldBuilder {
     districtD.name = 'district_d_alliance_rollercoaster';
     group.add(districtD);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // Articulated Surreal Carnival Facades behind the rollercoasters
+    // Articulated Surreal Carnival Facades behind the rollercoasters with continuous sidewalks
     [-1, 1].forEach((side) => {
       this.buildSurrealYatraFacade(districtD, roadbedWidth, chunkLength, side, 3, rng, detail);
+
+      const walkW = 22.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      districtD.add(walk);
     });
 
     // 1. Festive Rollercoaster Carnival Overhead Arches (strictly Y >= 9.6m)
@@ -1323,8 +1716,8 @@ export class RahulSatireWorldBuilder {
 
       // Side Pylons at |X| = 9.2m (strictly outside |X| <= 4.2m)
       [-roadbedWidth * 0.5 - 3.2, roadbedWidth * 0.5 + 3.2].forEach((px) => {
-        const pylon = new THREE.Mesh(this.getBox(1.4, 10.5, 1.4), this.neonMagentaMat);
-        pylon.position.set(px, 5.25, 0);
+        const pylon = new THREE.Mesh(this.getBox(1.4, 14.5, 1.4), this.neonMagentaMat);
+        pylon.position.set(px, 3.25, 0); // goes down to Y = -4.0m
         arch.add(pylon);
 
         const finial = new THREE.Mesh(this.getSphere(0.8, 8), this.goldMetalMat);
@@ -1344,13 +1737,18 @@ export class RahulSatireWorldBuilder {
         arch.add(lamp);
       }
 
-      group.add(arch);
+      districtD.add(arch);
     }
 
     // 2. Kinetic Monumental Handshake Statues on Pedestals
     [-1, 1].forEach((side) => {
       const statueGroup = new THREE.Group();
       statueGroup.position.set(side * 16.5, 0.6, -chunkLength * 0.5);
+
+      // Deep Subterranean Statue Plinth
+      const statuePlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
+      statuePlinth.position.y = -2.0;
+      statueGroup.add(statuePlinth);
 
       const pedestal = new THREE.Mesh(this.getBox(5.0, 3.0, 5.0), this.yatraWhiteMat);
       pedestal.position.y = 1.5;
@@ -1500,9 +1898,17 @@ export class RahulSatireWorldBuilder {
     districtE.name = 'district_e_political_multiverse';
     group.add(districtE);
 
-    // Articulated Surreal Multiverse Facades behind quantum monuments
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    // Articulated Surreal Multiverse Facades behind quantum monuments with continuous sidewalks
     [-1, 1].forEach((side) => {
       this.buildSurrealYatraFacade(districtE, roadbedWidth, chunkLength, side, 4, rng, detail);
+
+      const walkW = 22.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      districtE.add(walk);
     });
 
     // 1. Cosmic Floating Spires & Dimensional Quantum Obelisks
@@ -1510,6 +1916,11 @@ export class RahulSatireWorldBuilder {
       for (let z = 12; z < chunkLength - 12; z += 30) {
         const spireGroup = new THREE.Group();
         spireGroup.position.set(side * 16.5, 0.6, -z);
+
+        // Deep Subterranean Spire Plinth
+        const spirePlinth = new THREE.Mesh(this.getBox(4.2, 4.0, 4.2), this.parliamentSandstoneMat);
+        spirePlinth.position.y = -2.0;
+        spireGroup.add(spirePlinth);
 
         const base = new THREE.Mesh(this.getBox(3.4, 1.0, 3.4), this.yatraBlueMat);
         spireGroup.add(base);
@@ -1523,7 +1934,7 @@ export class RahulSatireWorldBuilder {
         ring.position.y = 12.0;
         spireGroup.add(ring);
 
-        group.add(spireGroup);
+        districtE.add(spireGroup);
       }
     });
 

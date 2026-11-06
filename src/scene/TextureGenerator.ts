@@ -4855,57 +4855,66 @@ export class TextureGenerator {
   public static getYatraNeverEndsSignTexture(variant: number = 0): THREE.Texture {
     const key = `rahul_yatra_never_ends_${variant % 4}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
+      const w = 1024;
       const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d')!;
 
-      // Vibrant tricolor & open-road palette
-      ctx.fillStyle = '#0284c7';
+      // Vibrant tricolor open-road backdrop
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(0.5, '#0369a1');
+      grad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
       // Gold/white roadside border
       ctx.strokeStyle = '#fef08a';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(8, 8, w - 16, h - 16);
+      ctx.lineWidth = 10;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
 
       // Header ribbon
-      ctx.fillStyle = '#f97316';
-      ctx.fillRect(16, 16, w - 32, 52);
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(20, 20, w - 40, 58);
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.font = '900 36px "Trebuchet MS", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🏃 THE NEVER-ENDING YATRA 🏃', w * 0.5, 52);
+      ctx.fillText('🏃 BHARAT JODO EXPEDITION 🏃', w * 0.5, 62);
 
-      // Main joke message
+      // Main joke message - punchy, visible from 25+ meters
       const jokes = [
-        ['FINAL DESTINATION: 2 KM', 'NEW FINAL DESTINATION: 4,000 KM', '★ SNEAKERS WEAR OUT FIRST ★'],
-        ['YATRA COMPLETED!', 'NEXT YATRA UNLOCKED IMMEDIATELY', '★ PLEASE DRINK CHAI AND CONTINUE ★'],
-        ['SHORTCUT DISCOVERED:', 'ANOTHER 2,500 KM DETOUR', '★ ROUTE CERTIFIED BY ENTHUSIASM ★'],
-        ['WALKING SIMULATOR:', 'POLITICAL COMEDY EDITION', '★ STEP COUNT: OVER 99,000,000 ★']
+        ['DESTINATION: 2 KM AHEAD', '+4,000 KM DETOUR EXTENSION ADDED!', '★ STEP COUNT: 12,450,000 ★'],
+        ['YATRA STAGE COMPLETE!', 'NEW CONTINENTAL STAGE BEGINS NOW', '★ PLEASE DRINK CHAI & JOG ON ★'],
+        ['SHORTCUT DETECTED:', 'EXTRA 2,500 KM THROUGH SCENIC ALPS', '★ SNEAKERS CERTIFIED DURABLE ★'],
+        ['ENDLESS MARCH REGIME:', 'SPEED: 25 KM/H • VIBES: 100%', '★ RUNAWAY MIC IN TRANSIT ★']
       ];
       const j = jokes[variant % jokes.length];
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillText(j[0], w * 0.5, 114);
+      ctx.font = '900 46px "Trebuchet MS", sans-serif';
+      ctx.fillText(j[0], w * 0.5, 134);
 
       ctx.fillStyle = '#fef08a';
-      ctx.font = '900 20px monospace';
-      ctx.fillText(j[1], w * 0.5, 162);
+      ctx.font = '900 32px monospace';
+      ctx.fillText(j[1], w * 0.5, 180);
 
       // Footer
-      ctx.fillStyle = '#10b981';
-      ctx.fillRect(16, 192, w - 32, 46);
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(20, 196, w - 40, 42);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText(j[2], w * 0.5, 222);
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 226);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -4916,8 +4925,8 @@ export class TextureGenerator {
   public static getFinishLineFlipTexture(isStart: boolean = false): THREE.Texture {
     const key = `rahul_finish_flip_${isStart ? 'start' : 'finish'}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
-      const h = 128;
+      const w = 1024;
+      const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
@@ -4925,41 +4934,60 @@ export class TextureGenerator {
 
       if (!isStart) {
         // FINISH LINE
-        ctx.fillStyle = '#16a34a'; // Green celebration
+        ctx.fillStyle = '#15803d'; // Green celebration
         ctx.fillRect(0, 0, w, h);
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(6, 6, w - 12, h - 12);
+        ctx.lineWidth = 10;
+        ctx.strokeRect(10, 10, w - 20, h - 20);
+
+        // Checkered header stripes
+        ctx.fillStyle = '#000000';
+        for (let x = 20; x < w - 20; x += 40) {
+          ctx.fillRect(x, 20, 20, 30);
+        }
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 32px "Trebuchet MS", sans-serif';
+        ctx.font = '900 54px "Trebuchet MS", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🏁 FINISH LINE: CONGRATULATIONS! 🏁', w * 0.5, 54);
+        ctx.fillText('🏁 FINISH LINE: 0 KM REMAINING! 🏁', w * 0.5, 120);
 
         ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 18px monospace';
-        ctx.fillText('PREPARE FOR MECHANICAL ARCH ROTATION...', w * 0.5, 96);
+        ctx.font = '900 36px monospace';
+        ctx.fillText('STAND BY FOR MECHANICAL FLIP ROTATION...', w * 0.5, 185);
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('★ ROTATING IN 3... 2... 1... ★', w * 0.5, 230);
       } else {
         // START OF NEXT YATRA
-        ctx.fillStyle = '#ea580c'; // Vibrant orange
+        ctx.fillStyle = '#c2410c'; // Vibrant orange
         ctx.fillRect(0, 0, w, h);
         ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(6, 6, w - 12, h - 12);
+        ctx.lineWidth = 10;
+        ctx.strokeRect(10, 10, w - 20, h - 20);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 30px "Trebuchet MS", sans-serif';
+        ctx.font = '900 52px "Trebuchet MS", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🚩 START OF NEXT YATRA 🚩', w * 0.5, 54);
+        ctx.fillText('🚩 NEXT YATRA UNLOCKED: +4,000 KM 🚩', w * 0.5, 120);
 
         ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 18px monospace';
-        ctx.fillText('NEXT ADVENTURE STARTS NOW • PLEASE KEEP WALKING', w * 0.5, 96);
+        ctx.font = '900 36px monospace';
+        ctx.fillText('NO BRAKES ON THE CAMPAIGN EXPRESS!', w * 0.5, 185);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('★ GRAB CHAI & CONTINUE JOGGING ★', w * 0.5, 230);
       }
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -4969,78 +4997,278 @@ export class TextureGenerator {
    */
   public static getYatraMapTexture(): THREE.Texture {
     return this.getOrCreate('rahul_yatra_route_map', () => {
-      const w = 512;
+      const w = 1024;
+      const h = 1024;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Parchment navigation grid background
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(0, 0, w, h);
+
+      // Grid lines
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      for (let x = 0; x < w; x += 128) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 128) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Ornate wooden border
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 16;
+      ctx.strokeRect(16, 16, w - 32, h - 32);
+
+      // Title Banner
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(40, 40, w - 80, 80);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 44px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏃 CONTINENTAL YATRA EXPEDITION MAP 🏃', w * 0.5, 96);
+
+      // Crazy winding route path (Tricolor ribbon)
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = '#f97316';
+      ctx.setLineDash([24, 12]);
+      ctx.beginPath();
+      ctx.moveTo(160, 880);
+      ctx.bezierCurveTo(240, 640, 760, 800, 480, 480);
+      ctx.bezierCurveTo(280, 240, 720, 360, 840, 160);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Waypoints
+      const waypoints = [
+        { x: 160, y: 880, label: 'START: SOUTH COAST', sub: '0 KM • FRESH SNEAKERS' },
+        { x: 600, y: 680, label: 'PIT STOP: CHAI BREAK #542', sub: '1,500 KM • BISCUITS INCLUDED' },
+        { x: 480, y: 480, label: 'STRATEGY HQ DETOUR', sub: '3,000 KM • WHITEBOARD SESSIONS' },
+        { x: 840, y: 160, label: 'NEW START LINE: BEYOND HORIZON', sub: 'INFINITE EXPEDITION CONTINUES' }
+      ];
+      waypoints.forEach((pt) => {
+        // Pin shadow & circle
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Pin center
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Waypoint card
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 24px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(pt.label, pt.x, pt.y - 32);
+
+        ctx.fillStyle = '#b45309';
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText(pt.sub, pt.x, pt.y - 10);
+      });
+
+      // Big Stamp
+      ctx.save();
+      ctx.translate(w * 0.5, 960);
+      ctx.rotate(-0.04);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '900 36px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('★ OFFICIAL STATUS: NEVER STOP JOGGING ★', 0, 0);
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      return tex;
+    });
+  }
+
+  /**
+   * District B: Giant Strategy Room Whiteboard Flowchart
+   */
+  public static getStrategyWhiteboardTexture(): THREE.Texture {
+    return this.getOrCreate('rahul_strategy_whiteboard', () => {
+      const w = 1024;
       const h = 512;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d')!;
 
-      // Parchment / navigation grid background
-      ctx.fillStyle = '#fef3c7';
+      // Glossy whiteboard porcelain background
+      ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, w, h);
 
-      // Grid lines
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 2;
-      for (let x = 0; x < w; x += 64) {
+      // Subtle dry-erase ghost grid
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 32) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
       }
-      for (let y = 0; y < h; y += 64) {
+      for (let y = 0; y < h; y += 32) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
 
-      // Border
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(8, 8, w - 16, h - 16);
+      // Brushed Aluminum Whiteboard Frame
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(7, 7, w - 14, h - 14);
 
-      // Title
-      ctx.fillStyle = '#78350f';
-      ctx.font = '900 24px "Trebuchet MS", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('OFFICIAL YATRA NAVIGATION MAP', w * 0.5, 46);
+      // Dry-erase marker tray indicator at bottom
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(100, h - 12, w - 200, 8);
 
-      // Crazy winding route path
-      ctx.strokeStyle = '#dc2626';
-      ctx.lineWidth = 6;
-      ctx.setLineDash([12, 6]);
-      ctx.beginPath();
-      ctx.moveTo(80, 440);
-      ctx.bezierCurveTo(120, 320, 380, 400, 240, 240);
-      ctx.bezierCurveTo(140, 120, 360, 180, 420, 80);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      // Whiteboard Title in bold blue dry-erase
+      ctx.fillStyle = '#1e3a8a';
+      ctx.font = '900 34px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('📋 MASTER STRATEGY 2026: "OPERATION RELAUNCH 5.0"', 40, 52);
 
-      // Waypoints
-      const waypoints = [
-        { x: 80, y: 440, label: 'START (SOUTH)' },
-        { x: 300, y: 340, label: 'CHAI BREAK #412' },
-        { x: 240, y: 240, label: 'WRONG TURN (VIA MARS)' },
-        { x: 420, y: 80, label: 'NEW START LINE' }
+      // 4-Step Master Flowchart Boxes
+      const steps = [
+        { num: 'STEP 1', title: 'YATRA 4,000 KM', sub: 'Walk nonstop 👟', bg: '#dcfce7', border: '#16a34a' },
+        { num: 'STEP 2', title: 'PRESS BRIEFING', sub: '20 Mics active 🎙️', bg: '#dbeafe', border: '#2563eb' },
+        { num: 'STEP 3', title: 'CONFUSION?', sub: 'Strategy debate ❓', bg: '#fef3c7', border: '#d97706' },
+        { num: 'STEP 4', title: 'VICTORY CHAI', sub: 'Repeat Step 1 ☕', bg: '#fee2e2', border: '#dc2626' }
       ];
-      waypoints.forEach((pt) => {
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+
+      const boxW = 200;
+      const boxH = 130;
+      const startX = 40;
+      const boxY = 100;
+      const gapX = 50;
+
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        const bx = startX + i * (boxW + gapX);
+
+        // Box shadow & background
+        ctx.fillStyle = s.bg;
+        ctx.fillRect(bx, boxY, boxW, boxH);
+        ctx.strokeStyle = s.border;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(bx, boxY, boxW, boxH);
+
+        // Content
+        ctx.fillStyle = s.border;
+        ctx.font = '900 18px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(s.num, bx + boxW * 0.5, boxY + 28);
 
         ctx.fillStyle = '#0f172a';
-        ctx.font = 'bold 14px monospace';
-        ctx.fillText(pt.label, pt.x, pt.y - 18);
-      });
+        ctx.font = '900 20px "Trebuchet MS", sans-serif';
+        ctx.fillText(s.title, bx + boxW * 0.5, boxY + 65);
 
-      // Funny stamp
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText(s.sub, bx + boxW * 0.5, boxY + 100);
+
+        // Connecting Arrows
+        if (i < steps.length - 1) {
+          const ax = bx + boxW + 8;
+          const ay = boxY + boxH * 0.5;
+          ctx.strokeStyle = '#0284c7';
+          ctx.fillStyle = '#0284c7';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(ax + 32, ay);
+          ctx.stroke();
+          // Arrowhead
+          ctx.beginPath();
+          ctx.moveTo(ax + 32, ay);
+          ctx.lineTo(ax + 22, ay - 8);
+          ctx.lineTo(ax + 22, ay + 8);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      // Red dry-erase circle around Step 4
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(startX + 3 * (boxW + gapX) + boxW * 0.5, boxY + boxH * 0.5, boxW * 0.6, boxH * 0.65, -0.05, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Hand-written marker annotations
       ctx.fillStyle = '#dc2626';
-      ctx.font = '900 18px monospace';
-      ctx.fillText('★ STATUS: STILL WALKING ★', w * 0.5, 485);
+      ctx.font = '900 22px "Trebuchet MS", cursive, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('👈 "THIS IS OUR WINNING FORMULA!"', startX + 3 * (boxW + gapX) - 40, boxY + boxH + 40);
+
+      // Yellow Sticky Note (Bottom-Left)
+      const sn1X = 50;
+      const sn1Y = 280;
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(sn1X, sn1Y, 260, 150);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sn1X, sn1Y, 260, 150);
+      ctx.fillStyle = '#713f12';
+      ctx.font = '900 18px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('📌 THINK-TANK MEMO:', sn1X + 15, sn1Y + 30);
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText('• Push big red reset button', sn1X + 15, sn1Y + 60);
+      ctx.fillText('• Keep runaway mic in check', sn1X + 15, sn1Y + 88);
+      ctx.fillText('• Order 50 more samosas', sn1X + 15, sn1Y + 116);
+
+      // Pink Sticky Note (Center-Right)
+      const sn2X = 350;
+      const sn2Y = 280;
+      ctx.fillStyle = '#fce7f3';
+      ctx.fillRect(sn2X, sn2Y, 260, 150);
+      ctx.strokeStyle = '#db2777';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sn2X, sn2Y, 260, 150);
+      ctx.fillStyle = '#831843';
+      ctx.font = '900 18px sans-serif';
+      ctx.fillText('🎯 STRATEGY WHEEL TIERS:', sn2X + 15, sn2Y + 30);
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText('Tier 1: Youth Rally', sn2X + 15, sn2Y + 60);
+      ctx.fillText('Tier 2: Podcast Interview', sn2X + 15, sn2Y + 88);
+      ctx.fillText('Tier 3: Infinite Detour', sn2X + 15, sn2Y + 116);
+
+      // Big Red Reset Button Reminder Box
+      const sn3X = 650;
+      const sn3Y = 280;
+      ctx.fillStyle = '#fee2e2';
+      ctx.fillRect(sn3X, sn3Y, 320, 150);
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(sn3X, sn3Y, 320, 150);
+      ctx.fillStyle = '#991b1b';
+      ctx.font = '900 20px "Trebuchet MS", sans-serif';
+      ctx.fillText('🚨 RELAUNCH PROTOCOL 🚨', sn3X + 20, sn3Y + 35);
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('IF IN DOUBT: PRESS RED BUTTON', sn3X + 20, sn3Y + 70);
+      ctx.fillText('AUTOMATIC FRESH COAT OF PAINT', sn3X + 20, sn3Y + 98);
+      ctx.fillText('GUARANTEED 100% SATIRE IMPACT', sn3X + 20, sn3Y + 126);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -5051,51 +5279,56 @@ export class TextureGenerator {
   public static getParliamentPandemoniumSignTexture(variant: number = 0): THREE.Texture {
     const key = `rahul_parliament_pandemonium_${variant % 4}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
+      const w = 1024;
       const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d')!;
 
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, w, h);
 
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
 
-      // Gold crest header
+      // Header
       ctx.fillStyle = '#0284c7';
-      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillRect(18, 18, w - 36, 56);
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.font = '900 36px "Trebuchet MS", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🏛️ PARLIAMENT PANDEMONIUM 🏛️', w * 0.5, 46);
+      ctx.fillText('🏛️ STRATEGY HQ & WAR ROOM 🏛️', w * 0.5, 58);
 
       const jokes = [
-        ['QUESTION HOUR:', 'ANSWER SOLD SEPARATELY', '★ MICROPHONE STATUS: RUNNING AWAY ★'],
-        ['DISCUSSION STARTED:', 'CONCLUSION 404 NOT FOUND', '★ PLEASE STAND BY FOR ADJOURNMENT ★'],
-        ['ORDER IN THE HOUSE!', 'EVERYONE HAS A VALID POINT', '★ NEXT SPEECH IN 3 SECONDS ★'],
-        ['DEBATE CLOCK ACTIVE:', 'RESETTING TO 10:00 ENDLESSLY', '★ EXTRA TIME GRANTED FOR CHAI ★']
+        ['OPERATION: RELAUNCH 5.0 ACTIVE', 'SPINNING STRATEGY WHEEL ENGAGED', '★ RUNAWAY MIC IN PLAY ★'],
+        ['DEBATE QUESTION HOUR:', 'ANSWERS DISTRIBUTED NEXT YEAR', '★ UNANIMOUS DISAGREEMENT ★'],
+        ['WAR ROOM WHITEBOARD READY:', 'FLOWCHART CONTAINS INFINITE LOOPS', '★ HIGH ADRENALINE SLAPSTICK ★'],
+        ['MICROPHONE ESCAPE VELOCITY:', 'SPEAKER LUNGES ACROSS AISLE', '★ 100% MAXIMUM VOLUME ★']
       ];
       const j = jokes[variant % jokes.length];
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.fillText(j[0], w * 0.5, 115);
+      ctx.font = '900 46px "Trebuchet MS", sans-serif';
+      ctx.fillText(j[0], w * 0.5, 134);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '900 20px monospace';
-      ctx.fillText(j[1], w * 0.5, 160);
+      ctx.font = '900 32px monospace';
+      ctx.fillText(j[1], w * 0.5, 180);
 
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '14px sans-serif';
-      ctx.fillText(j[2], w * 0.5, 215);
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 226);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -5106,65 +5339,71 @@ export class TextureGenerator {
   public static getPressConferencePanicSignTexture(variant: number = 0): THREE.Texture {
     const key = `rahul_press_conference_${variant % 4}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
-      const h = 256;
+      const w = 1024;
+      const h = 512;
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d')!;
 
-      ctx.fillStyle = '#0c4a6e';
+      // Deep studio control-room backdrop
+      ctx.fillStyle = '#082f49';
       ctx.fillRect(0, 0, w, h);
 
-      // Breaking header
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(0, 0, w, 44);
+      // Breaking news banner
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(0, 0, w, 76);
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.font = '900 42px "Trebuchet MS", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('⚡ 24/7 LIVE MEDIA PANIC ⚡', w * 0.5, 32);
+      ctx.fillText('⚡ 24/7 LIVE MEDIA PANIC • 20 MICS ACTIVE ⚡', w * 0.5, 54);
 
-      // 4 Pundit / Reporter tiles
-      const colors = ['#0369a1', '#b91c1c', '#047857', '#a16207'];
-      const headers = ['REPORTER 1', 'REPORTER 2', 'CAMERA CREW A', 'CAMERA CREW B'];
-      const sub = ['"QUESTION!"', '"FOLLOW-UP!"', '"FILMING CREW B"', '"FILMING CREW A"'];
+      // 4 Pundit / Reporter TV feed tiles
+      const colors = ['#0369a1', '#991b1b', '#047857', '#854d0e'];
+      const headers = ['CH 1: PODIUM MIC 1', 'CH 2: BOOM OPERATOR', 'CH 3: TV BROADCAST TRUCK', 'CH 4: PAPARAZZI CONGA'];
+      const sub = ['"QUESTION ON THE YATRA!"', '"FOLLOW-UP TO QUESTION 1!"', '"TRANSMITTING LIVE FEED"', '"PHOTOGRAPHING PODIUM!"'];
       for (let i = 0; i < 4; i++) {
-        const bx = 16 + (i % 2) * 242;
-        const by = 52 + Math.floor(i / 2) * 62;
+        const bx = 32 + (i % 2) * 480;
+        const by = 96 + Math.floor(i / 2) * 128;
         ctx.fillStyle = colors[i];
-        ctx.fillRect(bx, by, 238, 56);
-        ctx.strokeStyle = '#7dd3fc';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bx, by, 238, 56);
+        ctx.fillRect(bx, by, 460, 115);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bx, by, 460, 115);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = '900 24px "Trebuchet MS", sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(headers[i], bx + 18, by + 24);
+        ctx.fillText(headers[i], bx + 24, by + 46);
         ctx.fillStyle = '#fef08a';
-        ctx.font = '11px monospace';
-        ctx.fillText(sub[i], bx + 18, by + 42);
+        ctx.font = 'bold 20px monospace';
+        ctx.fillText(sub[i], bx + 24, by + 86);
       }
 
       // Scrolling Ticker at bottom
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(0, 185, w, 71);
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(0, 370, w, 142);
+      ctx.fillStyle = '#0f172a';
       ctx.textAlign = 'center';
       const tickers = [
-        'EXCLUSIVE: 17 JOURNALISTS ASK 18 OPINIONS AT ONCE',
-        'BREAKING: RUNAWAY MICROPHONE SPOTTED HEADING TOWARD RAILWAY',
-        'SPECIAL REPORT: 4-HOUR DEBATE ON GEOPOLITICS OF A TEACUP',
-        'PRESS CONFERENCE CONFIRMED ABOUT SCHEDULING NEXT PRESS CONFERENCE'
+        'EXCLUSIVE: 20 REPORTERS COMPETE FOR SAME PODIUM MICROPHONE',
+        'BREAKING: SATELLITE DISH SPINS AT RECORD 120 RPM TO CATCH AUDIO',
+        'SPECIAL REPORT: 4-HOUR DEBATE ON WHETHER TO ORDER EXTRA SAMOSAS',
+        'PRESS CONFERENCE CONFIRMED ABOUT SCHEDULING NEXT BRIEFING'
       ];
-      ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
-      ctx.fillText(tickers[variant % tickers.length], w * 0.5, 218);
-      ctx.font = '11px monospace';
-      ctx.fillText('LIVE RATING: 100% MAXIMUM VOLUME • ZERO CONCLUSIONS', w * 0.5, 238);
+      ctx.font = '900 30px "Trebuchet MS", sans-serif';
+      ctx.fillText(tickers[variant % tickers.length], w * 0.5, 432);
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('LIVE RATING: 100% MAXIMUM VOLUME • ZERO REAL DISPUTES', w * 0.5, 478);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -5175,7 +5414,7 @@ export class TextureGenerator {
   public static getAllianceRollercoasterSignTexture(variant: number = 0): THREE.Texture {
     const key = `rahul_alliance_rollercoaster_${variant % 4}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
+      const w = 1024;
       const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
@@ -5183,20 +5422,20 @@ export class TextureGenerator {
       const ctx = canvas.getContext('2d')!;
 
       // Carnival amusement park palette
-      ctx.fillStyle = '#581c87';
+      ctx.fillStyle = '#4c1d95';
       ctx.fillRect(0, 0, w, h);
 
       ctx.strokeStyle = '#f472b6';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
 
       // Header
-      ctx.fillStyle = '#ec4899';
-      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillStyle = '#db2777';
+      ctx.fillRect(18, 18, w - 36, 56);
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.font = '900 36px "Trebuchet MS", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🎢 ALLIANCE ROLLERCOASTER PARK 🎢', w * 0.5, 46);
+      ctx.fillText('🎢 ALLIANCE ROLLERCOASTER PARK 🎢', w * 0.5, 58);
 
       const jokes = [
         ['ALLIANCE STATUS:', "IT'S EXTREMELY COMPLICATED", '★ SEAT SHARING: EXPERT PUZZLE MODE ★'],
@@ -5207,20 +5446,25 @@ export class TextureGenerator {
       const j = jokes[variant % jokes.length];
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.fillText(j[0], w * 0.5, 114);
+      ctx.font = '900 46px "Trebuchet MS", sans-serif';
+      ctx.fillText(j[0], w * 0.5, 134);
 
       ctx.fillStyle = '#f472b6';
-      ctx.font = '900 20px monospace';
-      ctx.fillText(j[1], w * 0.5, 160);
+      ctx.font = '900 32px monospace';
+      ctx.fillText(j[1], w * 0.5, 180);
 
       ctx.fillStyle = '#cbd5e1';
-      ctx.font = '14px sans-serif';
-      ctx.fillText(j[2], w * 0.5, 215);
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(j[2], w * 0.5, 226);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
@@ -5231,7 +5475,7 @@ export class TextureGenerator {
   public static getPoliticalMultiverseSignTexture(variant: number = 0): THREE.Texture {
     const key = `rahul_political_multiverse_${variant % 4}`;
     return this.getOrCreate(key, () => {
-      const w = 512;
+      const w = 1024;
       const h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w;
@@ -5244,23 +5488,23 @@ export class TextureGenerator {
 
       // Starfield dots
       ctx.fillStyle = '#ffffff';
-      for (let s = 0; s < 45; s++) {
+      for (let s = 0; s < 60; s++) {
         const sx = (s * 47) % w;
         const sy = (s * 31) % h;
-        ctx.fillRect(sx, sy, (s % 3) + 1, (s % 3) + 1);
+        ctx.fillRect(sx, sy, (s % 3) + 2, (s % 3) + 2);
       }
 
       ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.lineWidth = 8;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
 
       // Hologram glowing cyan header
       ctx.fillStyle = '#6b21a8';
-      ctx.fillRect(14, 14, w - 28, 48);
+      ctx.fillRect(18, 18, w - 36, 56);
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '900 22px "Trebuchet MS", sans-serif';
+      ctx.font = '900 36px "Trebuchet MS", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🌌 POLITICAL MULTIVERSE 🌌', w * 0.5, 46);
+      ctx.fillText('🌌 POLITICAL MULTIVERSE 🌌', w * 0.5, 58);
 
       const jokes = [
         ['MULTIVERSE DIMENSION #404:', 'EVERY DEBATE ENDS ON TIME!', '★ WARNING: UNSTABLE FICTION ★'],
@@ -5271,20 +5515,25 @@ export class TextureGenerator {
       const j = jokes[variant % jokes.length];
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillText(j[0], w * 0.5, 114);
+      ctx.font = '900 44px "Trebuchet MS", sans-serif';
+      ctx.fillText(j[0], w * 0.5, 134);
 
       ctx.fillStyle = '#c084fc';
-      ctx.font = '900 20px monospace';
-      ctx.fillText(j[1], w * 0.5, 160);
+      ctx.font = '900 32px monospace';
+      ctx.fillText(j[1], w * 0.5, 180);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '14px monospace';
-      ctx.fillText(j[2], w * 0.5, 215);
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText(j[2], w * 0.5, 226);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
       return tex;
     });
   }
