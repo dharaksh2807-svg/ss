@@ -1955,6 +1955,10 @@ export class WorldScene {
     const sunColor = EnvironmentManager.lerpColor(base.sun.color, targetTheme.sun.color, t);
     this.sunLight.color.copy(sunColor);
     this.sunLight.intensity = THREE.MathUtils.lerp(base.sun.intensity, targetTheme.sun.intensity, t);
+    if (targetTheme.sun.position) {
+      this.sunLight.position.x = THREE.MathUtils.lerp(base.sun.position?.x ?? 20, targetTheme.sun.position.x, t);
+      this.sunLight.position.y = THREE.MathUtils.lerp(base.sun.position?.y ?? 40, targetTheme.sun.position.y, t);
+    }
 
     // 3. Fill Directional Light
     const fillColor = EnvironmentManager.lerpColor(base.fill.color, targetTheme.fill.color, t);

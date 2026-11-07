@@ -37,46 +37,46 @@ export const INFERNO_EXPRESS_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0a0305,    // Deep stygian volcanic void
-    bottom: 0x581111 // Intense fiery crimson & molten twilight glow
+    top: 0x180608,    // Atmospheric volcanic twilight void
+    bottom: 0x881c10 // Intense fiery crimson & molten twilight horizon glow
   },
   fog: {
-    color: 0x22080a,  // Atmospheric volcanic smoke & sulfur haze
-    density: 0.0022   // Atmospheric depth preserving high obstacle readability
+    color: 0x22070a,  // Atmospheric volcanic smoke & sulfur haze
+    density: 0.0016   // Atmospheric depth preserving crisp panoramic vistas of distant volcanoes
   },
   sun: {
-    color: 0xff6622,  // Radiant molten volcanic glare
-    intensity: 1.65,
-    position: { x: -35, y: 70, z: -55 }
+    color: 0xff7722,  // Radiant molten volcanic glare
+    intensity: 1.85,
+    position: { x: -28, y: 64, z: 28 } // Forward illumination highlighting obsidian facets & viaducts
   },
   fill: {
-    color: 0x3d0b0b,  // Fiery crimson fill light
-    intensity: 0.85
+    color: 0x661814,  // Rich volcanic crimson fill light
+    intensity: 1.05
   },
   hemi: {
-    sky: 0x1a0f0d,    // Dark volcanic ash canopy
-    ground: 0xff4400, // Vibrant molten lava upward reflection
-    intensity: 1.45
+    sky: 0x2e1214,    // Smoky ember ash canopy bounce
+    ground: 0xf97316, // Vibrant molten lava ocean upward reflection
+    intensity: 1.55
   },
   skyline: {
-    color: 0x140608,  // Silhouette of jagged volcanoes and obsidian towers
+    color: 0x160507,  // Silhouette of jagged volcanoes and obsidian towers
     opacity: 0.92,
     style: 'INDUSTRIAL'
   },
   clouds: {
-    color: 0x260c10,  // Boiling volcanic ash and smoke clouds
-    roughness: 0.90
+    color: 0x3b1216,  // Boiling volcanic ash and smoke clouds
+    roughness: 0.88
   },
   materials: {
-    ballastColor: 0x18181b,     // Cooled porous basalt & obsidian gravel
-    sleeperColor: 0x0f0f12,     // Fireproof carbonized iron railway ties
-    wallBaseColor: 0x1c1917,    // Heavy volcanic basalt masonry & black iron
+    ballastColor: 0x27272a,     // Cooled porous basalt & obsidian gravel
+    sleeperColor: 0x18181b,     // Fireproof carbonized iron railway ties
+    wallBaseColor: 0x221310,    // Heavy volcanic basalt masonry & black iron
     wallAccentColor: 0xf97316,  // Glowing molten magma fissures & runic inscriptions
     curbColor: 0xfbbf24,        // Bright glowing lava channel curbs (extreme visibility!)
     catenaryColor: 0x451a03,    // Heat-treated cast iron catenary arches
     insulatorColor: 0xef4444,   // Heat-glowing ruby ceramic insulators
     pipeColor: 0x7c2d12,        // Scorched molten-magma transport pipes
-    bridgeMainColor: 0x121217,  // Heavy black titanium-iron viaduct trestles
+    bridgeMainColor: 0x1c1917,  // Heavy black titanium-iron viaduct trestles
     bridgeAccentColor: 0xf97316,// Glowing runic bracket plates & fiery expansion joints
     groundPlaneColor: 0x0a0505
   },

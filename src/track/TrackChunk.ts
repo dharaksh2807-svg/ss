@@ -433,9 +433,11 @@ export class TrackChunk {
       case 'INFERNO_EXPRESS': {
         const mat = new THREE.MeshStandardMaterial({
           map: TextureGenerator.getVolcanicBasaltTexture(),
-          color: 0x221310,
-          roughness: 0.92,
-          metalness: 0.15
+          color: 0xffffff,
+          emissive: 0x441208,
+          emissiveIntensity: 0.65,
+          roughness: 0.40,
+          metalness: 0.25
         });
         curved.applyCurvature(mat);
         leftMat = mat;
