@@ -421,9 +421,11 @@ export class TrackChunk {
       case 'CHRONO_KINGDOM': {
         const mat = new THREE.MeshStandardMaterial({
           map: TextureGenerator.getClockworkFloorTexture(),
-          color: 0x483a28,
-          roughness: 0.60,
-          metalness: 0.65
+          color: 0xffffff,
+          emissive: 0x241712,
+          emissiveIntensity: 0.42,
+          roughness: 0.45,
+          metalness: 0.60
         });
         curved.applyCurvature(mat);
         leftMat = mat;

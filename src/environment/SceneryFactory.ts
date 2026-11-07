@@ -1594,7 +1594,7 @@ export class SceneryFactory {
     }
 
     if (smallMoment) {
-      this.buildSmallMoment(smallMoment, decorativeGroup, chunkLength, seed);
+      this.buildSmallMoment(smallMoment, decorativeGroup, chunkLength, seed, theme);
     }
 
     let meshesAdded = 0;
@@ -5980,11 +5980,12 @@ export class SceneryFactory {
     moment: SmallMomentType,
     group: THREE.Group,
     chunkLength: number,
-    seed: number
+    seed: number,
+    theme?: EnvironmentTheme
   ): void {
     switch (moment) {
       case 'PASSING_BACKGROUND_TRAIN':
-        this.buildPassingBackgroundTrain(group, chunkLength, seed);
+        this.buildPassingBackgroundTrain(group, chunkLength, seed, theme);
         break;
       case 'DISTANT_BIRDS_FLOCK':
         this.buildDistantBirdsFlock(group, chunkLength, seed);
@@ -5998,7 +5999,17 @@ export class SceneryFactory {
   /**
    * Distant passing passenger train on parallel outer track (X = ±13.5m, well outside 5.5m hazard envelope)
    */
-  private buildPassingBackgroundTrain(group: THREE.Group, chunkLength: number, seed: number): void {
+  private buildPassingBackgroundTrain(group: THREE.Group, chunkLength: number, seed: number, theme?: EnvironmentTheme): void {
+    if (theme && theme.id === 'CHRONO_KINGDOM') {
+      const side = (seed % 2 === 0) ? 1 : -1;
+      const train = ChronoKingdomWorldBuilder.getInstance().buildChronoKingdomShowcaseTrain(
+        side * 16.5,
+        0.35,
+        -chunkLength * 0.5
+      );
+      group.add(train);
+      return;
+    }
     const mats = this.getSharedMaterials();
     const trainGroup = new THREE.Group();
     const side = (seed % 2 === 0) ? 1 : -1;

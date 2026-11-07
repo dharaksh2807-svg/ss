@@ -280,9 +280,133 @@ assert.ok(trainSize.z >= 18.0 && trainSize.z <= 26.0, `Train length ${trainSize.
 pass(`Showcase train dimensions (${trainSize.x.toFixed(1)}m x ${trainSize.y.toFixed(1)}m x ${trainSize.z.toFixed(1)}m) match standard runner train envelope`);
 
 // ============================================================================
-// SUITE 7: TEARDOWN & LIFECYCLE CLEANUP
+// SUITE 7: ALL 12 ARCHITECTURAL VARIANTS CLEARANCE & GROUNDING
 // ============================================================================
-console.log('\n--- Suite 7: Teardown & Lifecycle Cleanup ---');
+console.log('\n--- Suite 7: All 12 Architectural Variants Clearance & Grounding ---');
+
+const districtBuilders = [
+  { name: 'District A', fn: (g: THREE.Group, v: number) => builder.buildGrandClockworkCapital(g, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, v) },
+  { name: 'District B', fn: (g: THREE.Group, v: number) => builder.buildTimeFoundry(g, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, v) },
+  { name: 'District C', fn: (g: THREE.Group, v: number) => builder.buildChronoObservatory(g, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, v) },
+  { name: 'District D', fn: (g: THREE.Group, v: number) => builder.buildFracturedTimeDistrict(g, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, v) }
+];
+
+districtBuilders.forEach((dist) => {
+  [0, 1, 2].forEach((variantIdx) => {
+    const vGroup = new THREE.Group();
+    director.reset();
+    dist.fn(vGroup, variantIdx);
+
+    vGroup.updateMatrixWorld(true);
+    let intrusions = 0;
+    const intrudingNames: string[] = [];
+
+    vGroup.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.computeBoundingBox();
+        const bbox = child.geometry.boundingBox;
+        if (!bbox) return;
+
+        const worldBox = bbox.clone().applyMatrix4(child.matrixWorld);
+        const inX = worldBox.min.x <= 4.2 && worldBox.max.x >= -4.2;
+        const inY = worldBox.min.y <= 8.5 && worldBox.max.y >= 0.1;
+
+        if (inX && inY) {
+          intrusions++;
+          intrudingNames.push(`${child.name || 'mesh'} [X: ${worldBox.min.x.toFixed(1)} to ${worldBox.max.x.toFixed(1)}, Y: ${worldBox.min.y.toFixed(1)} to ${worldBox.max.y.toFixed(1)}]`);
+        }
+      }
+    });
+
+    assert.strictEqual(intrusions, 0, `${dist.name} Variant ${variantIdx} has 0 intrusions (${intrudingNames.join(', ')})`);
+    pass(`${dist.name} Variant ${variantIdx}: 0 intrusions into playable corridor`);
+  });
+});
+
+// ============================================================================
+// SUITE 8: CINEMATIC SURPRISES & AMBIENT MICRO-MECHANISMS
+// ============================================================================
+console.log('\n--- Suite 8: Cinematic Surprises & Ambient Micro-Mechanisms ---');
+
+director.reset();
+const surpriseChunk = new THREE.Group();
+// Dist A Var 0 registers Clock Reversal
+builder.buildGrandClockworkCapital(surpriseChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0);
+assert.ok(director.getClockReversalCount() >= 1, `The Great Clock Reversal registered (${director.getClockReversalCount()})`);
+pass('Surprise 1: The Great Clock Reversal registered successfully');
+
+// Dist C Var 0 registers Celestial Alignment
+builder.buildChronoObservatory(surpriseChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0);
+assert.ok(director.getCelestialAlignmentCount() >= 1, `The Celestial Alignment registered (${director.getCelestialAlignmentCount()})`);
+pass('Surprise 2: The Celestial Alignment registered successfully');
+
+// Dist A Var 2 registers Carillon Bell
+builder.buildGrandClockworkCapital(surpriseChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 2);
+assert.ok(director.getCarillonBellCount() >= 1, `Campanile Carillon Bells registered (${director.getCarillonBellCount()})`);
+pass('Ambient Detail 1: Campanile Carillon Bells registered successfully');
+
+// Dist B Var 1 registers Oscillating Pressure Gauge
+builder.buildTimeFoundry(surpriseChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 1);
+assert.ok(director.getPressureGaugeCount() >= 1, `Oscillating Pressure Gauges registered (${director.getPressureGaugeCount()})`);
+pass('Ambient Detail 2: Oscillating Pressure Gauges registered successfully');
+
+// Test director animation update on all surprises
+director.update(0.1, true);
+director.update(5.0, true);
+director.update(16.0, true);
+pass('Director cleanly executes reversal, celestial alignment, and gauge oscillations');
+
+// ============================================================================
+// SUITE 9: MULTI-CYCLE DETERMINISTIC SCHEDULING (0-6400m PROGRESSION)
+// ============================================================================
+console.log('\n--- Suite 9: Multi-Cycle Deterministic Scheduling (0-6400m Progression) ---');
+
+const trackPositions = [
+  { z: -100, expectedName: 'district_a_grand_clockwork_capital', desc: 'Cycle 0 Block 0 (Capital)' },
+  { z: -500, expectedName: 'district_b_time_foundry', desc: 'Cycle 0 Block 1 (Foundry)' },
+  { z: -900, expectedName: 'district_c_chrono_observatory', desc: 'Cycle 0 Block 2 (Observatory)' },
+  { z: -1300, expectedName: 'district_d_fractured_time', desc: 'Cycle 0 Block 3 (Fractured)' },
+  { z: -1700, expectedName: 'district_b_time_foundry', desc: 'Cycle 1 Block 0 (Foundry First!)' },
+  { z: -2100, expectedName: 'district_a_grand_clockwork_capital', desc: 'Cycle 1 Block 1 (Capital Second!)' },
+  { z: -2500, expectedName: 'district_d_fractured_time', desc: 'Cycle 1 Block 2 (Fractured Third!)' },
+  { z: -2900, expectedName: 'district_c_chrono_observatory', desc: 'Cycle 1 Block 3 (Observatory Fourth!)' },
+  { z: -3300, expectedName: 'district_c_chrono_observatory', desc: 'Cycle 2 Block 0 (Observatory First!)' },
+  { z: -3700, expectedName: 'district_d_fractured_time', desc: 'Cycle 2 Block 1 (Fractured Second!)' },
+  { z: -4900, expectedName: 'district_d_fractured_time', desc: 'Cycle 3 Block 0 (Fractured First!)' }
+];
+
+trackPositions.forEach(({ z, expectedName, desc }) => {
+  const g = new THREE.Group();
+  builder.buildDistrictScenery(g, 12, 100, 100, 'FULL', z);
+  const found = g.getObjectByName(expectedName);
+  assert.ok(found, `At worldZ=${z} (${desc}), found ${expectedName}`);
+  pass(`Procedural Scheduler: ${desc} correctly instantiated at z=${z}m`);
+});
+
+// Verify 1600m scenery non-repetition
+const chunk0m = new THREE.Group();
+const chunk1600m = new THREE.Group();
+const chunk3200m = new THREE.Group();
+builder.buildDistrictScenery(chunk0m, 12, 100, 100, 'FULL', -100);
+builder.buildDistrictScenery(chunk1600m, 12, 100, 100, 'FULL', -1700);
+builder.buildDistrictScenery(chunk3200m, 12, 100, 100, 'FULL', -3300);
+
+assert.notStrictEqual(
+  chunk0m.children[0].name,
+  chunk1600m.children[0].name,
+  'Chunk at 0m and 1600m must have different macro districts'
+);
+assert.notStrictEqual(
+  chunk1600m.children[0].name,
+  chunk3200m.children[0].name,
+  'Chunk at 1600m and 3200m must have different macro districts'
+);
+pass('Non-repeating scenery: 0m, 1600m, and 3200m macro districts are distinct and unique');
+
+// ============================================================================
+// SUITE 10: TEARDOWN & LIFECYCLE CLEANUP
+// ============================================================================
+console.log('\n--- Suite 10: Teardown & Lifecycle Cleanup ---');
 
 director.reset();
 

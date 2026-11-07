@@ -5983,38 +5983,70 @@ export class TextureGenerator {
   }
 
   /**
-   * Clockwork Foundation Plate Texture (Riveted antique brass & iron decking)
+   * Clockwork Foundation Plate Texture (Riveted antique brass, midnight steel & warm amber floor grates)
    */
   public static getClockworkFloorTexture(): THREE.Texture {
-    return this.getOrCreate('terrain_clockwork_floor', () => {
+    return this.getOrCreate('terrain_clockwork_floor_v2', () => {
       const size = 512;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext('2d')!;
 
-      // Dark antique bronze base
-      ctx.fillStyle = '#32281c';
+      // 1. Midnight steel & dark bronze base
+      ctx.fillStyle = '#1c2430';
       ctx.fillRect(0, 0, size, size);
 
-      // Modular metal plate grid
+      // 2. Modular architectural parquet plate grid
       const tileSize = 128;
       for (let y = 0; y < size; y += tileSize) {
         for (let x = 0; x < size; x += tileSize) {
-          ctx.fillStyle = (x + y) % (tileSize * 2) === 0 ? '#3d3224' : '#2b2318';
+          const isAlt = ((x / tileSize) + (y / tileSize)) % 2 === 0;
+
+          // Parquet plate body (alternating burnished bronze & midnight steel)
+          ctx.fillStyle = isAlt ? '#2d241c' : '#222c3b';
           ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
 
-          // Central recessed gear ring
-          ctx.strokeStyle = '#5a4933';
+          // Antique Brass Bevel Border
+          ctx.strokeStyle = '#8c703b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 5, y + 5, tileSize - 10, tileSize - 10);
+
+          // Central Recessed Clockwork Gear Ring
+          ctx.strokeStyle = isAlt ? '#b99554' : '#ae623b';
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.arc(x + tileSize * 0.5, y + tileSize * 0.5, tileSize * 0.28, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Corner brass rivets
-          ctx.fillStyle = '#c5a059';
-          const rivetR = 3;
-          const pad = 10;
+          // Warm Amber Center Glow Core (Illuminated steam machinery sub-floor)
+          const grad = ctx.createRadialGradient(
+            x + tileSize * 0.5, y + tileSize * 0.5, 0,
+            x + tileSize * 0.5, y + tileSize * 0.5, tileSize * 0.18
+          );
+          grad.addColorStop(0, '#fef08a');
+          grad.addColorStop(0.5, '#f59e0b');
+          grad.addColorStop(1, 'rgba(180, 83, 9, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(x + tileSize * 0.5, y + tileSize * 0.5, tileSize * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 8 radial gear teeth on the plate ring
+          ctx.fillStyle = '#b99554';
+          for (let t = 0; t < 8; t++) {
+            const angle = (t * Math.PI) / 4;
+            const tx = x + tileSize * 0.5 + Math.cos(angle) * (tileSize * 0.32);
+            const ty = y + tileSize * 0.5 + Math.sin(angle) * (tileSize * 0.32);
+            ctx.beginPath();
+            ctx.arc(tx, ty, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Polished Brass Corner Rivets
+          ctx.fillStyle = '#d4af37';
+          const rivetR = 3.5;
+          const pad = 12;
           [
             [x + pad, y + pad],
             [x + tileSize - pad, y + pad],
@@ -6026,6 +6058,20 @@ export class TextureGenerator {
             ctx.fill();
           });
         }
+      }
+
+      // 3. Fine hairline interlocking expansion seams
+      ctx.strokeStyle = '#423321';
+      ctx.lineWidth = 2;
+      for (let s = 0; s <= size; s += tileSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, s);
+        ctx.lineTo(size, s);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s, 0);
+        ctx.lineTo(s, size);
+        ctx.stroke();
       }
 
       const tex = new THREE.CanvasTexture(canvas);

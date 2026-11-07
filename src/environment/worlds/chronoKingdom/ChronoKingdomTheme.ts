@@ -37,34 +37,34 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0f172a,    // Deep celestial twilight sapphire
-    bottom: 0x854d0e  // Radiant bronze and warm sunset furnace glow on horizon
+    top: 0x0f172a,    // Deep celestial twilight midnight sapphire (#0f172a)
+    bottom: 0x542337  // Sophisticated Victorian twilight burgundy-amber horizon (#542337)
   },
   fog: {
-    color: 0x3d1a12,  // Atmospheric warm bronze steam haze
-    density: 0.0016   // Crystal clarity for monumental clock towers and mechanisms
+    color: 0x24151e,  // Atmospheric twilight bronze-burgundy haze (#24151e)
+    density: 0.0014   // Crystal clarity for monumental clock towers and mechanisms
   },
   sun: {
     color: 0xffedd5,  // Radiant golden steam era sunlight
-    intensity: 1.70,
-    position: { x: -28, y: 58, z: 22 } // Positioned above and behind player to light all facades and gears down-track
+    intensity: 1.80,
+    position: { x: -26, y: 60, z: 24 } // Positioned above and behind player to light all facades and gears down-track
   },
   fill: {
-    color: 0xb45309,  // Rich Victorian bronze & copper canyon bounce fill
-    intensity: 0.90
+    color: 0x9a4f21,  // Rich antique brass & burnished copper canyon fill
+    intensity: 0.85
   },
   hemi: {
-    sky: 0x475569,    // Lighter celestial sky ambient reflection
-    ground: 0xd97706, // Warm radiant golden-amber cobblestone bounce
-    intensity: 1.45
+    sky: 0x334155,    // Cool midnight steel celestial ambient reflection
+    ground: 0xae623b, // Radiant burnished copper & warm amber clockwork floor bounce
+    intensity: 1.50
   },
   skyline: {
-    color: 0x13121d,  // Silhouette of colossal clock towers and spires
+    color: 0x161c2a,  // Chiseled silhouette of colossal clock towers and spires (#161c2a)
     opacity: 0.90,
     style: 'HISTORIC'
   },
   clouds: {
-    color: 0x2a1d24,  // Rich steam-infused dusk clouds
+    color: 0x2d1c28,  // Rich steam-infused dusk clouds (#2d1c28)
     roughness: 0.88
   },
   materials: {
@@ -72,13 +72,13 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     sleeperColor: 0x18110b,     // Steamed dark oak ties with brass fastener plates
     wallBaseColor: 0x261912,    // Heavy riveted bronze & cast-iron masonry
     wallAccentColor: 0xd4af37,  // Gilded antique gold clockwork filigree & gear rings
-    curbColor: 0xf59e0b,        // Bright polished bronze & warm amber curb (high visibility!)
+    curbColor: 0xb45309,        // Burnished copper & warm amber curb (harmonious with track)
     catenaryColor: 0x92400e,    // Riveted brass truss arches
     insulatorColor: 0xfbbf24,   // Amber glass electrical insulators
     pipeColor: 0xb87333,        // Burnished copper steam conduits with brass joint flanges
     bridgeMainColor: 0x382317,  // Heavy riveted bronze and iron viaduct trestles
     bridgeAccentColor: 0xc5a059,// Antique gold mechanical lattice
-    groundPlaneColor: 0x0c0b12
+    groundPlaneColor: 0x192334  // Midnight steel foundation
   },
   ambience: {
     baseToneFreq: 78,

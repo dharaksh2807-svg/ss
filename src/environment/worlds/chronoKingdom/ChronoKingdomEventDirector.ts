@@ -58,9 +58,44 @@ export interface TimePortalVortex {
   sparkles?: THREE.Points;
 }
 
+export interface ClockReversalEvent {
+  clockFace: THREE.Object3D;
+  minuteHand: THREE.Object3D;
+  hourHand: THREE.Object3D;
+  connectedGears: THREE.Object3D[];
+  timer: number;
+  duration: number;
+  cooldown: number;
+}
+
+export interface CelestialAlignmentEvent {
+  outerRing: THREE.Object3D;
+  middleRing: THREE.Object3D;
+  innerRing: THREE.Object3D;
+  orreryArm: THREE.Object3D;
+  sunBeam?: THREE.Mesh;
+  timer: number;
+  duration: number;
+  cooldown: number;
+}
+
+export interface CarillonBell {
+  mesh: THREE.Object3D;
+  speed: number;
+  amplitude: number;
+  phase: number;
+}
+
+export interface PressureGaugeNeedle {
+  mesh: THREE.Object3D;
+  frequency: number;
+  amplitude: number;
+  phase: number;
+}
+
 /**
  * ChronoKingdomEventDirector
- * Singleton managing all 6 animated clockwork world events with high performance,
+ * Singleton managing all animated clockwork, celestial, and temporal world events with high performance,
  * deterministic timing, zero per-frame garbage, and reduced-motion accessibility.
  */
 export class ChronoKingdomEventDirector {
@@ -73,6 +108,10 @@ export class ChronoKingdomEventDirector {
   private observatories: ObservatoryRingAssembly[] = [];
   private skybridgeTrains: SkybridgeTrain[] = [];
   private timePortals: TimePortalVortex[] = [];
+  private clockReversals: ClockReversalEvent[] = [];
+  private celestialAlignments: CelestialAlignmentEvent[] = [];
+  private carillonBells: CarillonBell[] = [];
+  private pressureGauges: PressureGaugeNeedle[] = [];
 
   private globalTime: number = 0;
 
@@ -105,6 +144,10 @@ export class ChronoKingdomEventDirector {
     this.observatories = this.observatories.filter(o => isAttached(o.outerRing));
     this.skybridgeTrains = this.skybridgeTrains.filter(t => isAttached(t.group));
     this.timePortals = this.timePortals.filter(p => isAttached(p.outerRing));
+    this.clockReversals = this.clockReversals.filter(r => isAttached(r.clockFace));
+    this.celestialAlignments = this.celestialAlignments.filter(a => isAttached(a.outerRing));
+    this.carillonBells = this.carillonBells.filter(b => isAttached(b.mesh));
+    this.pressureGauges = this.pressureGauges.filter(g => isAttached(g.mesh));
   }
 
   /**
@@ -118,6 +161,10 @@ export class ChronoKingdomEventDirector {
     this.observatories = [];
     this.skybridgeTrains = [];
     this.timePortals = [];
+    this.clockReversals = [];
+    this.celestialAlignments = [];
+    this.carillonBells = [];
+    this.pressureGauges = [];
     this.globalTime = 0;
   }
 
@@ -257,6 +304,78 @@ export class ChronoKingdomEventDirector {
       coreVortex,
       sparkles
     });
+  }
+
+  /**
+   * Surprise 1: The Great Clock Reversal
+   * Monumental clock dial and gears rapidly spin backward, pulsating with temporal radiance
+   */
+  public registerClockReversal(
+    clockFace: THREE.Object3D,
+    minuteHand: THREE.Object3D,
+    hourHand: THREE.Object3D,
+    connectedGears: THREE.Object3D[] = [],
+    duration: number = 4.0,
+    cooldown: number = 18.0
+  ): void {
+    this.clockReversals.push({
+      clockFace,
+      minuteHand,
+      hourHand,
+      connectedGears,
+      timer: 0,
+      duration,
+      cooldown
+    });
+  }
+
+  /**
+   * Surprise 2: The Celestial Alignment
+   * Concentric armillary rings accelerate and align to quadrature while central orrery sun flares
+   */
+  public registerCelestialAlignment(
+    outerRing: THREE.Object3D,
+    middleRing: THREE.Object3D,
+    innerRing: THREE.Object3D,
+    orreryArm: THREE.Object3D,
+    sunBeam?: THREE.Mesh,
+    duration: number = 4.5,
+    cooldown: number = 22.0
+  ): void {
+    this.celestialAlignments.push({
+      outerRing,
+      middleRing,
+      innerRing,
+      orreryArm,
+      sunBeam,
+      timer: 0,
+      duration,
+      cooldown
+    });
+  }
+
+  /**
+   * Ambient Micro-Detail: Swinging Campanile Carillon Bell
+   */
+  public registerCarillonBell(
+    mesh: THREE.Object3D,
+    speed: number = 2.5,
+    amplitude: number = 0.45,
+    phase: number = 0
+  ): void {
+    this.carillonBells.push({ mesh, speed, amplitude, phase });
+  }
+
+  /**
+   * Ambient Micro-Detail: Oscillating Steam Pressure Gauge Needle
+   */
+  public registerPressureGauge(
+    mesh: THREE.Object3D,
+    frequency: number = 3.2,
+    amplitude: number = 0.35,
+    phase: number = 0
+  ): void {
+    this.pressureGauges.push({ mesh, frequency, amplitude, phase });
   }
 
   // =========================================================================
@@ -418,6 +537,83 @@ export class ChronoKingdomEventDirector {
         tp.sparkles.rotation.z += rot * 0.5;
       }
     }
+
+    // --- 8. Surprise 1: The Great Clock Reversal ---
+    for (let i = 0; i < this.clockReversals.length; i++) {
+      const rev = this.clockReversals[i];
+      rev.timer += clampedDelta;
+      const cycle = rev.duration + rev.cooldown;
+      const progressInCycle = rev.timer % cycle;
+
+      if (progressInCycle < rev.duration) {
+        const norm = progressInCycle / rev.duration;
+        const speedMultiplier = Math.sin(norm * Math.PI);
+        const reverseDelta = -4.5 * speedMultiplier * motionScale * clampedDelta;
+        
+        rev.minuteHand.rotation.z += reverseDelta;
+        rev.hourHand.rotation.z += reverseDelta * 0.2;
+
+        for (let g = 0; g < rev.connectedGears.length; g++) {
+          rev.connectedGears[g].rotation.z -= reverseDelta * 0.75;
+        }
+
+        const faceMat = (rev.clockFace as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (faceMat && faceMat.emissive) {
+          faceMat.emissiveIntensity = 0.5 + speedMultiplier * 1.8;
+        }
+      } else {
+        const faceMat = (rev.clockFace as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (faceMat && faceMat.emissive) {
+          faceMat.emissiveIntensity = 0.45;
+        }
+      }
+    }
+
+    // --- 9. Surprise 2: The Celestial Alignment ---
+    for (let i = 0; i < this.celestialAlignments.length; i++) {
+      const align = this.celestialAlignments[i];
+      align.timer += clampedDelta;
+      const cycle = align.duration + align.cooldown;
+      const progressInCycle = align.timer % cycle;
+
+      if (progressInCycle < align.duration) {
+        const norm = progressInCycle / align.duration;
+        const curve = Math.sin(norm * Math.PI);
+
+        const alignRate = (1.5 + curve * 4.0) * motionScale * clampedDelta;
+        align.outerRing.rotation.z += alignRate * 0.4;
+        align.middleRing.rotation.y += alignRate * 0.6;
+        align.innerRing.rotation.x += alignRate * 0.8;
+
+        if (align.orreryArm) {
+          align.orreryArm.rotation.y += alignRate * 1.5;
+        }
+
+        if (align.sunBeam) {
+          align.sunBeam.visible = true;
+          const beamPulse = 1.0 + curve * 1.5;
+          align.sunBeam.scale.set(beamPulse, 1.0 + curve * 0.8, beamPulse);
+          const bMat = align.sunBeam.material as THREE.MeshBasicMaterial;
+          if (bMat) bMat.opacity = curve * 0.85;
+        }
+      } else {
+        if (align.sunBeam) align.sunBeam.visible = false;
+      }
+    }
+
+    // --- 10. Ambient Carillon Bells ---
+    for (let i = 0; i < this.carillonBells.length; i++) {
+      const bell = this.carillonBells[i];
+      bell.mesh.rotation.z = Math.sin(this.globalTime * bell.speed * motionScale + bell.phase) * bell.amplitude;
+    }
+
+    // --- 11. Oscillating Pressure Gauges ---
+    for (let i = 0; i < this.pressureGauges.length; i++) {
+      const gauge = this.pressureGauges[i];
+      const j = Math.sin(this.globalTime * 12.0 + gauge.phase) * 0.08;
+      const o = Math.sin(this.globalTime * gauge.frequency + gauge.phase) * gauge.amplitude;
+      gauge.mesh.rotation.z = o + j;
+    }
   }
 
   // Getters for test verification and telemetry
@@ -428,9 +624,15 @@ export class ChronoKingdomEventDirector {
   public getObservatoryCount(): number { return this.observatories.length; }
   public getSkybridgeTrainCount(): number { return this.skybridgeTrains.length; }
   public getTimePortalCount(): number { return this.timePortals.length; }
+  public getClockReversalCount(): number { return this.clockReversals.length; }
+  public getCelestialAlignmentCount(): number { return this.celestialAlignments.length; }
+  public getCarillonBellCount(): number { return this.carillonBells.length; }
+  public getPressureGaugeCount(): number { return this.pressureGauges.length; }
   public getTotalActiveElements(): number {
     return this.gears.length + this.chimes.length + this.bridges.length +
            this.pistons.length + this.observatories.length +
-           this.skybridgeTrains.length + this.timePortals.length;
+           this.skybridgeTrains.length + this.timePortals.length +
+           this.clockReversals.length + this.celestialAlignments.length +
+           this.carillonBells.length + this.pressureGauges.length;
   }
 }
