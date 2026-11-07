@@ -203,6 +203,7 @@ export class ObstacleFactory {
   private trainDestNeoMat: THREE.MeshBasicMaterial;
   private trainDestClassicMat: THREE.MeshBasicMaterial;
   private trainDestExpressMat: THREE.MeshBasicMaterial;
+  private trainDestInfernoMat: THREE.MeshBasicMaterial;
   private rampPlateMat: THREE.MeshStandardMaterial;
   private rampTrussMat: THREE.MeshStandardMaterial;
   private rampReflectorMat: THREE.MeshBasicMaterial;
@@ -406,6 +407,11 @@ export class ObstacleFactory {
       map: TextureGenerator.getDestinationSignTexture('AERO 08', 'CENTRAL AIRPORT', 0x76ff03)
     });
     this.curvedManager.applyCurvature(this.trainDestExpressMat);
+
+    this.trainDestInfernoMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getDestinationSignTexture('INFERNO 66', 'HELLFIRE EXPRESS', 0xf97316)
+    });
+    this.curvedManager.applyCurvature(this.trainDestInfernoMat);
 
     this.rampPlateMat = new THREE.MeshStandardMaterial({
       map: TextureGenerator.getDiamondPlateTexture(),
@@ -1197,7 +1203,7 @@ export class ObstacleFactory {
       this.buildRampBulkhead(group, w, h, bodyLength, bodyMat, accentColor);
       this.buildRamp(group, w, h, bodyLength, noseLength);
     } else {
-      this.buildFrontCab(group, w, h, bodyLength, noseLength, variant, bodyMat, colorHex, accentColor);
+      this.buildFrontCab(group, w, h, bodyLength, noseLength, variant, bodyMat, colorHex, accentColor, themeId);
     }
 
     // 4. Rear Gangway & Taillight Details
@@ -1525,6 +1531,67 @@ export class ObstacleFactory {
       });
     }
 
+    // 14. Theme-Specific Inferno Express Armored Obsidian Cowcatcher, Magma Underglow & Headlights
+    if (isInfernoExpress) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const infernoCabGroup = new THREE.Group();
+        const obsidianMat = new THREE.MeshStandardMaterial({
+          color: 0x18181b,
+          roughness: 0.65,
+          metalness: 0.85
+        });
+        this.curvedManager.applyCurvature(obsidianMat);
+        const magmaMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+        this.curvedManager.applyCurvature(magmaMat);
+
+        // Heavy angled obsidian plow
+        const plowGeo = new THREE.BoxGeometry(w * 0.85, 0.50, 0.40);
+        const plow = new THREE.Mesh(plowGeo, obsidianMat);
+        plow.position.set(0, 0.35, bodyLength * 0.5 + noseLength * 0.88);
+        infernoCabGroup.add(plow);
+
+        // Glowing magma edge on cowcatcher
+        const plowLipGeo = new THREE.BoxGeometry(w * 0.87, 0.08, 0.42);
+        const plowLip = new THREE.Mesh(plowLipGeo, magmaMat);
+        plowLip.position.set(0, 0.12, bodyLength * 0.5 + noseLength * 0.90);
+        infernoCabGroup.add(plowLip);
+
+        // Blazing incandescent orange projector headlights
+        [-w * 0.25, w * 0.25].forEach((hx) => {
+          const lampGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.20, 12);
+          lampGeo.rotateX(Math.PI / 2);
+          const lamp = new THREE.Mesh(lampGeo, magmaMat);
+          lamp.position.set(hx, 1.85, bodyLength * 0.5 + noseLength * 0.95);
+          infernoCabGroup.add(lamp);
+        });
+
+        group.add(infernoCabGroup);
+      }
+
+      // Heat-resistant armored skirts with glowing magma channel
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.22, bodyLength * 0.94);
+      const skirtMat = new THREE.MeshStandardMaterial({
+        color: 0x18181b,
+        roughness: 0.70,
+        metalness: 0.80
+      });
+      this.curvedManager.applyCurvature(skirtMat);
+      const magmaLineGeo = new THREE.BoxGeometry(0.05, 0.05, bodyLength * 0.92);
+      const magmaLineMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+      this.curvedManager.applyCurvature(magmaLineMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const mLine = new THREE.Mesh(magmaLineGeo, magmaLineMat);
+        mLine.position.set(sideX, 0.36, 0);
+        group.add(mLine);
+      });
+    }
+
     return group;
   }
 
@@ -1736,7 +1803,8 @@ export class ObstacleFactory {
     variant: TrainVariant,
     bodyMat: THREE.Material,
     colorHex: number,
-    accentColor: number
+    accentColor: number,
+    themeId?: string
   ): void {
     const halfW = w * 0.5;
     const frontZ = bodyLength * 0.5;
@@ -2085,7 +2153,8 @@ export class ObstacleFactory {
 
       // Flush-mounted high-res LED destination display
       const destGeo = new THREE.BoxGeometry(w * 0.60, 0.26, 0.08);
-      const destSign = new THREE.Mesh(destGeo, this.trainDestExpressMat);
+      const destMat = themeId === 'INFERNO_EXPRESS' ? this.trainDestInfernoMat : this.trainDestExpressMat;
+      const destSign = new THREE.Mesh(destGeo, destMat);
       destSign.position.set(0, 3.68, frontZ + expressNoseLen * 0.68);
       group.add(destSign);
 
@@ -3138,7 +3207,7 @@ export class ObstacleFactory {
         this.buildRampBulkhead(carriageGroup, w, h, comp.length, bodyMat, accentColor);
         this.buildRamp(carriageGroup, w, h, comp.length, noseLength, effectiveRampLen);
       } else if (comp.type === 'LOCOMOTIVE_CAB') {
-        this.buildFrontCab(carriageGroup, w, h, comp.length, noseLength, variant, bodyMat, carColor, accentColor);
+        this.buildFrontCab(carriageGroup, w, h, comp.length, noseLength, variant, bodyMat, carColor, accentColor, themeId);
       } else {
         // Intermediate front bulkhead connection
         const bellowGeo = new THREE.BoxGeometry(w * 0.52, 2.35, 0.35);
@@ -3394,6 +3463,56 @@ export class ObstacleFactory {
           const crest = new THREE.Mesh(crestGeo, crestMat);
           crest.position.set(sideX, h + 0.12, 0);
           carriageGroup.add(crest);
+        });
+      }
+
+      // Theme-Specific Inferno Express Armored Obsidian Cowcatcher & Glowing Magma Trims
+      if (themeId === 'INFERNO_EXPRESS') {
+        const halfW = w * 0.5;
+        if (!comp.hasRamp && comp.type === 'LOCOMOTIVE_CAB') {
+          const infernoPlowGroup = new THREE.Group();
+          const obsidianMat = new THREE.MeshStandardMaterial({
+            color: 0x18181b,
+            roughness: 0.65,
+            metalness: 0.85
+          });
+          this.curvedManager.applyCurvature(obsidianMat);
+          const magmaMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+          this.curvedManager.applyCurvature(magmaMat);
+
+          const plowGeo = new THREE.BoxGeometry(w * 0.86, 0.48, 0.38);
+          const plow = new THREE.Mesh(plowGeo, obsidianMat);
+          plow.position.set(0, 0.38, comp.length * 0.5 + noseLength * 0.85);
+          infernoPlowGroup.add(plow);
+
+          const magmaLipGeo = new THREE.BoxGeometry(w * 0.88, 0.08, 0.40);
+          const magmaLip = new THREE.Mesh(magmaLipGeo, magmaMat);
+          magmaLip.position.set(0, 0.14, comp.length * 0.5 + noseLength * 0.88);
+          infernoPlowGroup.add(magmaLip);
+
+          [-w * 0.24, w * 0.24].forEach((px) => {
+            const lampGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.18, 12);
+            lampGeo.rotateX(Math.PI / 2);
+            const lamp = new THREE.Mesh(lampGeo, magmaMat);
+            lamp.position.set(px, 1.85, comp.length * 0.5 + noseLength * 0.95);
+            infernoPlowGroup.add(lamp);
+          });
+
+          carriageGroup.add(infernoPlowGroup);
+        }
+
+        // Armored obsidian roof ridge
+        const ridgeGeo = new THREE.BoxGeometry(0.08, 0.18, comp.length * 0.94);
+        const ridgeMat = new THREE.MeshStandardMaterial({
+          color: 0x18181b,
+          roughness: 0.70,
+          metalness: 0.85
+        });
+        this.curvedManager.applyCurvature(ridgeMat);
+        [-halfW + 0.12, halfW - 0.12].forEach((sideX) => {
+          const ridge = new THREE.Mesh(ridgeGeo, ridgeMat);
+          ridge.position.set(sideX, h + 0.10, 0);
+          carriageGroup.add(ridge);
         });
       }
 

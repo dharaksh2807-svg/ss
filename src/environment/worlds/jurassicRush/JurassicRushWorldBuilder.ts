@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SeededRandom } from '../../SceneryFactory';
 import { JurassicRushEventDirector } from './JurassicRushEventDirector';
 import { JURASSIC_RUSH_TRAIN_LIVERY } from './JurassicRushTheme';
+import { CurvedShaderManager } from '../../../scene/CurvedShader';
 
 /**
  * Procedural Texture Cache for Jurassic Rush
@@ -270,6 +271,25 @@ export class JurassicRushWorldBuilder {
     this.lanternGlowMat = new THREE.MeshBasicMaterial({
       color: 0xfef08a
     });
+
+    // Apply track curvature shader to all materials so meshes bend smoothly with tracks
+    const curved = CurvedShaderManager.getInstance();
+    curved.applyCurvature(this.jungleLeafMat);
+    curved.applyCurvature(this.cycadLeafMat);
+    curved.applyCurvature(this.treeBarkMat);
+    curved.applyCurvature(this.canyonRockMat);
+    curved.applyCurvature(this.templeStoneMat);
+    curved.applyCurvature(this.mossyBasaltMat);
+    curved.applyCurvature(this.dinosaurSkinMat);
+    curved.applyCurvature(this.raptorGreenMat);
+    curved.applyCurvature(this.pterosaurWingsMat);
+    curved.applyCurvature(this.waterfallWaterMat);
+    curved.applyCurvature(this.riverWaterMat);
+    curved.applyCurvature(this.amberCurbMat);
+    curved.applyCurvature(this.expeditionBronzeMat);
+    curved.applyCurvature(this.expeditionSteelMat);
+    curved.applyCurvature(this.observationGlassMat);
+    curved.applyCurvature(this.lanternGlowMat);
   }
 
   public static getInstance(): JurassicRushWorldBuilder {

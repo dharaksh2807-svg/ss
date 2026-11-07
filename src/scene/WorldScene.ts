@@ -35,6 +35,7 @@ export class WorldScene {
   public vipExpressSkyline: THREE.Group | null = null;
   public midnightVelvetSkyline: THREE.Group | null = null;
   public jurassicSkyline: THREE.Group | null = null;
+  public infernoSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -46,6 +47,9 @@ export class WorldScene {
   private vipExpressSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private midnightVelvetSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private jurassicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private infernoSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private infernoSkylineVolcanoes: Array<{ craterGlow: THREE.Mesh; plume: THREE.Mesh; phase: number }> = [];
+  private infernoSkylineTime: number = 0;
   private vipSearchlights: THREE.Mesh[] = [];
   private midnightSkylineSearchlights: THREE.Mesh[] = [];
   private jurassicPterosaurFlocks: Array<{ group: THREE.Group; leftWing: THREE.Object3D; rightWing: THREE.Object3D; phase: number; basePos: THREE.Vector3 }> = [];
@@ -1802,6 +1806,108 @@ export class WorldScene {
 
     group.add(this.jurassicSkyline);
 
+    // =========================================================================
+    // 11. INFERNO EXPRESS: Ring of 18 Active Colossal Volcanoes, Glowing Calderas,
+    //     Molten Magma Cataracts, Spewing Ash Plumes & Basalt Spire Citadels
+    // =========================================================================
+    this.infernoSkylineVolcanoes = [];
+    const infernoSkyline = new THREE.Group();
+    this.infernoSkyline = infernoSkyline;
+    this.infernoSkylineMaterial = this.skylineMaterial.clone();
+    this.infernoSkylineMaterial.color.setHex(0x180806);
+    this.infernoSkylineMaterial.transparent = true;
+    this.infernoSkylineMaterial.opacity = 0.88;
+
+    const basaltMat = this.infernoSkylineMaterial;
+    const calderaMat = new THREE.MeshBasicMaterial({ color: 0x1f0a08 });
+    const infernoMagmaGlowMat = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.90 });
+    const innerCoreMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const lavaVeinMat = new THREE.MeshBasicMaterial({ color: 0xea580c });
+    const ashPlumeMat = new THREE.MeshBasicMaterial({ color: 0x271714, transparent: true, opacity: 0.70 });
+
+    // Ring of 18 Primordial Active Volcanoes around the horizon (dist = 335m)
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2;
+      const dist = 335;
+
+      const peakGroup = new THREE.Group();
+      peakGroup.position.set(
+        Math.cos(angle) * dist,
+        -15,
+        Math.sin(angle) * dist
+      );
+
+      // Colossal Volcanic Mountain Cone
+      const coneH = 85 + (i % 6) * 18;
+      const coneR = 36 + (i % 4) * 8;
+      const coneGeo = new THREE.ConeGeometry(coneR, coneH, 8);
+      const coneMesh = new THREE.Mesh(coneGeo, calderaMat);
+      coneMesh.position.y = coneH * 0.5;
+      peakGroup.add(coneMesh);
+
+      // Summit Caldera Crater Rim
+      const rimGeo = new THREE.CylinderGeometry(coneR * 0.22, coneR * 0.28, 5.0, 8);
+      const craterRim = new THREE.Mesh(rimGeo, basaltMat);
+      craterRim.position.y = coneH - 2.0;
+      peakGroup.add(craterRim);
+
+      // Incandescent Glowing Magma Caldera Lake
+      const magmaGeo = new THREE.CylinderGeometry(coneR * 0.18, coneR * 0.18, 2.0, 8);
+      const magmaGlow = new THREE.Mesh(magmaGeo, infernoMagmaGlowMat);
+      magmaGlow.position.y = coneH;
+      peakGroup.add(magmaGlow);
+
+      // White-hot center core
+      const coreGeo = new THREE.CylinderGeometry(coneR * 0.08, coneR * 0.08, 2.2, 8);
+      const core = new THREE.Mesh(coreGeo, innerCoreMat);
+      core.position.y = coneH + 0.1;
+      peakGroup.add(core);
+
+      // Cascading Molten Magma River streaming down the volcano slope
+      const riverW = 3.5 + (i % 3) * 1.5;
+      const riverGeo = new THREE.BoxGeometry(riverW, coneH * 0.65, 1.2);
+      const river = new THREE.Mesh(riverGeo, lavaVeinMat);
+      river.position.set(0, coneH * 0.45, coneR * 0.45);
+      river.rotation.x = 0.52;
+      peakGroup.add(river);
+
+      // Billowing Volcanic Ash & Smoke Plume
+      const plumeR = 12.0 + (i % 3) * 4.0;
+      const plumeGeo = new THREE.SphereGeometry(plumeR, 8, 8);
+      const plume = new THREE.Mesh(plumeGeo, ashPlumeMat);
+      plume.position.set(0, coneH + plumeR * 0.85, 0);
+      plume.userData = { baseY: coneH + plumeR * 0.85 };
+      peakGroup.add(plume);
+
+      this.infernoSkylineVolcanoes.push({
+        craterGlow: magmaGlow,
+        plume,
+        phase: i * 0.85
+      });
+
+      // Flanking Jagged Basalt Ridges
+      const ridgeH = coneH * 0.45;
+      const ridgeW = coneR * 0.70;
+      const ridgeMesh1 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW, ridgeH, 5), basaltMat);
+      ridgeMesh1.position.set(coneR * 0.65, ridgeH * 0.5, 0);
+      peakGroup.add(ridgeMesh1);
+
+      const ridgeMesh2 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW * 0.8, ridgeH * 0.8, 5), basaltMat);
+      ridgeMesh2.position.set(-coneR * 0.65, ridgeH * 0.4, 0);
+      peakGroup.add(ridgeMesh2);
+
+      // Distant Spired Basalt Citadel Monoliths
+      if (i % 3 === 1) {
+        const citadelSpire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 32.0, 6), basaltMat);
+        citadelSpire.position.set(coneR * 0.45, ridgeH + 12.0, 8.0);
+        peakGroup.add(citadelSpire);
+      }
+
+      infernoSkyline.add(peakGroup);
+    }
+
+    group.add(this.infernoSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -1813,6 +1919,7 @@ export class WorldScene {
     this.vipExpressSkyline.visible = this.currentTheme.id === 'VIP_EXPRESS';
     this.midnightVelvetSkyline.visible = this.currentTheme.id === 'MIDNIGHT_VELVET';
     this.jurassicSkyline.visible = this.currentTheme.id === 'JURASSIC_RUSH';
+    this.infernoSkyline.visible = this.currentTheme.id === 'INFERNO_EXPRESS';
 
     return group;
   }
@@ -1922,6 +2029,12 @@ export class WorldScene {
       isJurassic(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isInferno = (env: EnvironmentTheme) => env.id === 'INFERNO_EXPRESS';
+    const infernoOpacity = THREE.MathUtils.lerp(
+      isInferno(base) ? base.skyline.opacity : 0,
+      isInferno(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1966,6 +2079,10 @@ export class WorldScene {
       this.jurassicSkylineMaterial.color.copy(skylineColor);
       this.jurassicSkylineMaterial.opacity = jurassicOpacity;
     }
+    if (this.infernoSkylineMaterial) {
+      this.infernoSkylineMaterial.color.copy(skylineColor);
+      this.infernoSkylineMaterial.opacity = infernoOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -1977,6 +2094,7 @@ export class WorldScene {
     if (this.vipExpressSkyline) this.vipExpressSkyline.visible = vipOpacity > 0.01;
     if (this.midnightVelvetSkyline) this.midnightVelvetSkyline.visible = midnightVelvetOpacity > 0.01;
     if (this.jurassicSkyline) this.jurassicSkyline.visible = jurassicOpacity > 0.01;
+    if (this.infernoSkyline) this.infernoSkyline.visible = infernoOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -2536,6 +2654,23 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
       const delta = dt || 0.016;
       InfernoExpressEventDirector.getInstance().update(delta, true);
+
+      // Animate pulsing magma calderas and drifting ash plumes across volcanic skyline
+      if (this.infernoSkyline && this.infernoSkyline.visible) {
+        this.infernoSkylineTime += delta;
+        for (let i = 0; i < this.infernoSkylineVolcanoes.length; i++) {
+          const v = this.infernoSkylineVolcanoes[i];
+          const t = this.infernoSkylineTime * 1.8 + v.phase;
+          const glowScale = 0.9 + 0.2 * Math.sin(t * 2.2);
+          v.craterGlow.scale.set(glowScale, 1.0, glowScale);
+          v.plume.scale.set(
+            1.0 + 0.12 * Math.sin(t * 0.8),
+            1.0 + 0.15 * Math.cos(t * 0.9),
+            1.0 + 0.12 * Math.sin(t * 0.8)
+          );
+          v.plume.position.y = (v.plume.userData.baseY || 100) + Math.sin(t * 0.7) * 2.5;
+        }
+      }
     }
 
     if (this.currentTheme && this.currentTheme.id === 'JURASSIC_RUSH') {
