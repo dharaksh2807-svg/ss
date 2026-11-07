@@ -341,6 +341,19 @@ export class AbyssalGlasslineWorldBuilder {
       const lowerRunner = new THREE.Mesh(this.getBox(0.08, 0.06, chunkLength), mats.abyssalBioTealGlowMat || this.bioTealGlowMat);
       lowerRunner.position.set(wx + (wx < 0 ? wallThick * 0.5 : -wallThick * 0.5), baseH, -chunkLength * 0.5);
       group.add(lowerRunner);
+
+      // Heavy External Oxygen/Power Conduits & Reinforced Mounting Collars
+      const conduitX = wx + (wx < 0 ? -0.42 : 0.42);
+      const conduitMesh = new THREE.Mesh(this.getBox(0.20, 0.20, chunkLength), mats.abyssalTitaniumRibMat || this.titaniumCharcoalMat);
+      conduitMesh.position.set(conduitX, 0.85, -chunkLength * 0.5);
+      group.add(conduitMesh);
+
+      // Hydro-brass mounting collar brackets every 20m
+      for (let cz = 10; cz < chunkLength; cz += 20) {
+        const collar = new THREE.Mesh(this.getBox(0.26, 0.28, 0.35), mats.abyssalHydroBrassMat || this.hydroBrassMat);
+        collar.position.set(conduitX, 0.85, -cz);
+        group.add(collar);
+      }
     });
 
     // Vaulted Transparent Pressure Glass Roof Canopy (Y = 6.4m to apex 11.2m)
@@ -433,6 +446,29 @@ export class AbyssalGlasslineWorldBuilder {
           const polyp = new THREE.Mesh(this.getSphere(0.45, 6, 6), mats.abyssalBioCyanGlowMat || this.bioCyanGlowMat);
           polyp.position.set(rx + (p === 0 ? 3.0 : -3.0), 3.2, lotZ + p * 8.0);
           group.add(polyp);
+        }
+
+        // Swaying benthic seagrass blades
+        const director = AbyssalGlasslineEventDirector.getInstance();
+        for (let g = 0; g < 3; g++) {
+          const blade = new THREE.Mesh(this.getBox(0.22, 2.5, 0.05), mats.abyssalBioTealGlowMat || this.bioTealGlowMat);
+          blade.position.set(rx + (g % 2 === 0 ? -1.8 : 1.8), 2.8, lotZ - 12.0 + g * 7.5);
+          group.add(blade);
+          director.registerSwayingCoralFan(blade, g * 0.95);
+        }
+
+        // Deep-sea sea anemones with bioluminescent tentacles
+        for (let a = 0; a < 2; a++) {
+          const anemone = new THREE.Mesh(this.getCylinder(0.40, 0.28, 1.1, 6), mats.abyssalCoralMat || this.deepCoralMat);
+          anemone.position.set(rx + (a === 0 ? 4.2 : -4.2), 2.2, lotZ - 5.0 + a * 10.0);
+          group.add(anemone);
+        }
+
+        // Rising air-bubble exhaust streams from seabed vents
+        for (let b = 0; b < 3; b++) {
+          const bubble = new THREE.Mesh(this.getSphere(0.18 + b * 0.05, 6, 6), mats.abyssalBioCyanGlowMat || this.bioCyanGlowMat);
+          bubble.position.set(rx + (side < 0 ? 4.8 : -4.8), 3.2 + b * 2.6, lotZ + b * 3.5);
+          group.add(bubble);
         }
       }
     });
@@ -571,6 +607,15 @@ export class AbyssalGlasslineWorldBuilder {
       const shelf = new THREE.Mesh(this.getCylinder(1.6, 0.4, 0.35, 6), mats.abyssalCoralMat || this.deepCoralMat);
       shelf.position.set(-sideX, 7.5, ruinZ - 12.0 + c * 8.0);
       ruinGroup.add(shelf);
+    }
+
+    // Ancient Encrusted Shipwreck Hull Ribs & Timbers
+    for (let s = 0; s < 2; s++) {
+      const ribGeo = this.getTorus(4.5, 0.35, 6, 16);
+      const shipRib = new THREE.Mesh(ribGeo, mats.abyssalBasaltRockMat || this.basaltRockMat);
+      shipRib.position.set(-sideX - 4.5, 2.2, ruinZ - 4.0 + s * 12.0);
+      shipRib.rotation.set(0.4, 0.25, 0.7);
+      ruinGroup.add(shipRib);
     }
 
     // CINEMATIC EVENT D: The Sunken Titan Reveal

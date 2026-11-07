@@ -71,6 +71,9 @@ export class WorldScene {
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
+  private abyssalPlanktonGeo: THREE.BufferGeometry | null = null;
+  private abyssalPlanktonPos: Float32Array | null = null;
+  private abyssalCausticPlane: THREE.Mesh | null = null;
   private doomsdaySmokePlumes: THREE.Group[] = [];
   private doomsdayMeteorStreaks: THREE.Mesh[] = [];
   private doomsdayEmbersTime: number = 0;
@@ -1006,6 +1009,8 @@ export class WorldScene {
     }
     planktonGeo.setAttribute('position', new THREE.BufferAttribute(planktonPos, 3));
     planktonGeo.setAttribute('color', new THREE.BufferAttribute(planktonColors, 3));
+    this.abyssalPlanktonGeo = planktonGeo;
+    this.abyssalPlanktonPos = planktonPos;
     const planktonMat = new THREE.PointsMaterial({
       size: 2.8,
       vertexColors: true,
@@ -1086,21 +1091,47 @@ export class WorldScene {
     const causticPlane = new THREE.Mesh(causticGeo, causticMat);
     causticPlane.position.set(0, 92, -180);
     causticPlane.rotation.set(Math.PI / 2 + 0.12, 0, 0);
+    this.abyssalCausticPlane = causticPlane;
     this.abyssalSkyline.add(causticPlane);
 
-    // 5e. Swimming Background Marine Leviathans (Creatures)
+    // Additional theme materials for articulated marine megafauna & organisms
+    const abyssalVioletMat = new THREE.MeshBasicMaterial({
+      color: 0x8b5cf6,
+      transparent: true,
+      opacity: 0.72,
+      fog: false
+    });
+    const abyssalSearchlightMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.28,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false
+    });
+    const abyssalTitaniumMat = new THREE.MeshBasicMaterial({ color: 0x0f2b3e, fog: false });
+
+    // 5e. Living Oceanic Megafauna & Articulated Background Ecosystem
     this.backgroundMarineCreatures = [];
     const creatureSpecs = [
-      { startX: -140, y: 52, z: -240, vx: 14.0, verticalAmp: 4.5, swimFreq: 1.4, swimPhase: 0.0, minX: -220, maxX: 220, scale: 1.4, type: 'MANTA' },
-      { startX: 160, y: 72, z: -280, vx: -11.0, verticalAmp: 3.2, swimFreq: 1.1, swimPhase: 2.1, minX: -220, maxX: 220, scale: 1.8, type: 'LEVIATHAN' },
-      { startX: -60, y: 92, z: -310, vx: 22.0, verticalAmp: 5.0, swimFreq: 1.9, swimPhase: 4.2, minX: -220, maxX: 220, scale: 0.9, type: 'SCOUT_RAY' }
+      { startX: -160, y: 56, z: -230, vx: 12.0, verticalAmp: 4.5, swimFreq: 1.4, swimPhase: 0.0, minX: -360, maxX: 360, scale: 1.4, type: 'MANTA' },
+      { startX: 190, y: 74, z: -265, vx: -10.5, verticalAmp: 3.8, swimFreq: 1.15, swimPhase: 2.5, minX: -360, maxX: 360, scale: 1.25, type: 'MANTA' },
+      { startX: -240, y: 88, z: -320, vx: 16.0, verticalAmp: 3.5, swimFreq: 0.95, swimPhase: 1.1, minX: -360, maxX: 360, scale: 1.9, type: 'LEVIATHAN' },
+      { startX: 95, y: 46, z: -210, vx: -5.5, verticalAmp: 2.2, swimFreq: 1.7, swimPhase: 3.5, minX: -360, maxX: 360, scale: 1.0, type: 'JELLYFISH_SWARM' },
+      { startX: -115, y: 38, z: -195, vx: 18.0, verticalAmp: 1.4, swimFreq: 0.8, swimPhase: 0.7, minX: -360, maxX: 360, scale: 1.15, type: 'SUBMERSIBLE' },
+      { startX: 135, y: 64, z: -245, vx: -15.0, verticalAmp: 2.0, swimFreq: 1.6, swimPhase: 1.9, minX: -360, maxX: 360, scale: 0.85, type: 'FISH_SCHOOL' }
     ];
 
     creatureSpecs.forEach((spec) => {
       const creature = new THREE.Group();
       creature.position.set(spec.startX, spec.y, spec.z);
-      creature.userData = {
+      const sc = spec.scale;
+
+      const uData: any = {
+        type: spec.type,
         baseY: spec.y,
+        baseScale: spec.scale,
         vx: spec.vx,
         verticalAmp: spec.verticalAmp,
         swimFreq: spec.swimFreq,
@@ -1109,24 +1140,196 @@ export class WorldScene {
         maxX: spec.maxX
       };
 
-      const sc = spec.scale;
-      // Fusiform hydrodynamic body
-      const bodyGeo = new THREE.ConeGeometry(2.4 * sc, 16 * sc, 8);
-      const body = new THREE.Mesh(bodyGeo, abyssalNavyMat);
-      body.rotation.z = spec.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
-      creature.add(body);
+      if (spec.type === 'MANTA') {
+        // Streamlined Diamond Hydrodynamic Body
+        const bodyGeo = new THREE.CylinderGeometry(2.2 * sc, 1.4 * sc, 0.8 * sc, 8);
+        const body = new THREE.Mesh(bodyGeo, abyssalNavyMat);
+        body.rotation.x = Math.PI * 0.5;
+        body.rotation.z = spec.vx > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
+        creature.add(body);
 
-      // Wide undulating pectoral wings
-      const wingGeo = new THREE.BoxGeometry(22 * sc, 0.4, 7 * sc);
-      const wing = new THREE.Mesh(wingGeo, abyssalTealMat);
-      creature.add(wing);
+        // Cephalic Horns
+        [-0.8 * sc, 0.8 * sc].forEach((lx) => {
+          const horn = new THREE.Mesh(new THREE.ConeGeometry(0.3 * sc, 1.2 * sc, 6), abyssalNavyMat);
+          horn.rotation.x = spec.vx > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
+          horn.position.set(lx, 0, (spec.vx > 0 ? 1 : -1) * 1.5 * sc);
+          creature.add(horn);
+        });
 
-      // Bioluminescent dorsal spine light strip
-      const dorsalGeo = new THREE.BoxGeometry(0.3 * sc, 0.8 * sc, 14 * sc);
-      const dorsal = new THREE.Mesh(dorsalGeo, abyssalCyanMat);
-      dorsal.position.y = 1.4 * sc;
-      creature.add(dorsal);
+        // Articulated Left Wing + Tip
+        const leftWing = new THREE.Group();
+        leftWing.position.set(-2.0 * sc, 0, 0);
+        const lMain = new THREE.Mesh(new THREE.BoxGeometry(6.5 * sc, 0.18 * sc, 4.0 * sc), abyssalNavyMat);
+        lMain.position.set(-3.25 * sc, 0, 0);
+        leftWing.add(lMain);
 
+        const leftWingTip = new THREE.Mesh(new THREE.BoxGeometry(3.5 * sc, 0.12 * sc, 2.5 * sc), abyssalTealMat);
+        leftWingTip.position.set(-6.5 * sc, 0, 0);
+        leftWing.add(leftWingTip);
+        creature.add(leftWing);
+
+        // Articulated Right Wing + Tip
+        const rightWing = new THREE.Group();
+        rightWing.position.set(2.0 * sc, 0, 0);
+        const rMain = new THREE.Mesh(new THREE.BoxGeometry(6.5 * sc, 0.18 * sc, 4.0 * sc), abyssalNavyMat);
+        rMain.position.set(3.25 * sc, 0, 0);
+        rightWing.add(rMain);
+
+        const rightWingTip = new THREE.Mesh(new THREE.BoxGeometry(3.5 * sc, 0.12 * sc, 2.5 * sc), abyssalTealMat);
+        rightWingTip.position.set(6.5 * sc, 0, 0);
+        rightWing.add(rightWingTip);
+        creature.add(rightWing);
+
+        // Sinusoidal Whip Tail
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * sc, 0.03 * sc, 9.5 * sc, 4), abyssalNavyMat);
+        tail.rotation.x = spec.vx > 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
+        tail.position.set(0, 0, (spec.vx > 0 ? -1 : 1) * 4.5 * sc);
+        creature.add(tail);
+
+        // Ventral/Dorsal Photophore Arrays
+        const photophores: THREE.Mesh[] = [];
+        [-5.5 * sc, -3.2 * sc, 3.2 * sc, 5.5 * sc].forEach((px) => {
+          const photo = new THREE.Mesh(new THREE.SphereGeometry(0.22 * sc, 6, 6), abyssalCyanMat);
+          photo.position.set(px, 0.12 * sc, 0);
+          creature.add(photo);
+          photophores.push(photo);
+        });
+
+        uData.leftWing = leftWing;
+        uData.rightWing = rightWing;
+        uData.leftWingTip = leftWingTip;
+        uData.rightWingTip = rightWingTip;
+        uData.tail = tail;
+        uData.photophores = photophores;
+      } else if (spec.type === 'LEVIATHAN') {
+        // Colossal Armored Predator Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(5.0 * sc, 3.8 * sc, 8.5 * sc), abyssalNavyMat);
+        head.position.set(0, 0, 16.0 * sc);
+        creature.add(head);
+
+        // Twin Piercing Bioluminescent Eyes
+        const eyes: THREE.Mesh[] = [];
+        [-2.3 * sc, 2.3 * sc].forEach((ex) => {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.55 * sc, 8, 8), abyssalCyanMat);
+          eye.position.set(ex, 0.8 * sc, 19.2 * sc);
+          creature.add(eye);
+          eyes.push(eye);
+        });
+
+        // 7 Serpentine Body Segments
+        const bodySegments: THREE.Object3D[] = [];
+        const dorsalSpines: THREE.Object3D[] = [];
+        for (let s = 0; s < 7; s++) {
+          const taper = 1.0 - (s / 7) * 0.45;
+          const segW = 4.8 * sc * taper;
+          const segH = 3.6 * sc * taper;
+          const segL = 6.5 * sc;
+
+          const seg = new THREE.Mesh(new THREE.BoxGeometry(segW, segH, segL), abyssalNavyMat);
+          seg.position.set(0, 0, 10.0 * sc - s * 6.5 * sc);
+          creature.add(seg);
+          bodySegments.push(seg);
+
+          // Glowing dorsal spine
+          const spine = new THREE.Mesh(new THREE.ConeGeometry(0.5 * sc * taper, 2.8 * sc * taper, 4), abyssalTealMat);
+          spine.position.set(0, segH * 0.5 + 1.2 * sc * taper, 10.0 * sc - s * 6.5 * sc);
+          creature.add(spine);
+          dorsalSpines.push(spine);
+        }
+
+        // Horizontal Caudal Tail Flukes
+        const tailFlukes = new THREE.Group();
+        tailFlukes.position.set(0, 0, 10.0 * sc - 7 * 6.5 * sc - 1.5 * sc);
+        const flukeL = new THREE.Mesh(new THREE.BoxGeometry(5.0 * sc, 0.3 * sc, 2.8 * sc), abyssalNavyMat);
+        flukeL.position.set(-2.8 * sc, 0, 0);
+        tailFlukes.add(flukeL);
+        const flukeR = new THREE.Mesh(new THREE.BoxGeometry(5.0 * sc, 0.3 * sc, 2.8 * sc), abyssalNavyMat);
+        flukeR.position.set(2.8 * sc, 0, 0);
+        tailFlukes.add(flukeR);
+        creature.add(tailFlukes);
+
+        uData.head = head;
+        uData.eyes = eyes;
+        uData.bodySegments = bodySegments;
+        uData.dorsalSpines = dorsalSpines;
+        uData.tailFlukes = tailFlukes;
+      } else if (spec.type === 'JELLYFISH_SWARM') {
+        const jellyList: any[] = [];
+        for (let j = 0; j < 5; j++) {
+          const jGroup = new THREE.Group();
+          jGroup.position.set(
+            -8.0 + (j % 3) * 6.0,
+            (j % 2) * 3.5,
+            -6.0 + Math.floor(j / 3) * 8.0
+          );
+
+          // Pulsating Translucent Bell
+          const bell = new THREE.Mesh(new THREE.SphereGeometry(1.2 * sc, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), abyssalVioletMat);
+          jGroup.add(bell);
+
+          // Trailing Tentacles
+          const tentacles: THREE.Object3D[] = [];
+          for (let t = 0; t < 4; t++) {
+            const tent = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * sc, 0.02 * sc, 3.2 * sc, 4), abyssalCyanMat);
+            tent.position.set(Math.cos(t * 1.57) * 0.6 * sc, -1.8 * sc, Math.sin(t * 1.57) * 0.6 * sc);
+            jGroup.add(tent);
+            tentacles.push(tent);
+          }
+          creature.add(jGroup);
+          jellyList.push({
+            group: jGroup,
+            bell,
+            tentacles,
+            pulseFreq: 1.5 + (j % 2) * 0.5,
+            phase: j * 0.8
+          });
+        }
+        uData.jellyfish = jellyList;
+      } else if (spec.type === 'SUBMERSIBLE') {
+        // High-Pressure Submarine Hull
+        const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.6 * sc, 1.1 * sc, 6.5 * sc, 8), abyssalTitaniumMat);
+        hull.rotation.x = Math.PI * 0.5;
+        creature.add(hull);
+
+        // Forward Observation Glass Bubble
+        const bubble = new THREE.Mesh(new THREE.SphereGeometry(1.3 * sc, 8, 8), abyssalCyanMat);
+        bubble.position.set(0, 0, 3.2 * sc);
+        creature.add(bubble);
+
+        // Dual Stern Propellers
+        const propellers: THREE.Object3D[] = [];
+        [-0.8 * sc, 0.8 * sc].forEach((px) => {
+          const prop = new THREE.Mesh(new THREE.BoxGeometry(0.9 * sc, 0.15 * sc, 0.15 * sc), abyssalAmberMat);
+          prop.position.set(px, 0, -3.4 * sc);
+          creature.add(prop);
+          propellers.push(prop);
+        });
+
+        // Forward Volumetric Searchlight Cone
+        const searchlight = new THREE.Mesh(new THREE.ConeGeometry(3.2 * sc, 18.0 * sc, 8), abyssalSearchlightMat);
+        searchlight.rotation.x = -Math.PI * 0.5;
+        searchlight.position.set(0, -0.2 * sc, 11.0 * sc);
+        creature.add(searchlight);
+
+        uData.propellers = propellers;
+        uData.searchlight = searchlight;
+      } else if (spec.type === 'FISH_SCHOOL') {
+        const fishList: any[] = [];
+        for (let f = 0; f < 10; f++) {
+          const fMesh = new THREE.Mesh(new THREE.ConeGeometry(0.22 * sc, 0.9 * sc, 4), abyssalCyanMat);
+          fMesh.rotation.z = Math.PI * 0.5;
+          fMesh.position.set(
+            Math.cos(f * 0.63) * 3.5 * sc,
+            Math.sin(f * 1.25) * 1.5 * sc,
+            Math.sin(f * 0.63) * 3.5 * sc
+          );
+          creature.add(fMesh);
+          fishList.push(fMesh);
+        }
+        uData.fishList = fishList;
+      }
+
+      creature.userData = uData;
       this.backgroundMarineCreatures.push(creature);
       this.abyssalSkyline!.add(creature);
     });
@@ -2766,21 +2969,108 @@ export class WorldScene {
       }
     }
 
-    // Swimming background marine leviathans in oceanic abyss
+    // Swimming background marine creatures, marine snow and caustics in oceanic abyss
     if (this.backgroundMarineCreatures.length > 0 && this.abyssalSkyline && this.abyssalSkyline.visible) {
       const delta = dt || 0.016;
       this.abyssalCreatureTime += delta;
+      const t = this.abyssalCreatureTime;
+
       for (let i = 0; i < this.backgroundMarineCreatures.length; i++) {
         const creature = this.backgroundMarineCreatures[i];
-        creature.position.x += creature.userData.vx * delta;
-        const baseY = creature.userData.baseY !== undefined ? creature.userData.baseY : 45;
-        creature.position.y = baseY + Math.sin(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * creature.userData.verticalAmp;
-        creature.rotation.z = Math.cos(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * 0.08;
-        if (creature.userData.vx > 0 && creature.position.x > creature.userData.maxX) {
-          creature.position.x = creature.userData.minX;
-        } else if (creature.userData.vx < 0 && creature.position.x < creature.userData.minX) {
-          creature.position.x = creature.userData.maxX;
+        const u = creature.userData;
+        creature.position.x += u.vx * delta;
+        const baseY = u.baseY !== undefined ? u.baseY : 50;
+        creature.position.y = baseY + Math.sin(t * u.swimFreq + u.swimPhase) * u.verticalAmp;
+        creature.rotation.z = Math.cos(t * u.swimFreq + u.swimPhase) * 0.08;
+
+        // Bounded seamless wrap with edge fading (zero pop-in!)
+        const distFromCenter = Math.abs(creature.position.x);
+        if (distFromCenter > 300) {
+          const fade = Math.max(0.01, 1.0 - (distFromCenter - 300) / 60);
+          creature.scale.setScalar(u.baseScale * fade);
+        } else {
+          creature.scale.setScalar(u.baseScale);
         }
+
+        if (u.vx > 0 && creature.position.x > u.maxX) {
+          creature.position.x = u.minX;
+        } else if (u.vx < 0 && creature.position.x < u.minX) {
+          creature.position.x = u.maxX;
+        }
+
+        // Articulated Animations per creature type:
+        if (u.type === 'MANTA') {
+          const flap = Math.sin(t * u.swimFreq + u.swimPhase) * 0.32;
+          if (u.leftWing) u.leftWing.rotation.z = -flap;
+          if (u.rightWing) u.rightWing.rotation.z = flap;
+          if (u.leftWingTip) u.leftWingTip.rotation.z = -flap * 1.35;
+          if (u.rightWingTip) u.rightWingTip.rotation.z = flap * 1.35;
+          if (u.tail) {
+            u.tail.rotation.x = Math.sin(t * (u.swimFreq * 1.1) + u.swimPhase) * 0.16;
+            u.tail.rotation.y = Math.cos(t * u.swimFreq + u.swimPhase) * 0.12;
+          }
+          if (u.photophores) {
+            const pScale = 0.85 + 0.25 * Math.sin(t * 3.2 + i);
+            for (let p = 0; p < u.photophores.length; p++) u.photophores[p].scale.setScalar(pScale);
+          }
+        } else if (u.type === 'LEVIATHAN') {
+          if (u.bodySegments) {
+            for (let s = 0; s < u.bodySegments.length; s++) {
+              u.bodySegments[s].rotation.y = Math.sin(t * u.swimFreq - s * 0.42 + u.swimPhase) * 0.20;
+              u.bodySegments[s].rotation.z = Math.cos(t * u.swimFreq * 0.5 - s * 0.35 + u.swimPhase) * 0.08;
+            }
+          }
+          if (u.tailFlukes) {
+            u.tailFlukes.rotation.y = Math.cos(t * u.swimFreq - 3.2 + u.swimPhase) * 0.28;
+            u.tailFlukes.rotation.x = Math.sin(t * u.swimFreq - 3.2 + u.swimPhase) * 0.18;
+          }
+          if (u.eyes) {
+            const eyeGlow = 0.9 + 0.3 * Math.sin(t * 3.5);
+            for (let e = 0; e < u.eyes.length; e++) u.eyes[e].scale.setScalar(eyeGlow);
+          }
+        } else if (u.type === 'JELLYFISH_SWARM') {
+          if (u.jellyfish) {
+            for (let j = 0; j < u.jellyfish.length; j++) {
+              const jelly = u.jellyfish[j];
+              const jt = t * jelly.pulseFreq + jelly.phase;
+              const bellPulse = Math.sin(jt);
+              jelly.bell.scale.set(1.0 - bellPulse * 0.20, 1.0 + bellPulse * 0.35, 1.0 - bellPulse * 0.20);
+              for (let tn = 0; tn < jelly.tentacles.length; tn++) {
+                jelly.tentacles[tn].rotation.z = Math.sin(jt * 1.2 + tn) * 0.22;
+                jelly.tentacles[tn].rotation.x = Math.cos(jt * 1.0 + tn) * 0.15;
+              }
+            }
+          }
+        } else if (u.type === 'SUBMERSIBLE') {
+          if (u.propellers) {
+            for (let p = 0; p < u.propellers.length; p++) u.propellers[p].rotation.z += delta * 22.0;
+          }
+          if (u.searchlight) {
+            u.searchlight.rotation.y = Math.sin(t * 0.8 + u.swimPhase) * 0.22;
+          }
+        } else if (u.type === 'FISH_SCHOOL') {
+          creature.rotation.y = (u.vx > 0 ? 0 : Math.PI) + Math.sin(t * 0.7 + u.swimPhase) * 0.25;
+        }
+      }
+
+      // Animate Marine Snow particulate (plankton) drifting in deep current
+      if (this.abyssalPlanktonGeo && this.abyssalPlanktonPos) {
+        const count = this.abyssalPlanktonPos.length / 3;
+        for (let i = 0; i < count; i++) {
+          this.abyssalPlanktonPos[i * 3 + 1] -= delta * 3.5;
+          this.abyssalPlanktonPos[i * 3 + 0] += Math.sin(t * 0.8 + i) * delta * 1.4;
+          if (this.abyssalPlanktonPos[i * 3 + 1] < 4.0) {
+            this.abyssalPlanktonPos[i * 3 + 1] = 160.0;
+          }
+        }
+        this.abyssalPlanktonGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Animate Shimmering Downwelling Caustics
+      if (this.abyssalCausticPlane) {
+        (this.abyssalCausticPlane.material as THREE.MeshBasicMaterial).opacity =
+          0.30 + Math.sin(t * 1.6) * 0.08;
+        this.abyssalCausticPlane.rotation.z = Math.sin(t * 0.35) * 0.05;
       }
     }
 

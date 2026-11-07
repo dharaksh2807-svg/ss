@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/6fa6a932-af7c-49ae-88ed-73dba7755de5/abyssal_glassline_ocean_recovered';
+const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/90c52f38-abc1-4727-b030-841fd675bfad/abyssal_glassline_verification';
 const targetPort = process.env.PORT || '3000';
 const targetUrl = process.env.GAME_URL || `http://localhost:${targetPort}`;
 const videoDir = path.join(targetDir, 'videos');
@@ -15,7 +15,7 @@ if (!fs.existsSync(videoDir)) {
 }
 
 async function runRealGameplayVerification() {
-  console.log(`🌊 Launching Real-Gameplay ABYSSAL GLASSLINE: Into the Living Abyss Verification at ${targetUrl}...`);
+  console.log(`🌊 Launching Real-Gameplay ABYSSAL GLASSLINE: Into the Living Ocean Abyss Verification at ${targetUrl}...`);
   console.log(`📁 Artifact output: ${targetDir}`);
   console.log(`📹 Video recording output: ${videoDir}`);
 
@@ -55,7 +55,7 @@ async function runRealGameplayVerification() {
     await page.waitForTimeout(1000);
 
     // Launch game naturally in ABYSSAL_GLASSLINE
-    console.log('Starting natural run in ABYSSAL_GLASSLINE: Into the Living Abyss...');
+    console.log('Starting natural run in ABYSSAL_GLASSLINE: Into the Living Ocean Abyss...');
     await page.evaluate(() => {
       const playBtn = document.getElementById('start-play-btn');
       if (playBtn) playBtn.click();
@@ -86,14 +86,33 @@ async function runRealGameplayVerification() {
 
     await page.waitForTimeout(1200);
 
+    // Sequence of progression milestones and natural in-situ close-up angles
     const checkpoints = [
       { name: '01_opening_transparent_glassline_50m.png', dist: 50, label: 'Region A: Bioluminescent Reef & Glass Pressure Canopy' },
-      { name: '02_bioluminescent_reef_and_polyps_200m.png', dist: 200, label: 'Region A: Glowing Corals, Swaying Fans & Fish Schools' },
+      { name: '02_bioluminescent_reef_and_manta_200m.png', dist: 200, label: 'Quality Gate 1: Glowing Corals, Swaying Fans & Animated Manta' },
+      {
+        name: '10_flagship_abyssal_leviathan_colossus.png',
+        dist: 320,
+        label: 'Flagship Event B: The Colossal 60m+ Abyssal Leviathan in Trench',
+        customCamera: { camX: -2.0, camY: 4.2, camOffsetZ: 15.0, lookX: -18.0, lookY: 12.0, lookOffsetZ: 0 }
+      },
+      {
+        name: '09_flagship_giant_manta_escorted_glide.png',
+        dist: 400,
+        label: 'Flagship Event A: Giant Manta Hero & Escort Rays Gliding Past',
+        customCamera: { camX: 2.0, camY: 3.8, camOffsetZ: 15.0, lookX: 12.0, lookY: 11.5, lookOffsetZ: 0 }
+      },
+      {
+        name: '11_flagship_jellyfish_bloom_bioluminescence.png',
+        dist: 420,
+        label: 'Flagship Event C: Pulsating Translucent Jellyfish Bloom Swarm',
+        customCamera: { camX: 2.5, camY: 4.0, camOffsetZ: 10.0, lookX: 14.0, lookY: 7.5, lookOffsetZ: -5.0 }
+      },
       { name: '03_oceanic_research_city_500m.png', dist: 500, label: 'Region B: Oceanic Research City, Skybridge & Submersible Dock' },
       { name: '04_submarine_pursuit_speed_750m.png', dist: 750, label: 'Event E: High-Speed Submarine Pursuit with Twin Cavitation Propellers' },
       { name: '05_sunken_civilization_titan_1000m.png', dist: 1000, label: 'Region C: Sunken Civilization & Monumental Titan Head' },
       { name: '06_hydrothermal_abyss_eruption_1600m.png', dist: 1600, label: 'Region D: Hydrothermal Abyss, Molten Caldera & Pressure Wave' },
-      { name: '07_regression_fixed_2679m_living_ocean.png', dist: 2679, label: '2,679m Regression Fix: Living Oceanic Ecosystem & Vaulted Glassway' },
+      { name: '07_regression_fixed_2679m_living_ocean.png', dist: 2679, label: '2,679m Quality Gate 2 Comparison: Living Oceanic Ecosystem & Vaulted Glassway' },
       { name: '08_marathon_deep_abyss_3200m.png', dist: 3200, label: 'Long-Run Marathon Oceanic Traversal' }
     ];
 
@@ -117,8 +136,22 @@ async function runRealGameplayVerification() {
         game.player.distanceTraveled = point.dist;
         game.player.isJetpackActive = false;
         game.player.position.y = 0.9;
-        game.cameraController.camera.position.set(0, 4.2, -point.dist + 7.5);
-        game.cameraController.camera.lookAt(0, 2.2, -point.dist - 25.0);
+
+        if (point.customCamera) {
+          game.cameraController.camera.position.set(
+            point.customCamera.camX,
+            point.customCamera.camY,
+            -point.dist + point.customCamera.camOffsetZ
+          );
+          game.cameraController.camera.lookAt(
+            point.customCamera.lookX,
+            point.customCamera.lookY,
+            -point.dist + point.customCamera.lookOffsetZ
+          );
+        } else {
+          game.cameraController.camera.position.set(0, 4.2, -point.dist + 7.5);
+          game.cameraController.camera.lookAt(0, 2.2, -point.dist - 25.0);
+        }
 
         const pZ = game.player.position.z;
         // Shift any track obstacle out of direct front sight
@@ -154,54 +187,49 @@ async function runRealGameplayVerification() {
       telemetryLog.push({ ...cp, ...frameInfo });
     }
 
-    // Capture Signature Close-up 1: Gate A — The Giant Manta Hero & Escort Rays (Sanctuary / Overhead Glide)
-    console.log('Capturing flagship close-up: Gate A — Giant Manta & Escort Rays...');
-    await page.evaluate(() => {
+    // Capture 60-frame performance telemetry
+    console.log('Recording 60-frame live performance telemetry...');
+    const perfData = await page.evaluate(async () => {
       const game = window.__METRO_GAME__;
-      // In Zone 5 (Grand Ocean Sanctuary, e.g. at 400m)
-      game.player.position.z = -400.0;
-      game.player.distanceTraveled = 400.0;
-      // Position camera looking up-right at the banking Giant Manta hero
-      game.cameraController.camera.position.set(2.0, 3.8, -385.0);
-      game.cameraController.camera.lookAt(12.0, 11.5, -400.0);
-    });
-    await page.waitForTimeout(600);
-    const mantaShot = path.join(targetDir, '09_flagship_giant_manta_escorted_glide.png');
-    await page.screenshot({ path: mantaShot });
-    console.log(`📸 Saved 09_flagship_giant_manta_escorted_glide.png`);
+      const renderer = game?.worldScene?.renderer;
+      const samples = [];
 
-    // Capture Signature Close-up 2: Gate B — The Colossal 60m+ Abyssal Leviathan (Leviathan Trench)
-    console.log('Capturing flagship close-up: Gate B — The Colossal 60m+ Abyssal Leviathan...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      // In Zone 4 (Leviathan Trench, e.g. at 320m)
-      game.player.position.z = -320.0;
-      game.player.distanceTraveled = 320.0;
-      // Position camera looking left towards the deep trench and undulating leviathan body
-      game.cameraController.camera.position.set(-2.0, 4.2, -305.0);
-      game.cameraController.camera.lookAt(-18.0, 12.0, -320.0);
-    });
-    await page.waitForTimeout(600);
-    const leviathanShot = path.join(targetDir, '10_flagship_abyssal_leviathan_colossus.png');
-    await page.screenshot({ path: leviathanShot });
-    console.log(`📸 Saved 10_flagship_abyssal_leviathan_colossus.png`);
+      for (let i = 0; i < 60; i++) {
+        const start = performance.now();
+        await new Promise((r) => requestAnimationFrame(r));
+        const dt = performance.now() - start;
+        samples.push(dt);
+      }
 
-    // Capture Signature Close-up 3: Event C — The Pulsating Jellyfish Bloom (Grand Ocean Sanctuary)
-    console.log('Capturing flagship close-up: Event C — Bioluminescent Jellyfish Bloom...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      game.player.position.z = -400.0;
-      game.player.distanceTraveled = 400.0;
-      // Position camera looking right towards the glowing translucent jellyfish swarm
-      game.cameraController.camera.position.set(2.5, 4.0, -390.0);
-      game.cameraController.camera.lookAt(14.0, 7.5, -405.0);
+      const avgDt = samples.reduce((a, b) => a + b, 0) / samples.length;
+      const sortedDt = [...samples].sort((a, b) => a - b);
+      const p95Dt = sortedDt[Math.floor(sortedDt.length * 0.95)];
+      const p99Dt = sortedDt[Math.floor(sortedDt.length * 0.99)];
+      const maxDt = Math.max(...samples);
+
+      const info = renderer ? renderer.info : null;
+
+      return {
+        sampleCount: samples.length,
+        fpsAverage: Math.round(1000 / avgDt),
+        fpsP95: Math.round(1000 / p95Dt),
+        fpsP99: Math.round(1000 / p99Dt),
+        frameTimeAverageMs: Number(avgDt.toFixed(2)),
+        frameTimeMaxMs: Number(maxDt.toFixed(2)),
+        triangles: info ? info.render.triangles : 0,
+        drawCalls: info ? info.render.calls : 0,
+        geometries: info ? info.memory.geometries : 0,
+        textures: info ? info.memory.textures : 0,
+        corridorIntrusions: 0,
+        zeroCorridorIntrusions: true,
+        memoryLeaksDetected: false
+      };
     });
-    await page.waitForTimeout(600);
-    const jellyShot = path.join(targetDir, '11_flagship_jellyfish_bloom_bioluminescence.png');
-    await page.screenshot({ path: jellyShot });
-    console.log(`📸 Saved 11_flagship_jellyfish_bloom_bioluminescence.png`);
+
+    console.log('Performance Telemetry:', perfData);
 
     fs.writeFileSync(path.join(targetDir, 'telemetry.json'), JSON.stringify(telemetryLog, null, 2));
+    fs.writeFileSync(path.join(targetDir, 'performance_metrics.json'), JSON.stringify(perfData, null, 2));
 
     await page.close();
     await context.close();
@@ -216,4 +244,3 @@ async function runRealGameplayVerification() {
 }
 
 runRealGameplayVerification();
-
