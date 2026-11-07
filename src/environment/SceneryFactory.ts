@@ -1586,7 +1586,7 @@ export class SceneryFactory {
     } else if (theme.id === 'INFERNO_EXPRESS') {
       this.buildInfernoExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'JURASSIC_RUSH') {
-      this.buildJurassicRushScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildJurassicRushScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'VIVA_HEAT') {
       this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else {
@@ -7684,11 +7684,12 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ?: number
   ): void {
     const jurassicGroup = new THREE.Group();
     jurassicGroup.name = 'jurassic_rush_scenery';
-    JurassicRushWorldBuilder.getInstance().buildDistrictScenery(jurassicGroup, roadbedWidth, chunkLength, seed, detail);
+    JurassicRushWorldBuilder.getInstance().buildDistrictScenery(jurassicGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
     group.add(jurassicGroup);
   }
 

@@ -34,6 +34,7 @@ export class WorldScene {
   public hauntedCarnivalSkyline: THREE.Group | null = null;
   public vipExpressSkyline: THREE.Group | null = null;
   public midnightVelvetSkyline: THREE.Group | null = null;
+  public jurassicSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -44,12 +45,15 @@ export class WorldScene {
   private hauntedCarnivalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private vipExpressSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private midnightVelvetSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private jurassicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private vipSearchlights: THREE.Mesh[] = [];
   private midnightSkylineSearchlights: THREE.Mesh[] = [];
+  private jurassicPterosaurFlocks: Array<{ group: THREE.Group; leftWing: THREE.Object3D; rightWing: THREE.Object3D; phase: number; basePos: THREE.Vector3 }> = [];
   private vipConfettiGeo: THREE.BufferGeometry | null = null;
   private vipConfettiPos: Float32Array | null = null;
   private vipSearchlightTime: number = 0;
   private midnightSkylineSearchlightTime: number = 0;
+  private jurassicSkylineTime: number = 0;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
@@ -1671,6 +1675,133 @@ export class WorldScene {
 
     group.add(this.midnightVelvetSkyline);
 
+    // 10. Primordial Volcanic Peaks & Misty Jungle Mountain Horizon (Jurassic Rush: The Lost World)
+    this.jurassicPterosaurFlocks = [];
+    const jurassicSkyline = new THREE.Group();
+    this.jurassicSkyline = jurassicSkyline;
+    this.jurassicSkylineMaterial = this.skylineMaterial.clone();
+    this.jurassicSkylineMaterial.color.setHex(0x14281a);
+    this.jurassicSkylineMaterial.transparent = true;
+    this.jurassicSkylineMaterial.opacity = 0.88;
+
+    const jurassicMat = this.jurassicSkylineMaterial;
+    const volcanicRockMat = new THREE.MeshBasicMaterial({ color: 0x1f2923 });
+    const magmaGlowMat = new THREE.MeshBasicMaterial({ color: 0xd97706, transparent: true, opacity: 0.75 });
+    const pterosaurWingMat = new THREE.MeshBasicMaterial({ color: 0x111c14 });
+
+    // Ring of 18 Primordial Volcanoes & Craggy Jungle Ridges around the horizon (dist = 335m)
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2;
+      const dist = 335;
+
+      const peakGroup = new THREE.Group();
+      peakGroup.position.set(
+        Math.cos(angle) * dist,
+        -15,
+        Math.sin(angle) * dist
+      );
+
+      // Massive Volcanic Mountain Cone
+      const coneH = 90 + (i % 5) * 22;
+      const coneR = 36 + (i % 3) * 10;
+      const coneGeo = new THREE.ConeGeometry(coneR, coneH, 7);
+      const coneMesh = new THREE.Mesh(coneGeo, volcanicRockMat);
+      coneMesh.position.y = coneH * 0.5;
+      peakGroup.add(coneMesh);
+
+      // Glowing Magma Summit Caldera on key volcanic peaks
+      if (i % 3 === 0) {
+        const craterRim = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.18, coneR * 0.22, 6.0, 8), volcanicRockMat);
+        craterRim.position.y = coneH - 2.0;
+        peakGroup.add(craterRim);
+
+        const magmaGlow = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.14, coneR * 0.14, 2.0, 8), magmaGlowMat);
+        magmaGlow.position.y = coneH;
+        peakGroup.add(magmaGlow);
+      }
+
+      // Flanking Craggy Foothills & Jungle Ridge Ridges
+      const ridgeH = coneH * 0.45;
+      const ridgeW = coneR * 0.75;
+      const ridgeMesh = new THREE.Mesh(new THREE.ConeGeometry(ridgeW, ridgeH, 5), jurassicMat);
+      ridgeMesh.position.set(coneR * 0.65, ridgeH * 0.5, 0);
+      peakGroup.add(ridgeMesh);
+
+      const ridgeMesh2 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW * 0.85, ridgeH * 0.8, 5), jurassicMat);
+      ridgeMesh2.position.set(-coneR * 0.65, ridgeH * 0.4, 0);
+      peakGroup.add(ridgeMesh2);
+
+      // Distant Sauropod silhouette walking on foothills
+      if (i % 4 === 1) {
+        const distantDino = new THREE.Group();
+        distantDino.position.set(coneR * 0.4, 8.0, 10.0);
+
+        const dTorso = new THREE.Mesh(new THREE.BoxGeometry(7, 6, 12), jurassicMat);
+        dTorso.position.y = 8;
+        distantDino.add(dTorso);
+
+        const dNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.4, 16, 6), jurassicMat);
+        dNeck.position.set(0, 16, -5);
+        dNeck.rotation.x = -0.4;
+        distantDino.add(dNeck);
+
+        const dTail = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.2, 14, 6), jurassicMat);
+        dTail.position.set(0, 8, 7);
+        dTail.rotation.x = 1.3;
+        distantDino.add(dTail);
+
+        [-2.0, 2.0].forEach(lx => {
+          [-4.0, 4.0].forEach(lz => {
+            const dLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 9, 6), jurassicMat);
+            dLeg.position.set(lx, 4.5, lz);
+            distantDino.add(dLeg);
+          });
+        });
+
+        peakGroup.add(distantDino);
+      }
+
+      jurassicSkyline.add(peakGroup);
+    }
+
+    // Horizon Pterosaur Flocks Soaring in the Prehistoric Sky
+    const flockCoords = [
+      { x: -95, y: 52, z: -320 },
+      { x: 75, y: 58, z: -330 },
+      { x: -35, y: 44, z: -310 },
+      { x: 120, y: 48, z: -340 }
+    ];
+
+    flockCoords.forEach((fc, idx) => {
+      const pterGroup = new THREE.Group();
+      pterGroup.position.set(fc.x, fc.y, fc.z);
+
+      const pBody = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.2, 5), pterosaurWingMat);
+      pBody.rotation.x = Math.PI / 2;
+      pterGroup.add(pBody);
+
+      const pLeftWing = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.0), pterosaurWingMat);
+      pLeftWing.position.set(-2.8, 0, 0);
+      pLeftWing.rotation.x = Math.PI / 2;
+      pterGroup.add(pLeftWing);
+
+      const pRightWing = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.0), pterosaurWingMat);
+      pRightWing.position.set(2.8, 0, 0);
+      pRightWing.rotation.x = Math.PI / 2;
+      pterGroup.add(pRightWing);
+
+      jurassicSkyline.add(pterGroup);
+      this.jurassicPterosaurFlocks.push({
+        group: pterGroup,
+        leftWing: pLeftWing,
+        rightWing: pRightWing,
+        phase: idx * 1.3,
+        basePos: new THREE.Vector3(fc.x, fc.y, fc.z)
+      });
+    });
+
+    group.add(this.jurassicSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -1681,6 +1812,7 @@ export class WorldScene {
     this.hauntedCarnivalSkyline.visible = this.currentTheme.id === 'HAUNTED_CARNIVAL';
     this.vipExpressSkyline.visible = this.currentTheme.id === 'VIP_EXPRESS';
     this.midnightVelvetSkyline.visible = this.currentTheme.id === 'MIDNIGHT_VELVET';
+    this.jurassicSkyline.visible = this.currentTheme.id === 'JURASSIC_RUSH';
 
     return group;
   }
@@ -1784,6 +1916,12 @@ export class WorldScene {
       isMidnightVelvet(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isJurassic = (env: EnvironmentTheme) => env.id === 'JURASSIC_RUSH';
+    const jurassicOpacity = THREE.MathUtils.lerp(
+      isJurassic(base) ? base.skyline.opacity : 0,
+      isJurassic(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1824,6 +1962,10 @@ export class WorldScene {
       this.midnightVelvetSkylineMaterial.color.copy(skylineColor);
       this.midnightVelvetSkylineMaterial.opacity = midnightVelvetOpacity;
     }
+    if (this.jurassicSkylineMaterial) {
+      this.jurassicSkylineMaterial.color.copy(skylineColor);
+      this.jurassicSkylineMaterial.opacity = jurassicOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -1834,6 +1976,7 @@ export class WorldScene {
     if (this.hauntedCarnivalSkyline) this.hauntedCarnivalSkyline.visible = hauntedOpacity > 0.01;
     if (this.vipExpressSkyline) this.vipExpressSkyline.visible = vipOpacity > 0.01;
     if (this.midnightVelvetSkyline) this.midnightVelvetSkyline.visible = midnightVelvetOpacity > 0.01;
+    if (this.jurassicSkyline) this.jurassicSkyline.visible = jurassicOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -2398,6 +2541,22 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'JURASSIC_RUSH') {
       const delta = dt || 0.016;
       JurassicRushEventDirector.getInstance().update(delta, true);
+
+      // Animate soaring pterosaur flocks in prehistoric sky
+      if (this.jurassicSkyline && this.jurassicSkyline.visible) {
+        this.jurassicSkylineTime += delta;
+        for (let i = 0; i < this.jurassicPterosaurFlocks.length; i++) {
+          const flock = this.jurassicPterosaurFlocks[i];
+          const t = this.jurassicSkylineTime * 2.2 + flock.phase;
+          // Wing flapping cycle
+          flock.leftWing.rotation.z = Math.sin(t * 3.2) * 0.42;
+          flock.rightWing.rotation.z = -Math.sin(t * 3.2) * 0.42;
+          // Gentle soaring drift
+          flock.group.position.x = flock.basePos.x + Math.sin(t * 0.4) * 16.0;
+          flock.group.position.y = flock.basePos.y + Math.cos(t * 0.3) * 4.0;
+          flock.group.rotation.z = Math.cos(t * 0.4) * 0.12;
+        }
+      }
     }
 
     if (this.currentTheme && this.currentTheme.id === 'VIVA_HEAT') {
