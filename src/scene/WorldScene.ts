@@ -22,6 +22,7 @@ import { DoomsdayEventDirector } from '../environment/worlds/doomsdayLastTransit
 import { OrbitalHaloEventDirector } from '../environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
 import { ModernMetroEventDirector } from '../environment/worlds/modernMetro/ModernMetroEventDirector';
 import { HistoricQuarterEventDirector } from '../environment/worlds/historicQuarter/HistoricQuarterEventDirector';
+import { UndergroundMetroEventDirector } from '../environment/worlds/undergroundMetro/UndergroundMetroEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2768,6 +2769,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'HISTORIC_QUARTER') {
       const delta = dt || 0.016;
       HistoricQuarterEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'UNDERGROUND_METRO') {
+      const delta = dt || 0.016;
+      UndergroundMetroEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
   }
 

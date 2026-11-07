@@ -20,6 +20,7 @@ import { DoomsdayWorldBuilder } from './worlds/doomsdayLastTransit/DoomsdayWorld
 import { OrbitalHaloWorldBuilder } from './worlds/orbitalHalo/OrbitalHaloWorldBuilder';
 import { ModernMetroWorldBuilder } from './worlds/modernMetro/ModernMetroWorldBuilder';
 import { HistoricQuarterWorldBuilder } from './worlds/historicQuarter/HistoricQuarterWorldBuilder';
+import { UndergroundMetroWorldBuilder } from './worlds/undergroundMetro/UndergroundMetroWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -3540,286 +3541,17 @@ export class SceneryFactory {
     portalType: 'ENTRY' | 'EXIT' | 'BOTH' | 'NONE',
     isAerialCorridor: boolean = false
   ): void {
-    const mats = this.getSharedMaterials();
-    const rng = new SeededRandom(seed);
-    const undergroundGroup = new THREE.Group();
-    undergroundGroup.name = 'underground_metro_scenery';
-
-    // Clearance calculation:
-    // Roadbed is ~13.6m. Lanes are at X = -3.6, 0.0, +3.6.
-    // Left & Right continuous structural walls at X = ±TUNNEL_WALL_X (5.8m).
-    const wallX = CONSTANTS.TUNNEL_WALL_X; // 5.8m
-    const wallThick = 0.6;
-    
-    // Station Concourse vs Running Tunnel chunk:
-    // Alternating chunks feature a wide station hall platform with ceramic mosaic murals and billboards
-    const chunkIdx = Math.round(Math.abs(worldZ / chunkLength));
-    const isStationHall = (chunkIdx % 2) === 1;
-    
-    // Vault height:
-    // For designated aerial corridors, crown rises to 12.5m (TUNNEL_AERIAL_VAULT_HEIGHT)
-    // providing generous overhead clearance for runner at 9.0m and camera at 11.4m with 0 clipping!
-    const ceilingH = isAerialCorridor
-      ? (CONSTANTS.TUNNEL_AERIAL_VAULT_HEIGHT || 12.5)
-      : (isStationHall ? 10.6 : 9.8);
-    const wallH = isAerialCorridor ? 10.5 : 6.5;
-
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallH, chunkLength);
-
-    // 1. Continuous Glazed Subway Wall Tiling
-    // Left Wall
-    const leftWall = new THREE.Mesh(wallGeo, mats.tunnelTileMat);
-    leftWall.position.set(-wallX, wallH * 0.5, -chunkLength * 0.5);
-    leftWall.receiveShadow = true;
-    undergroundGroup.add(leftWall);
-
-    // Right Wall (Subway Tile or Decorative Station Name Mosaic Mural)
-    const rightWallMat = isStationHall
-      ? (rng.chance(0.5) ? mats.subwayTileMuralMat1 : mats.subwayTileMuralMat2)
-      : mats.tunnelTileMat;
-    const rightWall = new THREE.Mesh(wallGeo, rightWallMat);
-    rightWall.position.set(wallX, wallH * 0.5, -chunkLength * 0.5);
-    rightWall.receiveShadow = true;
-    undergroundGroup.add(rightWall);
-
-    // Wall coping frieze band
-    const friezeGeo = new THREE.BoxGeometry(wallThick + 0.1, 0.35, chunkLength);
-    const leftFrieze = new THREE.Mesh(friezeGeo, mats.tunnelCeilingMat);
-    leftFrieze.position.set(-wallX, wallH - 0.18, -chunkLength * 0.5);
-    undergroundGroup.add(leftFrieze);
-
-    const rightFrieze = new THREE.Mesh(friezeGeo, mats.tunnelCeilingMat);
-    rightFrieze.position.set(wallX, wallH - 0.18, -chunkLength * 0.5);
-    undergroundGroup.add(rightFrieze);
-
-    // 2. Vaulted Arched Ceiling
-    const spanW = wallX * 2.0; // 11.6m
-    const ceilingThick = 0.5;
-    const crownW = spanW * 0.62;
-
-    const crownSlab = new THREE.Mesh(new THREE.BoxGeometry(crownW, ceilingThick, chunkLength), mats.tunnelCeilingMat);
-    crownSlab.position.set(0, ceilingH, -chunkLength * 0.5);
-    crownSlab.receiveShadow = true;
-    undergroundGroup.add(crownSlab);
-
-    const haunchW = (spanW - crownW) * 0.5 + 0.4;
-    const haunchAngle = 0.36;
-
-    const leftHaunch = new THREE.Mesh(new THREE.BoxGeometry(haunchW, ceilingThick, chunkLength), mats.tunnelCeilingMat);
-    leftHaunch.rotation.z = -haunchAngle;
-    leftHaunch.position.set(-spanW * 0.5 + haunchW * 0.48, ceilingH - 0.35, -chunkLength * 0.5);
-    leftHaunch.receiveShadow = true;
-    undergroundGroup.add(leftHaunch);
-
-    const rightHaunch = new THREE.Mesh(new THREE.BoxGeometry(haunchW, ceilingThick, chunkLength), mats.tunnelCeilingMat);
-    rightHaunch.rotation.z = haunchAngle;
-    rightHaunch.position.set(spanW * 0.5 - haunchW * 0.48, ceilingH - 0.35, -chunkLength * 0.5);
-    rightHaunch.receiveShadow = true;
-    undergroundGroup.add(rightHaunch);
-
-    // 3. Repeating Structural Steel / Concrete Arch Ribs & Overhead Lighting Bents
-    const numRibs = 5;
-    const ribSpacing = chunkLength / numRibs;
-    for (let r = 0; r < numRibs; r++) {
-      const rz = -r * ribSpacing - ribSpacing * 0.5;
-      const ribGroup = new THREE.Group();
-      ribGroup.position.set(0, 0, rz);
-
-      // Flanking support columns (X = ±5.55m, clears > 5.4m)
-      const colGeo = new THREE.BoxGeometry(0.35, wallH, 0.5);
-      [-wallX + 0.25, wallX - 0.25].forEach((cx) => {
-        const col = new THREE.Mesh(colGeo, mats.tunnelRibMat);
-        col.position.set(cx, wallH * 0.5, 0);
-        col.castShadow = true;
-        ribGroup.add(col);
-      });
-
-      // Arch transverse cross-girder
-      const girder = new THREE.Mesh(new THREE.BoxGeometry(spanW + 0.2, 0.55, 0.5), mats.tunnelRibMat);
-      girder.position.set(0, ceilingH - 0.28, 0);
-      girder.castShadow = true;
-      ribGroup.add(girder);
-
-      // Overhead luminaire fixture units (dual high-output fluorescent strips casting downward light)
-      [-CONSTANTS.LANE_WIDTH, CONSTANTS.LANE_WIDTH].forEach((lx) => {
-        const fixture = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.16, 0.45), mats.tunnelLampMat);
-        fixture.position.set(lx, ceilingH - 0.42, 0);
-        ribGroup.add(fixture);
-
-        // Diffuse luminous downward face
-        const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.38), mats.tunnelLampMat);
-        glow.rotation.x = Math.PI / 2;
-        glow.position.set(lx, ceilingH - 0.51, 0);
-        ribGroup.add(glow);
-      });
-
-      // Railway Aspect Signal Light on alternating bents
-      if (r % 2 === 0) {
-        const sigGroup = new THREE.Group();
-        sigGroup.position.set(-wallX + 0.25, 4.2, 0.3);
-
-        const sigBox = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.0, 0.2), mats.tunnelRibMat);
-        sigGroup.add(sigBox);
-
-        const greenLamp = new THREE.Mesh(new THREE.CircleGeometry(0.08, 8), mats.subwaySignalGreenMat);
-        greenLamp.position.set(0, 0.32, 0.11);
-        sigGroup.add(greenLamp);
-
-        const amberLamp = new THREE.Mesh(new THREE.CircleGeometry(0.08, 8), mats.subwaySignalAmberMat);
-        amberLamp.position.set(0, 0, 0.11);
-        sigGroup.add(amberLamp);
-
-        const redLamp = new THREE.Mesh(new THREE.CircleGeometry(0.08, 8), mats.subwaySignalRedMat);
-        redLamp.position.set(0, -0.32, 0.11);
-        sigGroup.add(redLamp);
-
-        ribGroup.add(sigGroup);
-      }
-
-      undergroundGroup.add(ribGroup);
-    }
-
-    // 4. Elevated Emergency Catwalk (Left side: X = -5.55m, clears > 5.4m)
-    // Raised service walkway with diamond plate tread and safety yellow kickplate
-    const catwalkWidth = 0.35;
-    const catwalkHeight = 0.95;
-    const catwalkX = -wallX + 0.25;
-
-    const catwalkSlab = new THREE.Mesh(
-      new THREE.BoxGeometry(catwalkWidth, 0.18, chunkLength),
-      mats.subwayCatwalkMat
+    UndergroundMetroWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ,
+      portalType,
+      isAerialCorridor
     );
-    catwalkSlab.position.set(catwalkX, catwalkHeight, -chunkLength * 0.5);
-    catwalkSlab.receiveShadow = true;
-    undergroundGroup.add(catwalkSlab);
-
-    // Concrete foundation curb under catwalk
-    const catwalkBase = new THREE.Mesh(
-      new THREE.BoxGeometry(catwalkWidth, catwalkHeight - 0.09, chunkLength),
-      mats.curbMat
-    );
-    catwalkBase.position.set(catwalkX, (catwalkHeight - 0.09) * 0.5, -chunkLength * 0.5);
-    undergroundGroup.add(catwalkBase);
-
-    // Industrial Safety Handrail along the inner edge (X = -5.50m)
-    const railX = -5.50;
-    const railTopBar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.05, 0.05, chunkLength),
-      mats.castIronMat
-    );
-    railTopBar.position.set(railX, catwalkHeight + 0.95, -chunkLength * 0.5);
-    undergroundGroup.add(railTopBar);
-
-    if (detail !== 'MINIMAL') {
-      const postGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.95, 6);
-      for (let z = 0; z < chunkLength; z += 5) {
-        const post = new THREE.Mesh(postGeo, mats.castIronMat);
-        post.position.set(railX, catwalkHeight + 0.48, -z - 2.5);
-        undergroundGroup.add(post);
-      }
-
-      // Recessed Maintenance Doors along left tunnel wall
-      const doorGeo = new THREE.BoxGeometry(0.08, 2.4, 1.2);
-      [-chunkLength * 0.3, -chunkLength * 0.7].forEach((dz) => {
-        const door = new THREE.Mesh(doorGeo, mats.tunnelRibMat);
-        door.position.set(-wallX + 0.28, catwalkHeight + 1.2, dz);
-        undergroundGroup.add(door);
-
-        // Emergency phone box
-        const phone = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.3), mats.subwaySignalRedMat);
-        phone.position.set(-wallX + 0.28, catwalkHeight + 1.6, dz + 1.2);
-        undergroundGroup.add(phone);
-      });
-    }
-
-    // 5. Station Concourse Platform (Right side on station chunks, X = 5.55m, clears > 5.4m)
-    if (isStationHall) {
-      const platW = 0.35;
-      const platH = 0.95;
-      const platX = wallX - 0.25;
-
-      const platSlab = new THREE.Mesh(
-        new THREE.BoxGeometry(platW, platH, chunkLength),
-        mats.subwayPlatformSlabMat
-      );
-      platSlab.position.set(platX, platH * 0.5, -chunkLength * 0.5);
-      platSlab.receiveShadow = true;
-      undergroundGroup.add(platSlab);
-
-      // Tactile warning strip on platform edge (safety yellow band)
-      const warningStrip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.04, chunkLength, 1, 1, Math.round(chunkLength / 2.0)),
-        mats.hazardStripeMat
-      );
-      warningStrip.position.set(platX - platW * 0.5 + 0.04, platH + 0.02, -chunkLength * 0.5);
-      undergroundGroup.add(warningStrip);
-
-      // Platform details (benches, billboards, station clocks)
-      if (detail !== 'MINIMAL') {
-        // Platform Waiting Benches
-        const benchGeo = new THREE.BoxGeometry(0.3, 0.45, 2.0);
-        [-chunkLength * 0.25, -chunkLength * 0.5, -chunkLength * 0.75].forEach((bz) => {
-          const bench = new THREE.Mesh(benchGeo, mats.modernTeakMat);
-          bench.position.set(platX, platH + 0.23, bz);
-          bench.castShadow = true;
-          undergroundGroup.add(bench);
-        });
-
-        // Suspended Illuminated Transit Advertising Billboards along the wall
-        [-chunkLength * 0.35, -chunkLength * 0.65].forEach((bz) => {
-          const bb = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 2.2), mats.subwayBillboardMat);
-          bb.rotation.y = -Math.PI / 2;
-          bb.position.set(wallX - 0.28, platH + 2.4, bz);
-          undergroundGroup.add(bb);
-        });
-
-        // Suspended Double-Sided Station Clock
-        const clockGroup = new THREE.Group();
-        clockGroup.position.set(platX, ceilingH - 1.2, -chunkLength * 0.5);
-        const clockBody = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 16), mats.tunnelRibMat);
-        clockBody.rotation.x = Math.PI / 2;
-        clockGroup.add(clockBody);
-
-        const clockFace1 = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), mats.historicClockFaceMat);
-        clockFace1.position.z = 0.11;
-        clockGroup.add(clockFace1);
-
-        const clockFace2 = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), mats.historicClockFaceMat);
-        clockFace2.position.z = -0.11;
-        clockFace2.rotation.y = Math.PI;
-        clockGroup.add(clockFace2);
-
-        undergroundGroup.add(clockGroup);
-      }
-    }
-
-    // 6. Overhead Spiral Ventilation Ducts & Cable Conduit Trays
-    const ductGeo = new THREE.CylinderGeometry(0.38, 0.38, chunkLength, 12);
-    const duct = new THREE.Mesh(ductGeo, mats.subwayDuctMat);
-    duct.rotation.x = Math.PI / 2;
-    duct.position.set(-3.8, ceilingH - 0.5, -chunkLength * 0.5);
-    duct.castShadow = true;
-    undergroundGroup.add(duct);
-
-    // Duct suspension hangers
-    if (detail !== 'MINIMAL') {
-      const hangerGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
-      for (let hz = 0; hz < chunkLength; hz += 16) {
-        const hanger = new THREE.Mesh(hangerGeo, mats.tunnelRibMat);
-        hanger.position.set(-3.8, ceilingH - 0.25, -hz - 8);
-        undergroundGroup.add(hanger);
-      }
-    }
-
-    // 7. Monumental Entrance & Exit Tunnel Portals
-    if (portalType === 'ENTRY' || portalType === 'BOTH') {
-      this.buildSubwayPortalArch(undergroundGroup, 0, 'ENTRY', ceilingH);
-    }
-    if (portalType === 'EXIT' || portalType === 'BOTH') {
-      this.buildSubwayPortalArch(undergroundGroup, -chunkLength, 'EXIT', ceilingH);
-    }
-
-    group.add(undergroundGroup);
   }
 
   /**
@@ -3831,48 +3563,12 @@ export class SceneryFactory {
     type: 'ENTRY' | 'EXIT',
     ceilingH: number
   ): void {
-    const mats = this.getSharedMaterials();
-    const portal = new THREE.Group();
-    portal.position.set(0, 0, zPos);
-
-    const wallX = CONSTANTS.TUNNEL_WALL_X;
-    const spanW = wallX * 2.0;
-    const portalH = ceilingH + 1.8;
-    const portalDepth = 3.6;
-
-    // Massive flanking concrete pylons
-    const pylonGeo = new THREE.BoxGeometry(2.4, portalH, portalDepth);
-    [-wallX - 1.1, wallX + 1.1].forEach((px) => {
-      const pylon = new THREE.Mesh(pylonGeo, mats.modernConcreteMat);
-      pylon.position.set(px, portalH * 0.5, 0);
-      pylon.castShadow = true;
-      pylon.receiveShadow = true;
-      portal.add(pylon);
-    });
-
-    // Heavy overhead portal crown beam
-    const crownGeo = new THREE.BoxGeometry(spanW + 4.0, 2.4, portalDepth + 0.4);
-    const crown = new THREE.Mesh(crownGeo, mats.modernConcreteMat);
-    crown.position.set(0, portalH - 0.2, 0);
-    crown.castShadow = true;
-    crown.receiveShadow = true;
-    portal.add(crown);
-
-    // Hazard stripe warning edge along portal mouth
-    const hazardGeo = new THREE.BoxGeometry(spanW + 0.6, 0.45, 0.2);
-    const hazard = new THREE.Mesh(hazardGeo, mats.hazardStripeMat);
-    hazard.position.set(0, ceilingH + 0.1, type === 'ENTRY' ? 1.9 : -1.9);
-    portal.add(hazard);
-
-    // Red illuminated portal clearance warning beacons
-    const beaconGeo = new THREE.SphereGeometry(0.25, 8, 8);
-    [-spanW * 0.42, spanW * 0.42].forEach((bx) => {
-      const beacon = new THREE.Mesh(beaconGeo, mats.subwaySignalRedMat);
-      beacon.position.set(bx, ceilingH + 0.6, type === 'ENTRY' ? 2.0 : -2.0);
-      portal.add(beacon);
-    });
-
-    parent.add(portal);
+    UndergroundMetroWorldBuilder.getInstance().buildSubwayPortalArch(
+      parent,
+      zPos,
+      type,
+      ceilingH
+    );
   }
 
   // -------------------------------------------------------------------------
