@@ -90,12 +90,12 @@ function resetState(coins = 50000) {
 resetState();
 
 const allWorlds = getWorlds(progression.getState());
-check(allWorlds.length === 16, `Expected 16 total worlds in catalog, got ${allWorlds.length}`);
+check(allWorlds.length === 17, `Expected 17 total worlds in catalog, got ${allWorlds.length}`);
 
 const freeWorlds = allWorlds.filter((w) => w.unlock === 'FREE');
 const premiumWorlds = allWorlds.filter((w) => w.unlock === 'COINS');
 check(freeWorlds.length === 6, `Expected 6 free/bundled worlds, got ${freeWorlds.length}`);
-check(premiumWorlds.length === 10, `Expected 10 premium worlds, got ${premiumWorlds.length}`);
+check(premiumWorlds.length === 11, `Expected 11 premium worlds, got ${premiumWorlds.length}`);
 
 // 2. Verify all 16 world preview screenshots exist on disk and have metadata
 const publicDir = path.resolve(process.cwd(), 'public');
@@ -128,6 +128,7 @@ const expectedPricing: Record<string, number> = {
   CHRONO_KINGDOM: 18000,
   INFERNO_EXPRESS: 18000,
   JURASSIC_RUSH: 18000,
+  VIVA_HEAT: 12000,
 };
 
 for (const [id, price] of Object.entries(expectedPricing)) {

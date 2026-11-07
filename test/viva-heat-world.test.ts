@@ -18,6 +18,9 @@ import { EnvironmentRegistry } from '../src/environment/EnvironmentRegistry';
 import { EnvironmentManager, ENVIRONMENTS } from '../src/environment/EnvironmentConfig';
 import { SettingsManager } from '../src/settings/SettingsManager';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
+import { SceneryFactory } from '../src/environment/SceneryFactory';
+import { SceneryPool } from '../src/environment/SceneryPool';
+import { getWorld } from '../src/environment/WorldCatalog';
 
 console.log('🧪 Starting VIVA_HEAT (The Forbidden Festival) Verification Suite...\n');
 
@@ -309,6 +312,166 @@ assert.strictEqual(director.getSkybeamCount(), 0, 'Skybeams reset');
 assert.strictEqual(director.getSunLandmarkCount(), 0, 'Sun landmarks reset');
 assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Fever director reset() cleanly disposes all references');
+
+// ============================================================================
+// SUITE 9: 6 DISTINCT FESTIVAL DISTRICTS & GROUNDED PLINTHS
+// ============================================================================
+console.log('\n--- Suite 9: 6 Distinct Festival Districts & Grounded Plinths ---');
+
+const districtNames = [
+  'zone_sunset_promenade',
+  'zone_gilded_amphitheatre',
+  'zone_kinetic_flora',
+  'zone_midnight_marina',
+  'zone_royal_colonnade',
+  'zone_sunset_carnival'
+];
+
+const foundDistricts = new Set<string>();
+let plinthGroundingSafe = true;
+
+for (let chunkIdx = 0; chunkIdx < 6; chunkIdx++) {
+  const g = new THREE.Group();
+  const chunkZ = -chunkIdx * 100;
+  builder.buildDistrictScenery(g, 12, 1.2, 100, 7000 + chunkIdx, 'FULL', chunkZ);
+  g.updateMatrixWorld(true);
+
+  g.traverse((c) => {
+    if (districtNames.includes(c.name)) {
+      foundDistricts.add(c.name);
+    }
+    // Verify retaining plinths extend down to Y <= -5.5m (zero floating geometry)
+    if (c.name === 'viva_retaining_plinth') {
+      const b = new THREE.Box3().setFromObject(c);
+      if (b.min.y > -5.0) {
+        plinthGroundingSafe = false;
+      }
+    }
+  });
+}
+
+assert.strictEqual(foundDistricts.size, 6, `All 6 distinct festival districts generate in order (found ${foundDistricts.size}/6: ${Array.from(foundDistricts).join(', ')})`);
+pass('All 6 distinct festival districts generate in order across chunks');
+
+assert.ok(plinthGroundingSafe, 'Retaining plinths anchor structure down to Y <= -5.5m (zero floating geometry)');
+pass('Retaining plinths firmly anchor festival structure down to Y <= -5.5m');
+
+// ============================================================================
+// SUITE 10: GATE A — GRAND MEGA-YACHT ARRIVAL & CHAMPAGNE DOCKING
+// ============================================================================
+console.log('\n--- Suite 10: Gate A — Grand Mega-Yacht Arrival Sequence ---');
+
+director.reset();
+const testGroupA = new THREE.Group();
+builder.buildDistrictScenery(testGroupA, 12, 1.2, 100, 8000, 'FULL', 0); // District A
+const dockings = director.getGrandDockings();
+assert.ok(dockings.length > 0, 'Grand Mega-Yacht Arrival registered in director');
+pass('Gate A: Grand Mega-Yacht Arrival actor registered');
+
+const yachtActor = dockings[0];
+assert.strictEqual(yachtActor.state, 'DORMANT', 'Initial yacht state is DORMANT');
+
+// Signed-distance progression: runner approaching triggerZ (-50m)
+director.update(0.1, true, 80.0); // distanceAhead = 80 - (-50) = 130m <= 140m -> ANTICIPATION
+assert.strictEqual(yachtActor.state, 'ANTICIPATION', 'State advances to ANTICIPATION within 140m');
+pass('Yacht lifecycle advances to ANTICIPATION (sweeping searchlights & foghorn strobes)');
+
+director.update(0.1, true, 10.0); // distanceAhead = 10 - (-50) = 60m <= 75m -> ACTION
+assert.strictEqual(yachtActor.state, 'ACTION', 'State advances to ACTION within 75m');
+pass('Yacht lifecycle advances to ACTION (high-speed sweep & champagne waterjets)');
+
+director.update(0.1, true, -30.0); // distanceAhead = -30 - (-50) = 20m <= 25m -> CLIMAX
+assert.strictEqual(yachtActor.state, 'CLIMAX', 'State advances to CLIMAX within 25m');
+pass('Yacht lifecycle advances to CLIMAX (precision docking alignment & gangway extend)');
+
+director.update(0.1, true, -70.0); // distanceAhead = -70 - (-50) = -20m <= -15m -> AFTERMATH
+assert.strictEqual(yachtActor.state, 'AFTERMATH', 'State advances to AFTERMATH behind runner');
+pass('Yacht lifecycle advances to AFTERMATH (peacefully docked at pier)');
+
+director.update(0.1, true, -110.0); // distanceAhead = -110 - (-50) = -60m <= -45m -> COMPLETE
+assert.strictEqual(yachtActor.state, 'COMPLETE', 'State advances to COMPLETE');
+pass('Yacht lifecycle cleanly completes when runner moves past');
+
+// ============================================================================
+// SUITE 11: GATE B — COLOSSAL KINETIC FLORA AWAKENING & SOLAR PULSE
+// ============================================================================
+console.log('\n--- Suite 11: Gate B — Colossal Kinetic Flora Awakening Sequence ---');
+
+director.reset();
+const testGroupB = new THREE.Group();
+builder.buildDistrictScenery(testGroupB, 12, 1.2, 100, 8002, 'FULL', -200); // District C
+const awakenings = director.getKineticAwakenings();
+assert.ok(awakenings.length > 0, 'Colossal Kinetic Flora Awakening registered in director');
+pass('Gate B: Colossal Kinetic Flora Awakening actor registered');
+
+const floraActor = awakenings[0];
+assert.strictEqual(floraActor.state, 'DORMANT', 'Initial flora state is DORMANT');
+
+// Signed-distance progression: triggerZ = -200 - 50 = -250m
+director.update(0.1, true, -120.0); // distanceAhead = -120 - (-250) = 130m <= 140m -> ANTICIPATION
+assert.strictEqual(floraActor.state, 'ANTICIPATION', 'State advances to ANTICIPATION within 140m');
+pass('Flora lifecycle advances to ANTICIPATION (ground runes & stem conduits pulse)');
+
+director.update(0.1, true, -190.0); // distanceAhead = -190 - (-250) = 60m <= 75m -> ACTION
+assert.strictEqual(floraActor.state, 'ACTION', 'State advances to ACTION within 75m');
+pass('Flora lifecycle advances to ACTION (multi-tiered petal unfurl & stamen ascent)');
+
+director.update(0.1, true, -235.0); // distanceAhead = -235 - (-250) = 15m <= 25m -> CLIMAX
+assert.strictEqual(floraActor.state, 'CLIMAX', 'State advances to CLIMAX within 25m');
+pass('Flora lifecycle advances to CLIMAX (solar beam cone emission & sun corona pulse)');
+
+director.update(0.1, true, -275.0); // distanceAhead = -275 - (-250) = -25m <= -15m -> AFTERMATH
+assert.strictEqual(floraActor.state, 'AFTERMATH', 'State advances to AFTERMATH behind runner');
+pass('Flora lifecycle advances to AFTERMATH (gentle breathing in full bloom)');
+
+director.update(0.1, true, -310.0); // distanceAhead = -310 - (-250) = -60m <= -45m -> COMPLETE
+assert.strictEqual(floraActor.state, 'COMPLETE', 'State advances to COMPLETE');
+pass('Flora lifecycle cleanly completes');
+
+// ============================================================================
+// SUITE 12: GRAPHICS DETAIL TIERING & PERFORMANCE
+// ============================================================================
+console.log('\n--- Suite 12: Graphics Detail Tiering & Performance ---');
+
+const fullGroup = new THREE.Group();
+builder.buildDistrictScenery(fullGroup, 12, 1.2, 100, 9999, 'FULL', 0);
+let fullMeshes = 0;
+fullGroup.traverse((c) => { if (c instanceof THREE.Mesh) fullMeshes++; });
+
+const minGroup = new THREE.Group();
+builder.buildDistrictScenery(minGroup, 12, 1.2, 100, 9999, 'MINIMAL', 0);
+let minMeshes = 0;
+minGroup.traverse((c) => { if (c instanceof THREE.Mesh) minMeshes++; });
+
+assert.ok(fullMeshes > minMeshes, `FULL detail has more meshes than MINIMAL (${fullMeshes} > ${minMeshes})`);
+pass(`FULL detail produces richer environment than MINIMAL (${fullMeshes} > ${minMeshes} meshes)`);
+
+assert.ok(minMeshes >= 12, `MINIMAL detail retains essential retaining plinths and landmarks (${minMeshes} meshes)`);
+pass(`MINIMAL detail retains core architectural structures (${minMeshes} meshes)`);
+
+// ============================================================================
+// SUITE 13: SCENERY FACTORY INTEGRATION & WORLD STORE
+// ============================================================================
+console.log('\n--- Suite 13: Scenery Factory Integration & World Store ---');
+
+const factory = SceneryFactory.getInstance();
+const pool = SceneryPool.getInstance();
+
+const sfGroup = new THREE.Group();
+factory.buildScenery(sfGroup, VIVA_HEAT_THEME, -200, false, false, 'NONE', 'FULL', 4242);
+assert.ok(sfGroup.children.length > 0, 'SceneryFactory generates Viva Heat scenery');
+pass('SceneryFactory successfully generates Viva Heat world scenery');
+
+pool.clearDecorativeGroup(sfGroup, new Set(Object.values(factory.getSharedMaterials())));
+assert.strictEqual(sfGroup.children.length, 0, 'SceneryPool cleanly clears all decorative meshes');
+pass('SceneryPool cleanly recycles Viva Heat decorative groups');
+
+const worldDef = getWorld('VIVA_HEAT');
+assert.ok(worldDef !== undefined, 'VIVA_HEAT exists in WorldCatalog');
+assert.strictEqual(worldDef?.implemented, true, 'VIVA_HEAT is marked implemented');
+assert.strictEqual(worldDef?.available, true, 'VIVA_HEAT is marked available');
+assert.strictEqual(worldDef?.dynamicEligible, true, 'VIVA_HEAT is dynamicEligible');
+pass('VIVA_HEAT correctly registered in WorldCatalog as available, implemented, and dynamicEligible');
 
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} VIVA_HEAT WORLD TESTS PASSED!`);

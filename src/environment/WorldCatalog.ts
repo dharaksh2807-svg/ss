@@ -172,6 +172,17 @@ const PREMIUM_WORLDS: readonly WorldDefinition[] = [
     previewImage: '/worlds/jurassic_rush.png',
     features: ['Lost Jungle Canopy', 'Valley of Giants', 'Raptor Canyon', 'Ancient Sanctuary'],
     implemented: true, available: true, dynamicEligible: true, icon: '🦖', accentColor: '#10b981'
+  },
+  {
+    id: 'VIVA_HEAT', environmentId: 'VIVA_HEAT', displayName: 'Viva Heat',
+    description: 'An ultra-glamorous high-fashion fantasy festival where the coastline comes alive with kinetic floral sculptures, coastal sunset boulevards, luxury yachts, and pulsating theatrical fever.',
+    subtitle: 'The Forbidden Festival',
+    tagline: 'High-fashion sunset coastal rails through breathing kinetic flora, mega-yachts, and midnight carnivals.',
+    rarity: 'LEGENDARY',
+    unlock: 'COINS', coinCost: 12000, keyCost: null, previewReference: 'environment:VIVA_HEAT',
+    previewImage: '/worlds/viva_heat.png',
+    features: ['Monumental Scarlet Sun', 'Mega-Yacht Marina', 'Kinetic Floral Pavilion', 'Midnight Carnival'],
+    implemented: true, available: true, dynamicEligible: true, icon: '💃', accentColor: '#ff2d55'
   }
 ];
 

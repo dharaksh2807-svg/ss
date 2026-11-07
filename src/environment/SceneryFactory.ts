@@ -1594,7 +1594,7 @@ export class SceneryFactory {
     } else if (theme.id === 'JURASSIC_RUSH') {
       this.buildJurassicRushScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'VIVA_HEAT') {
-      this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     }
@@ -5605,12 +5605,18 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const vivaGroup = new THREE.Group();
-    vivaGroup.name = 'viva_heat_scenery';
-    VivaHeatWorldBuilder.getInstance().buildDistrictScenery(vivaGroup, roadbedWidth, chunkLength, seed, detail);
-    group.add(vivaGroup);
+    VivaHeatWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ
+    );
   }
 
   /**

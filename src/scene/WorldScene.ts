@@ -2755,7 +2755,7 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'VIVA_HEAT') {
       const delta = dt || 0.016;
-      FeverDirector.getInstance().update(delta, true);
+      FeverDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
   }
 

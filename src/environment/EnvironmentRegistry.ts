@@ -85,7 +85,7 @@ export class EnvironmentRegistry {
     currentId: EnvironmentId,
     rng: () => number,
     excludePrevious?: EnvironmentId,
-    eligibleIds: readonly EnvironmentId[] = this.getAllIds().filter((id) => id !== 'VIVA_HEAT')
+    eligibleIds: readonly EnvironmentId[] = this.getAllIds()
   ): EnvironmentId {
     const current = this.get(currentId);
     let candidates = current.allowedTransitions.filter((id) => id !== currentId && this.has(id) && eligibleIds.includes(id));

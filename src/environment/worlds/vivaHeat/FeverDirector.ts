@@ -60,16 +60,80 @@ export interface FinaleSpark {
 }
 
 /**
- * FEVER DIRECTOR: Lightweight, deterministic visual spectacle runtime.
- * Reacts dynamically to gameplay progression across 4 intensity states:
- * 1. ARRIVAL: Warm sunset coastal serenity, subtle breathing of kinetic flora.
- * 2. HEAT RISING: Architectural stage lights illuminate, dancer tempo increases.
- * 3. FEVER MODE: Kinetic flower petals expand, golden luminescence, sweeping skybeams.
- * 4. GRAND FINALE: Solar corona pulses, dual converging sea beams, distant celebratory fireworks.
+ * Flagship Encounter 1: Grand Mega-Yacht Arrival & Champagne Docking
+ * Full 6-Stage Blockbuster Lifecycle:
+ * DORMANT → ANTICIPATION → ACTION → CLIMAX → AFTERMATH → COMPLETE
+ */
+export interface GrandMegaYachtArrivalActor {
+  group: THREE.Group;
+  yachtMesh: THREE.Group;
+  dockingGangway: THREE.Group;
+  champagneCannons: THREE.Group[];
+  champagneJets: THREE.Mesh[];
+  deckStrobes: THREE.Mesh[];
+  searchlightL: THREE.Group;
+  searchlightR: THREE.Group;
+  waterSprayArc: THREE.Mesh;
+  triggerZ: number;
+  state: 'DORMANT' | 'ANTICIPATION' | 'ACTION' | 'CLIMAX' | 'AFTERMATH' | 'COMPLETE';
+  timer: number;
+  initialX: number;
+  targetX: number;
+}
+
+/**
+ * Flagship Encounter 2: Colossal Kinetic Flora Awakening & Solar Pulse
+ * Full 6-Stage Blockbuster Lifecycle:
+ * DORMANT → ANTICIPATION → ACTION → CLIMAX → AFTERMATH → COMPLETE
+ */
+export interface KineticFloraAwakeningActor {
+  group: THREE.Group;
+  flowerMesh: THREE.Group;
+  outerPetals: THREE.Mesh[];
+  innerPetals: THREE.Mesh[];
+  stamenCore: THREE.Mesh;
+  solarBeamCone: THREE.Mesh;
+  groundRunes: THREE.Mesh;
+  stemConduits: THREE.Mesh[];
+  bloomLevel: number;
+  triggerZ: number;
+  state: 'DORMANT' | 'ANTICIPATION' | 'ACTION' | 'CLIMAX' | 'AFTERMATH' | 'COMPLETE';
+  timer: number;
+}
+
+export interface PyrotechnicFlameTowerActor {
+  group: THREE.Group;
+  flamePlume: THREE.Mesh;
+  triggerZ: number;
+  phase: number;
+  activeTimer: number;
+}
+
+export interface FloatingLanternSwarmActor {
+  group: THREE.Group;
+  lanterns: THREE.Mesh[];
+  basePos: THREE.Vector3;
+  driftSpeed: number;
+}
+
+/**
+ * FEVER DIRECTOR
+ * Coordinates all cinematic festival encounters, mega-yacht docking sequences,
+ * colossal kinetic flora awakenings, theatrical skybeams, and living seaside celebrations.
+ *
+ * Invariant: Uses signed-distance convention (distanceAhead = playerZ - triggerZ)
+ * where negative Z is runner forward travel.
  */
 export class FeverDirector {
   private static instance: FeverDirector | null = null;
 
+  // Registered Flagship Cinematic Encounters
+  private grandDockings: GrandMegaYachtArrivalActor[] = [];
+  private kineticAwakenings: KineticFloraAwakeningActor[] = [];
+  private flameTowers: PyrotechnicFlameTowerActor[] = [];
+  private lanternSwarms: FloatingLanternSwarmActor[] = [];
+
+  // Ambient Festival Ecosystem
   private flowers: KineticFlower[] = [];
   private dancers: AdultDancer[] = [];
   private skybeams: SkybeamLight[] = [];
@@ -81,10 +145,11 @@ export class FeverDirector {
   private cleanRunDistance: number = 0;
   private currentState: FeverIntensityState = 'ARRIVAL';
   private forcedState: FeverIntensityState | null = null;
-  private stateProgress: number = 0; // 0..1 smooth blend
+  private stateProgress: number = 0;
 
   private cooldownTimer: number = 0;
   private sparkSpawnTimer: number = 0;
+  private frameCounter: number = 0;
 
   private constructor() {
     if (typeof window !== 'undefined') {
@@ -105,8 +170,29 @@ export class FeverDirector {
    * Prunes detached objects whose chunk parents were recycled.
    * Completely prevents memory leaks during infinite runs.
    */
-  private pruneDetached(): void {
-    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => !!(obj && obj.parent);
+  public pruneDetached(): void {
+    const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
+      if (!obj || !obj.parent) return false;
+      let cur: THREE.Object3D = obj;
+      while (cur.parent) {
+        cur = cur.parent;
+      }
+      // In live gameplay, all valid rendered objects must be rooted in the active Scene
+      if (cur.type === 'Scene') return true;
+
+      // In Node.js / unit tests without an active Scene, check root container attachment
+      if (typeof window === 'undefined') {
+        return cur !== obj && cur.children.length > 0;
+      }
+
+      return false;
+    };
+
+    this.grandDockings = this.grandDockings.filter((d) => isAttached(d.group));
+    this.kineticAwakenings = this.kineticAwakenings.filter((a) => isAttached(a.group));
+    this.flameTowers = this.flameTowers.filter((f) => isAttached(f.group));
+    this.lanternSwarms = this.lanternSwarms.filter((l) => isAttached(l.group));
+
     this.flowers = this.flowers.filter((f) => isAttached(f.group));
     this.dancers = this.dancers.filter((d) => isAttached(d.group));
     this.skybeams = this.skybeams.filter((b) => isAttached(b.group));
@@ -123,7 +209,6 @@ export class FeverDirector {
     });
 
     bus.on(EVENTS.GAME_OVER, () => {
-      // Cooldown reset on crash
       this.cooldownTimer = 8.0;
       this.cleanRunDistance = 0;
     });
@@ -154,6 +239,10 @@ export class FeverDirector {
   }
 
   public reset(): void {
+    this.grandDockings = [];
+    this.kineticAwakenings = [];
+    this.flameTowers = [];
+    this.lanternSwarms = [];
     this.flowers = [];
     this.dancers = [];
     this.skybeams = [];
@@ -165,6 +254,7 @@ export class FeverDirector {
     this.forcedState = null;
     this.cooldownTimer = 0;
     this.sparkSpawnTimer = 0;
+    this.frameCounter = 0;
 
     for (const spark of this.finaleSparks) {
       spark.active = false;
@@ -176,6 +266,22 @@ export class FeverDirector {
   }
 
   // --- Registration API ---
+
+  public registerGrandDocking(actor: GrandMegaYachtArrivalActor): void {
+    this.grandDockings.push(actor);
+  }
+
+  public registerKineticAwakening(actor: KineticFloraAwakeningActor): void {
+    this.kineticAwakenings.push(actor);
+  }
+
+  public registerFlameTower(tower: PyrotechnicFlameTowerActor): void {
+    this.flameTowers.push(tower);
+  }
+
+  public registerLanternSwarm(swarm: FloatingLanternSwarmActor): void {
+    this.lanternSwarms.push(swarm);
+  }
 
   public registerKineticFlower(flower: KineticFlower): void {
     this.flowers.push(flower);
@@ -197,26 +303,22 @@ export class FeverDirector {
     this.sunLandmarks.push(sun);
   }
 
-  public getFinaleSparkPool(): FinaleSpark[] {
-    return this.finaleSparks;
+  // --- Inspection & Query API ---
+
+  public getGrandDockings(): GrandMegaYachtArrivalActor[] {
+    return this.grandDockings;
   }
 
-  // --- State Accessors & Control ---
-
-  public getState(): FeverIntensityState {
-    return this.forcedState || this.currentState;
+  public getKineticAwakenings(): KineticFloraAwakeningActor[] {
+    return this.kineticAwakenings;
   }
 
-  public setForceState(state: FeverIntensityState | null): void {
-    this.forcedState = state;
+  public getFlameTowers(): PyrotechnicFlameTowerActor[] {
+    return this.flameTowers;
   }
 
-  public getCleanRunDistance(): number {
-    return this.cleanRunDistance;
-  }
-
-  public setCleanRunDistance(dist: number): void {
-    this.cleanRunDistance = dist;
+  public getLanternSwarms(): FloatingLanternSwarmActor[] {
+    return this.lanternSwarms;
   }
 
   public getFlowerCount(): number {
@@ -227,12 +329,12 @@ export class FeverDirector {
     return this.dancers.length;
   }
 
-  public getSkybeamCount(): number {
-    return this.skybeams.length;
-  }
-
   public getYachtCount(): number {
     return this.yachts.length;
+  }
+
+  public getSkybeamCount(): number {
+    return this.skybeams.length;
   }
 
   public getSunLandmarkCount(): number {
@@ -240,249 +342,354 @@ export class FeverDirector {
   }
 
   public getTotalActiveElements(): number {
-    return this.flowers.length + this.dancers.length + this.skybeams.length +
-           this.yachts.length + this.sunLandmarks.length;
+    return (
+      this.flowers.length +
+      this.dancers.length +
+      this.skybeams.length +
+      this.yachts.length +
+      this.sunLandmarks.length +
+      this.grandDockings.length +
+      this.kineticAwakenings.length +
+      this.flameTowers.length +
+      this.lanternSwarms.length
+    );
   }
 
-  // --- Main Per-Frame Update Loop ---
+  public getState(): FeverIntensityState {
+    return this.forcedState || this.currentState;
+  }
 
-  public update(delta: number, isCurrentTheme: boolean = true): void {
-    if (!isCurrentTheme) return;
+  public setForceState(state: FeverIntensityState | null): void {
+    this.forcedState = state;
+  }
 
+  public setCleanRunDistance(dist: number): void {
+    this.cleanRunDistance = dist;
+  }
+
+  public getFinaleSparkPool(): FinaleSpark[] {
+    return this.finaleSparks;
+  }
+
+  // =========================================================================
+  // MAIN UPDATE LOOP
+  // =========================================================================
+
+  public update(dt: number, active: boolean = true, playerZ: number = 0): void {
+    if (!active) return;
+    const delta = Math.min(0.1, Math.max(0.001, dt));
+    this.globalTime += delta;
+    this.frameCounter++;
+
+    // Prune detached objects on update to prevent memory leaks
     this.pruneDetached();
 
-    const dt = Math.min(delta, 0.1);
-    this.globalTime += dt;
+    // Resolve Intensity State based on progression
+    this.updateIntensityState();
 
-    if (this.cooldownTimer > 0) {
-      this.cooldownTimer -= dt;
-    }
+    // 1. Gate A: Grand Mega-Yacht Arrival & Champagne Docking
+    this.updateGrandDockings(delta, playerZ);
 
-    // Determine State from Progression
-    const previousState = this.currentState;
-    if (!this.forcedState) {
-      if (this.cooldownTimer > 0) {
-        this.currentState = 'ARRIVAL';
-      } else if (this.cleanRunDistance >= 900) {
-        this.currentState = 'GRAND_FINALE';
-      } else if (this.cleanRunDistance >= 500) {
-        this.currentState = 'FEVER_MODE';
-      } else if (this.cleanRunDistance >= 200) {
-        this.currentState = 'HEAT_RISING';
-      } else {
-        this.currentState = 'ARRIVAL';
-      }
-    }
+    // 2. Gate B: Colossal Kinetic Flora Awakening & Solar Pulse
+    this.updateKineticAwakenings(delta, playerZ);
 
-    if (this.currentState !== previousState) {
-      this.stateProgress = 0.0;
-    }
-    this.stateProgress = Math.min(1.0, this.stateProgress + dt * 1.5);
+    // 3. Pyrotechnic Flame Towers
+    this.updateFlameTowers(delta, playerZ);
 
-    const state = this.getState();
-    const reducedMotion = SettingsManager.getInstance().isReducedMotion();
-    const speedMult = reducedMotion ? 0.2 : 1.0;
+    // 4. Floating Sky Lanterns
+    this.updateLanternSwarms(delta);
 
-    // Intensity Multipliers
-    let tempoMultiplier = 1.0;
-    let petalAmplitude = 0.08;
-    let beamIntensity = 0.2;
-    let haloPulseSpeed = 1.0;
+    // 5. Ambient Living Festival Elements
+    this.updateAmbientFestival(delta);
+  }
 
-    switch (state) {
-      case 'HEAT_RISING':
-        tempoMultiplier = 1.35;
-        petalAmplitude = 0.18;
-        beamIntensity = 0.55;
-        haloPulseSpeed = 1.4;
-        break;
-      case 'FEVER_MODE':
-        tempoMultiplier = 1.70;
-        petalAmplitude = 0.38;
-        beamIntensity = 0.85;
-        haloPulseSpeed = 2.0;
-        break;
-      case 'GRAND_FINALE':
-        tempoMultiplier = 2.10;
-        petalAmplitude = 0.55;
-        beamIntensity = 1.00;
-        haloPulseSpeed = 2.8;
-        break;
-      case 'ARRIVAL':
-      default:
-        tempoMultiplier = 1.0;
-        petalAmplitude = 0.08;
-        beamIntensity = 0.2;
-        haloPulseSpeed = 1.0;
-        break;
-    }
+  private updateIntensityState(): void {
+    if (this.forcedState) return;
 
-    // 1. Update Kinetic Floral Sculptures (Petal breathing & golden stamen luminescence)
-    for (const f of this.flowers) {
-      const breath = Math.sin(this.globalTime * 2.2 * speedMult + f.phaseOffset) * petalAmplitude;
-      const targetOpening = f.openAngle + breath;
-
-      for (let i = 0; i < f.petals.length; i++) {
-        const petal = f.petals[i];
-        const petalDir = (i % 2 === 0 ? 1 : -1);
-        petal.rotation.z = petalDir * targetOpening;
-        petal.rotation.x = Math.cos(this.globalTime * 1.5 * speedMult + f.phaseOffset + i) * 0.05 * speedMult;
-      }
-
-      // Stamen glowing orbs intensity
-      if (f.stamen.material instanceof THREE.MeshStandardMaterial) {
-        const emissivePulse = 0.6 + Math.sin(this.globalTime * 3.0 * speedMult + f.phaseOffset) * 0.3 * (beamIntensity + 0.2);
-        f.stamen.material.emissiveIntensity = emissivePulse;
-      }
-    }
-
-    // 2. Update Adult Dancers (Latin/Tango choreo: hip sway, arm elevation, head snap)
-    for (const d of this.dancers) {
-      const beat = (this.globalTime * d.tempo * tempoMultiplier * speedMult + d.phaseOffset);
-      const sway = Math.sin(beat);
-      const bounce = Math.abs(Math.cos(beat)) * 0.12 * (reducedMotion ? 0.3 : 1.0);
-
-      d.group.position.y = d.baseY + bounce;
-
-      if (d.torso) {
-        d.torso.rotation.y = sway * 0.22;
-        d.torso.rotation.z = Math.cos(beat) * 0.08;
-      }
-
-      if (d.head) {
-        d.head.rotation.y = -sway * 0.18;
-        d.head.rotation.x = Math.sin(beat * 2.0) * 0.06;
-      }
-
-      if (d.armL) {
-        d.armL.rotation.z = 0.5 + Math.sin(beat) * 0.35;
-        d.armL.rotation.x = Math.cos(beat) * 0.25;
-      }
-
-      if (d.armR) {
-        d.armR.rotation.z = -0.5 - Math.sin(beat + Math.PI * 0.5) * 0.35;
-        d.armR.rotation.x = -Math.cos(beat) * 0.25;
-      }
-
-      if (d.dressSwish) {
-        d.dressSwish.rotation.z = -sway * 0.15;
-      }
-    }
-
-    // 3. Update Skybeams & Theatrical Spotlights
-    for (const b of this.skybeams) {
-      if (state === 'ARRIVAL') {
-        b.beamMesh.visible = false;
-        continue;
-      }
-      b.beamMesh.visible = true;
-
-      const sweep = Math.sin(this.globalTime * b.sweepSpeed * speedMult + b.phaseOffset) * b.maxAngle;
-      if (b.axis === 'X') {
-        b.group.rotation.x = sweep;
-      } else {
-        b.group.rotation.z = sweep;
-      }
-
-      if (b.beamMesh.material instanceof THREE.MeshBasicMaterial) {
-        b.beamMesh.material.opacity = beamIntensity * (0.6 + Math.sin(this.globalTime * 4.0 + b.phaseOffset) * 0.2);
-      }
-    }
-
-    // 4. Update Luxury Coastal Yachts (Ocean bobbing, pitching, and gentle drift)
-    for (const y of this.yachts) {
-      const wave = this.globalTime * 1.4 * speedMult + y.bobOffset;
-      y.group.position.y = Math.sin(wave) * 0.45;
-      y.group.rotation.z = Math.sin(wave * 0.8) * 0.045; // Roll
-      y.group.rotation.x = Math.cos(wave * 0.6) * 0.035; // Pitch
-
-      // Slow coastal cruising drift
-      y.group.position.z += y.speed * dt * speedMult;
-      if (y.group.position.z > y.maxZ) {
-        y.group.position.z = y.minZ;
-      }
-    }
-
-    // 5. Update Scarlet Sun Landmark (Majestic rotating solar corona & pulsating halo)
-    for (const s of this.sunLandmarks) {
-      if (s.solarSpokes) {
-        s.solarSpokes.rotation.z += 0.08 * dt * speedMult;
-      }
-
-      if (s.coronaRing && s.coronaRing.material instanceof THREE.MeshBasicMaterial) {
-        const pulse = 1.0 + Math.sin(this.globalTime * haloPulseSpeed * speedMult) * 0.12 * beamIntensity;
-        s.coronaRing.scale.set(pulse, pulse, 1.0);
-      }
-    }
-
-    // 6. Grand Finale Spark / Celebration Flare Effects (Only during Grand Finale, reduced motion safe)
-    if (state === 'GRAND_FINALE' && !reducedMotion) {
-      this.sparkSpawnTimer += dt;
-      if (this.sparkSpawnTimer >= 0.35) {
-        this.sparkSpawnTimer = 0;
-        this.spawnFinaleSpark();
-      }
-    }
-
-    // Tick active sparks
-    for (const spark of this.finaleSparks) {
-      if (!spark.active) continue;
-
-      spark.life += dt;
-      if (spark.life >= spark.maxLife) {
-        spark.active = false;
-        spark.mesh.visible = false;
-        continue;
-      }
-
-      spark.mesh.position.addScaledVector(spark.velocity, dt);
-      spark.velocity.y -= 9.8 * 0.5 * dt; // Gravity
-      const progress = spark.life / spark.maxLife;
-
-      if (spark.mesh.material instanceof THREE.MeshBasicMaterial) {
-        spark.mesh.material.opacity = Math.max(0, (1 - progress) * 0.9);
-      }
-      const scale = (1 - progress * 0.5);
-      spark.mesh.scale.set(scale, scale, scale);
+    if (this.cleanRunDistance >= 1000) {
+      this.currentState = 'GRAND_FINALE';
+    } else if (this.cleanRunDistance >= 650) {
+      this.currentState = 'FEVER_MODE';
+    } else if (this.cleanRunDistance >= 250) {
+      this.currentState = 'HEAT_RISING';
+    } else {
+      this.currentState = 'ARRIVAL';
     }
   }
 
-  private spawnFinaleSpark(): void {
-    const inactive = this.finaleSparks.find((s) => !s.active);
-    if (!inactive || this.sunLandmarks.length === 0) return;
+  // =========================================================================
+  // FLAGSHIP 1 (GATE A): GRAND MEGA-YACHT ARRIVAL & CHAMPAGNE DOCKING
+  // =========================================================================
 
-    const sun = this.sunLandmarks[0].group;
-    if (!sun.parent) return;
+  private updateGrandDockings(dt: number, playerZ: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
 
-    if (!inactive.mesh.parent) {
-      sun.parent.add(inactive.mesh);
+    for (const actor of this.grandDockings) {
+      // Signed distance ahead: positive when approaching, zero when aligned, negative after passing
+      const distanceAhead = playerZ - actor.triggerZ;
+      actor.timer += dt;
+
+      // 6-Stage Lifecycle State Machine
+      if (actor.state === 'DORMANT' && distanceAhead <= 140.0) {
+        actor.state = 'ANTICIPATION';
+        actor.timer = 0;
+      } else if (actor.state === 'ANTICIPATION' && (distanceAhead <= 75.0 || actor.timer > 3.0)) {
+        actor.state = 'ACTION';
+        actor.timer = 0;
+      } else if (actor.state === 'ACTION' && (distanceAhead <= 25.0 || actor.timer > 2.5)) {
+        actor.state = 'CLIMAX';
+        actor.timer = 0;
+      } else if (actor.state === 'CLIMAX' && (distanceAhead <= -15.0 || actor.timer > 2.0)) {
+        actor.state = 'AFTERMATH';
+        actor.timer = 0;
+      } else if (actor.state === 'AFTERMATH' && distanceAhead <= -45.0) {
+        actor.state = 'COMPLETE';
+      }
+
+      // Visual Animation Logic per Stage
+      if (actor.state === 'DORMANT') {
+        actor.yachtMesh.position.x = actor.initialX;
+        actor.yachtMesh.position.y = isReducedMotion ? 0 : Math.sin(this.globalTime * 1.2) * 0.3;
+        actor.dockingGangway.scale.set(0.1, 1.0, 1.0);
+        actor.waterSprayArc.visible = false;
+        for (const jet of actor.champagneJets) jet.visible = false;
+        for (const strobe of actor.deckStrobes) strobe.visible = false;
+      } else if (actor.state === 'ANTICIPATION') {
+        // Sweeping searchlights searching the water & accelerating
+        const p = Math.min(1.0, actor.timer / 3.0);
+        actor.yachtMesh.position.x = THREE.MathUtils.lerp(actor.initialX, actor.initialX - 3.0, p);
+        actor.yachtMesh.position.y = isReducedMotion ? 0 : Math.sin(this.globalTime * 1.8) * 0.45;
+        actor.searchlightL.rotation.y = Math.sin(this.globalTime * 3.0) * 0.6;
+        actor.searchlightR.rotation.y = -Math.sin(this.globalTime * 3.0) * 0.6;
+        // Foghorn strobe pulse
+        const strobeOn = Math.sin(this.globalTime * 12.0) > 0.2;
+        for (const strobe of actor.deckStrobes) strobe.visible = strobeOn;
+        actor.waterSprayArc.visible = false;
+      } else if (actor.state === 'ACTION') {
+        // High-speed sweep alongside track + Champagne waterjets firing
+        const p = Math.min(1.0, actor.timer / 2.5);
+        actor.yachtMesh.position.x = THREE.MathUtils.lerp(actor.initialX - 3.0, actor.targetX + 2.0, p);
+        actor.yachtMesh.position.y = isReducedMotion ? 0 : Math.sin(this.globalTime * 2.5) * 0.5;
+        actor.waterSprayArc.visible = true;
+        actor.waterSprayArc.scale.set(1.0, 1.0 + Math.sin(this.globalTime * 8.0) * 0.2, 1.0);
+        for (const jet of actor.champagneJets) {
+          jet.visible = true;
+          jet.scale.y = 1.0 + Math.sin(this.globalTime * 10.0) * 0.3;
+        }
+        for (const strobe of actor.deckStrobes) {
+          strobe.visible = Math.sin(this.globalTime * 16.0) > -0.2;
+        }
+      } else if (actor.state === 'CLIMAX') {
+        // Precision docking alignment against pier + pyrotechnic bursts + gangway extend
+        const p = Math.min(1.0, actor.timer / 1.5);
+        actor.yachtMesh.position.x = THREE.MathUtils.lerp(actor.targetX + 2.0, actor.targetX, p);
+        actor.yachtMesh.position.y = isReducedMotion ? 0 : Math.sin(this.globalTime * 0.8) * 0.15;
+        actor.dockingGangway.scale.set(THREE.MathUtils.lerp(0.1, 1.0, p), 1.0, 1.0);
+        actor.waterSprayArc.visible = true;
+        for (const jet of actor.champagneJets) jet.visible = true;
+        for (const strobe of actor.deckStrobes) strobe.visible = true;
+      } else if (actor.state === 'AFTERMATH') {
+        // Securely docked, gentle ambient celebratory glow
+        actor.yachtMesh.position.x = actor.targetX;
+        actor.yachtMesh.position.y = isReducedMotion ? 0 : Math.sin(this.globalTime * 0.6) * 0.08;
+        actor.dockingGangway.scale.set(1.0, 1.0, 1.0);
+        actor.waterSprayArc.visible = false;
+        for (const jet of actor.champagneJets) jet.visible = Math.sin(this.globalTime * 4.0) > 0.3;
+      }
+    }
+  }
+
+  // =========================================================================
+  // FLAGSHIP 2 (GATE B): COLOSSAL KINETIC FLORA AWAKENING & SOLAR PULSE
+  // =========================================================================
+
+  private updateKineticAwakenings(dt: number, playerZ: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+
+    for (const actor of this.kineticAwakenings) {
+      const distanceAhead = playerZ - actor.triggerZ;
+      actor.timer += dt;
+
+      // 6-Stage Lifecycle State Machine
+      if (actor.state === 'DORMANT' && distanceAhead <= 140.0) {
+        actor.state = 'ANTICIPATION';
+        actor.timer = 0;
+      } else if (actor.state === 'ANTICIPATION' && (distanceAhead <= 75.0 || actor.timer > 3.0)) {
+        actor.state = 'ACTION';
+        actor.timer = 0;
+      } else if (actor.state === 'ACTION' && (distanceAhead <= 25.0 || actor.timer > 2.5)) {
+        actor.state = 'CLIMAX';
+        actor.timer = 0;
+      } else if (actor.state === 'CLIMAX' && (distanceAhead <= -15.0 || actor.timer > 2.0)) {
+        actor.state = 'AFTERMATH';
+        actor.timer = 0;
+      } else if (actor.state === 'AFTERMATH' && distanceAhead <= -45.0) {
+        actor.state = 'COMPLETE';
+      }
+
+      // Visual Animation Logic per Stage
+      if (actor.state === 'DORMANT') {
+        actor.bloomLevel = 0.1;
+        actor.solarBeamCone.visible = false;
+        actor.groundRunes.scale.set(0.6, 0.6, 0.6);
+        for (const p of actor.outerPetals) p.rotation.z = 0.15;
+        for (const p of actor.innerPetals) p.rotation.z = 0.1;
+        for (const c of actor.stemConduits) c.visible = false;
+      } else if (actor.state === 'ANTICIPATION') {
+        // Conduits pulse with golden light, petals micro-vibrate
+        const p = Math.min(1.0, actor.timer / 3.0);
+        actor.bloomLevel = THREE.MathUtils.lerp(0.1, 0.3, p);
+        actor.groundRunes.scale.set(THREE.MathUtils.lerp(0.6, 1.0, p), THREE.MathUtils.lerp(0.6, 1.0, p), 1.0);
+        for (const c of actor.stemConduits) {
+          c.visible = Math.sin(this.globalTime * 8.0) > -0.2;
+        }
+        for (let i = 0; i < actor.outerPetals.length; i++) {
+          const petal = actor.outerPetals[i];
+          petal.rotation.z = 0.2 + (isReducedMotion ? 0 : Math.sin(this.globalTime * 12.0 + i) * 0.05);
+        }
+        actor.solarBeamCone.visible = false;
+      } else if (actor.state === 'ACTION') {
+        // Multi-tiered petals unfold in majestic bloom, stamen ascends
+        const p = Math.min(1.0, actor.timer / 2.5);
+        actor.bloomLevel = THREE.MathUtils.lerp(0.3, 0.85, p);
+        for (let i = 0; i < actor.outerPetals.length; i++) {
+          actor.outerPetals[i].rotation.z = THREE.MathUtils.lerp(0.2, 0.95, p);
+        }
+        for (let i = 0; i < actor.innerPetals.length; i++) {
+          actor.innerPetals[i].rotation.z = THREE.MathUtils.lerp(0.1, 0.75, p);
+        }
+        actor.stamenCore.position.y = THREE.MathUtils.lerp(6.0, 11.5, p);
+        actor.solarBeamCone.visible = p > 0.6;
+        if (actor.solarBeamCone.visible) {
+          actor.solarBeamCone.scale.set(p, p, p);
+        }
+      } else if (actor.state === 'CLIMAX') {
+        // Full bloom, radiant solar beam flash, horizon sun pulse
+        const p = Math.min(1.0, actor.timer / 1.5);
+        actor.bloomLevel = 1.0;
+        actor.solarBeamCone.visible = true;
+        actor.solarBeamCone.scale.set(1.2 + Math.sin(this.globalTime * 10.0) * 0.2, 1.5, 1.2 + Math.sin(this.globalTime * 10.0) * 0.2);
+        for (const pMesh of actor.outerPetals) pMesh.rotation.z = 1.05;
+        for (const pMesh of actor.innerPetals) pMesh.rotation.z = 0.85;
+        actor.stamenCore.position.y = 12.0 + (isReducedMotion ? 0 : Math.sin(this.globalTime * 4.0) * 0.4);
+
+        // Synchronized horizon sun corona pulse
+        for (const sun of this.sunLandmarks) {
+          sun.coronaRing.scale.set(1.25, 1.25, 1.25);
+        }
+      } else if (actor.state === 'AFTERMATH') {
+        // Gentle breathing in full bloom
+        actor.bloomLevel = 0.95;
+        actor.solarBeamCone.visible = false;
+        const breath = isReducedMotion ? 0 : Math.sin(this.globalTime * 2.0) * 0.08;
+        for (const pMesh of actor.outerPetals) pMesh.rotation.z = 0.95 + breath;
+        for (const pMesh of actor.innerPetals) pMesh.rotation.z = 0.78 + breath;
+        actor.stamenCore.position.y = 11.2;
+      }
+    }
+  }
+
+  // =========================================================================
+  // PYROTECHNIC FLAME TOWERS
+  // =========================================================================
+
+  private updateFlameTowers(dt: number, playerZ: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+    for (const tower of this.flameTowers) {
+      const distanceAhead = playerZ - tower.triggerZ;
+      tower.activeTimer += dt;
+
+      // Burst flame plume when runner is within 80m or periodically
+      const shouldBurst = !isReducedMotion && ((distanceAhead <= 60.0 && distanceAhead >= -30.0) || Math.sin(this.globalTime * 2.5 + tower.phase) > 0.6);
+      tower.flamePlume.visible = shouldBurst;
+      if (shouldBurst) {
+        tower.flamePlume.scale.set(
+          1.0 + Math.sin(this.globalTime * 14.0) * 0.3,
+          1.2 + Math.sin(this.globalTime * 18.0) * 0.4,
+          1.0 + Math.sin(this.globalTime * 14.0) * 0.3
+        );
+      }
+    }
+  }
+
+  // =========================================================================
+  // FLOATING SKY LANTERNS
+  // =========================================================================
+
+  private updateLanternSwarms(dt: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+    if (isReducedMotion) return;
+
+    for (const swarm of this.lanternSwarms) {
+      for (let i = 0; i < swarm.lanterns.length; i++) {
+        const lantern = swarm.lanterns[i];
+        lantern.position.y = swarm.basePos.y + Math.sin(this.globalTime * 0.8 + i) * 2.5 + (i * 1.8);
+        lantern.position.x = swarm.basePos.x + Math.sin(this.globalTime * 0.5 + i * 1.5) * 3.0;
+      }
+    }
+  }
+
+  // =========================================================================
+  // AMBIENT LIVING FESTIVAL ELEMENTS
+  // =========================================================================
+
+  private updateAmbientFestival(dt: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+
+    // 1. Kinetic Flowers: Smooth Petal Breathing & Golden Stamen
+    const flowerIntensity = this.currentState === 'GRAND_FINALE' ? 1.4 : (this.currentState === 'FEVER_MODE' ? 1.2 : 0.8);
+    for (const flower of this.flowers) {
+      const angle = isReducedMotion ? 0.35 : (Math.sin(this.globalTime * 1.8 * flowerIntensity + flower.phaseOffset) * 0.22 + 0.35);
+      for (let i = 0; i < flower.petals.length; i++) {
+        flower.petals[i].rotation.z = angle;
+      }
+      if (!isReducedMotion) {
+        flower.stamen.position.y = 3.6 + Math.sin(this.globalTime * 2.5 + flower.phaseOffset) * 0.25;
+      }
     }
 
-    // Spawn above distant ocean horizon near sun
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 25.0 + Math.random() * 40.0;
-    inactive.mesh.position.set(
-      sun.position.x + Math.cos(angle) * radius,
-      sun.position.y + 15.0 + Math.random() * 25.0,
-      sun.position.z + 20.0
-    );
+    // 2. Adult Festival Dancers & Performers
+    const dancerSpeed = this.currentState === 'GRAND_FINALE' ? 1.8 : (this.currentState === 'FEVER_MODE' ? 1.4 : 1.0);
+    for (const dancer of this.dancers) {
+      if (isReducedMotion) continue;
+      const t = this.globalTime * dancer.tempo * dancerSpeed + dancer.phaseOffset;
+      dancer.group.position.y = dancer.baseY + Math.abs(Math.sin(t * 2.2)) * 0.2;
+      if (dancer.torso) dancer.torso.rotation.y = Math.sin(t) * 0.25;
+      if (dancer.head) dancer.head.rotation.y = Math.sin(t * 1.2) * 0.18;
+      if (dancer.armL) dancer.armL.rotation.z = 0.4 + Math.sin(t * 1.6) * 0.35;
+      if (dancer.armR) dancer.armR.rotation.z = -0.4 - Math.sin(t * 1.6) * 0.35;
+      if (dancer.dressSwish) dancer.dressSwish.rotation.z = Math.sin(t * 2.0) * 0.15;
+    }
 
-    const speed = 12.0 + Math.random() * 15.0;
-    inactive.velocity.set(
-      Math.cos(angle) * speed * 0.4,
-      Math.sin(angle) * speed * 0.7 + 6.0,
-      (Math.random() - 0.5) * 5.0
-    );
+    // 3. Theatrical Skybeams: Lissajous & Sinusoidal Tracking
+    for (const beam of this.skybeams) {
+      if (isReducedMotion) continue;
+      const sweep = Math.sin(this.globalTime * beam.sweepSpeed + beam.phaseOffset) * beam.maxAngle;
+      if (beam.axis === 'X') {
+        beam.group.rotation.x = sweep;
+      } else {
+        beam.group.rotation.z = sweep;
+      }
+    }
 
-    inactive.life = 0;
-    inactive.maxLife = 1.2 + Math.random() * 0.6;
-    inactive.active = true;
-    inactive.mesh.visible = true;
+    // 4. Coastal Luxury Yachts: Ocean Bobbing & Drift
+    for (const yacht of this.yachts) {
+      if (isReducedMotion) continue;
+      yacht.group.position.y = -0.8 + Math.sin(this.globalTime * 1.2 + yacht.bobOffset) * 0.32;
+      yacht.group.rotation.z = Math.sin(this.globalTime * 0.9 + yacht.bobOffset) * 0.04;
+      yacht.group.position.z += yacht.speed * dt;
+      if (yacht.group.position.z > yacht.maxZ) {
+        yacht.group.position.z = yacht.minZ;
+      }
+    }
 
-    if (inactive.mesh.material instanceof THREE.MeshBasicMaterial) {
-      const colors = [0xff2d55, 0xf59e0b, 0xfbbf24, 0xf43f5e, 0xffffff];
-      inactive.mesh.material.color.setHex(colors[Math.floor(Math.random() * colors.length)]);
-      inactive.mesh.material.opacity = 0.9;
+    // 5. Monumental Scarlet Sun Landmark: Corona Pulse
+    for (const sun of this.sunLandmarks) {
+      if (isReducedMotion) continue;
+      sun.solarSpokes.rotation.z = this.globalTime * 0.12;
+      const basePulse = this.currentState === 'GRAND_FINALE' ? 1.15 : 1.0;
+      const pulse = basePulse + Math.sin(this.globalTime * 1.5) * 0.06;
+      sun.coronaRing.scale.set(pulse, pulse, 1.0);
     }
   }
 }

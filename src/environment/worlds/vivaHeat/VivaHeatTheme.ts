@@ -90,6 +90,23 @@ export const VIVA_HEAT_THEME: EnvironmentTheme = {
 };
 
 /**
+ * Master Color Palette for Viva Heat: The Forbidden Festival
+ */
+export const VIVA_PALETTE = {
+  sunsetScarlet: 0xff2d55,
+  sunsetGold: 0xf59e0b,
+  velvetCrimson: 0x4c0519,
+  twilightViolet: 0x3b0764,
+  orchidFuchsia: 0xd946ef,
+  coastalOcean: 0x2a0845,
+  amberGlow: 0xfbbf24,
+  palmEmerald: 0x047857,
+  marbleIvory: 0xffedd5,
+  champagneGold: 0xfef08a,
+  deepObsidian: 0x1f0310
+} as const;
+
+/**
  * Visual Livery Specification for Viva Heat Trains:
  * High-gloss candy automotive finish in Velvet Crimson, Coral Scarlet, and Sunset Gold
  */
@@ -104,7 +121,8 @@ export const VIVA_HEAT_TRAIN_LIVERY = {
   pipeTrimColor: 0xf43f5e,   // Coral Accent Beading
   wheelCapColor: 0xf59e0b,   // Gold Wheel Hub Caps
   roughness: 0.20,
-  metalness: 0.85
+  metalness: 0.85,
+  catwalkSurfaceY: 4.35
 } as const;
 
 /**
