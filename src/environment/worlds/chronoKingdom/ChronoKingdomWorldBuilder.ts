@@ -674,17 +674,17 @@ export class ChronoKingdomWorldBuilder {
 
     switch (districtIndex) {
       case 0:
-        this.buildGrandClockworkCapital(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex);
+        this.buildGrandClockworkCapital(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex, worldZIn);
         break;
       case 1:
-        this.buildTimeFoundry(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex);
+        this.buildTimeFoundry(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex, worldZIn);
         break;
       case 2:
-        this.buildChronoObservatory(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex);
+        this.buildChronoObservatory(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex, worldZIn);
         break;
       case 3:
       default:
-        this.buildFracturedTimeDistrict(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex);
+        this.buildFracturedTimeDistrict(group, roadbedWidth, chunkLength, rng, detail, director, variantIndex, worldZIn);
         break;
     }
   }
@@ -700,7 +700,8 @@ export class ChronoKingdomWorldBuilder {
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: ChronoKingdomEventDirector,
-    variant: number = 0
+    variant: number = 0,
+    worldZ: number = 0
   ): void {
     const districtA = new THREE.Group();
     districtA.name = 'district_a_grand_clockwork_capital';
@@ -1162,6 +1163,14 @@ export class ChronoKingdomWorldBuilder {
     const tram = this.buildSkybridgeClockworkTram(-curbEdge - 15.0, 18.2, -chunkLength * 0.5);
     director.registerSkybridgeTrain(tram, 12.0, -curbEdge - 28.0, curbEdge + 28.0);
     districtA.add(tram);
+
+    // 5. Blockbuster Spectacle: The Clockwork Titan Awakens (Scene A Quality Gate)
+    this.spawnClockworkTitan(districtA, director, worldZ, 1);
+
+    // 6. High-Value Surprise: Clockwork Bird Swarm Soaring Formation
+    if (variant === 1 || variant === 2) {
+      this.spawnClockworkBirdSwarm(districtA, director, worldZ);
+    }
   }
 
   // =========================================================================
@@ -1175,7 +1184,8 @@ export class ChronoKingdomWorldBuilder {
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: ChronoKingdomEventDirector,
-    variant: number = 0
+    variant: number = 0,
+    worldZ: number = 0
   ): void {
     const districtB = new THREE.Group();
     districtB.name = 'district_b_time_foundry';
@@ -1511,6 +1521,9 @@ export class ChronoKingdomWorldBuilder {
 
     const parkedLoco = this.buildChronoKingdomShowcaseTrain(curbEdge + 9.5, 1.0, -chunkLength * 0.45);
     districtB.add(parkedLoco);
+
+    // 5. Blockbuster Spectacle: The Transforming Clockwork City (Event D)
+    this.spawnTransformingCity(districtB, director, worldZ, roadbedWidth);
   }
 
   // =========================================================================
@@ -1524,7 +1537,8 @@ export class ChronoKingdomWorldBuilder {
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: ChronoKingdomEventDirector,
-    variant: number = 0
+    variant: number = 0,
+    worldZ: number = 0
   ): void {
     const districtC = new THREE.Group();
     districtC.name = 'district_c_chrono_observatory';
@@ -1836,6 +1850,14 @@ export class ChronoKingdomWorldBuilder {
       degreeArch.add(dRing);
       districtC.add(degreeArch);
     }
+
+    // 4. Blockbuster Spectacle: The Great Time Rift (Scene B Quality Gate)
+    this.spawnGreatTimeRift(districtC, director, worldZ, -1);
+
+    // 5. High-Value Surprise: The Pendulum Cathedral
+    if (variant === 1 || variant === 2) {
+      this.spawnPendulumCathedral(districtC, director, worldZ, 1);
+    }
   }
 
   // =========================================================================
@@ -1849,7 +1871,8 @@ export class ChronoKingdomWorldBuilder {
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     director: ChronoKingdomEventDirector,
-    variant: number = 0
+    variant: number = 0,
+    worldZ: number = 0
   ): void {
     const districtD = new THREE.Group();
     districtD.name = 'district_d_fractured_time';
@@ -2141,6 +2164,807 @@ export class ChronoKingdomWorldBuilder {
 
       districtD.add(stasisArch);
     }
+
+    // 4. Blockbuster Spectacle: The Mechanical Dragon (Event C)
+    this.spawnMechanicalDragon(districtD, director, worldZ);
+
+    // 5. High-Value Surprise: The Giant Hourglass
+    if (variant === 0 || variant === 2) {
+      this.spawnGiantHourglass(districtD, director, worldZ, 1);
+    }
+  }
+
+  // =========================================================================
+  // BLOCKBUSTER CINEMATIC SPECTACLE SPAWNERS (LEVEL 3 EVENTS & HIGH-VALUE SURPRISES)
+  // =========================================================================
+
+  /**
+   * Blockbuster Scene A Quality Gate: The Clockwork Titan Awakens
+   */
+  public spawnClockworkTitan(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    side: number = 1
+  ): THREE.Group {
+    const titanGroup = new THREE.Group();
+    titanGroup.name = 'blockbuster_clockwork_titan';
+    const tx = side * 13.5;
+    const tz = -50.0;
+    titanGroup.position.set(tx, 0, tz);
+
+    // 1. Deep Subterranean Foundation Plinth down to Y = -5.65m (Zero floating geometry)
+    const plinthDepth = 6.0;
+    const plinth = new THREE.Mesh(this.getBox(8.0, plinthDepth, 8.0), this.darkIronstoneMat);
+    plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    titanGroup.add(plinth);
+
+    const plinthCap = new THREE.Mesh(this.getBox(8.4, 0.6, 8.4), this.antiqueGoldMat);
+    plinthCap.position.set(0, 0.65, 0);
+    titanGroup.add(plinthCap);
+
+    // 2. Colossal Articulated Legs / Pylon Greaves
+    [-2.0, 2.0].forEach((lx) => {
+      const legPillar = new THREE.Mesh(this.getBox(2.0, 6.5, 2.2), this.midnightSteelMat);
+      legPillar.position.set(lx, 3.9, 0);
+      titanGroup.add(legPillar);
+
+      const kneeGear = this.buildGearMesh(1.1, 10, 0.25, this.antiqueGoldMat);
+      kneeGear.position.set(lx, 4.0, 1.15);
+      titanGroup.add(kneeGear);
+    });
+
+    // 3. Pelvis & Gear Ring
+    const waistRing = new THREE.Mesh(this.getTorus(2.6, 0.35, 6, 20), this.antiqueGoldMat);
+    waistRing.position.set(0, 7.3, 0);
+    waistRing.rotation.x = Math.PI / 2;
+    titanGroup.add(waistRing);
+
+    // 4. Heavy Bronze Armored Torso
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.set(0, 7.5, 0);
+    titanGroup.add(torsoGroup);
+
+    const chestArmor = new THREE.Mesh(this.getBox(5.2, 5.8, 3.6), this.darkBronzeMat);
+    chestArmor.position.set(0, 3.2, 0);
+    torsoGroup.add(chestArmor);
+
+    const breastPlate = new THREE.Mesh(this.getBox(4.4, 4.6, 1.2), this.burnishedCopperMat);
+    breastPlate.position.set(0, 3.4, 1.5);
+    torsoGroup.add(breastPlate);
+
+    // Exposed Internal Gear Mechanism (3 intermeshed cogs)
+    const coreGears: THREE.Object3D[] = [];
+    const gear1 = this.buildGearMesh(1.1, 12, 0.18, this.antiqueGoldMat);
+    gear1.position.set(-0.8, 3.6, 2.15);
+    torsoGroup.add(gear1);
+    coreGears.push(gear1);
+
+    const gear2 = this.buildGearMesh(0.85, 9, 0.18, this.burnishedCopperMat);
+    gear2.position.set(0.8, 3.4, 2.15);
+    torsoGroup.add(gear2);
+    coreGears.push(gear2);
+
+    const gear3 = this.buildGearMesh(0.65, 8, 0.18, this.agedBrassMat);
+    gear3.position.set(0.0, 4.5, 2.15);
+    torsoGroup.add(gear3);
+    coreGears.push(gear3);
+
+    // Pulsing Temporal Reactor Core
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.8 });
+    CurvedShaderManager.getInstance().applyCurvature(coreMat);
+    const coreMesh = new THREE.Mesh(this.getSphere(0.85, 12), coreMat);
+    coreMesh.position.set(0, 2.4, 2.0);
+    torsoGroup.add(coreMesh);
+
+    // Twin Exhaust Stacks at rear
+    const exhaustPipes: THREE.Object3D[] = [];
+    const steamPlumes: THREE.Mesh[] = [];
+    [-1.6, 1.6].forEach((px) => {
+      const pipe = new THREE.Mesh(this.getCylinder(0.4, 0.45, 3.2, 8), this.darkIronstoneMat);
+      pipe.position.set(px, 6.2, -1.6);
+      torsoGroup.add(pipe);
+      exhaustPipes.push(pipe);
+
+      const pipeRim = new THREE.Mesh(this.getCylinder(0.52, 0.42, 0.35, 8), this.antiqueGoldMat);
+      pipeRim.position.set(px, 7.8, -1.6);
+      torsoGroup.add(pipeRim);
+
+      const steamPuff = new THREE.Mesh(this.getSphere(0.75, 8), this.steamPuffMat);
+      steamPuff.position.set(px, 8.6, -1.6);
+      steamPuff.visible = false;
+      torsoGroup.add(steamPuff);
+      steamPlumes.push(steamPuff);
+    });
+
+    // 5. Articulated Head & Imperial Crown
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 6.8, 0.4);
+    torsoGroup.add(headGroup);
+
+    const headVisage = new THREE.Mesh(this.getBox(2.2, 2.4, 2.0), this.darkBronzeMat);
+    headVisage.position.set(0, 1.2, 0);
+    headGroup.add(headVisage);
+
+    const crown = new THREE.Mesh(this.getCylinder(1.35, 1.15, 0.8, 8), this.antiqueGoldMat);
+    crown.position.set(0, 2.6, 0);
+    headGroup.add(crown);
+
+    // Glowing Optical Sensor Eyes
+    const eyes: THREE.Mesh[] = [];
+    [-0.55, 0.55].forEach((ex) => {
+      const eye = new THREE.Mesh(this.getSphere(0.22, 8), this.warmGlassAmberMat);
+      eye.position.set(ex, 1.35, 1.05);
+      headGroup.add(eye);
+      eyes.push(eye);
+    });
+
+    // 6. Articulated Right Arm (Saluting / Power Posture)
+    const armRightGroup = new THREE.Group();
+    armRightGroup.position.set(3.0, 5.2, 0);
+    torsoGroup.add(armRightGroup);
+
+    const shoulderR = this.buildGearMesh(1.2, 12, 0.3, this.antiqueGoldMat);
+    shoulderR.rotation.y = Math.PI / 2;
+    armRightGroup.add(shoulderR);
+
+    const upperArmR = new THREE.Mesh(this.getBox(1.3, 3.8, 1.3), this.burnishedCopperMat);
+    upperArmR.position.set(0.6, -1.9, 0);
+    armRightGroup.add(upperArmR);
+
+    const forearmRightGroup = new THREE.Group();
+    forearmRightGroup.position.set(0.6, -3.8, 0);
+    armRightGroup.add(forearmRightGroup);
+
+    const lowerArmR = new THREE.Mesh(this.getBox(1.1, 3.5, 1.1), this.midnightSteelMat);
+    lowerArmR.position.set(0, -1.75, 0);
+    forearmRightGroup.add(lowerArmR);
+
+    const gauntletR = new THREE.Mesh(this.getBox(1.4, 1.2, 1.4), this.antiqueGoldMat);
+    gauntletR.position.set(0, -3.8, 0);
+    forearmRightGroup.add(gauntletR);
+
+    // 7. Articulated Left Arm (Guarding Stance)
+    const armLeftGroup = new THREE.Group();
+    armLeftGroup.position.set(-3.0, 5.2, 0);
+    torsoGroup.add(armLeftGroup);
+
+    const shoulderL = this.buildGearMesh(1.2, 12, 0.3, this.antiqueGoldMat);
+    shoulderL.rotation.y = Math.PI / 2;
+    armLeftGroup.add(shoulderL);
+
+    const upperArmL = new THREE.Mesh(this.getBox(1.3, 3.8, 1.3), this.burnishedCopperMat);
+    upperArmL.position.set(-0.6, -1.9, 0);
+    armLeftGroup.add(upperArmL);
+
+    const lowerArmL = new THREE.Mesh(this.getBox(1.1, 3.5, 1.1), this.midnightSteelMat);
+    lowerArmL.position.set(-0.6, -5.5, 0);
+    armLeftGroup.add(lowerArmL);
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerClockworkTitan({
+      group: titanGroup,
+      triggerZ,
+      state: 'DORMANT',
+      torso: torsoGroup,
+      head: headGroup,
+      eyes,
+      armLeft: armLeftGroup,
+      armRight: armRightGroup,
+      forearmRight: forearmRightGroup,
+      coreGears,
+      coreLight: coreMesh,
+      exhaustPipes,
+      steamPlumes,
+      timer: 0,
+      side
+    });
+
+    parent.add(titanGroup);
+    return titanGroup;
+  }
+
+  /**
+   * Blockbuster Scene B Quality Gate: The Great Time Rift
+   */
+  public spawnGreatTimeRift(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    side: number = -1
+  ): THREE.Group {
+    const riftGroup = new THREE.Group();
+    riftGroup.name = 'blockbuster_time_rift';
+    const rx = side * 14.5;
+    const rz = -50.0;
+    riftGroup.position.set(rx, 0, rz);
+
+    // 1. Dual Gothic Bronze Pylons grounded down to Y = -5.65m
+    const pylonDepth = 6.0;
+    [-3.8, 3.8].forEach((px) => {
+      const plinth = new THREE.Mesh(this.getBox(2.8, pylonDepth, 2.8), this.darkIronstoneMat);
+      plinth.position.set(px, 0.35 - pylonDepth * 0.5, 0);
+      riftGroup.add(plinth);
+
+      const pylon = new THREE.Mesh(this.getCylinder(1.1, 1.5, 22.0, 8), this.darkBronzeMat);
+      pylon.position.set(px, 11.35, 0);
+      riftGroup.add(pylon);
+
+      const capital = new THREE.Mesh(this.getBox(2.6, 1.4, 2.6), this.antiqueGoldMat);
+      capital.position.set(px, 22.5, 0);
+      riftGroup.add(capital);
+    });
+
+    // 2. Transverse Gantry Beam at Y = 22.0m
+    const gantry = new THREE.Mesh(this.getBox(10.5, 1.6, 2.4), this.burnishedCopperMat);
+    gantry.position.set(0, 22.2, 0);
+    riftGroup.add(gantry);
+
+    // 3. Center Ring Suspension Assembly at Y = 16.0m
+    const ringAssembly = new THREE.Group();
+    ringAssembly.position.set(0, 16.0, 0);
+    riftGroup.add(ringAssembly);
+
+    // Ring 1: Outer Zodiac Ring (R = 6.5m)
+    const outerRing = new THREE.Mesh(this.getTorus(6.5, 0.42, 8, 32), this.antiqueGoldMat);
+    ringAssembly.add(outerRing);
+
+    // Ring 2: Middle Escapement Ring (R = 5.0m)
+    const middleRing = new THREE.Mesh(this.getTorus(5.0, 0.38, 8, 28), this.burnishedCopperMat);
+    ringAssembly.add(middleRing);
+
+    // Ring 3: Inner Celestial Gimbal Ring (R = 3.5m)
+    const innerRing = new THREE.Mesh(this.getTorus(3.5, 0.32, 8, 24), this.agedBrassMat);
+    ringAssembly.add(innerRing);
+
+    // 4. 4 Articulated Locking Clamps
+    const lockingClamps: THREE.Object3D[] = [];
+    [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].forEach((angle) => {
+      const clampPivot = new THREE.Group();
+      clampPivot.position.set(Math.cos(angle) * 6.5, Math.sin(angle) * 6.5, 0);
+      clampPivot.rotation.z = angle;
+
+      const clampJaw = new THREE.Mesh(this.getBox(0.9, 1.8, 0.6), this.darkBronzeMat);
+      clampJaw.position.set(0, 0.9, 0);
+      clampPivot.add(clampJaw);
+
+      const clampTooth = new THREE.Mesh(this.getBox(0.5, 0.5, 0.7), this.antiqueGoldMat);
+      clampTooth.position.set(0, 1.8, 0);
+      clampPivot.add(clampTooth);
+
+      ringAssembly.add(clampPivot);
+      lockingClamps.push(clampPivot);
+    });
+
+    // 5. Swirling Temporal Vortex Disc
+    const vortexTex = ChronoKingdomTextureHelper.getVortexTexture();
+    const vortexMat = new THREE.MeshBasicMaterial({
+      map: vortexTex,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide
+    });
+    CurvedShaderManager.getInstance().applyCurvature(vortexMat);
+    const vortexMesh = new THREE.Mesh(this.getPlane(7.0, 7.0), vortexMat);
+    vortexMesh.scale.set(0.2, 0.2, 0.2);
+    ringAssembly.add(vortexMesh);
+
+    // 6. 8 Radiating Dimensional Energy Rays
+    const energyRays: THREE.Mesh[] = [];
+    for (let r = 0; r < 8; r++) {
+      const rAngle = (r * Math.PI) / 4;
+      const ray = new THREE.Mesh(this.getCylinder(0.08, 0.25, 6.0, 6), this.glowingCyanMat);
+      ray.position.set(Math.cos(rAngle) * 3.0, Math.sin(rAngle) * 3.0, 0);
+      ray.rotation.z = rAngle - Math.PI / 2;
+      ray.visible = false;
+      ringAssembly.add(ray);
+      energyRays.push(ray);
+    }
+
+    // 7. Orbiting Golden Particle Sparkles
+    const sparklesGroup = new THREE.Group();
+    for (let p = 0; p < 12; p++) {
+      const pAngle = (p * Math.PI) / 6;
+      const pRadius = 4.2 + (p % 3) * 0.8;
+      const spark = new THREE.Mesh(this.getSphere(0.18, 6), this.warmGlassAmberMat);
+      spark.position.set(Math.cos(pAngle) * pRadius, Math.sin(pAngle) * pRadius, (p % 2 === 0 ? 0.4 : -0.4));
+      sparklesGroup.add(spark);
+    }
+    ringAssembly.add(sparklesGroup);
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerGreatTimeRift({
+      group: riftGroup,
+      triggerZ,
+      state: 'DORMANT',
+      outerRing,
+      middleRing,
+      innerRing,
+      lockingClamps,
+      portalVortex: vortexMesh,
+      energyRays,
+      sparkles: sparklesGroup as any,
+      timer: 0,
+      side
+    });
+
+    parent.add(riftGroup);
+    return riftGroup;
+  }
+
+  /**
+   * Blockbuster Event C: The Mechanical Dragon
+   */
+  public spawnMechanicalDragon(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0
+  ): THREE.Group {
+    const dragonGroup = new THREE.Group();
+    dragonGroup.name = 'blockbuster_mechanical_dragon';
+    const tz = -50.0;
+    dragonGroup.position.set(0, 36.0, tz);
+
+    // 1. Aerodynamic Clockwork Fuselage
+    const fuselage = new THREE.Mesh(this.getBox(2.2, 1.8, 7.5), this.burnishedCopperMat);
+    fuselage.position.y = 0;
+    dragonGroup.add(fuselage);
+
+    [-1.15, 1.15].forEach((sx) => {
+      const scalePlate = new THREE.Mesh(this.getBox(0.2, 1.4, 6.8), this.darkBronzeMat);
+      scalePlate.position.set(sx, 0.1, 0);
+      dragonGroup.add(scalePlate);
+    });
+
+    // 2. Articulated Neck & Head
+    const neckGroup = new THREE.Group();
+    neckGroup.position.set(0, 0.4, 3.8);
+    dragonGroup.add(neckGroup);
+
+    const neckMesh = new THREE.Mesh(this.getCylinder(0.85, 1.1, 2.4, 8), this.burnishedCopperMat);
+    neckMesh.position.set(0, 0.8, 0.8);
+    neckMesh.rotation.x = Math.PI / 4;
+    neckGroup.add(neckMesh);
+
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.6, 1.8);
+    neckGroup.add(headGroup);
+
+    const skull = new THREE.Mesh(this.getBox(1.5, 1.1, 2.4), this.antiqueGoldMat);
+    skull.position.set(0, 0.2, 0.8);
+    headGroup.add(skull);
+
+    [-0.55, 0.55].forEach((ex) => {
+      const eye = new THREE.Mesh(this.getSphere(0.2, 8), this.glowingCyanMat);
+      eye.position.set(ex, 0.4, 1.6);
+      headGroup.add(eye);
+    });
+
+    const jawGroup = new THREE.Group();
+    jawGroup.position.set(0, -0.2, 0.5);
+    headGroup.add(jawGroup);
+
+    const jawMesh = new THREE.Mesh(this.getBox(1.2, 0.4, 2.0), this.darkBronzeMat);
+    jawMesh.position.set(0, -0.2, 0.8);
+    jawGroup.add(jawMesh);
+
+    const fireCore = new THREE.Mesh(this.getSphere(0.35, 6), this.furnaceFireMat);
+    fireCore.position.set(0, 0.1, 0.8);
+    jawGroup.add(fireCore);
+
+    // 3. Articulated Left & Right Wings
+    const wingsLeft: THREE.Object3D[] = [];
+    const wingsRight: THREE.Object3D[] = [];
+
+    const leftWingRoot = new THREE.Group();
+    leftWingRoot.position.set(-1.1, 0.5, 0.8);
+    dragonGroup.add(leftWingRoot);
+    wingsLeft.push(leftWingRoot);
+
+    const wingSparL = new THREE.Mesh(this.getBox(5.5, 0.25, 1.2), this.burnishedCopperMat);
+    wingSparL.position.set(-2.75, 0, 0);
+    leftWingRoot.add(wingSparL);
+
+    const wingSailL = new THREE.Mesh(this.getBox(5.2, 0.05, 2.8), this.antiqueGoldMat);
+    wingSailL.position.set(-2.6, 0.1, -1.2);
+    leftWingRoot.add(wingSailL);
+
+    const rightWingRoot = new THREE.Group();
+    rightWingRoot.position.set(1.1, 0.5, 0.8);
+    dragonGroup.add(rightWingRoot);
+    wingsRight.push(rightWingRoot);
+
+    const wingSparR = new THREE.Mesh(this.getBox(5.5, 0.25, 1.2), this.burnishedCopperMat);
+    wingSparR.position.set(2.75, 0, 0);
+    rightWingRoot.add(wingSparR);
+
+    const wingSailR = new THREE.Mesh(this.getBox(5.2, 0.05, 2.8), this.antiqueGoldMat);
+    wingSailR.position.set(2.6, 0.1, -1.2);
+    rightWingRoot.add(wingSailR);
+
+    // 4. 5-Segment Articulated Tail
+    const tailSegments: THREE.Object3D[] = [];
+    let prevTailParent: THREE.Object3D = dragonGroup;
+    let segZ = -3.8;
+
+    for (let t = 0; t < 5; t++) {
+      const tailSeg = new THREE.Group();
+      tailSeg.position.set(0, 0, segZ);
+      prevTailParent.add(tailSeg);
+      tailSegments.push(tailSeg);
+
+      const sizeFactor = 1.0 - t * 0.16;
+      const segMesh = new THREE.Mesh(this.getBox(1.6 * sizeFactor, 1.3 * sizeFactor, 1.8), this.burnishedCopperMat);
+      segMesh.position.set(0, 0, -0.9);
+      tailSeg.add(segMesh);
+
+      const spine = new THREE.Mesh(this.getBox(0.2, 0.4 * sizeFactor, 1.6), this.antiqueGoldMat);
+      spine.position.set(0, 0.8 * sizeFactor, -0.9);
+      tailSeg.add(spine);
+
+      if (t === 4) {
+        const fin = new THREE.Mesh(this.getBox(0.1, 2.2, 2.4), this.antiqueGoldMat);
+        fin.position.set(0, 0.6, -1.8);
+        tailSeg.add(fin);
+      }
+
+      prevTailParent = tailSeg;
+      segZ = -1.8;
+    }
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerMechanicalDragon({
+      group: dragonGroup,
+      triggerZ,
+      state: 'FLIGHT',
+      neck: neckGroup,
+      head: headGroup,
+      jaw: jawGroup,
+      wingsLeft,
+      wingsRight,
+      tailSegments,
+      flightProgress: 0,
+      baseY: 36.0,
+      flightPathRadius: 42.0,
+      timer: 0
+    });
+
+    parent.add(dragonGroup);
+    return dragonGroup;
+  }
+
+  /**
+   * Blockbuster Event D: The Transforming Clockwork City
+   */
+  public spawnTransformingCity(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    roadbedWidth: number = 10
+  ): THREE.Group {
+    const cityGroup = new THREE.Group();
+    cityGroup.name = 'blockbuster_transforming_city';
+    const tz = -50.0;
+    cityGroup.position.set(0, 0, tz);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const towerDist = 14.5;
+    const plinthDepth = 6.0;
+
+    const telescopingTowers: Array<{ mesh: THREE.Object3D; baseY: number; maxLift: number }> = [];
+    const foldingRoofs: Array<{ leftPanel: THREE.Object3D; rightPanel: THREE.Object3D; maxAngle: number }> = [];
+    const extendingBridges: Array<{ leftSpan: THREE.Object3D; rightSpan: THREE.Object3D; maxSpan: number }> = [];
+    const engagingGears: Array<{ mesh: THREE.Object3D; speed: number; axis: 'x' | 'y' | 'z' }> = [];
+
+    [-1, 1].forEach((side) => {
+      const bx = side * towerDist;
+
+      // 1. Deep Subterranean Foundation down to Y = -5.65m
+      const plinth = new THREE.Mesh(this.getBox(7.0, plinthDepth, 9.0), this.darkIronstoneMat);
+      plinth.position.set(bx, 0.35 - plinthDepth * 0.5, 0);
+      cityGroup.add(plinth);
+
+      // 2. Base Tower Structure (Y = 0 to 14m)
+      const baseTower = new THREE.Mesh(this.getBox(6.5, 13.5, 8.5), this.darkBronzeMat);
+      baseTower.position.set(bx, 7.1, 0);
+      cityGroup.add(baseTower);
+
+      // Engaging Drive Gear on facade
+      const driveGear = this.buildGearMesh(1.8, 14, 0.3, this.antiqueGoldMat);
+      driveGear.position.set(bx + (side === 1 ? -3.35 : 3.35), 7.0, 0);
+      driveGear.rotation.y = Math.PI / 2;
+      cityGroup.add(driveGear);
+      engagingGears.push({ mesh: driveGear, speed: 2.2, axis: 'x' });
+
+      // 3. Upper Telescoping Tower Section (lifts +8m)
+      const upperTower = new THREE.Group();
+      upperTower.position.set(bx, 14.0, 0);
+      cityGroup.add(upperTower);
+
+      const upperMesh = new THREE.Mesh(this.getBox(5.0, 10.0, 7.0), this.burnishedCopperMat);
+      upperMesh.position.set(0, 5.0, 0);
+      upperTower.add(upperMesh);
+
+      telescopingTowers.push({ mesh: upperTower, baseY: 14.0, maxLift: 8.0 });
+
+      // 4. Folding Mansard Roof Panels
+      const roofLeft = new THREE.Mesh(this.getBox(2.6, 0.3, 7.2), this.midnightSteelMat);
+      roofLeft.position.set(-1.3, 10.2, 0);
+      upperTower.add(roofLeft);
+
+      const roofRight = new THREE.Mesh(this.getBox(2.6, 0.3, 7.2), this.midnightSteelMat);
+      roofRight.position.set(1.3, 10.2, 0);
+      upperTower.add(roofRight);
+
+      foldingRoofs.push({ leftPanel: roofLeft, rightPanel: roofRight, maxAngle: 0.65 });
+    });
+
+    // 5. Extending Overhead Skybridge at Y = 18.0m
+    const bridgeY = 18.0;
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.position.set(0, bridgeY, 0);
+    cityGroup.add(bridgeGroup);
+
+    const bridgeLeft = new THREE.Mesh(this.getBox(7.5, 1.4, 3.2), this.antiqueGoldMat);
+    bridgeLeft.position.set(-curbEdge - 3.75, 0, 0);
+    bridgeGroup.add(bridgeLeft);
+
+    const bridgeRight = new THREE.Mesh(this.getBox(7.5, 1.4, 3.2), this.antiqueGoldMat);
+    bridgeRight.position.set(curbEdge + 3.75, 0, 0);
+    bridgeGroup.add(bridgeRight);
+
+    extendingBridges.push({ leftSpan: bridgeLeft, rightSpan: bridgeRight, maxSpan: 4.8 });
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerTransformingCity({
+      group: cityGroup,
+      triggerZ,
+      state: 'DORMANT',
+      telescopingTowers,
+      foldingRoofs,
+      extendingBridges,
+      engagingGears,
+      timer: 0
+    });
+
+    parent.add(cityGroup);
+    return cityGroup;
+  }
+
+  /**
+   * High-Value Surprise 1: The Giant Hourglass
+   */
+  public spawnGiantHourglass(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    side: number = 1
+  ): THREE.Group {
+    const hgGroup = new THREE.Group();
+    hgGroup.name = 'blockbuster_giant_hourglass';
+    const hx = side * 13.5;
+    const hz = -50.0;
+    hgGroup.position.set(hx, 0, hz);
+
+    // Deep plinth to Y = -5.65m
+    const plinthDepth = 6.0;
+    const plinth = new THREE.Mesh(this.getBox(5.5, plinthDepth, 5.5), this.darkIronstoneMat);
+    plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    hgGroup.add(plinth);
+
+    // Twin trunnion support pillars
+    [-2.2, 2.2].forEach((px) => {
+      const pillar = new THREE.Mesh(this.getCylinder(0.6, 0.8, 12.0, 8), this.darkBronzeMat);
+      pillar.position.set(px, 6.35, 0);
+      hgGroup.add(pillar);
+
+      const trunnionBearing = this.buildGearMesh(1.0, 10, 0.25, this.antiqueGoldMat);
+      trunnionBearing.position.set(px, 11.5, 0);
+      trunnionBearing.rotation.y = Math.PI / 2;
+      hgGroup.add(trunnionBearing);
+    });
+
+    // Rotating Hourglass Frame
+    const hgFrame = new THREE.Group();
+    hgFrame.position.set(0, 11.5, 0);
+    hgGroup.add(hgFrame);
+
+    // Upper bulb
+    const upperBulb = new THREE.Mesh(this.getCylinder(1.6, 0.4, 3.6, 12), this.warmGlassAmberMat);
+    upperBulb.position.set(0, 1.9, 0);
+    hgFrame.add(upperBulb);
+
+    // Lower bulb
+    const lowerBulb = new THREE.Mesh(this.getCylinder(0.4, 1.6, 3.6, 12), this.warmGlassAmberMat);
+    lowerBulb.position.set(0, -1.9, 0);
+    hgFrame.add(lowerBulb);
+
+    // Brass Caps & Waist
+    const waistCollar = new THREE.Mesh(this.getTorus(0.65, 0.15, 6, 16), this.antiqueGoldMat);
+    hgFrame.add(waistCollar);
+
+    const topCap = new THREE.Mesh(this.getCylinder(1.8, 1.8, 0.4, 12), this.antiqueGoldMat);
+    topCap.position.set(0, 3.8, 0);
+    hgFrame.add(topCap);
+
+    const botCap = new THREE.Mesh(this.getCylinder(1.8, 1.8, 0.4, 12), this.antiqueGoldMat);
+    botCap.position.set(0, -3.8, 0);
+    hgFrame.add(botCap);
+
+    // Falling Sand Stream inside
+    const sandStream = new THREE.Mesh(this.getCylinder(0.12, 0.12, 3.2, 6), this.warmGlassAmberMat);
+    hgFrame.add(sandStream);
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerGiantHourglass({
+      group: hgGroup,
+      triggerZ,
+      hourglassFrame: hgFrame,
+      sandUpper: upperBulb,
+      sandLower: lowerBulb,
+      sandStream,
+      rotationProgress: 0,
+      timer: 0
+    });
+
+    parent.add(hgGroup);
+    return hgGroup;
+  }
+
+  /**
+   * High-Value Surprise 2: The Pendulum Cathedral
+   */
+  public spawnPendulumCathedral(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    side: number = -1
+  ): THREE.Group {
+    const cathGroup = new THREE.Group();
+    cathGroup.name = 'blockbuster_pendulum_cathedral';
+    const cx = side * 14.0;
+    const cz = -50.0;
+    cathGroup.position.set(cx, 0, cz);
+
+    // Deep plinth to Y = -5.65m
+    const plinthDepth = 6.0;
+    const plinth = new THREE.Mesh(this.getBox(6.5, plinthDepth, 14.0), this.darkIronstoneMat);
+    plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    cathGroup.add(plinth);
+
+    // Cathedral Vaulted Columns
+    [-2.6, 2.6].forEach((px) => {
+      [-5.0, 0, 5.0].forEach((pz) => {
+        const pillar = new THREE.Mesh(this.getCylinder(0.65, 0.85, 18.0, 8), this.darkBronzeMat);
+        pillar.position.set(px, 9.35, pz);
+        cathGroup.add(pillar);
+      });
+    });
+
+    // Vaulted Ceiling Arch
+    const vaultRoof = new THREE.Mesh(this.getBox(6.0, 1.5, 14.5), this.burnishedCopperMat);
+    vaultRoof.position.set(0, 18.8, 0);
+    cathGroup.add(vaultRoof);
+
+    // 3 Harmonic Pendulums
+    const pendulums: Array<{ rod: THREE.Object3D; bob: THREE.Mesh; speed: number; amplitude: number; phase: number }> = [];
+    const ratios = [
+      { z: -4.0, length: 11.0, speed: 1.0, amp: 0.35, phase: 0.0 },
+      { z: 0.0, length: 8.5, speed: 1.414, amp: 0.42, phase: 1.2 },
+      { z: 4.0, length: 6.5, speed: 1.732, amp: 0.48, phase: 2.4 }
+    ];
+
+    ratios.forEach((p) => {
+      const penPivot = new THREE.Group();
+      penPivot.position.set(0, 18.0, p.z);
+      cathGroup.add(penPivot);
+
+      const rod = new THREE.Mesh(this.getCylinder(0.08, 0.08, p.length, 6), this.antiqueGoldMat);
+      rod.position.set(0, -p.length * 0.5, 0);
+      penPivot.add(rod);
+
+      const bob = new THREE.Mesh(this.getCylinder(1.1, 1.1, 0.35, 12), this.antiqueGoldMat);
+      bob.position.set(0, -p.length, 0);
+      penPivot.add(bob);
+
+      pendulums.push({
+        rod: penPivot,
+        bob,
+        speed: p.speed,
+        amplitude: p.amp,
+        phase: p.phase
+      });
+    });
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerPendulumCathedral({
+      group: cathGroup,
+      triggerZ,
+      pendulums,
+      timer: 0
+    });
+
+    parent.add(cathGroup);
+    return cathGroup;
+  }
+
+  /**
+   * High-Value Surprise 3: Clockwork Bird Swarm
+   */
+  public spawnClockworkBirdSwarm(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0
+  ): THREE.Group {
+    const swarmGroup = new THREE.Group();
+    swarmGroup.name = 'blockbuster_clockwork_bird_swarm';
+    const sz = -50.0;
+    swarmGroup.position.set(0, 24.0, sz);
+
+    const birds: Array<{ mesh: THREE.Object3D; leftWing: THREE.Object3D; rightWing: THREE.Object3D; offset: THREE.Vector3; flapSpeed: number }> = [];
+
+    // 8 Ornithopter drones flying in formation
+    for (let i = 0; i < 8; i++) {
+      const birdMesh = new THREE.Group();
+      const ox = (i % 2 === 0 ? 1 : -1) * (3.5 + Math.floor(i / 2) * 3.0);
+      const oy = (i % 3) * 1.5;
+      const oz = -Math.floor(i / 2) * 5.0;
+      birdMesh.position.set(ox, oy, oz);
+      swarmGroup.add(birdMesh);
+
+      // Body
+      const bBody = new THREE.Mesh(this.getBox(0.4, 0.35, 1.4), this.burnishedCopperMat);
+      birdMesh.add(bBody);
+
+      // Amber eye sensor
+      const bEye = new THREE.Mesh(this.getSphere(0.12, 6), this.warmGlassAmberMat);
+      bEye.position.set(0, 0.1, 0.75);
+      birdMesh.add(bEye);
+
+      // Articulated wings
+      const leftWing = new THREE.Group();
+      leftWing.position.set(-0.2, 0.1, 0.2);
+      birdMesh.add(leftWing);
+
+      const wingMeshL = new THREE.Mesh(this.getBox(1.6, 0.05, 0.8), this.antiqueGoldMat);
+      wingMeshL.position.set(-0.8, 0, 0);
+      leftWing.add(wingMeshL);
+
+      const rightWing = new THREE.Group();
+      rightWing.position.set(0.2, 0.1, 0.2);
+      birdMesh.add(rightWing);
+
+      const wingMeshR = new THREE.Mesh(this.getBox(1.6, 0.05, 0.8), this.antiqueGoldMat);
+      wingMeshR.position.set(0.8, 0, 0);
+      rightWing.add(wingMeshR);
+
+      birds.push({
+        mesh: birdMesh,
+        leftWing,
+        rightWing,
+        offset: new THREE.Vector3(ox, oy, oz),
+        flapSpeed: 7.0 + (i % 3) * 1.5
+      });
+    }
+
+    // Register with Director
+    const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
+    director.registerClockworkBirdSwarm({
+      group: swarmGroup,
+      triggerZ,
+      birds,
+      active: true,
+      timer: 0
+    });
+
+    parent.add(swarmGroup);
+    return swarmGroup;
   }
 
   // =========================================================================

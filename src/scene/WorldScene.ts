@@ -91,6 +91,7 @@ export class WorldScene {
   public prevTheme: EnvironmentTheme | null = null;
   public transitionProgress: number = 1.0;
   private transitionSpeed: number = 0.5; // Smooth 2s transition
+  private lastPlayerZ: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
@@ -2433,6 +2434,7 @@ export class WorldScene {
   }
 
   public updateSunPosition(playerZ: number, speed: number = CONSTANTS.INITIAL_SPEED, dt: number = 0.016): void {
+    this.lastPlayerZ = playerZ;
     // Keep directional shadow map frustum centered on active player and oncoming track
     this.sunLight.position.z = playerZ + 20;
     this.sunLight.target.position.z = playerZ - 12;
@@ -2665,7 +2667,8 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'CHRONO_KINGDOM') {
       const delta = dt || 0.016;
-      ChronoKingdomEventDirector.getInstance().update(delta, true);
+      ChronoKingdomEventDirector.getInstance().setScene(this.scene);
+      ChronoKingdomEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'HAUNTED_CARNIVAL') {

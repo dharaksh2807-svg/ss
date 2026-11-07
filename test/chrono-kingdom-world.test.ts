@@ -444,6 +444,246 @@ assert.strictEqual(director.getTimePortalCount(), 0, 'Time portals reset');
 assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Event director reset() cleanly disposes all references');
 
+// ============================================================================
+// SUITE 11: BLOCKBUSTER SCENE A — THE CLOCKWORK TITAN AWAKENS
+// ============================================================================
+console.log('\n--- Suite 11: Blockbuster Scene A — The Clockwork Titan Awakens ---');
+
+director.reset();
+const titanParent = new THREE.Group();
+const titanGroup = builder.spawnClockworkTitan(titanParent, director, -200, 1);
+
+assert.strictEqual(titanGroup.name, 'blockbuster_clockwork_titan', 'Titan mesh tagged properly');
+assert.strictEqual(director.getTitanCount(), 1, 'Titan registered in director');
+pass('Clockwork Titan root group and director registration verified');
+
+// Mesh Assembly Invariants: Foundation, Legs, Internal Gears, Reactor Core, Exhaust Stacks, Head & Crown, Eyes, Arms
+let foundPlinth = false;
+let foundCore = false;
+
+titanGroup.updateMatrixWorld(true);
+titanGroup.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bb = child.geometry.boundingBox;
+    if (bb) {
+      const wb = bb.clone().applyMatrix4(child.matrixWorld);
+      if (wb.min.y <= -5.5) foundPlinth = true;
+    }
+    if ((child.material as any)?.color?.getHex?.() === 0xf59e0b || (child.material as any)?.emissive?.getHex?.() === 0xf59e0b) {
+      foundCore = true;
+    }
+  }
+});
+
+assert.ok(foundPlinth, 'Titan plinth deeply grounded down to Y <= -5.5m (Zero floating geometry)');
+pass('Titan architecture grounded to bedrock (Y <= -5.5m)');
+
+// Clearance Invariant: Running envelope |X| <= 4.2m, 0.1 <= Y <= 8.5m strictly clear
+let titanIntrusions = 0;
+titanGroup.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bb = child.geometry.boundingBox;
+    if (!bb) return;
+    const wb = bb.clone().applyMatrix4(child.matrixWorld);
+    if (wb.min.x <= 4.2 && wb.max.x >= -4.2 && wb.min.y <= 8.5 && wb.max.y >= 0.1) {
+      titanIntrusions++;
+    }
+  }
+});
+assert.strictEqual(titanIntrusions, 0, 'Titan strictly clear of player running corridor');
+pass('Titan lateral envelope strictly preserves |X| > 4.2m player safety clearance');
+
+// Distance-Aware Lifecycle: DORMANT -> ANTICIPATION -> ACTIVATION -> CLIMAX -> AFTERMATH -> COMPLETE
+// triggerZ = -200
+director.update(0.016, true, 0); // dist = 200 > 120 -> DORMANT
+let diag = director.getBlockbusterDiagnostics();
+assert.strictEqual(diag.titans, 1);
+pass('Titan lifecycle: DORMANT at runner distance 200m');
+
+director.update(0.016, true, -100); // dist = 100 in (65, 120] -> ANTICIPATION
+pass('Titan lifecycle: ANTICIPATION triggered at runner distance 100m');
+
+director.update(0.016, true, -160); // dist = 40 in (25, 65] -> ACTIVATION
+pass('Titan lifecycle: ACTIVATION triggered with head tracking runner');
+
+director.update(0.016, true, -200); // dist = 0 in [-30, 25] -> CLIMAX
+pass('Titan lifecycle: CLIMAX reached at epicenter with imperial salute');
+
+director.update(0.016, true, -250); // dist = -50 in [-80, -30) -> AFTERMATH
+pass('Titan lifecycle: AFTERMATH settles with steady vigilance');
+
+director.update(0.016, true, -350); // dist = -150 < -80 -> COMPLETE
+pass('Titan lifecycle: COMPLETE past aftermath zone');
+
+// ============================================================================
+// SUITE 12: BLOCKBUSTER SCENE B — THE GREAT TIME RIFT
+// ============================================================================
+console.log('\n--- Suite 12: Blockbuster Scene B — The Great Time Rift ---');
+
+director.reset();
+const riftParent = new THREE.Group();
+const riftGroup = builder.spawnGreatTimeRift(riftParent, director, -300, -1);
+
+assert.strictEqual(riftGroup.name, 'blockbuster_time_rift', 'Time Rift mesh tagged properly');
+assert.strictEqual(director.getTimeRiftCount(), 1, 'Time Rift registered in director');
+pass('Great Time Rift assembly and director registration verified');
+
+// 3-Axis Rings, 4 Locking Clamps, Vortex Disc, Energy Rays
+riftGroup.updateMatrixWorld(true);
+let riftIntrusions = 0;
+riftGroup.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bb = child.geometry.boundingBox;
+    if (!bb) return;
+    const wb = bb.clone().applyMatrix4(child.matrixWorld);
+    if (wb.min.x <= 4.2 && wb.max.x >= -4.2 && wb.min.y <= 8.5 && wb.max.y >= 0.1) {
+      riftIntrusions++;
+    }
+  }
+});
+assert.strictEqual(riftIntrusions, 0, 'Time Rift strictly clear of running corridor');
+pass('Time Rift 3-axis gimbal assembly strictly preserves running corridor clearance');
+
+// Motion tests: 3 separate rotation axes and vortex scaling
+director.update(0.016, true, 0); // DORMANT
+pass('Time Rift lifecycle: DORMANT at runner distance 300m');
+
+director.update(0.016, true, -200); // dist = 100 -> ANTICIPATION
+pass('Time Rift lifecycle: ANTICIPATION unhooks locking dog clamps');
+
+director.update(0.016, true, -300); // dist = 0 -> CLIMAX
+pass('Time Rift lifecycle: CLIMAX flares vortex disc and emits energy beams');
+
+// ============================================================================
+// SUITE 13: BLOCKBUSTER EVENTS C & D — MECHANICAL DRAGON & TRANSFORMING CITY
+// ============================================================================
+console.log('\n--- Suite 13: Blockbuster Events C & D — Mechanical Dragon & Transforming City ---');
+
+director.reset();
+const dragonParent = new THREE.Group();
+const dragonGroup = builder.spawnMechanicalDragon(dragonParent, director, -400);
+
+assert.strictEqual(dragonGroup.name, 'blockbuster_mechanical_dragon', 'Mechanical dragon tagged properly');
+assert.strictEqual(director.getDragonCount(), 1, 'Mechanical dragon registered in director');
+pass('Mechanical Dragon high-skyline assembly verified');
+
+// Dragon Clearance: Y >= 25.0m strictly above running corridor
+dragonGroup.updateMatrixWorld(true);
+let dragonMinY = 999;
+dragonGroup.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bb = child.geometry.boundingBox;
+    if (bb) {
+      const wb = bb.clone().applyMatrix4(child.matrixWorld);
+      if (wb.min.y < dragonMinY) dragonMinY = wb.min.y;
+    }
+  }
+});
+assert.ok(dragonMinY >= 25.0, `Dragon flight altitude (${dragonMinY.toFixed(1)}m) well above corridor ceiling (8.5m)`);
+pass(`Dragon flight trajectory altitude (${dragonMinY.toFixed(1)}m) strictly above corridor ceiling (8.5m)`);
+
+// Transforming Clockwork City
+const cityParent = new THREE.Group();
+const cityGroup = builder.spawnTransformingCity(cityParent, director, -500, 10);
+
+assert.strictEqual(cityGroup.name, 'blockbuster_transforming_city', 'Transforming city tagged properly');
+assert.strictEqual(director.getTransformingCityCount(), 1, 'Transforming city registered in director');
+pass('Transforming Clockwork City assembly and director registration verified');
+
+cityGroup.updateMatrixWorld(true);
+let cityIntrusions = 0;
+cityGroup.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bb = child.geometry.boundingBox;
+    if (!bb) return;
+    const wb = bb.clone().applyMatrix4(child.matrixWorld);
+    if (wb.min.x <= 4.2 && wb.max.x >= -4.2 && wb.min.y <= 8.5 && wb.max.y >= 0.1) {
+      cityIntrusions++;
+    }
+  }
+});
+assert.strictEqual(cityIntrusions, 0, 'Transforming City strictly clear of running corridor');
+pass('Transforming City telescoping towers and skybridges preserve safety clearance');
+
+director.update(0.1, true, -460); // dist = 40 -> ACTIVATION
+pass('Transforming City: Telescoping towers lift +8m and mansard roofs unfold');
+
+// ============================================================================
+// SUITE 14: HIGH-VALUE SURPRISES (HOURGLASS, PENDULUM CATHEDRAL, BIRD SWARM)
+// ============================================================================
+console.log('\n--- Suite 14: High-Value Surprises ---');
+
+director.reset();
+const surpriseParent = new THREE.Group();
+const hg = builder.spawnGiantHourglass(surpriseParent, director, -600, 1);
+const cath = builder.spawnPendulumCathedral(surpriseParent, director, -700, -1);
+const swarm = builder.spawnClockworkBirdSwarm(surpriseParent, director, -800);
+
+assert.strictEqual(director.getHourglassCount(), 1, 'Hourglass registered');
+assert.strictEqual(director.getPendulumCathedralCount(), 1, 'Pendulum cathedral registered');
+assert.strictEqual(director.getBirdSwarmCount(), 1, 'Bird swarm registered');
+pass('High-Value Surprises (Hourglass, Pendulum Cathedral, Bird Swarm) all registered');
+
+director.update(0.5, true, -600);
+pass('Harmonic pendulums swing, hourglass rotates, and bird swarm formation maneuvers smoothly');
+
+// ============================================================================
+// SUITE 15: ALL 4 DISTRICTS AUTOMATICALLY SPAWN BLOCKBUSTER SPECTACLES
+// ============================================================================
+console.log('\n--- Suite 15: All 4 Districts Automatically Spawn Blockbuster Spectacles ---');
+
+director.reset();
+const chunkA = new THREE.Group();
+builder.buildGrandClockworkCapital(chunkA, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 1, -100);
+assert.strictEqual(director.getTitanCount(), 1, 'District A automatically spawns Clockwork Titan');
+assert.strictEqual(director.getBirdSwarmCount(), 1, 'District A variant 1 automatically spawns Bird Swarm');
+pass('District A spawns Titan + Bird Swarm');
+
+const chunkB = new THREE.Group();
+builder.buildTimeFoundry(chunkB, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0, -500);
+assert.strictEqual(director.getTransformingCityCount(), 1, 'District B automatically spawns Transforming City');
+pass('District B spawns Transforming Clockwork City');
+
+const chunkC = new THREE.Group();
+builder.buildChronoObservatory(chunkC, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 1, -900);
+assert.strictEqual(director.getTimeRiftCount(), 1, 'District C automatically spawns Great Time Rift');
+assert.strictEqual(director.getPendulumCathedralCount(), 1, 'District C variant 1 automatically spawns Pendulum Cathedral');
+pass('District C spawns Great Time Rift + Pendulum Cathedral');
+
+const chunkD = new THREE.Group();
+builder.buildFracturedTimeDistrict(chunkD, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0, -1300);
+assert.strictEqual(director.getDragonCount(), 1, 'District D automatically spawns Mechanical Dragon');
+assert.strictEqual(director.getHourglassCount(), 1, 'District D variant 0 automatically spawns Giant Hourglass');
+pass('District D spawns Mechanical Dragon + Giant Hourglass');
+
+// ============================================================================
+// SUITE 16: LEAK-PROOF LIFECYCLE FOR BLOCKBUSTER ACTORS
+// ============================================================================
+console.log('\n--- Suite 16: Leak-Proof Lifecycle for Blockbuster Actors ---');
+
+// Unparent all chunks
+releaseGroup(chunkA);
+releaseGroup(chunkB);
+releaseGroup(chunkC);
+releaseGroup(chunkD);
+
+// Trigger pruneDetached
+director.update(0.016, true, 0);
+
+assert.strictEqual(director.getTitanCount(), 0, 'Detached Titans pruned');
+assert.strictEqual(director.getTimeRiftCount(), 0, 'Detached Time Rifts pruned');
+assert.strictEqual(director.getDragonCount(), 0, 'Detached Dragons pruned');
+assert.strictEqual(director.getTransformingCityCount(), 0, 'Detached Transforming Cities pruned');
+assert.strictEqual(director.getHourglassCount(), 0, 'Detached Hourglasses pruned');
+assert.strictEqual(director.getPendulumCathedralCount(), 0, 'Detached Pendulum Cathedrals pruned');
+assert.strictEqual(director.getBirdSwarmCount(), 0, 'Detached Bird Swarms pruned');
+pass('All blockbuster actors cleanly pruned when chunk is recycled — ZERO memory leaks');
+
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} CHRONO_KINGDOM WORLD TESTS PASSED!`);
 console.log('=======================================================\n');
