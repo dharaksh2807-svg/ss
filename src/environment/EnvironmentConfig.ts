@@ -728,22 +728,22 @@ export const VIP_EXPRESS_THEME: EnvironmentTheme = {
     bottom: 0xffedd5 // Warm golden hour sunrise / ceremonial glow
   },
   fog: {
-    color: 0xfef3c7,  // Soft warm ivory-gold afternoon haze
-    density: 0.0030
+    color: 0xf5d0a9,  // Warm golden-hour ceremonial horizon glow (reduced density for crisp atmospheric depth)
+    density: 0.0016
   },
   sun: {
     color: 0xfffbeb,  // Bright dignified golden sunlight
-    intensity: 1.40,
+    intensity: 1.55,
     position: { x: -30, y: 55, z: -40 }
   },
   fill: {
     color: 0x1e3a8a,  // Royal navy shadow fill
-    intensity: 0.65
+    intensity: 0.70
   },
   hemi: {
     sky: 0xffedd5,    // Warm golden ceremonial sky fill
     ground: 0xd4a373, // Warm sandstone ground bounce
-    intensity: 1.25
+    intensity: 1.35
   },
   skyline: {
     color: 0xb45309,  // Warm golden sandstone silhouette of ceremonial domes and obelisks

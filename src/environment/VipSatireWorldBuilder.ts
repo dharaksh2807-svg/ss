@@ -96,28 +96,28 @@ export class VipSatireWorldBuilder {
   private buntingTricolorMat: THREE.MeshStandardMaterial;
 
   private constructor() {
-    this.terracottaMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.85 });
-    this.jaliStoneMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.75 });
-    this.tinRoofMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.75, roughness: 0.35 });
-    this.brassKettleMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.88, roughness: 0.22 });
+    this.terracottaMat = new THREE.MeshStandardMaterial({ color: 0x8c3826, roughness: 0.86 });
+    this.jaliStoneMat = new THREE.MeshStandardMaterial({ color: 0xd4a56a, roughness: 0.78 });
+    this.tinRoofMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.65, roughness: 0.40 });
+    this.brassKettleMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, metalness: 0.88, roughness: 0.22 });
     this.copperMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.82, roughness: 0.28 });
     this.teaGlassMat = new THREE.MeshStandardMaterial({ color: 0xb45309, transparent: true, opacity: 0.85, roughness: 0.1 });
     this.teaLiquidMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.3 });
     this.biscuitMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.9 });
-    this.redCarpetMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.8 });
-    this.velvetCurtainMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7, metalness: 0.1 });
-    this.goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.90, roughness: 0.18 });
+    this.redCarpetMat = new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.85 });
+    this.velvetCurtainMat = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.75, metalness: 0.1 });
+    this.goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, metalness: 0.88, roughness: 0.20 });
     this.diamondMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, metalness: 0.95, roughness: 0.05 });
-    this.ivoryMarbleMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.30 });
-    this.sandstoneMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.80 });
-    this.mediaScreenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, emissive: 0x0369a1, emissiveIntensity: 0.4 });
+    this.ivoryMarbleMat = new THREE.MeshStandardMaterial({ color: 0xfbf7ed, roughness: 0.28 });
+    this.sandstoneMat = new THREE.MeshStandardMaterial({ color: 0xc59c68, roughness: 0.78 });
+    this.mediaScreenMat = new THREE.MeshStandardMaterial({ color: 0x0f2942, roughness: 0.2, emissive: 0x0284c7, emissiveIntensity: 0.45 });
     // Replaced pitch-black cyberGlassMat with bright studio glass featuring illuminated ambient accents
-    this.cyberGlassMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.3, metalness: 0.4, emissive: 0x0f172a, emissiveIntensity: 0.25 });
-    this.parliamentWoodMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.55 });
-    this.parliamentGreenMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.75 });
+    this.cyberGlassMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.25, metalness: 0.6, emissive: 0x091828, emissiveIntensity: 0.2 });
+    this.parliamentWoodMat = new THREE.MeshStandardMaterial({ color: 0x381e10, roughness: 0.65 });
+    this.parliamentGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.78 });
     this.cartoonNpcSkinMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
     this.cartoonKurtaWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
-    this.cartoonWaistcoatOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.6 });
+    this.cartoonWaistcoatOrangeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.65 });
     this.cartoonPoloWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
     this.cartoonNavyPantsMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.7 });
     this.cartoonMufflerBrownMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 });
@@ -125,41 +125,41 @@ export class VipSatireWorldBuilder {
     this.cartoonHairSilverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5 });
     this.cartoonHairBlackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
     this.flashLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    this.tricolorGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+    this.tricolorGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 });
 
     // Gate A & B Visual Comedy Materials
     this.mangoGoldenMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.1, emissive: 0xd97706, emissiveIntensity: 0.35 });
     this.sunglassesBlackMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.1, metalness: 0.9 });
     this.silverMetalMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
     this.heartRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5, roughness: 0.3 });
-    this.sparkleYellowMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+    this.sparkleYellowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
     this.caveStoneMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.9 });
 
     // Initializing Indian Urban Architecture Materials
-    this.haveliYellowPlasterMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.85 });
-    this.haveliTerracottaMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.82 });
-    this.haveliSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.78 });
-    this.haveliWoodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.70 });
-    this.windowGlassLitMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 0.75, roughness: 0.2 });
-    this.studioGlassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 });
-    this.awningStripeOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.75 });
-    this.awningStripeMaroonMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.75 });
-    this.awningStripeGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
-    this.chhatriDomeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5, metalness: 0.25 });
+    this.haveliYellowPlasterMat = new THREE.MeshStandardMaterial({ color: 0xdfb76c, roughness: 0.88 });
+    this.haveliTerracottaMat = new THREE.MeshStandardMaterial({ color: 0x943d2c, roughness: 0.84 });
+    this.haveliSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xcfa774, roughness: 0.80 });
+    this.haveliWoodMat = new THREE.MeshStandardMaterial({ color: 0x3e2312, roughness: 0.74 });
+    this.windowGlassLitMat = new THREE.MeshStandardMaterial({ color: 0xffe4a0, emissive: 0xf59e0b, emissiveIntensity: 0.55, roughness: 0.25 });
+    this.studioGlassMat = new THREE.MeshStandardMaterial({ color: 0x162a3f, roughness: 0.25, metalness: 0.65, emissive: 0x075985, emissiveIntensity: 0.28 });
+    this.awningStripeOrangeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.75 });
+    this.awningStripeMaroonMat = new THREE.MeshStandardMaterial({ color: 0x831818, roughness: 0.75 });
+    this.awningStripeGreenMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.75 });
+    this.chhatriDomeMat = new THREE.MeshStandardMaterial({ color: 0xc59346, roughness: 0.45, metalness: 0.4 });
 
     // Roadshow Royale & Festive Materials
-    this.saffronFloralMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.85 });
-    this.yellowMarigoldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.85 });
+    this.saffronFloralMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.85 });
+    this.yellowMarigoldMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.85 });
     this.lotusPinkMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.65 });
-    this.lotusGoldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.20 });
-    this.suvWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.35 });
+    this.lotusGoldMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, metalness: 0.88, roughness: 0.20 });
+    this.suvWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.30, metalness: 0.40 });
     this.suvTireMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
     this.commandoSuitMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.75 });
     this.strobeAmberMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.5, roughness: 0.2 });
     this.strobeRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1.5, roughness: 0.2 });
     this.petalSaffronMat = new THREE.MeshBasicMaterial({ color: 0xea580c, side: THREE.DoubleSide });
     this.petalYellowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide });
-    this.buntingTricolorMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 });
+    this.buntingTricolorMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 });
 
     // CRITICAL FIX FOR FLOATING SCENERY:
     // Bend all VIP world materials synchronously with track curvature shader!
@@ -776,7 +776,7 @@ export class VipSatireWorldBuilder {
       // Select district palette
       let wallMat: THREE.MeshStandardMaterial;
       if (districtIndex === 0) {
-        // Chai Pe Charcha: Warm Jaipur ochre plaster & terracotta
+        // Roadshow & Chai Pe Charcha: Warm Jaipur ochre plaster & terracotta
         wallMat = bIdx % 2 === 0 ? this.haveliYellowPlasterMat : this.haveliTerracottaMat;
       } else if (districtIndex === 1) {
         // Inauguration Infinity: Grand imperial ivory marble & golden sandstone
@@ -792,7 +792,7 @@ export class VipSatireWorldBuilder {
         wallMat = bIdx % 2 === 0 ? this.haveliTerracottaMat : this.sandstoneMat;
       }
 
-      // 1. Ground Floor Plinth & Main Mass with Subsurface Foundation
+      // 1. Ground Floor Plinth & Main Mass with Subsurface Foundation down to -5.2m
       const mainBuilding = new THREE.Mesh(this.getBox(bWidth, totalH, bDepth), wallMat);
       mainBuilding.position.y = totalH * 0.5;
       bGroup.add(mainBuilding);
@@ -815,7 +815,53 @@ export class VipSatireWorldBuilder {
         return;
       }
 
-      // 2. Ground-Floor Bazaar Shops with Wooden Shutters & Striped Market Awnings
+      // Vertical Sandstone Corner Pilasters framing the building module
+      [-bWidth * 0.5, bWidth * 0.5].forEach((px) => {
+        const pilaster = new THREE.Mesh(this.getBox(0.45, totalH, 0.45), this.sandstoneMat);
+        pilaster.position.set(px, totalH * 0.5, bDepth * 0.5 + 0.1);
+        bGroup.add(pilaster);
+      });
+
+      // 2. Ground-Floor Arcaded Street Veranda with Scalloped Arches & Brass Lanterns
+      const columnSpacing = 4.0;
+      const colCount = Math.floor(bWidth / columnSpacing);
+      const startX = -((colCount - 1) * columnSpacing) * 0.5;
+
+      for (let c = 0; c < colCount; c++) {
+        const colX = startX + c * columnSpacing;
+        // Sandstone Pillar
+        const pillar = new THREE.Mesh(this.getCylinder(0.20, 0.24, 4.2, 6), this.sandstoneMat);
+        pillar.position.set(colX, 2.1, bDepth * 0.5 + 1.4);
+        bGroup.add(pillar);
+
+        // Carved Bracket Capital
+        const cap = new THREE.Mesh(this.getBox(0.65, 0.35, 0.65), this.sandstoneMat);
+        cap.position.set(colX, 4.3, bDepth * 0.5 + 1.4);
+        bGroup.add(cap);
+
+        // Scalloped Arch Spans between pillars
+        if (c < colCount - 1) {
+          const archSpan = new THREE.Mesh(this.getBox(columnSpacing - 0.2, 0.45, 0.35), this.sandstoneMat);
+          archSpan.position.set(colX + columnSpacing * 0.5, 4.3, bDepth * 0.5 + 1.4);
+          bGroup.add(archSpan);
+        }
+
+        // Hanging Brass Lantern
+        const lanternPole = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.6, 4), this.goldMetalMat);
+        lanternPole.position.set(colX, 3.8, bDepth * 0.5 + 0.8);
+        bGroup.add(lanternPole);
+        const lanternGlow = new THREE.Mesh(this.getCylinder(0.12, 0.18, 0.32, 6), this.windowGlassLitMat);
+        lanternGlow.position.set(colX, 3.4, bDepth * 0.5 + 0.8);
+        bGroup.add(lanternGlow);
+      }
+
+      // Continuous Carved Stone Chhajja Sunshade Shelf over Arcade
+      const chhajja = new THREE.Mesh(this.getBox(bWidth + 0.8, 0.15, 1.6), this.sandstoneMat);
+      chhajja.position.set(0, 4.65, bDepth * 0.5 + 1.1);
+      chhajja.rotation.x = 0.22; // Sloped down towards street
+      bGroup.add(chhajja);
+
+      // Recessed Inner Shops inside Veranda
       const shopCount = Math.floor(bWidth / 5.0);
       const shopSpacing = bWidth / (shopCount + 1);
       const awningMats = [this.awningStripeOrangeMat, this.awningStripeMaroonMat, this.awningStripeGreenMat];
@@ -824,7 +870,7 @@ export class VipSatireWorldBuilder {
         const shopX = -bWidth * 0.5 + (sh + 1) * shopSpacing;
 
         // Recessed wooden shop opening & sign
-        const shopDoor = new THREE.Mesh(this.getBox(2.6, 3.2, 0.4), this.haveliWoodMat);
+        const shopDoor = new THREE.Mesh(this.getBox(2.6, 3.2, 0.3), this.haveliWoodMat);
         shopDoor.position.set(shopX, 1.6, bDepth * 0.5 + 0.1);
         bGroup.add(shopDoor);
 
@@ -833,11 +879,11 @@ export class VipSatireWorldBuilder {
         shopGlow.position.set(shopX, 1.4, bDepth * 0.5 + 0.22);
         bGroup.add(shopGlow);
 
-        // Projecting Sloped Striped Market Awning
+        // Rolled striped fabric awning under veranda
         const awningMat = awningMats[(sh + bIdx) % awningMats.length];
-        const awning = new THREE.Mesh(this.getBox(3.0, 0.08, 1.6), awningMat);
-        awning.position.set(shopX, 3.4, bDepth * 0.5 + 0.75);
-        awning.rotation.x = 0.28; // sloped down toward street
+        const awning = new THREE.Mesh(this.getBox(2.8, 0.08, 0.9), awningMat);
+        awning.position.set(shopX, 3.4, bDepth * 0.5 + 0.45);
+        awning.rotation.x = 0.20;
         bGroup.add(awning);
       }
 
@@ -907,6 +953,20 @@ export class VipSatireWorldBuilder {
 
           bGroup.add(cGroup);
         });
+
+        // Iconic Indian Sintex Rooftop Water Tank on Roof
+        const tank = new THREE.Mesh(this.getCylinder(0.65, 0.65, 1.3, 10), this.commandoSuitMat);
+        tank.position.set(0, totalH + 0.75, bDepth * 0.5 - 2.2);
+        bGroup.add(tank);
+
+        // Slender Flagstaff with Triangular Saffron Festive Pennant
+        const flagPole = new THREE.Mesh(this.getCylinder(0.025, 0.025, 3.2, 4), this.goldMetalMat);
+        flagPole.position.set(0, totalH + 1.6, bDepth * 0.5 - 0.5);
+        bGroup.add(flagPole);
+        const pennant = new THREE.Mesh(this.getBox(0.8, 0.5, 0.02), this.saffronFloralMat);
+        pennant.position.set(0.4, totalH + 2.8, bDepth * 0.5 - 0.5);
+        bGroup.add(pennant);
+
       } else if (bDef.roofType === 'BROADCAST_TOWER') {
         // High-Tech Media Transmission Tower & Satellite Dish
         const towerGroup = new THREE.Group();
@@ -951,7 +1011,7 @@ export class VipSatireWorldBuilder {
 
     if (detail === 'MINIMAL') return;
 
-    // 5. Open Courtyard Setbacks: Mughal ornamental archways and glowing lamps
+    // 5. Open Courtyard Setbacks: Mughal ornamental archways, stepped stairs, and hanging marigold torans
     const courtyardZs = [-25.5, -53.5];
     courtyardZs.forEach((cyZ) => {
       const cyGroup = new THREE.Group();
@@ -972,6 +1032,12 @@ export class VipSatireWorldBuilder {
       const lamp = new THREE.Mesh(this.getSphere(0.35, 6), this.windowGlassLitMat);
       lamp.position.set(0, 4.4, 0);
       cyGroup.add(lamp);
+
+      // Hanging Marigold Toran Garland across alleyway
+      const toran = new THREE.Mesh(this.getCylinder(0.04, 0.04, 4.2, 6), this.yellowMarigoldMat);
+      toran.rotation.x = Math.PI / 2;
+      toran.position.set(0, 4.6, 0);
+      cyGroup.add(toran);
 
       group.add(cyGroup);
     });
@@ -1011,7 +1077,7 @@ export class VipSatireWorldBuilder {
       group.add(curb);
 
       // Ornate Indian Street Lampposts wrapped in fresh marigold garlands
-      const postStep = detail === 'MINIMAL' ? 36 : 18;
+      const postStep = detail === 'MINIMAL' ? 45 : 18;
       for (let z = 8; z < chunkLength - 8; z += postStep) {
         const postGroup = new THREE.Group();
         postGroup.position.set(side * (curbEdge + 2.2), 0.3, -z);
@@ -1053,9 +1119,9 @@ export class VipSatireWorldBuilder {
     floatGroup.position.set(-12.5, 0.3, -chunkLength * 0.45);
     floatGroup.userData.baseY = 0.3;
 
-    // Subsurface foundation plinth down to Y = -5.2m
-    const floatPlinth = new THREE.Mesh(this.getBox(7.0, 5.2, 16.0), this.sandstoneMat);
-    floatPlinth.position.set(0, -2.6, 0);
+    // Subsurface foundation plinth down to Y = -5.2m (submerged beneath promenade)
+    const floatPlinth = new THREE.Mesh(this.getBox(3.8, 5.0, 12.0), this.sandstoneMat);
+    floatPlinth.position.set(0, -2.8, 0);
     floatGroup.add(floatPlinth);
 
     // Heavy truck chassis
@@ -1244,45 +1310,121 @@ export class VipSatireWorldBuilder {
       suvGroup.name = `vip_pilot_escort_${pidx}`;
       suvGroup.position.set(-12.5, 0.3, pz);
 
-      const suvPlinth = new THREE.Mesh(this.getBox(4.5, 4.0, 7.5), this.sandstoneMat);
-      suvPlinth.position.set(0, -2.0, 0);
+      // Subsurface foundation plinth submerged below pavement (top at -0.3m)
+      const suvPlinth = new THREE.Mesh(this.getBox(2.2, 5.0, 4.8), this.sandstoneMat);
+      suvPlinth.position.set(0, -2.8, 0);
       suvGroup.add(suvPlinth);
 
-      // SUV Main Body
-      const body = new THREE.Mesh(this.getBox(2.8, 1.4, 5.8), this.suvWhiteMat);
-      body.position.y = 1.1;
+      // Lower Chassis & Wheel Wells
+      if (detail !== 'MINIMAL') {
+        const undercarriage = new THREE.Mesh(this.getBox(2.5, 0.35, 5.2), this.suvTireMat);
+        undercarriage.position.y = 0.45;
+        suvGroup.add(undercarriage);
+      }
+
+      // SUV Main Body with Sculpted Taper
+      const body = new THREE.Mesh(this.getBox(2.7, 0.9, 5.6), this.suvWhiteMat);
+      body.position.y = 0.95;
       suvGroup.add(body);
 
-      // Cabin & Tinted Windows
-      const cabin = new THREE.Mesh(this.getBox(2.6, 1.1, 3.6), this.suvWhiteMat);
-      cabin.position.set(0, 2.2, -0.4);
+      if (detail !== 'MINIMAL') {
+        // Lower Dark Composite Cladding
+        const cladding = new THREE.Mesh(this.getBox(2.74, 0.22, 5.62), this.commandoSuitMat);
+        cladding.position.y = 0.58;
+        suvGroup.add(cladding);
+
+        // Front Chrome Bullbar & Grille
+        const bullbar = new THREE.Mesh(this.getBox(2.2, 0.55, 0.15), this.silverMetalMat);
+        bullbar.position.set(0, 0.85, 2.95);
+        suvGroup.add(bullbar);
+
+        const grille = new THREE.Mesh(this.getBox(1.3, 0.35, 0.08), this.silverMetalMat);
+        grille.position.set(0, 1.05, 2.82);
+        suvGroup.add(grille);
+      }
+
+      // Clear Twin Rectangular LED Headlights & Turn Signals
+      [-0.98, 0.98].forEach((hx) => {
+        const headlight = new THREE.Mesh(this.getBox(0.55, 0.24, 0.06), this.flashLightMat);
+        headlight.position.set(hx, 1.05, 2.82);
+        suvGroup.add(headlight);
+
+        if (detail !== 'MINIMAL') {
+          const indicator = new THREE.Mesh(this.getBox(0.14, 0.22, 0.06), this.strobeAmberMat);
+          indicator.position.set(hx + (hx > 0 ? 0.32 : -0.32), 1.05, 2.81);
+          suvGroup.add(indicator);
+        }
+      });
+
+      // Front Hood & Raked Windshield
+      const hood = new THREE.Mesh(this.getBox(2.55, 0.18, 1.8), this.suvWhiteMat);
+      hood.position.set(0, 1.45, 1.8);
+      suvGroup.add(hood);
+
+      // Passenger Cabin
+      const cabin = new THREE.Mesh(this.getBox(2.5, 1.05, 3.4), this.suvWhiteMat);
+      cabin.position.set(0, 1.95, -0.65);
       suvGroup.add(cabin);
 
-      const windScreen = new THREE.Mesh(this.getBox(2.4, 0.9, 0.08), this.cyberGlassMat);
-      windScreen.position.set(0, 2.15, 1.42);
+      // Tinted Front Windshield
+      const windScreen = new THREE.Mesh(this.getBox(2.35, 0.85, 0.08), this.cyberGlassMat);
+      windScreen.position.set(0, 1.95, 1.05);
+      windScreen.rotation.x = -0.30;
       suvGroup.add(windScreen);
 
-      // 4 SUV Wheels
-      [-1.45, 1.45].forEach((wx) => {
-        [-1.8, 1.8].forEach((wz) => {
-          const w = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.35, 10), this.suvTireMat);
+      // Tinted Side Passenger Windows
+      [-1.27, 1.27].forEach((wx) => {
+        const sideWin = new THREE.Mesh(this.getBox(0.06, 0.62, 2.8), this.cyberGlassMat);
+        sideWin.position.set(wx, 2.05, -0.65);
+        suvGroup.add(sideWin);
+
+        // Wing Mirrors
+        if (detail !== 'MINIMAL') {
+          const mirror = new THREE.Mesh(this.getBox(0.22, 0.15, 0.10), this.suvWhiteMat);
+          mirror.position.set(wx + (wx > 0 ? 0.15 : -0.15), 1.85, 0.85);
+          suvGroup.add(mirror);
+        }
+      });
+
+      // Tinted Rear Windshield & Taillights
+      if (detail !== 'MINIMAL') {
+        const rearWin = new THREE.Mesh(this.getBox(2.15, 0.65, 0.06), this.cyberGlassMat);
+        rearWin.position.set(0, 2.05, -2.36);
+        suvGroup.add(rearWin);
+      }
+
+      [-0.95, 0.95].forEach((tx) => {
+        const tailLight = new THREE.Mesh(this.getBox(0.25, 0.55, 0.06), this.strobeRedMat);
+        tailLight.position.set(tx, 1.15, -2.82);
+        suvGroup.add(tailLight);
+      });
+
+      // 4 Realistic Alloy Wheels with Chrome Hubs & Treaded Tires
+      [-1.35, 1.35].forEach((wx) => {
+        [-1.7, 1.7].forEach((wz) => {
+          const w = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.36, 12), this.suvTireMat);
           w.rotation.z = Math.PI / 2;
           w.position.set(wx, 0.48, wz);
           suvGroup.add(w);
+
+          const rim = new THREE.Mesh(this.getCylinder(0.28, 0.28, 0.38, 8), this.silverMetalMat);
+          rim.rotation.z = Math.PI / 2;
+          rim.position.set(wx, 0.48, wz);
+          suvGroup.add(rim);
         });
       });
 
-      // Rooftop Emergency Strobe Lightbar (Amber & Red LEDs)
-      const lightbar = new THREE.Mesh(this.getBox(1.6, 0.15, 0.35), this.tinRoofMat);
-      lightbar.position.set(0, 2.85, -0.2);
+      // Rooftop Aerodynamic Emergency Strobe Lightbar (Amber & Red LEDs)
+      const lightbar = new THREE.Mesh(this.getBox(1.5, 0.12, 0.32), this.tinRoofMat);
+      lightbar.position.set(0, 2.55, -0.2);
       suvGroup.add(lightbar);
 
-      const strobeAmber = new THREE.Mesh(this.getBox(0.65, 0.14, 0.28), this.strobeAmberMat);
-      strobeAmber.position.set(-0.4, 2.92, -0.2);
+      const strobeAmber = new THREE.Mesh(this.getBox(0.60, 0.14, 0.26), this.strobeAmberMat);
+      strobeAmber.position.set(-0.35, 2.62, -0.2);
       suvGroup.add(strobeAmber);
 
-      const strobeRed = new THREE.Mesh(this.getBox(0.65, 0.14, 0.28), this.strobeRedMat);
-      strobeRed.position.set(0.4, 2.92, -0.2);
+      const strobeRed = new THREE.Mesh(this.getBox(0.60, 0.14, 0.26), this.strobeRedMat);
+      strobeRed.position.set(0.35, 2.62, -0.2);
       suvGroup.add(strobeRed);
 
       director.registerPilotEscort(suvGroup, strobeAmber, strobeRed);
@@ -1533,19 +1675,25 @@ export class VipSatireWorldBuilder {
         roof.rotation.x = 0.20;
         stallGroup.add(roof);
 
-        // Signboard
+        // Compact Authentic Bazaar Stall Signboard integrated with awning
         const signTex = TextureGenerator.getChaiPeCharchaSignTexture(Math.floor(zOffset / 24));
-        const signMesh = new THREE.Mesh(this.getBox(3.4, 0.9, 0.06), this.createBasicMaterial({ map: signTex }));
-        signMesh.position.set(0, 2.9, 0.3);
+        const signMesh = new THREE.Mesh(this.getBox(2.4, 0.55, 0.05), this.createBasicMaterial({ map: signTex }));
+        signMesh.position.set(0, 2.55, 0.95);
+        signMesh.rotation.x = 0.20;
         stallGroup.add(signMesh);
 
+        // Traditional Indian Brass Samovar Boiler
+        const samovar = new THREE.Mesh(this.getCylinder(0.28, 0.35, 0.85, 10), this.brassKettleMat);
+        samovar.position.set(0.65, 1.55, -0.2);
+        stallGroup.add(samovar);
+
         // Brass Steaming Kettle with Dome Lid & Spout
-        const kettle = new THREE.Mesh(this.getCylinder(0.40, 0.46, 0.70, 10), this.brassKettleMat);
-        kettle.position.set(-0.85, 1.50, 0);
+        const kettle = new THREE.Mesh(this.getCylinder(0.35, 0.42, 0.65, 10), this.brassKettleMat);
+        kettle.position.set(-0.85, 1.45, 0);
         stallGroup.add(kettle);
 
         const spout = new THREE.Mesh(this.getCylinder(0.08, 0.14, 0.42, 8), this.brassKettleMat);
-        spout.position.set(-0.52, 1.68, 0);
+        spout.position.set(-0.52, 1.62, 0);
         spout.rotation.z = -0.65;
         stallGroup.add(spout);
 
@@ -1613,20 +1761,24 @@ export class VipSatireWorldBuilder {
     curtainR.position.set(1.5, 3.2, -2.2);
     teacupPavilion.add(curtainR);
 
-    // Golden Pedestal with ONE TINY CUTTING CHAI CUP
-    const pedestal = new THREE.Mesh(this.getCylinder(0.55, 0.65, 1.2, 10), this.goldMetalMat);
-    pedestal.position.set(0, 1.5, -1.8);
+    // Golden Pedestal with ONE TINY CUTTING CHAI CUP (Elevated and clearly framed by curtains)
+    const pedestal = new THREE.Mesh(this.getCylinder(0.65, 0.75, 1.6, 12), this.goldMetalMat);
+    pedestal.position.set(0, 1.7, -1.0);
     teacupPavilion.add(pedestal);
 
+    const velvetPillow = new THREE.Mesh(this.getCylinder(0.60, 0.65, 0.18, 12), this.velvetCurtainMat);
+    velvetPillow.position.set(0, 2.55, -1.0);
+    teacupPavilion.add(velvetPillow);
+
     const tinyCupGroup = new THREE.Group();
-    tinyCupGroup.position.set(0, 2.2, -1.8);
-    const tinyCup = new THREE.Mesh(this.getCylinder(0.12, 0.08, 0.28, 8), this.teaGlassMat);
+    tinyCupGroup.position.set(0, 2.8, -1.0);
+    const tinyCup = new THREE.Mesh(this.getCylinder(0.14, 0.10, 0.32, 8), this.teaGlassMat);
     tinyCupGroup.add(tinyCup);
-    const tinyTea = new THREE.Mesh(this.getCylinder(0.10, 0.07, 0.22, 8), this.teaLiquidMat);
+    const tinyTea = new THREE.Mesh(this.getCylinder(0.12, 0.08, 0.25, 8), this.teaLiquidMat);
     tinyCupGroup.add(tinyTea);
     teacupPavilion.add(tinyCupGroup);
 
-    // Flanking Brass Spotlights
+    // Flanking Brass Spotlights angled down toward tiny cup
     const spotL = new THREE.Mesh(this.getCylinder(0.18, 0.32, 0.45, 8), this.goldMetalMat);
     spotL.position.set(-2.8, 4.5, -0.5);
     spotL.rotation.set(0.5, 0.3, 0);
@@ -1648,10 +1800,10 @@ export class VipSatireWorldBuilder {
 
     director.registerTeacupReveal(curtainL, curtainR, tinyCupGroup, [spotL, spotR], vips);
 
-    // Plaque sign
+    // Plaque sign mounted neatly on lower dais face (NEVER blocking pedestal sightline!)
     const plaqueTex = TextureGenerator.getVipPhotoOpSignTexture();
-    const plaque = new THREE.Mesh(this.getBox(3.8, 1.2, 0.08), this.createBasicMaterial({ map: plaqueTex }));
-    plaque.position.set(0, 2.2, 3.8);
+    const plaque = new THREE.Mesh(this.getBox(3.2, 0.7, 0.06), this.createBasicMaterial({ map: plaqueTex }));
+    plaque.position.set(0, 0.45, 4.28);
     teacupPavilion.add(plaque);
 
     group.add(teacupPavilion);
@@ -1952,12 +2104,28 @@ export class VipSatireWorldBuilder {
       sidewalk.position.set(sx, sidewalkY, -chunkLength * 0.5);
       group.add(sidewalk);
 
-      // Giant Glowing LED Media Screen mounted cleanly on the central broadcast studio facade
+      // High-Tech LED Studio Video Wall integrated with architectural truss frame
+      const screenTruss = new THREE.Group();
+      screenTruss.position.set(side * (curbEdge + 9.5), 9.0, -chunkLength * 0.5);
+      screenTruss.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
+
+      const screenFrame = new THREE.Mesh(this.getBox(14.8, 7.8, 0.4), this.tinRoofMat);
+      screenTruss.add(screenFrame);
+
       const screenTex = TextureGenerator.getBreakingNewsScreenTexture(side > 0 ? 0 : 2);
-      const screen = new THREE.Mesh(this.getPlane(24.0, 12.0), this.createBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
-      screen.position.set(side * (curbEdge + 4.5), 11.5, -chunkLength * 0.5);
-      screen.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
-      group.add(screen);
+      const screen = new THREE.Mesh(this.getPlane(14.0, 7.0), this.createBasicMaterial({ map: screenTex, side: THREE.DoubleSide }));
+      screen.position.z = 0.22;
+      screenTruss.add(screen);
+
+      // Studio floodlights framing screen
+      [-6.5, 6.5].forEach((lx) => {
+        const spot = new THREE.Mesh(this.getCylinder(0.2, 0.35, 0.4, 6), this.goldMetalMat);
+        spot.position.set(lx, 4.2, 0.3);
+        spot.rotation.x = 0.4;
+        screenTruss.add(spot);
+      });
+
+      group.add(screenTruss);
     });
 
     // 2. HERO GAG 5: PRIME-TIME REMOTE REVELATION & PAPARAZZI (Satisfies vip_camera_crew, X > 15.0m)
@@ -2245,9 +2413,22 @@ export class VipSatireWorldBuilder {
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 4, rng, detail);
 
       const gx = side * (curbEdge + swWidth * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(swWidth, swHeight, chunkLength), this.parliamentWoodMat);
+      const gallery = new THREE.Mesh(this.getBox(swWidth, swHeight, chunkLength), this.sandstoneMat);
       gallery.position.set(gx, 0.3 - swHeight * 0.5, -chunkLength * 0.5);
       group.add(gallery);
+
+      // Carved Classical Sandstone Colonnade along Concourse Curb
+      if (detail !== 'MINIMAL') {
+        for (let z = 6; z < chunkLength - 6; z += 12) {
+          const col = new THREE.Mesh(this.getCylinder(0.24, 0.30, 5.5, 8), this.sandstoneMat);
+          col.position.set(side * (curbEdge + 1.4), 3.0, -z);
+          group.add(col);
+
+          const cap = new THREE.Mesh(this.getBox(0.8, 0.4, 0.8), this.sandstoneMat);
+          cap.position.set(side * (curbEdge + 1.4), 5.9, -z);
+          group.add(cap);
+        }
+      }
 
       // Green Leather Parliament Benches
       for (let z = 6; z < chunkLength - 6; z += 10) {
