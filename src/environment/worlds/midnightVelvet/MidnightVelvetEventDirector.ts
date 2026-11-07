@@ -46,6 +46,51 @@ interface PaparazziFlash {
   interval: number;
 }
 
+export interface VipArrivalActor {
+  group: THREE.Group;
+  limousine: THREE.Group;
+  rearDoorPivot: THREE.Group;
+  valetGroup: THREE.Group;
+  valetTorso?: THREE.Object3D;
+  valetArm?: THREE.Object3D;
+  gentlemanGroup: THREE.Group;
+  ladyGroup: THREE.Group;
+  photographers: Array<{
+    group: THREE.Group;
+    camArm?: THREE.Object3D;
+    initialRotY: number;
+    flashMesh: THREE.Mesh;
+  }>;
+  cycleTimer: number;
+  initialLimoZ: number;
+  carpetCenterZ: number;
+  doorLimoX: number;
+  redCarpetX: number;
+}
+
+export interface NightclubRevealActor {
+  group: THREE.Group;
+  kineticSculpture: {
+    outerRing: THREE.Object3D;
+    midRing: THREE.Object3D;
+    innerSpokes: THREE.Object3D;
+    coreSphere: THREE.Mesh;
+  };
+  marqueeBulbs: THREE.Mesh[];
+  verticalPillars: THREE.Mesh[];
+  signMesh: THREE.Mesh;
+  queueGuests: Array<{
+    group: THREE.Group;
+    swayPhase: number;
+    armWine?: THREE.Object3D;
+  }>;
+  bouncer: {
+    group: THREE.Group;
+    clipboardArm?: THREE.Object3D;
+  };
+  revealTimer: number;
+}
+
 export class MidnightVelvetEventDirector {
   private static instance: MidnightVelvetEventDirector | null = null;
 
@@ -56,6 +101,8 @@ export class MidnightVelvetEventDirector {
   private hotelMarquees: HotelMarquee[] = [];
   private clockTowers: ClockTowerGag[] = [];
   private paparazziFlashes: PaparazziFlash[] = [];
+  private vipArrivals: VipArrivalActor[] = [];
+  private nightclubReveals: NightclubRevealActor[] = [];
 
   private globalTime: number = 0;
 
@@ -76,6 +123,8 @@ export class MidnightVelvetEventDirector {
     this.hotelMarquees = [];
     this.clockTowers = [];
     this.paparazziFlashes = [];
+    this.vipArrivals = [];
+    this.nightclubReveals = [];
     this.globalTime = 0;
   }
 
@@ -109,6 +158,14 @@ export class MidnightVelvetEventDirector {
     this.clockTowers.push({ pendulum, minuteHand });
   }
 
+  public registerVipArrival(actor: VipArrivalActor): void {
+    this.vipArrivals.push(actor);
+  }
+
+  public registerNightclubReveal(actor: NightclubRevealActor): void {
+    this.nightclubReveals.push(actor);
+  }
+
   // --- Diagnostics Getters ---
   public getMotorcadeCarCount(): number { return this.motorcadeCars.length; }
   public getPartyDancerCount(): number { return this.partyDancers.length; }
@@ -116,9 +173,12 @@ export class MidnightVelvetEventDirector {
   public getMarinaYachtCount(): number { return this.marinaYachts.length; }
   public getHotelMarqueeCount(): number { return this.hotelMarquees.length; }
   public getClockTowerCount(): number { return this.clockTowers.length; }
+  public getVipArrivalCount(): number { return this.vipArrivals.length; }
+  public getNightclubRevealCount(): number { return this.nightclubReveals.length; }
   public getTotalActiveElements(): number {
     return this.motorcadeCars.length + this.partyDancers.length + this.searchlights.length +
-      this.marinaYachts.length + this.hotelMarquees.length + this.clockTowers.length;
+      this.marinaYachts.length + this.hotelMarquees.length + this.clockTowers.length +
+      this.vipArrivals.length + this.nightclubReveals.length;
   }
 
   /**
@@ -136,6 +196,8 @@ export class MidnightVelvetEventDirector {
     this.hotelMarquees = this.hotelMarquees.filter(m => m.bulbs.length > 0 && isAttached(m.bulbs[0]));
     this.clockTowers = this.clockTowers.filter(ct => isAttached(ct.pendulum));
     this.paparazziFlashes = this.paparazziFlashes.filter(p => isAttached(p.mesh));
+    this.vipArrivals = this.vipArrivals.filter(v => isAttached(v.group));
+    this.nightclubReveals = this.nightclubReveals.filter(nr => isAttached(nr.group));
   }
 
   // --- Animation Update Loop ---
@@ -215,7 +277,7 @@ export class MidnightVelvetEventDirector {
           const bulb = marquee.bulbs[b];
           const isActive = (b % 3) === (activeIndex % 3);
           const mat = bulb.material as THREE.MeshBasicMaterial;
-          if (mat) {
+          if (mat && typeof mat.color?.setHex === 'function') {
             mat.color.setHex(isActive ? 0xfffbeb : 0x78350f);
           }
         }
@@ -250,5 +312,143 @@ export class MidnightVelvetEventDirector {
         }
       }
     }
+
+    // 8. SIGNATURE ANIMATION A: VIP Red-Carpet Arrival Sequence
+    if (!reducedMotion) {
+      for (let v = 0; v < this.vipArrivals.length; v++) {
+        const actor = this.vipArrivals[v];
+        actor.cycleTimer += delta;
+        const t = actor.cycleTimer % 16.0;
+
+        if (t < 4.0) {
+          // Approach: Limousine rolls in smoothly along boulevard
+          const p = t / 4.0;
+          const ease = 1 - Math.pow(1 - p, 3);
+          actor.limousine.position.z = actor.initialLimoZ + 22.0 * (1 - ease);
+          actor.rearDoorPivot.rotation.y = 0;
+          actor.gentlemanGroup.visible = false;
+          actor.ladyGroup.visible = false;
+          if (actor.valetTorso) actor.valetTorso.rotation.x = 0;
+          if (actor.valetArm) actor.valetArm.rotation.z = 0;
+          for (const phot of actor.photographers) {
+            phot.group.rotation.y = phot.initialRotY;
+            phot.flashMesh.visible = false;
+          }
+        } else if (t < 6.5) {
+          // Valet Greeting & Door Open: Valet approaches, bows, door swings open
+          actor.limousine.position.z = actor.initialLimoZ;
+          const pOpen = (t - 4.0) / 2.5;
+          const doorAngle = -Math.PI * 0.38 * Math.sin(pOpen * Math.PI * 0.5);
+          actor.rearDoorPivot.rotation.y = doorAngle;
+          if (actor.valetTorso) actor.valetTorso.rotation.x = 0.28 * Math.sin(pOpen * Math.PI * 0.5);
+          if (actor.valetArm) actor.valetArm.rotation.z = -0.55 * Math.sin(pOpen * Math.PI * 0.5);
+          actor.gentlemanGroup.visible = false;
+          actor.ladyGroup.visible = false;
+        } else if (t < 10.5) {
+          // VIP Exit: Couple steps down out of limousine onto red carpet, photographers fire flashes
+          actor.limousine.position.z = actor.initialLimoZ;
+          actor.gentlemanGroup.visible = true;
+          actor.ladyGroup.visible = true;
+          const pExit = (t - 6.5) / 4.0;
+          actor.gentlemanGroup.position.x = THREE.MathUtils.lerp(actor.doorLimoX, actor.redCarpetX, Math.min(1, pExit * 1.6));
+          actor.gentlemanGroup.position.z = actor.carpetCenterZ;
+          actor.gentlemanGroup.position.y = 0.03 + Math.abs(Math.sin(t * 6.0)) * 0.05;
+
+          actor.ladyGroup.position.x = THREE.MathUtils.lerp(actor.doorLimoX, actor.redCarpetX - 0.7, Math.min(1, Math.max(0, (pExit - 0.2) * 1.5)));
+          actor.ladyGroup.position.z = actor.carpetCenterZ + 0.6;
+          actor.ladyGroup.position.y = 0.03 + Math.abs(Math.sin(t * 6.0)) * 0.04;
+
+          // Photographers pivot & flash
+          for (const phot of actor.photographers) {
+            phot.group.rotation.y = phot.initialRotY + Math.sin(t * 2.0) * 0.25;
+            const flashActive = Math.sin(t * 24.0) > 0.65;
+            phot.flashMesh.visible = flashActive;
+          }
+        } else if (t < 14.5) {
+          // Walk into Hotel: Couple walks gracefully along red carpet into grand illuminated entrance
+          actor.limousine.position.z = actor.initialLimoZ;
+          const pWalk = (t - 10.5) / 4.0;
+          actor.gentlemanGroup.position.x = actor.redCarpetX;
+          actor.gentlemanGroup.position.z = THREE.MathUtils.lerp(actor.carpetCenterZ, actor.carpetCenterZ - 3.8, pWalk);
+          actor.gentlemanGroup.position.y = 0.03 + Math.abs(Math.sin(t * 7.0)) * 0.06;
+
+          actor.ladyGroup.position.x = actor.redCarpetX - 0.7;
+          actor.ladyGroup.position.z = THREE.MathUtils.lerp(actor.carpetCenterZ + 0.6, actor.carpetCenterZ - 3.2, pWalk);
+          actor.ladyGroup.position.y = 0.03 + Math.abs(Math.sin(t * 7.0)) * 0.05;
+
+          // Valet straightens and gestures
+          if (actor.valetTorso) actor.valetTorso.rotation.x = THREE.MathUtils.lerp(0.28, 0, pWalk);
+          actor.rearDoorPivot.rotation.y = THREE.MathUtils.lerp(-Math.PI * 0.38, 0, Math.min(1, pWalk * 2.2));
+
+          // Intermittent flashes
+          for (const phot of actor.photographers) {
+            phot.flashMesh.visible = Math.sin(t * 14.0) > 0.8;
+          }
+        } else {
+          // Reset / loop
+          actor.gentlemanGroup.visible = false;
+          actor.ladyGroup.visible = false;
+          actor.rearDoorPivot.rotation.y = 0;
+          for (const phot of actor.photographers) {
+            phot.group.rotation.y = phot.initialRotY;
+            phot.flashMesh.visible = false;
+          }
+        }
+      }
+    }
+
+    // 9. SIGNATURE ANIMATION B: Grand Nightclub Reveal Sequence
+    if (!reducedMotion) {
+      for (let n = 0; n < this.nightclubReveals.length; n++) {
+        const actor = this.nightclubReveals[n];
+        actor.revealTimer += delta;
+
+        // Kinetic Art Deco Sculpture revolving in 3D
+        if (actor.kineticSculpture) {
+          actor.kineticSculpture.outerRing.rotation.z += 0.55 * delta;
+          actor.kineticSculpture.midRing.rotation.x += 0.75 * delta;
+          actor.kineticSculpture.innerSpokes.rotation.y += 1.10 * delta;
+          const pulse = 1.0 + 0.14 * Math.sin(this.globalTime * 3.5);
+          actor.kineticSculpture.coreSphere.scale.set(pulse, pulse, pulse);
+        }
+
+        // Sequential marquee light chaser
+        const activeIdx = Math.floor(actor.revealTimer * 7.0) % (actor.marqueeBulbs.length || 1);
+        for (let b = 0; b < actor.marqueeBulbs.length; b++) {
+          const bulb = actor.marqueeBulbs[b];
+          const active = (b % 3) === (activeIdx % 3);
+          const mat = bulb.material as THREE.MeshBasicMaterial;
+          if (mat && typeof mat.color?.setHex === 'function') {
+            mat.color.setHex(active ? 0xfffbeb : 0x78350f);
+          }
+        }
+
+        // Vertical pillar light column ascending glow waves
+        for (let p = 0; p < actor.verticalPillars.length; p++) {
+          const pillar = actor.verticalPillars[p];
+          const phase = (this.globalTime * 1.8 + p * 0.35) % 1.0;
+          const lum = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
+          const mat = pillar.material as THREE.MeshStandardMaterial;
+          if (mat) {
+            mat.emissiveIntensity = 0.8 + lum * 1.6;
+          }
+        }
+
+        // Queue crowd conversational sway
+        for (let q = 0; q < actor.queueGuests.length; q++) {
+          const g = actor.queueGuests[q];
+          g.group.rotation.y = Math.sin(this.globalTime * 1.6 + g.swayPhase) * 0.12;
+          if (g.armWine) {
+            g.armWine.rotation.z = -0.4 + Math.sin(this.globalTime * 2.2 + g.swayPhase) * 0.18;
+          }
+        }
+
+        // Bouncer checking VIP guest list
+        if (actor.bouncer.clipboardArm) {
+          actor.bouncer.clipboardArm.rotation.x = 0.22 + Math.sin(this.globalTime * 1.1) * 0.12;
+        }
+      }
+    }
   }
 }
+

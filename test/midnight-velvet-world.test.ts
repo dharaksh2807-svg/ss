@@ -198,6 +198,8 @@ check(typeof director.getSearchlightCount() === 'number', 'Director has getSearc
 check(typeof director.getMarinaYachtCount() === 'number', 'Director has getMarinaYachtCount');
 check(typeof director.getHotelMarqueeCount() === 'number', 'Director has getHotelMarqueeCount');
 check(typeof director.getClockTowerCount() === 'number', 'Director has getClockTowerCount');
+check(typeof director.getVipArrivalCount() === 'number', 'Director has getVipArrivalCount');
+check(typeof director.getNightclubRevealCount() === 'number', 'Director has getNightclubRevealCount');
 check(typeof director.getTotalActiveElements() === 'number', 'Director has getTotalActiveElements');
 
 // Test memory leak fix: detached recycled objects must be automatically pruned
