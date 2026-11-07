@@ -388,38 +388,59 @@ export class RahulSatireWorldBuilder {
   private mediaStudioGlassMat: THREE.MeshStandardMaterial;
   private yatraAwningMat: THREE.MeshStandardMaterial;
   private yatraBannerGreenMat: THREE.MeshStandardMaterial;
+  private yatraSandstonePlasterMat: THREE.MeshStandardMaterial;
+  private yatraTerracottaMat: THREE.MeshStandardMaterial;
+  private yatraIvoryMat: THREE.MeshStandardMaterial;
+  private yatraTealMat: THREE.MeshStandardMaterial;
+  private yatraIndigoMat: THREE.MeshStandardMaterial;
+  private yatraMarigoldMat: THREE.MeshStandardMaterial;
+  private yatraFoliageGreenMat: THREE.MeshStandardMaterial;
+  private yatraBarkBrownMat: THREE.MeshStandardMaterial;
+  private parliamentMarbleMat: THREE.MeshStandardMaterial;
+  private shadowMat: THREE.MeshBasicMaterial;
 
   private constructor() {
     this.roadbedWallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
-    this.yatraWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
-    this.yatraBlueMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4, metalness: 0.2 });
-    this.yatraOrangeMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
-    this.yatraGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5 });
-    this.goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.85 });
-    this.parliamentSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.8 });
+    this.yatraWhiteMat = new THREE.MeshStandardMaterial({ color: 0xfdfbf7, roughness: 0.5 });
+    // Rich Indian peacock teal instead of flat electric blue
+    this.yatraBlueMat = new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.45, metalness: 0.2 });
+    this.yatraOrangeMat = new THREE.MeshStandardMaterial({ color: 0xe05615, roughness: 0.55 });
+    this.yatraGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.55 });
+    this.goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, roughness: 0.25, metalness: 0.85 });
+    this.parliamentSandstoneMat = new THREE.MeshStandardMaterial({ color: 0xcfa774, roughness: 0.75 });
     this.parliamentGreenMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.6 });
-    this.woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 });
-    // Bright vibrant media blue instead of pitch-black
-    this.mediaBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e40af, roughness: 0.35, metalness: 0.3, emissive: 0x0f172a, emissiveIntensity: 0.2 });
-    this.neonMagentaMat = new THREE.MeshStandardMaterial({ color: 0xd946ef, roughness: 0.2, metalness: 0.5 });
+    this.woodMat = new THREE.MeshStandardMaterial({ color: 0x4a2810, roughness: 0.75 });
+    // Architectural deep slate navy
+    this.mediaBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.25 });
+    this.neonMagentaMat = new THREE.MeshStandardMaterial({ color: 0xa21caf, roughness: 0.35, metalness: 0.3 });
     this.neonCyanMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     this.neonPinkMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
     this.cartoonSkinMat = new THREE.MeshStandardMaterial({ color: 0xd9a27c, roughness: 0.7 });
     this.cartoonHairDarkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
     this.cartoonHairSilverMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
     this.paperWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    this.redVelvetMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.85 });
+    this.redVelvetMat = new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.85 });
     this.silverMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.7 });
     this.darkSuitMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.7 });
     this.saffronWaistcoatMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.6 });
-    this.royalBlueMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5 });
+    this.royalBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
 
     // Initializing Surreal Yatra Architecture Materials
-    this.yatraYellowMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.75 });
-    this.yatraLitWindowMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 0.75, roughness: 0.2 });
-    this.mediaStudioGlassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 });
-    this.yatraAwningMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75 });
-    this.yatraBannerGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.75 });
+    this.yatraYellowMat = new THREE.MeshStandardMaterial({ color: 0xdfb76c, roughness: 0.75 });
+    this.yatraLitWindowMat = new THREE.MeshStandardMaterial({ color: 0xffe4a0, emissive: 0xf59e0b, emissiveIntensity: 0.65, roughness: 0.2 });
+    this.mediaStudioGlassMat = new THREE.MeshStandardMaterial({ color: 0x162a3f, roughness: 0.2, metalness: 0.6, emissive: 0x0f172a, emissiveIntensity: 0.25 });
+    this.yatraAwningMat = new THREE.MeshStandardMaterial({ color: 0xe05615, roughness: 0.75 });
+    this.yatraBannerGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
+    this.yatraSandstonePlasterMat = new THREE.MeshStandardMaterial({ color: 0xdfb76c, roughness: 0.8 });
+    this.yatraTerracottaMat = new THREE.MeshStandardMaterial({ color: 0x943d2c, roughness: 0.85 });
+    this.yatraIvoryMat = new THREE.MeshStandardMaterial({ color: 0xfdfbf7, roughness: 0.65 });
+    this.yatraTealMat = new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.5, metalness: 0.15 });
+    this.yatraIndigoMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
+    this.yatraMarigoldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7 });
+    this.yatraFoliageGreenMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.85 });
+    this.yatraBarkBrownMat = new THREE.MeshStandardMaterial({ color: 0x3e2312, roughness: 0.9 });
+    this.parliamentMarbleMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35 });
+    this.shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
 
     // CRITICAL FIX: Apply track world-curvature shader to all Rahulverse materials!
     // Without this, as the track curves downward along Y = -0.00045 * Z^2,
@@ -431,7 +452,10 @@ export class RahulSatireWorldBuilder {
       this.cartoonSkinMat, this.cartoonHairDarkMat, this.cartoonHairSilverMat, this.paperWhiteMat,
       this.redVelvetMat, this.silverMat, this.darkSuitMat, this.saffronWaistcoatMat,
       this.royalBlueMat, this.yatraYellowMat, this.yatraLitWindowMat, this.mediaStudioGlassMat,
-      this.yatraAwningMat, this.yatraBannerGreenMat
+      this.yatraAwningMat, this.yatraBannerGreenMat, this.yatraSandstonePlasterMat,
+      this.yatraTerracottaMat, this.yatraIvoryMat, this.yatraTealMat, this.yatraIndigoMat,
+      this.yatraMarigoldMat, this.yatraFoliageGreenMat, this.yatraBarkBrownMat,
+      this.parliamentMarbleMat
     ];
 
     const curvedShader = CurvedShaderManager.getInstance();
@@ -550,10 +574,103 @@ export class RahulSatireWorldBuilder {
   // =========================================================================
 
   /**
+   * Roadside lush green Neem/Peepal tree with circular stone sitting platform (chabutra)
+   */
+  public buildRoadsideTree(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    scale: number = 1.0
+  ): THREE.Group {
+    const tree = new THREE.Group();
+    tree.position.set(x, y, z);
+    tree.scale.setScalar(scale);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(3.4, 5.5, 3.4), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    tree.add(plinth);
+
+    // Circular stone sitting bench / chabutra
+    const chabutra = new THREE.Mesh(this.getCylinder(2.2, 2.4, 0.65, 10), this.parliamentSandstoneMat);
+    chabutra.position.y = 0.325;
+    tree.add(chabutra);
+
+    // Weathered timber trunk
+    const trunk = new THREE.Mesh(this.getCylinder(0.35, 0.52, 4.2, 8), this.yatraBarkBrownMat);
+    trunk.position.y = 2.4;
+    tree.add(trunk);
+
+    // Multi-tiered leafy green canopy with organic organic silhouette
+    const canopy1 = new THREE.Mesh(this.getCylinder(0.8, 2.6, 2.0, 8), this.yatraFoliageGreenMat);
+    canopy1.position.y = 4.6;
+    tree.add(canopy1);
+
+    const canopy2 = new THREE.Mesh(this.getCylinder(0.5, 2.0, 1.8, 8), this.yatraFoliageGreenMat);
+    canopy2.position.y = 6.0;
+    tree.add(canopy2);
+
+    const canopyTop = new THREE.Mesh(this.getSphere(1.2, 8), this.yatraFoliageGreenMat);
+    canopyTop.position.y = 7.1;
+    tree.add(canopyTop);
+
+    group.add(tree);
+    return tree;
+  }
+
+  /**
+   * Roadside Yatra rest area canopy (Shamiana) with striped fabric & earthen water pots
+   */
+  public buildRoadsideCanopy(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    width: number,
+    depth: number,
+    fabricColorMat: THREE.Material
+  ): THREE.Group {
+    const canopy = new THREE.Group();
+    canopy.position.set(x, y, z);
+
+    // Foundation plinth
+    const plinth = new THREE.Mesh(this.getBox(width + 0.6, 5.5, depth + 0.6), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    canopy.add(plinth);
+
+    // Platform
+    const floor = new THREE.Mesh(this.getBox(width, 0.3, depth), this.parliamentSandstoneMat);
+    floor.position.y = 0.15;
+    canopy.add(floor);
+
+    // 4 Corner Timber Poles
+    const hwx = (width * 0.5) - 0.25;
+    const hwz = (depth * 0.5) - 0.25;
+    [[-hwx, -hwz], [-hwx, hwz], [hwx, -hwz], [hwx, hwz]].forEach(([px, pz]) => {
+      const pole = new THREE.Mesh(this.getCylinder(0.08, 0.08, 3.8, 6), this.woodMat);
+      pole.position.set(px, 1.9, pz);
+      canopy.add(pole);
+    });
+
+    // Sloped Fabric Canopy Top
+    const roof = new THREE.Mesh(this.getBox(width + 0.4, 0.1, depth + 0.4), fabricColorMat);
+    roof.position.y = 3.8;
+    canopy.add(roof);
+
+    // Clay water pot (Matka) for water distribution
+    const matka = new THREE.Mesh(this.getSphere(0.38, 8), this.yatraTerracottaMat);
+    matka.position.set(0, 0.65, 0);
+    canopy.add(matka);
+
+    group.add(canopy);
+    return canopy;
+  }
+
+  /**
    * Builds rich, modular, articulated surreal political architecture with setbacks,
-   * campaign pavilions, cantilevered press galleries, glowing window bands,
-   * striped awnings, rooftop transmission antennas, and open courtyards.
-   * Completely eliminates monolithic black/dark walls and empty voids!
+   * haveli verandas, carved sandstone pillars, cantilevered balconies, jali screens,
+   * warm lit windows, rooftop chhatris, and open courtyards with lush neem trees.
    */
   public buildSurrealYatraFacade(
     group: THREE.Group,
@@ -569,11 +686,11 @@ export class RahulSatireWorldBuilder {
     const facadeX = side * (wallX + 10.5);
     const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
 
-    // Three articulated modules per side with open courtyard gaps
+    // Three articulated modules per side with varied story heights and open courtyards
     const buildingDefs = [
-      { z: -14, length: 16, stories: 3, roofType: 'PAVILION' },
-      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : 'MILESTONE') },
-      { z: -66, length: 16, stories: 3, roofType: 'PAVILION' }
+      { z: -14, length: 16, stories: 3, roofType: 'CHHATRI' },
+      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : 'TERRACOTTA_TILES') },
+      { z: -66, length: 16, stories: 3, roofType: 'CHHATRI' }
     ];
 
     buildingDefs.forEach((bDef, bIdx) => {
@@ -586,27 +703,40 @@ export class RahulSatireWorldBuilder {
       const storyH = 4.8;
       const totalH = bDef.stories * storyH;
 
-      // Select district palette
+      // Select district authentic regional Indian palette
       let wallMat: THREE.MeshStandardMaterial;
+      let trimMat: THREE.MeshStandardMaterial = this.parliamentSandstoneMat;
+      let accentMat: THREE.MeshStandardMaterial = this.yatraTealMat;
+
       if (districtIndex === 0) {
-        // Yatra Never Ends: Saffron, White & Green Vernacular
-        wallMat = bIdx % 2 === 0 ? this.yatraWhiteMat : this.yatraOrangeMat;
+        // Yatra Never Ends: Jaisalmer Sandstone Plaster, Warm Terracotta & Ivory
+        wallMat = bIdx % 2 === 0 ? this.yatraSandstonePlasterMat : this.yatraTerracottaMat;
+        trimMat = this.parliamentSandstoneMat;
+        accentMat = this.yatraOrangeMat;
       } else if (districtIndex === 1) {
-        // Parliament Pandemonium: Sandstone & Royal Blue
-        wallMat = bIdx % 2 === 0 ? this.parliamentSandstoneMat : this.royalBlueMat;
+        // Parliament Pandemonium: Classical Makrana Marble & Buff Sandstone
+        wallMat = bIdx % 2 === 0 ? this.parliamentMarbleMat : this.parliamentSandstoneMat;
+        trimMat = this.parliamentSandstoneMat;
+        accentMat = this.parliamentGreenMat;
       } else if (districtIndex === 2) {
-        // Press Conference Panic: High-tech Media Studio Glass & Deep Navy
+        // Press Conference Panic: High-Tech Studio Navy & Glass
         wallMat = bIdx === 1 ? this.mediaStudioGlassMat : this.mediaBlueMat;
+        trimMat = this.parliamentSandstoneMat;
+        accentMat = this.yatraIvoryMat;
       } else if (districtIndex === 3) {
-        // Alliance Rollercoaster: Festive Carnival Magenta & Yellow
-        wallMat = bIdx % 2 === 0 ? this.neonMagentaMat : this.yatraYellowMat;
+        // Alliance Circus: Festive Marigold & Sandstone Meeting Pavilions
+        wallMat = bIdx % 2 === 0 ? this.yatraSandstonePlasterMat : this.yatraMarigoldMat;
+        trimMat = this.parliamentSandstoneMat;
+        accentMat = this.yatraIndigoMat;
       } else {
-        // Political Multiverse: Deep Cosmic Navy & Sandstone
-        wallMat = bIdx % 2 === 0 ? this.mediaBlueMat : this.parliamentSandstoneMat;
+        // Political Multiverse: Deep Indigo & Sandstone Obelisks
+        wallMat = bIdx % 2 === 0 ? this.yatraIndigoMat : this.yatraSandstonePlasterMat;
+        trimMat = this.parliamentSandstoneMat;
+        accentMat = this.yatraTealMat;
       }
 
       // 0. Subterranean Foundation Plinth down to Y = -5.2m (prevents floating scenery)
-      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.8, 5.5, bDepth + 0.8), this.parliamentSandstoneMat);
+      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.8, 5.5, bDepth + 0.8), trimMat);
       plinth.position.y = -2.45;
       bGroup.add(plinth);
 
@@ -617,7 +747,7 @@ export class RahulSatireWorldBuilder {
 
       // Carved Stringcourse Ledges between floors
       for (let s = 1; s <= bDef.stories; s++) {
-        const cornice = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.45, bDepth + 0.6), this.parliamentSandstoneMat);
+        const cornice = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.45, bDepth + 0.6), trimMat);
         cornice.position.y = s * storyH;
         bGroup.add(cornice);
       }
@@ -628,30 +758,47 @@ export class RahulSatireWorldBuilder {
         return;
       }
 
-      // 2. Ground-Floor Campaign Centers with Striped Awnings
-      const stallCount = Math.floor(bWidth / 5.0);
+      // 2. Ground-Floor Colonnaded Verandas with Wooden Shuttered Shopfronts
+      const stallCount = Math.floor(bWidth / 5.2);
       const stallSpacing = bWidth / (stallCount + 1);
-      const awningMats = [this.yatraOrangeMat, this.yatraWhiteMat, this.yatraGreenMat];
+      const awningMats = [this.yatraOrangeMat, this.yatraIvoryMat, this.yatraGreenMat, this.yatraTealMat];
 
       for (let sh = 0; sh < stallCount; sh++) {
         const stallX = -bWidth * 0.5 + (sh + 1) * stallSpacing;
 
-        const door = new THREE.Mesh(this.getBox(2.6, 3.2, 0.4), this.woodMat);
-        door.position.set(stallX, 1.6, bDepth * 0.5 + 0.1);
+        // Sandstone Colonnade Pillars
+        const pillarL = new THREE.Mesh(this.getBox(0.35, 3.4, 0.35), trimMat);
+        pillarL.position.set(stallX - 1.4, 1.7, bDepth * 0.5 + 0.9);
+        bGroup.add(pillarL);
+
+        const pillarR = new THREE.Mesh(this.getBox(0.35, 3.4, 0.35), trimMat);
+        pillarR.position.set(stallX + 1.4, 1.7, bDepth * 0.5 + 0.9);
+        bGroup.add(pillarR);
+
+        // Recessed wooden shopfront door
+        const door = new THREE.Mesh(this.getBox(2.4, 3.0, 0.3), this.woodMat);
+        door.position.set(stallX, 1.5, bDepth * 0.5 + 0.1);
         bGroup.add(door);
 
-        const glow = new THREE.Mesh(this.getBox(1.8, 2.4, 0.05), this.yatraLitWindowMat);
-        glow.position.set(stallX, 1.4, bDepth * 0.5 + 0.22);
+        // Warm lit interior window
+        const glow = new THREE.Mesh(this.getBox(1.6, 2.2, 0.05), this.yatraLitWindowMat);
+        glow.position.set(stallX, 1.4, bDepth * 0.5 + 0.26);
         bGroup.add(glow);
 
+        // Sloped stone or fabric chhajja / awning
         const awningMat = awningMats[(sh + bIdx) % awningMats.length];
-        const awning = new THREE.Mesh(this.getBox(3.0, 0.08, 1.6), awningMat);
+        const awning = new THREE.Mesh(this.getBox(3.0, 0.12, 1.6), awningMat);
         awning.position.set(stallX, 3.4, bDepth * 0.5 + 0.75);
         awning.rotation.x = 0.28;
         bGroup.add(awning);
+
+        // Hanging brass lantern
+        const lantern = new THREE.Mesh(this.getSphere(0.2, 6), this.yatraLitWindowMat);
+        lantern.position.set(stallX, 3.1, bDepth * 0.5 + 0.9);
+        bGroup.add(lantern);
       }
 
-      // 3. Cantilevered Press Galleries on Upper Floors
+      // 3. Cantilevered Jharokha Balconies on Upper Floors
       for (let s = 1; s < bDef.stories; s++) {
         const floorY = s * storyH;
         const galleryCount = Math.floor(bWidth / 5.5);
@@ -660,21 +807,29 @@ export class RahulSatireWorldBuilder {
         for (let g = 0; g < galleryCount; g++) {
           const gX = -bWidth * 0.5 + (g + 1) * gSpacing;
 
-          const gBase = new THREE.Mesh(this.getBox(2.0, 0.35, 1.2), this.parliamentSandstoneMat);
-          gBase.position.set(gX, floorY + 0.6, bDepth * 0.5 + 0.6);
+          // Carved stone corbel supports
+          const corbel = new THREE.Mesh(this.getBox(0.4, 0.8, 1.0), trimMat);
+          corbel.position.set(gX, floorY + 0.2, bDepth * 0.5 + 0.4);
+          bGroup.add(corbel);
+
+          // Cantilevered balcony base
+          const gBase = new THREE.Mesh(this.getBox(2.2, 0.35, 1.4), trimMat);
+          gBase.position.set(gX, floorY + 0.6, bDepth * 0.5 + 0.7);
           bGroup.add(gBase);
 
-          const railing = new THREE.Mesh(this.getBox(2.0, 0.85, 0.12), this.goldMetalMat);
-          railing.position.set(gX, floorY + 1.15, bDepth * 0.5 + 1.15);
+          // Pierced jali lattice balustrade
+          const railing = new THREE.Mesh(this.getBox(2.2, 0.85, 0.12), trimMat);
+          railing.position.set(gX, floorY + 1.15, bDepth * 0.5 + 1.35);
           bGroup.add(railing);
 
-          const win = new THREE.Mesh(this.getBox(1.4, 1.8, 0.05), this.yatraLitWindowMat);
+          // Warm arched window
+          const win = new THREE.Mesh(this.getBox(1.5, 2.0, 0.05), this.yatraLitWindowMat);
           win.position.set(gX, floorY + 1.8, bDepth * 0.5 + 0.05);
           bGroup.add(win);
         }
       }
 
-      // 4. Rooftops: Broadcast Towers or Milestone Crowns
+      // 4. Rooftops: Rajasthani Chhatris, Terracotta Tiles or Broadcast Towers
       if (bDef.roofType === 'BROADCAST_TOWER') {
         const towerGroup = new THREE.Group();
         towerGroup.position.set(0, totalH, 0);
@@ -687,56 +842,76 @@ export class RahulSatireWorldBuilder {
         beacon.position.y = 8.2;
         towerGroup.add(beacon);
 
-        const dish = new THREE.Mesh(this.getCylinder(1.2, 0.15, 0.35, 8), this.yatraWhiteMat);
+        const dish = new THREE.Mesh(this.getCylinder(1.2, 0.15, 0.35, 8), this.yatraIvoryMat);
         dish.position.set(2.0, 1.8, 0);
         dish.rotation.z = 0.55;
         towerGroup.add(dish);
 
         bGroup.add(towerGroup);
-      } else {
-        // Decorative Tri-Color Milestone Arch Crown
-        const archCrown = new THREE.Mesh(this.getBox(4.0, 1.2, 0.8), this.yatraOrangeMat);
-        archCrown.position.set(0, totalH + 0.6, bDepth * 0.5 - 0.5);
-        bGroup.add(archCrown);
+      } else if (bDef.roofType === 'CHHATRI') {
+        // Traditional Rajasthani domed Chhatri pavilion with golden kalash
+        const chhatri = new THREE.Group();
+        chhatri.position.set(0, totalH, bDepth * 0.5 - 1.2);
 
-        const archDome = new THREE.Mesh(this.getCylinder(0.1, 1.2, 0.8, 6), this.yatraGreenMat);
-        archDome.position.set(0, totalH + 1.6, bDepth * 0.5 - 0.5);
-        bGroup.add(archDome);
+        // 4 Sandstone pillars
+        [[-1.2, -1.2], [-1.2, 1.2], [1.2, -1.2], [1.2, 1.2]].forEach(([px, pz]) => {
+          const col = new THREE.Mesh(this.getCylinder(0.12, 0.14, 2.4, 6), trimMat);
+          col.position.set(px, 1.2, pz);
+          chhatri.add(col);
+        });
+
+        // Dome roof
+        const dome = new THREE.Mesh(this.getSphere(1.8, 8), this.yatraTerracottaMat);
+        dome.position.y = 2.8;
+        chhatri.add(dome);
+
+        // Golden kalash finial
+        const finial = new THREE.Mesh(this.getCylinder(0.08, 0.22, 0.8, 6), this.goldMetalMat);
+        finial.position.y = 4.4;
+        chhatri.add(finial);
+
+        bGroup.add(chhatri);
+      } else {
+        // Terracotta tile sloped roof eaves and parapet
+        const roofShed = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.8, bDepth + 0.6), this.yatraTerracottaMat);
+        roofShed.position.set(0, totalH + 0.4, 0);
+        bGroup.add(roofShed);
+
+        // Black Sintex rooftop water tank
+        const tank = new THREE.Mesh(this.getCylinder(0.85, 0.85, 1.4, 10), this.mediaBlueMat);
+        tank.position.set(-bWidth * 0.3, totalH + 1.5, 0);
+        bGroup.add(tank);
+
+        // TV dish antenna
+        const dish = new THREE.Mesh(this.getCylinder(0.5, 0.08, 0.2, 8), this.silverMat);
+        dish.position.set(bWidth * 0.3, totalH + 1.2, 0);
+        dish.rotation.x = 0.5;
+        bGroup.add(dish);
       }
+
+      // Tricolor campaign pennant
+      const pennantMast = new THREE.Mesh(this.getCylinder(0.04, 0.04, 2.5, 6), this.silverMat);
+      pennantMast.position.set(bWidth * 0.45, totalH + 1.25, bDepth * 0.5);
+      bGroup.add(pennantMast);
+
+      const flag = new THREE.Mesh(this.getBox(0.02, 0.6, 1.2), this.yatraOrangeMat);
+      flag.position.set(bWidth * 0.45, totalH + 2.0, bDepth * 0.5 + 0.6);
+      bGroup.add(flag);
 
       group.add(bGroup);
     });
 
     if (detail === 'MINIMAL') return;
 
-    // 5. Open Courtyard Setbacks: Milestone arches and festival lamps
+    // 5. Open Courtyard Setbacks: Lush Roadside Neem Trees with Chabutra & Canopies
     const courtyardZs = [-25.5, -53.5];
-    courtyardZs.forEach((cyZ) => {
-      const cyGroup = new THREE.Group();
-      cyGroup.position.set(facadeX + (side > 0 ? -1.5 : 1.5), 0, cyZ);
-
-      // Subterranean Courtyard Foundation Plinth
-      const cyPlinth = new THREE.Mesh(this.getBox(3.2, 5.5, 6.2), this.parliamentSandstoneMat);
-      cyPlinth.position.y = -2.45;
-      cyGroup.add(cyPlinth);
-
-      const postL = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
-      postL.position.set(0, 2.4, -2.2);
-      cyGroup.add(postL);
-
-      const postR = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
-      postR.position.set(0, 2.4, 2.2);
-      cyGroup.add(postR);
-
-      const lintel = new THREE.Mesh(this.getBox(0.7, 0.6, 5.2), this.yatraOrangeMat);
-      lintel.position.set(0, 5.0, 0);
-      cyGroup.add(lintel);
-
-      const lamp = new THREE.Mesh(this.getSphere(0.35, 6), this.yatraLitWindowMat);
-      lamp.position.set(0, 4.4, 0);
-      cyGroup.add(lamp);
-
-      group.add(cyGroup);
+    courtyardZs.forEach((cyZ, cyIdx) => {
+      const cyX = facadeX + (side > 0 ? -2.2 : 2.2);
+      if (cyIdx % 2 === 0) {
+        this.buildRoadsideTree(group, cyX, 0, cyZ, 1.0);
+      } else {
+        this.buildRoadsideCanopy(group, cyX, 0, cyZ, 4.2, 4.2, this.yatraMarigoldMat);
+      }
     });
   }
 
@@ -990,26 +1165,45 @@ export class RahulSatireWorldBuilder {
     vanGroup.name = 'rahul_campaign_van';
     vanGroup.position.set(11.5, 0.6, -chunkLength * 0.42);
 
-    // Deep Subterranean Van Foundation Plinth
-    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 5.5, 5.0), this.parliamentSandstoneMat);
-    vanPlinth.position.y = -2.45;
+    // Sunken Subterranean Van Foundation Plinth (bottom Y <= -5.2m, top beneath road pavement)
+    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 5.0, 4.6), this.parliamentSandstoneMat);
+    vanPlinth.position.y = -2.8;
     vanGroup.add(vanPlinth);
 
-    // Van Body (Campaign Navy & Saffron)
-    const vanBody = new THREE.Mesh(this.getBox(5.6, 2.2, 2.8), this.yatraBlueMat);
-    vanBody.position.y = 1.6;
+    // Automotive Van Body (Cream & Saffron Indian commercial tempo)
+    const vanBody = new THREE.Mesh(this.getBox(5.6, 2.0, 2.7), this.yatraIvoryMat);
+    vanBody.position.y = 1.45;
     vanGroup.add(vanBody);
 
-    const vanCab = new THREE.Mesh(this.getBox(2.2, 1.4, 2.6), this.yatraWhiteMat);
-    vanCab.position.set(1.5, 3.0, 0);
+    const vanCab = new THREE.Mesh(this.getBox(2.2, 1.4, 2.5), this.yatraIvoryMat);
+    vanCab.position.set(1.5, 2.8, 0);
     vanGroup.add(vanCab);
 
-    // Windshield
-    const windshield = new THREE.Mesh(this.getBox(0.1, 1.0, 2.4), this.mediaStudioGlassMat);
-    windshield.position.set(2.65, 3.0, 0);
+    // Chrome Horizontal Grille & Bumper
+    const grille = new THREE.Mesh(this.getBox(0.1, 0.65, 2.1), this.silverMat);
+    grille.position.set(2.62, 1.4, 0);
+    vanGroup.add(grille);
+
+    // Dual LED Headlights
+    [-0.85, 0.85].forEach((hz) => {
+      const lamp = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.1, 8), this.yatraLitWindowMat);
+      lamp.position.set(2.64, 1.4, hz);
+      lamp.rotation.z = Math.PI / 2;
+      vanGroup.add(lamp);
+    });
+
+    // Front Black Bullbar
+    const bullbar = new THREE.Mesh(this.getBox(0.2, 0.8, 2.4), this.darkSuitMat);
+    bullbar.position.set(2.75, 1.2, 0);
+    vanGroup.add(bullbar);
+
+    // Raked Windshield
+    const windshield = new THREE.Mesh(this.getBox(0.1, 1.1, 2.3), this.mediaStudioGlassMat);
+    windshield.position.set(2.55, 2.8, 0);
+    windshield.rotation.z = -0.15;
     vanGroup.add(windshield);
 
-    // 4 Wheels
+    // 4 Wheels touching pavement naturally
     const vanWheels: THREE.Mesh[] = [];
     [[-1.8, -1.3], [-1.8, 1.3], [1.6, -1.3], [1.6, 1.3]].forEach(([wx, wz]) => {
       const wheel = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.45, 12), this.darkSuitMat);
@@ -1220,20 +1414,36 @@ export class RahulSatireWorldBuilder {
     // High side pillars outside running envelope (|X| = 8.8m > 4.2m)
     const archH = 9.4;
     [-roadbedWidth * 0.5 - 2.8, roadbedWidth * 0.5 + 2.8].forEach((px) => {
-      const p = new THREE.Mesh(this.getBox(1.8, archH, 1.8), this.yatraBlueMat);
+      // Subterranean pedestal plinth down to Y = -5.2m
+      const base = new THREE.Mesh(this.getBox(2.6, 5.5, 2.6), this.parliamentSandstoneMat);
+      base.position.set(px, -2.45, 0);
+      archGroup.add(base);
+
+      // Fluted sandstone pillar
+      const p = new THREE.Mesh(this.getCylinder(0.9, 1.0, archH, 8), this.parliamentSandstoneMat);
       p.position.set(px, archH * 0.5, 0);
       archGroup.add(p);
 
-      // Gold finial on top of each pillar
+      // Carved column capital
+      const cap = new THREE.Mesh(this.getBox(2.2, 0.6, 2.2), this.parliamentSandstoneMat);
+      cap.position.set(px, archH + 0.3, 0);
+      archGroup.add(cap);
+
+      // Gold kalash finial on top of each pillar
       const finial = new THREE.Mesh(this.getSphere(0.9, 8), this.goldMetalMat);
       finial.position.set(px, archH + 1.2, 0);
       archGroup.add(finial);
     });
 
     // Overhead lintel beam (lowest point Y = 9.4m > 8.5m)
-    const lintel = new THREE.Mesh(this.getBox(roadbedWidth + 7.5, 1.2, 2.0), this.yatraOrangeMat);
+    const lintel = new THREE.Mesh(this.getBox(roadbedWidth + 7.5, 1.2, 2.0), this.yatraSandstonePlasterMat);
     lintel.position.set(0, archH + 0.6, 0);
     archGroup.add(lintel);
+
+    // Decorative victory marigold garland
+    const garland = new THREE.Mesh(this.getBox(roadbedWidth + 6.0, 0.25, 0.25), this.yatraMarigoldMat);
+    garland.position.set(0, archH + 0.1, 1.05);
+    archGroup.add(garland);
 
     // Mechanical Flip Board
     const flipPivot = new THREE.Group();
@@ -1299,6 +1509,81 @@ export class RahulSatireWorldBuilder {
     accordionMap.position.set(roadbedWidth * 0.5 + 4.2, 0.6, -4.0);
     archGroup.add(accordionMap);
 
+    // Celebrating Crowd of Volunteers & Supporters lining the sidewalks
+    const crowdMembers: {
+      group: THREE.Group;
+      armL: THREE.Object3D;
+      armR: THREE.Object3D;
+      head: THREE.Object3D;
+      baseY: number;
+    }[] = [];
+
+    const crowdPositions = [
+      { x: -roadbedWidth * 0.5 - 3.8, z: -2.0 },
+      { x: -roadbedWidth * 0.5 - 4.8, z: -5.0 },
+      { x: -roadbedWidth * 0.5 - 3.5, z: -8.0 },
+      { x: roadbedWidth * 0.5 + 5.5, z: -2.0 },
+      { x: roadbedWidth * 0.5 + 6.2, z: -5.5 },
+      { x: roadbedWidth * 0.5 + 5.0, z: -8.5 }
+    ];
+
+    crowdPositions.forEach((pos, cIdx) => {
+      const cGroup = new THREE.Group();
+      cGroup.position.set(pos.x, 0.6, pos.z);
+
+      // Kurta & Trousers
+      const cLegs = new THREE.Mesh(this.getBox(0.38, 0.7, 0.3), this.yatraWhiteMat);
+      cLegs.position.y = 0.35;
+      cGroup.add(cLegs);
+
+      const cTorso = new THREE.Mesh(this.getBox(0.44, 0.65, 0.3), cIdx % 2 === 0 ? this.yatraWhiteMat : this.yatraSandstonePlasterMat);
+      cTorso.position.y = 0.95;
+      cGroup.add(cTorso);
+
+      // Tricolor sash
+      const sash = new THREE.Mesh(this.getBox(0.46, 0.16, 0.32), this.yatraOrangeMat);
+      sash.position.set(0, 0.95, 0);
+      sash.rotation.z = 0.3;
+      cGroup.add(sash);
+
+      // Head
+      const cHead = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonSkinMat);
+      cHead.position.y = 1.45;
+      cGroup.add(cHead);
+
+      // Arms
+      const armL = new THREE.Group();
+      armL.position.set(-0.28, 1.25, 0);
+      const armMeshL = new THREE.Mesh(this.getBox(0.1, 0.45, 0.1), this.yatraWhiteMat);
+      armMeshL.position.y = 0.225;
+      armL.add(armMeshL);
+      cGroup.add(armL);
+
+      const armR = new THREE.Group();
+      armR.position.set(0.28, 1.25, 0);
+      const armMeshR = new THREE.Mesh(this.getBox(0.1, 0.45, 0.1), this.yatraWhiteMat);
+      armMeshR.position.y = 0.225;
+      armR.add(armMeshR);
+      cGroup.add(armR);
+
+      // Flag held by right arm
+      const flagPole = new THREE.Mesh(this.getCylinder(0.02, 0.02, 1.2, 4), this.woodMat);
+      flagPole.position.set(0, 0.6, 0);
+      armR.add(flagPole);
+      const flagBanner = new THREE.Mesh(this.getBox(0.02, 0.35, 0.6), cIdx % 2 === 0 ? this.yatraOrangeMat : this.yatraGreenMat);
+      flagBanner.position.set(0, 1.0, 0.3);
+      armR.add(flagBanner);
+
+      archGroup.add(cGroup);
+      crowdMembers.push({
+        group: cGroup,
+        armL,
+        armR,
+        head: cHead,
+        baseY: 0.6
+      });
+    });
+
     // GATE A: Animated Running Rahul Caricature sprinting toward finish line along sidewalk
     const runnerRahul = this.buildRahulCaricature(archGroup, roadbedWidth * 0.5 + 4.2, 0.6, -12.0, 'RUN', director);
 
@@ -1308,7 +1593,7 @@ export class RahulSatireWorldBuilder {
     towel.visible = false;
     runnerRahul.add(towel);
 
-    director.registerNeverEndingYatra(archGroup, flipPivot, ratchetGear, accordionMap, runnerRahul, towel);
+    director.registerNeverEndingYatra(archGroup, flipPivot, ratchetGear, accordionMap, runnerRahul, towel, crowdMembers);
 
     archGroup.add(flipPivot);
     group.add(archGroup);
@@ -1602,10 +1887,10 @@ export class RahulSatireWorldBuilder {
     director.registerRevolvingDoor(rotorGroup, 1.4);
     group.add(doorGroup);
 
-    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (Angled towards player camera at X = +12.6m)
-    const hugStage = this.buildParliamentHugAndWinkStage(group, 12.6, 0.6, -chunkLength * 0.35, director);
+    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (Angled towards player camera at X = +13.5m)
+    const hugStage = this.buildParliamentHugAndWinkStage(group, 13.5, 0.6, -chunkLength * 0.35, director);
     hugStage.rotation.y = -Math.PI * 0.35;
-    hugStage.scale.set(1.25, 1.25, 1.25);
+    hugStage.scale.set(1.15, 1.15, 1.15);
 
     // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
     this.buildMicrophoneChaosStage(group, -16.5, 0.6, -chunkLength * 0.85, director);
@@ -1957,31 +2242,36 @@ export class RahulSatireWorldBuilder {
       districtD.add(walk);
     });
 
-    // 1. Festive Rollercoaster Carnival Overhead Arches (strictly Y >= 9.6m)
+    // 1. Festive Rollercoaster Carnival Overhead Arches (strictly Y >= 11.2m, warm festive palette)
     for (let z = 15; z < chunkLength - 15; z += 40) {
       const arch = new THREE.Group();
       arch.position.set(0, 0, -z);
 
       // Side Pylons at |X| = 9.2m (strictly outside |X| <= 4.2m)
       [-roadbedWidth * 0.5 - 3.2, roadbedWidth * 0.5 + 3.2].forEach((px) => {
-        const pylon = new THREE.Mesh(this.getBox(1.4, 14.5, 1.4), this.neonMagentaMat);
-        pylon.position.set(px, 3.25, 0); // goes down to Y = -4.0m
+        const pylon = new THREE.Mesh(this.getBox(1.4, 15.5, 1.4), this.yatraSandstonePlasterMat);
+        pylon.position.set(px, 3.75, 0); // goes down to Y = -4.0m
         arch.add(pylon);
 
         const finial = new THREE.Mesh(this.getSphere(0.8, 8), this.goldMetalMat);
-        finial.position.set(px, 11.0, 0);
+        finial.position.set(px, 12.0, 0);
         arch.add(finial);
       });
 
-      // Overhead Carnival Track Arch (Y = 10.2m, height 0.8m -> min.y = 9.8m > 8.5m)
-      const overheadArch = new THREE.Mesh(this.getBox(roadbedWidth + 8.0, 0.8, 1.8), this.neonMagentaMat);
-      overheadArch.position.set(0, 10.2, 0);
+      // Overhead Carnival Track Arch (Y = 11.8m, height 0.6m -> min.y = 11.5m > 8.5m)
+      const overheadArch = new THREE.Mesh(this.getBox(roadbedWidth + 8.0, 0.6, 1.2), this.yatraTerracottaMat);
+      overheadArch.position.set(0, 11.8, 0);
       arch.add(overheadArch);
+
+      // Decorative Marigold Garland Trim
+      const marigoldTrim = new THREE.Mesh(this.getBox(roadbedWidth + 7.6, 0.25, 1.3), this.yatraMarigoldMat);
+      marigoldTrim.position.set(0, 11.35, 0);
+      arch.add(marigoldTrim);
 
       // Festive Marquee Lamps along the overhead arch
       for (let l = -5; l <= 5; l += 2.5) {
         const lamp = new THREE.Mesh(this.getSphere(0.28, 6), this.goldMetalMat);
-        lamp.position.set(l, 9.6, 0);
+        lamp.position.set(l, 11.0, 0);
         arch.add(lamp);
       }
 
@@ -2598,65 +2888,110 @@ export class RahulSatireWorldBuilder {
     stage.position.set(x, y, z);
 
     // Deep Subterranean Sandstone Foundation Plinth down to Y = -5.2m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 5.5, 9.5), this.parliamentSandstoneMat);
+    const plinth = new THREE.Mesh(this.getBox(8.8, 5.5, 8.8), this.parliamentSandstoneMat);
     plinth.position.y = -2.45;
     stage.add(plinth);
 
-    const greenFloor = new THREE.Mesh(this.getBox(8.8, 0.08, 8.8), this.parliamentGreenMat);
-    greenFloor.position.set(0, 0.34, 0);
-    stage.add(greenFloor);
+    // Pristine White Makrana Marble Concourse Floor
+    const marbleFloor = new THREE.Mesh(this.getBox(8.4, 0.12, 8.4), this.parliamentMarbleMat);
+    marbleFloor.position.set(0, 0.35, 0);
+    stage.add(marbleFloor);
+
+    // Inlaid Green Carpet Center Aisle
+    const greenCarpet = new THREE.Mesh(this.getBox(2.8, 0.14, 8.0), this.parliamentGreenMat);
+    greenCarpet.position.set(0, 0.36, 0);
+    stage.add(greenCarpet);
+
+    // Fluted Sandstone Colonnade along back wall (z = -3.8)
+    const backWall = new THREE.Mesh(this.getBox(8.4, 4.6, 0.4), this.parliamentSandstoneMat);
+    backWall.position.set(0, 2.65, -3.9);
+    stage.add(backWall);
+
+    for (let c = -3.6; c <= 3.6; c += 1.8) {
+      const col = new THREE.Mesh(this.getCylinder(0.20, 0.22, 4.4, 12), this.parliamentSandstoneMat);
+      col.position.set(c, 2.55, -3.7);
+      stage.add(col);
+
+      // Scalloped arch cap
+      const cap = new THREE.Mesh(this.getBox(0.60, 0.22, 0.60), this.goldMetalMat);
+      cap.position.set(c, 4.75, -3.7);
+      stage.add(cap);
+    }
 
     // Overhead Marquee Banner
     const marqueeTex = RahulverseTextureCache.getHugAndWinkMarqueeTexture();
-    const marqueeMesh = new THREE.Mesh(this.getBox(7.2, 1.5, 0.12), new THREE.MeshBasicMaterial({ map: marqueeTex }));
-    marqueeMesh.position.set(0, 4.8, -3.4);
+    const marqueeMesh = new THREE.Mesh(this.getBox(7.0, 1.4, 0.14), new THREE.MeshBasicMaterial({ map: marqueeTex }));
+    marqueeMesh.position.set(0, 5.1, -3.5);
     stage.add(marqueeMesh);
 
-    // Warm parliamentary spotlights shining onto stage
-    [-2.6, 2.6].forEach((lx) => {
-      const lamp = new THREE.Mesh(this.getCylinder(0.25, 0.1, 0.4, 8), this.goldMetalMat);
-      lamp.position.set(lx, 4.6, -3.2);
-      lamp.rotation.x = 0.4;
+    // Warm parliamentary brass chandeliers / spotlights
+    [-2.8, 2.8].forEach((lx) => {
+      const lamp = new THREE.Mesh(this.getCylinder(0.28, 0.12, 0.45, 8), this.goldMetalMat);
+      lamp.position.set(lx, 4.9, -3.4);
+      lamp.rotation.x = 0.35;
       stage.add(lamp);
     });
 
     // Treasury Bench with Seated Modi on Left
-    const treasuryBench = new THREE.Mesh(this.getBox(2.2, 1.1, 1.4), this.parliamentGreenMat);
-    treasuryBench.position.set(-0.7, 1.1, 0);
+    const treasuryBench = new THREE.Mesh(this.getBox(2.6, 1.15, 1.5), this.parliamentGreenMat);
+    treasuryBench.position.set(-0.8, 1.1, 0);
     stage.add(treasuryBench);
+
+    // Polished Wooden Desk with Microphones & Papers
+    const desk = new THREE.Mesh(this.getBox(2.4, 0.85, 0.7), this.woodMat);
+    desk.position.set(-0.8, 0.8, 0.85);
+    stage.add(desk);
+
+    const deskMic = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.35, 6), this.silverMat);
+    deskMic.position.set(-0.8, 1.35, 0.85);
+    stage.add(deskMic);
 
     // Modi Caricature in Seated Pose
     const modi = new THREE.Group();
     modi.name = 'seated_modi';
-    modi.position.set(-0.7, 0.8, 0);
+    modi.position.set(-0.8, 0.8, 0);
 
     const mLegs = new THREE.Mesh(this.getBox(0.44, 0.5, 0.4), this.yatraWhiteMat);
     mLegs.position.y = 0.25;
     modi.add(mLegs);
 
-    const mTorso = new THREE.Mesh(this.getBox(0.52, 0.65, 0.38), this.saffronWaistcoatMat);
+    const mTorso = new THREE.Mesh(this.getBox(0.54, 0.68, 0.40), this.saffronWaistcoatMat);
     mTorso.position.y = 0.85;
     modi.add(mTorso);
 
-    const mHead = new THREE.Mesh(this.getCylinder(0.21, 0.19, 0.38, 10), this.cartoonSkinMat);
+    const mCollar = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.10, 8), this.saffronWaistcoatMat);
+    mCollar.position.y = 1.22;
+    modi.add(mCollar);
+
+    const mHead = new THREE.Mesh(this.getCylinder(0.22, 0.20, 0.38, 10), this.cartoonSkinMat);
     mHead.position.y = 1.45;
     modi.add(mHead);
 
-    const mHair = new THREE.Mesh(this.getSphere(0.23, 8), this.cartoonHairSilverMat);
+    const mHair = new THREE.Mesh(this.getSphere(0.24, 8), this.cartoonHairSilverMat);
     mHair.position.set(0, 1.62, -0.04);
     modi.add(mHair);
 
-    const mBeard = new THREE.Mesh(this.getBox(0.28, 0.22, 0.18), this.cartoonHairSilverMat);
+    const mBeard = new THREE.Mesh(this.getBox(0.30, 0.22, 0.20), this.cartoonHairSilverMat);
     mBeard.position.set(0, 1.34, 0.14);
     modi.add(mBeard);
 
     // Articulated Spectacles that pop up in surprise
-    const specs = new THREE.Mesh(this.getBox(0.36, 0.08, 0.04), this.goldMetalMat);
-    specs.position.set(0, 1.52, 0.20);
+    const specs = new THREE.Mesh(this.getBox(0.38, 0.08, 0.04), this.goldMetalMat);
+    specs.position.set(0, 1.52, 0.22);
     modi.add(specs);
+
+    // Articulated Modi Arms that fling up in disbelief when hugged
+    const modiArmL = new THREE.Mesh(this.getBox(0.12, 0.48, 0.12), this.yatraWhiteMat);
+    modiArmL.position.set(-0.36, 0.95, 0);
+    modi.add(modiArmL);
+
+    const modiArmR = new THREE.Mesh(this.getBox(0.12, 0.48, 0.12), this.yatraWhiteMat);
+    modiArmR.position.set(0.36, 0.95, 0);
+    modi.add(modiArmR);
+
     stage.add(modi);
 
-    // Rahul Caricature that strides across floor & winks
+    // Rahul Caricature that strides across floor, hugs & winks
     const rahul = new THREE.Group();
     rahul.name = 'striding_rahul';
     rahul.position.set(-2.8, 0.8, 0);
@@ -2665,74 +3000,74 @@ export class RahulSatireWorldBuilder {
     rLegs.position.y = 0.4;
     rahul.add(rLegs);
 
-    const rTorso = new THREE.Mesh(this.getBox(0.48, 0.7, 0.34), this.yatraWhiteMat);
+    const rTorso = new THREE.Mesh(this.getBox(0.50, 0.72, 0.36), this.yatraWhiteMat);
     rTorso.position.y = 1.1;
     rahul.add(rTorso);
 
-    const rHead = new THREE.Mesh(this.getCylinder(0.19, 0.19, 0.38, 10), this.cartoonSkinMat);
+    const rHead = new THREE.Mesh(this.getCylinder(0.20, 0.20, 0.38, 10), this.cartoonSkinMat);
     rHead.position.y = 1.65;
     rahul.add(rHead);
 
-    const rHair = new THREE.Mesh(this.getSphere(0.22, 8), this.cartoonHairDarkMat);
-    rHair.position.set(0, 1.8, -0.02);
+    const rHair = new THREE.Mesh(this.getSphere(0.23, 8), this.cartoonHairDarkMat);
+    rHair.position.set(0, 1.82, -0.02);
     rahul.add(rHair);
 
     // Left Eyebrow for arched winking
-    const eyebrowL = new THREE.Mesh(this.getBox(0.12, 0.03, 0.03), this.cartoonHairDarkMat);
-    eyebrowL.position.set(-0.08, 1.78, 0.20);
+    const eyebrowL = new THREE.Mesh(this.getBox(0.13, 0.03, 0.03), this.cartoonHairDarkMat);
+    eyebrowL.position.set(-0.08, 1.78, 0.21);
     rahul.add(eyebrowL);
 
     // Left Eyelid that snaps shut
-    const eyelidL = new THREE.Mesh(this.getBox(0.10, 0.06, 0.02), this.cartoonSkinMat);
-    eyelidL.position.set(-0.08, 1.70, 0.21);
+    const eyelidL = new THREE.Mesh(this.getBox(0.11, 0.06, 0.02), this.cartoonSkinMat);
+    eyelidL.position.set(-0.08, 1.70, 0.22);
     rahul.add(eyelidL);
 
     // Tooth sparkle star (pops up at corner of wink smile)
     const sparkleStar = new THREE.Group();
-    sparkleStar.position.set(0.22, 1.65, 0.25);
-    const sBeam1 = new THREE.Mesh(this.getBox(0.35, 0.05, 0.03), this.neonCyanMat);
+    sparkleStar.position.set(0.22, 1.65, 0.26);
+    const sBeam1 = new THREE.Mesh(this.getBox(0.38, 0.05, 0.03), this.goldMetalMat);
     sparkleStar.add(sBeam1);
-    const sBeam2 = new THREE.Mesh(this.getBox(0.05, 0.35, 0.03), this.neonCyanMat);
+    const sBeam2 = new THREE.Mesh(this.getBox(0.05, 0.38, 0.03), this.goldMetalMat);
     sparkleStar.add(sBeam2);
     sparkleStar.visible = false;
     rahul.add(sparkleStar);
 
     // Arms
-    const rArmL = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
-    rArmL.position.set(-0.34, 1.15, 0);
+    const rArmL = new THREE.Mesh(this.getBox(0.12, 0.54, 0.12), this.yatraWhiteMat);
+    rArmL.position.set(-0.35, 1.15, 0);
     rahul.add(rArmL);
 
-    const rArmR = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
-    rArmR.position.set(0.34, 1.15, 0);
+    const rArmR = new THREE.Mesh(this.getBox(0.12, 0.54, 0.12), this.yatraWhiteMat);
+    rArmR.position.set(0.35, 1.15, 0);
     rahul.add(rArmR);
     stage.add(rahul);
 
     // Cartoon Floating Heart Mesh
-    const heartMesh = new THREE.Mesh(this.getSphere(0.45, 8), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5 }));
-    heartMesh.position.set(-0.7, 3.2, 0);
+    const heartMesh = new THREE.Mesh(this.getSphere(0.50, 10), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.6 }));
+    heartMesh.position.set(-0.8, 3.2, 0);
     heartMesh.scale.set(0.01, 0.01, 0.01);
     stage.add(heartMesh);
 
-    // Press Gallery Scaffold in background with Cameraman that topples backwards!
+    // Press Gallery Scaffold in background with Cameraman and Spectator MPs
     const galleryGroup = new THREE.Group();
     galleryGroup.position.set(2.8, 0.8, -2.5);
 
-    const gallRailing = new THREE.Mesh(this.getBox(2.8, 1.2, 0.2), this.goldMetalMat);
+    const gallRailing = new THREE.Mesh(this.getBox(3.4, 1.2, 0.2), this.goldMetalMat);
     gallRailing.position.set(0, 0.6, 0);
     galleryGroup.add(gallRailing);
 
     // Cameraman Tripod
-    const tripod = new THREE.Mesh(this.getCylinder(0.06, 0.16, 1.4, 5), this.silverMat);
-    tripod.position.set(0, 1.3, 0.4);
+    const tripod = new THREE.Mesh(this.getCylinder(0.06, 0.18, 1.4, 6), this.silverMat);
+    tripod.position.set(-0.4, 1.3, 0.4);
     galleryGroup.add(tripod);
 
-    const cameraBox = new THREE.Mesh(this.getBox(0.35, 0.25, 0.5), this.darkSuitMat);
-    cameraBox.position.set(0, 2.05, 0.4);
+    const cameraBox = new THREE.Mesh(this.getBox(0.38, 0.26, 0.52), this.darkSuitMat);
+    cameraBox.position.set(-0.4, 2.05, 0.4);
     galleryGroup.add(cameraBox);
 
     // Cameraman Figure that falls backwards
     const cameraman = new THREE.Group();
-    cameraman.position.set(0, 0.6, -0.2);
+    cameraman.position.set(-0.4, 0.6, -0.2);
 
     const cBody = new THREE.Mesh(this.getBox(0.42, 0.65, 0.28), this.royalBlueMat);
     cBody.position.y = 0.75;
@@ -2742,6 +3077,33 @@ export class RahulSatireWorldBuilder {
     cHead.position.y = 1.25;
     cameraman.add(cHead);
     galleryGroup.add(cameraman);
+
+    // Spectator MPs in the gallery with articulated arms that throw arms up in disbelief
+    const gallerySpectators: { group: THREE.Group; armL: THREE.Mesh; armR: THREE.Mesh }[] = [];
+    [0.6, 1.3].forEach((sx, idx) => {
+      const mpGroup = new THREE.Group();
+      mpGroup.position.set(sx, 0.6, -0.2);
+
+      const mpBody = new THREE.Mesh(this.getBox(0.38, 0.60, 0.26), idx === 0 ? this.yatraSandstonePlasterMat : this.yatraWhiteMat);
+      mpBody.position.y = 0.70;
+      mpGroup.add(mpBody);
+
+      const mpHead = new THREE.Mesh(this.getCylinder(0.16, 0.16, 0.28, 8), this.cartoonSkinMat);
+      mpHead.position.y = 1.15;
+      mpGroup.add(mpHead);
+
+      const sArmL = new THREE.Mesh(this.getBox(0.10, 0.42, 0.10), this.yatraWhiteMat);
+      sArmL.position.set(-0.25, 0.75, 0);
+      mpGroup.add(sArmL);
+
+      const sArmR = new THREE.Mesh(this.getBox(0.10, 0.42, 0.10), this.yatraWhiteMat);
+      sArmR.position.set(0.25, 0.75, 0);
+      mpGroup.add(sArmR);
+
+      galleryGroup.add(mpGroup);
+      gallerySpectators.push({ group: mpGroup, armL: sArmL, armR: sArmR });
+    });
+
     stage.add(galleryGroup);
 
     director.registerParliamentHugAndWink(
@@ -2753,7 +3115,10 @@ export class RahulSatireWorldBuilder {
       eyebrowL,
       eyelidL,
       sparkleStar,
-      heartMesh
+      heartMesh,
+      modiArmL,
+      modiArmR,
+      gallerySpectators
     );
 
     group.add(stage);
@@ -2921,7 +3286,7 @@ export class RahulSatireWorldBuilder {
       const cGroup = new THREE.Group();
       cGroup.position.set(Math.cos(cAng) * 3.2, 0.8, Math.sin(cAng) * 3.2);
 
-      const cSeat = new THREE.Mesh(this.getBox(0.7, 0.7, 0.7), this.neonMagentaMat);
+      const cSeat = new THREE.Mesh(this.getBox(0.7, 0.7, 0.7), this.yatraTealMat);
       cSeat.position.y = 0.6;
       cGroup.add(cSeat);
 

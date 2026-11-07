@@ -122,6 +122,13 @@ export interface ParliamentHugAndWinkEvent {
   eyelidL: THREE.Object3D;
   sparkleStar: THREE.Object3D;
   heartMesh: THREE.Object3D;
+  modiArmL?: THREE.Object3D;
+  modiArmR?: THREE.Object3D;
+  gallerySpectators?: {
+    group: THREE.Group;
+    armL: THREE.Object3D;
+    armR: THREE.Object3D;
+  }[];
   timer: number;
 }
 
@@ -155,6 +162,13 @@ export interface NeverEndingYatraEvent {
   accordionMap: THREE.Object3D;
   runnerRahul: THREE.Group;
   sweatTowel?: THREE.Object3D;
+  crowdMembers?: {
+    group: THREE.Group;
+    armL: THREE.Object3D;
+    armR: THREE.Object3D;
+    head: THREE.Object3D;
+    baseY: number;
+  }[];
   timer: number;
 }
 
@@ -483,7 +497,14 @@ export class RahulComedyEventDirector {
     eyebrowL: THREE.Object3D,
     eyelidL: THREE.Object3D,
     sparkleStar: THREE.Object3D,
-    heartMesh: THREE.Object3D
+    heartMesh: THREE.Object3D,
+    modiArmL?: THREE.Object3D,
+    modiArmR?: THREE.Object3D,
+    gallerySpectators?: {
+      group: THREE.Group;
+      armL: THREE.Object3D;
+      armR: THREE.Object3D;
+    }[]
   ): void {
     this.parliamentHugAndWinks.push({
       rahulFigure,
@@ -495,6 +516,9 @@ export class RahulComedyEventDirector {
       eyelidL,
       sparkleStar,
       heartMesh,
+      modiArmL,
+      modiArmR,
+      gallerySpectators,
       timer: 0
     });
   }
@@ -537,7 +561,14 @@ export class RahulComedyEventDirector {
     ratchetGear: THREE.Object3D,
     accordionMap: THREE.Object3D,
     runnerRahul: THREE.Group,
-    sweatTowel?: THREE.Object3D
+    sweatTowel?: THREE.Object3D,
+    crowdMembers?: {
+      group: THREE.Group;
+      armL: THREE.Object3D;
+      armR: THREE.Object3D;
+      head: THREE.Object3D;
+      baseY: number;
+    }[]
   ): void {
     this.neverEndingYatras.push({
       archGroup,
@@ -546,6 +577,7 @@ export class RahulComedyEventDirector {
       accordionMap,
       runnerRahul,
       sweatTowel,
+      crowdMembers,
       timer: 0
     });
   }
@@ -1012,19 +1044,30 @@ export class RahulComedyEventDirector {
         g.rahulFigure.rotation.y = Math.PI * 0.5;
         g.rahulFigure.position.y = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.15;
         g.modiSpectacles.position.y = 1.62; // Spectacles on Modi's face
+        if (g.modiArmL) g.modiArmL.rotation.z = 0.3;
+        if (g.modiArmR) g.modiArmR.rotation.z = -0.3;
         g.heartMesh.scale.set(0.01, 0.01, 0.01);
         g.eyebrowL.position.y = 0;
         g.eyelidL.scale.y = 1.0;
         g.sparkleStar.visible = false;
         g.cameramanFigure.rotation.x = 0;
         g.cameramanTripod.rotation.z = 0;
+        if (g.gallerySpectators) {
+          for (let s = 0; s < g.gallerySpectators.length; s++) {
+            g.gallerySpectators[s].armL.rotation.z = 0.2;
+            g.gallerySpectators[s].armR.rotation.z = -0.2;
+          }
+        }
       } else if (cycle < 3.8) {
         // Bear Hug!
         g.rahulFigure.position.x = -0.7;
         g.rahulFigure.rotation.y = 0;
         g.rahulFigure.position.y = 0;
         // Modi spectacles pop up comically in surprise
-        g.modiSpectacles.position.y = 1.62 + Math.abs(Math.sin((cycle - 2.2) * 5.0)) * 0.25;
+        g.modiSpectacles.position.y = 1.62 + Math.abs(Math.sin((cycle - 2.2) * 5.0)) * 0.35;
+        // Modi arms throw up in shock
+        if (g.modiArmL) g.modiArmL.rotation.z = 1.2;
+        if (g.modiArmR) g.modiArmR.rotation.z = -1.2;
         // Heart icon pulses above
         const heartPulse = 1.0 + Math.sin(this.globalClock * 10.0) * 0.25;
         g.heartMesh.scale.set(heartPulse, heartPulse, heartPulse);
@@ -1034,29 +1077,45 @@ export class RahulComedyEventDirector {
         g.rahulFigure.rotation.y = 0;
         g.heartMesh.scale.set(0.01, 0.01, 0.01);
         g.modiSpectacles.position.y = 1.62;
+        if (g.modiArmL) g.modiArmL.rotation.z = 0.4;
+        if (g.modiArmR) g.modiArmR.rotation.z = -0.4;
 
         // Eyebrow arches high, left eyelid snaps shut in wink
-        g.eyebrowL.position.y = 0.14;
-        g.eyelidL.scale.y = 0.1;
+        g.eyebrowL.position.y = 0.16;
+        g.eyelidL.scale.y = 0.08;
 
         // Sparkle star pops and spins
         g.sparkleStar.visible = true;
         g.sparkleStar.rotation.z += delta * 6.0;
-        const spScale = 1.0 + Math.sin(this.globalClock * 12.0) * 0.25;
+        const spScale = 1.1 + Math.sin(this.globalClock * 12.0) * 0.3;
         g.sparkleStar.scale.set(spScale, spScale, spScale);
 
         // Cameraman in press gallery topples backwards in shock!
         const fallT = Math.min(1.0, (cycle - 3.8) / 0.8);
         g.cameramanFigure.rotation.x = -Math.PI * 0.45 * fallT;
         g.cameramanTripod.rotation.z = -0.55 * fallT;
+
+        // Spectator MPs throw their arms up in animated disbelief
+        if (g.gallerySpectators) {
+          for (let s = 0; s < g.gallerySpectators.length; s++) {
+            g.gallerySpectators[s].armL.rotation.z = 1.3 * fallT;
+            g.gallerySpectators[s].armR.rotation.z = -1.3 * fallT;
+          }
+        }
       } else {
         // Recovery
         const recT = (cycle - 5.4) / 1.6;
-        g.eyebrowL.position.y = 0.14 * (1.0 - recT);
-        g.eyelidL.scale.y = 0.1 + recT * 0.9;
+        g.eyebrowL.position.y = 0.16 * (1.0 - recT);
+        g.eyelidL.scale.y = 0.08 + recT * 0.92;
         g.sparkleStar.visible = false;
         g.cameramanFigure.rotation.x = -Math.PI * 0.45 * (1.0 - recT);
         g.cameramanTripod.rotation.z = -0.55 * (1.0 - recT);
+        if (g.gallerySpectators) {
+          for (let s = 0; s < g.gallerySpectators.length; s++) {
+            g.gallerySpectators[s].armL.rotation.z = 1.3 * (1.0 - recT);
+            g.gallerySpectators[s].armR.rotation.z = -1.3 * (1.0 - recT);
+          }
+        }
       }
     }
 
@@ -1128,7 +1187,7 @@ export class RahulComedyEventDirector {
     }
 
     // GATE A: The Never-Ending Yatra Mechanical Flip & Infinite Map
-    // 6.5s cycle: Sprint (0-2.5s) -> Ratchet Spin & Flip (2.5-3.5s) -> Map Unroll & Double-Take (3.5-5s) -> Resume (5-6.5s)
+    // 6.5s cycle: Sprint (0-2.5s) -> Ratchet Spin & Flip (2.5-3.5s) -> Map Unroll & Synchronized Disbelief (3.5-5s) -> Resume (5-6.5s)
     for (let i = 0; i < this.neverEndingYatras.length; i++) {
       const g = this.neverEndingYatras[i];
       g.timer += delta * motionMultiplier;
@@ -1143,18 +1202,50 @@ export class RahulComedyEventDirector {
         g.accordionMap.scale.z = 0.05;
         if (g.sweatTowel) g.sweatTowel.visible = false;
         g.runnerRahul.rotation.y = 0;
+
+        // Crowd jumps and waves in victory celebration anticipation
+        if (g.crowdMembers) {
+          for (let c = 0; c < g.crowdMembers.length; c++) {
+            const cm = g.crowdMembers[c];
+            cm.group.position.y = cm.baseY + Math.abs(Math.sin(this.globalClock * 8.0 + c * 1.2)) * 0.25;
+            cm.armL.rotation.z = 0.6 + Math.sin(this.globalClock * 10.0 + c) * 0.4;
+            cm.armR.rotation.z = -0.6 - Math.sin(this.globalClock * 10.0 + c) * 0.4;
+            cm.head.rotation.y = Math.sin(this.globalClock * 4.0 + c) * 0.15;
+          }
+        }
       } else if (cycle < 3.5) {
         // Ratchet gear spins furiously!
-        g.ratchetGear.rotation.z += delta * 18.0;
+        g.ratchetGear.rotation.z += delta * 20.0;
         const flipT = (cycle - 2.5) / 1.0;
         g.flipBanner.rotation.x = flipT * Math.PI; // 180° flip to STARTING LINE 2
+
+        // Crowd freezes in shock
+        if (g.crowdMembers) {
+          for (let c = 0; c < g.crowdMembers.length; c++) {
+            const cm = g.crowdMembers[c];
+            cm.group.position.y = cm.baseY;
+            cm.armL.rotation.z = 0.1;
+            cm.armR.rotation.z = -0.1;
+          }
+        }
       } else if (cycle < 5.0) {
         // Accordion map unrolls across horizon; runner does double take
         g.flipBanner.rotation.x = Math.PI;
         const mapT = (cycle - 3.5) / 1.5;
         g.accordionMap.scale.z = 0.05 + mapT * 1.8;
         // Head shakes left-right in classic cartoon double-take
-        g.runnerRahul.rotation.y = Math.sin(this.globalClock * 10.0) * 0.35;
+        g.runnerRahul.rotation.y = Math.sin(this.globalClock * 12.0) * 0.45;
+
+        // Synchronized disbelief: crowd drops arms and shakes heads in disbelief
+        if (g.crowdMembers) {
+          for (let c = 0; c < g.crowdMembers.length; c++) {
+            const cm = g.crowdMembers[c];
+            cm.group.position.y = cm.baseY;
+            cm.armL.rotation.z = 0.05;
+            cm.armR.rotation.z = -0.05;
+            cm.head.rotation.y = Math.sin(this.globalClock * 6.0) * 0.35;
+          }
+        }
       } else {
         // Wipes brow, shrugs, and jogs forward along loop!
         g.flipBanner.rotation.x = Math.PI;
@@ -1163,6 +1254,16 @@ export class RahulComedyEventDirector {
         const jogT = (cycle - 5.0) / 1.5;
         g.runnerRahul.position.z = -2.0 + jogT * 3.0;
         g.runnerRahul.position.y = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.15;
+
+        if (g.crowdMembers) {
+          for (let c = 0; c < g.crowdMembers.length; c++) {
+            const cm = g.crowdMembers[c];
+            cm.group.position.y = cm.baseY;
+            cm.armL.rotation.z = 0.1;
+            cm.armR.rotation.z = -0.1;
+            cm.head.rotation.y = 0;
+          }
+        }
       }
     }
 

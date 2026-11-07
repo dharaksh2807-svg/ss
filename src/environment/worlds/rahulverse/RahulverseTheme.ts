@@ -29,30 +29,30 @@ export const RAHULVERSE_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0284c7,    // Brilliant clear open-air yatra cyan/blue
-    bottom: 0xfef08a // Warm vibrant golden morning sunrise
+    top: 0x1d4ed8,    // Warm energetic sapphire Indian morning sky
+    bottom: 0xfef3c7 // Warm vibrant golden morning sunrise
   },
   fog: {
-    color: 0xe0f2fe,  // Crisp morning horizon haze
-    density: 0.0028
+    color: 0xf1f5f9,  // Crisp morning horizon haze
+    density: 0.0016
   },
   sun: {
     color: 0xffedd5,  // Bright energetic morning sunlight
-    intensity: 1.45,
+    intensity: 1.50,
     position: { x: -35, y: 60, z: -45 }
   },
   fill: {
-    color: 0x0284c7,  // Atmospheric blue shadow fill
-    intensity: 0.65
+    color: 0x0f766e,  // Atmospheric warm teal shadow fill
+    intensity: 0.55
   },
   hemi: {
-    sky: 0xfef08a,    // Golden sky reflection
-    ground: 0xca8a04, // Warm earth ground bounce
-    intensity: 1.25
+    sky: 0xfef3c7,    // Warm golden sky reflection
+    ground: 0xcfa774, // Warm sandstone ground bounce
+    intensity: 1.30
   },
   skyline: {
-    color: 0x0369a1,  // Silhouette of mountain ridges, stupas, and futuristic spires
-    opacity: 0.82,
+    color: 0x1e3a8a,  // Silhouette of mountain ridges, stupas, and scenic hills
+    opacity: 0.85,
     style: 'MODERN'
   },
   clouds: {
@@ -62,15 +62,15 @@ export const RAHULVERSE_THEME: EnvironmentTheme = {
   materials: {
     ballastColor: 0x475569,     // Natural railway granite ballast
     sleeperColor: 0x1e293b,     // Weathered railway ties
-    wallBaseColor: 0xffffff,    // Crisp white roadside colonnade
-    wallAccentColor: 0x0284c7,  // Dynamic athletic cyan racing stripe
+    wallBaseColor: 0xfdfbf7,    // Warm ivory roadside colonnade
+    wallAccentColor: 0x0f766e,  // Rich Indian peacock teal
     curbColor: 0xf59e0b,        // Sunlit turmeric yellow curb
-    catenaryColor: 0x0369a1,    // Sky blue catenary pylons
+    catenaryColor: 0x1e3a8a,    // Indigo catenary pylons
     insulatorColor: 0xf59e0b,   // Polished brass insulators
     pipeColor: 0xd97706,        // Conduit pipes
-    bridgeMainColor: 0xf8fafc,  // White viaduct arches
-    bridgeAccentColor: 0x0284c7,// Energetic blue accents
-    groundPlaneColor: 0xca8a04
+    bridgeMainColor: 0xf8fafc,  // Warm ivory viaduct arches
+    bridgeAccentColor: 0x0f766e,// Rich teal accents
+    groundPlaneColor: 0xcfa774
   },
   ambience: {
     baseToneFreq: 130,
