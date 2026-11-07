@@ -1917,6 +1917,105 @@ export class WorldScene {
         fillIntensity = 0.70;
         isRain = false;
         break;
+      case 'CHRONO_CELESTIAL_CLOCKWORK':
+        sunColorHex = 0xffdf99;
+        sunIntensity = 1.35;
+        skyTopHex = 0x071126;
+        skyBottomHex = 0x3d1d11;
+        fogColorHex = 0x1c1719;
+        fogDensity = 0.0028;
+        fillColorHex = 0x1e1b4b;
+        fillIntensity = 0.60;
+        isRain = false;
+        break;
+      case 'CHRONO_STEAM_RAIN':
+        sunColorHex = 0xd4af37;
+        sunIntensity = 0.95;
+        skyTopHex = 0x050c1b;
+        skyBottomHex = 0x2d150c;
+        fogColorHex = 0x161214;
+        fogDensity = 0.0042;
+        fillColorHex = 0x18153a;
+        fillIntensity = 0.50;
+        isRain = true;
+        break;
+      case 'MIDNIGHT_VELVET_AFTERDARK':
+        sunColorHex = 0xffeedd;
+        sunIntensity = 1.25;
+        skyTopHex = 0x050711;
+        skyBottomHex = 0x1f0b18;
+        fogColorHex = 0x120a1c;
+        fogDensity = 0.0028;
+        fillColorHex = 0x2e1065;
+        fillIntensity = 0.55;
+        isRain = false;
+        break;
+      case 'MIDNIGHT_VELVET_RAIN':
+        sunColorHex = 0xd8c8b8;
+        sunIntensity = 0.85;
+        skyTopHex = 0x03040a;
+        skyBottomHex = 0x160812;
+        fogColorHex = 0x0e0816;
+        fogDensity = 0.0040;
+        fillColorHex = 0x220c4a;
+        fillIntensity = 0.45;
+        isRain = true;
+        break;
+      case 'VIP_CEREMONIAL_SUNSET':
+        sunColorHex = 0xfffbeb;
+        sunIntensity = 1.40;
+        skyTopHex = 0x1e3a8a;
+        skyBottomHex = 0xffedd5;
+        fogColorHex = 0xfef3c7;
+        fogDensity = 0.0030;
+        fillColorHex = 0x1e3a8a;
+        fillIntensity = 0.65;
+        isRain = false;
+        break;
+      case 'RAHULVERSE_MORNING_YATRA':
+        sunColorHex = 0xffedd5;
+        sunIntensity = 1.45;
+        skyTopHex = 0x0284c7;
+        skyBottomHex = 0xfef08a;
+        fogColorHex = 0xe0f2fe;
+        fogDensity = 0.0028;
+        fillColorHex = 0x0284c7;
+        fillIntensity = 0.65;
+        isRain = false;
+        break;
+      case 'INFERNO_VOLCANIC_MAGMA':
+        sunColorHex = 0xff7733;
+        sunIntensity = 1.35;
+        skyTopHex = 0x0f0407;
+        skyBottomHex = 0x450a0a;
+        fogColorHex = 0x1f0a0d;
+        fogDensity = 0.0028;
+        fillColorHex = 0x3d0b0b;
+        fillIntensity = 0.60;
+        isRain = false;
+        break;
+      case 'JURASSIC_PRIMORDIAL_DAWN':
+        sunColorHex = 0xfef08a;
+        sunIntensity = 1.35;
+        skyTopHex = 0x032b1e;
+        skyBottomHex = 0xca8a04;
+        fogColorHex = 0x14402e;
+        fogDensity = 0.0028;
+        fillColorHex = 0x064e3b;
+        fillIntensity = 0.60;
+        isRain = false;
+        break;
+      case 'VIVA_HEAT_SUNSET_FEVER':
+        sunColorHex = 0xffedd5;
+        sunIntensity = 1.45;
+        skyTopHex = 0x3b0764;
+        skyBottomHex = 0xf43f5e;
+        fogColorHex = 0x4a044e;
+        fogDensity = 0.0028;
+        fillColorHex = 0x831843;
+        fillIntensity = 0.60;
+        isRain = false;
+        break;
       case 'CLEAR_DAYLIGHT':
       default:
         sunColorHex = 0xfff8eb;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONSTANTS } from '../../../core/Constants';
 import { SeededRandom } from '../../SceneryFactory';
+import { CurvedShaderManager } from '../../../scene/CurvedShader';
 import { TextureGenerator } from '../../../scene/TextureGenerator';
 import { MidnightVelvetEventDirector } from './MidnightVelvetEventDirector';
 
@@ -96,6 +97,34 @@ export class MidnightVelvetWorldBuilder {
     this.marqueeBulbMatOff = new THREE.MeshBasicMaterial({
       color: 0x78350f
     });
+
+    // Apply track curvature shader to all shared materials so scenery bends smoothly with tracks
+    const curved = CurvedShaderManager.getInstance();
+    curved.applyCurvature(this.blackMarbleMat);
+    curved.applyCurvature(this.goldMetalMat);
+    curved.applyCurvature(this.velvetBurgundyMat);
+    curved.applyCurvature(this.midnightNavyMat);
+    curved.applyCurvature(this.warmGlassMat);
+    curved.applyCurvature(this.oceanWaterMat);
+    curved.applyCurvature(this.redCarpetMat);
+    curved.applyCurvature(this.darkGraniteMat);
+    curved.applyCurvature(this.neonPinkMat);
+    curved.applyCurvature(this.champagneGlowMat);
+    curved.applyCurvature(this.cartoonSkinMat);
+    curved.applyCurvature(this.marqueeBulbMatOn);
+    curved.applyCurvature(this.marqueeBulbMatOff);
+  }
+
+  public createStandardMaterial(params: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial {
+    const mat = new THREE.MeshStandardMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
+  }
+
+  public createBasicMaterial(params: THREE.MeshBasicMaterialParameters): THREE.MeshBasicMaterial {
+    const mat = new THREE.MeshBasicMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
   }
 
   public static getInstance(): MidnightVelvetWorldBuilder {
@@ -202,25 +231,31 @@ export class MidnightVelvetWorldBuilder {
     districtA.name = 'district_a_velvet_boulevard';
     group.add(districtA);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Streetscape Promenade with Black Marble & Gold Trim
+    // 1. Streetscape Promenade with Black Marble & Gold Trim (Solid depth down to Y = -4.0m)
     [-1, 1].forEach((side) => {
-      const walkW = 14.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.6, chunkLength), this.blackMarbleMat);
-      walk.position.set(wx, 0.3, -chunkLength * 0.5);
+      const walkW = 22.0;
+      const walkDepth = 4.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.blackMarbleMat);
+      walk.position.set(wx, 0.3 - walkDepth * 0.5, -chunkLength * 0.5);
       districtA.add(walk);
 
       // Gold curbs facing railway
-      const curb = new THREE.Mesh(this.getBox(0.4, 0.7, chunkLength), this.goldMetalMat);
-      curb.position.set(side * (wallX + 0.2), 0.35, -chunkLength * 0.5);
+      const curb = new THREE.Mesh(this.getBox(0.48, walkDepth + 0.1, chunkLength), this.goldMetalMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.35 - walkDepth * 0.5, -chunkLength * 0.5);
       districtA.add(curb);
 
       // Art Deco Step-Back Luxury Towers
       for (let z = 12; z < chunkLength - 12; z += 35) {
         const buildingGroup = new THREE.Group();
-        buildingGroup.position.set(side * (wallX + 8.5), 0.6, -z);
+        buildingGroup.position.set(side * (curbEdge + 11.0), 0.6, -z);
+
+        // Subterranean Foundation Plinth down to Y = -4.0m
+        const plinth = new THREE.Mesh(this.getBox(12.8, 4.0, 24.8), this.blackMarbleMat);
+        plinth.position.y = -2.0;
+        buildingGroup.add(plinth);
 
         // Lower Base (Club Entrance)
         const base = new THREE.Mesh(this.getBox(12.0, 10.0, 24.0), this.blackMarbleMat);
@@ -252,7 +287,7 @@ export class MidnightVelvetWorldBuilder {
 
       // 2. Gilded Nightclub Entrance with Burgundy Scalloped Awning & Red Carpet
       const clubStage = new THREE.Group();
-      clubStage.position.set(side * (wallX + 3.5), 0.6, -chunkLength * 0.45);
+      clubStage.position.set(side * (curbEdge + 4.5), 0.6, -chunkLength * 0.45);
 
       // Red carpet runner from doorway to curb
       const carpet = new THREE.Mesh(this.getBox(3.0, 0.08, 12.0), this.redCarpetMat);
@@ -280,7 +315,7 @@ export class MidnightVelvetWorldBuilder {
 
       // Illuminated Club Sign facing tracks
       const signTex = TextureGenerator.getVelvetBoulevardSignTexture(side > 0 ? 0 : 1);
-      const signMesh = new THREE.Mesh(this.getPlane(7.0, 3.5), new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide }));
+      const signMesh = new THREE.Mesh(this.getPlane(7.0, 3.5), this.createBasicMaterial({ map: signTex, side: THREE.DoubleSide }));
       signMesh.position.set(0, 5.8, 0);
       signMesh.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       clubStage.add(signMesh);
@@ -305,7 +340,7 @@ export class MidnightVelvetWorldBuilder {
     // 3. Classic Luxury Town Car / Limousine parked parallel outside collision zone
     const limoGroup = new THREE.Group();
     limoGroup.name = 'velvet_luxury_limousine';
-    limoGroup.position.set(-wallX - 3.2, 0.6, -chunkLength * 0.25);
+    limoGroup.position.set(-curbEdge - 4.2, 0.6, -chunkLength * 0.25);
 
     // Car Body (Glossy midnight black & champagne gold roof)
     const body = new THREE.Mesh(this.getBox(2.2, 1.0, 7.5), this.blackMarbleMat);
@@ -362,45 +397,46 @@ export class MidnightVelvetWorldBuilder {
     districtB.name = 'district_b_moonlight_marina';
     group.add(districtB);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
     // 1. Shimmering Ocean Water Basin on both sides of elevated railway
     [-1, 1].forEach((side) => {
+      // Solid Granite Boardwalk Pier with depth down to Y = -4.0m
+      const pierW = 7.0;
+      const pierDepth = 4.4;
+      const pier = new THREE.Mesh(this.getBox(pierW, pierDepth, chunkLength), this.darkGraniteMat);
+      pier.position.set(side * (curbEdge + pierW * 0.5), 0.4 - pierDepth * 0.5, -chunkLength * 0.5);
+      districtB.add(pier);
+
       const waterW = 32.0;
       const ocean = new THREE.Mesh(this.getPlane(waterW, chunkLength), this.oceanWaterMat);
-      ocean.position.set(side * (wallX + waterW * 0.5), -0.2, -chunkLength * 0.5);
+      ocean.position.set(side * (curbEdge + pierW + waterW * 0.5), -0.2, -chunkLength * 0.5);
       ocean.rotation.x = -Math.PI / 2;
       districtB.add(ocean);
-
-      // Wooden Yacht Pier & Marina Boardwalk
-      const pierW = 5.0;
-      const pier = new THREE.Mesh(this.getBox(pierW, 0.8, chunkLength), this.darkGraniteMat);
-      pier.position.set(side * (wallX + pierW * 0.5), 0.4, -chunkLength * 0.5);
-      districtB.add(pier);
 
       // Marina Brass Railing
       for (let z = 6; z < chunkLength - 6; z += 14) {
         const post = new THREE.Mesh(this.getCylinder(0.08, 0.08, 1.2, 6), this.goldMetalMat);
-        post.position.set(side * (wallX + 0.3), 1.0, -z);
+        post.position.set(side * (curbEdge + 0.3), 1.0, -z);
         districtB.add(post);
 
         const rail = new THREE.Mesh(this.getBox(0.08, 0.08, 14.0), this.goldMetalMat);
-        rail.position.set(side * (wallX + 0.3), 1.5, -z);
+        rail.position.set(side * (curbEdge + 0.3), 1.5, -z);
         districtB.add(rail);
 
         // Uplit Tropical Palm Tree along Boardwalk
-        this.buildMarinaPalmTree(districtB, side * (wallX + pierW - 0.8), 0.8, -z);
+        this.buildMarinaPalmTree(districtB, side * (curbEdge + pierW - 0.8), 0.8, -z);
       }
 
       // Luxury Motor Yacht docked in berth
-      const yacht = this.buildLuxuryYacht(side * (wallX + 14.0), 0.1, -chunkLength * 0.45, side > 0);
+      const yacht = this.buildLuxuryYacht(side * (curbEdge + pierW + 8.0), 0.1, -chunkLength * 0.45, side > 0);
       director.registerMarinaYacht(yacht, 2.5, side * 1.5);
       districtB.add(yacht);
 
       // Marina Sign
       const marinaSignTex = TextureGenerator.getMoonlightMarinaSignTexture(side > 0 ? 0 : 2);
-      const marinaSign = new THREE.Mesh(this.getPlane(8.0, 4.0), new THREE.MeshBasicMaterial({ map: marinaSignTex, side: THREE.DoubleSide }));
-      marinaSign.position.set(side * (wallX + 0.1), 4.5, -chunkLength * 0.5);
+      const marinaSign = new THREE.Mesh(this.getPlane(8.0, 4.0), this.createBasicMaterial({ map: marinaSignTex, side: THREE.DoubleSide }));
+      marinaSign.position.set(side * (curbEdge + 0.2), 4.5, -chunkLength * 0.5);
       marinaSign.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       districtB.add(marinaSign);
     });
@@ -421,7 +457,7 @@ export class MidnightVelvetWorldBuilder {
 
     // 3. Sweeping Curved Marina Footbridge spanning above the water
     const bridgeGroup = new THREE.Group();
-    bridgeGroup.position.set(-wallX - 16.0, 4.5, -chunkLength * 0.6);
+    bridgeGroup.position.set(-curbEdge - 17.5, 4.5, -chunkLength * 0.6);
     const bridgeSpan = new THREE.Mesh(this.getTorus(14.0, 0.8, 8, 20), this.goldMetalMat);
     bridgeSpan.rotation.x = Math.PI / 2;
     bridgeGroup.add(bridgeSpan);
@@ -444,16 +480,17 @@ export class MidnightVelvetWorldBuilder {
     districtC.name = 'district_c_golden_hour_club';
     group.add(districtC);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
     // 1. Multi-Level Nightclub Facades with Tiered Rooftops (Optimized height for camera visibility)
     [-1, 1].forEach((side) => {
-      const clubW = 16.0;
-      const cx = side * (wallX + clubW * 0.5);
+      const clubW = 20.0;
+      const clubDepth = 12.5;
+      const cx = side * (curbEdge + clubW * 0.5);
 
-      // Ground Tier (Height 8.5m, lower elevation so rooftop party is in prime camera view)
-      const groundClub = new THREE.Mesh(this.getBox(clubW, 8.5, chunkLength), this.velvetBurgundyMat);
-      groundClub.position.set(cx, 4.25, -chunkLength * 0.5);
+      // Ground Tier (Extends down to Y = -4.0m to anchor into earth)
+      const groundClub = new THREE.Mesh(this.getBox(clubW, clubDepth, chunkLength), this.velvetBurgundyMat);
+      groundClub.position.set(cx, 4.25 - 2.0, -chunkLength * 0.5);
       districtC.add(groundClub);
 
       // Gold Lattice & Chevron Frieze
@@ -481,14 +518,14 @@ export class MidnightVelvetWorldBuilder {
 
       // Giant Illuminated Sunburst Club Sign
       const clubSignTex = TextureGenerator.getGoldenHourClubSignTexture(side > 0 ? 0 : 1);
-      const clubSign = new THREE.Mesh(this.getPlane(12.0, 5.0), new THREE.MeshBasicMaterial({ map: clubSignTex, side: THREE.DoubleSide }));
-      clubSign.position.set(side * (wallX + 0.1), 6.5, -chunkLength * 0.45);
+      const clubSign = new THREE.Mesh(this.getPlane(12.0, 5.0), this.createBasicMaterial({ map: clubSignTex, side: THREE.DoubleSide }));
+      clubSign.position.set(side * (curbEdge + 0.2), 6.5, -chunkLength * 0.45);
       clubSign.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       districtC.add(clubSign);
     });
 
     // 2. Twin Skyline Spotlights Sweeping the Night Sky
-    [-wallX - 6.0, wallX + 6.0].forEach((sx, idx) => {
+    [-curbEdge - 8.0, curbEdge + 8.0].forEach((sx, idx) => {
       const searchlightGroup = new THREE.Group();
       searchlightGroup.name = 'golden_hour_searchlight';
       searchlightGroup.position.set(sx, 10.5, -chunkLength * 0.5);
@@ -498,7 +535,7 @@ export class MidnightVelvetWorldBuilder {
 
       const beamCone = new THREE.Mesh(
         this.getCylinder(0.4, 4.5, 38.0, 10),
-        new THREE.MeshBasicMaterial({
+        this.createBasicMaterial({
           color: 0xfef08a,
           transparent: true,
           opacity: 0.28,
@@ -530,37 +567,38 @@ export class MidnightVelvetWorldBuilder {
     districtD.name = 'district_d_midnight_grand';
     group.add(districtD);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Monumental Fluted Granite & Marble Colonnade
+    // 1. Monumental Fluted Granite & Marble Colonnade (Continuous depth down to Y = -4.0m)
     [-1, 1].forEach((side) => {
-      const concW = 15.0;
-      const cx = side * (wallX + concW * 0.5);
+      const concW = 20.0;
+      const concDepth = 4.8;
+      const cx = side * (curbEdge + concW * 0.5);
 
-      const concourse = new THREE.Mesh(this.getBox(concW, 1.0, chunkLength), this.darkGraniteMat);
-      concourse.position.set(cx, 0.5, -chunkLength * 0.5);
+      const concourse = new THREE.Mesh(this.getBox(concW, concDepth, chunkLength), this.darkGraniteMat);
+      concourse.position.set(cx, 0.5 - 2.0, -chunkLength * 0.5);
       districtD.add(concourse);
 
       // Fluted Classical Art Deco Pillars
       for (let z = 8; z < chunkLength - 8; z += 12) {
         const pillar = new THREE.Mesh(this.getCylinder(0.65, 0.75, 9.5, 10), this.blackMarbleMat);
-        pillar.position.set(side * (wallX + 1.8), 5.2, -z);
+        pillar.position.set(side * (curbEdge + 2.2), 5.2, -z);
         districtD.add(pillar);
 
         // Gilded Capital
         const capital = new THREE.Mesh(this.getBox(1.8, 0.8, 1.8), this.goldMetalMat);
-        capital.position.set(side * (wallX + 1.8), 10.2, -z);
+        capital.position.set(side * (curbEdge + 2.2), 10.2, -z);
         districtD.add(capital);
 
         // Hanging Crystal Chandelier
-        const chandelier = this.buildCrystalChandelier(side * (wallX + 4.5), 8.5, -z);
+        const chandelier = this.buildCrystalChandelier(side * (curbEdge + 5.0), 8.5, -z);
         districtD.add(chandelier);
       }
 
       // Station Signage
       const grandSignTex = TextureGenerator.getMidnightGrandSignTexture(side > 0 ? 0 : 2);
-      const grandSign = new THREE.Mesh(this.getPlane(10.0, 5.0), new THREE.MeshBasicMaterial({ map: grandSignTex, side: THREE.DoubleSide }));
-      grandSign.position.set(side * (wallX + 0.1), 5.5, -chunkLength * 0.5);
+      const grandSign = new THREE.Mesh(this.getPlane(10.0, 5.0), this.createBasicMaterial({ map: grandSignTex, side: THREE.DoubleSide }));
+      grandSign.position.set(side * (curbEdge + 0.2), 5.5, -chunkLength * 0.5);
       grandSign.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       districtD.add(grandSign);
     });
@@ -568,7 +606,12 @@ export class MidnightVelvetWorldBuilder {
     // 2. Monumental Central Art Deco Clock Tower
     const towerGroup = new THREE.Group();
     towerGroup.name = 'midnight_grand_clock_tower';
-    towerGroup.position.set(-wallX - 12.0, 0.6, -chunkLength * 0.5);
+    towerGroup.position.set(-curbEdge - 14.0, 0.6, -chunkLength * 0.5);
+
+    // Subterranean Plinth down to Y = -4.0m
+    const towerPlinth = new THREE.Mesh(this.getBox(10.0, 4.0, 10.0), this.blackMarbleMat);
+    towerPlinth.position.y = -2.0;
+    towerGroup.add(towerPlinth);
 
     // Tower Body
     const towerBase = new THREE.Mesh(this.getBox(9.0, 32.0, 9.0), this.blackMarbleMat);
@@ -604,7 +647,7 @@ export class MidnightVelvetWorldBuilder {
     districtD.add(towerGroup);
 
     // 3. Vintage Luxury Streamliner Carriage on Siding
-    const sidingCarriage = this.buildLuxuryStationCarriage(wallX + 8.5, 0.6, -chunkLength * 0.45);
+    const sidingCarriage = this.buildLuxuryStationCarriage(curbEdge + 9.5, 0.6, -chunkLength * 0.45);
     districtD.add(sidingCarriage);
   }
 

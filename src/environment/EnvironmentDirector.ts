@@ -263,7 +263,10 @@ export class EnvironmentDirector {
     }
 
     // Apply weather and time-of-day atmospheric preset
-    const activePreset = encounterDir.resolveAtmospherePreset(playerZ, transition.fromEnv);
+    const targetDistrict = (transition.inTransition && transition.progress >= 0.5)
+      ? transition.toEnv
+      : transition.fromEnv;
+    const activePreset = encounterDir.resolveAtmospherePreset(playerZ, targetDistrict);
     worldScene.applyAtmospherePreset(activePreset, transition.inTransition ? transition.progress : 1.0);
   }
 

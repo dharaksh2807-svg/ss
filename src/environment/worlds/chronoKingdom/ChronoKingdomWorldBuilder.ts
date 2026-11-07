@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SeededRandom } from '../../SceneryFactory';
+import { CurvedShaderManager } from '../../../scene/CurvedShader';
 import { ChronoKingdomEventDirector } from './ChronoKingdomEventDirector';
 import { CHRONO_KINGDOM_TRAIN_LIVERY } from './ChronoKingdomTheme';
 
@@ -311,6 +312,31 @@ export class ChronoKingdomWorldBuilder {
       transparent: true,
       opacity: 0.55
     });
+
+    // Apply track curvature shader to all shared materials so scenery bends smoothly with tracks
+    const curved = CurvedShaderManager.getInstance();
+    curved.applyCurvature(this.darkBronzeMat);
+    curved.applyCurvature(this.antiqueGoldMat);
+    curved.applyCurvature(this.burnishedCopperMat);
+    curved.applyCurvature(this.midnightSteelMat);
+    curved.applyCurvature(this.warmGlassAmberMat);
+    curved.applyCurvature(this.furnaceFireMat);
+    curved.applyCurvature(this.darkIronstoneMat);
+    curved.applyCurvature(this.steamedOakMat);
+    curved.applyCurvature(this.glowingCyanMat);
+    curved.applyCurvature(this.steamPuffMat);
+  }
+
+  public createStandardMaterial(params: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial {
+    const mat = new THREE.MeshStandardMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
+  }
+
+  public createBasicMaterial(params: THREE.MeshBasicMaterialParameters): THREE.MeshBasicMaterial {
+    const mat = new THREE.MeshBasicMaterial(params);
+    CurvedShaderManager.getInstance().applyCurvature(mat);
+    return mat;
   }
 
   public static getInstance(): ChronoKingdomWorldBuilder {
@@ -422,25 +448,31 @@ export class ChronoKingdomWorldBuilder {
     districtA.name = 'district_a_grand_clockwork_capital';
     group.add(districtA);
 
-    const wallX = roadbedWidth * 0.5 + 2.4; // 8.4m from center
+    const curbEdge = roadbedWidth * 0.5 + 0.5; // 6.5m from center - touches track ballast curb directly!
 
     [-1, 1].forEach((side) => {
-      // 1. Heavy Steampunk Sidewalk Promenade with Bronze Curbs
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.8, chunkLength), this.darkIronstoneMat);
-      walk.position.set(wx, 0.4, -chunkLength * 0.5);
+      // 1. Heavy Steampunk Sidewalk Promenade with Bronze Curbs (Continuous depth down to Y = -4.0m)
+      const walkW = 22.0;
+      const walkDepth = 4.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.darkIronstoneMat);
+      walk.position.set(wx, 0.4 - walkDepth * 0.5, -chunkLength * 0.5);
       districtA.add(walk);
 
       // Bright Antique Gold / Amber Railing Curb
-      const curb = new THREE.Mesh(this.getBox(0.45, 0.9, chunkLength), this.antiqueGoldMat);
-      curb.position.set(side * (wallX + 0.22), 0.45, -chunkLength * 0.5);
+      const curb = new THREE.Mesh(this.getBox(0.48, walkDepth + 0.1, chunkLength), this.antiqueGoldMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.45 - walkDepth * 0.5, -chunkLength * 0.5);
       districtA.add(curb);
 
       // 2. Colossal Interconnected Clock Towers
       for (let z = 14; z < chunkLength - 14; z += 38) {
         const towerGroup = new THREE.Group();
-        towerGroup.position.set(side * (wallX + 10.0), 0.8, -z);
+        towerGroup.position.set(side * (curbEdge + 11.5), 0.8, -z);
+
+        // Subterranean Foundation Plinth down to Y = -4.0m (prevents floating scenery)
+        const plinth = new THREE.Mesh(this.getBox(15.0, 4.0, 27.0), this.darkBronzeMat);
+        plinth.position.y = -2.0;
+        towerGroup.add(plinth);
 
         // Lower Base (Heavy Riveted Masonry)
         const base = new THREE.Mesh(this.getBox(14.0, 14.0, 26.0), this.darkBronzeMat);
@@ -459,11 +491,16 @@ export class ChronoKingdomWorldBuilder {
         midTier.position.y = 23.0;
         towerGroup.add(midTier);
 
+        // Glowing Amber Window Band along lower middle tier
+        const winBand = new THREE.Mesh(this.getBox(0.2, 8.0, 16.0), this.warmGlassAmberMat);
+        winBand.position.set(-side * 5.9, 15.0, 0);
+        towerGroup.add(winBand);
+
         // Monumental Clock Face facing tracks
         const clockTex = ChronoKingdomTextureHelper.getClockFaceTexture(true);
         const clockMesh = new THREE.Mesh(
           this.getPlane(9.0, 9.0),
-          new THREE.MeshStandardMaterial({
+          this.createStandardMaterial({
             map: clockTex,
             roughness: 0.3,
             metalness: 0.4,
@@ -486,7 +523,7 @@ export class ChronoKingdomWorldBuilder {
         for (let r = 0; r < 2; r++) {
           const resRing = new THREE.Mesh(
             this.getTorus(4.8, 0.12, 6, 24),
-            new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0 })
+            this.createBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0 })
           );
           resRing.position.set(-side * 6.2, 23.0, 0);
           resRing.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
@@ -587,25 +624,31 @@ export class ChronoKingdomWorldBuilder {
     districtB.name = 'district_b_time_foundry';
     group.add(districtB);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
     [-1, 1].forEach((side) => {
-      // 1. Heavy Scorched Iron Foundry Promenade
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.8, chunkLength), this.steamedOakMat);
-      walk.position.set(wx, 0.4, -chunkLength * 0.5);
+      // 1. Heavy Scorched Iron Foundry Promenade (Solid depth down to Y = -4.0m)
+      const walkW = 22.0;
+      const walkDepth = 4.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.steamedOakMat);
+      walk.position.set(wx, 0.4 - walkDepth * 0.5, -chunkLength * 0.5);
       districtB.add(walk);
 
       // Burnished Copper Curb Trim
-      const curb = new THREE.Mesh(this.getBox(0.45, 0.9, chunkLength), this.burnishedCopperMat);
-      curb.position.set(side * (wallX + 0.22), 0.45, -chunkLength * 0.5);
+      const curb = new THREE.Mesh(this.getBox(0.48, walkDepth + 0.1, chunkLength), this.burnishedCopperMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.45 - walkDepth * 0.5, -chunkLength * 0.5);
       districtB.add(curb);
 
       // 2. Foundry Smelting Halls & Glowing Furnaces
       for (let z = 12; z < chunkLength - 12; z += 34) {
         const foundryHall = new THREE.Group();
-        foundryHall.position.set(side * (wallX + 9.5), 0.8, -z);
+        foundryHall.position.set(side * (curbEdge + 11.0), 0.8, -z);
+
+        // Subterranean Cast-Iron Plinth down to Y = -4.0m
+        const fPlinth = new THREE.Mesh(this.getBox(14.0, 4.0, 25.0), this.darkBronzeMat);
+        fPlinth.position.y = -2.0;
+        foundryHall.add(fPlinth);
 
         // Heavy Cast-Iron Foundation Base
         const hallBase = new THREE.Mesh(this.getBox(13.0, 12.0, 24.0), this.darkBronzeMat);
@@ -621,7 +664,7 @@ export class ChronoKingdomWorldBuilder {
         const gaugeTex = ChronoKingdomTextureHelper.getPressureGaugeTexture();
         const gauge = new THREE.Mesh(
           this.getPlane(2.2, 2.2),
-          new THREE.MeshStandardMaterial({ map: gaugeTex, side: THREE.DoubleSide })
+          this.createStandardMaterial({ map: gaugeTex, side: THREE.DoubleSide })
         );
         gauge.position.set(-side * 6.6, 10.0, 2.5);
         gauge.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
@@ -690,16 +733,16 @@ export class ChronoKingdomWorldBuilder {
       // 5. Overhead Steam Pressure Conduits running parallel
       const pipeRun = new THREE.Mesh(this.getCylinder(0.3, 0.3, chunkLength, 8), this.burnishedCopperMat);
       pipeRun.rotation.x = Math.PI / 2;
-      pipeRun.position.set(side * (wallX + 1.2), 7.5, -chunkLength * 0.5);
+      pipeRun.position.set(side * (curbEdge + 1.2), 7.5, -chunkLength * 0.5);
       districtB.add(pipeRun);
     });
 
     // 6. Siding Steam Locomotive Chassis on elevated platform
     const sidingPlatform = new THREE.Mesh(this.getBox(6.0, 1.2, 26.0), this.darkBronzeMat);
-    sidingPlatform.position.set(wallX + 8.0, 0.6, -chunkLength * 0.45);
+    sidingPlatform.position.set(curbEdge + 9.5, 0.6, -chunkLength * 0.45);
     districtB.add(sidingPlatform);
 
-    const parkedLoco = this.buildChronoKingdomShowcaseTrain(wallX + 8.0, 1.2, -chunkLength * 0.45);
+    const parkedLoco = this.buildChronoKingdomShowcaseTrain(curbEdge + 9.5, 1.2, -chunkLength * 0.45);
     districtB.add(parkedLoco);
   }
 
@@ -719,32 +762,33 @@ export class ChronoKingdomWorldBuilder {
     districtC.name = 'district_c_chrono_observatory';
     group.add(districtC);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
     [-1, 1].forEach((side) => {
-      // 1. Midnight Basalt Promenade
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.8, chunkLength), this.midnightSteelMat);
-      walk.position.set(wx, 0.4, -chunkLength * 0.5);
+      // 1. Midnight Basalt Promenade (Solid depth down to Y = -4.0m)
+      const walkW = 22.0;
+      const walkDepth = 4.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.midnightSteelMat);
+      walk.position.set(wx, 0.4 - walkDepth * 0.5, -chunkLength * 0.5);
       districtC.add(walk);
 
-      const curb = new THREE.Mesh(this.getBox(0.45, 0.9, chunkLength), this.antiqueGoldMat);
-      curb.position.set(side * (wallX + 0.22), 0.45, -chunkLength * 0.5);
+      const curb = new THREE.Mesh(this.getBox(0.48, walkDepth + 0.1, chunkLength), this.antiqueGoldMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.45 - walkDepth * 0.5, -chunkLength * 0.5);
       districtC.add(curb);
 
       // 2. Colossal Celestial Astrolabe Dial facing the tracks
       const astrolabeTex = ChronoKingdomTextureHelper.getAstrolabeTexture();
       const astrolabe = new THREE.Mesh(
         this.getPlane(11.0, 11.0),
-        new THREE.MeshStandardMaterial({
+        this.createStandardMaterial({
           map: astrolabeTex,
           emissive: 0x38bdf8,
           emissiveIntensity: 0.4,
           side: THREE.DoubleSide
         })
       );
-      astrolabe.position.set(side * (wallX + 0.3), 11.0, -chunkLength * 0.5);
+      astrolabe.position.set(side * (curbEdge + 0.5), 11.0, -chunkLength * 0.5);
       astrolabe.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
       districtC.add(astrolabe);
     });
@@ -752,7 +796,12 @@ export class ChronoKingdomWorldBuilder {
     // 3. Immense Celestial Observatory Dome & Concentric Gimbal Rings (Left Side)
     const observatoryGroup = new THREE.Group();
     observatoryGroup.name = 'celestial_observatory_complex';
-    observatoryGroup.position.set(-wallX - 14.0, 0.8, -chunkLength * 0.5);
+    observatoryGroup.position.set(-curbEdge - 15.0, 0.8, -chunkLength * 0.5);
+
+    // Subterranean Rotunda Plinth down to Y = -4.0m
+    const rotundaPlinth = new THREE.Mesh(this.getCylinder(12.5, 12.8, 4.0, 16), this.darkBronzeMat);
+    rotundaPlinth.position.y = -2.0;
+    observatoryGroup.add(rotundaPlinth);
 
     // Stone Rotunda Base
     const rotunda = new THREE.Mesh(this.getCylinder(11.0, 12.0, 18.0, 16), this.darkBronzeMat);
@@ -841,32 +890,62 @@ export class ChronoKingdomWorldBuilder {
     districtD.name = 'district_d_fractured_time';
     group.add(districtD);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
     [-1, 1].forEach((side) => {
-      // 1. Shifting Stone & Copper Promenade
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 0.8, chunkLength), this.darkIronstoneMat);
-      walk.position.set(wx, 0.4, -chunkLength * 0.5);
+      // 1. Shifting Stone & Copper Promenade (Solid depth down to Y = -4.0m)
+      const walkW = 22.0;
+      const walkDepth = 4.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.darkIronstoneMat);
+      walk.position.set(wx, 0.4 - walkDepth * 0.5, -chunkLength * 0.5);
       districtD.add(walk);
 
-      const curb = new THREE.Mesh(this.getBox(0.45, 0.9, chunkLength), this.antiqueGoldMat);
-      curb.position.set(side * (wallX + 0.22), 0.45, -chunkLength * 0.5);
+      const curb = new THREE.Mesh(this.getBox(0.48, walkDepth + 0.1, chunkLength), this.antiqueGoldMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.45 - walkDepth * 0.5, -chunkLength * 0.5);
       districtD.add(curb);
 
-      // 2. Floating-Looking Clock Fragments & Cantilevered Spires
+      // 2. Temporal Stasis Chambers & Mechanically Suspended Clock Fragments
       for (let z = 12; z < chunkLength - 12; z += 35) {
         const fragmentGroup = new THREE.Group();
-        fragmentGroup.position.set(side * (wallX + 11.0), 0.8, -z);
+        fragmentGroup.position.set(side * (curbEdge + 12.0), 0.8, -z);
 
-        // Tilted Ruined Base
+        // Subterranean Anchor Plinth down to Y = -4.0m (prevents floating scenery)
+        const plinth = new THREE.Mesh(this.getBox(13.2, 4.0, 21.2), this.darkBronzeMat);
+        plinth.position.y = -2.0;
+        fragmentGroup.add(plinth);
+
+        // Heavy Riveted Ground Anchor Base
         const ruBase = new THREE.Mesh(this.getBox(12.0, 10.0, 20.0), this.darkBronzeMat);
         ruBase.position.y = 5.0;
-        ruBase.rotation.z = side * 0.08;
         fragmentGroup.add(ruBase);
 
-        // Hovering Floating Clockwork Block (Suspended above base)
+        // Heavy Bronze Suspension Pylons & Mooring Girders holding the stasis field
+        [-4.5, 4.5].forEach((px) => {
+          const pylon = new THREE.Mesh(this.getBox(0.9, 14.0, 0.9), this.burnishedCopperMat);
+          pylon.position.set(px, 12.0, 0);
+          fragmentGroup.add(pylon);
+
+          const bracket = new THREE.Mesh(this.getBox(1.8, 0.6, 1.8), this.antiqueGoldMat);
+          bracket.position.set(px, 18.0, 0);
+          fragmentGroup.add(bracket);
+        });
+
+        // Glowing Amber Temporal Stasis Ring encircling the floating block
+        const stasisRing = new THREE.Mesh(this.getTorus(7.2, 0.35, 8, 24), this.warmGlassAmberMat);
+        stasisRing.position.set(0, 18.0, 0);
+        stasisRing.rotation.x = Math.PI / 2;
+        fragmentGroup.add(stasisRing);
+        director.registerGear(stasisRing, 0.5 * side, 'z');
+
+        // Glowing Cyan Energy Beams pinning the block in temporal suspension
+        [-3.5, 3.5].forEach((ex) => {
+          const beam = new THREE.Mesh(this.getCylinder(0.12, 0.12, 10.0, 6), this.glowingCyanMat);
+          beam.position.set(ex, 12.5, 0);
+          fragmentGroup.add(beam);
+        });
+
+        // Hovering Floating Clockwork Block (Suspended inside temporal stasis field)
         const floatingBlock = new THREE.Mesh(this.getBox(9.0, 9.0, 14.0), this.midnightSteelMat);
         floatingBlock.position.set(0, 18.0, 0);
         floatingBlock.rotation.set(0.12, side * 0.25, 0.18);
@@ -876,7 +955,7 @@ export class ChronoKingdomWorldBuilder {
         const warpedClockTex = ChronoKingdomTextureHelper.getClockFaceTexture(false);
         const warpedClock = new THREE.Mesh(
           this.getPlane(6.5, 6.5),
-          new THREE.MeshStandardMaterial({
+          this.createStandardMaterial({
             map: warpedClockTex,
             emissive: 0xd97706,
             emissiveIntensity: 0.65,
@@ -888,14 +967,14 @@ export class ChronoKingdomWorldBuilder {
         warpedClock.rotation.z = 0.35;
         fragmentGroup.add(warpedClock);
 
-        // Mooring Brass Chains holding floating block
+        // Heavy Mooring Chains
         [-4.0, 4.0].forEach((cx) => {
-          const chain = new THREE.Mesh(this.getCylinder(0.08, 0.08, 9.0, 6), this.antiqueGoldMat);
+          const chain = new THREE.Mesh(this.getCylinder(0.18, 0.18, 9.0, 6), this.antiqueGoldMat);
           chain.position.set(cx, 13.5, 0);
           fragmentGroup.add(chain);
         });
 
-        // Floating Gear cluster
+        // Floating Gear cluster inside stasis field
         const floatGear = this.buildGearMesh(3.0, 12, 0.4, this.antiqueGoldMat);
         floatGear.position.set(-side * 4.8, 25.0, 3.0);
         floatGear.rotation.y = Math.PI / 2;
@@ -909,7 +988,7 @@ export class ChronoKingdomWorldBuilder {
     // 3. Magnificent Glowing Time Portal (Safely outside gameplay tracks at X = -15m, Y = 9.5m)
     const portalGroup = new THREE.Group();
     portalGroup.name = 'temporal_rift_portal';
-    portalGroup.position.set(-wallX - 7.5, 9.5, -chunkLength * 0.5);
+    portalGroup.position.set(-curbEdge - 9.0, 9.5, -chunkLength * 0.5);
 
     // Outer Concentric Chronos Ring
     const portalOuter = new THREE.Mesh(this.getTorus(7.5, 0.5, 8, 24), this.antiqueGoldMat);
@@ -923,7 +1002,7 @@ export class ChronoKingdomWorldBuilder {
     const vortexTex = ChronoKingdomTextureHelper.getVortexTexture();
     const vortexCore = new THREE.Mesh(
       this.getPlane(10.5, 10.5),
-      new THREE.MeshBasicMaterial({
+      this.createBasicMaterial({
         map: vortexTex,
         transparent: true,
         side: THREE.DoubleSide,

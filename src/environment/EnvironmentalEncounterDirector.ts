@@ -30,7 +30,16 @@ export type AtmospherePreset =
   | 'ABYSSAL_BIOLUMINESCENT_CHASM'
   | 'DOOMSDAY_FIRESTORM_FALLOUT'
   | 'PHANTOM_SPECTRAL_VOID'
-  | 'CARNIVAL_HAUNTED_NIGHT';
+  | 'CARNIVAL_HAUNTED_NIGHT'
+  | 'CHRONO_CELESTIAL_CLOCKWORK'
+  | 'CHRONO_STEAM_RAIN'
+  | 'MIDNIGHT_VELVET_AFTERDARK'
+  | 'MIDNIGHT_VELVET_RAIN'
+  | 'VIP_CEREMONIAL_SUNSET'
+  | 'RAHULVERSE_MORNING_YATRA'
+  | 'INFERNO_VOLCANIC_MAGMA'
+  | 'JURASSIC_PRIMORDIAL_DAWN'
+  | 'VIVA_HEAT_SUNSET_FEVER';
 
 export interface LandmarkEncounterDef {
   id: LandmarkType;
@@ -414,22 +423,53 @@ export class EnvironmentalEncounterDirector {
       return 'CARNIVAL_HAUNTED_NIGHT';
     }
 
+    const dist = Math.abs(playerZ);
+    const isWeatherPacing = (dist > 1400 && dist % 1200 > 800);
+
+    // Premium Worlds Authored Atmospheric Presets & Weather Variations
+    if (districtId === 'CHRONO_KINGDOM') {
+      return isWeatherPacing ? 'CHRONO_STEAM_RAIN' : 'CHRONO_CELESTIAL_CLOCKWORK';
+    }
+
+    if (districtId === 'MIDNIGHT_VELVET') {
+      return isWeatherPacing ? 'MIDNIGHT_VELVET_RAIN' : 'MIDNIGHT_VELVET_AFTERDARK';
+    }
+
+    if (districtId === 'VIP_EXPRESS') {
+      return 'VIP_CEREMONIAL_SUNSET';
+    }
+
+    if (districtId === 'RAHULVERSE') {
+      return 'RAHULVERSE_MORNING_YATRA';
+    }
+
+    if (districtId === 'INFERNO_EXPRESS') {
+      return 'INFERNO_VOLCANIC_MAGMA';
+    }
+
+    if (districtId === 'JURASSIC_RUSH') {
+      return 'JURASSIC_PRIMORDIAL_DAWN';
+    }
+
+    if (districtId === 'VIVA_HEAT') {
+      return 'VIVA_HEAT_SUNSET_FEVER';
+    }
+
     // Check if an upcoming or recent landmark prefers an atmosphere
     for (const [_, landmark] of this.scheduledLandmarks) {
-      if (Math.abs(landmark.worldZ - playerZ) < 160 && landmark.def.preferredAtmosphere) {
+      if (Math.abs(landmark.worldZ - playerZ) < 160 && landmark.def.preferredAtmosphere && landmark.def.eligibleDistricts.includes(districtId)) {
         return landmark.def.preferredAtmosphere;
       }
     }
 
-    // Default progression-based atmospheric pacing:
+    // Default progression-based atmospheric pacing for standard environments:
     // 0 - 600m: CLEAR_DAYLIGHT (Modern) or WARM_GOLDEN_HOUR (Historic)
     // 600m - 1200m: WARM_GOLDEN_HOUR
     // 1200m - 1800m: SOFT_OVERCAST / LIGHT_RAIN
-    const dist = Math.abs(playerZ);
     if (districtId === 'HISTORIC_QUARTER') {
       return (dist % 1600 > 900) ? 'SOFT_OVERCAST' : 'WARM_GOLDEN_HOUR';
     } else {
-      if (dist > 1400 && dist % 1200 > 800) {
+      if (isWeatherPacing) {
         return 'LIGHT_RAIN';
       }
       return 'CLEAR_DAYLIGHT';

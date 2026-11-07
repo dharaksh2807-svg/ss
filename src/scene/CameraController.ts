@@ -149,10 +149,14 @@ export class CameraController {
       this.isLobbyMode = false;
       this.isIntroMode = false;
       const isPortrait = this.camera.aspect < 1.0;
-      // Front-side 3/4 dramatic cinematic framing player's face, defeat reaction, and scene context
-      const camX = playerPos.x - (isPortrait ? 1.15 : 1.55);
-      this.gameOverTargetPos.set(camX, playerPos.y + 1.15, playerPos.z - 2.3);
-      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 1.05, playerPos.z);
+      // Front-side 3/4 dramatic cinematic framing player's face, defeat reaction, and scene context.
+      // Offset camera laterally toward the center track to avoid track edge obstructions.
+      const lateralDir = playerPos.x >= 0 ? -1 : 1;
+      const camX = playerPos.x + lateralDir * (isPortrait ? 1.25 : 1.65);
+      // Elevate camera to Y = +1.65m and look downward at Y = +0.95m.
+      // This prevents near-ground coins (at Y = 1.0m) from obstructing the camera lens.
+      this.gameOverTargetPos.set(camX, playerPos.y + (isPortrait ? 1.50 : 1.65), playerPos.z - (isPortrait ? 2.5 : 2.9));
+      this.gameOverLookTarget.set(playerPos.x, playerPos.y + 0.95, playerPos.z);
     }
   }
 
