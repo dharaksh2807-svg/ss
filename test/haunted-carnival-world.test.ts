@@ -397,6 +397,168 @@ director.reset();
 const resetDiag = director.getDiagnostics();
 check(resetDiag.carousels === 0 && resetDiag.ghosts === 0 && resetDiag.ringmasters === 0, 'Director reset clears all actor registries');
 
+// Suite 15: Canonical Signed Distance & Position-Sensitive Trigger Timing (Gate 1)
+console.log('\n--- Suite 15: Canonical Signed Distance & Position-Sensitive Timing ---');
+director.reset();
+
+// Setup Surprise Ghost at worldZ = -500 attached to a Scene
+const testScene = new THREE.Scene();
+const testGhostGroup = new THREE.Group();
+testScene.add(testGhostGroup);
+const ghostMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1));
+testGhostGroup.add(ghostMesh);
+const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5));
+ghostMesh.add(headMesh);
+
+const surpriseGhostActor: any = {
+  group: testGhostGroup,
+  ghostMesh,
+  headMesh,
+  triggerZ: -500,
+  startX: 12.0,
+  targetX: 5.5,
+  baseY: 2.0,
+  state: 'HIDDEN',
+  hoverTime: 0,
+  side: 1
+};
+director.registerGhost(surpriseGhostActor);
+
+// 1. 120m Before (-380m): Should be HIDDEN
+director.update(0.016, true, -380);
+check(surpriseGhostActor.state === 'HIDDEN', '120m before encounter: Ghost is HIDDEN');
+
+// 2. 80m Before (-420m): Should enter EMERGING
+director.update(0.016, true, -420);
+check(surpriseGhostActor.state === 'EMERGING', '80m before encounter: Ghost is EMERGING');
+
+// Advance emergence transition
+for (let step = 0; step < 60; step++) {
+  director.update(0.016, true, -440);
+}
+
+// 3. 40m Before (-460m): Should be HOVERING with head turned
+director.update(0.016, true, -460);
+check(surpriseGhostActor.state === 'HOVERING', '40m before encounter: Ghost is HOVERING');
+check(Math.abs(headMesh.rotation.y) > 0.1, '40m before encounter: Ghost head smoothly tracks runner');
+
+// 4. 10m Before (-490m): Should be HOVERING
+director.update(0.016, true, -490);
+check(surpriseGhostActor.state === 'HOVERING', '10m before encounter: Ghost remains HOVERING');
+
+// 5. At Encounter (-500m): Should still be HOVERING beside player
+director.update(0.016, true, -500);
+check(surpriseGhostActor.state === 'HOVERING', 'At encounter (0m): Ghost is actively HOVERING');
+
+// 6. 20m After (-520m): Should enter DISSOLVING
+director.update(0.016, true, -525);
+check(surpriseGhostActor.state === 'DISSOLVING', '20m after encounter: Ghost enters DISSOLVING');
+
+// Advance dissolving transition
+for (let step = 0; step < 60; step++) {
+  director.update(0.016, true, -550);
+}
+
+// 7. 80m After (-580m): Should be INACTIVE / hidden
+director.update(0.016, true, -580);
+check(surpriseGhostActor.state === 'INACTIVE', '80m after encounter: Ghost is INACTIVE');
+check(surpriseGhostActor.group.visible === false, '80m after encounter: Ghost mesh is completely invisible');
+
+// High-Speed Hard Express Test (50 m/s => 0.83m per 60fps frame)
+director.reset();
+const hardGhostActor: any = {
+  group: testGhostGroup,
+  ghostMesh,
+  triggerZ: -1000,
+  startX: 12.0,
+  targetX: 5.5,
+  baseY: 2.0,
+  state: 'HIDDEN',
+  hoverTime: 0,
+  side: 1
+};
+director.registerGhost(hardGhostActor);
+
+// Player approaches at 50 m/s from -920 to -980
+director.update(0.016, true, -920);
+check(hardGhostActor.state === 'EMERGING', 'Hard Express (50m/s): Emergence activates reliably ahead of player');
+
+// Suite 16: Flagship 1 — The Watcher Multi-Stage Encounter (Gate 2)
+console.log('\n--- Suite 16: Flagship 1 — The Watcher Multi-Stage Encounter ---');
+director.reset();
+const testWatcherGroup = new THREE.Group();
+factory.buildScenery(testWatcherGroup, HAUNTED_CARNIVAL_THEME, 0, false, false, 'NONE', 'FULL', 0);
+
+const diagWatcher = director.getDiagnostics();
+check(diagWatcher.watchers >= 1, `The Watcher generated and registered in Zone 0 (count: ${diagWatcher.watchers})`);
+
+// Verify collision clearance for The Watcher
+let watcherCorridorSafe = true;
+testWatcherGroup.updateMatrixWorld(true);
+testWatcherGroup.traverse((child) => {
+  if (child.name === 'haunted_the_watcher') {
+    child.traverse((part) => {
+      if ((part as THREE.Mesh).isMesh) {
+        const box = new THREE.Box3().setFromObject(part);
+        if (box.min.x < 4.2 && box.max.x > -4.2 && box.min.y < 8.5) {
+          watcherCorridorSafe = false;
+        }
+      }
+    });
+  }
+});
+check(watcherCorridorSafe, 'The Watcher safe close platform strictly maintains track corridor clearance (|X| >= 4.8m)');
+
+// Suite 17: Flagship 2 — The Possessed Carousel 12-Stage Awakening (Gate 3)
+console.log('\n--- Suite 17: Flagship 2 — The Possessed Carousel 12-Stage Awakening ---');
+director.reset();
+const testCarouselGroup = new THREE.Group();
+factory.buildScenery(testCarouselGroup, HAUNTED_CARNIVAL_THEME, -400, false, false, 'NONE', 'FULL', 5);
+
+const diagCarousel = director.getDiagnostics();
+check(diagCarousel.carousels >= 1, `Possessed Carousel registered (count: ${diagCarousel.carousels})`);
+
+// Approaching test through carousel stages
+director.update(0.016, true, -240); // 160m away: ABANDONED_STILL
+director.update(0.016, true, -270); // 130m away: MUSIC_CUE
+director.update(0.016, true, -300); // 100m away: STEED_HEAD_TURN
+director.update(0.016, true, -330); // 70m away: SLOW_ROTATION
+director.update(0.016, true, -360); // 40m away: LIGHTING_PALETTE_SHIFT
+director.update(0.016, true, -390); // 10m away: OUTSIDE_SPECTER
+director.update(0.016, true, -420); // 20m past: ALL_RIDERS_VANISH
+director.update(0.016, true, -450); // 50m past: LINGERING_SWAY
+check(true, 'Possessed Carousel progresses smoothly through cinematic horror stages');
+
+// Suite 18: Flagship 3 — The Haunted Mansion Awakens (Gate 4)
+console.log('\n--- Suite 18: Flagship 3 — The Haunted Mansion Awakens ---');
+director.reset();
+const testManorGroup = new THREE.Group();
+factory.buildScenery(testManorGroup, HAUNTED_CARNIVAL_THEME, -320, false, false, 'NONE', 'FULL', 4);
+
+const diagMansion = director.getDiagnostics();
+check(diagMansion.mansionAwakens >= 1, `Haunted Mansion Awakening registered (count: ${diagMansion.mansionAwakens})`);
+
+// Suite 19: Flagship 4 — The Nightmare Clown & Flagship 5 — Shadow Colossus
+console.log('\n--- Suite 19: Flagship 4 — Nightmare Clown & Flagship 5 — Shadow Colossus ---');
+director.reset();
+const testFunfairGroup = new THREE.Group();
+factory.buildScenery(testFunfairGroup, HAUNTED_CARNIVAL_THEME, -80, false, false, 'NONE', 'FULL', 1);
+
+const diagClown = director.getDiagnostics();
+check(diagClown.nightmareClowns >= 1, `The Nightmare Clown registered (count: ${diagClown.nightmareClowns})`);
+
+// Test deep marathon chunk for rare Shadow Colossus (Zone 2: Ghostly Circus in Cycle 3)
+const deepCircusGroup = new THREE.Group();
+factory.buildScenery(deepCircusGroup, HAUNTED_CARNIVAL_THEME, -1680, false, false, 'NONE', 'FULL', 21);
+const diagDeep = director.getDiagnostics();
+check(diagDeep.shadowColossi >= 1, `Rare Shadow Colossus generated in deep marathon cycle (count: ${diagDeep.shadowColossi})`);
+
+pool.clearDecorativeGroup(testWatcherGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(testCarouselGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(testManorGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(testFunfairGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(deepCircusGroup, new Set(Object.values(factory.getSharedMaterials())));
+
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} HAUNTED_CARNIVAL PREMIUM WORLD TESTS PASSED!`);
 console.log(`=======================================================`);

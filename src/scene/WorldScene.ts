@@ -2673,7 +2673,7 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'HAUNTED_CARNIVAL') {
       const delta = dt || 0.016;
-      HauntedCarnivalEventDirector.getInstance().update(delta, true);
+      HauntedCarnivalEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'PHANTOM_LINE') {

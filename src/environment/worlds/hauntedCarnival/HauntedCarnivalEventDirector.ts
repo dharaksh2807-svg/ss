@@ -2,12 +2,26 @@ import * as THREE from 'three';
 import { SettingsManager } from '../../../settings/SettingsManager';
 
 /**
- * Actor Interfaces for Haunted Carnival Dynamic Encounters
+ * HAUNTED CARNIVAL: THE NIGHTMARE EXPERIENCE
+ * Dynamic Horror Event Director
+ * 
+ * Enforces canonical negative-Z signed-distance triggers:
+ *   distanceAhead = playerZ - eventWorldZ
+ * 
+ * Coordinates the 5 Flagship Horror Encounters:
+ *   1. THE WATCHER: Lone figure under dim lamp -> head turns -> vanishes -> close platform shock lunge
+ *   2. THE POSSESSED CAROUSEL: 12-stage cinematic awakening, independent steed turn, ghostly riders, abrupt stop
+ *   3. THE HAUNTED MANSION AWAKENS: Window silhouettes, darkening sequence, wraith emergence, giant skyline colossus
+ *   4. THE NIGHTMARE CLOWN: Sinister articulated clown peeking in booth, startling lurch to curb, unnatural head snap
+ *   5. THE SHADOW COLOSSUS: Monumental breathing skyline titan with glowing beacons
  */
+
+// --- Actor Interfaces ---
 
 export interface SteedActor {
   mesh: THREE.Object3D;
   pole: THREE.Object3D;
+  head?: THREE.Object3D;
   rider?: THREE.Object3D;
   baseY: number;
   amplitude: number;
@@ -15,17 +29,36 @@ export interface SteedActor {
   phase: number;
 }
 
+export type CarouselStage =
+  | 'ABANDONED_STILL'
+  | 'MUSIC_CUE'
+  | 'STEED_HEAD_TURN'
+  | 'RIDER_MATERIALIZE_1'
+  | 'SLOW_ROTATION'
+  | 'ALL_RIDERS_FADE_IN'
+  | 'LIGHTING_PALETTE_SHIFT'
+  | 'RIDERS_TURN_TO_TRACK'
+  | 'OUTSIDE_SPECTER'
+  | 'ABRUPT_STOP'
+  | 'ALL_RIDERS_VANISH'
+  | 'LINGERING_SWAY';
+
 export interface HauntedCarouselActor {
   group: THREE.Group;
   turntable: THREE.Object3D;
   canopy: THREE.Object3D;
   steeds: SteedActor[];
+  leadSteedHead?: THREE.Object3D;
+  outsideSpecter?: THREE.Group;
   centerOrgan?: THREE.Object3D;
   organPipes?: THREE.Object3D[];
   lanternBulbs?: THREE.Mesh[];
   rotationSpeed: number;
+  currentSpeed: number;
   worldZ: number;
   isAwakened: boolean;
+  stage: CarouselStage;
+  stageTimer: number;
 }
 
 export interface SurpriseGhostActor {
@@ -41,6 +74,102 @@ export interface SurpriseGhostActor {
   state: 'HIDDEN' | 'EMERGING' | 'HOVERING' | 'DISSOLVING' | 'INACTIVE';
   hoverTime: number;
   side: number;
+}
+
+export type WatcherState =
+  | 'DORMANT'
+  | 'DISTANT_WATCHING'
+  | 'SUSPENSE_TURNING'
+  | 'VANISHED'
+  | 'CLOSE_SHOCK'
+  | 'DISSOLVING'
+  | 'COMPLETED';
+
+export interface WatcherActor {
+  group: THREE.Group;
+  worldZ: number;
+  side: number;
+  distantLamp: THREE.Group;
+  distantLampLight: THREE.Mesh;
+  distantFigure: THREE.Group;
+  distantHead: THREE.Object3D;
+  distantEyes: THREE.Mesh[];
+  closePlatform: THREE.Group;
+  closeFigure: THREE.Group;
+  closeHead: THREE.Object3D;
+  closeFace?: THREE.Mesh;
+  closeEyes: THREE.Mesh[];
+  closeArmLeft: THREE.Object3D;
+  closeArmRight: THREE.Object3D;
+  mistCloud?: THREE.Mesh;
+  aftermathSilhouette?: THREE.Group;
+  state: WatcherState;
+  stateTimer: number;
+}
+
+export type MansionStage =
+  | 'QUIET'
+  | 'HIGH_WINDOW_SILHOUETTE'
+  | 'LOW_WINDOW_SILHOUETTE'
+  | 'WINDOWS_DARKEN'
+  | 'DOORS_OPENING'
+  | 'WRAITH_EMERGE'
+  | 'COLOSSUS_RISE'
+  | 'HAND_OVER_ROOF'
+  | 'FADE_TO_DARKNESS';
+
+export interface MansionAwakensActor {
+  group: THREE.Group;
+  worldZ: number;
+  sideX: number;
+  highWindows: Array<{ mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; silhouette: THREE.Mesh }>;
+  lowWindows: Array<{ mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; silhouette: THREE.Mesh }>;
+  doorLeft: THREE.Object3D;
+  doorRight: THREE.Object3D;
+  portalWraith: THREE.Group;
+  colossusGroup: THREE.Group;
+  colossusHead: THREE.Object3D;
+  colossusEyes: THREE.Mesh[];
+  colossusLeftArm: THREE.Object3D;
+  colossusRightClaw: THREE.Object3D;
+  stage: MansionStage;
+  stageTimer: number;
+}
+
+export type NightmareClownState =
+  | 'PEEKING_INSIDE'
+  | 'DUCKING'
+  | 'DOOR_OPENING'
+  | 'EMERGING'
+  | 'NOTICING_RUNNER'
+  | 'STARTLING_LURCH'
+  | 'FROZEN_TWIST'
+  | 'HEAD_SNAP'
+  | 'VANISHED';
+
+export interface NightmareClownActor {
+  group: THREE.Group;
+  worldZ: number;
+  baseX: number;
+  boothDoor: THREE.Object3D;
+  clownBody: THREE.Group;
+  clownHead: THREE.Object3D;
+  clownArmLeft: THREE.Object3D;
+  clownArmRight: THREE.Object3D;
+  jugglingEmbers?: THREE.Mesh[];
+  state: NightmareClownState;
+  timer: number;
+}
+
+export interface ShadowColossusActor {
+  group: THREE.Group;
+  worldZ: number;
+  head: THREE.Object3D;
+  leftClaw: THREE.Object3D;
+  rightClaw: THREE.Object3D;
+  eyes: THREE.Mesh[];
+  baseY: number;
+  phase: number;
 }
 
 export interface RingmasterActor {
@@ -146,9 +275,130 @@ export interface AmbientHauntingActor {
 }
 
 /**
+ * Procedural Web Audio Synthesizer for Supernatural Cues
+ */
+class HauntedAudioEngine {
+  private static ctx: AudioContext | null = null;
+  private static lastSoundTime: Record<string, number> = {};
+
+  private static getAudioContext(): AudioContext | null {
+    if (typeof window === 'undefined') return null;
+    if (this.ctx) return this.ctx;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
+    } catch {}
+    return this.ctx;
+  }
+
+  public static playWatcherShock(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx || SettingsManager.getInstance().getState().isMuted) return;
+    const now = ctx.currentTime;
+    if (now - (this.lastSoundTime['watcher_shock'] || 0) < 3.0) return;
+    this.lastSoundTime['watcher_shock'] = now;
+
+    try {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      // Dissonant minor-second cluster
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(82.4, now); // Low E
+      osc2.frequency.setValueAtTime(87.3, now); // Low F (dissonant friction)
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(420, now);
+      filter.frequency.exponentialRampToValueAtTime(140, now + 0.8);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.25);
+      osc2.stop(now + 1.25);
+    } catch {}
+  }
+
+  public static playCarouselMusicBox(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx || SettingsManager.getInstance().getState().isMuted) return;
+    const now = ctx.currentTime;
+    if (now - (this.lastSoundTime['carousel_chime'] || 0) < 4.0) return;
+    this.lastSoundTime['carousel_chime'] = now;
+
+    try {
+      // Four descending detuned music box chimes
+      const notes = [587.33, 523.25, 440.0, 392.0];
+      notes.forEach((freq, idx) => {
+        const t = now + idx * 0.22;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq * (1.0 + (Math.random() * 0.01 - 0.005)), t);
+
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.08, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.65);
+      });
+    } catch {}
+  }
+
+  public static playColossusRumble(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx || SettingsManager.getInstance().getState().isMuted) return;
+    const now = ctx.currentTime;
+    if (now - (this.lastSoundTime['colossus_rumble'] || 0) < 6.0) return;
+    this.lastSoundTime['colossus_rumble'] = now;
+
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(45.0, now);
+      osc.frequency.linearRampToValueAtTime(65.0, now + 1.2);
+      osc.frequency.linearRampToValueAtTime(38.0, now + 2.8);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(180, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 3.1);
+    } catch {}
+  }
+}
+
+/**
  * HauntedCarnivalEventDirector
- * Coordinates and animates all 12 signature scares, Scene A (Carousel), Scene B (Ghost Encounter),
- * and ambient hauntings with performance safety, reduced-motion awareness, and leak-free lifecycle pruning.
+ * Coordinates and animates all flagship horror encounters, signature scares, and ambient hauntings.
  */
 export class HauntedCarnivalEventDirector {
   private static instance: HauntedCarnivalEventDirector | null = null;
@@ -156,8 +406,14 @@ export class HauntedCarnivalEventDirector {
   private totalTime: number = 0;
   private frameCounter: number = 0;
 
-  // Registered Actors
+  // Registered Flagship Actors
+  private watchers: WatcherActor[] = [];
   private carousels: HauntedCarouselActor[] = [];
+  private mansionAwakens: MansionAwakensActor[] = [];
+  private nightmareClowns: NightmareClownActor[] = [];
+  private shadowColossi: ShadowColossusActor[] = [];
+
+  // Existing Signature Scares
   private ghosts: SurpriseGhostActor[] = [];
   private ringmasters: RingmasterActor[] = [];
   private ghostClowns: GhostClownActor[] = [];
@@ -186,8 +442,24 @@ export class HauntedCarnivalEventDirector {
 
   // --- Registration Methods ---
 
+  public registerWatcher(actor: WatcherActor): void {
+    this.watchers.push(actor);
+  }
+
   public registerCarousel(actor: HauntedCarouselActor): void {
     this.carousels.push(actor);
+  }
+
+  public registerMansionAwakens(actor: MansionAwakensActor): void {
+    this.mansionAwakens.push(actor);
+  }
+
+  public registerNightmareClown(actor: NightmareClownActor): void {
+    this.nightmareClowns.push(actor);
+  }
+
+  public registerShadowColossus(actor: ShadowColossusActor): void {
+    this.shadowColossi.push(actor);
   }
 
   public registerGhost(actor: SurpriseGhostActor): void {
@@ -246,10 +518,33 @@ export class HauntedCarnivalEventDirector {
     this.ambient.creakingSigns.push({ mesh, phase });
   }
 
+  // --- Diagnostics Getters ---
+  public getWatcherCount(): number { return this.watchers.length; }
+  public getCarouselCount(): number { return this.carousels.length; }
+  public getMansionAwakensCount(): number { return this.mansionAwakens.length; }
+  public getNightmareClownCount(): number { return this.nightmareClowns.length; }
+  public getShadowColossusCount(): number { return this.shadowColossi.length; }
+  public getGhostCount(): number { return this.ghosts.length; }
+  public getRingmasterCount(): number { return this.ringmasters.length; }
+  public getGhostClownCount(): number { return this.ghostClowns.length; }
+
+  public getTotalActiveElements(): number {
+    return this.watchers.length + this.carousels.length + this.mansionAwakens.length +
+      this.nightmareClowns.length + this.shadowColossi.length + this.ghosts.length +
+      this.ringmasters.length + this.ghostClowns.length + this.hauntedDolls.length +
+      this.shadowCreatures.length + this.mirrorGlitches.length + this.ghostTrains.length +
+      this.livingPumpkins.length + this.paradeFloats.length + this.batSwarms.length +
+      this.funhouseTricks.length;
+  }
+
   // --- Lifecycle & Pruning ---
 
   public reset(): void {
+    this.watchers.length = 0;
     this.carousels.length = 0;
+    this.mansionAwakens.length = 0;
+    this.nightmareClowns.length = 0;
+    this.shadowColossi.length = 0;
     this.ghosts.length = 0;
     this.ringmasters.length = 0;
     this.ghostClowns.length = 0;
@@ -279,7 +574,11 @@ export class HauntedCarnivalEventDirector {
   }
 
   private pruneDetached(): void {
+    this.watchers = this.watchers.filter((a) => !this.isDetached(a.group));
     this.carousels = this.carousels.filter((a) => !this.isDetached(a.group));
+    this.mansionAwakens = this.mansionAwakens.filter((a) => !this.isDetached(a.group));
+    this.nightmareClowns = this.nightmareClowns.filter((a) => !this.isDetached(a.group));
+    this.shadowColossi = this.shadowColossi.filter((a) => !this.isDetached(a.group));
     this.ghosts = this.ghosts.filter((a) => !this.isDetached(a.group));
     this.ringmasters = this.ringmasters.filter((a) => !this.isDetached(a.group));
     this.ghostClowns = this.ghostClowns.filter((a) => !this.isDetached(a.group));
@@ -320,40 +619,216 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 1. SCENE A: THE HAUNTED CAROUSEL AWAKENING
+    // =========================================================================
+    // FLAGSHIP 1: THE WATCHER (Opening & Recurring Psychological Jumpscare)
+    // =========================================================================
+    for (let w = 0; w < this.watchers.length; w++) {
+      const watcher = this.watchers[w];
+      const distanceAhead = pZ - watcher.worldZ; // Canonical negative-Z signed distance
+      watcher.stateTimer += dt;
+
+      if (distanceAhead > 130) {
+        watcher.state = 'DORMANT';
+        watcher.distantFigure.visible = true;
+        watcher.closeFigure.visible = false;
+        watcher.distantLampLight.scale.setScalar(1.0);
+        watcher.distantHead.rotation.y = 0;
+      } else if (distanceAhead > 75) {
+        watcher.state = 'DISTANT_WATCHING';
+        watcher.distantFigure.visible = true;
+        watcher.closeFigure.visible = false;
+        // Subtle motionless silhouette standing under dim gaslight
+        watcher.distantHead.rotation.y = Math.sin(t * 0.8) * 0.05;
+      } else if (distanceAhead > 35) {
+        watcher.state = 'SUSPENSE_TURNING';
+        watcher.distantFigure.visible = true;
+        watcher.closeFigure.visible = false;
+
+        // Lamp slowly dims and flickers
+        const flicker = 0.35 + 0.25 * Math.sin(t * 14.0) * Math.cos(t * 9.0);
+        watcher.distantLampLight.scale.setScalar(flicker);
+
+        // Figure slowly rotates head to face the runner
+        const targetRotY = THREE.MathUtils.clamp((distanceAhead - 35) / 40, 0, 1.0);
+        watcher.distantHead.rotation.y = (1.0 - targetRotY) * (watcher.side > 0 ? -1.2 : 1.2);
+
+        // Faint pale eyes glow into visibility
+        for (let e = 0; e < watcher.distantEyes.length; e++) {
+          const eye = watcher.distantEyes[e];
+          eye.scale.setScalar(0.7 + 0.3 * Math.sin(t * 6.0));
+        }
+      } else if (distanceAhead > 22) {
+        watcher.state = 'VANISHED';
+        // Lamp goes out, distant figure is GONE
+        watcher.distantLampLight.scale.setScalar(0.001);
+        watcher.distantFigure.visible = false;
+        watcher.closeFigure.visible = false;
+      } else if (distanceAhead > -12) {
+        if (watcher.state !== 'CLOSE_SHOCK') {
+          watcher.state = 'CLOSE_SHOCK';
+          HauntedAudioEngine.playWatcherShock();
+        }
+        // SUDDEN CLOSE SHOCK ON SAFE ELEVATED PLATFORM
+        watcher.distantFigure.visible = false;
+        watcher.closeFigure.visible = true;
+
+        // Unnatural lunging movement toward viewing edge
+        const lungeProgress = Math.min(1.0, Math.max(0.0, (22 - distanceAhead) / 10));
+        const lungeX = watcher.side * (watcher.closeFigure.userData.baseX + lungeProgress * 0.9);
+        watcher.closeFigure.position.x = lungeX;
+        watcher.closeFigure.position.z = Math.sin(t * 22.0) * 0.08 * motionScale;
+
+        // Limbs reach forward unnaturally
+        watcher.closeArmLeft.rotation.x = -1.2 + Math.sin(t * 18.0) * 0.25 * motionScale;
+        watcher.closeArmRight.rotation.x = -1.1 + Math.cos(t * 16.0) * 0.25 * motionScale;
+        watcher.closeHead.rotation.x = 0.25;
+        watcher.closeHead.rotation.y = watcher.side > 0 ? -0.4 : 0.4;
+
+        // Eyes pulse intensely
+        for (let e = 0; e < watcher.closeEyes.length; e++) {
+          watcher.closeEyes[e].scale.setScalar(1.2 + 0.3 * Math.sin(t * 25.0));
+        }
+      } else if (distanceAhead > -40) {
+        watcher.state = 'DISSOLVING';
+        const dissolveProg = Math.min(1.0, (-12 - distanceAhead) / 28);
+        const scaleVal = Math.max(0.001, 1.0 - dissolveProg);
+        watcher.closeFigure.scale.set(scaleVal, scaleVal, scaleVal);
+        watcher.closeFigure.position.y += dt * 1.5; // Drifts upward into mist
+
+        if (dissolveProg >= 1.0) {
+          watcher.closeFigure.visible = false;
+        }
+
+        // Lamp returns to steady ambient glow
+        watcher.distantLampLight.scale.setScalar(0.8);
+      } else {
+        watcher.state = 'COMPLETED';
+        watcher.closeFigure.visible = false;
+        watcher.distantFigure.visible = false;
+      }
+    }
+
+    // =========================================================================
+    // FLAGSHIP 2: THE POSSESSED CAROUSEL (12-Stage Cinematic Awakening)
+    // =========================================================================
     for (let i = 0; i < this.carousels.length; i++) {
       const c = this.carousels[i];
-      const dist = Math.abs(c.worldZ - pZ);
+      const distanceAhead = pZ - c.worldZ; // Canonical negative-Z signed distance
+      c.stageTimer += dt;
 
-      // Proximity awakening: starts slow, accelerates and pulses lights when player approaches
-      const awakenDistance = 140;
-      if (dist < awakenDistance && !c.isAwakened) {
-        c.isAwakened = true;
+      // 12-Stage Progression
+      if (distanceAhead > 140) {
+        c.stage = 'ABANDONED_STILL';
+        c.currentSpeed = 0;
+        if (c.outsideSpecter) c.outsideSpecter.visible = false;
+      } else if (distanceAhead > 115) {
+        if (c.stage !== 'MUSIC_CUE') {
+          c.stage = 'MUSIC_CUE';
+          HauntedAudioEngine.playCarouselMusicBox();
+        }
+        c.currentSpeed = 0;
+      } else if (distanceAhead > 95) {
+        c.stage = 'STEED_HEAD_TURN';
+        c.currentSpeed = 0;
+        // Lead steed independently turns head toward oncoming tracks
+        if (c.leadSteedHead) {
+          c.leadSteedHead.rotation.y = THREE.MathUtils.lerp(c.leadSteedHead.rotation.y, 1.2, dt * 3.0);
+        }
+      } else if (distanceAhead > 80) {
+        c.stage = 'RIDER_MATERIALIZE_1';
+        c.currentSpeed = c.rotationSpeed * 0.15;
+        // First phantom child silhouette fades in
+        if (c.steeds[0] && c.steeds[0].rider) {
+          c.steeds[0].rider.visible = true;
+          c.steeds[0].rider.scale.setScalar(Math.min(1.0, c.steeds[0].rider.scale.x + dt * 2.0));
+        }
+      } else if (distanceAhead > 65) {
+        c.stage = 'SLOW_ROTATION';
+        c.currentSpeed = THREE.MathUtils.lerp(c.currentSpeed, c.rotationSpeed * 0.5, dt * 2.0);
+      } else if (distanceAhead > 50) {
+        c.stage = 'ALL_RIDERS_FADE_IN';
+        c.currentSpeed = THREE.MathUtils.lerp(c.currentSpeed, c.rotationSpeed, dt * 2.5);
+        // All riders materialize
+        for (let s = 0; s < c.steeds.length; s++) {
+          const rider = c.steeds[s]?.rider;
+          if (rider) {
+            rider.visible = true;
+          }
+        }
+      } else if (distanceAhead > 35) {
+        c.stage = 'LIGHTING_PALETTE_SHIFT';
+        c.currentSpeed = c.rotationSpeed * 1.35;
+        // Bulbs shift to unsettling blood crimson & violet
+        if (c.lanternBulbs) {
+          for (let b = 0; b < c.lanternBulbs.length; b++) {
+            const bulb = c.lanternBulbs[b];
+            const mat = bulb.material as THREE.MeshBasicMaterial;
+            if (mat && mat.color) {
+              mat.color.setHex(b % 2 === 0 ? 0x991b1b : 0x4a044e);
+            }
+          }
+        }
+      } else if (distanceAhead > 18) {
+        c.stage = 'RIDERS_TURN_TO_TRACK';
+        c.currentSpeed = c.rotationSpeed * 1.4;
+        // Riders snap heads toward oncoming player
+        for (let s = 0; s < c.steeds.length; s++) {
+          const rider = c.steeds[s]?.rider;
+          if (rider) {
+            rider.rotation.y = THREE.MathUtils.lerp(rider.rotation.y, Math.PI * 0.5, dt * 5.0);
+          }
+        }
+      } else if (distanceAhead > 0) {
+        c.stage = 'OUTSIDE_SPECTER';
+        c.currentSpeed = c.rotationSpeed * 1.2;
+        // Phantom conductor appears outside ride at trackside verge
+        if (c.outsideSpecter) {
+          c.outsideSpecter.visible = true;
+          c.outsideSpecter.position.y = Math.sin(t * 3.5) * 0.3;
+        }
+      } else if (distanceAhead > -15) {
+        c.stage = 'ABRUPT_STOP';
+        // Carousel halts abruptly with shudder
+        c.currentSpeed = 0;
+        c.turntable.rotation.y += Math.sin(t * 35.0) * 0.015 * motionScale;
+      } else if (distanceAhead > -30) {
+        c.stage = 'ALL_RIDERS_VANISH';
+        c.currentSpeed = 0;
+        // All riders vanish into thin air
+        for (let s = 0; s < c.steeds.length; s++) {
+          const rider = c.steeds[s]?.rider;
+          if (rider) {
+            rider.visible = false;
+          }
+        }
+        if (c.outsideSpecter) c.outsideSpecter.visible = false;
+      } else {
+        c.stage = 'LINGERING_SWAY';
+        c.currentSpeed = 0;
+        // Lone steed sways faintly in dead silence
+        if (c.steeds[0]) {
+          c.steeds[0].mesh.rotation.z = Math.sin(t * 1.2) * 0.05 * motionScale;
+        }
       }
 
-      const activeSpeed = (c.isAwakened ? c.rotationSpeed : c.rotationSpeed * 0.3) * motionScale;
+      // Rotate turntable according to current active speed
+      c.turntable.rotation.y += c.currentSpeed * motionScale * dt;
+      c.canopy.rotation.y -= c.currentSpeed * 0.4 * motionScale * dt;
 
-      // Rotate circular platform
-      c.turntable.rotation.y += activeSpeed * dt;
-
-      // Canopy subtle counter-rotation
-      c.canopy.rotation.y -= activeSpeed * 0.45 * dt;
-
-      // Vertical sinusoidal bobbing steeds & ghostly riders
+      // Sinusoidal bobbing steeds
       for (let s = 0; s < c.steeds.length; s++) {
         const steed = c.steeds[s];
         const bob = Math.sin(t * steed.frequency * motionScale + steed.phase) * steed.amplitude;
         steed.mesh.position.y = steed.baseY + bob;
         steed.pole.position.y = steed.baseY + bob * 0.5;
 
-        if (steed.rider) {
+        if (steed.rider && steed.rider.visible) {
           steed.rider.position.y = steed.baseY + bob + 0.65;
-          // Ghost rider undulating spectral sway
           steed.rider.rotation.z = Math.sin(t * 3.0 + steed.phase) * 0.08 * motionScale;
         }
       }
 
-      // Center organ pipe puffing animation
+      // Organ pipes
       if (c.organPipes) {
         for (let p = 0; p < c.organPipes.length; p++) {
           const pipe = c.organPipes[p];
@@ -361,27 +836,175 @@ export class HauntedCarnivalEventDirector {
           pipe.scale.set(1.0, scaleY, 1.0);
         }
       }
+    }
 
-      // Bulb lights chasing pattern
-      if (c.lanternBulbs) {
-        for (let b = 0; b < c.lanternBulbs.length; b++) {
-          const bulb = c.lanternBulbs[b];
-          const pulse = 0.5 + 0.5 * Math.sin(t * 5.0 + b * 0.4);
-          if ((bulb.material as THREE.MeshBasicMaterial).color) {
-            bulb.scale.setScalar(0.85 + pulse * 0.3);
-          }
+    // =========================================================================
+    // FLAGSHIP 3: THE HAUNTED MANSION AWAKENS (858m Cinematic Showpiece)
+    // =========================================================================
+    for (let m = 0; m < this.mansionAwakens.length; m++) {
+      const manor = this.mansionAwakens[m];
+      const distanceAhead = pZ - manor.worldZ; // Canonical negative-Z signed distance
+      manor.stageTimer += dt;
+
+      if (distanceAhead > 160) {
+        manor.stage = 'QUIET';
+        manor.highWindows.forEach(w => { w.silhouette.visible = false; w.mat.color.setHex(0xfbbf24); });
+        manor.lowWindows.forEach(w => { w.silhouette.visible = false; w.mat.color.setHex(0xfbbf24); });
+        manor.doorLeft.rotation.y = 0;
+        manor.doorRight.rotation.y = 0;
+        manor.portalWraith.visible = false;
+        manor.colossusGroup.visible = false;
+        manor.colossusGroup.position.y = 12.0;
+      } else if (distanceAhead > 130) {
+        manor.stage = 'HIGH_WINDOW_SILHOUETTE';
+        // Silhouette appears in high window looking down
+        if (manor.highWindows[1]) {
+          manor.highWindows[1].silhouette.visible = true;
+          manor.highWindows[1].silhouette.position.y = Math.sin(t * 1.5) * 0.1;
+        }
+      } else if (distanceAhead > 105) {
+        manor.stage = 'LOW_WINDOW_SILHOUETTE';
+        // Figure appears in lower window
+        if (manor.lowWindows[0]) {
+          manor.lowWindows[0].silhouette.visible = true;
+        }
+      } else if (distanceAhead > 80) {
+        manor.stage = 'WINDOWS_DARKEN';
+        // Windows extinguish one by one
+        const darkIdx = Math.floor((105 - distanceAhead) / 8);
+        manor.highWindows.forEach((w, idx) => {
+          if (idx <= darkIdx) w.mat.color.setHex(0x050508);
+        });
+        manor.lowWindows.forEach((w, idx) => {
+          if (idx <= darkIdx) w.mat.color.setHex(0x050508);
+        });
+      } else if (distanceAhead > 55) {
+        manor.stage = 'DOORS_OPENING';
+        // Double doors slowly creak open
+        manor.doorLeft.rotation.y = THREE.MathUtils.lerp(manor.doorLeft.rotation.y, -Math.PI * 0.45, dt * 1.8);
+        manor.doorRight.rotation.y = THREE.MathUtils.lerp(manor.doorRight.rotation.y, Math.PI * 0.45, dt * 1.8);
+      } else if (distanceAhead > 35) {
+        manor.stage = 'WRAITH_EMERGE';
+        // Spectral wraith floats out of portal
+        manor.portalWraith.visible = true;
+        manor.portalWraith.position.z += dt * 1.8;
+        manor.portalWraith.position.y = 2.4 + Math.sin(t * 3.2) * 0.35;
+      } else if (distanceAhead > 10) {
+        if (manor.stage !== 'COLOSSUS_RISE') {
+          manor.stage = 'COLOSSUS_RISE';
+          HauntedAudioEngine.playColossusRumble();
+        }
+        // Monumental shadow colossus rises behind the manor towers
+        manor.colossusGroup.visible = true;
+        manor.colossusGroup.position.y = THREE.MathUtils.lerp(manor.colossusGroup.position.y, 36.0, dt * 2.2);
+        manor.colossusHead.rotation.x = THREE.MathUtils.lerp(manor.colossusHead.rotation.x, 0.35, dt * 2.0);
+
+        // Glowing red beacons pulse
+        manor.colossusEyes.forEach(eye => {
+          eye.scale.setScalar(1.2 + 0.35 * Math.sin(t * 8.0));
+        });
+      } else if (distanceAhead > -25) {
+        manor.stage = 'HAND_OVER_ROOF';
+        // Enormous clawed hand reaches over the rooftop tiles!
+        manor.colossusRightClaw.rotation.x = THREE.MathUtils.lerp(manor.colossusRightClaw.rotation.x, -1.2, dt * 3.2);
+        manor.colossusRightClaw.position.z = THREE.MathUtils.lerp(manor.colossusRightClaw.position.z, 8.5, dt * 3.0);
+      } else {
+        manor.stage = 'FADE_TO_DARKNESS';
+        // Dissolves into atmospheric fog
+        const fadeProg = Math.min(1.0, (-25 - distanceAhead) / 30);
+        manor.colossusGroup.scale.setScalar(Math.max(0.001, 1.0 - fadeProg));
+        manor.portalWraith.scale.setScalar(Math.max(0.001, 1.0 - fadeProg));
+        if (fadeProg >= 1.0) {
+          manor.colossusGroup.visible = false;
+          manor.portalWraith.visible = false;
         }
       }
     }
 
-    // 2. SCENE B: SURPRISE GHOST ENCOUNTER
+    // =========================================================================
+    // FLAGSHIP 4: THE NIGHTMARE CLOWN (Sinister Booth Encounter)
+    // =========================================================================
+    for (let c = 0; c < this.nightmareClowns.length; c++) {
+      const clown = this.nightmareClowns[c];
+      const distanceAhead = pZ - clown.worldZ; // Canonical negative-Z signed distance
+      clown.timer += dt;
+
+      if (distanceAhead > 90) {
+        clown.state = 'PEEKING_INSIDE';
+        clown.clownBody.visible = true;
+        clown.clownBody.position.set(0, 1.2, 0);
+        clown.clownHead.rotation.y = Math.sin(t * 2.0) * 0.2;
+        clown.boothDoor.rotation.y = 0;
+      } else if (distanceAhead > 75) {
+        clown.state = 'DUCKING';
+        clown.clownBody.position.y = THREE.MathUtils.lerp(clown.clownBody.position.y, 0.4, dt * 6.0);
+      } else if (distanceAhead > 60) {
+        clown.state = 'DOOR_OPENING';
+        clown.boothDoor.rotation.y = THREE.MathUtils.lerp(clown.boothDoor.rotation.y, -Math.PI * 0.4, dt * 2.5);
+      } else if (distanceAhead > 45) {
+        clown.state = 'EMERGING';
+        clown.clownBody.position.y = 0;
+        clown.clownBody.position.z = THREE.MathUtils.lerp(clown.clownBody.position.z, 2.5, dt * 2.5);
+      } else if (distanceAhead > 30) {
+        clown.state = 'NOTICING_RUNNER';
+        // Head jerks to face oncoming runner
+        clown.clownHead.rotation.y = THREE.MathUtils.lerp(clown.clownHead.rotation.y, Math.PI * 0.5, dt * 8.0);
+      } else if (distanceAhead > 10) {
+        clown.state = 'STARTLING_LURCH';
+        // Startling sudden lurch toward safe viewing edge (strictly |X| >= 4.8m)
+        clown.clownBody.position.x = THREE.MathUtils.lerp(clown.clownBody.position.x, clown.baseX > 0 ? -1.8 : 1.8, dt * 7.0);
+        clown.clownArmLeft.rotation.z = Math.sin(t * 25.0) * 0.6;
+        clown.clownArmRight.rotation.x = -1.2 + Math.cos(t * 22.0) * 0.4;
+      } else if (distanceAhead > 0) {
+        clown.state = 'FROZEN_TWIST';
+        // Rigid frozen contortion
+        clown.clownHead.rotation.z = 0.45;
+      } else if (distanceAhead > -15) {
+        clown.state = 'HEAD_SNAP';
+        // Head rotates 90 degrees mechanically
+        clown.clownHead.rotation.y = Math.PI;
+      } else {
+        clown.state = 'VANISHED';
+        clown.clownBody.visible = false;
+      }
+    }
+
+    // =========================================================================
+    // FLAGSHIP 5: THE SHADOW COLOSSUS (Rare Deep Skyline Titan)
+    // =========================================================================
+    for (let sc = 0; sc < this.shadowColossi.length; sc++) {
+      const colossus = this.shadowColossi[sc];
+      const distanceAhead = pZ - colossus.worldZ;
+      const colT = t * 0.45 + colossus.phase;
+
+      // Colossal slow breathing
+      colossus.group.position.y = colossus.baseY + Math.sin(colT) * 2.5 * motionScale;
+      colossus.leftClaw.rotation.z = Math.sin(colT * 0.8) * 0.22 * motionScale;
+      colossus.rightClaw.rotation.z = -Math.cos(colT * 0.7) * 0.25 * motionScale;
+
+      // Piercing eyes pulse
+      for (let e = 0; e < colossus.eyes.length; e++) {
+        colossus.eyes[e].scale.setScalar(1.0 + 0.35 * Math.sin(t * 4.0 + e));
+      }
+
+      // Track head toward runner when within 250m
+      if (Math.abs(distanceAhead) < 250) {
+        colossus.head.rotation.y = THREE.MathUtils.clamp(distanceAhead * 0.003, -0.4, 0.4);
+      }
+    }
+
+    // =========================================================================
+    // EXISTING SIGNATURE SCARES (WITH FIXED CANONICAL SIGNED DISTANCE)
+    // =========================================================================
+
+    // SCENE B: SURPRISE GHOST ENCOUNTER
     for (let i = 0; i < this.ghosts.length; i++) {
       const g = this.ghosts[i];
-      const distToTrigger = g.triggerZ - pZ; // Positive when player is approaching (running towards negative Z)
+      // CORRECTED: distanceAhead = pZ - g.triggerZ (positive when approaching in negative-Z)
+      const distanceAhead = pZ - g.triggerZ;
 
-      // State Machine for elegant emergence and dissolution
       if (g.state === 'HIDDEN') {
-        if (distToTrigger < 95 && distToTrigger > -10) {
+        if (distanceAhead <= 100 && distanceAhead >= -10) {
           g.state = 'EMERGING';
           g.hoverTime = 0;
           g.group.visible = true;
@@ -389,7 +1012,6 @@ export class HauntedCarnivalEventDirector {
       } else if (g.state === 'EMERGING') {
         g.hoverTime += dt;
         const progress = Math.min(1.0, g.hoverTime * 1.6);
-        // Smooth slide out from behind booth into side vista (strictly outside corridor)
         g.ghostMesh.position.x = THREE.MathUtils.lerp(g.startX, g.targetX, progress);
         g.ghostMesh.position.y = g.baseY + Math.sin(t * 2.8) * 0.4 * motionScale;
 
@@ -398,32 +1020,30 @@ export class HauntedCarnivalEventDirector {
         }
       } else if (g.state === 'HOVERING') {
         g.hoverTime += dt;
-        // Spectral floating hover motion
         g.ghostMesh.position.y = g.baseY + Math.sin(t * 2.2 + g.side) * 0.38 * motionScale;
         g.ghostMesh.rotation.z = Math.sin(t * 1.5) * 0.07 * motionScale;
 
         // Head turns smoothly toward the oncoming runner
         if (g.headMesh) {
-          const lookAngle = THREE.MathUtils.clamp((pZ - g.triggerZ) * 0.015, -0.65, 0.65);
+          const lookAngle = THREE.MathUtils.clamp(distanceAhead * 0.015, -0.65, 0.65);
           g.headMesh.rotation.y = lookAngle * (g.side > 0 ? 1 : -1);
         }
 
-        // Lantern swinging
         if (g.lanternMesh) {
           g.lanternMesh.rotation.z = Math.sin(t * 3.2) * 0.22 * motionScale;
         }
 
         // Dissolve when player runs past
-        if (distToTrigger < -22) {
+        if (distanceAhead < -20) {
           g.state = 'DISSOLVING';
           g.hoverTime = 0;
         }
       } else if (g.state === 'DISSOLVING') {
         g.hoverTime += dt;
         const dissolveProg = Math.min(1.0, g.hoverTime * 2.2);
-        const scaleVal = 1.0 - dissolveProg;
+        const scaleVal = Math.max(0.001, 1.0 - dissolveProg);
         g.ghostMesh.scale.set(scaleVal, scaleVal, scaleVal);
-        g.ghostMesh.position.y += dt * 1.8; // Drifts upward into mist
+        g.ghostMesh.position.y += dt * 1.8;
 
         if (dissolveProg >= 1.0) {
           g.state = 'INACTIVE';
@@ -432,14 +1052,13 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 3. THE HAUNTED RINGMASTER
+    // THE HAUNTED RINGMASTER
     for (let i = 0; i < this.ringmasters.length; i++) {
       const rm = this.ringmasters[i];
-      const dist = rm.triggerZ - pZ;
+      const distanceAhead = pZ - rm.triggerZ; // CORRECTED
 
-      if (dist < 110 && dist > -15) {
+      if (distanceAhead <= 110 && distanceAhead >= -15) {
         rm.timer += dt;
-        // Theatrical greeting: swings cane, tips hat / bows
         const bow = Math.sin(rm.timer * 2.5) * 0.25 * motionScale;
         rm.head.rotation.x = bow;
         rm.caneArm.rotation.z = Math.sin(rm.timer * 3.0) * 0.45 * motionScale;
@@ -451,22 +1070,19 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 4. MISCHIEVOUS GHOST CLOWN
+    // MISCHIEVOUS GHOST CLOWN
     for (let i = 0; i < this.ghostClowns.length; i++) {
       const clown = this.ghostClowns[i];
-      const dist = clown.triggerZ - pZ;
+      const distanceAhead = pZ - clown.triggerZ; // CORRECTED
 
-      if (dist < 85 && dist > -15) {
+      if (distanceAhead <= 85 && distanceAhead >= -15) {
         clown.timer += dt;
-        // Peeks out from tent edge
         const peek = Math.sin(clown.timer * 2.8) * clown.peekOffset * motionScale;
         clown.group.position.x = clown.baseX + peek;
 
-        // Honk horn / wave hands
         clown.armLeft.rotation.z = Math.sin(clown.timer * 5.0) * 0.35 * motionScale;
         clown.armRight.rotation.x = Math.cos(clown.timer * 4.0) * 0.35 * motionScale;
 
-        // Juggling glowing embers in parabolic loops
         for (let j = 0; j < clown.jugglingOrbs.length; j++) {
           const orb = clown.jugglingOrbs[j];
           const phase = clown.orbPhases[j] + t * 4.0 * motionScale;
@@ -477,33 +1093,27 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 5. HAUNTED DOLLS (Head Tracking Player)
+    // HAUNTED DOLLS (Head Tracking Player)
     for (let i = 0; i < this.hauntedDolls.length; i++) {
       const doll = this.hauntedDolls[i];
-      const dz = doll.worldZ - pZ;
+      const distanceAhead = pZ - doll.worldZ; // CORRECTED
 
-      if (Math.abs(dz) < 65) {
-        // Smoothly rotate head to look at runner
-        const targetRotY = THREE.MathUtils.clamp(-dz * 0.022 * doll.side, -0.85, 0.85);
+      if (Math.abs(distanceAhead) < 70) {
+        const targetRotY = THREE.MathUtils.clamp(distanceAhead * 0.022 * doll.side, -0.85, 0.85);
         doll.head.rotation.y = THREE.MathUtils.lerp(doll.head.rotation.y, doll.baseRotY + targetRotY, dt * 4.0);
-        // Subtle creepy tilt
         doll.head.rotation.z = Math.sin(t * 1.8) * 0.08 * motionScale;
       }
     }
 
-    // 6. GIANT SHADOW CREATURE (Background Loom)
+    // GIANT SHADOW CREATURE (Background Loom)
     for (let i = 0; i < this.shadowCreatures.length; i++) {
       const beast = this.shadowCreatures[i];
       const beastT = t * 0.65 + beast.phase;
 
-      // Colossal breathing silhouette rise and fall
       beast.group.position.y = beast.baseY + Math.sin(beastT) * 1.8 * motionScale;
-
-      // Slow sweeping claw gestures through the purple fog
       beast.leftClaw.rotation.z = Math.sin(beastT * 1.2) * 0.22 * motionScale;
       beast.rightClaw.rotation.z = -Math.cos(beastT * 0.9) * 0.25 * motionScale;
 
-      // Glowing crimson/amber eyes pulsing
       for (let e = 0; e < beast.eyes.length; e++) {
         const eye = beast.eyes[e];
         const pulse = 0.8 + 0.35 * Math.sin(t * 3.5 + e);
@@ -511,23 +1121,20 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 7. CURSED MIRROR MAZE GLITCH
+    // CURSED MIRROR MAZE GLITCH
     for (let i = 0; i < this.mirrorGlitches.length; i++) {
       const mg = this.mirrorGlitches[i];
       mg.flickerTimer += dt;
 
       if (mg.ghostReflection) {
-        // Reflection moves slightly desynced from reality
         mg.ghostReflection.position.y = Math.sin(t * 4.0 + mg.phase) * 0.12 * motionScale;
         mg.ghostReflection.rotation.y = Math.cos(t * 2.5 + mg.phase) * 0.18 * motionScale;
-
-        // Occasional ghostly flicker
         const isFlicker = Math.sin(mg.flickerTimer * 9.0) > 0.85;
         mg.ghostReflection.visible = !isFlicker;
       }
     }
 
-    // 8. SPECTRAL GHOST TRAIN (Sky Viaduct Cross-Over)
+    // SPECTRAL GHOST TRAIN (Sky Viaduct Cross-Over)
     for (let i = 0; i < this.ghostTrains.length; i++) {
       const gt = this.ghostTrains[i];
       gt.group.position.z += gt.speed * dt * motionScale;
@@ -538,13 +1145,11 @@ export class HauntedCarnivalEventDirector {
         gt.group.position.z = gt.maxZ;
       }
 
-      // Wheels rotation
       const wheelRot = gt.speed * dt * 2.5;
       for (let w = 0; w < gt.wheels.length; w++) {
         gt.wheels[w].rotation.x += wheelRot;
       }
 
-      // Spectral window glow pulses
       for (let g = 0; g < gt.spectralGlows.length; g++) {
         const glow = gt.spectralGlows[g];
         const p = 0.75 + 0.25 * Math.sin(t * 4.0 + g * 0.6);
@@ -552,26 +1157,22 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 9. LIVING PUMPKIN PATCH (Watchful Jack-o'-Lanterns)
+    // LIVING PUMPKIN PATCH (Watchful Jack-o'-Lanterns)
     for (let i = 0; i < this.livingPumpkins.length; i++) {
       const p = this.livingPumpkins[i];
-      const dz = p.worldZ - pZ;
+      const distanceAhead = pZ - p.worldZ; // CORRECTED
 
-      if (Math.abs(dz) < 70) {
-        // Swivel toward runner
-        const targetAngle = THREE.MathUtils.clamp(-dz * 0.025, -0.9, 0.9);
+      if (Math.abs(distanceAhead) < 70) {
+        const targetAngle = THREE.MathUtils.clamp(distanceAhead * 0.025, -0.9, 0.9);
         p.head.rotation.y = THREE.MathUtils.lerp(p.head.rotation.y, p.baseRotY + targetAngle, dt * 5.0);
-
-        // Jack-o'-lantern flicker
         const flicker = 0.8 + 0.3 * Math.sin(t * 12.0 + p.phase) * Math.cos(t * 7.5);
         p.glowMesh.scale.setScalar(flicker);
       }
     }
 
-    // 10. GHOST CARNIVAL PARADE FLOAT
+    // GHOST CARNIVAL PARADE FLOAT
     for (let i = 0; i < this.paradeFloats.length; i++) {
       const pf = this.paradeFloats[i];
-      // Float rocking
       pf.group.rotation.z = Math.sin(t * 1.8) * 0.04 * motionScale;
 
       for (let s = 0; s < pf.skeletons.length; s++) {
@@ -587,7 +1188,7 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
-    // 11. SPECTRAL BAT SWARM (Overhead Sky Arcs)
+    // SPECTRAL BAT SWARM (Overhead Sky Arcs)
     for (let i = 0; i < this.batSwarms.length; i++) {
       const swarm = this.batSwarms[i];
       for (let b = 0; b < swarm.bats.length; b++) {
@@ -598,37 +1199,33 @@ export class HauntedCarnivalEventDirector {
         bat.mesh.position.set(bx, bat.baseY + Math.sin(t * 4.0 + b) * 1.2, bz);
         bat.mesh.rotation.y = -angle + Math.PI * 0.5;
 
-        // Wing flapping
         const flap = Math.sin(t * 16.0 + b * 2.0) * 0.55 * motionScale;
         bat.wingL.rotation.z = flap;
         bat.wingR.rotation.z = -flap;
       }
     }
 
-    // 12. TRICK FUNHOUSE FACADE ILLUSION
+    // TRICK FUNHOUSE FACADE ILLUSION
     for (let i = 0; i < this.funhouseTricks.length; i++) {
       const fh = this.funhouseTricks[i];
       fh.phase += dt * 1.5 * motionScale;
 
-      // Crooked facade tiles subtly shift
       for (let k = 0; k < fh.movingTiles.length; k++) {
         const tile = fh.movingTiles[k];
         tile.rotation.z = Math.sin(fh.phase + k * 1.2) * 0.06 * motionScale;
       }
 
-      // Rolling eyes
       for (let e = 0; e < fh.eyeballs.length; e++) {
         const eye = fh.eyeballs[e];
         eye.rotation.y = Math.sin(t * 2.2 + e) * 0.45 * motionScale;
       }
 
-      // Jaw dropping
       if (fh.mouthJaw) {
         fh.mouthJaw.position.y = -0.3 + Math.sin(t * 1.8) * 0.25 * motionScale;
       }
     }
 
-    // 13. AMBIENT HAUNTINGS: LANTERNS, WILL-O'-THE-WISPS, CREAKING SIGNS
+    // AMBIENT HAUNTINGS: LANTERNS, WILL-O'-THE-WISPS, CREAKING SIGNS
     for (let i = 0; i < this.ambient.swingingLanterns.length; i++) {
       const l = this.ambient.swingingLanterns[i];
       const angle = Math.sin(t * l.freq * motionScale + l.phase) * 0.22 * motionScale;
@@ -659,7 +1256,11 @@ export class HauntedCarnivalEventDirector {
 
   public getDiagnostics(): Record<string, number> {
     return {
+      watchers: this.watchers.length,
       carousels: this.carousels.length,
+      mansionAwakens: this.mansionAwakens.length,
+      nightmareClowns: this.nightmareClowns.length,
+      shadowColossi: this.shadowColossi.length,
       ghosts: this.ghosts.length,
       ringmasters: this.ringmasters.length,
       ghostClowns: this.ghostClowns.length,

@@ -179,6 +179,129 @@ class HauntedCarnivalTextureHelper {
     this.cache.set(key, tex);
     return tex;
   }
+
+  public static getWatcherFaceTexture(): THREE.Texture {
+    if (typeof document === 'undefined') return new THREE.Texture();
+    const key = 'haunted_watcher_face';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+
+    // Pale, ashen, decaying skin
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Deep hollow sunken eye sockets
+    ctx.fillStyle = '#090714';
+    ctx.beginPath();
+    ctx.ellipse(80, 95, 32, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(176, 95, 32, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Piercing pale cyan/white pupils
+    ctx.fillStyle = '#67e8f9';
+    ctx.shadowColor = '#06b6d4';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(80, 95, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(176, 95, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Stretched gaunt mouth with dark void
+    ctx.fillStyle = '#0f0b18';
+    ctx.beginPath();
+    ctx.ellipse(128, 185, 38, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cracked skin veins
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(80, 135);
+    ctx.lineTo(60, 175);
+    ctx.lineTo(35, 195);
+    ctx.moveTo(176, 135);
+    ctx.lineTo(195, 170);
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getNightmareClownFaceTexture(): THREE.Texture {
+    if (typeof document === 'undefined') return new THREE.Texture();
+    const key = 'haunted_clown_face';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+
+    // Chalk white cracked clown greasepaint
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Black diamond markings through eyes
+    ctx.fillStyle = '#090714';
+    const drawDiamond = (cx: number, cy: number, w: number, h: number) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - h);
+      ctx.lineTo(cx + w, cy);
+      ctx.lineTo(cx, cy + h);
+      ctx.lineTo(cx - w, cy);
+      ctx.closePath();
+      ctx.fill();
+    };
+    drawDiamond(80, 90, 26, 48);
+    drawDiamond(176, 90, 26, 48);
+
+    // Glowing yellow/amber predatory eyes
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(80, 90, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(176, 90, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Distorted wide red smile stretching past cheeks
+    ctx.fillStyle = '#991b1b';
+    ctx.beginPath();
+    ctx.moveTo(35, 160);
+    ctx.quadraticCurveTo(128, 245, 221, 160);
+    ctx.quadraticCurveTo(128, 190, 35, 160);
+    ctx.closePath();
+    ctx.fill();
+
+    // Sharp jagged yellow teeth
+    ctx.fillStyle = '#fef08a';
+    for (let t = 0; t < 7; t++) {
+      const tx = 65 + t * 18;
+      ctx.beginPath();
+      ctx.moveTo(tx, 178);
+      ctx.lineTo(tx + 7, 195);
+      ctx.lineTo(tx + 14, 178);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
 }
 
 /**
@@ -208,6 +331,10 @@ export class HauntedCarnivalWorldBuilder {
   private dollFaceMat!: THREE.MeshBasicMaterial;
   private witchFireGreenMat!: THREE.MeshBasicMaterial;
   private darkCobblestoneMat!: THREE.MeshStandardMaterial;
+  private watcherFaceMat!: THREE.MeshBasicMaterial;
+  private clownFaceMat!: THREE.MeshBasicMaterial;
+  private shadowColossusMat!: THREE.MeshStandardMaterial;
+  private bloodCrimsonGlowMat!: THREE.MeshBasicMaterial;
 
   private constructor() {
     this.initCustomMaterials();
@@ -291,6 +418,28 @@ export class HauntedCarnivalWorldBuilder {
       metalness: 0.15
     });
     curved.applyCurvature(this.darkCobblestoneMat);
+
+    this.watcherFaceMat = new THREE.MeshBasicMaterial({
+      map: HauntedCarnivalTextureHelper.getWatcherFaceTexture()
+    });
+    curved.applyCurvature(this.watcherFaceMat);
+
+    this.clownFaceMat = new THREE.MeshBasicMaterial({
+      map: HauntedCarnivalTextureHelper.getNightmareClownFaceTexture()
+    });
+    curved.applyCurvature(this.clownFaceMat);
+
+    this.shadowColossusMat = new THREE.MeshStandardMaterial({
+      color: 0x07050d,
+      roughness: 0.95,
+      metalness: 0.1
+    });
+    curved.applyCurvature(this.shadowColossusMat);
+
+    this.bloodCrimsonGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xdc2626
+    });
+    curved.applyCurvature(this.bloodCrimsonGlowMat);
   }
 
   // --- Geometry Cache Helpers ---
@@ -660,6 +809,9 @@ export class HauntedCarnivalWorldBuilder {
     // SIGNATURE SCARE 1: THE HAUNTED RINGMASTER (Welcoming at Entrance)
     this.spawnRingmaster(entranceGroup, sideX, boothZ + 6.0, director, worldZ);
 
+    // FLAGSHIP HORROR SCARE A: THE WATCHER (First 100m Opening Jumpscare)
+    this.spawnTheWatcher(entranceGroup, 1, boothZ + 12.0, director, worldZ);
+
     // Bare Gnarled Dead Trees with Perched Bats
     this.spawnTwistedTrees(entranceGroup, -sideX - 4.5, -chunkLength * 0.25, mats, detail);
     this.spawnTwistedTrees(entranceGroup, sideX + 4.5, -chunkLength * 0.75, mats, detail);
@@ -746,6 +898,9 @@ export class HauntedCarnivalWorldBuilder {
     // SIGNATURE SCARE 2: PEEK-A-BOO GHOST CLOWN (Behind concession stand)
     this.spawnGhostClown(funfairGroup, sideX, stallZ, director, worldZ);
 
+    // FLAGSHIP HORROR SCARE D: THE NIGHTMARE CLOWN (Sinister Articulated Clown Jumpscare)
+    this.spawnNightmareClown(funfairGroup, -sideX - 2.0, stallZ, director, worldZ);
+
     // SIGNATURE SCARE 11: TRICK FUNHOUSE FACADE ILLUSION
     if (variant === 1 || detail === 'FULL') {
       this.spawnFunhouseFacade(funfairGroup, sideX + 4.0, -chunkLength * 0.75, director);
@@ -815,6 +970,11 @@ export class HauntedCarnivalWorldBuilder {
 
     // SIGNATURE SCARE 9: Ghost Carnival Parade Float on opposite side
     this.spawnParadeFloat(circusGroup, tentX - 4.0, tentZ + 8.0, director);
+
+    // FLAGSHIP HORROR SCARE E: THE SHADOW COLOSSUS (Rare Skyline Titan in Deep Runs)
+    if (worldZ <= -1600 || variant === 2) {
+      this.spawnShadowColossus(circusGroup, tentX + 16.0, tentZ - 30.0, director, worldZ);
+    }
 
     circusGroup.add(tentGroup);
     group.add(circusGroup);
@@ -889,6 +1049,9 @@ export class HauntedCarnivalWorldBuilder {
     // SCENE B: SURPRISE GHOST ENCOUNTER (Emerging from behind Mausoleum)
     this.spawnSurpriseGhost(graveyardGroup, -sideX - 2.0, cryptZ, director, worldZ);
 
+    // FLAGSHIP HORROR SCARE A: THE WATCHER (Haunting the Graveyard Gates)
+    this.spawnTheWatcher(graveyardGroup, -1, cryptZ + 8.0, director, worldZ);
+
     graveyardGroup.add(cryptGroup);
     group.add(graveyardGroup);
   }
@@ -917,6 +1080,7 @@ export class HauntedCarnivalWorldBuilder {
 
     const sideX = roadbedWidth * 0.5 + 14.0;
     const manorZ = -chunkLength * 0.5;
+    const triggerWorldZ = worldZ - Math.abs(manorZ);
 
     // Multi-tier Victorian Gothic Manor
     const baseW = 16.0;
@@ -945,14 +1109,72 @@ export class HauntedCarnivalWorldBuilder {
       mansion.add(spire);
     });
 
-    // Illuminated Gothic Stained-Glass Windows with Silhouettes
+    // High & Low Animated Windows with independent materials & silhouettes
+    const highWindows: Array<{ mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; silhouette: THREE.Mesh }> = [];
+    const lowWindows: Array<{ mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; silhouette: THREE.Mesh }> = [];
+
     [-4.5, 0, 4.5].forEach((wx) => {
-      [4.5, 9.5].forEach((wy) => {
-        const win = new THREE.Mesh(this.getBox(2.2, 3.4, 0.2), mats.hauntedGothicWindowMat);
-        win.position.set(-sideX + wx, wy, manorZ + baseD * 0.5 + 0.1);
-        mansion.add(win);
-      });
+      // High window
+      const highMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+      CurvedShaderManager.getInstance().applyCurvature(highMat);
+      const highWin = new THREE.Mesh(this.getBox(2.2, 3.4, 0.2), highMat);
+      highWin.position.set(-sideX + wx, 9.5, manorZ + baseD * 0.5 + 0.1);
+
+      const highSil = new THREE.Mesh(this.getBox(1.1, 1.9, 0.05), this.shadowColossusMat);
+      highSil.position.set(0, -0.3, 0.12);
+      highSil.visible = false;
+      highWin.add(highSil);
+      mansion.add(highWin);
+      highWindows.push({ mesh: highWin, mat: highMat, silhouette: highSil });
+
+      // Low window
+      const lowMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+      CurvedShaderManager.getInstance().applyCurvature(lowMat);
+      const lowWin = new THREE.Mesh(this.getBox(2.2, 3.4, 0.2), lowMat);
+      lowWin.position.set(-sideX + wx, 4.5, manorZ + baseD * 0.5 + 0.1);
+
+      const lowSil = new THREE.Mesh(this.getBox(1.0, 1.8, 0.05), this.shadowColossusMat);
+      lowSil.position.set(0, -0.3, 0.12);
+      lowSil.visible = false;
+      lowWin.add(lowSil);
+      mansion.add(lowWin);
+      lowWindows.push({ mesh: lowWin, mat: lowMat, silhouette: lowSil });
     });
+
+    // Double entrance doors on hinges
+    const doorPortal = new THREE.Group();
+    doorPortal.position.set(-sideX, 1.8, manorZ + baseD * 0.5 + 0.15);
+
+    const doorFrame = new THREE.Mesh(this.getBox(3.4, 3.8, 0.3), this.weatheredWoodMat);
+    doorPortal.add(doorFrame);
+
+    const doorLeft = new THREE.Group();
+    doorLeft.position.set(-1.4, 0, 0);
+    const dPanelL = new THREE.Mesh(this.getBox(1.4, 3.4, 0.12), this.weatheredWoodMat);
+    dPanelL.position.set(0.7, 0, 0);
+    doorLeft.add(dPanelL);
+    doorPortal.add(doorLeft);
+
+    const doorRight = new THREE.Group();
+    doorRight.position.set(1.4, 0, 0);
+    const dPanelR = new THREE.Mesh(this.getBox(1.4, 3.4, 0.12), this.weatheredWoodMat);
+    dPanelR.position.set(-0.7, 0, 0);
+    doorRight.add(dPanelR);
+    doorPortal.add(doorRight);
+
+    // Spectral Wraith floating from portal
+    const portalWraith = new THREE.Group();
+    portalWraith.position.set(0, 0, 0);
+    portalWraith.visible = false;
+    const wraithBody = new THREE.Mesh(this.getCylinder(0.2, 0.45, 1.8, 8), this.spectralVioletMat);
+    wraithBody.position.y = 0.9;
+    portalWraith.add(wraithBody);
+    const wraithHead = new THREE.Mesh(this.getSphere(0.26, 8, 8), this.spectralTealMat);
+    wraithHead.position.y = 2.0;
+    portalWraith.add(wraithHead);
+    doorPortal.add(portalWraith);
+
+    mansion.add(doorPortal);
 
     // Cathedral Organ Pipes on balcony
     const organPipesGroup = new THREE.Group();
@@ -965,11 +1187,88 @@ export class HauntedCarnivalWorldBuilder {
     }
     mansion.add(organPipesGroup);
 
-    // SIGNATURE SCARE 5: GIANT SHADOW CREATURE (Rising behind the Manor in fog)
+    // FLAGSHIP 3: Colossal Shadow Titan rising behind the Manor
+    const colossusGroup = new THREE.Group();
+    colossusGroup.name = 'mansion_shadow_colossus';
+    colossusGroup.position.set(-sideX, 14.0, manorZ - 14.0);
+    colossusGroup.visible = false;
+
+    // Torso silhouette
+    const colTorso = new THREE.Mesh(this.getBox(20.0, 32.0, 6.0), this.shadowColossusMat);
+    colTorso.position.y = 16.0;
+    colossusGroup.add(colTorso);
+
+    // Colossal Head
+    const colHead = new THREE.Group();
+    colHead.position.set(0, 34.0, 2.0);
+    const headCore = new THREE.Mesh(this.getSphere(4.2, 12, 12), this.shadowColossusMat);
+    colHead.add(headCore);
+
+    // Horns
+    [-2.8, 2.8].forEach(hx => {
+      const horn = new THREE.Mesh(this.getCone(1.2, 6.0, 6), this.shadowColossusMat);
+      horn.position.set(hx, 4.0, -0.5);
+      horn.rotation.z = hx > 0 ? -0.35 : 0.35;
+      colHead.add(horn);
+    });
+
+    // Glowing Crimson Eyes
+    const colEyes: THREE.Mesh[] = [];
+    [-1.6, 1.6].forEach(ex => {
+      const eye = new THREE.Mesh(this.getSphere(0.85, 8, 8), this.bloodCrimsonGlowMat);
+      eye.position.set(ex, 0.8, 3.8);
+      colHead.add(eye);
+      colEyes.push(eye);
+    });
+    colossusGroup.add(colHead);
+
+    // Left claw resting on shoulder
+    const clawL = new THREE.Mesh(this.getBox(5.0, 16.0, 3.5), this.shadowColossusMat);
+    clawL.position.set(-13.0, 18.0, 2.0);
+    colossusGroup.add(clawL);
+
+    // Enormous Right Claw that reaches over the rooftop tiles
+    const clawR = new THREE.Group();
+    clawR.position.set(12.0, 22.0, 2.0);
+    const armUpper = new THREE.Mesh(this.getBox(4.5, 18.0, 3.5), this.shadowColossusMat);
+    armUpper.position.set(0, -6.0, 0);
+    clawR.add(armUpper);
+
+    // Claw fingers
+    for (let f = -1; f <= 1; f++) {
+      const finger = new THREE.Mesh(this.getBox(1.1, 7.5, 1.1), this.shadowColossusMat);
+      finger.position.set(f * 1.5, -16.0, 1.2);
+      finger.rotation.x = -0.5;
+      clawR.add(finger);
+    }
+    colossusGroup.add(clawR);
+
+    manorGroup.add(colossusGroup);
+
+    // Also call spawnGiantShadowCreature for backwards compatibility
     this.spawnGiantShadowCreature(manorGroup, -sideX, manorZ - 25.0, director);
 
     manorGroup.add(mansion);
     group.add(manorGroup);
+
+    // Register Mansion Awakening with Director
+    director.registerMansionAwakens({
+      group: manorGroup,
+      worldZ: triggerWorldZ,
+      sideX,
+      highWindows,
+      lowWindows,
+      doorLeft,
+      doorRight,
+      portalWraith,
+      colossusGroup,
+      colossusHead: colHead,
+      colossusEyes: colEyes,
+      colossusLeftArm: clawL,
+      colossusRightClaw: clawR,
+      stage: 'QUIET',
+      stageTimer: 0
+    });
   }
 
   // =========================================================================
@@ -1046,6 +1345,9 @@ export class HauntedCarnivalWorldBuilder {
     }
 
     midwayGroup.add(pumpkinShrine);
+
+    // FLAGSHIP HORROR SCARE A: THE WATCHER (Watching over the Supernatural Midway)
+    this.spawnTheWatcher(midwayGroup, 1, midwayZ + 18.0, director, worldZ);
 
     // SIGNATURE SCARE 6: Cursed Mirror Maze Glitch
     this.spawnMirrorMaze(midwayGroup, sideX + 8.0, midwayZ + 12.0, mats, director);
@@ -1147,6 +1449,7 @@ export class HauntedCarnivalWorldBuilder {
       steedActors.push({
         mesh: steedGroup,
         pole,
+        head,
         rider,
         baseY: 1.8,
         amplitude: 0.65,
@@ -1156,6 +1459,18 @@ export class HauntedCarnivalWorldBuilder {
     }
 
     carouselGroup.add(turntable);
+
+    // Phantom Conductor outside ride at trackside verge
+    const outsideSpecter = new THREE.Group();
+    outsideSpecter.position.set(-radius - 1.5, 0, 0);
+    outsideSpecter.visible = false;
+    const specterBody = new THREE.Mesh(this.getCylinder(0.28, 0.45, 2.2, 8), this.spectralVioletMat);
+    specterBody.position.y = 1.1;
+    outsideSpecter.add(specterBody);
+    const specterHead = new THREE.Mesh(this.getSphere(0.3, 8, 8), this.spectralTealMat);
+    specterHead.position.y = 2.4;
+    outsideSpecter.add(specterHead);
+    carouselGroup.add(outsideSpecter);
 
     // Counter-Rotating Ornate Gothic Canopy
     const canopy = new THREE.Group();
@@ -1189,12 +1504,17 @@ export class HauntedCarnivalWorldBuilder {
       turntable,
       canopy,
       steeds: steedActors,
+      leadSteedHead: steedActors[0]?.head,
+      outsideSpecter,
       centerOrgan,
       organPipes,
       lanternBulbs,
       rotationSpeed: 0.45,
+      currentSpeed: 0,
       worldZ: worldZ - Math.abs(posZ),
-      isAwakened: false
+      isAwakened: false,
+      stage: 'ABANDONED_STILL',
+      stageTimer: 0
     });
   }
 
@@ -1656,5 +1976,330 @@ export class HauntedCarnivalWorldBuilder {
     }
 
     parent.add(treeGroup);
+  }
+
+  // =========================================================================
+  // FLAGSHIP 1: THE WATCHER (Opening & Recurring Psychological Jumpscare)
+  // =========================================================================
+
+  public spawnTheWatcher(
+    parent: THREE.Group,
+    side: number,
+    posZ: number,
+    director: HauntedCarnivalEventDirector,
+    worldZ: number
+  ): void {
+    const watcherGroup = new THREE.Group();
+    watcherGroup.name = 'haunted_the_watcher';
+    const triggerWorldZ = worldZ - Math.abs(posZ);
+    watcherGroup.position.set(0, 0, posZ);
+
+    const curbX = side * 12.0;
+
+    // 1. Distant Lamp & Motionless Figure (Setup)
+    const distantLamp = new THREE.Group();
+    distantLamp.position.set(curbX, 0, -18.0);
+
+    // Gas lamp post
+    const post = new THREE.Mesh(this.getCylinder(0.12, 0.16, 5.2, 8), this.weatheredWoodMat);
+    post.position.y = 2.6;
+    distantLamp.add(post);
+
+    // Lamp cage & bulb
+    const cage = new THREE.Mesh(this.getBox(0.8, 1.0, 0.8), this.weatheredWoodMat);
+    cage.position.set(0, 5.2, 0);
+    distantLamp.add(cage);
+
+    const bulb = new THREE.Mesh(this.getSphere(0.35, 8, 8), SceneryFactory.getInstance().getSharedMaterials().hauntedAmberGlowMat);
+    bulb.position.set(0, 5.2, 0);
+    distantLamp.add(bulb);
+
+    // Distant Motionless Figure standing under the lamp
+    const distantFig = new THREE.Group();
+    distantFig.position.set(0, 0, 0.8);
+
+    // Tall slender dark trench coat
+    const dCoat = new THREE.Mesh(this.getCylinder(0.35, 0.55, 2.6, 8), this.shadowColossusMat);
+    dCoat.position.y = 1.3;
+    distantFig.add(dCoat);
+
+    // Head on pivot
+    const dHead = new THREE.Group();
+    dHead.position.set(0, 2.7, 0);
+    const dHeadMesh = new THREE.Mesh(this.getSphere(0.32, 8, 8), this.shadowColossusMat);
+    dHead.add(dHeadMesh);
+
+    // Wide brim fedora hat
+    const hatBrim = new THREE.Mesh(this.getCylinder(0.65, 0.65, 0.08, 10), this.shadowColossusMat);
+    hatBrim.position.y = 0.22;
+    dHead.add(hatBrim);
+    const hatCrown = new THREE.Mesh(this.getCylinder(0.36, 0.42, 0.45, 10), this.shadowColossusMat);
+    hatCrown.position.y = 0.45;
+    dHead.add(hatCrown);
+
+    // Faint glowing eyes
+    const dEyes: THREE.Mesh[] = [];
+    [-0.1, 0.1].forEach((ex) => {
+      const eye = new THREE.Mesh(this.getSphere(0.06, 6, 6), this.spectralTealMat);
+      eye.position.set(ex, 0, 0.3);
+      eye.scale.setScalar(0.01);
+      dHead.add(eye);
+      dEyes.push(eye);
+    });
+    distantFig.add(dHead);
+    distantLamp.add(distantFig);
+    watcherGroup.add(distantLamp);
+
+    // 2. Safe Elevated Promenade Shock Platform (Shock Encounter)
+    // Strictly at |X| >= 4.8m (safe from track envelope |X| <= 4.2m)
+    const closePlatform = new THREE.Group();
+    const platX = side * 5.6;
+    closePlatform.position.set(platX, 0, 0);
+
+    const stonePedestal = new THREE.Mesh(this.getBox(2.8, 0.6, 3.2), SceneryFactory.getInstance().getSharedMaterials().hauntedGothicStoneMat);
+    stonePedestal.position.y = 0.3;
+    closePlatform.add(stonePedestal);
+
+    // Close Shock Figure
+    const closeFig = new THREE.Group();
+    closeFig.position.set(0, 0.6, 0);
+    closeFig.visible = false;
+    closeFig.userData.baseX = platX;
+
+    // Torso with dark Victorian frock coat
+    const cCoat = new THREE.Mesh(this.getCylinder(0.42, 0.65, 2.8, 8), this.shadowColossusMat);
+    cCoat.position.y = 1.4;
+    closeFig.add(cCoat);
+
+    // Articulated Arms reaching forward
+    const armL = new THREE.Mesh(this.getCylinder(0.12, 0.1, 1.8, 6), this.shadowColossusMat);
+    armL.position.set(-0.55, 2.3, 0.2);
+    armL.rotation.x = -0.8;
+    closeFig.add(armL);
+
+    const armR = new THREE.Mesh(this.getCylinder(0.12, 0.1, 1.8, 6), this.shadowColossusMat);
+    armR.position.set(0.55, 2.3, 0.2);
+    armR.rotation.x = -0.8;
+    closeFig.add(armR);
+
+    // Head on pivot with horrifying sculpted face
+    const cHead = new THREE.Group();
+    cHead.position.set(0, 2.9, 0);
+
+    const cHeadMesh = new THREE.Mesh(this.getSphere(0.42, 10, 10), this.shadowColossusMat);
+    cHead.add(cHeadMesh);
+
+    // Horrifying face plane
+    const facePlane = new THREE.Mesh(this.getBox(0.55, 0.65, 0.05), this.watcherFaceMat);
+    facePlane.position.set(0, 0, 0.4);
+    cHead.add(facePlane);
+
+    // Piercing glowing eyes
+    const cEyes: THREE.Mesh[] = [];
+    [-0.14, 0.14].forEach((ex) => {
+      const eye = new THREE.Mesh(this.getSphere(0.08, 8, 8), this.spectralTealMat);
+      eye.position.set(ex, 0.05, 0.44);
+      cHead.add(eye);
+      cEyes.push(eye);
+    });
+
+    // Ragged top hat
+    const cHatBrim = new THREE.Mesh(this.getCylinder(0.75, 0.75, 0.08, 12), this.shadowColossusMat);
+    cHatBrim.position.y = 0.35;
+    cHead.add(cHatBrim);
+    const cHatCrown = new THREE.Mesh(this.getCylinder(0.45, 0.52, 0.85, 12), this.shadowColossusMat);
+    cHatCrown.position.y = 0.8;
+    cHead.add(cHatCrown);
+
+    closeFig.add(cHead);
+    closePlatform.add(closeFig);
+    watcherGroup.add(closePlatform);
+
+    parent.add(watcherGroup);
+
+    director.registerWatcher({
+      group: watcherGroup,
+      worldZ: triggerWorldZ,
+      side,
+      distantLamp,
+      distantLampLight: bulb,
+      distantFigure: distantFig,
+      distantHead: dHead,
+      distantEyes: dEyes,
+      closePlatform,
+      closeFigure: closeFig,
+      closeHead: cHead,
+      closeFace: facePlane,
+      closeEyes: cEyes,
+      closeArmLeft: armL,
+      closeArmRight: armR,
+      state: 'DORMANT',
+      stateTimer: 0
+    });
+  }
+
+  // =========================================================================
+  // FLAGSHIP 4: THE NIGHTMARE CLOWN (Sinister Articulated Clown Jumpscare)
+  // =========================================================================
+
+  public spawnNightmareClown(
+    parent: THREE.Group,
+    baseX: number,
+    posZ: number,
+    director: HauntedCarnivalEventDirector,
+    worldZ: number
+  ): void {
+    const clownEncounter = new THREE.Group();
+    clownEncounter.name = 'nightmare_clown_encounter';
+    const triggerWorldZ = worldZ - Math.abs(posZ);
+    clownEncounter.position.set(baseX, 0, posZ);
+
+    // Concession Booth with articulated door
+    const boothW = 4.2;
+    const boothH = 3.8;
+    const boothD = 3.2;
+
+    const boothFrame = new THREE.Mesh(this.getBox(boothW, boothH, boothD), this.weatheredWoodMat);
+    boothFrame.position.y = boothH * 0.5;
+    clownEncounter.add(boothFrame);
+
+    // Striped Awning
+    const awning = new THREE.Mesh(this.getBox(boothW + 0.6, 0.35, boothD + 0.6), SceneryFactory.getInstance().getSharedMaterials().hauntedCarnivalStripeMat);
+    awning.position.y = boothH + 0.18;
+    clownEncounter.add(awning);
+
+    // Articulated Door on hinge
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(0, 0, boothD * 0.5);
+    const doorMesh = new THREE.Mesh(this.getBox(1.6, 2.6, 0.12), this.weatheredWoodMat);
+    doorMesh.position.set(0.8, 1.3, 0);
+    doorPivot.add(doorMesh);
+    clownEncounter.add(doorPivot);
+
+    // Articulated Nightmare Clown Body
+    const clownBody = new THREE.Group();
+    clownBody.position.set(0, 1.2, 0);
+
+    // Torso with torn ruff
+    const torso = new THREE.Mesh(this.getCylinder(0.35, 0.45, 1.6, 8), SceneryFactory.getInstance().getSharedMaterials().hauntedCarnivalStripeMat);
+    torso.position.y = 0.8;
+    clownBody.add(torso);
+
+    const ruff = new THREE.Mesh(this.getCylinder(0.65, 0.65, 0.18, 10), this.agedVelvetMat);
+    ruff.position.y = 1.65;
+    clownBody.add(ruff);
+
+    // Head on pivot with cracked porcelain clown mask
+    const head = new THREE.Group();
+    head.position.set(0, 2.1, 0);
+
+    const headSphere = new THREE.Mesh(this.getSphere(0.36, 8, 8), this.weatheredWoodMat);
+    head.add(headSphere);
+
+    const mask = new THREE.Mesh(this.getBox(0.48, 0.58, 0.05), this.clownFaceMat);
+    mask.position.set(0, 0, 0.36);
+    head.add(mask);
+
+    // Small cone clown hat
+    const hat = new THREE.Mesh(this.getCone(0.24, 0.75, 8), this.agedVelvetMat);
+    hat.position.set(0.08, 0.55, 0);
+    hat.rotation.z = -0.15;
+    head.add(hat);
+
+    clownBody.add(head);
+
+    // Articulated Arms
+    const armL = new THREE.Mesh(this.getCylinder(0.1, 0.08, 1.2, 6), this.agedVelvetMat);
+    armL.position.set(-0.45, 1.4, 0);
+    clownBody.add(armL);
+
+    const armR = new THREE.Mesh(this.getCylinder(0.1, 0.08, 1.2, 6), this.agedVelvetMat);
+    armR.position.set(0.45, 1.4, 0);
+    clownBody.add(armR);
+
+    clownEncounter.add(clownBody);
+    parent.add(clownEncounter);
+
+    director.registerNightmareClown({
+      group: clownEncounter,
+      worldZ: triggerWorldZ,
+      baseX,
+      boothDoor: doorPivot,
+      clownBody,
+      clownHead: head,
+      clownArmLeft: armL,
+      clownArmRight: armR,
+      state: 'PEEKING_INSIDE',
+      timer: 0
+    });
+  }
+
+  // =========================================================================
+  // FLAGSHIP 5: THE SHADOW COLOSSUS (Rare Skyline Titan)
+  // =========================================================================
+
+  public spawnShadowColossus(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    director: HauntedCarnivalEventDirector,
+    worldZ: number
+  ): void {
+    const colossusGroup = new THREE.Group();
+    colossusGroup.name = 'skyline_shadow_colossus';
+    const triggerWorldZ = worldZ - Math.abs(posZ);
+    const baseY = 24.0;
+    colossusGroup.position.set(posX, baseY, posZ);
+
+    // Monumental torso
+    const torso = new THREE.Mesh(this.getBox(24.0, 36.0, 8.0), this.shadowColossusMat);
+    torso.position.y = 18.0;
+    colossusGroup.add(torso);
+
+    // Colossal Head
+    const head = new THREE.Group();
+    head.position.set(0, 38.0, 3.0);
+    const skull = new THREE.Mesh(this.getSphere(5.5, 12, 12), this.shadowColossusMat);
+    head.add(skull);
+
+    // Curved Horns
+    [-3.5, 3.5].forEach(hx => {
+      const horn = new THREE.Mesh(this.getCone(1.4, 7.5, 6), this.shadowColossusMat);
+      horn.position.set(hx, 5.0, -1.0);
+      horn.rotation.z = hx > 0 ? -0.4 : 0.4;
+      head.add(horn);
+    });
+
+    // Piercing glowing crimson eyes
+    const eyes: THREE.Mesh[] = [];
+    [-2.2, 2.2].forEach(ex => {
+      const eye = new THREE.Mesh(this.getSphere(1.1, 8, 8), this.bloodCrimsonGlowMat);
+      eye.position.set(ex, 1.2, 4.8);
+      head.add(eye);
+      eyes.push(eye);
+    });
+    colossusGroup.add(head);
+
+    // Articulated Claws
+    const clawL = new THREE.Mesh(this.getBox(6.5, 20.0, 4.0), this.shadowColossusMat);
+    clawL.position.set(-16.0, 20.0, 2.0);
+    colossusGroup.add(clawL);
+
+    const clawR = new THREE.Mesh(this.getBox(6.5, 20.0, 4.0), this.shadowColossusMat);
+    clawR.position.set(16.0, 20.0, 2.0);
+    colossusGroup.add(clawR);
+
+    parent.add(colossusGroup);
+
+    director.registerShadowColossus({
+      group: colossusGroup,
+      worldZ: triggerWorldZ,
+      head,
+      leftClaw: clawL,
+      rightClaw: clawR,
+      eyes,
+      baseY,
+      phase: 0
+    });
   }
 }
