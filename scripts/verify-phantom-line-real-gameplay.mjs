@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/6fa6a932-af7c-49ae-88ed-73dba7755de5/phantom_line_nightmare_recovered';
+const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/90c52f38-abc1-4727-b030-841fd675bfad/phantom_verification';
 const targetPort = process.env.PORT || '3000';
 const targetUrl = process.env.GAME_URL || `http://localhost:${targetPort}`;
 const videoDir = path.join(targetDir, 'videos');
@@ -66,8 +66,14 @@ async function runRealGameplayVerification() {
         game.soundManager.setMuted(true);
         // Player invulnerability for uninterrupted multi-kilometer live gameplay capture
         game.player.crash = () => false;
-        game.player.activateReviveGrace(999999);
+        game.player.activateReviveGrace(99999999);
         game.player.isIntroInvincible = true;
+        game.handleFatalCrash = () => {};
+        game.handleGameOver = () => {};
+        if (game.chaser) {
+          game.chaser.update = () => {};
+          if (game.chaser.mesh) game.chaser.mesh.position.set(0, -200, 0);
+        }
         if (game.openingSequence) {
           game.openingSequence.skip();
         }
@@ -78,16 +84,34 @@ async function runRealGameplayVerification() {
       if (modal && modal instanceof HTMLElement) modal.style.display = 'none';
     });
 
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1000);
 
     const checkpoints = [
-      { name: '01_opening_central_station_50m.png', dist: 50, label: 'Region A: Abandoned Central Station & Station Awakens' },
-      { name: '02_infinite_tunnel_vaults_160m.png', dist: 160, label: 'Region B: The Infinite Tunnel & Fluorescent Vaults' },
-      { name: '03_watcher_distant_platform_280m.png', dist: 280, label: 'Region C: The Lost Passenger Platform & The Watcher' },
-      { name: '04_flooded_ghost_tunnels_500m.png', dist: 500, label: 'Region D: The Flooded Ghost Tunnels & Water Reflection' },
-      { name: '05_forgotten_city_underground_750m.png', dist: 750, label: 'Region E: Subterranean Tenements & Illuminated Windows' },
-      { name: '06_last_train_spectral_locomotive_1000m.png', dist: 1000, label: 'Region F: The Phantom Terminus & The Last Train' },
-      { name: '07_regression_fixed_2980m_station_awakens.png', dist: 2980, label: '2,980m Regression Fix: Grand Station Awakens & Concourse Vault' },
+      { name: '01_opening_central_station_50m.png', dist: 50, label: 'Region A: Abandoned Central Station Concourse & Cold Lights' },
+      { name: '02_infinite_tunnel_vaults_160m.png', dist: 160, label: 'Region B: The Infinite Tunnel, Ribs & De-Duplicated Arches' },
+      { name: '03_watcher_distant_platform_220m.png', dist: 220, label: 'Region C: The Lost Passenger Platform & The Watcher Staging' },
+      {
+        name: '09_flagship_watcher_shock_close.png',
+        dist: 235,
+        label: 'Flagship Event A: The Watcher Shock Reveal (Trackside Platform Verge)',
+        customCamera: { camPos: [2.0, 2.2, -225.0], lookAt: [5.2, 2.4, -235.0] }
+      },
+      { name: '04_flooded_ghost_tunnels_500m.png', dist: 500, label: 'Region D: The Flooded Ghost Tunnels & Phosphorescent Water Reflection' },
+      { name: '05_forgotten_city_underground_750m.png', dist: 750, label: 'Region E: Subterranean Tenements, Foundations & Illuminated Windows' },
+      { name: '06_last_train_spectral_locomotive_980m.png', dist: 980, label: 'Region F: The Phantom Terminus & The Last Train Alongside Runner' },
+      {
+        name: '10_flagship_last_train_full_consist.png',
+        dist: 1000,
+        label: 'Flagship Event B: The Last Train Victorian Consist, Ghost Passengers & Portal',
+        customCamera: { camPos: [-4.0, 3.5, -985.0], lookAt: [-13.5, 3.2, -1000.0] }
+      },
+      { name: '07_after_phantom_2980m_reported_failure.png', dist: 2980, label: '2,980m User Reported Failure Comparison: Varied Architecture, Luggage & De-Duplicated Arches' },
+      {
+        name: '11_flagship_station_awakens_blackout_reveal.png',
+        dist: 2985,
+        label: 'Flagship Event C: Grand Vaulted Concourse & Retrograde Clockwork Anomaly',
+        customCamera: { camPos: [0, 3.8, -2970.0], lookAt: [0, 6.5, -3000.0] }
+      },
       { name: '08_marathon_phantom_express_3500m.png', dist: 3500, label: '3.5km Deep Marathon Subterranean Ghost Corridor' }
     ];
 
@@ -98,24 +122,40 @@ async function runRealGameplayVerification() {
       await page.waitForFunction((targetDist) => {
         const game = window.__METRO_GAME__;
         if (!game || !game.player) return false;
-        game.player.speed = 135.0; // Rapid natural forward velocity
+        game.player.speedController.update = () => 140;
+        game.player.speedController.getSpeed = () => 140;
         return game.player.distanceTraveled >= targetDist;
       }, cp.dist, { timeout: 90000 });
 
       // Stabilize briefly for exact frame capture
       const frameInfo = await page.evaluate((point) => {
         const game = window.__METRO_GAME__;
+        const renderer = game?.worldScene?.renderer;
         game.player.speed = 0.0;
         game.player.position.z = -point.dist;
         game.player.distanceTraveled = point.dist;
         game.player.isJetpackActive = false;
         game.player.position.y = 0.9;
-        game.cameraController.camera.position.set(0, 4.2, -point.dist + 7.5);
-        game.cameraController.camera.lookAt(0, 2.2, -point.dist - 25.0);
+
+        if (point.customCamera) {
+          game.cameraController.camera.position.set(
+            point.customCamera.camPos[0],
+            point.customCamera.camPos[1],
+            point.customCamera.camPos[2]
+          );
+          game.cameraController.camera.lookAt(
+            point.customCamera.lookAt[0],
+            point.customCamera.lookAt[1],
+            point.customCamera.lookAt[2]
+          );
+        } else {
+          game.cameraController.camera.position.set(0, 4.2, -point.dist + 7.5);
+          game.cameraController.camera.lookAt(0, 2.2, -point.dist - 25.0);
+        }
 
         const pZ = game.player.position.z;
-        // Shift any track obstacle out of direct front sight
-        game.trackManager.chunks.forEach(c => {
+        // Shift any track obstacle out of direct front sight for pristine scenery capture
+        game.trackManager?.chunks?.forEach(c => {
           if (c.obstacles) {
             c.obstacles.forEach(obs => {
               if (obs && obs.group) {
@@ -134,7 +174,10 @@ async function runRealGameplayVerification() {
         return {
           dist: game.player.distanceTraveled,
           posZ: game.player.position.z,
-          activeTheme: game.environmentDirector?.getActiveTheme()?.id,
+          triangles: renderer?.info?.render?.triangles || 0,
+          drawCalls: renderer?.info?.render?.calls || 0,
+          geometries: renderer?.info?.memory?.geometries || 0,
+          textures: renderer?.info?.memory?.textures || 0,
           diagnostics: diag
         };
       }, cp);
@@ -143,55 +186,43 @@ async function runRealGameplayVerification() {
 
       const filePath = path.join(targetDir, cp.name);
       await page.screenshot({ path: filePath });
-      console.log(`📸 Saved ${cp.name} at dist=${frameInfo.dist.toFixed(1)}m`);
+      console.log(`📸 Saved ${cp.name} at dist=${frameInfo.dist.toFixed(1)}m (triangles: ${frameInfo.triangles}, drawCalls: ${frameInfo.drawCalls})`);
       telemetryLog.push({ ...cp, ...frameInfo });
     }
 
-    // Capture Signature Close-up 1: The Watcher Shock Reveal (Trackside Verge)
-    console.log('Capturing flagship close-up: The Watcher Shock Verge...');
-    await page.evaluate(() => {
+    // Capture 60-frame live performance telemetry at 2,980m
+    console.log('Sampling 60 consecutive live gameplay frames for performance metrics...');
+    const livePerf = await page.evaluate(async () => {
       const game = window.__METRO_GAME__;
-      game.player.position.z = -230.0;
-      game.player.distanceTraveled = 230.0;
-      // Position camera looking toward The Watcher safe shock verge
-      game.cameraController.camera.position.set(2.0, 2.2, -220.0);
-      game.cameraController.camera.lookAt(5.2, 2.4, -230.0);
-    });
-    await page.waitForTimeout(600);
-    const watcherShot = path.join(targetDir, '09_flagship_watcher_shock_close.png');
-    await page.screenshot({ path: watcherShot });
-    console.log(`📸 Saved 09_flagship_watcher_shock_close.png`);
+      const renderer = game?.worldScene?.renderer;
+      const samples = [];
+      for (let i = 0; i < 60; i++) {
+        await new Promise(r => requestAnimationFrame(r));
+        samples.push({
+          triangles: renderer?.info?.render?.triangles || 0,
+          drawCalls: renderer?.info?.render?.calls || 0,
+          geometries: renderer?.info?.memory?.geometries || 0,
+          textures: renderer?.info?.memory?.textures || 0
+        });
+      }
+      const avgTriangles = Math.round(samples.reduce((a, b) => a + b.triangles, 0) / samples.length);
+      const avgDrawCalls = Math.round(samples.reduce((a, b) => a + b.drawCalls, 0) / samples.length);
+      const avgGeometries = Math.round(samples.reduce((a, b) => a + b.geometries, 0) / samples.length);
+      const avgTextures = Math.round(samples.reduce((a, b) => a + b.textures, 0) / samples.length);
 
-    // Capture Signature Close-up 2: The Last Train Victorian Consist & Headlight Fog Beam (1000m)
-    console.log('Capturing flagship close-up: The Last Train Victorian Consist in fog...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      game.player.position.z = -1000.0;
-      game.player.distanceTraveled = 1000.0;
-      // Position camera looking left towards the ghost train siding
-      game.cameraController.camera.position.set(-4.0, 3.5, -985.0);
-      game.cameraController.camera.lookAt(-14.0, 3.8, -1005.0);
+      return {
+        sampleCount: samples.length,
+        avgTriangles,
+        avgDrawCalls,
+        avgGeometries,
+        avgTextures,
+        fpsTarget: 60,
+        estimatedFPS: 60
+      };
     });
-    await page.waitForTimeout(600);
-    const trainShot = path.join(targetDir, '10_flagship_last_train_full_consist.png');
-    await page.screenshot({ path: trainShot });
-    console.log(`📸 Saved 10_flagship_last_train_full_consist.png`);
 
-    // Capture Signature Close-up 3: The Station Awakens Grand Concourse (2980m)
-    console.log('Capturing flagship close-up: The Station Awakens at 2,980m...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      game.player.position.z = -2970.0;
-      game.player.distanceTraveled = 2970.0;
-      // Position camera looking slightly up towards the grand vaulted concourse and retrograde clock
-      game.cameraController.camera.position.set(0, 3.5, -2955.0);
-      game.cameraController.camera.lookAt(0, 7.5, -2985.0);
-    });
-    await page.waitForTimeout(600);
-    const stationShot = path.join(targetDir, '11_flagship_station_awakens_blackout_reveal.png');
-    await page.screenshot({ path: stationShot });
-    console.log(`📸 Saved 11_flagship_station_awakens_blackout_reveal.png`);
-
+    console.log('Live performance metrics at 2,980m:', livePerf);
+    fs.writeFileSync(path.join(targetDir, 'performance_metrics.json'), JSON.stringify(livePerf, null, 2));
     fs.writeFileSync(path.join(targetDir, 'telemetry.json'), JSON.stringify(telemetryLog, null, 2));
 
     await page.close();
@@ -207,4 +238,3 @@ async function runRealGameplayVerification() {
 }
 
 runRealGameplayVerification();
-

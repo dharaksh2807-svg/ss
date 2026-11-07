@@ -335,45 +335,36 @@ export class PhantomLineEventDirector {
         if (w.platformLamp) w.platformLamp.scale.setScalar(1.0);
         if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
         w.group.visible = true;
-      } else if (distanceAhead > 65) {
+      } else if (distanceAhead > 55) {
         // Player notices figure during approach; subtle head tracking begins
         w.state = 'WATCHING';
-        const lookAngle = THREE.MathUtils.clamp((distanceAhead - 90) * 0.015, -0.65, 0.65);
+        const lookAngle = THREE.MathUtils.clamp((distanceAhead - 80) * 0.015, -0.65, 0.65);
         w.head.rotation.y = THREE.MathUtils.lerp(w.head.rotation.y, lookAngle, dt * 3.5);
-        w.head.rotation.z = Math.sin(t * 2.0) * 0.04 * motionScale; // Eerie head tilt
+        w.head.rotation.z = Math.sin(t * 2.0) * 0.05 * motionScale; // Eerie head tilt
         if (w.platformLamp) w.platformLamp.scale.setScalar(1.0);
         if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
-      } else if (distanceAhead > 32) {
-        // 3. Figure slowly turns its head toward player; 4. Platform stillness
-        w.state = 'WATCHING';
-        w.head.rotation.y = THREE.MathUtils.lerp(w.head.rotation.y, 0, dt * 4.0); // Directly facing track
-        w.head.rotation.z = Math.sin(t * 1.5) * 0.06 * motionScale;
-        if (w.platformLamp) w.platformLamp.scale.setScalar(0.95);
-        if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
-      } else if (distanceAhead > 18) {
-        // 5. Lamp dims briefly; 6. Figure vanishes
+        w.group.visible = true;
+      } else if (distanceAhead > 22) {
+        // 5. Lamp dims down; 6. Figure dissolves behind Victorian column
         w.state = 'STEPPING_BACK';
-        // Platform lamp dips to low eerie pulse
         if (w.platformLamp) {
-          const dim = Math.max(0.15, 0.4 + 0.3 * Math.sin(t * 12.0));
+          const dim = Math.max(0.15, 0.45 + 0.25 * Math.sin(t * 10.0));
           w.platformLamp.scale.setScalar(dim);
         }
-        // Figure steps behind column / dissolves into shadows
-        const stepProgress = Math.min(1.0, (32 - distanceAhead) / 14);
+        const stepProgress = Math.min(1.0, (55 - distanceAhead) / 33);
         w.group.position.x = THREE.MathUtils.lerp(w.baseX, w.hideX, stepProgress);
         for (let e = 0; e < w.eyes.length; e++) {
           w.eyes[e].scale.setScalar(Math.max(0.01, 1.0 - stepProgress));
         }
         if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
-      } else if (distanceAhead > -4) {
-        // 7. Figure unexpectedly reappears at closer, safe trackside location!
-        // 8. Stares toward the moving runner!
-        w.state = 'VANISHED'; // Platform watcher is vanished
+      } else if (distanceAhead > -14) {
+        // 7. SHOCK REVEAL: Figure unexpectedly reappears at trackside verge!
+        // 8. Stares toward the moving runner with glowing cyan eyes tracking!
+        w.state = 'VANISHED'; // Platform distant watcher is vanished
         w.group.visible = false;
 
         if (w.closeVergeMesh) {
           w.closeVergeMesh.visible = true;
-          // Shock reveal: twin cyan eyes pierce through fog at trackside verge
           if (w.closeVergeHead) {
             const trackAngle = THREE.MathUtils.clamp(-distanceAhead * 0.04, -0.85, 0.85);
             w.closeVergeHead.rotation.y = trackAngle;
@@ -404,10 +395,11 @@ export class PhantomLineEventDirector {
 
       lt.timer += dt;
 
-      // Moves along parallel siding
-      lt.group.position.z += lt.speed * dt * motionScale;
-      if (lt.group.position.z > lt.maxZ) {
-        lt.group.position.z = lt.minZ;
+      // 1. Distant station signal turns on
+      if (lt.stationSignalLight) {
+        lt.stationSignalLight.visible = distanceAhead < 160 && distanceAhead > -60;
+        const sigPulse = 0.8 + 0.25 * Math.sin(t * 4.0);
+        lt.stationSignalLight.scale.setScalar(sigPulse);
       }
 
       // Wheels rotation
@@ -416,31 +408,32 @@ export class PhantomLineEventDirector {
         lt.wheels[w].rotation.x += wheelRot;
       }
 
-      // 1. Distant station signal turns on
-      if (lt.stationSignalLight) {
-        lt.stationSignalLight.visible = distanceAhead < 160 && distanceAhead > -60;
-        const sigPulse = 0.8 + 0.25 * Math.sin(t * 4.0);
-        lt.stationSignalLight.scale.setScalar(sigPulse);
-      }
-
       // State progression along distance
       if (distanceAhead > 130) {
         lt.state = 'APPROACHING';
         lt.group.visible = true;
+        lt.group.position.z = 25.0;
         if (lt.headlightBeam) lt.headlightBeam.scale.set(0.4, 0.4, 0.4);
-      } else if (distanceAhead > 70) {
+      } else if (distanceAhead > 50) {
         // 2. Spectral train emerges from tunnel; 3. Headlights illuminate fog
         lt.state = 'APPROACHING';
         lt.group.visible = true;
+        const approachProg = (130 - distanceAhead) / 80;
+        lt.group.position.z = THREE.MathUtils.lerp(25.0, 0.0, approachProg);
+
         if (lt.headlightBeam) {
           const beamPulse = 1.0 + 0.15 * Math.sin(t * 3.0);
           lt.headlightBeam.scale.set(beamPulse, beamPulse, beamPulse * 1.3);
           lt.headlightBeam.visible = true;
         }
-      } else if (distanceAhead > -25) {
+      } else if (distanceAhead > -35) {
         // 4. Ghost passengers turn toward runner; 5. Travels alongside; 6. Empty car; 7. Final window figure
         lt.state = 'PASSING';
         lt.group.visible = true;
+
+        // Smoothly advances in negative-Z direction alongside runner
+        lt.group.position.z -= lt.speed * dt * motionScale * 0.6;
+        if (lt.group.position.z < -45.0) lt.group.position.z = -45.0;
 
         // Glowing cyan passenger windows pulse softly
         for (let g = 0; g < lt.windowGlows.length; g++) {
@@ -453,7 +446,7 @@ export class PhantomLineEventDirector {
         for (let p = 0; p < lt.ghostPassengers.length; p++) {
           const pass = lt.ghostPassengers[p];
           pass.rotation.z = Math.sin(t * 2.2 + p) * 0.06 * motionScale;
-          const turnAngle = THREE.MathUtils.clamp((distanceAhead - 25) * 0.02, -0.6, 0.6);
+          const turnAngle = THREE.MathUtils.clamp((distanceAhead - 10) * 0.02, -0.65, 0.65);
           pass.rotation.y = THREE.MathUtils.lerp(pass.rotation.y, turnAngle, dt * 3.0);
         }
 
@@ -463,14 +456,15 @@ export class PhantomLineEventDirector {
           lt.finalWindowSpecter.rotation.z = 0.08 * Math.sin(t * 3.5);
         }
       } else {
-        // 8. Train vanishes into mist
+        // 8. Train vanishes into mist through impossible portal
         lt.state = 'FADING_INTO_FOG';
         lt.fogFadeTimer += dt;
         const fadeProg = Math.min(1.0, lt.fogFadeTimer * 1.5);
         const scaleVal = Math.max(0.01, 1.0 - fadeProg * 0.7);
         lt.group.scale.set(scaleVal, scaleVal, scaleVal);
+        lt.group.position.z -= lt.speed * dt * 1.5 * motionScale;
 
-        if (fadeProg >= 1.0) {
+        if (fadeProg >= 1.0 || distanceAhead < -70) {
           lt.group.visible = false;
         }
       }

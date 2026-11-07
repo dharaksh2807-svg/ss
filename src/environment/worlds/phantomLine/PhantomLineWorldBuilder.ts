@@ -92,6 +92,12 @@ export class PhantomLineWorldBuilder {
   private paleSilverMoonlightMat!: THREE.MeshStandardMaterial;
   private dampPuddleMat!: THREE.MeshStandardMaterial;
   private ghostMistGlowMat!: THREE.MeshBasicMaterial;
+  private leatherOxbloodMat!: THREE.MeshStandardMaterial;
+  private leatherTanMat!: THREE.MeshStandardMaterial;
+  private antiqueBrassMat!: THREE.MeshStandardMaterial;
+  private benchWoodMat!: THREE.MeshStandardMaterial;
+  private platformHazardMat!: THREE.MeshStandardMaterial;
+  private stainedTileMat!: THREE.MeshStandardMaterial;
 
   private constructor() {
     this.initCustomMaterials();
@@ -173,6 +179,48 @@ export class PhantomLineWorldBuilder {
       depthWrite: false
     });
     curved.applyCurvature(this.ghostMistGlowMat);
+
+    this.leatherOxbloodMat = new THREE.MeshStandardMaterial({
+      color: 0x4a2818,
+      roughness: 0.75,
+      metalness: 0.10
+    });
+    curved.applyCurvature(this.leatherOxbloodMat);
+
+    this.leatherTanMat = new THREE.MeshStandardMaterial({
+      color: 0x6e4526,
+      roughness: 0.70,
+      metalness: 0.10
+    });
+    curved.applyCurvature(this.leatherTanMat);
+
+    this.antiqueBrassMat = new THREE.MeshStandardMaterial({
+      color: 0xc5a059,
+      roughness: 0.35,
+      metalness: 0.80
+    });
+    curved.applyCurvature(this.antiqueBrassMat);
+
+    this.benchWoodMat = new THREE.MeshStandardMaterial({
+      color: 0x2a3d34,
+      roughness: 0.85,
+      metalness: 0.10
+    });
+    curved.applyCurvature(this.benchWoodMat);
+
+    this.platformHazardMat = new THREE.MeshStandardMaterial({
+      color: 0xca8a04,
+      roughness: 0.65,
+      metalness: 0.15
+    });
+    curved.applyCurvature(this.platformHazardMat);
+
+    this.stainedTileMat = new THREE.MeshStandardMaterial({
+      color: 0xd1d5db,
+      roughness: 0.45,
+      metalness: 0.10
+    });
+    curved.applyCurvature(this.stainedTileMat);
   }
 
   // --- Geometry Cache Helpers ---
@@ -268,11 +316,11 @@ export class PhantomLineWorldBuilder {
     this.buildDeepRetainingPromenades(group, roadbedWidth, chunkLength, mats);
 
     // 2. Region-Specific Subway Walls, Colonnades & Cold Cathode Tube Fixtures along perimeter
-    this.buildDecayingSubwayWallsAndLights(group, roadbedWidth, chunkLength, mats, director, detail, zoneIndex);
+    this.buildDecayingSubwayWallsAndLights(group, roadbedWidth, chunkLength, mats, director, detail, zoneIndex, seed);
 
     // 3. Spanning Overhead Derelict Arches (built on tunnel chunks or periodically)
     if (zoneIndex === 1 || Math.abs(seed) % 3 === 0) {
-      this.buildDerelictCastIronArches(group, roadbedWidth, chunkLength, mats, director);
+      this.buildDerelictCastIronArches(group, roadbedWidth, chunkLength, mats, director, seed, zoneIndex);
     }
 
     // 4. Macro Region Dispatch with Micro-Variants
@@ -337,7 +385,8 @@ export class PhantomLineWorldBuilder {
     mats: any,
     director: PhantomLineEventDirector,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    zoneIndex: number = 1
+    zoneIndex: number = 1,
+    seed: number = 0
   ): void {
     const wallX = roadbedWidth * 0.5 + 1.4; // 6.8m from center (strictly outside 4.0m corridor)
     const wallHeight = 3.8;
@@ -345,10 +394,12 @@ export class PhantomLineWorldBuilder {
 
     const wallGeo = this.getBox(wallThickness, wallHeight, chunkLength);
     const copingGeo = this.getBox(wallThickness + 0.18, 0.28, chunkLength);
+    const hazardGeo = this.getBox(0.25, 0.04, chunkLength);
 
     [-wallX, wallX].forEach((wx, sideIdx) => {
-      // In Zone 0 (Central Station) and Zone 5 (Phantom Terminus), create grand open colonnade archways
-      // instead of solid flat walls boxing in the runner, while keeping required test meshes intact
+      const side = sideIdx === 0 ? -1 : 1;
+
+      // Base decaying Victorian subway tile retaining wall
       const wall = new THREE.Mesh(wallGeo, mats.phantomDecayedTileMat);
       wall.position.set(wx, wallHeight * 0.5, -chunkLength * 0.5);
       wall.receiveShadow = true;
@@ -358,6 +409,11 @@ export class PhantomLineWorldBuilder {
       const coping = new THREE.Mesh(copingGeo, mats.phantomWeatheredBrickMat);
       coping.position.set(wx, wallHeight + 0.14, -chunkLength * 0.5);
       group.add(coping);
+
+      // Worn platform hazard warning edge strip
+      const hazard = new THREE.Mesh(hazardGeo, this.platformHazardMat);
+      hazard.position.set(wx + (wx < 0 ? 0.95 : -0.95), 0.36, -chunkLength * 0.5);
+      group.add(hazard);
 
       // Rusted iron structural pilasters every 10m
       const pilasterGeo = this.getBox(0.45, wallHeight + 0.6, 0.5);
@@ -402,8 +458,124 @@ export class PhantomLineWorldBuilder {
           jbox.position.set(wx + (wx < 0 ? 0.38 : -0.38), wallHeight - 1.2, -bz);
           group.add(jbox);
         }
+
+        // --- Rich Architectural Microdetails along the Promenade (|X| >= 8.2m) ---
+        if (zoneIndex === 0 || zoneIndex === 5) {
+          // Central Station & Terminus: ticket booth, luggage stacks & dust-coated benches
+          if (sideIdx === 0) {
+            this.spawnAbandonedTicketBooth(group, side * (wallX + 3.2), -chunkLength * 0.4, side);
+          }
+          this.spawnAbandonedLuggage(group, side * (wallX + 1.8), -chunkLength * 0.75);
+          this.spawnStationBench(group, side * (wallX + 1.8), -chunkLength * 0.2, side);
+        } else if (zoneIndex === 2) {
+          // Lost Passenger Platform: vintage luggage & platform benches
+          this.spawnAbandonedLuggage(group, side * (wallX + 1.6), -chunkLength * 0.3);
+          this.spawnStationBench(group, side * (wallX + 1.8), -chunkLength * 0.65, side);
+        } else if (zoneIndex === 1 || zoneIndex === 4) {
+          // Infinite Tunnel & City Underground: grime/soot stained wall panels
+          const grimeGeo = this.getBox(0.04, wallHeight * 0.7, 7.5);
+          const grimePanel = new THREE.Mesh(grimeGeo, this.weatheredSlateMat);
+          grimePanel.position.set(wx + (wx < 0 ? 0.42 : -0.42), wallHeight * 0.45, -chunkLength * 0.5);
+          group.add(grimePanel);
+        } else if (zoneIndex === 3) {
+          // Flooded Crypts: extra damp reflection puddle
+          const extraPuddle = new THREE.Mesh(this.getBox(1.6, 0.04, 10.0), mats.phantomWaterMirrorMat);
+          extraPuddle.position.set(wx + (wx < 0 ? 1.4 : -1.4), 0.36, -chunkLength * 0.5);
+          group.add(extraPuddle);
+        }
       }
     });
+  }
+
+  private spawnAbandonedLuggage(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number
+  ): void {
+    const lugGroup = new THREE.Group();
+    lugGroup.position.set(posX, 0.35, posZ);
+
+    // Large vintage steamer trunk at the bottom
+    const trunk = new THREE.Mesh(this.getBox(1.3, 0.65, 0.8), this.leatherOxbloodMat);
+    trunk.position.y = 0.325;
+    lugGroup.add(trunk);
+
+    // Brass corner brackets on trunk
+    const brassCornerGeo = this.getBox(0.12, 0.12, 0.12);
+    [[-0.6, -0.35], [0.6, -0.35], [-0.6, 0.35], [0.6, 0.35]].forEach(([cx, cz]) => {
+      const corner = new THREE.Mesh(brassCornerGeo, this.antiqueBrassMat);
+      corner.position.set(cx, 0.58, cz);
+      lugGroup.add(corner);
+    });
+
+    // Medium leather suitcase tilted on top of trunk
+    const case1 = new THREE.Mesh(this.getBox(0.85, 0.42, 0.3), this.leatherTanMat);
+    case1.position.set(0.1, 0.85, 0.05);
+    case1.rotation.y = 0.18;
+    lugGroup.add(case1);
+
+    // Antique Victorian hat box beside the trunk
+    const hatBox = new THREE.Mesh(this.getCylinder(0.28, 0.28, 0.38, 10), this.weatheredSlateMat);
+    hatBox.position.set(-0.85, 0.19, 0.2);
+    lugGroup.add(hatBox);
+
+    parent.add(lugGroup);
+  }
+
+  private spawnStationBench(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    side: number
+  ): void {
+    const benchGroup = new THREE.Group();
+    benchGroup.position.set(posX, 0.35, posZ);
+
+    // Cast-iron frame ends
+    [-1.0, 1.0].forEach((bx) => {
+      const leg = new THREE.Mesh(this.getBox(0.12, 0.85, 0.7), SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat);
+      leg.position.set(bx, 0.425, 0);
+      benchGroup.add(leg);
+    });
+
+    // Weathered wooden slat seat
+    const seat = new THREE.Mesh(this.getBox(2.2, 0.08, 0.65), this.benchWoodMat);
+    seat.position.set(0, 0.52, 0.02);
+    benchGroup.add(seat);
+
+    // Weathered wooden backrest
+    const back = new THREE.Mesh(this.getBox(2.2, 0.45, 0.08), this.benchWoodMat);
+    back.position.set(0, 0.82, side > 0 ? -0.28 : 0.28);
+    benchGroup.add(back);
+
+    parent.add(benchGroup);
+  }
+
+  private spawnAbandonedTicketBooth(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    side: number
+  ): void {
+    const boothGroup = new THREE.Group();
+    boothGroup.position.set(posX, 0.35, posZ);
+
+    // Dark wood and rusted iron kiosk booth
+    const body = new THREE.Mesh(this.getBox(2.2, 3.4, 2.0), this.weatheredSlateMat);
+    body.position.y = 1.7;
+    boothGroup.add(body);
+
+    // Arched Victorian ticket window opening with brass wire grille
+    const windowGrille = new THREE.Mesh(this.getBox(1.2, 1.1, 0.1), this.antiqueBrassMat);
+    windowGrille.position.set(0, 1.8, side > 0 ? -1.02 : 1.02);
+    boothGroup.add(windowGrille);
+
+    // Dim overhead ticket lamp
+    const lamp = new THREE.Mesh(this.getSphere(0.18, 6, 6), SceneryFactory.getInstance().getSharedMaterials().phantomColdFluorescentMat);
+    lamp.position.set(0, 3.2, side > 0 ? -1.1 : 1.1);
+    boothGroup.add(lamp);
+
+    parent.add(boothGroup);
   }
 
   // =========================================================================
@@ -415,7 +587,9 @@ export class PhantomLineWorldBuilder {
     roadbedWidth: number,
     chunkLength: number,
     mats: any,
-    director: PhantomLineEventDirector
+    director: PhantomLineEventDirector,
+    seed: number = 0,
+    zoneIndex: number = 1
   ): void {
     const archGroup = new THREE.Group();
     archGroup.name = 'phantom_derelict_arches';
@@ -443,11 +617,45 @@ export class PhantomLineWorldBuilder {
     lintel.position.set(0, archClearanceY + 1.25, archZ);
     archGroup.add(lintel);
 
-    // Derelict Station Clock suspended above tracks (clearance >= 10.5m)
-    const clock = new THREE.Mesh(this.getCylinder(1.4, 1.4, 0.3, 16), mats.phantomDistortedClockMat);
-    clock.rotation.x = Math.PI * 0.5;
-    clock.position.set(0, archClearanceY - 0.5, archZ + 1.6);
-    archGroup.add(clock);
+    // Architectural Variation across 4 distinct overhead structural styles:
+    const archStyle = Math.abs(seed) % 4;
+
+    if (archStyle === 0) {
+      // Style 0: Victorian Gothic Arch with suspended gaslight chandelier and cast-iron brackets
+      const chandelier = new THREE.Mesh(this.getSphere(0.42, 8, 8), mats.phantomColdFluorescentMat);
+      chandelier.position.set(0, archClearanceY - 0.6, archZ);
+      archGroup.add(chandelier);
+      director.registerFlickeringLamp(chandelier, 1.6, seed);
+
+      [-spanW * 0.28, spanW * 0.28].forEach((bx) => {
+        const bracket = new THREE.Mesh(this.getBox(2.2, 0.4, 0.5), mats.phantomRustedIronMat);
+        bracket.position.set(bx, archClearanceY - 0.2, archZ);
+        bracket.rotation.z = bx < 0 ? -0.35 : 0.35;
+        archGroup.add(bracket);
+      });
+    } else if (archStyle === 1) {
+      // Style 1: Industrial Steel Truss Viaduct with hanging severed cables (clearance Y >= 10.4m)
+      const conduit = new THREE.Mesh(this.getBox(spanW + 2.0, 0.3, 0.4), mats.phantomRustedIronMat);
+      conduit.position.set(0, archClearanceY - 0.2, archZ + 0.8);
+      archGroup.add(conduit);
+
+      [-2.5, 2.5].forEach((cx) => {
+        const cable = new THREE.Mesh(this.getCylinder(0.04, 0.04, 1.2, 6), mats.phantomRustedIronMat);
+        cable.position.set(cx, archClearanceY - 0.8, archZ + 0.8);
+        archGroup.add(cable);
+      });
+    } else if (archStyle === 2) {
+      // Style 2: Weathered Masonry Keystones & dark stone vault
+      const keystone = new THREE.Mesh(this.getBox(2.0, 1.4, 3.2), this.weatheredSlateMat);
+      keystone.position.set(0, archClearanceY + 0.6, archZ);
+      archGroup.add(keystone);
+    } else {
+      // Style 3: Distorted Antique Station Clock (ONLY appears on Style 3)
+      const clock = new THREE.Mesh(this.getCylinder(1.4, 1.4, 0.3, 16), mats.phantomDistortedClockMat);
+      clock.rotation.x = Math.PI * 0.5;
+      clock.position.set(0, archClearanceY - 0.5, archZ + 1.6);
+      archGroup.add(clock);
+    }
 
     group.add(archGroup);
   }
@@ -940,15 +1148,15 @@ export class PhantomLineWorldBuilder {
 
     parent.add(watcherGroup);
 
-    // Close Verge Shock-Reveal Incarnation (Reappears at safe trackside verge |X| >= 4.85m)
+    // Close Verge Shock-Reveal Incarnation (Reappears at safe trackside verge |X| = 5.2m)
     const closeVergeGroup = new THREE.Group();
     closeVergeGroup.name = 'watcher_close_verge_specter';
-    // Offset relative to parent (platGroup is at platX = ±11.5m). We place verge at world |X| = 4.85m
-    // (bounding box min.x >= 4.25m, strictly outside the 4.0m corridor)
-    const vergeWorldX = parent.position.x < 0 ? -4.85 : 4.85;
+    // Offset relative to parent (platGroup is at platX = ±11.5m). We place verge at world |X| = 5.2m
+    // (bounding box min.x >= 4.6m, strictly outside the 4.2m corridor)
+    const vergeWorldX = parent.position.x < 0 ? -5.2 : 5.2;
     const vergeLocalX = vergeWorldX - parent.position.x;
     closeVergeGroup.position.set(vergeLocalX, 0.35, posZ + 12.0);
-    closeVergeGroup.visible = false; // Initially invisible until Phase 7
+    closeVergeGroup.visible = false; // Initially invisible until near verge reveal
 
     const closeTorso = new THREE.Mesh(this.getCylinder(0.38, 0.6, 1.7, 8), this.ghostCyanSpectralMat);
     closeTorso.position.y = 1.6;
@@ -1124,6 +1332,22 @@ export class PhantomLineWorldBuilder {
     trainGroup.add(finalFigure);
 
     parent.add(trainGroup);
+
+    // Impossible Spectral Void Portal Arch on siding track
+    const portalArch = new THREE.Group();
+    portalArch.name = 'ghost_portal_arch';
+    portalArch.position.set(0, 0, -38.0);
+
+    const ironMat = SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat;
+    const portalFrame = new THREE.Mesh(this.getBox(carW + 2.2, carH + 2.8, 1.2), ironMat);
+    portalFrame.position.y = (carH + 2.8) * 0.5;
+    portalArch.add(portalFrame);
+
+    const portalVoid = new THREE.Mesh(this.getBox(carW + 0.8, carH + 1.4, 0.4), this.ghostMistGlowMat);
+    portalVoid.position.y = (carH + 1.4) * 0.5 + 0.4;
+    portalArch.add(portalVoid);
+
+    parent.add(portalArch);
 
     director.registerLastTrain({
       group: trainGroup,

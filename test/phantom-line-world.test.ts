@@ -584,6 +584,73 @@ check(saActor.finalDistantFigure!.visible === true, 'Final distant silhouette fi
 pool.clearDecorativeGroup(stationAwakensChunk, new Set(Object.values(factory.getSharedMaterials())));
 testScene.remove(stationAwakensChunk);
 
+// Suite 19: Architectural De-Duplication & Non-Repetitive Overhead Structures
+console.log('\n--- Suite 19: Overhead Arch De-Duplication & Architectural Variety ---');
+let archesWithClocks = 0;
+let archesWithChandeliersOrCables = 0;
+let totalArches = 0;
+
+for (let s = 100; s < 120; s++) {
+  const g = new THREE.Group();
+  factory.buildScenery(g, PHANTOM_LINE_THEME, -s * 80, false, false, 'NONE', 'FULL', s);
+  g.traverse((child) => {
+    if (child.name === 'phantom_derelict_arches') {
+      totalArches++;
+      let hasClock = false;
+      let hasChandelierOrCable = false;
+      child.traverse((part) => {
+        if ((part as THREE.Mesh).isMesh) {
+          const m = (part as THREE.Mesh).material;
+          if (m === mats.phantomDistortedClockMat) hasClock = true;
+          if (m === mats.phantomColdFluorescentMat || m === mats.phantomRustedIronMat) {
+            hasChandelierOrCable = true;
+          }
+        }
+      });
+      if (hasClock) archesWithClocks++;
+      if (hasChandelierOrCable) archesWithChandeliersOrCables++;
+    }
+  });
+  pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
+}
+
+check(totalArches > 0, `Overhead arches generated across test chunks (${totalArches})`);
+check(archesWithClocks < totalArches, `Overhead clocks are de-duplicated and NOT present on every arch (${archesWithClocks}/${totalArches} have clocks)`);
+check(archesWithChandeliersOrCables > 0, 'Arches feature alternative Victorian chandeliers and industrial trusses');
+
+// Suite 20: Station Microdetails & Portal Verification
+console.log('\n--- Suite 20: Heritage Microdetails & Spectral Portal ---');
+const microChunk = new THREE.Group();
+factory.buildScenery(microChunk, PHANTOM_LINE_THEME, -400, false, false, 'NONE', 'FULL', 201); // Terminus chunk
+
+let foundPortalArch = false;
+let foundLuggage = false;
+let foundBench = false;
+let foundHazardStrip = false;
+
+microChunk.traverse((c) => {
+  if (c.name === 'ghost_portal_arch') foundPortalArch = true;
+  if ((c as THREE.Mesh).isMesh) {
+    const geo = (c as THREE.Mesh).geometry;
+    if (geo instanceof THREE.BoxGeometry) {
+      const p = geo.parameters;
+      // Luggage trunk is 1.3 x 0.65 x 0.8
+      if (Math.abs(p.width - 1.3) < 0.1 && Math.abs(p.height - 0.65) < 0.1) foundLuggage = true;
+      // Bench seat is 2.2 x 0.08 x 0.65
+      if (Math.abs(p.width - 2.2) < 0.1 && Math.abs(p.height - 0.08) < 0.05) foundBench = true;
+      // Hazard strip is 0.25 x 0.04
+      if (Math.abs(p.width - 0.25) < 0.05 && Math.abs(p.height - 0.04) < 0.02) foundHazardStrip = true;
+    }
+  }
+});
+
+check(foundPortalArch, 'The Last Train terminus siding includes ghost_portal_arch');
+check(foundLuggage, 'Platform promenade features abandoned vintage leather luggage stacks');
+check(foundBench, 'Platform promenade features dust-coated station benches');
+check(foundHazardStrip, 'Platform edge features worn yellow platform hazard markings');
+
+pool.clearDecorativeGroup(microChunk, new Set(Object.values(factory.getSharedMaterials())));
+
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} PHANTOM_LINE PREMIUM WORLD TESTS PASSED!`);
 console.log(`=======================================================`);
