@@ -24,6 +24,7 @@ import { NeonRainlineEventDirector } from './environment/worlds/neonRainline/Neo
 import { DoomsdayEventDirector } from './environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 import { OrbitalHaloEventDirector } from './environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
 import { ModernMetroEventDirector } from './environment/worlds/modernMetro/ModernMetroEventDirector';
+import { HistoricQuarterEventDirector } from './environment/worlds/historicQuarter/HistoricQuarterEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -50,6 +51,7 @@ if (isDeveloperMode()) {
   (window as any).__DOOMSDAY_DIRECTOR__ = DoomsdayEventDirector.getInstance();
   (window as any).__ORBITAL_DIRECTOR__ = OrbitalHaloEventDirector.getInstance();
   (window as any).__MODERN_METRO_DIRECTOR__ = ModernMetroEventDirector.getInstance();
+  (window as any).__HISTORIC_DIRECTOR__ = HistoricQuarterEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };
@@ -61,6 +63,8 @@ if (isDeveloperMode()) {
       EnvironmentManager.getInstance().setDevPreviewEnvironment('VIVA_HEAT');
     } else if (preview && (preview.toUpperCase() === 'MODERN_METRO' || preview.toUpperCase() === 'MODERN')) {
       EnvironmentManager.getInstance().setDevPreviewEnvironment('MODERN_METRO');
+    } else if (preview && (preview.toUpperCase() === 'HISTORIC_QUARTER' || preview.toUpperCase() === 'HISTORIC')) {
+      EnvironmentManager.getInstance().setDevPreviewEnvironment('HISTORIC_QUARTER');
     }
   }
 }

@@ -21,6 +21,7 @@ import { NeonRainlineEventDirector } from '../environment/worlds/neonRainline/Ne
 import { DoomsdayEventDirector } from '../environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 import { OrbitalHaloEventDirector } from '../environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
 import { ModernMetroEventDirector } from '../environment/worlds/modernMetro/ModernMetroEventDirector';
+import { HistoricQuarterEventDirector } from '../environment/worlds/historicQuarter/HistoricQuarterEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2762,6 +2763,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'MODERN_METRO') {
       const delta = dt || 0.016;
       ModernMetroEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'HISTORIC_QUARTER') {
+      const delta = dt || 0.016;
+      HistoricQuarterEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
   }
 

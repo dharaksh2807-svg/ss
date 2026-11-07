@@ -19,6 +19,7 @@ import { NeonRainlineWorldBuilder } from './worlds/neonRainline/NeonRainlineWorl
 import { DoomsdayWorldBuilder } from './worlds/doomsdayLastTransit/DoomsdayWorldBuilder';
 import { OrbitalHaloWorldBuilder } from './worlds/orbitalHalo/OrbitalHaloWorldBuilder';
 import { ModernMetroWorldBuilder } from './worlds/modernMetro/ModernMetroWorldBuilder';
+import { HistoricQuarterWorldBuilder } from './worlds/historicQuarter/HistoricQuarterWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1567,7 +1568,7 @@ export class SceneryFactory {
     } else if (isTransition) {
       this.buildTransitionPortalScenery(decorativeGroup, roadbedWidth, curbWidth, theme, chunkLength);
     } else if (theme.id === 'HISTORIC_QUARTER') {
-      this.buildHistoricQuarterScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildHistoricQuarterScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'NEON_INDUSTRIAL') {
       this.buildNeonIndustrialScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'NEON_RAINLINE') {
@@ -1974,94 +1975,18 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const mats = this.getSharedMaterials();
-    const rng = new SeededRandom(seed);
-
-    const wallHeight = 2.6;
-    const wallThick = 0.7;
-    const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, chunkLength);
-
-    // 1. Weathered Brick Retaining Walls
-    const leftWall = new THREE.Mesh(wallGeo, mats.weatheredBrickMat1);
-    leftWall.position.set(-wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    leftWall.castShadow = true;
-    leftWall.receiveShadow = true;
-    group.add(leftWall);
-
-    const rightWall = new THREE.Mesh(wallGeo, mats.weatheredBrickMat1);
-    rightWall.position.set(wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    rightWall.castShadow = true;
-    rightWall.receiveShadow = true;
-    group.add(rightWall);
-
-    // Stone coping cap
-    const capGeo = new THREE.BoxGeometry(wallThick + 0.2, 0.25, chunkLength);
-    const leftCap = new THREE.Mesh(capGeo, mats.stoneMasonryMat);
-    leftCap.position.set(-wallX, wallHeight + 0.12, -chunkLength * 0.5);
-    group.add(leftCap);
-
-    const rightCap = new THREE.Mesh(capGeo, mats.stoneMasonryMat);
-    rightCap.position.set(wallX, wallHeight + 0.12, -chunkLength * 0.5);
-    group.add(rightCap);
-
-    // Black wrought iron railing
-    const railBarGeo = new THREE.BoxGeometry(0.08, 0.08, chunkLength);
-    [-wallX, wallX].forEach((wx) => {
-      const topBar = new THREE.Mesh(railBarGeo, mats.castIronMat);
-      topBar.position.set(wx, wallHeight + 0.85, -chunkLength * 0.5);
-      group.add(topBar);
-
-      if (detail !== 'MINIMAL') {
-        const railPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.85, 6);
-        for (let z = 0; z < chunkLength; z += 5) {
-          const post = new THREE.Mesh(railPostGeo, mats.castIronMat);
-          post.position.set(wx, wallHeight + 0.45, -z - 2.5);
-          group.add(post);
-        }
-      }
-    });
-
-    // Cast-iron gas streetlamps along retaining wall coping
-    if (detail !== 'MINIMAL') {
-      const postGeo = new THREE.CylinderGeometry(0.07, 0.1, 5.8, 8);
-      const lanternGeo = new THREE.BoxGeometry(0.5, 0.8, 0.5);
-      const lanternGlass = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.65, 0.42), mats.gasLampMat);
-
-      for (let z = 14; z < chunkLength; z += 24) {
-        [-wallX, wallX].forEach((wx) => {
-          const lampGroup = new THREE.Group();
-          lampGroup.position.set(wx, wallHeight, -z);
-
-          const post = new THREE.Mesh(postGeo, mats.castIronMat);
-          post.position.y = 2.9;
-          lampGroup.add(post);
-
-          const lanternFrame = new THREE.Mesh(lanternGeo, mats.castIronMat);
-          lanternFrame.position.y = 6.0;
-          lampGroup.add(lanternFrame);
-
-          const glow = lanternGlass.clone();
-          glow.position.y = 6.0;
-          lampGroup.add(glow);
-
-          group.add(lampGroup);
-        });
-      }
-    }
-
-    // 2. Black-Iron Telegraph & Semaphore Gantries
-    this.buildHistoricGantrySystem(group, chunkLength);
-
-    // 3. Victorian Modular Buildings
-    this.buildHistoricModularBuildings(group, chunkLength, rng, detail);
-
-    // 4. Masonry Arched Viaduct Bridge (deterministic placement)
-    if (rng.chance(0.50)) {
-      this.buildHistoricArchBridge(group, chunkLength);
-    }
+    HistoricQuarterWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ
+    );
   }
 
   private buildHistoricGantrySystem(group: THREE.Group, chunkLength: number): void {

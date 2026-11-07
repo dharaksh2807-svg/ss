@@ -36,6 +36,7 @@
     "test:jurassic-rush": "npx tsx test/jurassic-rush-world.test.ts",
     "test:viva-heat": "npx tsx test/viva-heat-world.test.ts",
     "test:modern-metro": "npx tsx test/modern-metro-world.test.ts",
+    "test:historic-quarter": "npx tsx test/historic-quarter-world.test.ts",
     "test:dev-grant": "npx tsx test/developer-coin-grant.test.ts",
     "test:encounters": "npx tsx test/environmental-encounters.test.ts",
     "test:audit": "npx tsx test/task4-worldgen-audit.test.ts",
