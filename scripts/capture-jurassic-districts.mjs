@@ -63,10 +63,14 @@ async function captureAllJurassicDistricts() {
     await page.waitForTimeout(1000);
 
     const shots = [
-      { name: '01_district_a_lost_jungle_15m.png', targetDist: 15 },
-      { name: '02_district_b_valley_of_giants_415m.png', targetDist: 415 },
-      { name: '03_district_c_raptor_canyon_825m.png', targetDist: 825 },
-      { name: '04_district_d_ancient_sanctuary_1230m.png', targetDist: 1230 }
+      { name: '01_district_a_lost_jungle_spawn_15m.png', targetDist: 15 },
+      { name: '02_district_a_lost_jungle_sauropod_waterfall_45m.png', targetDist: 45 },
+      { name: '03_district_b_valley_of_giants_415m.png', targetDist: 415 },
+      { name: '04_district_b_valley_of_giants_herd_465m.png', targetDist: 465 },
+      { name: '05_district_c_raptor_canyon_825m.png', targetDist: 825 },
+      { name: '06_district_c_raptor_canyon_ridge_885m.png', targetDist: 885 },
+      { name: '07_district_d_ancient_sanctuary_ruins_1230m.png', targetDist: 1230 },
+      { name: '08_district_d_ancient_sanctuary_apex_carnivore_1275m.png', targetDist: 1275 }
     ];
 
     for (const shot of shots) {
@@ -108,17 +112,16 @@ async function captureAllJurassicDistricts() {
     const telemetry = await page.evaluate(() => {
       const game = window.__METRO_GAME__;
       return {
-        theme: game?.environmentDirector?.getCurrentDistrict?.(),
         distanceTraveled: game?.player?.distanceTraveled,
         playerZ: game?.player?.position?.z
       };
     });
 
-    const telemPath = path.join(BASE_ARTIFACT_DIR, 'baseline_telemetry.json');
+    const telemPath = path.join(BASE_ARTIFACT_DIR, 'districts_telemetry.json');
     fs.writeFileSync(telemPath, JSON.stringify(telemetry, null, 2));
     console.log('Saved telemetry to:', telemPath);
 
-    console.log('🏁 Baseline capture complete!');
+    console.log('🏁 Jurassic Rush Multi-District capture complete!');
   } finally {
     await browser.close();
   }

@@ -37,34 +37,34 @@ export const JURASSIC_RUSH_THEME: EnvironmentTheme = {
     'INFERNO_EXPRESS'
   ],
   sky: {
-    top: 0x0a5c44,    // Lush prehistoric jungle canopy emerald sky
-    bottom: 0xfcd34d // Golden primordial morning sunlight & misty amber horizon
+    top: 0x0284c7,    // Vibrant Cretaceous tropical azure-cerulean sky
+    bottom: 0x6ee7b7 // Luminous golden-emerald rainforest horizon mist
   },
   fog: {
-    color: 0x184e3d,  // Atmospheric lush prehistoric jungle mist
-    density: 0.0022   // Atmospheric depth preserving high obstacle visibility and long vistas
+    color: 0x0f4a3c,  // Atmospheric lush Cretaceous jungle mist
+    density: 0.0016   // Crisp scenic depth with panoramic vistas of colossal dinosaurs
   },
   sun: {
-    color: 0xfff1c2,  // Warm golden prehistoric sunlight
-    intensity: 1.55,
-    position: { x: -28, y: 70, z: -35 }
+    color: 0xfff8db,  // Radiant golden prehistoric morning sunlight
+    intensity: 1.75,
+    position: { x: -26, y: 58, z: 22 } // Illuminates down-track dinosaur faces and lush foliage
   },
   fill: {
-    color: 0x15803d,  // Vibrant emerald canopy shadow fill
+    color: 0x065f46,  // Deep emerald rainforest canopy shadow fill
     intensity: 0.95
   },
   hemi: {
-    sky: 0x34d399,    // Radiant emerald rainforest canopy bounce
-    ground: 0xd97706, // Warm canyon ochre earth reflection
-    intensity: 1.30
+    sky: 0x38bdf8,    // Tropical azure sky bounce
+    ground: 0x15803d, // Vibrant rainforest floor green reflection
+    intensity: 1.45
   },
   skyline: {
-    color: 0x164e3b,  // Silhouettes of towering prehistoric mountains and peaks
+    color: 0x064e3b,  // Towering prehistoric volcanic peaks and mist-shrouded mountain silhouettes
     opacity: 0.88,
     style: 'HISTORIC'
   },
   clouds: {
-    color: 0x2dd4bf,  // Humid jungle mist and mountain clouds
+    color: 0x34d399,  // Humid jungle mist and mountain clouds
     roughness: 0.82
   },
   materials: {
