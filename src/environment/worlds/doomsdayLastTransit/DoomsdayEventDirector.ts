@@ -35,9 +35,33 @@ export interface EvacuationConvoyActor {
   vehicles: Array<{ mesh: THREE.Group; wheels: THREE.Mesh[]; beaconLight: THREE.Mesh; speed: number }>;
   bridgeRamp: THREE.Mesh;
   searchlightDrones: Array<{ mesh: THREE.Group; lightCone: THREE.Mesh; orbitPhase: number }>;
+  rescueHelicopter?: {
+    mesh: THREE.Group;
+    mainRotor: THREE.Mesh;
+    tailRotor: THREE.Mesh;
+    searchlight: THREE.Mesh;
+    dustPuff: THREE.Mesh;
+    startPos: THREE.Vector3;
+    landPos: THREE.Vector3;
+  };
   triggerZ: number;
   state: 'HIGHWAY_ESCAPE' | 'RAMP_FRACTURE' | 'DRONE_ESCORT' | 'COMPLETE';
   timer: number;
+}
+
+export interface LastRescueTrainActor {
+  group: THREE.Group;
+  locomotive: THREE.Group;
+  coaches: THREE.Group[];
+  doors: THREE.Mesh[];
+  headlights: THREE.Mesh[];
+  beaconLights: THREE.Mesh[];
+  dustEmitter?: THREE.Group;
+  triggerZ: number;
+  state: 'STATION_BOARDING' | 'DOORS_CLOSING' | 'THROTTLE_SURGE' | 'DEPARTING' | 'COMPLETE';
+  timer: number;
+  speed: number;
+  targetSpeed: number;
 }
 
 export interface FracturingSkybridgeActor {
@@ -102,6 +126,7 @@ export class DoomsdayEventDirector {
   private fracturingSkybridges: FracturingSkybridgeActor[] = [];
   private industrialFirestorms: IndustrialFirestormActor[] = [];
   private finalTransitGates: FinalTransitGateActor[] = [];
+  private lastRescueTrains: LastRescueTrainActor[] = [];
 
   // Ambient Living Disaster Ecosystem
   private ambient: AmbientDisasterLife = {
@@ -147,6 +172,10 @@ export class DoomsdayEventDirector {
     this.finalTransitGates.push(actor);
   }
 
+  public registerLastRescueTrain(actor: LastRescueTrainActor): void {
+    this.lastRescueTrains.push(actor);
+  }
+
   public registerPatrolDrone(mesh: THREE.Group, lightCone: THREE.Mesh, basePos: THREE.Vector3, radius: number = 10.0): void {
     this.ambient.patrolDrones.push({
       mesh,
@@ -190,6 +219,7 @@ export class DoomsdayEventDirector {
     this.fracturingSkybridges = [];
     this.industrialFirestorms = [];
     this.finalTransitGates = [];
+    this.lastRescueTrains = [];
     this.ambient = {
       patrolDrones: [],
       emergencyVehicles: [],
@@ -218,6 +248,7 @@ export class DoomsdayEventDirector {
     this.fracturingSkybridges = this.fracturingSkybridges.filter(a => isAttached(a.group));
     this.industrialFirestorms = this.industrialFirestorms.filter(a => isAttached(a.group));
     this.finalTransitGates = this.finalTransitGates.filter(a => isAttached(a.group));
+    this.lastRescueTrains = this.lastRescueTrains.filter(a => isAttached(a.group));
 
     this.ambient.patrolDrones = this.ambient.patrolDrones.filter(d => isAttached(d.mesh));
     this.ambient.emergencyVehicles = this.ambient.emergencyVehicles.filter(v => isAttached(v.mesh));
@@ -258,7 +289,10 @@ export class DoomsdayEventDirector {
     // 6. Animate Event F: The Final Transit Gate
     this.updateFinalTransitGates(delta, playerZ);
 
-    // 7. Animate Dynamic Ambient Disaster Ecosystem
+    // 7. Animate Event C: The Last Rescue Train & Evacuation Viaduct
+    this.updateLastRescueTrains(delta, playerZ);
+
+    // 8. Animate Dynamic Ambient Disaster Ecosystem
     this.updateAmbientDisasterLife(delta);
   }
 
@@ -424,6 +458,31 @@ export class DoomsdayEventDirector {
         drone.mesh.position.y += Math.sin(drone.orbitPhase) * dt * 1.2;
         drone.lightCone.rotation.z = Math.sin(drone.orbitPhase * 0.8) * 0.15;
       }
+
+      // Articulated rescue helicopter landing progression
+      if (actor.rescueHelicopter) {
+        const chopper = actor.rescueHelicopter;
+        chopper.mainRotor.rotation.y += dt * 38.0;
+        chopper.tailRotor.rotation.x += dt * 44.0;
+
+        if (actor.state === 'HIGHWAY_ESCAPE') {
+          // Approach from sky toward landing pad
+          const t = Math.min(1.0, actor.timer / 4.5);
+          chopper.mesh.position.lerpVectors(chopper.startPos, chopper.landPos, t);
+          chopper.mesh.rotation.z = Math.sin(this.totalTime * 3.0) * 0.08 - 0.06;
+          chopper.searchlight.rotation.z = Math.sin(this.totalTime * 2.5) * 0.25;
+          chopper.dustPuff.visible = false;
+        } else if (actor.state === 'RAMP_FRACTURE' || actor.state === 'DRONE_ESCORT') {
+          // Touchdown / hover at landing pad with dust swirl
+          chopper.mesh.position.copy(chopper.landPos);
+          chopper.mesh.position.y += Math.sin(this.totalTime * 2.0) * 0.15;
+          chopper.mesh.rotation.z = 0;
+          chopper.searchlight.rotation.z = 0;
+          chopper.dustPuff.visible = true;
+          const dustScale = 1.0 + Math.sin(this.totalTime * 8.0) * 0.35;
+          chopper.dustPuff.scale.set(dustScale, 0.5, dustScale);
+        }
+      }
     }
   }
 
@@ -547,6 +606,70 @@ export class DoomsdayEventDirector {
   }
 
   // =========================================================================
+  // DISASTER 7: THE LAST RESCUE TRAIN (Event C - Parallel Viaduct Line)
+  // =========================================================================
+
+  private updateLastRescueTrains(dt: number, playerZ: number): void {
+    for (const actor of this.lastRescueTrains) {
+      const distanceAhead = playerZ - actor.triggerZ;
+      actor.timer += dt;
+
+      if (actor.state === 'STATION_BOARDING' && distanceAhead <= 140.0) {
+        actor.state = 'DOORS_CLOSING';
+        actor.timer = 0;
+      } else if (actor.state === 'DOORS_CLOSING' && (distanceAhead <= 85.0 || actor.timer > 2.0)) {
+        actor.state = 'THROTTLE_SURGE';
+        actor.timer = 0;
+      } else if (actor.state === 'THROTTLE_SURGE' && (distanceAhead <= 40.0 || actor.timer > 1.5)) {
+        actor.state = 'DEPARTING';
+        actor.timer = 0;
+      } else if (actor.state === 'DEPARTING' && distanceAhead <= -160.0) {
+        actor.state = 'COMPLETE';
+      }
+
+      // Strobe emergency lights along roofline
+      for (const b of actor.beaconLights) {
+        b.visible = Math.sin(this.totalTime * 20.0) > 0.0;
+      }
+
+      // Headlight pulsing and glow
+      const headlightIntensity = actor.state === 'STATION_BOARDING' ? 0.7 : 1.0;
+      for (const hl of actor.headlights) {
+        hl.scale.setScalar(headlightIntensity + Math.sin(this.totalTime * 12.0) * 0.15);
+      }
+
+      // Sliding emergency doors animation
+      if (actor.state === 'DOORS_CLOSING' || actor.state === 'THROTTLE_SURGE' || actor.state === 'DEPARTING') {
+        const doorProgress = Math.min(1.0, actor.timer / 1.6);
+        for (let d = 0; d < actor.doors.length; d++) {
+          const door = actor.doors[d];
+          const dir = d % 2 === 0 ? 1 : -1;
+          door.position.x = dir * THREE.MathUtils.lerp(0.85, 0.0, doorProgress);
+        }
+      }
+
+      // Throttle acceleration and forward motion
+      if (actor.state === 'THROTTLE_SURGE') {
+        // Minor engine rev vibration
+        actor.locomotive.position.y = Math.sin(actor.timer * 40.0) * 0.04;
+        actor.speed = THREE.MathUtils.lerp(actor.speed, 12.0, dt * 2.0);
+        actor.group.position.z -= actor.speed * dt;
+      } else if (actor.state === 'DEPARTING') {
+        actor.locomotive.position.y = 0;
+        actor.speed = THREE.MathUtils.lerp(actor.speed, actor.targetSpeed, dt * 2.5);
+        actor.group.position.z -= actor.speed * dt;
+
+        // Dust / spark emitter
+        if (actor.dustEmitter) {
+          actor.dustEmitter.visible = true;
+          const dustScale = 1.0 + Math.sin(this.totalTime * 10.0) * 0.35;
+          actor.dustEmitter.scale.set(dustScale, 1.0, dustScale);
+        }
+      }
+    }
+  }
+
+  // =========================================================================
   // AMBIENT LIVING DISASTER ECOSYSTEM
   // =========================================================================
 
@@ -602,6 +725,7 @@ export class DoomsdayEventDirector {
     fracturingSkybridges: number;
     industrialFirestorms: number;
     finalTransitGates: number;
+    lastRescueTrains: number;
     patrolDrones: number;
     emergencyVehicles: number;
     smokingBreaches: number;
@@ -614,6 +738,7 @@ export class DoomsdayEventDirector {
       fracturingSkybridges: this.fracturingSkybridges.length,
       industrialFirestorms: this.industrialFirestorms.length,
       finalTransitGates: this.finalTransitGates.length,
+      lastRescueTrains: this.lastRescueTrains.length,
       patrolDrones: this.ambient.patrolDrones.length,
       emergencyVehicles: this.ambient.emergencyVehicles.length,
       smokingBreaches: this.ambient.smokingBreaches.length,
@@ -643,5 +768,9 @@ export class DoomsdayEventDirector {
 
   public getFinalTransitGates(): readonly FinalTransitGateActor[] {
     return this.finalTransitGates;
+  }
+
+  public getLastRescueTrains(): readonly LastRescueTrainActor[] {
+    return this.lastRescueTrains;
   }
 }

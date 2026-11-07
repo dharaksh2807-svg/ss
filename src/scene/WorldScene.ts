@@ -76,6 +76,15 @@ export class WorldScene {
   private abyssalCausticPlane: THREE.Mesh | null = null;
   private doomsdaySmokePlumes: THREE.Group[] = [];
   private doomsdayMeteorStreaks: THREE.Mesh[] = [];
+  private doomsdayHelicopters: Array<{
+    group: THREE.Group;
+    mainRotor: THREE.Object3D;
+    tailRotor: THREE.Object3D;
+    searchlight: THREE.Object3D;
+    vx: number;
+    minX: number;
+    maxX: number;
+  }> = [];
   private doomsdayEmbersTime: number = 0;
   private doomsdayEmbersGeo: THREE.BufferGeometry | null = null;
   private doomsdayEmbersPositions: Float32Array | null = null;
@@ -1549,6 +1558,99 @@ export class WorldScene {
     bridgeGroup.add(lavaTrench);
 
     this.doomsdaySkyline.add(bridgeGroup);
+
+    // 6f. Distant Patrolling Rescue Helicopters (Search and Rescue Choppers over ruined horizon)
+    this.doomsdayHelicopters = [];
+    const chopperConfigs = [
+      { startX: -140, y: 75, z: -380, vx: 18.0, minX: -260, maxX: 260 },
+      { startX: 110, y: 92, z: -460, vx: -14.0, minX: -260, maxX: 260 }
+    ];
+
+    const rescueHullMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+    const rescueAccentMat = new THREE.MeshBasicMaterial({ color: 0xef4444 }); // Emergency orange/red
+    const rotorMat = new THREE.MeshBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.75 });
+    const searchlightBeamMat = new THREE.MeshBasicMaterial({
+      color: 0xffedd5,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false
+    });
+
+    chopperConfigs.forEach((cfg) => {
+      const chopperGroup = new THREE.Group();
+      chopperGroup.position.set(cfg.startX, cfg.y, cfg.z);
+
+      // Main fuselage
+      const fuselage = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.4, 8.5), rescueHullMat);
+      fuselage.position.y = 1.2;
+      chopperGroup.add(fuselage);
+
+      // Nose / cockpit glass
+      const nose = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.8, 3.2), doomsdayAmberMat);
+      nose.position.set(0, 1.0, -4.2);
+      chopperGroup.add(nose);
+
+      // Rescue emergency marking band
+      const marking = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.8, 2.5), rescueAccentMat);
+      marking.position.set(0, 1.2, 0);
+      chopperGroup.add(marking);
+
+      // Tail boom
+      const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 8.0), rescueHullMat);
+      tailBoom.position.set(0, 1.5, 7.0);
+      chopperGroup.add(tailBoom);
+
+      // Vertical tail fin
+      const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.0, 2.0), rescueAccentMat);
+      tailFin.position.set(0, 3.0, 10.5);
+      chopperGroup.add(tailFin);
+
+      // Main rotor mast & blades
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 4), rescueHullMat);
+      mast.position.set(0, 2.8, -1.0);
+      chopperGroup.add(mast);
+
+      const mainRotor = new THREE.Mesh(new THREE.BoxGeometry(16.0, 0.08, 0.8), rotorMat);
+      mainRotor.position.set(0, 3.4, -1.0);
+      chopperGroup.add(mainRotor);
+
+      // Tail rotor
+      const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3.6, 0.4), rotorMat);
+      tailRotor.position.set(0.3, 3.2, 10.5);
+      chopperGroup.add(tailRotor);
+
+      // Searchlight pod & downward illumination cone
+      const searchlightGroup = new THREE.Group();
+      searchlightGroup.position.set(0, 0.2, -3.2);
+
+      const pod = new THREE.Mesh(new THREE.SphereGeometry(0.6, 6, 6), doomsdayFlameMat);
+      searchlightGroup.add(pod);
+
+      // Angled light cone pointing down to the ruined cityscape
+      const coneGeo = new THREE.ConeGeometry(8.0, 38.0, 8, 1, true);
+      const cone = new THREE.Mesh(coneGeo, searchlightBeamMat);
+      cone.position.set(0, -19.0, -8.0);
+      cone.rotation.x = Math.PI / 6;
+      searchlightGroup.add(cone);
+
+      chopperGroup.add(searchlightGroup);
+
+      // Face direction of flight
+      chopperGroup.rotation.y = cfg.vx < 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
+
+      this.doomsdayHelicopters.push({
+        group: chopperGroup,
+        mainRotor,
+        tailRotor,
+        searchlight: searchlightGroup,
+        vx: cfg.vx,
+        minX: cfg.minX,
+        maxX: cfg.maxX
+      });
+
+      this.doomsdaySkyline!.add(chopperGroup);
+    });
+
     group.add(this.doomsdaySkyline);
 
     // =========================================================================
@@ -3106,6 +3208,27 @@ export class WorldScene {
         if (meteor.position.x < -240) {
           meteor.position.x = meteor.userData.startX + 60;
           meteor.position.y = meteor.userData.startY + 24;
+        }
+      }
+
+      // Animate patrolling rescue helicopters
+      for (let i = 0; i < this.doomsdayHelicopters.length; i++) {
+        const chopper = this.doomsdayHelicopters[i];
+        chopper.group.position.x += chopper.vx * delta;
+        // Spin rotors
+        chopper.mainRotor.rotation.y += delta * 32.0;
+        chopper.tailRotor.rotation.x += delta * 38.0;
+        // Searchlight sweeping sway
+        chopper.searchlight.rotation.z = Math.sin(this.doomsdayEmbersTime * 2.0 + i) * 0.25;
+        chopper.searchlight.rotation.x = Math.cos(this.doomsdayEmbersTime * 1.5 + i) * 0.15;
+        // Bounded aerodynamic bank
+        chopper.group.rotation.z = (chopper.vx > 0 ? -1 : 1) * 0.08;
+
+        // Wrap around horizon
+        if (chopper.vx > 0 && chopper.group.position.x > chopper.maxX) {
+          chopper.group.position.x = chopper.minX;
+        } else if (chopper.vx < 0 && chopper.group.position.x < chopper.minX) {
+          chopper.group.position.x = chopper.maxX;
         }
       }
     }

@@ -338,6 +338,19 @@ check(diag.evacuationConvoys >= 1, 'Director tracks Evacuation Convoys');
 check(diag.fracturingSkybridges >= 1, 'Director tracks Fracturing Skybridges');
 check(diag.industrialFirestorms >= 1, 'Director tracks Industrial Firestorms');
 check(diag.finalTransitGates >= 1, 'Director tracks Final Transit Gates');
+check((diag as any).lastRescueTrains >= 1, 'Director tracks Last Rescue Train on parallel viaduct');
+
+const evacConvoys = director.getEvacuationConvoys();
+check(evacConvoys.length >= 1, 'At least 1 evacuation convoy registered');
+check(evacConvoys[0].rescueHelicopter !== undefined, 'Evacuation convoy includes articulated rescue helicopter');
+check(evacConvoys[0].rescueHelicopter?.mainRotor !== undefined, 'Rescue helicopter has spinning main rotor');
+check(evacConvoys[0].rescueHelicopter?.searchlight !== undefined, 'Rescue helicopter has searchlight illumination cone');
+
+const rescueTrains = director.getLastRescueTrains();
+check(rescueTrains.length >= 1, 'At least 1 Last Rescue Train registered');
+check(rescueTrains[0].locomotive !== undefined, 'Last Rescue Train includes armored locomotive');
+check(rescueTrains[0].coaches.length >= 2, 'Last Rescue Train has at least 2 passenger evacuation coaches');
+check(rescueTrains[0].doors.length >= 2, 'Last Rescue Train has sliding emergency doors');
 
 // Suite 14: Signed-Distance Convention Progression
 console.log('\n--- Suite 14: Signed-Distance Convention Progression ---');
