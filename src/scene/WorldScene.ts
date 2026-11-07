@@ -15,6 +15,7 @@ import { InfernoExpressEventDirector } from '../environment/worlds/infernoExpres
 import { JurassicRushEventDirector } from '../environment/worlds/jurassicRush/JurassicRushEventDirector';
 import { FeverDirector } from '../environment/worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from '../environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
+import { PhantomLineEventDirector } from '../environment/worlds/phantomLine/PhantomLineEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2670,6 +2671,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'HAUNTED_CARNIVAL') {
       const delta = dt || 0.016;
       HauntedCarnivalEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'PHANTOM_LINE') {
+      const delta = dt || 0.016;
+      PhantomLineEventDirector.getInstance().update(delta, true);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {

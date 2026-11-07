@@ -15,6 +15,7 @@ import { InfernoExpressEventDirector } from './worlds/infernoExpress/InfernoExpr
 import { JurassicRushEventDirector } from './worlds/jurassicRush/JurassicRushEventDirector';
 import { FeverDirector } from './worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from './worlds/hauntedCarnival/HauntedCarnivalEventDirector';
+import { PhantomLineEventDirector } from './worlds/phantomLine/PhantomLineEventDirector';
 import type { TrackChunk } from '../track/TrackChunk';
 import type { WorldScene } from '../scene/WorldScene';
 
@@ -86,6 +87,7 @@ export class EnvironmentDirector {
     JurassicRushEventDirector.getInstance().reset();
     FeverDirector.getInstance().reset();
     HauntedCarnivalEventDirector.getInstance().reset();
+    PhantomLineEventDirector.getInstance().reset();
   }
 
   public setRunSeed(seed: number, isDebug: boolean = false): void {
