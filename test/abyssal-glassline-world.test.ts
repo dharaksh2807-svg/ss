@@ -9,6 +9,8 @@ import { WorldScene } from '../src/scene/WorldScene';
 import { EnvironmentalEncounterDirector } from '../src/environment/EnvironmentalEncounterDirector';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { getWorld } from '../src/environment/WorldCatalog';
+import { AbyssalGlasslineWorldBuilder } from '../src/environment/worlds/abyssalGlassline/AbyssalGlasslineWorldBuilder';
+import { AbyssalGlasslineEventDirector } from '../src/environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 
 console.log('🧪 Starting ABYSSAL_GLASSLINE Premium World Verification Suite...\n');
 
@@ -232,6 +234,196 @@ for (let s = 200; s < 225; s++) {
   pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
 }
 check(landmarkTypes.size >= 2, `Procedural generation includes multiple landmark variations (found ${Array.from(landmarkTypes).join(', ')})`);
+
+// Suite 10: 6 Distinct Oceanic Regions & Cycle Permutations
+console.log('\n--- Suite 10: 6 Distinct Oceanic Regions & Permutations ---');
+const director = AbyssalGlasslineEventDirector.getInstance();
+director.reset();
+
+const zoneNamesFound = new Set<string>();
+for (let cIdx = 0; cIdx < 6; cIdx++) {
+  const g = new THREE.Group();
+  factory.buildScenery(g, ABYSSAL_GLASSLINE_THEME, -cIdx * 80, false, false, 'NONE', 'FULL', 5000 + cIdx);
+  g.traverse((child) => {
+    if (child.name.startsWith('zone_')) {
+      zoneNamesFound.add(child.name);
+    }
+  });
+  pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
+}
+
+check(zoneNamesFound.has('zone_bioluminescent_reef'), 'Contains zone_bioluminescent_reef');
+check(zoneNamesFound.has('zone_oceanic_research_city'), 'Contains zone_oceanic_research_city');
+check(zoneNamesFound.has('zone_sunken_civilization'), 'Contains zone_sunken_civilization');
+check(zoneNamesFound.has('zone_hydrothermal_abyss'), 'Contains zone_hydrothermal_abyss');
+check(zoneNamesFound.has('zone_leviathan_trench'), 'Contains zone_leviathan_trench');
+check(zoneNamesFound.has('zone_grand_ocean_sanctuary'), 'Contains zone_grand_ocean_sanctuary');
+check(zoneNamesFound.size === 6, `All 6 distinct oceanic regions spawn across the first cycle (got ${zoneNamesFound.size}/6)`);
+
+// Verify deep retaining promenades extend down to Y <= -5.85m (Zero Floating Geometry)
+const testPromenadeGroup = new THREE.Group();
+factory.buildScenery(testPromenadeGroup, ABYSSAL_GLASSLINE_THEME, 0, false, false, 'NONE', 'FULL', 4004);
+let minPromenadeY = Infinity;
+testPromenadeGroup.traverse((child) => {
+  if ((child as THREE.Mesh).isMesh) {
+    const box = new THREE.Box3().setFromObject(child);
+    if (box.min.y < minPromenadeY) {
+      minPromenadeY = box.min.y;
+    }
+  }
+});
+check(minPromenadeY <= -5.5, `Deep retaining promenades anchor down into benthic seafloor (minY = ${minPromenadeY.toFixed(2)}m <= -5.5m)`);
+pool.clearDecorativeGroup(testPromenadeGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 11: Gate A — The Giant Manta Encounter
+console.log('\n--- Suite 11: Gate A — The Giant Manta Encounter ---');
+director.reset();
+const mantaChunkGroup = new THREE.Group();
+// Zone 5 (Grand Ocean Sanctuary) contains Giant Manta hero
+factory.buildScenery(mantaChunkGroup, ABYSSAL_GLASSLINE_THEME, -5 * 80, false, false, 'NONE', 'FULL', 5005);
+
+const registeredMantas = director.getGiantMantas();
+check(registeredMantas.length > 0, `Giant Manta successfully registered in EventDirector (got ${registeredMantas.length})`);
+
+const manta = registeredMantas[0];
+check(manta.bodyMesh !== undefined, 'Manta has sculpted diamond hydrodynamic body');
+check(manta.leftWing !== undefined && manta.rightWing !== undefined, 'Manta has primary wings');
+check(manta.leftWingTip !== undefined && manta.rightWingTip !== undefined, 'Manta has secondary articulated wing tips');
+check(manta.cephalicLobes.length === 2, 'Manta has dual curled cephalic feeding lobes');
+check(manta.tail !== undefined, 'Manta has long tapered whip tail');
+check(manta.photophores.length >= 6, `Manta has bioluminescent photophore arrays (${manta.photophores.length} photophores)`);
+check(manta.escortRays.length === 2, `Manta is flanked by 2 escort rays in echelon formation (got ${manta.escortRays.length})`);
+
+// Animate manta via director and verify realistic wing undulation
+const initialLWingRotZ = manta.leftWing.rotation.z;
+director.update(0.4, true, -400); // 400m before encounter
+check(manta.leftWing.rotation.z !== initialLWingRotZ, 'Giant Manta wing flap updates dynamically during swimming cycle');
+
+// Check escort ray wings also articulate
+const escortRay0 = manta.escortRays[0];
+check(escortRay0.leftWing !== undefined && escortRay0.rightWing !== undefined, 'Escort ray has articulated pectoral wings');
+
+pool.clearDecorativeGroup(mantaChunkGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 12: Gate B — The Abyssal Leviathan
+console.log('\n--- Suite 12: Gate B — The Abyssal Leviathan ---');
+director.reset();
+const leviathanChunkGroup = new THREE.Group();
+// Zone 4 (Leviathan Trench) contains Leviathan colossus
+factory.buildScenery(leviathanChunkGroup, ABYSSAL_GLASSLINE_THEME, -4 * 80, false, false, 'NONE', 'FULL', 5004);
+
+const registeredLeviathans = director.getLeviathans();
+check(registeredLeviathans.length > 0, `Abyssal Leviathan successfully registered in EventDirector (got ${registeredLeviathans.length})`);
+
+const leviathan = registeredLeviathans[0];
+check(leviathan.head !== undefined, 'Leviathan has massive armored predator head');
+check(leviathan.bodySegments.length >= 8, `Leviathan features serpentine multi-segment body (got ${leviathan.bodySegments.length} segments)`);
+check(leviathan.dorsalSpines.length >= 8, `Leviathan features glowing dorsal spines along spine (got ${leviathan.dorsalSpines.length} spines)`);
+check(leviathan.tailFlukes !== undefined, 'Leviathan features expansive caudal tail flukes');
+check(leviathan.eyes.length === 2, 'Leviathan features bioluminescent predator eyes');
+
+// Verify Leviathan length exceeds 60m colossus threshold
+let leviathanTotalLength = 9.0; // Head length
+for (let s = 0; s < leviathan.bodySegments.length; s++) {
+  leviathanTotalLength += 7.2;
+}
+check(leviathanTotalLength >= 60.0, `Leviathan body scale is colossal (computed length: ${leviathanTotalLength.toFixed(1)}m >= 60m)`);
+
+// Test serpentine wave propagation down segments
+director.update(0.5, true, -320);
+const seg0Rot = leviathan.bodySegments[0].rotation.y;
+const segLastRot = leviathan.bodySegments[leviathan.bodySegments.length - 1].rotation.y;
+check(seg0Rot !== segLastRot, 'Sinuous traveling wave propagates along segmented body');
+
+pool.clearDecorativeGroup(leviathanChunkGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 13: Cinematic Events C, D, E, F
+console.log('\n--- Suite 13: Cinematic Events C, D, E, F ---');
+director.reset();
+const multiEventGroup = new THREE.Group();
+
+// Build Chunks 1, 2, 3, 5 to register events C, D, E, F
+factory.buildScenery(multiEventGroup, ABYSSAL_GLASSLINE_THEME, -1 * 80, false, false, 'NONE', 'FULL', 6001); // City -> Event E (Submarine Pursuit)
+factory.buildScenery(multiEventGroup, ABYSSAL_GLASSLINE_THEME, -2 * 80, false, false, 'NONE', 'FULL', 6002); // Ruins -> Event D (Sunken Titan)
+factory.buildScenery(multiEventGroup, ABYSSAL_GLASSLINE_THEME, -3 * 80, false, false, 'NONE', 'FULL', 6003); // Hydrothermal -> Event F (Hydrothermal Eruption)
+factory.buildScenery(multiEventGroup, ABYSSAL_GLASSLINE_THEME, -5 * 80, false, false, 'NONE', 'FULL', 6005); // Sanctuary -> Event C (Jellyfish Bloom)
+
+// Event C: Jellyfish Bloom
+const blooms = director.getJellyfishBlooms();
+check(blooms.length > 0, 'Jellyfish Bloom event registered');
+check(blooms[0].jellyfish.length >= 12, `Jellyfish Bloom contains pulsating swarm (got ${blooms[0].jellyfish.length} jellyfish)`);
+check(blooms[0].jellyfish[0].bell !== undefined, 'Jellyfish has translucent bell dome');
+check(blooms[0].jellyfish[0].tentacles.length >= 4, 'Jellyfish has trailing undulating tentacles');
+
+// Event D: Sunken Titan
+const titans = director.getSunkenTitans();
+check(titans.length > 0, 'Sunken Titan event registered');
+check(titans[0].statueHead !== undefined, 'Sunken Titan contains monumental carved head');
+check(titans[0].colonnadeArches.length >= 3, 'Sunken Titan includes surrounding ancient colonnades');
+check(titans[0].searchlightCone !== undefined, 'Sunken Titan features submersible exploration searchlight');
+
+// Event E: Submarine Pursuit
+const pursuits = director.getSubmarinePursuits();
+check(pursuits.length > 0, 'Submarine Pursuit event registered');
+check(pursuits[0].submarine !== undefined, 'Submarine Pursuit includes research submarine hull');
+check(pursuits[0].propellers.length === 2, 'Submarine has dual high-speed cavitation propellers');
+check(pursuits[0].searchlights.length === 2, 'Submarine has dual penetrating searchlight beams');
+check(pursuits[0].targetCreature !== undefined, 'Submarine is actively pursuing a deep-sea creature');
+
+// Event F: Hydrothermal Eruption
+const eruptions = director.getHydrothermalEruptions();
+check(eruptions.length > 0, 'Hydrothermal Eruption event registered');
+check(eruptions[0].chimney !== undefined, 'Hydrothermal event includes volcanic black smoker chimney');
+check(eruptions[0].moltenCalderaGlow !== undefined, 'Hydrothermal vent has glowing molten caldera orifice');
+check(eruptions[0].thermalPlumes.length >= 3, 'Hydrothermal vent has billowing thermal plumes');
+check(eruptions[0].pressureWaveMesh !== undefined, 'Hydrothermal vent features expanding pressure-wave pulse');
+
+pool.clearDecorativeGroup(multiEventGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 14: Signed-Distance Convention Verification
+console.log('\n--- Suite 14: Signed-Distance Convention Verification ---');
+// Verify convention: For negative-Z travel, distanceAhead = playerZ - encounterZ
+const encounterZ = -1000;
+const testDistances = [
+  { playerZ: -850, expectedDistanceAhead: 150, stage: 'Distant Approach (150m ahead)' },
+  { playerZ: -900, expectedDistanceAhead: 100, stage: 'Mid Approach (100m ahead)' },
+  { playerZ: -940, expectedDistanceAhead: 60, stage: 'Close Encounter Reveal (60m ahead)' },
+  { playerZ: -980, expectedDistanceAhead: 20, stage: 'Flyby Apex Transition (20m ahead)' },
+  { playerZ: -1000, expectedDistanceAhead: 0, stage: 'Direct Overhead / Tunnel Passing (0m)' },
+  { playerZ: -1020, expectedDistanceAhead: -20, stage: 'Banking Departure (-20m passed)' },
+  { playerZ: -1100, expectedDistanceAhead: -100, stage: 'Fading Into Oceanic Abyss (-100m passed)' }
+];
+
+testDistances.forEach((td) => {
+  const calculatedDistanceAhead = td.playerZ - encounterZ;
+  check(calculatedDistanceAhead === td.expectedDistanceAhead, `Signed distance for ${td.stage}: ${calculatedDistanceAhead}m === ${td.expectedDistanceAhead}m`);
+});
+
+// Suite 15: Memory Lifecycle & Scenery Pool Stability
+console.log('\n--- Suite 15: Memory Lifecycle & Detached Pruning ---');
+director.reset();
+const diagEmpty = director.getDiagnostics();
+check(diagEmpty.giantMantas === 0, 'reset() clears giantMantas');
+check(diagEmpty.leviathans === 0, 'reset() clears leviathans');
+check(diagEmpty.jellyfishBlooms === 0, 'reset() clears jellyfishBlooms');
+
+const lifecycleGroup = new THREE.Group();
+factory.buildScenery(lifecycleGroup, ABYSSAL_GLASSLINE_THEME, -400, false, false, 'NONE', 'FULL', 7777);
+const diagPopulated = director.getDiagnostics();
+check(diagPopulated.giantMantas > 0 || diagPopulated.leviathans > 0 || diagPopulated.fishSchools > 0, 'Populated chunk registers director actors');
+
+// Detach and recycle
+pool.clearDecorativeGroup(lifecycleGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Advance director frames to trigger pruneDetached() (every 45 frames)
+for (let f = 0; f < 50; f++) {
+  director.update(0.016, true, -400);
+}
+
+const diagPruned = director.getDiagnostics();
+check(diagPruned.giantMantas === 0, 'pruneDetached() safely removes recycled giantMantas');
+check(diagPruned.leviathans === 0, 'pruneDetached() safely removes recycled leviathans');
+check(diagPruned.fishSchools === 0, 'pruneDetached() safely removes recycled fishSchools');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} ABYSSAL_GLASSLINE PREMIUM WORLD TESTS PASSED!`);

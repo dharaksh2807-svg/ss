@@ -14,6 +14,7 @@ import { JurassicRushWorldBuilder } from './worlds/jurassicRush/JurassicRushWorl
 import { VivaHeatWorldBuilder } from './worlds/vivaHeat/VivaHeatWorldBuilder';
 import { HauntedCarnivalWorldBuilder } from './worlds/hauntedCarnival/HauntedCarnivalWorldBuilder';
 import { PhantomLineWorldBuilder } from './worlds/phantomLine/PhantomLineWorldBuilder';
+import { AbyssalGlasslineWorldBuilder } from './worlds/abyssalGlassline/AbyssalGlasslineWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1570,7 +1571,7 @@ export class SceneryFactory {
     } else if (theme.id === 'ORBITAL_HALO') {
       this.buildOrbitalHaloScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'ABYSSAL_GLASSLINE') {
-      this.buildAbyssalGlasslineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildAbyssalGlasslineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'DOOMSDAY_LAST_TRANSIT') {
       this.buildDoomsdayLastTransitScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'PHANTOM_LINE') {
@@ -3846,38 +3847,18 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const rng = new SeededRandom(seed);
-
-    // 1. Enclosed Transparent Glass Transit Tunnel & Guideway
-    this.buildAbyssalGuidewayAndGlassTunnel(group, roadbedWidth, curbWidth, chunkLength, detail);
-
-    // 2. High-Pressure Titanium Compression Ribs & Hydrostatic Gantries
-    this.buildAbyssalCompressionRibsGantries(group, chunkLength, detail);
-
-    // 3. Benthic Seafloor, Basalt Slabs, Bioluminescent Corals & Research Pods
-    this.buildAbyssalSeabedAndCoralFormations(group, chunkLength, rng, detail);
-
-    // 4. Deterministic Landmark Variations
-    // Variation 1: Monumental Trench Sanctum Dome (~48% of chunks)
-    const hasSanctumDome = rng.chance(0.48);
-    const domeZ = -chunkLength * 0.5;
-    if (hasSanctumDome) {
-      this.buildAbyssalMonumentalSanctumDome(group, chunkLength, domeZ);
-    }
-
-    // Variation 2: Oceanographic Research Skybridge & Submersible Dock (~38% of chunks when staggered)
-    if (detail !== 'MINIMAL' && (!hasSanctumDome || rng.chance(0.38))) {
-      const bridgeZ = hasSanctumDome ? -chunkLength * 0.18 : -chunkLength * 0.5;
-      this.buildAbyssalResearchSkybridge(group, chunkLength, bridgeZ);
-    }
-
-    // Variation 3: Hydrothermal Trench Chasm & Geothermal Vent (~35% of chunks)
-    if (detail !== 'MINIMAL' && rng.chance(0.35)) {
-      const chasmZ = hasSanctumDome ? -chunkLength * 0.80 : -chunkLength * 0.25;
-      this.buildAbyssalHydrothermalChasm(group, chunkLength, chasmZ, rng);
-    }
+    AbyssalGlasslineWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ
+    );
   }
 
   private buildAbyssalGuidewayAndGlassTunnel(

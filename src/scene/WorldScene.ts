@@ -16,6 +16,7 @@ import { JurassicRushEventDirector } from '../environment/worlds/jurassicRush/Ju
 import { FeverDirector } from '../environment/worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from '../environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 import { PhantomLineEventDirector } from '../environment/worlds/phantomLine/PhantomLineEventDirector';
+import { AbyssalGlasslineEventDirector } from '../environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -879,6 +880,7 @@ export class WorldScene {
       const creature = new THREE.Group();
       creature.position.set(spec.startX, spec.y, spec.z);
       creature.userData = {
+        baseY: spec.y,
         vx: spec.vx,
         verticalAmp: spec.verticalAmp,
         swimFreq: spec.swimFreq,
@@ -2505,7 +2507,8 @@ export class WorldScene {
       for (let i = 0; i < this.backgroundMarineCreatures.length; i++) {
         const creature = this.backgroundMarineCreatures[i];
         creature.position.x += creature.userData.vx * delta;
-        creature.position.y += Math.sin(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * creature.userData.verticalAmp * delta;
+        const baseY = creature.userData.baseY !== undefined ? creature.userData.baseY : 45;
+        creature.position.y = baseY + Math.sin(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * creature.userData.verticalAmp;
         creature.rotation.z = Math.cos(this.abyssalCreatureTime * creature.userData.swimFreq + creature.userData.swimPhase) * 0.08;
         if (creature.userData.vx > 0 && creature.position.x > creature.userData.maxX) {
           creature.position.x = creature.userData.minX;
@@ -2679,6 +2682,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'PHANTOM_LINE') {
       const delta = dt || 0.016;
       PhantomLineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'ABYSSAL_GLASSLINE') {
+      const delta = dt || 0.016;
+      AbyssalGlasslineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {

@@ -19,6 +19,7 @@ import { JurassicRushEventDirector } from './environment/worlds/jurassicRush/Jur
 import { FeverDirector } from './environment/worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from './environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 import { PhantomLineEventDirector } from './environment/worlds/phantomLine/PhantomLineEventDirector';
+import { AbyssalGlasslineEventDirector } from './environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -40,6 +41,7 @@ if (isDeveloperMode()) {
   (window as any).__FEVER_DIRECTOR__ = FeverDirector.getInstance();
   (window as any).__HAUNTED_DIRECTOR__ = HauntedCarnivalEventDirector.getInstance();
   (window as any).__PHANTOM_DIRECTOR__ = PhantomLineEventDirector.getInstance();
+  (window as any).__ABYSSAL_DIRECTOR__ = AbyssalGlasslineEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };
