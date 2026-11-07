@@ -404,6 +404,112 @@ check(cleanDiag.airTrafficSwarms === 0, 'Air traffic swarms reset to 0');
 check(cleanDiag.maglevCrossovers === 0, 'Maglev crossovers reset to 0');
 check(cleanDiag.flyingCars === 0, 'Flying cars reset to 0');
 
+// Suite 16: Flagship Hero Events Lifecycles & Kinematic Banking
+console.log('\n--- Suite 16: Flagship Hero Events Lifecycles & Kinematic Banking ---');
+import { NEON_RAINLINE_DISTRICTS } from '../src/environment/worlds/neonRainline/NeonRainlineTheme';
+check(NEON_RAINLINE_DISTRICTS.length === 8, '8 distinct landscape types defined in NEON_RAINLINE_DISTRICTS');
+
+// Test Air-Traffic Ballet 6-stage lifecycle
+const balletGroup = new THREE.Group();
+factory.buildScenery(balletGroup, NEON_RAINLINE_THEME, -160, false, false, 'NONE', 'FULL', 5002);
+const activeBallets = director.getAirTrafficBallets();
+check(activeBallets.length > 0, 'Air-Traffic Ballet registered in director');
+const testBallet = activeBallets[activeBallets.length - 1];
+const bTrigger = testBallet.triggerZ;
+
+director.update(0.016, true, bTrigger + 160);
+check(testBallet.state === 'DORMANT', `Ballet at +160m ahead is DORMANT (got ${testBallet.state})`);
+
+director.update(0.016, true, bTrigger + 100);
+check(testBallet.state === 'ANTICIPATION', `Ballet at +100m ahead is ANTICIPATION (got ${testBallet.state})`);
+
+director.update(0.016, true, bTrigger + 50);
+check(testBallet.state === 'ACTION', `Ballet at +50m ahead is ACTION (got ${testBallet.state})`);
+
+director.update(0.016, true, bTrigger);
+check(testBallet.state === 'CLIMAX', `Ballet at trigger is CLIMAX (got ${testBallet.state})`);
+
+director.update(0.016, true, bTrigger - 50);
+check(testBallet.state === 'AFTERMATH', `Ballet at -50m behind is AFTERMATH (got ${testBallet.state})`);
+
+director.update(0.016, true, bTrigger - 120);
+check(testBallet.state === 'COMPLETE', `Ballet at -120m behind is COMPLETE (got ${testBallet.state})`);
+
+// Verify vehicle banking roll responds to turn motion
+let hasNonZeroBank = false;
+for (let step = 0; step < 20; step++) {
+  director.update(0.05, true, bTrigger + 50);
+  if (Math.abs(testBallet.vehicles[0].bankAngle) > 0.01) {
+    hasNonZeroBank = true;
+    break;
+  }
+}
+check(hasNonZeroBank, 'Hover vehicles exhibit dynamic physical banking roll into curves');
+
+// Test Futuristic Plaza Awakens 6-stage lifecycle
+const testPlazaGroup = new THREE.Group();
+factory.buildScenery(testPlazaGroup, NEON_RAINLINE_THEME, -320, false, false, 'NONE', 'FULL', 5004);
+const activePlazas = director.getPlazaAwakenings();
+check(activePlazas.length > 0, 'Plaza Awakening registered in director');
+const testPlaza = activePlazas[activePlazas.length - 1];
+const pTrigger = testPlaza.triggerZ;
+
+director.update(0.016, true, pTrigger + 150);
+check(testPlaza.state === 'DORMANT', `Plaza at +150m is DORMANT (got ${testPlaza.state})`);
+
+director.update(0.016, true, pTrigger + 90);
+check(testPlaza.state === 'ANTICIPATION', `Plaza at +90m is ANTICIPATION (got ${testPlaza.state})`);
+
+director.update(0.016, true, pTrigger + 40);
+check(testPlaza.state === 'ACTION', `Plaza at +40m is ACTION (got ${testPlaza.state})`);
+
+for (let f = 0; f < 30; f++) {
+  director.update(0.05, true, pTrigger);
+}
+check(testPlaza.state === 'CLIMAX', `Plaza at trigger is CLIMAX (got ${testPlaza.state})`);
+check(testPlaza.powerLevel > 0.8, `Plaza power level ramps up during CLIMAX (got ${testPlaza.powerLevel.toFixed(2)})`);
+
+director.update(0.016, true, pTrigger - 50);
+check(testPlaza.state === 'AFTERMATH', `Plaza at -50m is AFTERMATH (got ${testPlaza.state})`);
+
+director.update(0.016, true, pTrigger - 120);
+check(testPlaza.state === 'COMPLETE', `Plaza at -120m is COMPLETE (got ${testPlaza.state})`);
+
+// Suite 17: Foundation Grounding (Y <= -5.85m) & Open Plaza Low Curb (No 2.6m Corridor Trap)
+console.log('\n--- Suite 17: Foundation Grounding & Open Plaza Unboxed Boundary ---');
+let foundDeepPlinth = false;
+testPlazaGroup.traverse((child) => {
+  if ((child as THREE.Mesh).isMesh) {
+    const box = new THREE.Box3().setFromObject(child);
+    if (box.min.y <= -5.80) {
+      foundDeepPlinth = true;
+    }
+  }
+});
+check(foundDeepPlinth, 'Foundation plinths extend down to Y <= -5.80m (zero floating scenery)');
+
+// Check that in the Open Plaza (chunk 4), the track boundary curb is low (<= 0.45m), NOT a 2.6m monolithic wall
+let maxBoundaryWallHeightInPlaza = 0;
+testPlazaGroup.traverse((child) => {
+  if ((child as THREE.Mesh).isMesh) {
+    const box = new THREE.Box3().setFromObject(child);
+    // Boundary curb near track edge (X approx 5.5m - 6.5m)
+    if ((box.min.x > 5.0 && box.max.x < 7.0) || (box.min.x > -7.0 && box.max.x < -5.0)) {
+      if (box.max.y > maxBoundaryWallHeightInPlaza && box.max.y < 5.0) {
+        maxBoundaryWallHeightInPlaza = box.max.y;
+      }
+    }
+  }
+});
+check(
+  maxBoundaryWallHeightInPlaza <= 0.45,
+  `Open plaza boundary is a low flush curb (got height ${maxBoundaryWallHeightInPlaza.toFixed(2)}m <= 0.45m, no 2.6m wall trap)`
+);
+
+pool.clearDecorativeGroup(balletGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(testPlazaGroup, new Set(Object.values(factory.getSharedMaterials())));
+director.reset();
+
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} NEON_RAINLINE PREMIUM WORLD TESTS PASSED!`);
 console.log(`=======================================================`);

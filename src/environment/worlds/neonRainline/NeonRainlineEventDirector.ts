@@ -1,97 +1,34 @@
 import * as THREE from 'three';
+import { EventBus } from '../../../core/EventBus';
 import { SettingsManager } from '../../../settings/SettingsManager';
+import type {
+  HoverCarActor,
+  AirTrafficBalletActor,
+  FuturisticPlazaAwakeningActor,
+  MaglevTrainActor,
+  TechBlackoutActor,
+  DroneShowActor,
+  SkybridgeTransformActor,
+  CityStormActor,
+  AmbientCityLife
+} from './NeonRainlineTheme';
 
-/**
- * Actor Interfaces for Neon Rainline Cinematic Megacity Encounters
- */
+// Re-export actor types for backwards compatibility
+export type {
+  HoverCarActor,
+  AirTrafficBalletActor,
+  FuturisticPlazaAwakeningActor,
+  MaglevTrainActor,
+  TechBlackoutActor,
+  DroneShowActor,
+  SkybridgeTransformActor,
+  CityStormActor,
+  AmbientCityLife
+};
 
-export interface HoverCarActor {
-  mesh: THREE.Group;
-  cockpitGlass?: THREE.Mesh;
-  engineGlow?: THREE.Mesh;
-  lightTrail?: THREE.Mesh;
-  basePos: THREE.Vector3;
-  velocity: THREE.Vector3;
-  bankAngle: number;
-  flightPathRadius: number;
-  flightPathSpeed: number;
-  flightPhase: number;
-}
-
-export interface AirTrafficSwarmActor {
-  group: THREE.Group;
-  vehicles: HoverCarActor[];
-  triggerZ: number;
-  state: 'DISTANT_APPROACH' | 'FORMATION_FLIGHT' | 'BANKING_CROSSOVER' | 'DISPERSING' | 'COMPLETE';
-  timer: number;
-}
-
-export interface HoloCityAwakeningActor {
-  group: THREE.Group;
-  landmarkCore: THREE.Mesh;
-  concentricRings: THREE.Mesh[];
-  holographicPanels: THREE.Mesh[];
-  triggerZ: number;
-  state: 'STANDBY' | 'RESONANCE_START' | 'GIANT_INSTALLATION' | 'SHAPE_SHIFT' | 'FADING' | 'COMPLETE';
-  timer: number;
-}
-
-export interface MaglevTrainActor {
-  group: THREE.Group;
-  trainUpper: THREE.Group;
-  trainLower: THREE.Group;
-  upperUndercarriageGlow: THREE.Mesh;
-  lowerUndercarriageGlow: THREE.Mesh;
-  triggerZ: number;
-  state: 'APPROACHING' | 'CROSSING_OVERHEAD' | 'RECEDING' | 'COMPLETE';
-  timer: number;
-}
-
-export interface TechBlackoutActor {
-  group: THREE.Group;
-  affectedDistrictMeshes: THREE.Mesh[];
-  emergencyBeacons: THREE.Mesh[];
-  reactorCore: THREE.Mesh;
-  triggerZ: number;
-  state: 'NORMAL' | 'BLACKOUT_DROP' | 'EMERGENCY_PULSE' | 'CASCADE_RESTORE' | 'COMPLETE';
-  timer: number;
-}
-
-export interface DroneShowActor {
-  group: THREE.Group;
-  drones: Array<{ mesh: THREE.Mesh; baseOffset: THREE.Vector3; orbitPhase: number }>;
-  triggerZ: number;
-  state: 'HOVER_PLAZA' | 'CONSTELLATION_FORM' | 'SPIRAL_ROTATION' | 'DISPERSE' | 'COMPLETE';
-  timer: number;
-}
-
-export interface SkybridgeTransformActor {
-  group: THREE.Group;
-  leftSection: THREE.Mesh;
-  rightSection: THREE.Mesh;
-  centerSpan: THREE.Mesh;
-  serviceBots: THREE.Mesh[];
-  triggerZ: number;
-  state: 'RETRACTED' | 'EXTENDING' | 'FULL_SPAN' | 'ACTIVE_TRANSIT' | 'COMPLETE';
-  timer: number;
-}
-
-export interface CityStormActor {
-  group: THREE.Group;
-  lightningPlanes: THREE.Mesh[];
-  triggerZ: number;
-  state: 'CLEARING' | 'GATHERING_STORM' | 'PEAK_PRECIPITATION' | 'LIGHTNING_PULSE' | 'CALMING';
-  timer: number;
-}
-
-export interface AmbientCityLife {
-  flyingCars: Array<{ mesh: THREE.Group; startX: number; endX: number; y: number; z: number; speed: number; dir: number }>;
-  deliveryDrones: Array<{ mesh: THREE.Group; center: THREE.Vector3; radius: number; freq: number; phase: number; rotors: THREE.Mesh[] }>;
-  waterTaxis: Array<{ mesh: THREE.Group; canalZ: number; speed: number; minZ: number; maxZ: number }>;
-  industrialCranes: Array<{ arm: THREE.Object3D; cable: THREE.Object3D; phase: number; speed: number }>;
-  glassElevators: Array<{ mesh: THREE.Group; minY: number; maxY: number; speed: number; curY: number; dir: number }>;
-  swayingHoloBanners: Array<{ mesh: THREE.Mesh; phase: number; freq: number }>;
-}
+// Aliases for backwards compatibility with earlier test suites
+export type AirTrafficSwarmActor = AirTrafficBalletActor;
+export type HoloCityAwakeningActor = FuturisticPlazaAwakeningActor;
 
 /**
  * NeonRainlineEventDirector
@@ -109,8 +46,8 @@ export class NeonRainlineEventDirector {
   private frameCounter: number = 0;
 
   // Registered Encounters
-  private airTrafficSwarms: AirTrafficSwarmActor[] = [];
-  private holoAwakenings: HoloCityAwakeningActor[] = [];
+  private airTrafficBallets: AirTrafficBalletActor[] = [];
+  private plazaAwakenings: FuturisticPlazaAwakeningActor[] = [];
   private maglevCrossovers: MaglevTrainActor[] = [];
   private techBlackouts: TechBlackoutActor[] = [];
   private droneShows: DroneShowActor[] = [];
@@ -124,10 +61,13 @@ export class NeonRainlineEventDirector {
     waterTaxis: [],
     industrialCranes: [],
     glassElevators: [],
-    swayingHoloBanners: []
+    swayingHoloBanners: [],
+    bioluminescentTrees: []
   };
 
-  private constructor() {}
+  private constructor() {
+    this.initEventListeners();
+  }
 
   public static getInstance(): NeonRainlineEventDirector {
     if (!this.instance) {
@@ -136,14 +76,46 @@ export class NeonRainlineEventDirector {
     return this.instance;
   }
 
-  // --- Registration Methods ---
+  private initEventListeners(): void {
+    const bus = EventBus.getInstance();
+    bus.on('GAME_RESTART', () => {
+      this.reset();
+    });
 
-  public registerAirTrafficSwarm(actor: AirTrafficSwarmActor): void {
-    this.airTrafficSwarms.push(actor);
+    bus.on('PLAYER_REVIVE', () => {
+      // Re-arm dormant states on revive
+      for (const a of this.airTrafficBallets) {
+        if (a.state === 'COMPLETE') a.state = 'DORMANT';
+      }
+      for (const a of this.plazaAwakenings) {
+        if (a.state === 'COMPLETE') a.state = 'DORMANT';
+      }
+      for (const a of this.maglevCrossovers) {
+        if (a.state === 'COMPLETE') a.state = 'APPROACHING';
+      }
+    });
+
+    bus.on('TRACK_RECYCLED', () => {
+      this.pruneDetached();
+    });
   }
 
-  public registerHoloAwakening(actor: HoloCityAwakeningActor): void {
-    this.holoAwakenings.push(actor);
+  // --- Registration Methods ---
+
+  public registerAirTrafficBallet(actor: AirTrafficBalletActor): void {
+    this.airTrafficBallets.push(actor);
+  }
+
+  public registerAirTrafficSwarm(actor: AirTrafficBalletActor): void {
+    this.registerAirTrafficBallet(actor);
+  }
+
+  public registerPlazaAwakening(actor: FuturisticPlazaAwakeningActor): void {
+    this.plazaAwakenings.push(actor);
+  }
+
+  public registerHoloAwakening(actor: FuturisticPlazaAwakeningActor): void {
+    this.registerPlazaAwakening(actor);
   }
 
   public registerMaglevCrossover(actor: MaglevTrainActor): void {
@@ -166,35 +138,77 @@ export class NeonRainlineEventDirector {
     this.cityStorms.push(actor);
   }
 
-  public registerFlyingCar(mesh: THREE.Group, startX: number, endX: number, y: number, z: number, speed: number = 42.0, dir: number = 1): void {
+  public registerFlyingCar(
+    mesh: THREE.Group,
+    startX: number,
+    endX: number,
+    y: number,
+    z: number,
+    speed: number = 42.0,
+    dir: number = 1
+  ): void {
     this.ambient.flyingCars.push({ mesh, startX, endX, y, z, speed, dir });
   }
 
-  public registerDeliveryDrone(mesh: THREE.Group, center: THREE.Vector3, radius: number = 4.5, freq: number = 1.4, phase: number = 0, rotors: THREE.Mesh[] = []): void {
+  public registerDeliveryDrone(
+    mesh: THREE.Group,
+    center: THREE.Vector3,
+    radius: number = 4.5,
+    freq: number = 1.4,
+    phase: number = 0,
+    rotors: THREE.Mesh[] = []
+  ): void {
     this.ambient.deliveryDrones.push({ mesh, center: center.clone(), radius, freq, phase, rotors });
   }
 
-  public registerWaterTaxi(mesh: THREE.Group, canalZ: number, speed: number = 8.5, minZ: number = -60, maxZ: number = 60): void {
+  public registerWaterTaxi(
+    mesh: THREE.Group,
+    canalZ: number,
+    speed: number = 8.5,
+    minZ: number = -60,
+    maxZ: number = 60
+  ): void {
     this.ambient.waterTaxis.push({ mesh, canalZ, speed, minZ, maxZ });
   }
 
-  public registerIndustrialCrane(arm: THREE.Object3D, cable: THREE.Object3D, phase: number = 0, speed: number = 0.6): void {
+  public registerIndustrialCrane(
+    arm: THREE.Object3D,
+    cable: THREE.Object3D,
+    phase: number = 0,
+    speed: number = 0.6
+  ): void {
     this.ambient.industrialCranes.push({ arm, cable, phase, speed });
   }
 
-  public registerGlassElevator(mesh: THREE.Group, minY: number, maxY: number, speed: number = 12.0): void {
+  public registerGlassElevator(
+    mesh: THREE.Group,
+    minY: number,
+    maxY: number,
+    speed: number = 12.0
+  ): void {
     this.ambient.glassElevators.push({ mesh, minY, maxY, speed, curY: minY + (maxY - minY) * 0.5, dir: 1 });
   }
 
-  public registerSwayingHoloBanner(mesh: THREE.Mesh, phase: number = 0, freq: number = 1.5): void {
+  public registerSwayingHoloBanner(
+    mesh: THREE.Mesh,
+    phase: number = 0,
+    freq: number = 1.5
+  ): void {
     this.ambient.swayingHoloBanners.push({ mesh, phase, freq });
+  }
+
+  public registerBioluminescentTree(
+    canopy: THREE.Mesh,
+    pulsePhase: number = 0
+  ): void {
+    this.ambient.bioluminescentTrees.push({ canopy, pulsePhase });
   }
 
   // --- Lifecycle & Pruning ---
 
   public reset(): void {
-    this.airTrafficSwarms.length = 0;
-    this.holoAwakenings.length = 0;
+    this.airTrafficBallets.length = 0;
+    this.plazaAwakenings.length = 0;
     this.maglevCrossovers.length = 0;
     this.techBlackouts.length = 0;
     this.droneShows.length = 0;
@@ -206,12 +220,13 @@ export class NeonRainlineEventDirector {
     this.ambient.industrialCranes.length = 0;
     this.ambient.glassElevators.length = 0;
     this.ambient.swayingHoloBanners.length = 0;
+    this.ambient.bioluminescentTrees.length = 0;
     this.totalTime = 0;
     this.frameCounter = 0;
   }
 
-  private isDetached(obj: THREE.Object3D): boolean {
-    let current: THREE.Object3D | null = obj;
+  private isDetached(obj: THREE.Object3D | null | undefined): boolean {
+    let current: THREE.Object3D | null | undefined = obj;
     while (current) {
       if (!current.parent) {
         return current.type !== 'Scene';
@@ -221,9 +236,9 @@ export class NeonRainlineEventDirector {
     return true;
   }
 
-  private pruneDetached(): void {
-    this.airTrafficSwarms = this.airTrafficSwarms.filter((a) => !this.isDetached(a.group));
-    this.holoAwakenings = this.holoAwakenings.filter((a) => !this.isDetached(a.group));
+  public pruneDetached(): void {
+    this.airTrafficBallets = this.airTrafficBallets.filter((a) => !this.isDetached(a.group));
+    this.plazaAwakenings = this.plazaAwakenings.filter((a) => !this.isDetached(a.group));
     this.maglevCrossovers = this.maglevCrossovers.filter((a) => !this.isDetached(a.group));
     this.techBlackouts = this.techBlackouts.filter((a) => !this.isDetached(a.group));
     this.droneShows = this.droneShows.filter((a) => !this.isDetached(a.group));
@@ -235,6 +250,7 @@ export class NeonRainlineEventDirector {
     this.ambient.industrialCranes = this.ambient.industrialCranes.filter((a) => !this.isDetached(a.arm));
     this.ambient.glassElevators = this.ambient.glassElevators.filter((a) => !this.isDetached(a.mesh));
     this.ambient.swayingHoloBanners = this.ambient.swayingHoloBanners.filter((a) => !this.isDetached(a.mesh));
+    this.ambient.bioluminescentTrees = this.ambient.bioluminescentTrees.filter((b) => !this.isDetached(b.canopy));
   }
 
   // --- Main Update Loop ---
@@ -262,95 +278,187 @@ export class NeonRainlineEventDirector {
     }
 
     // =========================================================================
-    // GATE B & SURPRISE 1: THE FUTURISTIC AIR-TRAFFIC SWARM
+    // FLAGSHIP HERO EVENT A: AIR-TRAFFIC BALLET (6-Stage Lifecycle)
     // =========================================================================
-    for (let i = 0; i < this.airTrafficSwarms.length; i++) {
-      const swarm = this.airTrafficSwarms[i];
-      const distanceAhead = pZ - swarm.triggerZ;
-      swarm.timer += dt;
+    for (let i = 0; i < this.airTrafficBallets.length; i++) {
+      const ballet = this.airTrafficBallets[i];
+      const distanceAhead = pZ - ballet.triggerZ;
+      ballet.timer += dt;
 
+      // 6-stage lifecycle transitions
       if (distanceAhead > 140) {
-        swarm.state = 'DISTANT_APPROACH';
-      } else if (distanceAhead > 70) {
-        swarm.state = 'FORMATION_FLIGHT';
-      } else if (distanceAhead > -30) {
-        swarm.state = 'BANKING_CROSSOVER';
-      } else if (distanceAhead > -120) {
-        swarm.state = 'DISPERSING';
+        ballet.state = 'DORMANT';
+      } else if (distanceAhead > 80) {
+        ballet.state = 'ANTICIPATION';
+      } else if (distanceAhead > 25) {
+        ballet.state = 'ACTION';
+      } else if (distanceAhead > -25) {
+        ballet.state = 'CLIMAX';
+      } else if (distanceAhead > -80) {
+        ballet.state = 'AFTERMATH';
       } else {
-        swarm.state = 'COMPLETE';
+        ballet.state = 'COMPLETE';
       }
 
-      // Animate sculpted hover vehicles along dynamic flight routes
-      for (let v = 0; v < swarm.vehicles.length; v++) {
-        const car = swarm.vehicles[v];
-        const carT = (t * car.flightPathSpeed + car.flightPhase) * motionScale;
+      // Physics-driven hover vehicle flight trajectories with realistic banking
+      const vCount = ballet.vehicles.length;
+      for (let v = 0; v < vCount; v++) {
+        const car = ballet.vehicles[v];
+        const routeIdx = car.routeType ?? v;
+        const speedMultiplier = 1.0 + routeIdx * 0.15;
+        const carT = (t * car.flightPathSpeed * speedMultiplier + car.flightPhase) * motionScale;
 
-        // Smooth flight curve traversing across the city
-        const flightX = car.basePos.x + Math.sin(carT) * car.flightPathRadius;
-        const flightY = car.basePos.y + Math.sin(carT * 1.8) * 2.2;
-        const flightZ = car.basePos.z + Math.cos(carT * 0.7) * (car.flightPathRadius * 0.8);
+        // Spline / orbit evaluation based on state
+        let radius = car.flightPathRadius;
+        let altOffset = 0;
+        let speedBoost = 1.0;
+
+        if (ballet.state === 'ANTICIPATION') {
+          speedBoost = 1.2;
+          altOffset = Math.sin(carT * 2.0) * 1.5;
+        } else if (ballet.state === 'ACTION') {
+          speedBoost = 1.6;
+          radius *= 0.85; // Tighten formation
+          altOffset = Math.sin(carT * 2.5) * 3.0;
+        } else if (ballet.state === 'CLIMAX') {
+          speedBoost = 2.0; // High speed sweeping dive
+          radius *= 0.7;
+          altOffset = Math.sin(carT * 3.0) * 4.5;
+        } else if (ballet.state === 'AFTERMATH') {
+          speedBoost = 1.4;
+          radius *= 1.3; // Expand formation outwards into skyline
+          altOffset = 6.0 + Math.sin(carT) * 2.0; // Climbing out
+        }
+
+        const effectiveT = carT * speedBoost;
+        const flightX = car.basePos.x + Math.sin(effectiveT) * radius;
+        const flightY = car.basePos.y + altOffset;
+        const flightZ = car.basePos.z + Math.cos(effectiveT * 0.8) * (radius * 0.9);
 
         car.mesh.position.set(flightX, flightY, flightZ);
 
-        // Realistic banking roll into curves
-        const targetRoll = Math.cos(carT) * -0.28 * motionScale;
-        car.mesh.rotation.z = targetRoll;
-        car.mesh.rotation.y = Math.sin(carT * 0.7) * 0.45;
+        // Realistic banking roll proportional to turn rate
+        // Tangent angle derivative of (sin(T), cos(0.8 T))
+        const turnRate = Math.cos(effectiveT);
+        const targetRoll = -turnRate * 0.55 * motionScale;
+        // Smoothly interpolate banking roll
+        car.bankAngle += (targetRoll - car.bankAngle) * Math.min(1.0, dt * 8.0);
+        car.mesh.rotation.z = car.bankAngle;
 
-        // Engine glow pulsating with thrust
+        // Yaw aligned to trajectory heading
+        const heading = Math.atan2(Math.cos(effectiveT), -Math.sin(effectiveT * 0.8) * 0.8);
+        car.mesh.rotation.y = heading;
+
+        // Slight pitch tilt into dives
+        const pitchAngle = Math.cos(effectiveT * 2.5) * -0.15 * motionScale;
+        car.mesh.rotation.x = pitchAngle;
+
+        // Engine glow thrust pulsing
         if (car.engineGlow) {
-          const thrust = 0.85 + 0.35 * Math.sin(carT * 4.0);
-          car.engineGlow.scale.set(thrust, thrust, 1.0);
+          const thrust = 0.8 + 0.45 * Math.sin(effectiveT * 6.0) * (ballet.state === 'CLIMAX' ? 1.4 : 1.0);
+          car.engineGlow.scale.set(thrust, thrust, 1.0 + thrust * 0.3);
         }
       }
     }
 
     // =========================================================================
-    // SURPRISE 2: THE HOLOGRAPHIC CITY AWAKENS
+    // FLAGSHIP HERO EVENT B: FUTURISTIC PLAZA AWAKENS (6-Stage Lifecycle)
     // =========================================================================
-    for (let i = 0; i < this.holoAwakenings.length; i++) {
-      const holo = this.holoAwakenings[i];
-      const distanceAhead = pZ - holo.triggerZ;
-      holo.timer += dt;
+    for (let i = 0; i < this.plazaAwakenings.length; i++) {
+      const plaza = this.plazaAwakenings[i];
+      const distanceAhead = pZ - plaza.triggerZ;
+      plaza.timer += dt;
 
+      // 6-stage lifecycle transitions
       if (distanceAhead > 130) {
-        holo.state = 'STANDBY';
+        plaza.state = 'DORMANT';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 0.1, dt * 2.0);
       } else if (distanceAhead > 75) {
-        holo.state = 'RESONANCE_START';
-      } else if (distanceAhead > 15) {
-        holo.state = 'GIANT_INSTALLATION';
-      } else if (distanceAhead > -40) {
-        holo.state = 'SHAPE_SHIFT';
-      } else if (distanceAhead > -110) {
-        holo.state = 'FADING';
+        plaza.state = 'ANTICIPATION';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 0.45, dt * 2.5);
+      } else if (distanceAhead > 20) {
+        plaza.state = 'ACTION';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 0.85, dt * 3.0);
+      } else if (distanceAhead > -35) {
+        plaza.state = 'CLIMAX';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 1.25, dt * 4.0);
+      } else if (distanceAhead > -90) {
+        plaza.state = 'AFTERMATH';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 0.5, dt * 2.0);
       } else {
-        holo.state = 'COMPLETE';
+        plaza.state = 'COMPLETE';
+        plaza.powerLevel = THREE.MathUtils.lerp(plaza.powerLevel, 0.2, dt * 1.5);
       }
 
-      // Concentric rings rotation and expansion
-      for (let r = 0; r < holo.concentricRings.length; r++) {
-        const ring = holo.concentricRings[r];
-        const dir = r % 2 === 0 ? 1 : -1;
-        ring.rotation.y += dt * 0.85 * dir * motionScale;
-        ring.rotation.x = Math.sin(t * 1.2 + r) * 0.15 * motionScale;
+      const pLevel = plaza.powerLevel;
 
-        if (holo.state === 'GIANT_INSTALLATION' || holo.state === 'SHAPE_SHIFT') {
-          const s = 1.0 + 0.22 * Math.sin(t * 2.5 + r * 1.2);
-          ring.scale.set(s, s, s);
+      // 1. Gyroscopic concentric rings rotation & nutation
+      if (plaza.innerRing) {
+        plaza.innerRing.rotation.y += dt * 1.8 * pLevel * motionScale;
+        plaza.innerRing.rotation.x = Math.sin(t * 2.2) * 0.35 * pLevel * motionScale;
+        const innerScale = 1.0 + 0.15 * Math.sin(t * 3.5) * pLevel;
+        plaza.innerRing.scale.set(innerScale, innerScale, innerScale);
+      }
+      if (plaza.outerRing) {
+        plaza.outerRing.rotation.y -= dt * 1.2 * pLevel * motionScale; // Counter-rotation
+        plaza.outerRing.rotation.z = Math.cos(t * 1.8) * 0.28 * pLevel * motionScale;
+        const outerScale = 1.0 + 0.2 * Math.sin(t * 2.8 + 1.0) * pLevel;
+        plaza.outerRing.scale.set(outerScale, outerScale, outerScale);
+      }
+
+      // 2. Central Superconducting Core elevation (rises 8.5m at peak)
+      if (plaza.coreSculpture) {
+        const targetElevation = (plaza.state === 'ACTION' || plaza.state === 'CLIMAX')
+          ? 6.5 + 4.5 * THREE.MathUtils.clamp(pLevel, 0.5, 1.2)
+          : 6.5 + 1.2 * Math.sin(t * 1.5);
+        plaza.coreSculpture.position.y = THREE.MathUtils.lerp(
+          plaza.coreSculpture.position.y,
+          targetElevation,
+          dt * 3.0
+        );
+        const corePulse = 1.0 + 0.25 * Math.sin(t * 5.0) * pLevel;
+        plaza.coreSculpture.scale.set(corePulse, corePulse, corePulse);
+      }
+
+      // 3. Orbiting Holographic Data Panels
+      const panelCount = plaza.holographicPanels ? plaza.holographicPanels.length : 0;
+      for (let p = 0; p < panelCount; p++) {
+        const panel = plaza.holographicPanels[p];
+        const panelAngle = t * 0.8 * motionScale + (p / Math.max(1, panelCount)) * Math.PI * 2;
+        const orbitRadius = 8.0 + 2.5 * pLevel;
+        panel.position.x = Math.cos(panelAngle) * orbitRadius;
+        panel.position.z = Math.sin(panelAngle) * orbitRadius;
+        panel.position.y = (plaza.coreSculpture ? plaza.coreSculpture.position.y : 6.5) + Math.sin(t * 2.0 + p) * 1.2;
+        panel.rotation.y = -panelAngle + Math.PI * 0.5;
+      }
+
+      // 4. Perimeter Lamp Activation Sequence
+      if (plaza.perimeterLamps) {
+        const lampCount = plaza.perimeterLamps.length;
+        for (let l = 0; l < lampCount; l++) {
+          const lamp = plaza.perimeterLamps[l];
+          const phase = (l / lampCount) * Math.PI * 2;
+          const lampBrightness = (Math.sin(t * 3.0 + phase) * 0.5 + 0.5) * pLevel;
+          lamp.mesh.scale.setScalar(0.7 + lampBrightness * 0.6);
         }
       }
 
-      // Rotating holographic panels
-      for (let p = 0; p < holo.holographicPanels.length; p++) {
-        const panel = holo.holographicPanels[p];
-        panel.rotation.y += dt * 0.45 * motionScale;
-        panel.position.y += Math.sin(t * 1.6 + p) * 0.05 * motionScale;
+      // 5. Pedestrian / Maintenance Automatons responding to the plaza center
+      if (plaza.pedestrianBots) {
+        for (let b = 0; b < plaza.pedestrianBots.length; b++) {
+          const bot = plaza.pedestrianBots[b];
+          if (plaza.state === 'CLIMAX' || plaza.state === 'ACTION') {
+            // Subtle celebratory hop/bob
+            bot.position.y = 0.5 + Math.abs(Math.sin(t * 4.0 + b * 1.5)) * 0.25;
+          } else {
+            bot.position.y = 0.5;
+          }
+        }
       }
     }
 
     // =========================================================================
-    // SURPRISE 3: THE MAGLEV TRANSIT CROSSOVER
+    // CINEMATIC SURPRISE 3: MAGLEV TRANSIT CROSSOVER
     // =========================================================================
     for (let i = 0; i < this.maglevCrossovers.length; i++) {
       const maglev = this.maglevCrossovers[i];
@@ -367,7 +475,6 @@ export class NeonRainlineEventDirector {
         maglev.state = 'COMPLETE';
       }
 
-      // High-speed upper and lower gliding sky trains moving in opposite directions
       const upperSpeed = 48.0 * motionScale;
       const lowerSpeed = 38.0 * motionScale;
 
@@ -381,15 +488,15 @@ export class NeonRainlineEventDirector {
         maglev.trainLower.position.z = 140;
       }
 
-      // Undercarriage magnetic induction field glow pulse
+      // Undercarriage induction glow pulse
       const magPulse1 = 0.85 + 0.25 * Math.sin(t * 8.0);
       const magPulse2 = 0.85 + 0.25 * Math.cos(t * 7.5);
-      maglev.upperUndercarriageGlow.scale.set(magPulse1, 1.0, 1.0);
-      maglev.lowerUndercarriageGlow.scale.set(magPulse2, 1.0, 1.0);
+      if (maglev.upperUndercarriageGlow) maglev.upperUndercarriageGlow.scale.set(magPulse1, 1.0, 1.0);
+      if (maglev.lowerUndercarriageGlow) maglev.lowerUndercarriageGlow.scale.set(magPulse2, 1.0, 1.0);
     }
 
     // =========================================================================
-    // SURPRISE 4: THE TECHNOLOGY BLACKOUT & CASCADING RESTORE
+    // CINEMATIC SURPRISE 4: TECHNOLOGY BLACKOUT & CASCADING RESTORE
     // =========================================================================
     for (let i = 0; i < this.techBlackouts.length; i++) {
       const blackout = this.techBlackouts[i];
@@ -413,13 +520,11 @@ export class NeonRainlineEventDirector {
           blackout.affectedDistrictMeshes[m].visible = false;
         }
       } else if (blackout.state === 'EMERGENCY_PULSE') {
-        // Slow pulsing amber/red emergency beacons (smooth, non-strobing)
         const pulse = 0.4 + 0.6 * Math.sin(t * 2.2);
         for (let b = 0; b < blackout.emergencyBeacons.length; b++) {
           blackout.emergencyBeacons[b].visible = pulse > 0.5;
         }
       } else if (blackout.state === 'CASCADE_RESTORE' || blackout.state === 'NORMAL') {
-        // Sequentially restore buildings
         for (let m = 0; m < blackout.affectedDistrictMeshes.length; m++) {
           blackout.affectedDistrictMeshes[m].visible = true;
         }
@@ -430,7 +535,7 @@ export class NeonRainlineEventDirector {
     }
 
     // =========================================================================
-    // SURPRISE 5: THE MEGACITY DRONE LIGHT SHOW
+    // CINEMATIC SURPRISE 5: MEGACITY DRONE LIGHT SHOW
     // =========================================================================
     for (let i = 0; i < this.droneShows.length; i++) {
       const droneShow = this.droneShows[i];
@@ -449,35 +554,30 @@ export class NeonRainlineEventDirector {
         droneShow.state = 'COMPLETE';
       }
 
-      // Coordinate swarm formation motion above plaza
       const dCount = droneShow.drones.length;
       for (let d = 0; d < dCount; d++) {
         const drone = droneShow.drones[d];
         const dtPhase = t * 1.5 * motionScale + drone.orbitPhase;
 
         if (droneShow.state === 'SPIRAL_ROTATION') {
-          // Dynamic spiral constellation
           const r = 5.0 + Math.sin(dtPhase * 0.8) * 3.5;
           const x = drone.baseOffset.x + Math.cos(dtPhase) * r;
           const z = drone.baseOffset.z + Math.sin(dtPhase) * r;
           const y = drone.baseOffset.y + Math.sin(dtPhase * 2.0) * 1.8;
           drone.mesh.position.set(x, y, z);
         } else if (droneShow.state === 'CONSTELLATION_FORM') {
-          // Geometric diamond structure
           const targetY = drone.baseOffset.y + Math.sin(dtPhase) * 0.8;
           drone.mesh.position.set(drone.baseOffset.x, targetY, drone.baseOffset.z);
         } else {
-          // Gentle floating hover
           drone.mesh.position.y = drone.baseOffset.y + Math.sin(dtPhase) * 0.4;
         }
 
-        // Drone LED beacon brightness pulse
         drone.mesh.scale.setScalar(0.85 + 0.3 * Math.sin(dtPhase * 3.0));
       }
     }
 
     // =========================================================================
-    // SURPRISE 6: THE SKYBRIDGE TRANSFORMATION
+    // CINEMATIC SURPRISE 6: TELESCOPIC SKYBRIDGE TRANSFORMATION
     // =========================================================================
     for (let i = 0; i < this.skybridgeTransforms.length; i++) {
       const bridge = this.skybridgeTransforms[i];
@@ -497,11 +597,11 @@ export class NeonRainlineEventDirector {
       }
 
       if (bridge.state === 'EXTENDING' || bridge.state === 'FULL_SPAN' || bridge.state === 'ACTIVE_TRANSIT') {
-        // Telescopic mechanical bridge extension
         const extendProgress = THREE.MathUtils.clamp((110 - distanceAhead) / 50.0, 0, 1.0);
-        bridge.centerSpan.scale.set(1.0, 1.0, extendProgress);
+        if (bridge.centerSpan) {
+          bridge.centerSpan.scale.set(1.0, 1.0, extendProgress);
+        }
 
-        // Walking maintenance service bots
         for (let b = 0; b < bridge.serviceBots.length; b++) {
           const bot = bridge.serviceBots[b];
           bot.position.x = Math.sin(t * 1.2 + b * 2.0) * 8.0 * extendProgress;
@@ -511,7 +611,7 @@ export class NeonRainlineEventDirector {
     }
 
     // =========================================================================
-    // SURPRISE 7: THE RAINSTORM OVER THE CITY
+    // CINEMATIC SURPRISE 7: RAINSTORM OVER THE CITY
     // =========================================================================
     for (let i = 0; i < this.cityStorms.length; i++) {
       const storm = this.cityStorms[i];
@@ -530,7 +630,6 @@ export class NeonRainlineEventDirector {
         storm.state = 'CALMING';
       }
 
-      // Restrained soft horizon sheet lightning (smooth, non-epileptogenic, reduced-motion aware)
       for (let l = 0; l < storm.lightningPlanes.length; l++) {
         const sheet = storm.lightningPlanes[l];
         if (storm.state === 'LIGHTNING_PULSE' && !reducedMotion) {
@@ -556,7 +655,6 @@ export class NeonRainlineEventDirector {
       } else if (car.dir < 0 && car.mesh.position.x < car.endX) {
         car.mesh.position.x = car.startX;
       }
-      // Floating altitude bob
       car.mesh.position.y = car.y + Math.sin(t * 1.8 + c) * 0.8;
     }
 
@@ -612,14 +710,23 @@ export class NeonRainlineEventDirector {
       const banner = this.ambient.swayingHoloBanners[b];
       banner.mesh.rotation.y = Math.sin(t * banner.freq * motionScale + banner.phase) * 0.18 * motionScale;
     }
+
+    // 7. Bioluminescent Cyber Trees Emissive Pulse
+    for (let tr = 0; tr < this.ambient.bioluminescentTrees.length; tr++) {
+      const tree = this.ambient.bioluminescentTrees[tr];
+      const pulse = 0.95 + 0.1 * Math.sin(t * 1.8 + tree.pulsePhase);
+      tree.canopy.scale.set(pulse, pulse, pulse);
+    }
   }
 
   // --- Diagnostics & Getters ---
 
   public getDiagnostics(): Record<string, number> {
     return {
-      airTrafficSwarms: this.airTrafficSwarms.length,
-      holoAwakenings: this.holoAwakenings.length,
+      airTrafficSwarms: this.airTrafficBallets.length,
+      airTrafficBallets: this.airTrafficBallets.length,
+      holoAwakenings: this.plazaAwakenings.length,
+      plazaAwakenings: this.plazaAwakenings.length,
       maglevCrossovers: this.maglevCrossovers.length,
       techBlackouts: this.techBlackouts.length,
       droneShows: this.droneShows.length,
@@ -630,16 +737,25 @@ export class NeonRainlineEventDirector {
       waterTaxis: this.ambient.waterTaxis.length,
       industrialCranes: this.ambient.industrialCranes.length,
       glassElevators: this.ambient.glassElevators.length,
-      swayingHoloBanners: this.ambient.swayingHoloBanners.length
+      swayingHoloBanners: this.ambient.swayingHoloBanners.length,
+      bioluminescentTrees: this.ambient.bioluminescentTrees.length
     };
   }
 
-  public getAirTrafficSwarms(): readonly AirTrafficSwarmActor[] {
-    return this.airTrafficSwarms;
+  public getAirTrafficSwarms(): readonly AirTrafficBalletActor[] {
+    return this.airTrafficBallets;
   }
 
-  public getHoloAwakenings(): readonly HoloCityAwakeningActor[] {
-    return this.holoAwakenings;
+  public getAirTrafficBallets(): readonly AirTrafficBalletActor[] {
+    return this.airTrafficBallets;
+  }
+
+  public getHoloAwakenings(): readonly FuturisticPlazaAwakeningActor[] {
+    return this.plazaAwakenings;
+  }
+
+  public getPlazaAwakenings(): readonly FuturisticPlazaAwakeningActor[] {
+    return this.plazaAwakenings;
   }
 
   public getMaglevCrossovers(): readonly MaglevTrainActor[] {

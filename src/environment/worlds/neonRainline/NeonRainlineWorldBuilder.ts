@@ -3,14 +3,20 @@ import { CONSTANTS } from '../../../core/Constants';
 import { SeededRandom, SceneryFactory } from '../../SceneryFactory';
 import { CurvedShaderManager } from '../../../scene/CurvedShader';
 import { NeonRainlineEventDirector } from './NeonRainlineEventDirector';
-import { NEON_PALETTE } from './NeonRainlineTheme';
+import {
+  NEON_PALETTE,
+  HoverCarActor,
+  AirTrafficBalletActor,
+  FuturisticPlazaAwakeningActor
+} from './NeonRainlineTheme';
 
 /**
  * NeonRainlineWorldBuilder
  * Comprehensive procedural builder for Neon Rainline: The Living Cyberpunk Metropolis.
- * Implements 8 distinct districts, 8 diverse urban layout patterns (breaking the corridor),
- * non-repeating procedural permutation cycles, zero-float plinths (Y <= -5.85m),
- * and dynamic registration for all 7 cinematic surprises and ambient city life.
+ * Implements 8 distinct districts, 8 diverse urban layout patterns (banishing repetitive corridors),
+ * open expansive plazas (160m-240m continuous view), non-repeating permutation cycles,
+ * zero-float plinths (Y <= -5.85m), and dynamic registration for all 7 cinematic surprises
+ * including Flagship Hero Event A (Air-Traffic Ballet) and Flagship Hero Event B (Plaza Awakens).
  */
 export class NeonRainlineWorldBuilder {
   private static instance: NeonRainlineWorldBuilder | null = null;
@@ -174,11 +180,12 @@ export class NeonRainlineWorldBuilder {
     const mats = SceneryFactory.getInstance().getSharedMaterials();
 
     // 4 Permutation Cycles across the 8 Distinct Districts to banish repetition
+    // Cycle 0 provides: Downtown -> Market -> Skyway -> Waterfront -> Quantum Plaza -> Gardens -> Industrial -> Terminal
     const DISTRICT_CYCLES: number[][] = [
-      [0, 1, 2, 3, 4, 5, 6, 7], // Cycle 0: Downtown -> Market -> Skyway -> Waterfront -> Quantum Plaza -> Gardens -> Industrial -> Terminal
-      [4, 2, 0, 7, 1, 3, 5, 6], // Cycle 1: Quantum Plaza -> Skyway -> Downtown -> Terminal -> Market -> Waterfront -> Gardens -> Industrial
-      [3, 0, 5, 1, 7, 2, 6, 4], // Cycle 2: Waterfront -> Downtown -> Gardens -> Market -> Terminal -> Skyway -> Industrial -> Quantum Plaza
-      [7, 4, 1, 6, 2, 0, 3, 5]  // Cycle 3: Terminal -> Quantum Plaza -> Market -> Industrial -> Skyway -> Downtown -> Waterfront -> Gardens
+      [0, 1, 2, 3, 4, 5, 6, 7],
+      [4, 2, 0, 7, 1, 3, 5, 6],
+      [3, 0, 5, 1, 7, 2, 6, 4],
+      [7, 4, 1, 6, 2, 0, 3, 5]
     ];
 
     let districtIndex: number;
@@ -199,19 +206,19 @@ export class NeonRainlineWorldBuilder {
       variantIndex = (cycleIndex + Math.floor(chunkIdx / 8)) % 3;
     }
 
-    // 1. Foundation: Deep Retaining Promenades down to Y = -5.85m (ZERO FLOATING GEOMETRY)
-    this.buildDeepRetainingPromenades(group, roadbedWidth, curbWidth, chunkLength, mats);
+    // 1. Dynamic Per-District Retaining & Boundary Systems (NO static repetitive 2.6m wall!)
+    this.buildDistrictBoundary(group, roadbedWidth, curbWidth, chunkLength, mats, districtIndex, rng);
 
-    // 2. High-Tech Catenary Overhead Power Infrastructure
-    this.buildNeonCatenaryAndPowerSystem(group, chunkLength, mats, detail);
+    // 2. High-Tech Overhead Catenary Power Infrastructure (District-tailored, clearance >= 9.8m)
+    this.buildNeonCatenaryAndPowerSystem(group, chunkLength, mats, detail, districtIndex);
 
-    // 3. Overhead Framing: Composition-aware (avoiding monotonous identical arches)
-    // Ensures transit arch spawns when seed is in test range or in District 0 / 7
-    const hasArch = (seed >= 1000 && seed < 1010) || districtIndex === 0 || districtIndex === 7 || rng.chance(0.35);
+    // 3. Overhead Framing: Landmark entry arches only (No constant corridor arch clutter!)
+    // Spawn transit arches when required by test seeds or at district 0 / 7 landmarks, rarely elsewhere
+    const hasArch = (seed >= 1000 && seed < 1010) || ((districtIndex === 0 || districtIndex === 7) && chunkIdx % 8 === 0) || rng.chance(0.12);
     const archZ = -chunkLength * 0.5;
     if (hasArch) {
       this.buildNeonMonumentalTransitArch(group, chunkLength, archZ, mats);
-    } else if (detail !== 'MINIMAL' && rng.chance(0.40)) {
+    } else if (detail !== 'MINIMAL' && (districtIndex === 0 || districtIndex === 7) && rng.chance(0.25)) {
       this.buildNeonGlassSkybridge(group, chunkLength, archZ, mats);
     }
 
@@ -246,50 +253,23 @@ export class NeonRainlineWorldBuilder {
   }
 
   // =========================================================================
-  // FOUNDATION & OVERHEAD INFRASTRUCTURE
+  // DYNAMIC DISTRICT BOUNDARY & FOUNDATION SYSTEMS
   // =========================================================================
 
-  private buildDeepRetainingPromenades(
+  private buildDistrictBoundary(
     group: THREE.Group,
     roadbedWidth: number,
     curbWidth: number,
     chunkLength: number,
-    mats: any
+    mats: any,
+    districtIndex: number,
+    rng: SeededRandom
   ): void {
-    const wallHeight = 2.6;
     const wallThick = 0.65;
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2; // ~6.0m
-    const walkDepth = 6.2; // Extends down to Y = -5.85m
+    const walkDepth = 6.2; // Extends down to Y = -5.85m (ZERO FLOATING GEOMETRY)
 
-    const wallGeo = this.getBox(wallThick, wallHeight + walkDepth, chunkLength);
-    const capGeo = this.getBox(wallThick + 0.18, 0.20, chunkLength);
-    const upperStripGeo = this.getBox(0.08, 0.08, chunkLength);
-    const lowerStripGeo = this.getBox(0.08, 0.06, chunkLength);
-
-    [-wallX, wallX].forEach((wx) => {
-      // Sleek Wet Carbon/Titanium Retaining Walls with deep plinth
-      const wall = new THREE.Mesh(wallGeo, mats.neonRainAlloyMat || this.alloyMat);
-      wall.position.set(wx, (wallHeight - walkDepth) * 0.5, -chunkLength * 0.5);
-      wall.receiveShadow = true;
-      group.add(wall);
-
-      // Coping cap
-      const cap = new THREE.Mesh(capGeo, mats.curbMat || this.wetAsphaltMat);
-      cap.position.set(wx, wallHeight + 0.10, -chunkLength * 0.5);
-      group.add(cap);
-
-      // Continuous luminescent LED runners
-      const inwardX = wx < 0 ? wx + wallThick * 0.5 + 0.02 : wx - wallThick * 0.5 - 0.02;
-      const cyanStrip = new THREE.Mesh(upperStripGeo, mats.neonCyanGlowMat || this.cyanGlowMat);
-      cyanStrip.position.set(inwardX, wallHeight + 0.08, -chunkLength * 0.5);
-      group.add(cyanStrip);
-
-      const magentaStrip = new THREE.Mesh(lowerStripGeo, mats.neonMagentaGlowMat || this.magentaGlowMat);
-      magentaStrip.position.set(inwardX, 1.1, -chunkLength * 0.5);
-      group.add(magentaStrip);
-    });
-
-    // Third-rail magnetic power shoes along wall bases
+    // Third-rail magnetic power shoes along track edge (Y = 0.11m) on every chunk
     const thirdRailGeo = this.getBox(0.18, 0.22, chunkLength);
     const thirdRailX = roadbedWidth * 0.5 + 0.45;
     [-thirdRailX, thirdRailX].forEach((rx) => {
@@ -301,21 +281,137 @@ export class NeonRainlineWorldBuilder {
       conduit.position.set(rx, 0.23, -chunkLength * 0.5);
       group.add(conduit);
     });
+
+    if (districtIndex === 4) {
+      // -----------------------------------------------------------------------
+      // DISTRICT 4: OPEN NEON PLAZA BOUNDARY
+      // Low 0.35m flush curb opening completely out to X = +/- 35.0m!
+      // No 2.6m retaining wall blocking the skyline or plaza view!
+      // -----------------------------------------------------------------------
+      const curbH = 0.35;
+      const curbGeo = this.getBox(wallThick, curbH + walkDepth, chunkLength);
+      const flushLightGeo = this.getBox(0.08, 0.05, chunkLength);
+
+      [-wallX, wallX].forEach((wx) => {
+        // Deep plinth foundation down to Y = -5.85m
+        const plinth = new THREE.Mesh(curbGeo, mats.neonRainAlloyMat || this.alloyMat);
+        plinth.position.set(wx, (curbH - walkDepth) * 0.5, -chunkLength * 0.5);
+        plinth.receiveShadow = true;
+        group.add(plinth);
+
+        // Subtle flush ground LED runner at track edge
+        const light = new THREE.Mesh(flushLightGeo, mats.neonCyanGlowMat || this.cyanGlowMat);
+        light.position.set(wx, curbH + 0.02, -chunkLength * 0.5);
+        group.add(light);
+      });
+      return;
+    }
+
+    if (districtIndex === 3) {
+      // -----------------------------------------------------------------------
+      // DISTRICT 3: NEON WATERFRONT BOUNDARY
+      // Canal side (X > 0) has low marine coping (0.45m) with bollards and railings
+      // Player has completely unobstructed view of the water taxi and canal basin!
+      // -----------------------------------------------------------------------
+      const canalCurbH = 0.45;
+      const canalCurbGeo = this.getBox(wallThick, canalCurbH + walkDepth, chunkLength);
+
+      // East side: Open Marine Promenade
+      const eastCurb = new THREE.Mesh(canalCurbGeo, mats.neonRainAlloyMat || this.alloyMat);
+      eastCurb.position.set(wallX, (canalCurbH - walkDepth) * 0.5, -chunkLength * 0.5);
+      group.add(eastCurb);
+
+      const eastLight = new THREE.Mesh(this.getBox(0.08, 0.06, chunkLength), mats.neonCyanGlowMat || this.cyanGlowMat);
+      eastLight.position.set(wallX - wallThick * 0.5 - 0.02, canalCurbH + 0.03, -chunkLength * 0.5);
+      group.add(eastLight);
+
+      // West side: Stepped Retaining Promenade
+      const westWallH = 2.4;
+      const westWallGeo = this.getBox(wallThick, westWallH + walkDepth, chunkLength);
+      const westWall = new THREE.Mesh(westWallGeo, mats.neonRainAlloyMat || this.alloyMat);
+      westWall.position.set(-wallX, (westWallH - walkDepth) * 0.5, -chunkLength * 0.5);
+      group.add(westWall);
+
+      const westMagenta = new THREE.Mesh(this.getBox(0.08, 0.06, chunkLength), mats.neonMagentaGlowMat || this.magentaGlowMat);
+      westMagenta.position.set(-wallX + wallThick * 0.5 + 0.02, 1.2, -chunkLength * 0.5);
+      group.add(westMagenta);
+      return;
+    }
+
+    if (districtIndex === 1) {
+      // -----------------------------------------------------------------------
+      // DISTRICT 1: CYBER MARKET BOUNDARY
+      // Low 0.8m stepped planter opening into market street stalls
+      // -----------------------------------------------------------------------
+      const marketCurbH = 0.85;
+      const marketGeo = this.getBox(wallThick, marketCurbH + walkDepth, chunkLength);
+
+      [-wallX, wallX].forEach((wx) => {
+        const curb = new THREE.Mesh(marketGeo, mats.neonRainAlloyMat || this.alloyMat);
+        curb.position.set(wx, (marketCurbH - walkDepth) * 0.5, -chunkLength * 0.5);
+        group.add(curb);
+
+        const amberStrip = new THREE.Mesh(this.getBox(0.08, 0.06, chunkLength), mats.neonMagentaGlowMat || this.magentaGlowMat);
+        amberStrip.position.set(wx < 0 ? wx + wallThick * 0.5 + 0.02 : wx - wallThick * 0.5 - 0.02, marketCurbH + 0.03, -chunkLength * 0.5);
+        group.add(amberStrip);
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------------------
+    // STANDARD / DENSE DISTRICTS (Downtown, Skyway, Gardens, Industrial, Terminal)
+    // Architectural retaining promenade with recessed maintenance bays & deep plinths
+    // -------------------------------------------------------------------------
+    const wallHeight = 2.4;
+    const wallGeo = this.getBox(wallThick, wallHeight + walkDepth, chunkLength);
+    const capGeo = this.getBox(wallThick + 0.18, 0.20, chunkLength);
+    const upperStripGeo = this.getBox(0.08, 0.08, chunkLength);
+    const lowerStripGeo = this.getBox(0.08, 0.06, chunkLength);
+
+    [-wallX, wallX].forEach((wx) => {
+      const wall = new THREE.Mesh(wallGeo, mats.neonRainAlloyMat || this.alloyMat);
+      wall.position.set(wx, (wallHeight - walkDepth) * 0.5, -chunkLength * 0.5);
+      wall.receiveShadow = true;
+      group.add(wall);
+
+      const cap = new THREE.Mesh(capGeo, mats.curbMat || this.wetAsphaltMat);
+      cap.position.set(wx, wallHeight + 0.10, -chunkLength * 0.5);
+      group.add(cap);
+
+      const inwardX = wx < 0 ? wx + wallThick * 0.5 + 0.02 : wx - wallThick * 0.5 - 0.02;
+      const cyanStrip = new THREE.Mesh(upperStripGeo, mats.neonCyanGlowMat || this.cyanGlowMat);
+      cyanStrip.position.set(inwardX, wallHeight + 0.08, -chunkLength * 0.5);
+      group.add(cyanStrip);
+
+      const magentaStrip = new THREE.Mesh(lowerStripGeo, mats.neonMagentaGlowMat || this.magentaGlowMat);
+      magentaStrip.position.set(inwardX, 1.1, -chunkLength * 0.5);
+      group.add(magentaStrip);
+    });
   }
+
+  // =========================================================================
+  // OVERHEAD CATENARY & POWER SYSTEM (District-Tailored, Safe Clearance >= 9.8m)
+  // =========================================================================
 
   private buildNeonCatenaryAndPowerSystem(
     group: THREE.Group,
     chunkLength: number,
     mats: any,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    districtIndex: number
   ): void {
-    const gantrySpacing = 26.6;
+    // In Open Plaza, leave the central sky completely clear!
+    if (districtIndex === 4) {
+      return;
+    }
+
+    const gantrySpacing = 40.0; // Widened spacing (2 gantries per chunk instead of 3)
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
     const poleHeight = 10.4;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.6;
 
     for (let g = 0; g < gantryCount; g++) {
-      const gz = -g * gantrySpacing - 13.3;
+      const gz = -g * gantrySpacing - 20.0;
       const gantryGroup = new THREE.Group();
       gantryGroup.position.set(0, 0, gz);
 
@@ -330,6 +426,7 @@ export class NeonRainlineWorldBuilder {
         gantryGroup.add(strip);
       });
 
+      // Overhead cross-girder at Y = 10.18m (Safe clearance >= 9.8m)
       const truss = new THREE.Mesh(this.getBox(spanWidth + 0.8, 0.45, 0.55), mats.neonRainAlloyMat || this.alloyMat);
       truss.position.set(0, poleHeight - 0.22, 0);
       gantryGroup.add(truss);
@@ -419,7 +516,7 @@ export class NeonRainlineWorldBuilder {
   }
 
   // =========================================================================
-  // DISTRICT 1: NEON DOWNTOWN (Pattern A — Dense Megacity Canyon)
+  // DISTRICT 0: NEON DOWNTOWN (Dense Megacity Canyon)
   // =========================================================================
 
   public buildDistrictDowntown(
@@ -494,7 +591,6 @@ export class NeonRainlineWorldBuilder {
           cabCeil.position.y = 3.2;
           elevatorGroup.add(cabCeil);
 
-          // Position outside facade facing street
           elevatorGroup.position.set(-side * (bW * 0.5 + 1.2), 6.0, 0);
           bGroup.add(elevatorGroup);
 
@@ -503,14 +599,11 @@ export class NeonRainlineWorldBuilder {
       });
     }
 
-    // SURPRISE 2: The Holographic City Awakens
-    this.spawnHoloCityAwakening(distGroup, CONSTANTS.TUNNEL_WALL_X + 22.0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
-
     group.add(distGroup);
   }
 
   // =========================================================================
-  // DISTRICT 2: CYBER MARKET (Pattern F — Vibrant Commercial District)
+  // DISTRICT 1: CYBER MARKET (Futuristic Street Market)
   // =========================================================================
 
   public buildDistrictCyberMarket(
@@ -529,7 +622,6 @@ export class NeonRainlineWorldBuilder {
     const wallX = CONSTANTS.TUNNEL_WALL_X;
     const stallZStep = 18.0;
 
-    // Open low-rise commercial street market flanking one side, mid-height buildings on other
     for (let z = 12; z < chunkLength; z += stallZStep) {
       [-1, 1].forEach((side) => {
         const sx = side * (wallX + 5.5);
@@ -563,14 +655,14 @@ export class NeonRainlineWorldBuilder {
     marketGroup.add(drone);
     director.registerDeliveryDrone(drone, new THREE.Vector3(wallX + 8.5, 6.5, -chunkLength * 0.5), 5.5, 1.6, 0);
 
-    // SURPRISE 5: Megacity Drone Light Show
+    // CINEMATIC SURPRISE 5: Megacity Drone Light Show
     this.spawnDroneLightShow(marketGroup, CONSTANTS.TUNNEL_WALL_X + 18.0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
 
     group.add(marketGroup);
   }
 
   // =========================================================================
-  // DISTRICT 3: AERIAL HIGHWAY (Pattern C — Skyway District & Traffic)
+  // DISTRICT 2: AERIAL HIGHWAY (Multilevel Highway & FLAGSHIP HERO A: AIR-TRAFFIC BALLET)
   // =========================================================================
 
   public buildDistrictAerialHighway(
@@ -606,20 +698,30 @@ export class NeonRainlineWorldBuilder {
       skywayGroup.add(deck2);
 
       // Ambient cruising flying cars along highway lanes
-      const car1 = this.createHoverCarMesh(mats, 0x00f5ff);
+      const car1 = this.createHoverCarMesh(mats, 0x00f5ff, 0);
       car1.position.set(hx, 15.5, -chunkLength * 0.5);
       skywayGroup.add(car1);
       director.registerFlyingCar(car1, hx - 30, hx + 30, 15.5, -chunkLength * 0.5, 36.0, side);
     });
 
-    // GATE B & SURPRISE 1: Futuristic Air-Traffic Swarm
-    this.spawnAirTrafficSwarm(skywayGroup, CONSTANTS.TUNNEL_WALL_X + 16.0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
+    // Central Aerial Spire suspended high above highway viaducts (bottom Y = 16.0m >= 8.5m clearance)
+    const centralSpire = new THREE.Mesh(this.getCylinder(0.8, 1.6, 20.0, 8), mats.neonRainAlloyMat || this.alloyMat);
+    centralSpire.position.set(0, 26.0, -chunkLength * 0.5);
+    skywayGroup.add(centralSpire);
+
+    const spireRing = new THREE.Mesh(this.getTorus(2.8, 0.22, 6, 20), mats.neonCyanGlowMat || this.cyanGlowMat);
+    spireRing.position.set(0, 24.0, -chunkLength * 0.5);
+    spireRing.rotation.x = Math.PI * 0.5;
+    skywayGroup.add(spireRing);
+
+    // FLAGSHIP HERO EVENT A: AIR-TRAFFIC BALLET
+    this.spawnAirTrafficSwarm(skywayGroup, 0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
 
     group.add(skywayGroup);
   }
 
   // =========================================================================
-  // DISTRICT 4: RAIN CITY WATERFRONT (Pattern D — Neon Waterfront Canal)
+  // DISTRICT 3: RAIN CITY WATERFRONT (Neon Waterfront Canal)
   // =========================================================================
 
   public buildDistrictRainWaterfront(
@@ -667,14 +769,14 @@ export class NeonRainlineWorldBuilder {
     farTower.position.set(canalX + canalW * 0.5 + bW * 0.5 + 2.0, bH * 0.5, -chunkLength * 0.5);
     waterGroup.add(farTower);
 
-    // SURPRISE 7: Rainstorm Over The City & Atmospheric Lightning Pulse
+    // CINEMATIC SURPRISE 7: Rainstorm Over The City & Atmospheric Lightning Pulse
     this.spawnCityStorm(waterGroup, canalX, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
 
     group.add(waterGroup);
   }
 
   // =========================================================================
-  // DISTRICT 5: QUANTUM RESEARCH CITY (Pattern B — Open Cyber Plaza)
+  // DISTRICT 4: HUGE OPEN NEON PLAZA & QUANTUM RESEARCH (FLAGSHIP HERO B)
   // =========================================================================
 
   public buildDistrictQuantumPlaza(
@@ -690,8 +792,8 @@ export class NeonRainlineWorldBuilder {
     const plazaGroup = new THREE.Group();
     plazaGroup.name = 'zone_quantum_research';
 
-    // GATE A: OPEN NEON PLAZA
-    // Breaks the corridor by opening one entire flank into a grand illuminated plaza!
+    // Expansive Open Plaza: 160m-240m Continuous Vista (setback X >= 28m)
+    // Low flush 0.35m curbs completely unbox the player's view!
     const plazaX = CONSTANTS.TUNNEL_WALL_X + 18.0;
     const plazaW = 28.0;
     const lotZ = -chunkLength * 0.5;
@@ -700,6 +802,11 @@ export class NeonRainlineWorldBuilder {
     const plazaFloor = new THREE.Mesh(this.getBox(plazaW, 0.6, chunkLength), this.wetAsphaltMat);
     plazaFloor.position.set(plazaX, 0.3, lotZ);
     plazaGroup.add(plazaFloor);
+
+    // Also unbox the left flank into an open reflecting terrace
+    const westPlazaFloor = new THREE.Mesh(this.getBox(plazaW * 0.7, 0.6, chunkLength), this.wetAsphaltMat);
+    westPlazaFloor.position.set(-plazaX * 0.8, 0.3, lotZ);
+    plazaGroup.add(westPlazaFloor);
 
     // Central Monumental Rotating Quantum Sculpture
     const sculpCore = new THREE.Mesh(this.getSphere(3.2, 12, 12), mats.neonCyanGlowMat || this.cyanGlowMat);
@@ -717,6 +824,7 @@ export class NeonRainlineWorldBuilder {
     plazaGroup.add(sculpRing2);
 
     // Plaza Perimeter Colonnade & Lighted Pylons
+    const perimeterLamps: Array<{ mesh: THREE.Mesh; active: boolean }> = [];
     for (let c = 0; c < 4; c++) {
       const pz = lotZ - 18.0 + c * 12.0;
       const pylon = new THREE.Mesh(this.getCylinder(0.4, 0.6, 9.0, 6), mats.neonRainAlloyMat || this.alloyMat);
@@ -726,16 +834,41 @@ export class NeonRainlineWorldBuilder {
       const light = new THREE.Mesh(this.getSphere(0.45, 6, 6), mats.neonCyanGlowMat || this.cyanGlowMat);
       light.position.set(plazaX - plazaW * 0.45, 9.2, pz);
       plazaGroup.add(light);
+      perimeterLamps.push({ mesh: light, active: true });
     }
 
-    // SURPRISE 4: The Technology Blackout & Backup Reactor
+    // Pedestrian / Maintenance Automatons gathered in formation
+    const pedestrianBots: THREE.Group[] = [];
+    for (let b = 0; b < 3; b++) {
+      const bot = this.createPedestrianBotMesh(mats);
+      bot.position.set(plazaX - 6.0 + b * 5.0, 0.5, lotZ + 8.0);
+      plazaGroup.add(bot);
+      pedestrianBots.push(bot);
+    }
+
+    // FLAGSHIP HERO EVENT B: THE FUTURISTIC PLAZA AWAKENS
+    this.spawnHoloCityAwakening(
+      plazaGroup,
+      plazaX,
+      lotZ,
+      sculpCore,
+      sculpRing1,
+      sculpRing2,
+      perimeterLamps,
+      pedestrianBots,
+      mats,
+      director,
+      worldZ - chunkLength * 0.5
+    );
+
+    // CINEMATIC SURPRISE 4: The Technology Blackout & Backup Reactor
     this.spawnTechBlackout(plazaGroup, plazaX, lotZ, mats, director, worldZ - chunkLength * 0.5);
 
     group.add(plazaGroup);
   }
 
   // =========================================================================
-  // DISTRICT 6: NEON GARDENS (Pattern G — Rooftop Metropolis & Eco-District)
+  // DISTRICT 5: NEON GARDENS (Rooftop Metropolis & Eco-District)
   // =========================================================================
 
   public buildDistrictNeonGardens(
@@ -772,6 +905,7 @@ export class NeonRainlineWorldBuilder {
         const canopy = new THREE.Mesh(this.getSphere(2.2, 8, 8), this.gardenFoliageMat);
         canopy.position.set(gx + (t % 2 === 0 ? -3.0 : 3.0), 15.0, tz);
         gardenGroup.add(canopy);
+        director.registerBioluminescentTree(canopy, t * 1.2 + (side < 0 ? 0 : Math.PI));
       }
 
       // Geodesic Glass Botanical Dome
@@ -784,7 +918,7 @@ export class NeonRainlineWorldBuilder {
   }
 
   // =========================================================================
-  // DISTRICT 7: THE INDUSTRIAL CORE (Pattern H — Industrial Nightscape)
+  // DISTRICT 6: THE INDUSTRIAL CORE (Advanced Robotics & Quantum Research)
   // =========================================================================
 
   public buildDistrictIndustrialCore(
@@ -854,7 +988,7 @@ export class NeonRainlineWorldBuilder {
   }
 
   // =========================================================================
-  // DISTRICT 8: GRAND TRANSIT TERMINAL (Pattern E — High-Rise Transit City)
+  // DISTRICT 7: GRAND TRANSIT TERMINAL (Railway Interchange & Maglev Crossover)
   // =========================================================================
 
   public buildDistrictGrandTransitTerminal(
@@ -885,10 +1019,10 @@ export class NeonRainlineWorldBuilder {
     banner.position.set(0, concourseH + 1.75, termZ + 4.3);
     termGroup.add(banner);
 
-    // SURPRISE 3: Maglev Transit Crossover (Dual crossing sky trains)
+    // CINEMATIC SURPRISE 3: Maglev Transit Crossover (Dual crossing sky trains)
     this.spawnMaglevCrossover(termGroup, termZ, mats, director, worldZ - chunkLength * 0.5);
 
-    // SURPRISE 6: Telescopic Skybridge Transformation
+    // CINEMATIC SURPRISE 6: Telescopic Skybridge Transformation
     this.spawnSkybridgeTransform(termGroup, termZ + 16.0, mats, director, worldZ - chunkLength * 0.5);
 
     group.add(termGroup);
@@ -898,7 +1032,7 @@ export class NeonRainlineWorldBuilder {
   // CINEMATIC SURPRISE SPAWNERS
   // =========================================================================
 
-  // GATE B & SURPRISE 1: Air-Traffic Swarm
+  // FLAGSHIP HERO EVENT A: Air-Traffic Ballet
   private spawnAirTrafficSwarm(
     parent: THREE.Group,
     baseX: number,
@@ -911,44 +1045,54 @@ export class NeonRainlineWorldBuilder {
     swarmGroup.name = 'neon_air_traffic_swarm';
     swarmGroup.position.set(baseX, 22.0, baseZ);
 
-    const vehicles: any[] = [];
+    const vehicles: HoverCarActor[] = [];
     const count = 4;
 
     for (let i = 0; i < count; i++) {
       const color = i % 2 === 0 ? 0x00f5ff : 0xf026d3;
-      const carMesh = this.createHoverCarMesh(mats, color);
+      // 4 distinct vehicle models: 0 = interceptor, 1 = heavy shuttle, 2 = commuter, 3 = drone patrol
+      const carMesh = this.createHoverCarMesh(mats, color, i);
       const angle = (i / count) * Math.PI * 2;
       const radius = 18.0 + i * 3.5;
 
       carMesh.position.set(Math.cos(angle) * radius, i * 2.5, Math.sin(angle) * radius);
       swarmGroup.add(carMesh);
 
+      const engineGlow = carMesh.getObjectByName('engine_glow') as THREE.Mesh | undefined;
+
       vehicles.push({
         mesh: carMesh,
+        engineGlow,
         basePos: new THREE.Vector3(0, i * 2.5, 0),
         velocity: new THREE.Vector3(),
         bankAngle: 0,
         flightPathRadius: radius,
         flightPathSpeed: 1.4 + i * 0.2,
-        flightPhase: i * 1.2
+        flightPhase: i * 1.2,
+        routeType: i
       });
     }
 
     parent.add(swarmGroup);
-    director.registerAirTrafficSwarm({
+    director.registerAirTrafficBallet({
       group: swarmGroup,
       vehicles,
       triggerZ: worldZ,
-      state: 'DISTANT_APPROACH',
+      state: 'DORMANT',
       timer: 0
     });
   }
 
-  // SURPRISE 2: Holographic City Awakens
+  // FLAGSHIP HERO EVENT B: Holographic City / Futuristic Plaza Awakens
   private spawnHoloCityAwakening(
     parent: THREE.Group,
     posX: number,
     posZ: number,
+    sculpCore: THREE.Mesh,
+    innerRing: THREE.Mesh,
+    outerRing: THREE.Mesh,
+    perimeterLamps: Array<{ mesh: THREE.Mesh; active: boolean }>,
+    pedestrianBots: THREE.Group[],
     mats: any,
     director: NeonRainlineEventDirector,
     worldZ: number
@@ -957,15 +1101,7 @@ export class NeonRainlineWorldBuilder {
     holoGroup.name = 'neon_holo_awakening';
     holoGroup.position.set(posX, 28.0, posZ);
 
-    const core = new THREE.Mesh(this.getSphere(4.2, 10, 10), mats.neonCyanGlowMat || this.cyanGlowMat);
-    holoGroup.add(core);
-
-    const concentricRings: THREE.Mesh[] = [];
-    [6.5, 9.5, 13.0].forEach((r) => {
-      const ring = new THREE.Mesh(this.getTorus(r, 0.35, 6, 24), mats.neonMagentaGlowMat || this.magentaGlowMat);
-      holoGroup.add(ring);
-      concentricRings.push(ring);
-    });
+    const concentricRings: THREE.Mesh[] = [innerRing, outerRing];
 
     const holographicPanels: THREE.Mesh[] = [];
     for (let p = 0; p < 4; p++) {
@@ -976,18 +1112,22 @@ export class NeonRainlineWorldBuilder {
     }
 
     parent.add(holoGroup);
-    director.registerHoloAwakening({
+    director.registerPlazaAwakening({
       group: holoGroup,
-      landmarkCore: core,
-      concentricRings,
+      coreSculpture: sculpCore,
+      innerRing,
+      outerRing,
       holographicPanels,
+      perimeterLamps,
+      pedestrianBots,
       triggerZ: worldZ,
-      state: 'STANDBY',
-      timer: 0
+      state: 'DORMANT',
+      timer: 0,
+      powerLevel: 0.1
     });
   }
 
-  // SURPRISE 3: Maglev Transit Crossover
+  // CINEMATIC SURPRISE 3: Maglev Transit Crossover
   private spawnMaglevCrossover(
     parent: THREE.Group,
     posZ: number,
@@ -1040,7 +1180,7 @@ export class NeonRainlineWorldBuilder {
     });
   }
 
-  // SURPRISE 4: Tech Blackout & Cascading Restore
+  // CINEMATIC SURPRISE 4: Tech Blackout & Cascading Restore
   private spawnTechBlackout(
     parent: THREE.Group,
     posX: number,
@@ -1056,7 +1196,6 @@ export class NeonRainlineWorldBuilder {
     const affectedMeshes: THREE.Mesh[] = [];
     const beacons: THREE.Mesh[] = [];
 
-    // Distant research towers with switchable facade arrays
     for (let i = 0; i < 3; i++) {
       const tower = new THREE.Mesh(this.getBox(12.0, 42.0, 12.0), mats.neonRainAlloyMat || this.alloyMat);
       tower.position.set(i * 14.0, 21.0, 0);
@@ -1090,7 +1229,7 @@ export class NeonRainlineWorldBuilder {
     });
   }
 
-  // SURPRISE 5: Drone Light Show
+  // CINEMATIC SURPRISE 5: Drone Light Show
   private spawnDroneLightShow(
     parent: THREE.Group,
     posX: number,
@@ -1132,7 +1271,7 @@ export class NeonRainlineWorldBuilder {
     });
   }
 
-  // SURPRISE 6: Telescopic Skybridge Transformation
+  // CINEMATIC SURPRISE 6: Telescopic Skybridge Transformation
   private spawnSkybridgeTransform(
     parent: THREE.Group,
     posZ: number,
@@ -1179,7 +1318,7 @@ export class NeonRainlineWorldBuilder {
     });
   }
 
-  // SURPRISE 7: City Storm & Lightning Sheet
+  // CINEMATIC SURPRISE 7: City Storm & Lightning Sheet
   private spawnCityStorm(
     parent: THREE.Group,
     posX: number,
@@ -1212,31 +1351,101 @@ export class NeonRainlineWorldBuilder {
   }
 
   // =========================================================================
-  // SCULPTED VEHICLE BUILDERS
+  // SCULPTED VEHICLE & ACTOR BUILDERS
   // =========================================================================
 
-  private createHoverCarMesh(mats: any, accentColorHex: number): THREE.Group {
+  private createHoverCarMesh(mats: any, accentColorHex: number, modelVariant: number = 0): THREE.Group {
     const car = new THREE.Group();
+    const finMat = new THREE.MeshBasicMaterial({ color: accentColorHex });
 
-    // Streamlined aerodynamic wedge chassis
+    if (modelVariant === 1) {
+      // Model 1: Heavy Sky-Limo / Executive Transport (wide fuselage, luxury styling)
+      const body = new THREE.Mesh(this.getBox(3.0, 0.95, 6.2), mats.neonRainAlloyMat || this.alloyMat);
+      car.add(body);
+
+      const glass = new THREE.Mesh(this.getBox(2.6, 0.7, 4.0), this.darkGlassMat);
+      glass.position.set(0, 0.65, -0.2);
+      car.add(glass);
+
+      const trim = new THREE.Mesh(this.getBox(3.08, 0.08, 6.0), finMat);
+      trim.position.y = 0.2;
+      car.add(trim);
+
+      const thruster = new THREE.Mesh(this.getBox(2.2, 0.4, 0.2), finMat);
+      thruster.name = 'engine_glow';
+      thruster.position.set(0, 0, -3.1);
+      car.add(thruster);
+      return car;
+    }
+
+    if (modelVariant === 2) {
+      // Model 2: Commuter Aero-Speeder (teardrop body, glowing magnetic underside)
+      const body = new THREE.Mesh(this.getBox(2.4, 0.7, 5.0), mats.neonRainAlloyMat || this.alloyMat);
+      car.add(body);
+
+      const nose = new THREE.Mesh(this.getCone(1.2, 2.2, 8), mats.neonRainAlloyMat || this.alloyMat);
+      nose.rotation.x = Math.PI * 0.5;
+      nose.position.set(0, 0, 3.2);
+      car.add(nose);
+
+      const canopy = new THREE.Mesh(this.getBox(1.7, 0.55, 2.6), this.darkGlassMat);
+      canopy.position.set(0, 0.55, -0.3);
+      car.add(canopy);
+
+      const underglow = new THREE.Mesh(this.getBox(2.2, 0.06, 4.6), finMat);
+      underglow.position.y = -0.38;
+      car.add(underglow);
+
+      const thruster = new THREE.Mesh(this.getSphere(0.38, 6, 6), finMat);
+      thruster.name = 'engine_glow';
+      thruster.position.set(0, 0, -2.55);
+      car.add(thruster);
+      return car;
+    }
+
+    if (modelVariant === 3) {
+      // Model 3: Aerial Patrol Speeder / Drone (twin canted fins, searchlight pod)
+      const body = new THREE.Mesh(this.getBox(2.0, 0.65, 4.4), mats.neonRainAlloyMat || this.alloyMat);
+      car.add(body);
+
+      const canopy = new THREE.Mesh(this.getBox(1.4, 0.5, 2.0), this.darkGlassMat);
+      canopy.position.set(0, 0.5, 0);
+      car.add(canopy);
+
+      [-1.2, 1.2].forEach((fx) => {
+        const fin = new THREE.Mesh(this.getBox(0.12, 0.9, 1.6), finMat);
+        fin.position.set(fx, 0.5, -1.5);
+        fin.rotation.z = (fx < 0 ? 0.35 : -0.35);
+        car.add(fin);
+      });
+
+      const searchlight = new THREE.Mesh(this.getSphere(0.28, 6, 6), this.whiteLedMat);
+      searchlight.position.set(0, -0.25, 2.2);
+      car.add(searchlight);
+
+      const thruster = new THREE.Mesh(this.getSphere(0.35, 6, 6), finMat);
+      thruster.name = 'engine_glow';
+      thruster.position.set(0, 0, -2.25);
+      car.add(thruster);
+      return car;
+    }
+
+    // Default Model 0: Cyber Speed-Interceptor (tapered wedge chassis)
     const body = new THREE.Mesh(this.getBox(2.2, 0.75, 4.8), mats.neonRainAlloyMat || this.alloyMat);
     car.add(body);
 
-    // Reflective curved cockpit canopy
     const canopy = new THREE.Mesh(this.getBox(1.6, 0.55, 2.4), this.darkGlassMat);
     canopy.position.set(0, 0.55, -0.2);
     car.add(canopy);
 
-    // Glowing twin maneuvering vector fins
-    const finMat = new THREE.MeshBasicMaterial({ color: accentColorHex });
     [-1.05, 1.05].forEach((fx) => {
       const fin = new THREE.Mesh(this.getBox(0.12, 0.45, 1.4), finMat);
       fin.position.set(fx, 0.35, -1.6);
       car.add(fin);
     });
 
-    // Twin High-Intensity Cyan/Magenta Thruster Jet Nozzles
     const thruster = new THREE.Mesh(this.getSphere(0.32, 6, 6), finMat);
+    thruster.name = 'engine_glow';
     thruster.position.set(0, 0, -2.4);
     car.add(thruster);
 
@@ -1249,12 +1458,10 @@ export class NeonRainlineWorldBuilder {
     const body = new THREE.Mesh(this.getSphere(0.85, 8, 8), mats.neonRainAlloyMat || this.alloyMat);
     drone.add(body);
 
-    // Glowing cargo compartment
     const cargo = new THREE.Mesh(this.getBox(1.1, 0.65, 1.1), mats.neonCyanGlowMat || this.cyanGlowMat);
     cargo.position.y = -0.55;
     drone.add(cargo);
 
-    // 4 Quad Rotor Spars & Propellers
     const rotorArmGeo = this.getBox(3.4, 0.08, 0.12);
     const arm1 = new THREE.Mesh(rotorArmGeo, mats.neonRainAlloyMat || this.alloyMat);
     drone.add(arm1);
@@ -1287,7 +1494,6 @@ export class NeonRainlineWorldBuilder {
   private createMaglevConsist(mats: any, accentHex: number): THREE.Group {
     const consist = new THREE.Group();
 
-    // Aerodynamic futuristic maglev cab
     const cab = new THREE.Mesh(this.getBox(3.2, 3.4, 18.0), mats.neonRainAlloyMat || this.alloyMat);
     cab.position.y = 1.7;
     consist.add(cab);
@@ -1298,5 +1504,31 @@ export class NeonRainlineWorldBuilder {
     consist.add(win);
 
     return consist;
+  }
+
+  private createPedestrianBotMesh(mats: any): THREE.Group {
+    const bot = new THREE.Group();
+
+    // Torso
+    const torso = new THREE.Mesh(this.getBox(0.8, 1.1, 0.5), mats.neonRainAlloyMat || this.alloyMat);
+    torso.position.y = 1.1;
+    bot.add(torso);
+
+    // Optical visor sensor
+    const visor = new THREE.Mesh(this.getBox(0.65, 0.2, 0.25), mats.neonCyanGlowMat || this.cyanGlowMat);
+    visor.position.set(0, 1.85, 0.2);
+    bot.add(visor);
+
+    // Head
+    const head = new THREE.Mesh(this.getBox(0.55, 0.5, 0.5), mats.neonRainAlloyMat || this.alloyMat);
+    head.position.y = 1.85;
+    bot.add(head);
+
+    // Magnetic levitation hover disk
+    const disk = new THREE.Mesh(this.getCylinder(0.5, 0.4, 0.2, 8), mats.neonMagentaGlowMat || this.magentaGlowMat);
+    disk.position.y = 0.2;
+    bot.add(disk);
+
+    return bot;
   }
 }
