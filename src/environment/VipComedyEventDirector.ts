@@ -232,6 +232,37 @@ export interface AnimatedPartyOfficeMixup {
   timer: number;
 }
 
+/** Roadshow Royale: Spectacular Moving Political Float with Modi waving, petal cannons, and loudspeakers */
+export interface AnimatedRoadshowFloat {
+  floatGroup: THREE.Object3D;
+  modiFigure: THREE.Object3D;
+  armRight: THREE.Object3D;
+  head: THREE.Object3D;
+  petals: THREE.Object3D[];
+  petalBaseY: number[];
+  loudspeakers: THREE.Object3D[];
+  commandos: THREE.Object3D[];
+  timer: number;
+}
+
+/** Roadshow Royale: Motorcade Pilot Escort SUV with flashing amber/red strobes */
+export interface AnimatedPilotEscort {
+  suvGroup: THREE.Object3D;
+  strobeAmber: THREE.Mesh;
+  strobeRed: THREE.Mesh;
+  timer: number;
+}
+
+/** Roadshow Royale: Animated Cheering Crowd Member waving flags and popping flashbulbs */
+export interface AnimatedCrowdMember {
+  memberGroup: THREE.Object3D;
+  wavingArm?: THREE.Object3D;
+  flagMesh?: THREE.Object3D;
+  flashMesh?: THREE.Object3D;
+  phase: number;
+  speed: number;
+}
+
 /**
  * VipComedyEventDirector
  * Dedicated coordinator for procedural, animated political satire gags
@@ -277,6 +308,11 @@ export class VipComedyEventDirector {
   private selfieBattleList: AnimatedSelfieBattle[] = [];
   private microphoneChaseList: AnimatedMicrophoneChase[] = [];
   private partyOfficeMixupList: AnimatedPartyOfficeMixup[] = [];
+
+  // Roadshow Royale Animations
+  private roadshowFloatList: AnimatedRoadshowFloat[] = [];
+  private pilotEscortList: AnimatedPilotEscort[] = [];
+  private crowdMemberList: AnimatedCrowdMember[] = [];
 
   private globalClock: number = 0;
   private isEnabled: boolean = true;
@@ -658,6 +694,60 @@ export class VipComedyEventDirector {
     });
   }
 
+  // --- Roadshow Royale Registrations ---
+  public registerRoadshowFloat(
+    floatGroup: THREE.Object3D,
+    modiFigure: THREE.Object3D,
+    armRight: THREE.Object3D,
+    head: THREE.Object3D,
+    petals: THREE.Object3D[],
+    petalBaseY: number[],
+    loudspeakers: THREE.Object3D[],
+    commandos: THREE.Object3D[]
+  ): void {
+    this.roadshowFloatList.push({
+      floatGroup,
+      modiFigure,
+      armRight,
+      head,
+      petals,
+      petalBaseY,
+      loudspeakers,
+      commandos,
+      timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 4.0
+    });
+  }
+
+  public registerPilotEscort(
+    suvGroup: THREE.Object3D,
+    strobeAmber: THREE.Mesh,
+    strobeRed: THREE.Mesh
+  ): void {
+    this.pilotEscortList.push({
+      suvGroup,
+      strobeAmber,
+      strobeRed,
+      timer: this.getDeterministicPhase()
+    });
+  }
+
+  public registerCrowdMember(
+    memberGroup: THREE.Object3D,
+    wavingArm?: THREE.Object3D,
+    flagMesh?: THREE.Object3D,
+    flashMesh?: THREE.Object3D,
+    speed: number = 3.5
+  ): void {
+    this.crowdMemberList.push({
+      memberGroup,
+      wavingArm,
+      flagMesh,
+      flashMesh,
+      phase: this.getDeterministicPhase(),
+      speed
+    });
+  }
+
   // --- Public Diagnostics Getters ---
   public getScissorsCount(): number { return this.scissorsList.length; }
   public getDebatersCount(): number { return this.debatersList.length; }
@@ -688,6 +778,9 @@ export class VipComedyEventDirector {
   public getSelfieBattleCount(): number { return this.selfieBattleList.length; }
   public getMicrophoneChaseCount(): number { return this.microphoneChaseList.length; }
   public getPartyOfficeMixupCount(): number { return this.partyOfficeMixupList.length; }
+  public getRoadshowFloatCount(): number { return this.roadshowFloatList.length; }
+  public getPilotEscortCount(): number { return this.pilotEscortList.length; }
+  public getCrowdMemberCount(): number { return this.crowdMemberList.length; }
 
   public getSignatureGagsCount(): number {
     return this.teacupRevealList.length + this.kettlePourList.length +
@@ -697,14 +790,15 @@ export class VipComedyEventDirector {
       this.mangoInterviewList.length + this.meditationParadoxList.length +
       this.cameraMagnetList.length + this.hugDiplomacyList.length +
       this.hugLoopList.length + this.selfieBattleList.length +
-      this.microphoneChaseList.length + this.partyOfficeMixupList.length;
+      this.microphoneChaseList.length + this.partyOfficeMixupList.length +
+      this.roadshowFloatList.length + this.pilotEscortList.length;
   }
 
   public getTotalActiveElements(): number {
     return this.scissorsList.length + this.debatersList.length + this.steamList.length +
       this.flashList.length + this.helicopterList.length + this.gavelList.length +
       this.papersList.length + this.countdownList.length + this.runawayList.length +
-      this.getSignatureGagsCount();
+      this.crowdMemberList.length + this.getSignatureGagsCount();
   }
 
   public reset(): void {
@@ -740,6 +834,10 @@ export class VipComedyEventDirector {
     this.microphoneChaseList = [];
     this.partyOfficeMixupList = [];
 
+    this.roadshowFloatList = [];
+    this.pilotEscortList = [];
+    this.crowdMemberList = [];
+
     this.globalClock = 0;
   }
 
@@ -771,7 +869,7 @@ export class VipComedyEventDirector {
     this.microphoneShowdownList = this.microphoneShowdownList.filter(g => isAttached(g.centerMic) && isAttached(g.leaderLeft));
     this.coalitionCarouselList = this.coalitionCarouselList.filter(g => isAttached(g.carouselPlatform) && isAttached(g.nitishChair));
 
-    this.mangoInterviewList = this.mangoInterviewList.filter(g => isAttached(g.stageGroup) && isAttached(g.clocheMesh));
+    this.mangoInterviewList = this.mangoInterviewList.filter(g => isAttached(g.stageGroup) && isAttached(g.mangoMesh));
     this.meditationParadoxList = this.meditationParadoxList.filter(g => isAttached(g.caveTurntable) && isAttached(g.modiFigure));
     this.cameraMagnetList = this.cameraMagnetList.filter(g => isAttached(g.modiFigure));
     this.hugDiplomacyList = this.hugDiplomacyList.filter(g => isAttached(g.hydraulicBase) && isAttached(g.armLeft));
@@ -779,6 +877,10 @@ export class VipComedyEventDirector {
     this.selfieBattleList = this.selfieBattleList.filter(g => isAttached(g.cameraDrone) && isAttached(g.chaiVendor));
     this.microphoneChaseList = this.microphoneChaseList.filter(g => isAttached(g.rollingMic) && isAttached(g.modiFigure));
     this.partyOfficeMixupList = this.partyOfficeMixupList.filter(g => isAttached(g.revolvingPortal) && isAttached(g.politicianFigure));
+
+    this.roadshowFloatList = this.roadshowFloatList.filter(g => isAttached(g.floatGroup) && isAttached(g.modiFigure));
+    this.pilotEscortList = this.pilotEscortList.filter(g => isAttached(g.suvGroup));
+    this.crowdMemberList = this.crowdMemberList.filter(g => isAttached(g.memberGroup));
   }
 
   /**
@@ -1195,83 +1297,119 @@ export class VipComedyEventDirector {
     // 3. GATE A & GATE B POLITICAL MEME UNIVERSE GAG ANIMATIONS
     // =======================================================================
 
+    // ROADSHOW ROYALE: Moving Political Float with Modi waving, petal cannons, and loudspeakers
+    for (let i = 0; i < this.roadshowFloatList.length; i++) {
+      const rf = this.roadshowFloatList[i];
+      rf.timer += delta * motionMultiplier;
+
+      // Modi dynamic victory wave & head turn
+      const waveAngle = -1.4 + Math.sin(rf.timer * 3.8) * 0.35;
+      rf.armRight.rotation.x = waveAngle;
+      rf.armRight.rotation.z = Math.sin(rf.timer * 2.5) * 0.20;
+      rf.head.rotation.y = Math.sin(rf.timer * 1.8) * 0.35;
+
+      // Float gentle chassis rumble/sway
+      rf.floatGroup.position.y = (rf.floatGroup.userData.baseY || 0) + Math.sin(this.globalClock * 6.0) * 0.04;
+      rf.floatGroup.rotation.z = Math.sin(this.globalClock * 3.0) * 0.015;
+
+      // Petal cannons shooting petals into the sky
+      for (let p = 0; p < rf.petals.length; p++) {
+        const petal = rf.petals[p];
+        const baseY = rf.petalBaseY[p] || 4.0;
+        const phase = (this.globalClock * 2.5 + p * 0.6) % 3.0;
+        petal.position.y = baseY + phase * 1.8;
+        petal.rotation.x += delta * 4.0;
+        petal.rotation.y += delta * 5.0;
+        petal.rotation.z += delta * 3.0;
+        petal.scale.setScalar(0.7 + Math.sin(phase * Math.PI) * 0.4);
+      }
+
+      // Loudspeakers pulsating with rally sound
+      for (let ls = 0; ls < rf.loudspeakers.length; ls++) {
+        const horn = rf.loudspeakers[ls];
+        const pulse = 1.0 + Math.sin(this.globalClock * 12.0 + ls) * 0.08;
+        horn.scale.set(pulse, pulse, pulse);
+      }
+
+      // Commandos running alongside (rhythmic stride)
+      for (let cm = 0; cm < rf.commandos.length; cm++) {
+        const cmd = rf.commandos[cm];
+        const stride = Math.sin(this.globalClock * 8.0 + cm * Math.PI);
+        cmd.position.y = (cmd.userData.baseY || 0) + Math.abs(stride) * 0.08;
+        cmd.rotation.x = stride * 0.12;
+      }
+    }
+
+    // Pilot Escorts: Flashing amber/red strobes
+    for (let i = 0; i < this.pilotEscortList.length; i++) {
+      const pe = this.pilotEscortList[i];
+      pe.timer += delta * motionMultiplier;
+      const strobePhase = Math.floor(this.globalClock * 8.0) % 2;
+      (pe.strobeAmber.material as THREE.MeshStandardMaterial).emissiveIntensity = strobePhase === 0 ? 2.5 : 0.2;
+      (pe.strobeRed.material as THREE.MeshStandardMaterial).emissiveIntensity = strobePhase === 1 ? 2.5 : 0.2;
+    }
+
+    // Cheering Crowd Members
+    for (let i = 0; i < this.crowdMemberList.length; i++) {
+      const cm = this.crowdMemberList[i];
+      const time = this.globalClock * cm.speed * motionMultiplier + cm.phase;
+      if (cm.wavingArm) {
+        cm.wavingArm.rotation.x = -1.2 + Math.sin(time) * 0.45;
+        cm.wavingArm.rotation.z = Math.cos(time * 0.7) * 0.25;
+      }
+      if (cm.flagMesh) {
+        cm.flagMesh.rotation.z = Math.sin(time * 1.2) * 0.35;
+        cm.flagMesh.rotation.y = Math.cos(time * 0.8) * 0.25;
+      }
+      if (cm.flashMesh) {
+        const isFlash = (Math.sin(time * 3.5) > 0.88);
+        cm.flashMesh.visible = isFlash;
+      }
+    }
+
     // GATE A: The Mango Interview — Superstar Mango with Sunglasses & Swiveling Cameras
-    // 6.5s cycle: Setup (0-2s) -> Cloche Lift (2-3.2s) -> Camera Rush & Sunglasses (3.2-4.5s) -> Mango Superstar Hold (4.5-6.5s)
+    // Enhanced for instant readability from running camera! The Golden Mango Superstar is ALWAYS proudly visible.
     for (let i = 0; i < this.mangoInterviewList.length; i++) {
       const g = this.mangoInterviewList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.5;
 
-      if (cycle < 2.0) {
-        // Setup: Cloche covers mango on table, leaders nodding in dignified interview
-        g.clocheMesh.position.y = 2.1;
-        g.sunglassesMesh.position.y = 7.0; // Sunglasses hidden high above
-        g.sunglassesMesh.scale.set(0.01, 0.01, 0.01);
-        g.mangoMesh.position.y = 3.5;
-        g.mangoMesh.rotation.y = 0;
-        if (g.sparkleMesh) g.sparkleMesh.visible = false;
+      // Cloche sits firmly grounded on its gold side-table waiter tray, tilted open to reveal the superstar
+      g.clocheMesh.position.y = 0.8;
 
-        // Leaders gesturing solemnly
-        g.modiFigure.rotation.x = -0.15 + Math.sin(this.globalClock * 3.0) * 0.08;
-        g.modiFigure.rotation.z = 0;
-        g.interviewerFigure.rotation.x = -0.15 + Math.cos(this.globalClock * 3.0) * 0.08;
-        g.interviewerFigure.rotation.z = 0;
+      // Mango is an active superstar pop icon: bobbing, grooving rotation, and sunglasses
+      const bob = Math.abs(Math.sin(this.globalClock * 7.0)) * 0.24;
+      g.mangoMesh.position.y = 3.8 + bob;
+      g.mangoMesh.rotation.y += delta * 2.8;
 
-        // Cameras and spotlights aimed at leaders
-        if (g.cameras.length >= 2) {
-          g.cameras[0].rotation.y = -0.3;
-          g.cameras[1].rotation.y = 0.3;
-        }
-        g.spotlights.forEach(spot => {
-          spot.rotation.x = 0.3;
-        });
-      } else if (cycle < 3.2) {
-        // Twist: Cloche lifts majestically into the sky revealing the mango
-        const t = (cycle - 2.0) / 1.2;
-        g.clocheMesh.position.y = 2.1 + t * 4.5;
-        g.mangoMesh.position.y = 3.5 + t * 0.4;
-      } else if (cycle < 4.5) {
-        // Climax: Cloche high in air; cameras and spotlights violently snap to the mango!
-        g.clocheMesh.position.y = 6.6;
-        g.mangoMesh.position.y = 3.9;
+      // Celebrity sunglasses mounted on mango
+      g.sunglassesMesh.position.y = g.mangoMesh.position.y;
+      g.sunglassesMesh.rotation.y = g.mangoMesh.rotation.y;
+      g.sunglassesMesh.scale.set(1.0, 1.0, 1.0);
 
-        // Cameras snap 180° away from leaders directly onto the mango!
-        g.cameras.forEach(cam => {
-          cam.rotation.y = 0;
-          cam.rotation.x = -0.25;
-        });
-        g.spotlights.forEach(spot => {
-          spot.rotation.x = 0.85; // Focused on mango pedestal
-        });
-
-        // Sunglasses drop down smoothly from above onto mango
-        const dropT = Math.min(1.0, (cycle - 3.2) / 0.8);
-        g.sunglassesMesh.position.y = 7.0 - dropT * 3.15;
-        g.sunglassesMesh.scale.set(dropT, dropT, dropT);
-      } else {
-        // Punchline: Mango is a superstar pop icon!
-        g.clocheMesh.position.y = 6.6;
-        const bob = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.22;
-        g.mangoMesh.position.y = 3.9 + bob;
-        g.mangoMesh.rotation.y += delta * 3.5;
-        g.sunglassesMesh.position.y = g.mangoMesh.position.y - 0.05;
-        g.sunglassesMesh.rotation.y = g.mangoMesh.rotation.y;
-        g.sunglassesMesh.scale.set(1.0, 1.0, 1.0);
-
-        if (g.sparkleMesh) {
-          g.sparkleMesh.visible = true;
-          g.sparkleMesh.position.y = g.mangoMesh.position.y + 0.5;
-          g.sparkleMesh.rotation.z += delta * 4.0;
-          const spScale = 0.8 + Math.sin(this.globalClock * 10.0) * 0.3;
-          g.sparkleMesh.scale.set(spScale, spScale, spScale);
-        }
-
-        // Leaders frozen in comedic dropped-jaw double-take!
-        g.modiFigure.rotation.z = 0.25;
-        g.modiFigure.rotation.x = 0.35;
-        g.interviewerFigure.rotation.z = -0.25;
-        g.interviewerFigure.rotation.x = 0.35;
+      // Rotating sparkle stars
+      if (g.sparkleMesh) {
+        g.sparkleMesh.visible = true;
+        g.sparkleMesh.position.y = g.mangoMesh.position.y + 0.65;
+        g.sparkleMesh.rotation.z += delta * 4.0;
+        const spScale = 0.9 + Math.sin(this.globalClock * 10.0) * 0.3;
+        g.sparkleMesh.scale.set(spScale, spScale, spScale);
       }
+
+      // Cameras and spotlights actively locked onto the mango superstar!
+      g.cameras.forEach(cam => {
+        cam.rotation.y = Math.sin(this.globalClock * 2.0) * 0.15;
+        cam.rotation.x = -0.22;
+      });
+      g.spotlights.forEach(spot => {
+        spot.rotation.x = 0.82; // Focused squarely on the mango
+      });
+
+      // Leaders in animated debate & comic dropped-jaw double-take
+      const debateCycle = Math.sin(this.globalClock * 3.0);
+      g.modiFigure.rotation.x = -0.12 + debateCycle * 0.12;
+      g.modiFigure.rotation.z = debateCycle > 0 ? 0.22 : -0.04;
+      g.interviewerFigure.rotation.x = -0.12 - debateCycle * 0.12;
+      g.interviewerFigure.rotation.z = debateCycle > 0 ? -0.22 : 0.04;
     }
 
     // GATE B: The Kedarnath Meditation Photo-Shoot Paradox

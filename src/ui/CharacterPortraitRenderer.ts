@@ -242,6 +242,24 @@ export class CharacterPortraitRenderer {
         .then((loaded) => {
           if (this.glbGroup && this.currentCharacterId === charDef.id) {
             this.glbInstance = loaded;
+
+            // Recolor waistcoat meshes to vibrant royal saffron for char_modi
+            if (charDef.id === 'char_modi') {
+              const saffronColor = charDef.outfits[0]?.colors.primary || 0xea580c;
+              loaded.scene.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const mesh = child as THREE.Mesh;
+                  if (mesh.name === 'navy_fabric_mesh' || mesh.name === 'navy_trim_mesh') {
+                    mesh.material = new THREE.MeshStandardMaterial({
+                      color: saffronColor,
+                      roughness: 0.82,
+                      metalness: 0.05
+                    });
+                  }
+                }
+              });
+            }
+
             this.glbGroup.add(loaded.scene);
             // Face camera directly in portrait studio
             loaded.scene.rotation.y = Math.PI - 0.18; // 3/4 subtle angle

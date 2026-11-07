@@ -323,6 +323,26 @@ export class CharacterModel {
         .then((loaded) => {
           if (this.currentCharacterId === characterId && this.glbContainer) {
             this.glbInstance = loaded;
+
+            // Modi signature styling: ensure the authentic 3D GLB model wears his signature vibrant royal saffron waistcoat
+            const outfit = charDef.outfits.find((o) => o.id === this.currentOutfitId) || charDef.outfits[0];
+            if (characterId === 'char_modi' && outfit) {
+              const saffronColor = outfit.colors.primary; // 0xea580c (vibrant royal saffron)
+              loaded.scene.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const mesh = child as THREE.Mesh;
+                  if (mesh.name === 'navy_fabric_mesh' || mesh.name === 'navy_trim_mesh') {
+                    const mat = new THREE.MeshStandardMaterial({
+                      color: saffronColor,
+                      roughness: 0.82,
+                      metalness: 0.05
+                    });
+                    mesh.material = mat;
+                  }
+                }
+              });
+            }
+
             this.glbContainer.add(loaded.scene);
             // Hide procedural body mesh hierarchy so the authentic 3D GLB model is visible
             this.hipsGroup.visible = false;

@@ -81,6 +81,20 @@ export class VipSatireWorldBuilder {
   private awningStripeGreenMat: THREE.MeshStandardMaterial;
   private chhatriDomeMat: THREE.MeshStandardMaterial;
 
+  // Roadshow Royale & Indian Festive Materials
+  private saffronFloralMat: THREE.MeshStandardMaterial;
+  private yellowMarigoldMat: THREE.MeshStandardMaterial;
+  private lotusPinkMat: THREE.MeshStandardMaterial;
+  private lotusGoldMat: THREE.MeshStandardMaterial;
+  private suvWhiteMat: THREE.MeshStandardMaterial;
+  private suvTireMat: THREE.MeshStandardMaterial;
+  private commandoSuitMat: THREE.MeshStandardMaterial;
+  private strobeAmberMat: THREE.MeshStandardMaterial;
+  private strobeRedMat: THREE.MeshStandardMaterial;
+  private petalSaffronMat: THREE.MeshBasicMaterial;
+  private petalYellowMat: THREE.MeshBasicMaterial;
+  private buntingTricolorMat: THREE.MeshStandardMaterial;
+
   private constructor() {
     this.terracottaMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.85 });
     this.jaliStoneMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.75 });
@@ -133,6 +147,20 @@ export class VipSatireWorldBuilder {
     this.awningStripeGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
     this.chhatriDomeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5, metalness: 0.25 });
 
+    // Roadshow Royale & Festive Materials
+    this.saffronFloralMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.85 });
+    this.yellowMarigoldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.85 });
+    this.lotusPinkMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.65 });
+    this.lotusGoldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.20 });
+    this.suvWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.35 });
+    this.suvTireMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
+    this.commandoSuitMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.75 });
+    this.strobeAmberMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.5, roughness: 0.2 });
+    this.strobeRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1.5, roughness: 0.2 });
+    this.petalSaffronMat = new THREE.MeshBasicMaterial({ color: 0xea580c, side: THREE.DoubleSide });
+    this.petalYellowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide });
+    this.buntingTricolorMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 });
+
     // CRITICAL FIX FOR FLOATING SCENERY:
     // Bend all VIP world materials synchronously with track curvature shader!
     const curved = CurvedShaderManager.getInstance();
@@ -150,7 +178,10 @@ export class VipSatireWorldBuilder {
       this.haveliYellowPlasterMat, this.haveliTerracottaMat, this.haveliSandstoneMat,
       this.haveliWoodMat, this.windowGlassLitMat, this.studioGlassMat,
       this.awningStripeOrangeMat, this.awningStripeMaroonMat, this.awningStripeGreenMat,
-      this.chhatriDomeMat
+      this.chhatriDomeMat, this.saffronFloralMat, this.yellowMarigoldMat,
+      this.lotusPinkMat, this.lotusGoldMat, this.suvWhiteMat, this.suvTireMat,
+      this.commandoSuitMat, this.strobeAmberMat, this.strobeRedMat,
+      this.petalSaffronMat, this.petalYellowMat, this.buntingTricolorMat
     ];
     allMats.forEach(m => curved.applyCurvature(m));
   }
@@ -238,33 +269,33 @@ export class VipSatireWorldBuilder {
 
     // Determine district:
     // Sustained 400m thematic districts during active gameplay runs!
-    let districtIndex: number;
-    const effectiveZ = (worldZIn !== 0 && seed !== 999)
+    const effectiveZ = (typeof worldZIn === 'number' && !isNaN(worldZIn))
       ? worldZIn
-      : (group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
+      : (group.parent && typeof group.parent.position?.z === 'number' && !isNaN(group.parent.position.z)
         ? group.parent.position.z
         : 0);
 
-    if (effectiveZ !== 0) {
-      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 5;
+    let districtIndex: number;
+    if (seed >= 0 && seed < 5) {
+      districtIndex = seed;
     } else {
-      districtIndex = (seed >= 0 && seed < 5) ? seed : (Math.floor(Math.abs(seed) / 4) % 5);
+      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 5;
     }
 
     const isTestSeed = seed === 12345;
 
     switch (districtIndex) {
       case 0:
-        this.buildChaiPeCharchaDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildRoadshowRoyaleDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ, isTestSeed);
         break;
       case 1:
-        this.buildInaugurationInfinityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildChaiPeCharchaDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
       case 2:
-        this.buildBreakingNewsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildInaugurationInfinityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
       case 3:
-        this.buildMasterstrokeMegacityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildBreakingNewsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
       case 4:
       default:
@@ -299,53 +330,119 @@ export class VipSatireWorldBuilder {
     char.name = 'caricature_modi';
     char.position.set(x, y, z);
 
-    // Legs / Kurta base
-    const legs = new THREE.Mesh(this.getBox(0.42, 0.75, 0.32), this.cartoonKurtaWhiteMat);
-    legs.position.y = 0.38;
+    // Traditional brown Mojari shoes with curved tips
+    [-0.14, 0.14].forEach((fx) => {
+      const shoe = new THREE.Mesh(this.getBox(0.14, 0.10, 0.32), this.haveliWoodMat);
+      shoe.position.set(fx, 0.05, 0.05);
+      char.add(shoe);
+    });
+
+    // Legs: Churidar trousers with soft folds
+    const legs = new THREE.Mesh(this.getCylinder(0.18, 0.14, 0.72, 10), this.cartoonKurtaWhiteMat);
+    legs.position.y = 0.36;
     char.add(legs);
 
+    // Kurta lower pleated hem draping below waist
+    const kurtaSkirt = new THREE.Mesh(this.getCylinder(0.26, 0.30, 0.35, 10), this.cartoonKurtaWhiteMat);
+    kurtaSkirt.position.y = 0.75;
+    char.add(kurtaSkirt);
+
     // Torso with tailored Saffron Nehru Waistcoat
-    const torso = new THREE.Mesh(this.getBox(0.50, 0.65, 0.36), this.cartoonWaistcoatOrangeMat);
-    torso.position.y = 1.0;
+    const torso = new THREE.Mesh(this.getCylinder(0.28, 0.25, 0.65, 12), this.cartoonWaistcoatOrangeMat);
+    torso.position.y = 1.08;
     char.add(torso);
 
-    // Mandarin Collar
-    const collar = new THREE.Mesh(this.getCylinder(0.16, 0.16, 0.10, 8), this.cartoonWaistcoatOrangeMat);
-    collar.position.y = 1.35;
-    char.add(collar);
+    // Waistcoat Front Central Placket
+    const placket = new THREE.Mesh(this.getBox(0.06, 0.62, 0.02), this.cartoonWaistcoatOrangeMat);
+    placket.position.set(0, 1.08, 0.26);
+    char.add(placket);
+
+    // 5 Brushed Bronze Buttons
+    for (let b = 0; b < 5; b++) {
+      const btn = new THREE.Mesh(this.getCylinder(0.018, 0.018, 0.01, 8), this.copperMat);
+      btn.rotation.x = Math.PI / 2;
+      btn.position.set(0, 0.86 + b * 0.11, 0.275);
+      char.add(btn);
+    }
 
     // Saffron Folded Pocket Square on Chest
-    const pocketSquare = new THREE.Mesh(this.getBox(0.08, 0.08, 0.02), this.cartoonWaistcoatOrangeMat);
-    pocketSquare.position.set(-0.14, 1.15, 0.19);
+    const pocketSquare = new THREE.Mesh(this.getBox(0.09, 0.09, 0.02), this.lotusGoldMat);
+    pocketSquare.position.set(-0.13, 1.25, 0.25);
+    pocketSquare.rotation.z = 0.2;
     char.add(pocketSquare);
 
-    // Head
-    const head = new THREE.Mesh(this.getCylinder(0.20, 0.18, 0.36, 10), this.cartoonNpcSkinMat);
-    head.position.y = 1.55;
+    // Draped Ceremonial Saffron Shawl / Angavastram over Left Shoulder
+    const shawl = new THREE.Mesh(this.getBox(0.12, 0.75, 0.30), this.saffronFloralMat);
+    shawl.position.set(-0.24, 1.05, 0.02);
+    char.add(shawl);
+    const shawlBorder = new THREE.Mesh(this.getBox(0.125, 0.04, 0.31), this.lotusGoldMat);
+    shawlBorder.position.set(-0.24, 0.68, 0.02);
+    char.add(shawlBorder);
+
+    // Mandarin Collar
+    const collar = new THREE.Mesh(this.getCylinder(0.17, 0.17, 0.10, 10), this.cartoonWaistcoatOrangeMat);
+    collar.position.y = 1.42;
+    char.add(collar);
+
+    // Sculpted Head & Cheeks
+    const head = new THREE.Mesh(this.getCylinder(0.20, 0.18, 0.35, 12), this.cartoonNpcSkinMat);
+    head.position.y = 1.62;
     char.add(head);
 
-    // Swept Silver Hair Volume
-    const hair = new THREE.Mesh(this.getSphere(0.22, 8), this.cartoonHairSilverMat);
-    hair.position.set(0, 1.70, -0.04);
+    const nose = new THREE.Mesh(this.getCylinder(0.035, 0.05, 0.12, 6), this.cartoonNpcSkinMat);
+    nose.rotation.x = Math.PI / 2;
+    nose.position.set(0, 1.64, 0.22);
+    char.add(nose);
+
+    // Swept Silver Hair Volume (Sides & Crown)
+    const hair = new THREE.Mesh(this.getSphere(0.24, 12), this.cartoonHairSilverMat);
+    hair.scale.set(1.0, 1.15, 1.08);
+    hair.position.set(0, 1.76, -0.04);
     char.add(hair);
 
-    // Trimmed Silver Beard & Mustache
-    const beard = new THREE.Mesh(this.getBox(0.32, 0.22, 0.24), this.cartoonHairSilverMat);
-    beard.position.set(0, 1.44, 0.10);
+    // Distinguished Silver Beard (curved around jaw)
+    const beard = new THREE.Mesh(this.getCylinder(0.21, 0.12, 0.26, 10), this.cartoonHairSilverMat);
+    beard.position.set(0, 1.48, 0.10);
     char.add(beard);
 
-    // Metallic Spectacles
-    const glasses = new THREE.Mesh(this.getBox(0.34, 0.08, 0.04), this.goldMetalMat);
-    glasses.position.set(0, 1.62, 0.20);
+    // Silver Mustache
+    const mustache = new THREE.Mesh(this.getBox(0.26, 0.07, 0.08), this.cartoonHairSilverMat);
+    mustache.position.set(0, 1.57, 0.21);
+    char.add(mustache);
+
+    // Gold Rimless Wire Spectacles with Double Bridge
+    const glasses = new THREE.Group();
+    const rimL = new THREE.Mesh(this.getTorus(0.065, 0.012, 8), this.goldMetalMat);
+    rimL.position.set(-0.09, 0, 0);
+    glasses.add(rimL);
+    const rimR = new THREE.Mesh(this.getTorus(0.065, 0.012, 8), this.goldMetalMat);
+    rimR.position.set(0.09, 0, 0);
+    glasses.add(rimR);
+    const bridge = new THREE.Mesh(this.getBox(0.06, 0.015, 0.01), this.goldMetalMat);
+    bridge.position.set(0, 0.01, 0);
+    glasses.add(bridge);
+    glasses.position.set(0, 1.68, 0.22);
     char.add(glasses);
 
-    // Animated Arms
-    const armL = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.cartoonKurtaWhiteMat);
-    armL.position.set(-0.35, 1.05, 0);
+    // Articulated Arms with white kurta sleeves
+    const armL = new THREE.Group();
+    armL.position.set(-0.35, 1.25, 0);
+    const sleeveL = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.48, 8), this.cartoonKurtaWhiteMat);
+    sleeveL.position.y = -0.20;
+    armL.add(sleeveL);
+    const handL = new THREE.Mesh(this.getSphere(0.065, 6), this.cartoonNpcSkinMat);
+    handL.position.y = -0.45;
+    armL.add(handL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.cartoonKurtaWhiteMat);
-    armR.position.set(0.35, 1.05, 0);
+    const armR = new THREE.Group();
+    armR.position.set(0.35, 1.25, 0);
+    const sleeveR = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.48, 8), this.cartoonKurtaWhiteMat);
+    sleeveR.position.y = -0.20;
+    armR.add(sleeveR);
+    const handR = new THREE.Mesh(this.getSphere(0.065, 6), this.cartoonNpcSkinMat);
+    handR.position.y = -0.45;
+    armR.add(handR);
     char.add(armR);
 
     // Pose configuration
@@ -655,8 +752,8 @@ export class VipSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL'
   ): void {
     const wallX = roadbedWidth * 0.5 + 2.2;
-    // Setback building facade line: X = 24.0m, front face at X = 20.5m (outside track envelope |X| <= 4.2m)
-    const facadeX = side * (wallX + 16.5);
+    // Setback building facade line: X = 19.2m, front face at X = 15.7m (outside track envelope |X| <= 4.2m)
+    const facadeX = side * (wallX + 12.5);
     const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
 
     // Three articulated architectural modules per side with open courtyard gaps
@@ -700,9 +797,9 @@ export class VipSatireWorldBuilder {
       mainBuilding.position.y = totalH * 0.5;
       bGroup.add(mainBuilding);
 
-      // Deep foundation plinth down to y = -4.0m to prevent floating scenery
-      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.6, 4.0, bDepth + 0.6), this.sandstoneMat);
-      plinth.position.y = -2.0;
+      // Deep foundation plinth down to y = -5.2m to prevent floating scenery
+      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.6, 5.2, bDepth + 0.6), this.sandstoneMat);
+      plinth.position.y = -2.6;
       bGroup.add(plinth);
 
       // Carved Sandstone Stringcourse Ledges between floors
@@ -881,7 +978,500 @@ export class VipSatireWorldBuilder {
   }
 
   // =========================================================================
-  // DISTRICT A — CHAI PE CHARCHA: THE MEGA SUMMIT
+  // DISTRICT A — ROADSHOW ROYALE: THE SPECTACULAR POLITICAL MOTORCADE
+  // =========================================================================
+  public buildRoadshowRoyaleDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: VipComedyEventDirector,
+    worldZ: number = 0,
+    isTestSeed: boolean = false
+  ): void {
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const sidewalkW = 20.0;
+    const sidewalkH = 4.8;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom down to -4.5m for rock-solid grounding
+
+    // 1. Grand Ceremonial Rally Promenades on East & West Flanks
+    [-1, 1].forEach((side) => {
+      // Background Indian urban rally facades
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 0, rng, detail);
+
+      const sx = side * (curbEdge + sidewalkW * 0.5);
+      const promenade = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.terracottaMat);
+      promenade.position.set(sx, sidewalkY, -chunkLength * 0.5);
+      group.add(promenade);
+
+      // Sandstone curb edging
+      const curb = new THREE.Mesh(this.getBox(0.8, 0.4, chunkLength), this.sandstoneMat);
+      curb.position.set(side * (curbEdge + 0.4), 0.3, -chunkLength * 0.5);
+      group.add(curb);
+
+      // Ornate Indian Street Lampposts wrapped in fresh marigold garlands
+      const postStep = detail === 'MINIMAL' ? 36 : 18;
+      for (let z = 8; z < chunkLength - 8; z += postStep) {
+        const postGroup = new THREE.Group();
+        postGroup.position.set(side * (curbEdge + 2.2), 0.3, -z);
+
+        const base = new THREE.Mesh(this.getCylinder(0.22, 0.32, 0.8, 8), this.sandstoneMat);
+        base.position.y = 0.4;
+        postGroup.add(base);
+
+        const pole = new THREE.Mesh(this.getCylinder(0.08, 0.12, 5.0, 8), this.parliamentWoodMat);
+        pole.position.y = 3.2;
+        postGroup.add(pole);
+
+        // Marigold garland wrapped around pole (Full & Balanced tiers)
+        if (detail !== 'MINIMAL') {
+          for (let g = 0; g < 4; g++) {
+            const garland = new THREE.Mesh(this.getTorus(0.14, 0.05, 6), g % 2 === 0 ? this.yellowMarigoldMat : this.saffronFloralMat);
+            garland.rotation.x = Math.PI / 2 + 0.2;
+            garland.position.set(0, 1.2 + g * 0.9, 0);
+            postGroup.add(garland);
+          }
+        }
+
+        // Lantern head with warm glowing light
+        const lamp = new THREE.Mesh(this.getCylinder(0.24, 0.16, 0.45, 6), this.windowGlassLitMat);
+        lamp.position.y = 5.8;
+        postGroup.add(lamp);
+
+        const cap = new THREE.Mesh(this.getCylinder(0.06, 0.35, 0.22, 6), this.goldMetalMat);
+        cap.position.y = 6.1;
+        postGroup.add(cap);
+
+        group.add(postGroup);
+      }
+    });
+
+    // 2. THE GRAND ROADSHOW FLOAT TRUCK (West Flank, X = -12.5m)
+    const floatGroup = new THREE.Group();
+    floatGroup.name = 'vip_roadshow_float';
+    floatGroup.position.set(-12.5, 0.3, -chunkLength * 0.45);
+    floatGroup.userData.baseY = 0.3;
+
+    // Subsurface foundation plinth down to Y = -5.2m
+    const floatPlinth = new THREE.Mesh(this.getBox(7.0, 5.2, 16.0), this.sandstoneMat);
+    floatPlinth.position.set(0, -2.6, 0);
+    floatGroup.add(floatPlinth);
+
+    // Heavy truck chassis
+    const chassis = new THREE.Mesh(this.getBox(4.4, 0.8, 14.0), this.tinRoofMat);
+    chassis.position.y = 0.6;
+    floatGroup.add(chassis);
+
+    // Heavy Wheels with chrome hubs
+    const wheels = detail === 'MINIMAL' ? [-4.0, 4.0] : [-5.0, 0, 5.0];
+    wheels.forEach((wz) => {
+      [-2.2, 2.2].forEach((wx) => {
+        const wheel = new THREE.Mesh(this.getCylinder(0.65, 0.65, 0.45, 12), this.suvTireMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(wx, 0.65, wz);
+        floatGroup.add(wheel);
+
+        const hub = new THREE.Mesh(this.getCylinder(0.25, 0.25, 0.48, 8), this.goldMetalMat);
+        hub.rotation.z = Math.PI / 2;
+        hub.position.set(wx, 0.65, wz);
+        floatGroup.add(hub);
+      });
+    });
+
+    // Front Truck Cab
+    const cab = new THREE.Mesh(this.getBox(4.2, 2.4, 3.8), this.saffronFloralMat);
+    cab.position.set(0, 2.0, 5.0);
+    floatGroup.add(cab);
+
+    // Cab windshield & chrome grille
+    const windshield = new THREE.Mesh(this.getBox(3.8, 1.2, 0.1), this.studioGlassMat);
+    windshield.position.set(0, 2.4, 6.95);
+    floatGroup.add(windshield);
+
+    const grille = new THREE.Mesh(this.getBox(3.4, 0.9, 0.15), this.goldMetalMat);
+    grille.position.set(0, 1.1, 6.95);
+    floatGroup.add(grille);
+
+    // Giant 3D Golden Lotus Emblem on Truck Front
+    const lotusFront = new THREE.Group();
+    lotusFront.position.set(0, 1.1, 7.1);
+    const lotusCore = new THREE.Mesh(this.getSphere(0.25, 8), this.lotusGoldMat);
+    lotusFront.add(lotusCore);
+    for (let lp = 0; lp < 8; lp++) {
+      const petalAngle = (lp / 8) * Math.PI * 2;
+      const lotusPetal = new THREE.Mesh(this.getBox(0.18, 0.42, 0.05), this.lotusPinkMat);
+      lotusPetal.rotation.z = petalAngle;
+      lotusPetal.position.set(Math.cos(petalAngle) * 0.35, Math.sin(petalAngle) * 0.35, 0);
+      lotusFront.add(lotusPetal);
+    }
+    floatGroup.add(lotusFront);
+
+    // Thick Marigold Flower Garlands draped across bumper
+    for (let mg = -1.6; mg <= 1.6; mg += 0.8) {
+      const garland = new THREE.Mesh(this.getTorus(0.28, 0.09, 6), this.yellowMarigoldMat);
+      garland.position.set(mg, 0.7, 7.05);
+      floatGroup.add(garland);
+    }
+
+    // Rear Hydraulic Rally Stage (Elevated dais in truck bed)
+    const rallyStage = new THREE.Mesh(this.getBox(4.2, 1.4, 8.5), this.saffronFloralMat);
+    rallyStage.position.set(0, 1.7, -1.5);
+    floatGroup.add(rallyStage);
+
+    // Polished Brass Railings around the stage
+    const railMat = this.goldMetalMat;
+    [-2.0, 2.0].forEach((rx) => {
+      const rail = new THREE.Mesh(this.getBox(0.08, 1.1, 8.2), railMat);
+      rail.position.set(rx, 2.9, -1.5);
+      floatGroup.add(rail);
+    });
+    const backRail = new THREE.Mesh(this.getBox(4.0, 1.1, 0.08), railMat);
+    backRail.position.set(0, 2.9, -5.6);
+    floatGroup.add(backRail);
+
+    // 3D Lotus on Side Skirts (Full & Balanced)
+    if (detail !== 'MINIMAL') {
+      [-2.22, 2.22].forEach((sx) => {
+        const sideLotus = lotusFront.clone();
+        sideLotus.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2;
+        sideLotus.position.set(sx, 1.7, -1.5);
+        floatGroup.add(sideLotus);
+      });
+    }
+
+    // Elevated Center Rostrum on Float
+    const rostrum = new THREE.Mesh(this.getCylinder(1.2, 1.4, 0.8, 10), this.ivoryMarbleMat);
+    rostrum.position.set(0, 2.7, -1.2);
+    floatGroup.add(rostrum);
+
+    // Animated Caricature of Modi on Float Platform!
+    const modiFig = this.buildModiCaricature(floatGroup, 0, 3.1, -1.2, 'VICTORY', director);
+    const armR = modiFig.getObjectByName('caricature_modi')?.children.find(c => c.position.x > 0.25) || modiFig;
+    const headObj = modiFig.getObjectByName('caricature_modi')?.children.find(c => c.position.y > 1.4) || modiFig;
+
+    // Twin High-Powered Flower Petal Cannons at Truck Roof
+    const petalCannons: THREE.Object3D[] = [];
+    const petals: THREE.Object3D[] = [];
+    const petalBaseY: number[] = [];
+
+    [-1.6, 1.6].forEach((cx) => {
+      const cannon = new THREE.Mesh(this.getCylinder(0.20, 0.32, 1.2, 8), this.copperMat);
+      cannon.rotation.x = -0.55; // Angled backward & upward into the sky
+      cannon.position.set(cx, 3.8, 3.6);
+      floatGroup.add(cannon);
+      petalCannons.push(cannon);
+
+      // Animated Flower Petal particles shooting into the sky (Full & Balanced tiers)
+      if (detail !== 'MINIMAL') {
+        for (let p = 0; p < 6; p++) {
+          const petalMat = p % 2 === 0 ? this.petalSaffronMat : this.petalYellowMat;
+          const petal = new THREE.Mesh(this.getPlane(0.35, 0.35), petalMat);
+          petal.position.set(cx + (Math.random() - 0.5) * 1.8, 4.5 + p * 0.6, 3.0 - p * 0.8);
+          petal.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+          floatGroup.add(petal);
+          petals.push(petal);
+          petalBaseY.push(4.5 + p * 0.6);
+        }
+      }
+    });
+
+    // Quad Loudspeaker Horn Cluster on Cab Roof
+    const loudspeakers: THREE.Object3D[] = [];
+    const speakerCoords = [
+      { x: -1.2, z: 4.6, ry: -0.4 },
+      { x: 1.2, z: 4.6, ry: 0.4 },
+      { x: -1.2, z: 5.6, ry: -0.8 },
+      { x: 1.2, z: 5.6, ry: 0.8 }
+    ];
+    speakerCoords.forEach((sc) => {
+      const horn = new THREE.Mesh(this.getCylinder(0.28, 0.08, 0.65, 8), this.tinRoofMat);
+      horn.rotation.x = Math.PI / 2;
+      horn.rotation.y = sc.ry;
+      horn.position.set(sc.x, 3.6, sc.z);
+      floatGroup.add(horn);
+      loudspeakers.push(horn);
+    });
+
+    // Security Commandos (SPG in Black Safari Suits & Sunglasses)
+    const commandos: THREE.Object3D[] = [];
+    const commandoCoords = detail === 'MINIMAL'
+      ? [{ x: -2.6, y: 1.8, z: 1.0, isJogging: false }]
+      : [
+          { x: -2.6, y: 1.8, z: 1.0, isJogging: false },  // Standing on left footboard
+          { x: 2.6, y: 1.8, z: 1.0, isJogging: false },   // Standing on right footboard
+          { x: -3.2, y: 0.3, z: -3.5, isJogging: true },  // Jogging alongside left
+          { x: 3.2, y: 0.3, z: -3.5, isJogging: true }    // Jogging alongside right
+        ];
+
+    commandoCoords.forEach((cc, cidx) => {
+      const cmdGroup = new THREE.Group();
+      cmdGroup.position.set(cc.x, cc.y, cc.z);
+      cmdGroup.userData.baseY = cc.y;
+
+      const legs = new THREE.Mesh(this.getBox(0.36, 0.72, 0.28), this.commandoSuitMat);
+      legs.position.y = 0.36;
+      cmdGroup.add(legs);
+
+      const torso = new THREE.Mesh(this.getBox(0.44, 0.62, 0.30), this.commandoSuitMat);
+      torso.position.y = 0.98;
+      cmdGroup.add(torso);
+
+      const head = new THREE.Mesh(this.getCylinder(0.16, 0.16, 0.28, 8), this.cartoonNpcSkinMat);
+      head.position.y = 1.42;
+      cmdGroup.add(head);
+
+      const glasses = new THREE.Mesh(this.getBox(0.30, 0.08, 0.04), this.sunglassesBlackMat);
+      glasses.position.set(0, 1.45, 0.17);
+      cmdGroup.add(glasses);
+
+      // Commando radio earpiece cord
+      const earpiece = new THREE.Mesh(this.getCylinder(0.015, 0.015, 0.22, 4), this.suvTireMat);
+      earpiece.position.set(0.18, 1.25, -0.05);
+      cmdGroup.add(earpiece);
+
+      floatGroup.add(cmdGroup);
+      commandos.push(cmdGroup);
+    });
+
+    director.registerRoadshowFloat(floatGroup, modiFig, armR, headObj, petals, petalBaseY, loudspeakers, commandos);
+    group.add(floatGroup);
+
+    // 3. VIP PILOT ESCORT SUVS (White Scorpio Convoy)
+    const pilotZs = detail === 'MINIMAL' ? [-chunkLength * 0.15] : [-chunkLength * 0.15, -chunkLength * 0.80];
+    pilotZs.forEach((pz, pidx) => {
+      const suvGroup = new THREE.Group();
+      suvGroup.name = `vip_pilot_escort_${pidx}`;
+      suvGroup.position.set(-12.5, 0.3, pz);
+
+      const suvPlinth = new THREE.Mesh(this.getBox(4.5, 4.0, 7.5), this.sandstoneMat);
+      suvPlinth.position.set(0, -2.0, 0);
+      suvGroup.add(suvPlinth);
+
+      // SUV Main Body
+      const body = new THREE.Mesh(this.getBox(2.8, 1.4, 5.8), this.suvWhiteMat);
+      body.position.y = 1.1;
+      suvGroup.add(body);
+
+      // Cabin & Tinted Windows
+      const cabin = new THREE.Mesh(this.getBox(2.6, 1.1, 3.6), this.suvWhiteMat);
+      cabin.position.set(0, 2.2, -0.4);
+      suvGroup.add(cabin);
+
+      const windScreen = new THREE.Mesh(this.getBox(2.4, 0.9, 0.08), this.cyberGlassMat);
+      windScreen.position.set(0, 2.15, 1.42);
+      suvGroup.add(windScreen);
+
+      // 4 SUV Wheels
+      [-1.45, 1.45].forEach((wx) => {
+        [-1.8, 1.8].forEach((wz) => {
+          const w = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.35, 10), this.suvTireMat);
+          w.rotation.z = Math.PI / 2;
+          w.position.set(wx, 0.48, wz);
+          suvGroup.add(w);
+        });
+      });
+
+      // Rooftop Emergency Strobe Lightbar (Amber & Red LEDs)
+      const lightbar = new THREE.Mesh(this.getBox(1.6, 0.15, 0.35), this.tinRoofMat);
+      lightbar.position.set(0, 2.85, -0.2);
+      suvGroup.add(lightbar);
+
+      const strobeAmber = new THREE.Mesh(this.getBox(0.65, 0.14, 0.28), this.strobeAmberMat);
+      strobeAmber.position.set(-0.4, 2.92, -0.2);
+      suvGroup.add(strobeAmber);
+
+      const strobeRed = new THREE.Mesh(this.getBox(0.65, 0.14, 0.28), this.strobeRedMat);
+      strobeRed.position.set(0.4, 2.92, -0.2);
+      suvGroup.add(strobeRed);
+
+      director.registerPilotEscort(suvGroup, strobeAmber, strobeRed);
+      group.add(suvGroup);
+    });
+
+    // 4. TELEVISION MEDIA OUTSIDE BROADCAST (OB) VAN (Clean broadcast livery with wheels & cameras)
+    const obVan = new THREE.Group();
+    obVan.name = 'vip_media_ob_van';
+    // Positioned safely behind the mango stage or on opposite flank (Z = -0.85 * chunkLength)
+    obVan.position.set(14.5, 0.3, -chunkLength * 0.85);
+
+    const vanPlinth = new THREE.Mesh(this.getBox(5.0, 4.5, 9.5), this.sandstoneMat);
+    vanPlinth.position.set(0, -2.25, 0);
+    obVan.add(vanPlinth);
+
+    // Clean white broadcast van chassis
+    const vanBody = new THREE.Mesh(this.getBox(3.2, 2.2, 7.8), this.suvWhiteMat);
+    vanBody.position.y = 1.4;
+    obVan.add(vanBody);
+
+    // Royal blue media network stripe
+    const vanStripe = new THREE.Mesh(this.getBox(3.24, 0.48, 7.82), this.createStandardMaterial({ color: 0x0284c7, roughness: 0.4 }));
+    vanStripe.position.y = 1.35;
+    obVan.add(vanStripe);
+
+    // Front windshield & side media studio windows
+    const vanWindshield = new THREE.Mesh(this.getBox(3.0, 0.85, 0.08), this.cyberGlassMat);
+    vanWindshield.position.set(0, 1.85, 3.92);
+    obVan.add(vanWindshield);
+
+    // 4 Heavy Rubber Tires with Golden Hubs
+    [-1.65, 1.65].forEach((wx) => {
+      [-2.4, 2.4].forEach((wz) => {
+        const tire = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.35, 10), this.suvTireMat);
+        tire.rotation.z = Math.PI / 2;
+        tire.position.set(wx, 0.55, wz);
+        obVan.add(tire);
+
+        const hub = new THREE.Mesh(this.getCylinder(0.22, 0.22, 0.38, 8), this.goldMetalMat);
+        hub.rotation.z = Math.PI / 2;
+        hub.position.set(wx, 0.55, wz);
+        obVan.add(hub);
+      });
+    });
+
+    // Rotating Satellite Dish on Roof
+    const dishMast = new THREE.Mesh(this.getCylinder(0.08, 0.14, 1.4, 8), this.tinRoofMat);
+    dishMast.position.set(0, 3.1, -1.5);
+    obVan.add(dishMast);
+
+    const dish = new THREE.Mesh(this.getCylinder(1.1, 0.2, 0.25, 12), this.ivoryMarbleMat);
+    dish.rotation.x = -0.6;
+    dish.position.set(0, 3.8, -1.5);
+    obVan.add(dish);
+
+    // Broadcast Cameraman on Van Roof Platform
+    const camPlat = new THREE.Mesh(this.getBox(2.2, 0.2, 2.2), this.tinRoofMat);
+    camPlat.position.set(0, 2.6, 1.5);
+    obVan.add(camPlat);
+
+    const camRig = new THREE.Group();
+    camRig.position.set(0, 2.7, 1.5);
+    const tripod = new THREE.Mesh(this.getCylinder(0.06, 0.18, 1.2, 5), this.tinRoofMat);
+    tripod.position.y = 0.6;
+    camRig.add(tripod);
+    const broadcastCam = new THREE.Mesh(this.getBox(0.45, 0.35, 0.9), this.parliamentWoodMat);
+    broadcastCam.position.y = 1.35;
+    camRig.add(broadcastCam);
+    const bigLens = new THREE.Mesh(this.getCylinder(0.12, 0.16, 0.6, 8), this.goldMetalMat);
+    bigLens.rotation.x = Math.PI / 2;
+    bigLens.position.set(0, 1.35, 0.6);
+    camRig.add(bigLens);
+    obVan.add(camRig);
+
+    if (detail !== 'MINIMAL') {
+      group.add(obVan);
+    }
+
+    // 5. TIERED SPECTATOR GRANDSTANDS WITH CHEERING CROWDS (East Flank, X = +18.5m)
+    const grandstand = new THREE.Group();
+    grandstand.name = 'vip_grandstand';
+    grandstand.position.set(18.5, 0.3, -chunkLength * 0.65);
+
+    const standPlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 18.0), this.sandstoneMat);
+    standPlinth.position.set(0, -2.0, 0);
+    grandstand.add(standPlinth);
+
+    if (detail !== 'MINIMAL') {
+      // 3 Tiers of Bleachers
+      for (let t = 0; t < 3; t++) {
+        const tier = new THREE.Mesh(this.getBox(2.2, 0.8 + t * 0.7, 16.0), this.haveliWoodMat);
+        tier.position.set(-2.0 + t * 2.0, (0.8 + t * 0.7) * 0.5, 0);
+        grandstand.add(tier);
+
+        // Cheering crowd members on each tier
+        for (let c = -6; c <= 6; c += 2.4) {
+          const crowdMember = new THREE.Group();
+          crowdMember.position.set(-2.0 + t * 2.0, 0.8 + t * 0.7, c);
+
+          const cBodyMat = Math.abs(c) % 2 === 0 ? this.cartoonWaistcoatOrangeMat : this.cartoonKurtaWhiteMat;
+          const cBody = new THREE.Mesh(this.getCylinder(0.18, 0.14, 0.95, 8), cBodyMat);
+          cBody.position.y = 0.48;
+          crowdMember.add(cBody);
+
+          const cHead = new THREE.Mesh(this.getSphere(0.16, 6), this.cartoonNpcSkinMat);
+          cHead.position.y = 1.08;
+          crowdMember.add(cHead);
+
+          // Waving Arm holding Saffron Flag
+          const armGroup = new THREE.Group();
+          armGroup.position.set(0.18, 0.85, 0);
+          const arm = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.45, 4), cBodyMat);
+          arm.position.y = 0.22;
+          armGroup.add(arm);
+
+          const pole = new THREE.Mesh(this.getCylinder(0.015, 0.015, 1.2, 4), this.goldMetalMat);
+          pole.position.set(0, 0.7, 0);
+          armGroup.add(pole);
+
+          const flag = new THREE.Mesh(this.getPlane(0.55, 0.35), this.saffronFloralMat);
+          flag.position.set(0.28, 1.1, 0);
+          armGroup.add(flag);
+
+          crowdMember.add(armGroup);
+
+          // Phone Flash LED
+          const phone = new THREE.Mesh(this.getBox(0.08, 0.14, 0.02), this.tinRoofMat);
+          phone.position.set(-0.18, 0.85, 0.22);
+          crowdMember.add(phone);
+
+          const flash = new THREE.Mesh(this.getSphere(0.06, 4), this.flashLightMat);
+          flash.position.set(-0.18, 0.90, 0.24);
+          flash.visible = false;
+          crowdMember.add(flash);
+
+          director.registerCrowdMember(crowdMember, armGroup, flag, flash, 3.2 + Math.random());
+          grandstand.add(crowdMember);
+        }
+      }
+    } else {
+      // Lightweight single bleacher for MINIMAL budget
+      const tier = new THREE.Mesh(this.getBox(2.2, 0.8, 8.0), this.haveliWoodMat);
+      tier.position.set(0, 0.4, 0);
+      grandstand.add(tier);
+
+      const crowdMember = new THREE.Group();
+      crowdMember.position.set(0, 0.8, 0);
+      const cBody = new THREE.Mesh(this.getCylinder(0.18, 0.14, 0.95, 6), this.cartoonWaistcoatOrangeMat);
+      cBody.position.y = 0.48;
+      crowdMember.add(cBody);
+
+      const armGroup = new THREE.Group();
+      const flag = new THREE.Mesh(this.getPlane(0.4, 0.3), this.saffronFloralMat);
+      const flash = new THREE.Mesh(this.getSphere(0.04, 4), this.flashLightMat);
+      director.registerCrowdMember(crowdMember, armGroup, flag, flash, 3.5);
+      grandstand.add(crowdMember);
+    }
+
+    group.add(grandstand);
+
+    // 6. OVERHEAD FESTIVE MARIGOLD TORANS & BUNTING (At Y = 9.8m, clear of 8.5m hazard envelope)
+    if (detail !== 'MINIMAL') {
+      for (let bz = 12; bz < chunkLength - 12; bz += 28) {
+        const buntingLine = new THREE.Mesh(this.getCylinder(0.025, 0.025, roadbedWidth + 24.0, 6), this.goldMetalMat);
+        buntingLine.rotation.z = Math.PI / 2;
+        buntingLine.position.set(0, 9.8, -bz);
+        group.add(buntingLine);
+
+        // Triangular pennant flags along bunting line
+        for (let bx = -14; bx <= 14; bx += 2.5) {
+          if (Math.abs(bx) < curbEdge) continue; // Keep strictly over sidewalks
+          const pennantMat = Math.abs(bx) % 3 === 0 ? this.saffronFloralMat : (Math.abs(bx) % 3 === 1 ? this.ivoryMarbleMat : this.buntingTricolorMat);
+          const pennant = new THREE.Mesh(this.getBox(0.65, 0.85, 0.04), pennantMat);
+          pennant.position.set(bx, 9.3, -bz);
+          group.add(pennant);
+        }
+      }
+    }
+
+    // 7. CRITICAL GATE A: THE GREAT MANGO INTERVIEW (East Terrace at X = +11.2m)
+    // Prominently staged for the running camera!
+    if (detail !== 'MINIMAL' || isTestSeed) {
+      this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director);
+    }
+  }
+
+  // =========================================================================
+  // DISTRICT B — CHAI PE CHARCHA: THE MEGA SUMMIT
   // =========================================================================
   public buildChaiPeCharchaDistrict(
     group: THREE.Group,
@@ -894,8 +1484,8 @@ export class VipSatireWorldBuilder {
     // Exact flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 4.3;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
+    const sidewalkH = 5.2;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
 
     // 1. Terracotta Promenade with Sandstone Jali Screens and Authentic Haveli Facades
     [-1, 1].forEach((side) => {
@@ -1001,8 +1591,8 @@ export class VipSatireWorldBuilder {
     dais.position.y = 0.45;
     teacupPavilion.add(dais);
 
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     teacupPavilion.add(plinth);
 
     const carpet = new THREE.Mesh(this.getBox(2.6, 0.06, 8.0), this.redCarpetMat);
@@ -1075,8 +1665,8 @@ export class VipSatireWorldBuilder {
       baseRing.position.y = 0.4;
       kettleMonument.add(baseRing);
 
-      const kPlinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-      kPlinth.position.y = -2.0;
+      const kPlinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+      kPlinth.position.y = -2.6;
       kettleMonument.add(kPlinth);
 
       // Colossal 6-meter Golden Kettle
@@ -1116,9 +1706,9 @@ export class VipSatireWorldBuilder {
       group.add(kettleMonument);
     }
 
-    // 4. SIGNATURE COMEDY SCENE A: THE GREAT MANGO INTERVIEW
-    // Prominently placed on the East terrace at X = +11.2m (strictly clear of |X| <= 4.2m hazard corridor)
-    this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director);
+    // 4. CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST
+    // East side at X = +18.5m, Z = -chunkLength * 0.75
+    this.buildSelfieBattleStage(group, 18.5, 0.6, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -1135,8 +1725,8 @@ export class VipSatireWorldBuilder {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 4.3;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
+    const sidewalkH = 5.2;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
 
     // 1. Endless Red-Carpet Marble Promenades
     [-1, 1].forEach((side) => {
@@ -1169,9 +1759,9 @@ export class VipSatireWorldBuilder {
     ribbonGroup.name = 'vip_ribbon_ceremony';
     ribbonGroup.position.set(-16.5, 0.8, -chunkLength * 0.4);
 
-    // Deep Subsurface Foundation Plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(12.0, 4.0, 12.0), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Deep Subsurface Foundation Plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(12.0, 5.2, 12.0), this.sandstoneMat);
+    plinth.position.y = -2.6;
     ribbonGroup.add(plinth);
 
     const stage = new THREE.Mesh(this.getBox(10.5, 1.2, 10.5), this.ivoryMarbleMat);
@@ -1349,8 +1939,8 @@ export class VipSatireWorldBuilder {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 4.3;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.0m
+    const sidewalkH = 5.2;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
 
     // 1. High-Tech Media Studio Towers & Articulated Broadcast Center
     [-1, 1].forEach((side) => {
@@ -1375,9 +1965,9 @@ export class VipSatireWorldBuilder {
     mediaStage.name = 'vip_camera_crew';
     mediaStage.position.set(16.5, 0, -chunkLength * 0.5);
 
-    // Deep Subsurface Foundation Plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(10.0, 4.0, 10.0), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Deep Subsurface Foundation Plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(10.0, 5.2, 10.0), this.sandstoneMat);
+    plinth.position.y = -2.6;
     mediaStage.add(plinth);
 
     const scaffold = new THREE.Mesh(this.getBox(8.0, 5.0, 8.0), this.tinRoofMat);
@@ -1483,6 +2073,7 @@ export class VipSatireWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
+    const swHeight = 5.2;
 
     // 1. Futuristic Golden Marble Plaza Promenades
     [-1, 1].forEach((side) => {
@@ -1490,8 +2081,8 @@ export class VipSatireWorldBuilder {
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 3, rng, detail);
 
       const px = side * (curbEdge + swWidth * 0.5);
-      const plaza = new THREE.Mesh(this.getBox(swWidth, 4.3, chunkLength), this.ivoryMarbleMat);
-      plaza.position.set(px, -1.85, -chunkLength * 0.5);
+      const plaza = new THREE.Mesh(this.getBox(swWidth, swHeight, chunkLength), this.ivoryMarbleMat);
+      plaza.position.set(px, 0.3 - swHeight * 0.5, -chunkLength * 0.5);
       group.add(plaza);
 
       // Cyber Spires with glowing crowns
@@ -1507,9 +2098,9 @@ export class VipSatireWorldBuilder {
     towerGroup.name = 'vip_announcement_tower';
     towerGroup.position.set(-17.5, 0, -chunkLength * 0.65);
 
-    // Foundation plinth down to y = -4.0m
-    const towerPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 7.0), this.sandstoneMat);
-    towerPlinth.position.y = -2.0;
+    // Foundation plinth down to y = -5.2m
+    const towerPlinth = new THREE.Mesh(this.getBox(7.0, 5.2, 7.0), this.sandstoneMat);
+    towerPlinth.position.y = -2.6;
     towerGroup.add(towerPlinth);
 
     // Monolith Computing Core
@@ -1560,8 +2151,8 @@ export class VipSatireWorldBuilder {
       const chessGroup = new THREE.Group();
       chessGroup.position.set(-18.5, 0.4, -chunkLength * 0.25);
 
-      const chessPlinth = new THREE.Mesh(this.getBox(10.0, 4.0, 10.0), this.sandstoneMat);
-      chessPlinth.position.y = -2.0;
+      const chessPlinth = new THREE.Mesh(this.getBox(10.0, 5.2, 10.0), this.sandstoneMat);
+      chessPlinth.position.y = -2.6;
       chessGroup.add(chessPlinth);
 
       const board = new THREE.Mesh(this.getBox(9.0, 0.6, 9.0), this.ivoryMarbleMat);
@@ -1592,8 +2183,8 @@ export class VipSatireWorldBuilder {
     jamGroup.name = 'vip_traffic_jam';
     jamGroup.position.set(34.0, 0, -chunkLength * 0.5);
 
-    const jamPlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 24.0), this.sandstoneMat);
-    jamPlinth.position.y = -2.0;
+    const jamPlinth = new THREE.Mesh(this.getBox(8.0, 5.2, 24.0), this.sandstoneMat);
+    jamPlinth.position.y = -2.6;
     jamGroup.add(jamPlinth);
 
     const suvBodyMat = this.createStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 });
@@ -1646,6 +2237,7 @@ export class VipSatireWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
+    const swHeight = 5.2;
 
     // 1. Circular Colonnade Parliament Galleries on sides
     [-1, 1].forEach((side) => {
@@ -1653,8 +2245,8 @@ export class VipSatireWorldBuilder {
       this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 4, rng, detail);
 
       const gx = side * (curbEdge + swWidth * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(swWidth, 4.3, chunkLength), this.parliamentWoodMat);
-      gallery.position.set(gx, -1.85, -chunkLength * 0.5);
+      const gallery = new THREE.Mesh(this.getBox(swWidth, swHeight, chunkLength), this.parliamentWoodMat);
+      gallery.position.set(gx, 0.3 - swHeight * 0.5, -chunkLength * 0.5);
       group.add(gallery);
 
       // Green Leather Parliament Benches
@@ -1669,8 +2261,8 @@ export class VipSatireWorldBuilder {
     const arenaStage = new THREE.Group();
     arenaStage.position.set(-16.5, 0, -chunkLength * 0.5);
 
-    const arenaPlinth = new THREE.Mesh(this.getBox(10.5, 4.0, 10.5), this.sandstoneMat);
-    arenaPlinth.position.y = -2.0;
+    const arenaPlinth = new THREE.Mesh(this.getBox(10.5, 5.2, 10.5), this.sandstoneMat);
+    arenaPlinth.position.y = -2.6;
     arenaStage.add(arenaPlinth);
 
     const rostrum = new THREE.Mesh(this.getBox(9.0, 1.2, 9.0), this.parliamentWoodMat);
@@ -1741,8 +2333,8 @@ export class VipSatireWorldBuilder {
       const carouselGroup = new THREE.Group();
       carouselGroup.position.set(18.5, 0, -chunkLength * 0.45);
 
-      const carouselPlinth = new THREE.Mesh(this.getCylinder(5.0, 5.0, 4.0, 12), this.sandstoneMat);
-      carouselPlinth.position.y = -2.0;
+      const carouselPlinth = new THREE.Mesh(this.getCylinder(5.0, 5.0, 5.2, 12), this.sandstoneMat);
+      carouselPlinth.position.y = -2.6;
       carouselGroup.add(carouselPlinth);
 
       const carouselPlat = new THREE.Mesh(this.getCylinder(4.2, 4.6, 0.6, 12), this.parliamentWoodMat);
@@ -1780,9 +2372,9 @@ export class VipSatireWorldBuilder {
     plaza.name = 'vip_ceremonial_plaza';
     plaza.position.set(-18.5, 0, z);
 
-    // Foundation plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(10.5, 4.0, 10.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Foundation plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(10.5, 5.2, 10.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     plaza.add(plinth);
 
     const dais = new THREE.Mesh(this.getBox(9.5, 1.2, 9.5), this.ivoryMarbleMat);
@@ -1809,9 +2401,9 @@ export class VipSatireWorldBuilder {
     enclosure.name = 'vip_press_enclosure';
     enclosure.position.set(18.5, 0, z);
 
-    // Foundation plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Foundation plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     enclosure.add(plinth);
 
     const scaffold = new THREE.Mesh(this.getBox(8.5, 4.5, 8.5), this.tinRoofMat);
@@ -1826,9 +2418,9 @@ export class VipSatireWorldBuilder {
     colonnade.name = 'vip_secretariat_colonnade';
     colonnade.position.set(-20.5, 0, z);
 
-    // Foundation plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(7.5, 4.0, 13.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Foundation plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(7.5, 5.2, 13.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     colonnade.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(6.5, 1.2, 12.5), this.sandstoneMat);
@@ -1850,9 +2442,9 @@ export class VipSatireWorldBuilder {
     helipad.name = 'vip_convoy_helipad';
     helipad.position.set(22.5, 0, z);
 
-    // Foundation plinth down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getCylinder(6.0, 6.0, 4.0, 12), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Foundation plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getCylinder(6.0, 6.0, 5.2, 12), this.sandstoneMat);
+    plinth.position.y = -2.6;
     helipad.add(plinth);
 
     const pad = new THREE.Mesh(this.getCylinder(5.5, 5.5, 0.8, 12), this.terracottaMat);
@@ -1894,9 +2486,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_mango_interview';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m to guarantee 0 floating scenery
-    const plinth = new THREE.Mesh(this.getBox(11.0, 4.0, 11.0), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m to guarantee 0 floating scenery
+    const plinth = new THREE.Mesh(this.getBox(11.0, 5.2, 11.0), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     // Marble Podium Base
@@ -1946,66 +2538,81 @@ export class VipSatireWorldBuilder {
     stage.add(interviewerFigure);
 
     // Central Ornate Golden Pedestal
-    const table = new THREE.Mesh(this.getCylinder(1.1, 1.3, 1.2, 12), this.goldMetalMat);
+    const table = new THREE.Mesh(this.getCylinder(1.2, 1.45, 1.4, 14), this.goldMetalMat);
     table.position.set(0, 1.4, 0);
     stage.add(table);
 
-    // Velvet Cushion on Pedestal
-    const cushion = new THREE.Mesh(this.getCylinder(0.9, 1.0, 0.18, 12), this.velvetCurtainMat);
-    cushion.position.set(0, 2.05, 0);
+    // Velvet Cushion on Pedestal (Royal saffron/crimson velvet with gold trim)
+    const cushion = new THREE.Mesh(this.getCylinder(1.15, 1.25, 0.28, 14), this.velvetCurtainMat);
+    cushion.position.set(0, 2.24, 0);
     stage.add(cushion);
 
-    // THE GLORIOUS OVERSIZED GOLDEN MANGO (2.4m tall Alphonso pop celebrity!)
-    const mango = new THREE.Mesh(this.getSphere(0.95, 16), this.mangoGoldenMat);
-    mango.scale.set(1.0, 1.42, 0.92);
-    mango.position.set(0, 3.4, 0);
+    const goldFringe = new THREE.Mesh(this.getCylinder(1.28, 1.28, 0.08, 14), this.goldMetalMat);
+    goldFringe.position.set(0, 2.12, 0);
+    stage.add(goldFringe);
+
+    // THE GLORIOUS OVERSIZED GOLDEN MANGO (2.8m tall Alphonso pop celebrity!)
+    const mango = new THREE.Mesh(this.getSphere(1.05, 16), this.mangoGoldenMat);
+    mango.scale.set(1.05, 1.45, 0.95);
+    mango.position.set(0, 3.8, 0);
     stage.add(mango);
 
     // Green Mango Leafy Stem
-    const stem = new THREE.Mesh(this.getCylinder(0.06, 0.08, 0.5, 8), this.tricolorGreenMat);
-    stem.position.set(0, 4.85, 0);
+    const stem = new THREE.Mesh(this.getCylinder(0.08, 0.10, 0.6, 8), this.tricolorGreenMat);
+    stem.position.set(0, 5.4, 0);
     stem.rotation.z = 0.25;
     stage.add(stem);
 
-    const leaf = new THREE.Mesh(this.getBox(0.65, 0.04, 0.32), this.tricolorGreenMat);
-    leaf.position.set(0.3, 4.95, 0);
+    const leaf = new THREE.Mesh(this.getBox(0.85, 0.05, 0.42), this.tricolorGreenMat);
+    leaf.position.set(0.4, 5.5, 0);
     leaf.rotation.z = -0.3;
     stage.add(leaf);
 
-    // Cool Celebrity Sunglasses (0.85m wide, drops down onto mango)
+    // Cool Celebrity Sunglasses (1.1m wide, with gold bridge)
     const sunglasses = new THREE.Group();
     sunglasses.name = 'mango_sunglasses';
-    sunglasses.position.set(0, 6.0, 0);
-    const sunglassL = new THREE.Mesh(this.getBox(0.40, 0.24, 0.08), this.sunglassesBlackMat);
-    sunglassL.position.set(-0.25, 0, 0.85);
+    sunglasses.position.set(0, 3.8, 0);
+    const sunglassL = new THREE.Mesh(this.getBox(0.46, 0.28, 0.10), this.sunglassesBlackMat);
+    sunglassL.position.set(-0.30, 0, 1.0);
     sunglasses.add(sunglassL);
-    const sunglassR = new THREE.Mesh(this.getBox(0.40, 0.24, 0.08), this.sunglassesBlackMat);
-    sunglassR.position.set(0.25, 0, 0.85);
+    const sunglassR = new THREE.Mesh(this.getBox(0.46, 0.28, 0.10), this.sunglassesBlackMat);
+    sunglassR.position.set(0.30, 0, 1.0);
     sunglasses.add(sunglassR);
-    const sunglassBridge = new THREE.Mesh(this.getBox(0.18, 0.05, 0.06), this.sunglassesBlackMat);
-    sunglassBridge.position.set(0, 0.04, 0.85);
+    const sunglassBridge = new THREE.Mesh(this.getBox(0.22, 0.06, 0.08), this.goldMetalMat);
+    sunglassBridge.position.set(0, 0.04, 1.0);
     sunglasses.add(sunglassBridge);
     stage.add(sunglasses);
 
-    // Silver Cloche (Giant Banquet Serving Dome that lifts majestically)
+    // Silver Cloche: Grounded on an ornate gold side table with a silver waiter's tray, tilted open!
     const cloche = new THREE.Group();
     cloche.name = 'interview_cloche';
-    cloche.position.set(0, 3.4, 0);
-    const dome = new THREE.Mesh(this.getCylinder(0.15, 1.35, 2.6, 16), this.silverMetalMat);
-    dome.position.y = 1.3;
+    cloche.position.set(-3.2, 0.8, -1.2);
+
+    const clocheStand = new THREE.Mesh(this.getCylinder(0.45, 0.55, 1.2, 10), this.goldMetalMat);
+    clocheStand.position.y = 0.6;
+    cloche.add(clocheStand);
+
+    const clocheTray = new THREE.Mesh(this.getCylinder(0.7, 0.7, 0.08, 12), this.silverMetalMat);
+    clocheTray.position.y = 1.24;
+    cloche.add(clocheTray);
+
+    const dome = new THREE.Mesh(this.getCylinder(0.12, 0.60, 1.2, 14), this.silverMetalMat);
+    dome.position.set(0.08, 1.82, 0);
+    dome.rotation.z = 0.38; // Tilted open on tray
     cloche.add(dome);
-    const handle = new THREE.Mesh(this.getSphere(0.22, 8), this.goldMetalMat);
-    handle.position.y = 2.7;
+
+    const handle = new THREE.Mesh(this.getSphere(0.12, 8), this.goldMetalMat);
+    handle.position.set(0.24, 2.42, 0);
     cloche.add(handle);
     stage.add(cloche);
 
     // Sparkle Star (Yellow 4-point star for superstar moment)
     const sparkle = new THREE.Group();
     sparkle.name = 'mango_sparkle';
-    sparkle.position.set(0.8, 3.8, 0.6);
-    const ray1 = new THREE.Mesh(this.getBox(0.8, 0.12, 0.06), this.sparkleYellowMat);
+    sparkle.position.set(0.9, 4.4, 0.7);
+    const ray1 = new THREE.Mesh(this.getBox(0.9, 0.14, 0.06), this.sparkleYellowMat);
     sparkle.add(ray1);
-    const ray2 = new THREE.Mesh(this.getBox(0.12, 0.8, 0.06), this.sparkleYellowMat);
+    const ray2 = new THREE.Mesh(this.getBox(0.14, 0.9, 0.06), this.sparkleYellowMat);
     sparkle.add(ray2);
     sparkle.visible = false;
     stage.add(sparkle);
@@ -2061,11 +2668,44 @@ export class VipSatireWorldBuilder {
       spotlights.push(spot);
     });
 
-    // Dramatic Studio Backdrop Signboard
-    const signTex = TextureGenerator.getChaiPeCharchaSignTexture(0);
-    const sign = new THREE.Mesh(this.getBox(5.0, 1.2, 0.08), this.createBasicMaterial({ map: signTex }));
-    sign.position.set(0, 4.6, -4.2);
-    stage.add(sign);
+    // 3D Architectural Mughal Sandstone & Gold Studio Archway Backdrop (Eliminates blurry 2D texture)
+    const backdropArch = new THREE.Group();
+    backdropArch.position.set(0, 0.8, -4.0);
+
+    const archPlinth = new THREE.Mesh(this.getBox(8.5, 4.0, 1.2), this.sandstoneMat);
+    archPlinth.position.y = -2.0;
+    backdropArch.add(archPlinth);
+
+    const archPillarL = new THREE.Mesh(this.getCylinder(0.30, 0.38, 6.2, 8), this.sandstoneMat);
+    archPillarL.position.set(-3.5, 3.1, 0);
+    backdropArch.add(archPillarL);
+
+    const archPillarR = new THREE.Mesh(this.getCylinder(0.30, 0.38, 6.2, 8), this.sandstoneMat);
+    archPillarR.position.set(3.5, 3.1, 0);
+    backdropArch.add(archPillarR);
+
+    const archLintel = new THREE.Mesh(this.getBox(8.2, 1.2, 1.0), this.sandstoneMat);
+    archLintel.position.set(0, 6.5, 0);
+    backdropArch.add(archLintel);
+
+    // Golden Kalash Finials on Pillars
+    [-3.5, 3.5].forEach((px) => {
+      const finial = new THREE.Mesh(this.getCylinder(0.06, 0.24, 1.2, 6), this.goldMetalMat);
+      finial.position.set(px, 7.5, 0);
+      backdropArch.add(finial);
+    });
+
+    // Sculpted Golden Frieze Ribbon atop arch
+    const archFrieze = new THREE.Mesh(this.getBox(7.2, 0.8, 0.2), this.goldMetalMat);
+    archFrieze.position.set(0, 6.5, 0.55);
+    backdropArch.add(archFrieze);
+
+    // Deep Velvet Drapery Backdrop
+    const velvetBackdrop = new THREE.Mesh(this.getBox(6.6, 5.6, 0.12), this.velvetCurtainMat);
+    velvetBackdrop.position.set(0, 3.2, -0.2);
+    backdropArch.add(velvetBackdrop);
+
+    stage.add(backdropArch);
 
     director.registerMangoInterview(
       stage,
@@ -2099,9 +2739,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_meditation_paradox';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     // Stone Platform Base
@@ -2253,9 +2893,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_camera_magnet';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     // Marble Podium Base
@@ -2331,9 +2971,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_hug_diplomacy';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     // Steel Platform Base
@@ -2399,9 +3039,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_hug_loop';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.ivoryMarbleMat);
@@ -2449,9 +3089,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_selfie_battle';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.sandstoneMat);
@@ -2522,9 +3162,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_mic_chase';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(8.5, 4.0, 13.0), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(8.5, 5.2, 13.0), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(7.5, 0.8, 12.0), this.ivoryMarbleMat);
@@ -2589,9 +3229,9 @@ export class VipSatireWorldBuilder {
     stage.name = 'vip_crossover_office_mixup';
     stage.position.set(x, y, z);
 
-    // Subsurface Plinth Foundation down to y = -4.0m
-    const plinth = new THREE.Mesh(this.getBox(9.5, 4.0, 9.5), this.sandstoneMat);
-    plinth.position.y = -2.0;
+    // Subsurface Plinth Foundation down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
     stage.add(plinth);
 
     const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.sandstoneMat);

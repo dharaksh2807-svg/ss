@@ -2324,11 +2324,11 @@ export class WorldScene {
         break;
       case 'VIP_CEREMONIAL_SUNSET':
         sunColorHex = 0xfffbeb;
-        sunIntensity = 1.40;
+        sunIntensity = 1.45;
         skyTopHex = 0x1e3a8a;
         skyBottomHex = 0xffedd5;
         fogColorHex = 0xfef3c7;
-        fogDensity = 0.0030;
+        fogDensity = 0.0016;
         fillColorHex = 0x1e3a8a;
         fillIntensity = 0.65;
         isRain = false;

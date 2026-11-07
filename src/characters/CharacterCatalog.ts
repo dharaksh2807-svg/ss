@@ -465,16 +465,16 @@ export const CHARACTER_CATALOG: CharacterDefinition[] = [
       {
         id: 'modi_classic',
         name: 'Vibrant Statesman',
-        tagline: 'Signature Traditional Kurta & Navy Waistcoat',
-        description: 'Impeccable cream kurta, tailored midnight-navy Nehru waistcoat with brass buttons, saffron pocket square accent, and lightweight graphite running sneakers.',
+        tagline: 'Signature Saffron Waistcoat & Traditional Kurta',
+        description: 'Impeccable white kurta, tailored saffron Nehru waistcoat with brass buttons, golden pocket square accent, and lightweight graphite running sneakers.',
         icon: '🏛️',
         previewImage: '/characters/modi/front.png',
         unlock: { type: 'FREE', description: 'Default Look with Narendra Modi' },
         colors: {
-          primary: 0x1b2838,     // Midnight navy waistcoat
-          secondary: 0xf5f0e6,   // Cream kurta fabric
-          pants: 0xf5f0e6,       // Cream churidar
-          accent: 0xff9933,      // Saffron pocket square
+          primary: 0xea580c,     // Vibrant royal saffron Nehru waistcoat
+          secondary: 0xf8fafc,   // Pure white kurta fabric
+          pants: 0xf8fafc,       // White churidar
+          accent: 0xf59e0b,      // Golden pocket square
           hairOrHelmet: 0xf2f2f2,// Silver-white swept hair & beard
           skin: 0xd7a176,        // Warm natural skin tone
           details: 0xcd7f32      // Brushed bronze spectacles & buttons
