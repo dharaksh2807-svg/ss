@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/6fa6a932-af7c-49ae-88ed-73dba7755de5/orbital_halo_recovered';
+const targetDir = process.argv[2] || process.env.ARTIFACT_DIR || '/Users/dharaksh/.gemini/antigravity/brain/90c52f38-abc1-4727-b030-841fd675bfad/orbital_halo_verification';
 const targetPort = process.env.PORT || '3000';
 const targetUrl = process.env.GAME_URL || `http://localhost:${targetPort}`;
 const videoDir = path.join(targetDir, 'videos');
@@ -152,56 +152,72 @@ async function runRealGameplayVerification() {
       await page.screenshot({ path: filePath });
       console.log(`📸 Saved ${cp.name} at dist=${frameInfo.dist.toFixed(1)}m`);
       telemetryLog.push({ ...cp, ...frameInfo });
+
+      // Live In-District Signature Close-up Captures
+      if (cp.dist === 50) {
+        console.log('Capturing flagship close-up: Gate A — Grand Spacecraft Docking Sequence in live District 0...');
+        await page.evaluate(() => {
+          const game = window.__METRO_GAME__;
+          game.cameraController.camera.position.set(3.5, 4.8, -32.0);
+          game.cameraController.camera.lookAt(18.0, 8.5, -40.0);
+        });
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(targetDir, '09_flagship_grand_spacecraft_docking_gate_a.png') });
+        console.log('📸 Saved 09_flagship_grand_spacecraft_docking_gate_a.png');
+      } else if (cp.dist === 250) {
+        console.log('Capturing flagship close-up: Event C — Astronaut EVA Spacewalk & Radio Dish...');
+        await page.evaluate(() => {
+          const game = window.__METRO_GAME__;
+          game.cameraController.camera.position.set(2.0, 4.8, -190.0);
+          game.cameraController.camera.lookAt(18.0, 9.5, -200.0);
+        });
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(targetDir, '11_flagship_astronaut_spacewalk_and_observatory.png') });
+        console.log('📸 Saved 11_flagship_astronaut_spacewalk_and_observatory.png');
+
+        console.log('Capturing flagship close-up: Gate B — Colossal Rotating Gravity Ring Awakening in live District 3...');
+        await page.evaluate(() => {
+          const game = window.__METRO_GAME__;
+          game.cameraController.camera.position.set(2.0, 5.5, -245.0);
+          game.cameraController.camera.lookAt(48.0, 26.0, -260.0);
+        });
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(targetDir, '10_flagship_orbital_ring_awakening_gate_b.png') });
+        console.log('📸 Saved 10_flagship_orbital_ring_awakening_gate_b.png');
+      }
     }
 
-    // Capture Signature Close-up 1: Gate A — Grand Spacecraft Docking Sequence
-    console.log('Capturing flagship close-up: Gate A — Grand Spacecraft Docking Sequence...');
-    await page.evaluate(() => {
+    // Measure 60-frame post-upgrade performance metrics
+    console.log('Measuring post-upgrade 60-frame rendering performance...');
+    const perfStats = await page.evaluate(async () => {
       const game = window.__METRO_GAME__;
-      // In District A (at ~160m)
-      game.player.position.z = -160.0;
-      game.player.distanceTraveled = 160.0;
-      // Position camera looking right toward the detailed docking spacecraft, mechanical arms, and umbilical
-      game.cameraController.camera.position.set(4.5, 5.2, -145.0);
-      game.cameraController.camera.lookAt(22.0, 9.0, -160.0);
-    });
-    await page.waitForTimeout(600);
-    const dockingShot = path.join(targetDir, '09_flagship_grand_spacecraft_docking_gate_a.png');
-    await page.screenshot({ path: dockingShot });
-    console.log(`📸 Saved 09_flagship_grand_spacecraft_docking_gate_a.png`);
+      const renderer = game?.worldScene?.renderer;
+      const frameTimes = [];
+      let lastTime = performance.now();
 
-    // Capture Signature Close-up 2: Gate B — Colossal Rotating Gravity Ring Awakening
-    console.log('Capturing flagship close-up: Gate B — Colossal Rotating Gravity Ring Awakening...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      // In District D (at ~240m / ~720m)
-      game.player.position.z = -240.0;
-      game.player.distanceTraveled = 240.0;
-      // Position camera looking right-up toward the colossal rotating gravity ring, illuminated rim, and spokes
-      game.cameraController.camera.position.set(2.0, 5.5, -215.0);
-      game.cameraController.camera.lookAt(52.0, 28.0, -240.0);
-    });
-    await page.waitForTimeout(600);
-    const ringShot = path.join(targetDir, '10_flagship_orbital_ring_awakening_gate_b.png');
-    await page.screenshot({ path: ringShot });
-    console.log(`📸 Saved 10_flagship_orbital_ring_awakening_gate_b.png`);
+      for (let i = 0; i < 60; i++) {
+        await new Promise(requestAnimationFrame);
+        const now = performance.now();
+        frameTimes.push(now - lastTime);
+        lastTime = now;
+      }
 
-    // Capture Signature Close-up 3: Event C — Astronaut EVA Spacewalk & Celestial Observatory
-    console.log('Capturing flagship close-up: Event C — Astronaut EVA Spacewalk & Radio Dish...');
-    await page.evaluate(() => {
-      const game = window.__METRO_GAME__;
-      // In District C (at ~320m)
-      game.player.position.z = -320.0;
-      game.player.distanceTraveled = 320.0;
-      // Position camera looking right-up toward the astronaut performing spacewalk repairs with tether and welding sparks
-      game.cameraController.camera.position.set(3.5, 4.8, -305.0);
-      game.cameraController.camera.lookAt(18.0, 8.5, -320.0);
+      const info = renderer?.info || {};
+      const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+      return {
+        avgFrameTimeMs: avgFrameTime,
+        fps: 1000 / avgFrameTime,
+        drawCalls: info.render?.calls || 0,
+        triangles: info.render?.triangles || 0,
+        geometries: info.memory?.geometries || 0,
+        textures: info.memory?.textures || 0,
+        playerZ: game?.player?.position?.z || 0,
+        dist: game?.player?.distanceTraveled || 0
+      };
     });
-    await page.waitForTimeout(600);
-    const spacewalkShot = path.join(targetDir, '11_flagship_astronaut_spacewalk_and_observatory.png');
-    await page.screenshot({ path: spacewalkShot });
-    console.log(`📸 Saved 11_flagship_astronaut_spacewalk_and_observatory.png`);
 
+    console.log('Post-Upgrade Performance Metrics:', JSON.stringify(perfStats, null, 2));
+    fs.writeFileSync(path.join(targetDir, 'performance_metrics.json'), JSON.stringify(perfStats, null, 2));
     fs.writeFileSync(path.join(targetDir, 'telemetry.json'), JSON.stringify(telemetryLog, null, 2));
 
     await page.close();

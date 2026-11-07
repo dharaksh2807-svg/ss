@@ -287,6 +287,8 @@ if (dockings.length > 0) {
   check(d.umbilicalTube !== undefined, 'Pressurized airlock umbilical tube present');
   check(d.dockingThrusters.length >= 2, `Docking RCS thrusters present (count: ${d.dockingThrusters.length})`);
   check(d.statusLights.length >= 2, `Status indicator lights present (count: ${d.statusLights.length})`);
+  check(d.cargoTransferCrane !== undefined && d.cargoTransferCrane.isGroup, 'Articulated cargo transfer crane is initialized');
+  check(d.cargoPod !== undefined && d.cargoPod.isMesh, 'Modular cargo pod for transfer is initialized');
   check(d.state === 'APPROACH', `Initial docking sequence state is APPROACH (got ${d.state})`);
 }
 
@@ -298,6 +300,7 @@ if (rings.length > 0) {
   const r = rings[0];
   check(r.ringGroup !== undefined && r.ringGroup.isGroup, 'Rotating ring structure is initialized');
   check(r.bearingCore !== undefined, 'Central drive bearing core is initialized');
+  check(r.counterRing !== undefined && r.counterRing.isGroup, 'Counter-rotating stabilizer ring is initialized');
   check(r.spokes.length >= 4, `Radial spokes connecting bearing core present (count: ${r.spokes.length})`);
   check(r.habitatPods.length >= 4, `Habitation residential pods present (count: ${r.habitatPods.length})`);
   check(r.statusStrobes.length >= 4, `Power strobes along spokes present (count: ${r.statusStrobes.length})`);

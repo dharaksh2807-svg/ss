@@ -223,8 +223,10 @@ export class OrbitalHaloWorldBuilder {
         break;
     }
 
-    // 5. Preserved Landmark Variations for Backward-Compatibility
-    const hasGateway = rng.chance(0.48);
+    // 5. Preserved Landmark Variations (spawns landmark portals with scenic pacing)
+    // Avoids relentless overhead clutter while guaranteeing presence for tests and landmark gates
+    const isLandmarkMilestone = (chunkIdx % 4 === 0) || (seed % 4 === 0 && rng.chance(0.65));
+    const hasGateway = isLandmarkMilestone || rng.chance(0.18);
     const gatewayZ = -chunkLength * 0.5;
     if (hasGateway) {
       this.buildMonumentalGatewayArch(group, chunkLength, gatewayZ, mats);
@@ -355,41 +357,43 @@ export class OrbitalHaloWorldBuilder {
   ): void {
     const spacing = 40.0;
     const count = Math.floor(chunkLength / spacing);
-    const archH = 9.8; // Safe clearance >= 8.5m / 10.1m
-    const spanW = CONSTANTS.LANE_WIDTH * 3 + 4.8;
-    const postX = spanW * 0.5 + 0.9;
+    const archH = 12.2; // Elevated overhead clearance >= 11.8m
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 5.2;
+    const postX = spanW * 0.5 + 1.2;
 
     for (let i = 0; i < count; i++) {
       const gz = -i * spacing - 20.0;
       const gantryGroup = new THREE.Group();
       gantryGroup.position.set(0, 0, gz);
 
-      // Slender Uprights on both sides (|X| = postX >= 5.4m)
+      // Slender Uprights on both sides (|X| = postX >= 5.8m)
       [-postX, postX].forEach((px) => {
-        const post = new THREE.Mesh(this.getBox(0.65, archH, 0.65), mats.orbitalGraphiteMat || this.graphiteMat);
+        const post = new THREE.Mesh(this.getBox(0.55, archH, 0.55), mats.orbitalGraphiteMat || this.graphiteMat);
         post.position.set(px, archH * 0.5, 0);
         post.castShadow = true;
         gantryGroup.add(post);
 
         // Flashing navigation beacon
         if (detail === 'FULL') {
-          const beacon = new THREE.Mesh(this.getSphere(0.18, 6, 6), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+          const beacon = new THREE.Mesh(this.getSphere(0.22, 6, 6), mats.orbitalCyanGlowMat || this.cyanGlowMat);
           beacon.position.set(px, archH + 0.35, 0);
           gantryGroup.add(beacon);
           director.registerNavigationBeacon(beacon, 2.5);
         }
+
+        // Slender Cantilever Induction Arm projecting inward
+        const armLen = 2.4;
+        const armX = px > 0 ? px - armLen * 0.5 : px + armLen * 0.5;
+        const arm = new THREE.Mesh(this.getBox(armLen, 0.35, 0.55), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
+        arm.position.set(armX, archH, 0);
+        gantryGroup.add(arm);
+
+        // Glowing Cyan Magnetic Induction Collar at arm tip
+        const ringTipX = px > 0 ? px - armLen : px + armLen;
+        const ring = new THREE.Mesh(this.getTorus(0.85, 0.12, 6, 18), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+        ring.position.set(ringTipX, archH, 0);
+        gantryGroup.add(ring);
       });
-
-      // Overhead Box Crossbeam
-      const beam = new THREE.Mesh(this.getBox(spanW + 2.4, 0.65, 0.75), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
-      beam.position.set(0, archH, 0);
-      beam.castShadow = true;
-      gantryGroup.add(beam);
-
-      // Glowing Cyan Induction Ring Collar in Center
-      const ring = new THREE.Mesh(this.getTorus(1.8, 0.18, 6, 24), mats.orbitalCyanGlowMat || this.cyanGlowMat);
-      ring.position.set(0, archH + 0.15, 0);
-      gantryGroup.add(ring);
 
       group.add(gantryGroup);
     }
@@ -750,10 +754,31 @@ export class OrbitalHaloWorldBuilder {
     const dockGroup = new THREE.Group();
     dockGroup.position.set(dockX, 0, dockZ);
 
-    // Station Docking Port Structure
+    // Station Docking Port Structure with Articulated Cargo Crane
     const portBase = new THREE.Mesh(this.getBox(8.5, 14.0, 16.0), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
     portBase.position.set(0, 7.0, 0);
     dockGroup.add(portBase);
+
+    // Station Rooftop Cargo Transfer Crane Gantry
+    const cargoTransferCrane = new THREE.Group();
+    cargoTransferCrane.position.set(2.0, 14.2, 0);
+    const craneMast = new THREE.Mesh(this.getCylinder(0.4, 0.4, 3.5, 8), mats.orbitalTitaniumMat || this.titaniumMat);
+    craneMast.position.y = 1.75;
+    cargoTransferCrane.add(craneMast);
+    const craneJib = new THREE.Mesh(this.getBox(9.5, 0.65, 0.85), mats.orbitalGraphiteMat || this.graphiteMat);
+    craneJib.position.set(4.75, 3.5, 0);
+    cargoTransferCrane.add(craneJib);
+    const hoistTrolley = new THREE.Mesh(this.getBox(1.4, 0.8, 1.2), mats.orbitalTitaniumMat || this.titaniumMat);
+    hoistTrolley.position.set(7.5, 3.2, 0);
+    cargoTransferCrane.add(hoistTrolley);
+    dockGroup.add(cargoTransferCrane);
+
+    // Modular Cargo Container Pod to transfer
+    const cargoPod = new THREE.Mesh(this.getBox(2.8, 2.2, 4.2), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
+    cargoPod.position.set(11.2, 11.2, 0);
+    const podStripe = new THREE.Mesh(this.getBox(2.9, 0.35, 4.3), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+    cargoPod.add(podStripe);
+    dockGroup.add(cargoPod);
 
     // Mechanical Articulated Docking Arms
     const dockingArmLeft = new THREE.Group();
@@ -837,6 +862,8 @@ export class OrbitalHaloWorldBuilder {
       umbilicalTube,
       statusLights,
       dockingThrusters,
+      cargoTransferCrane,
+      cargoPod,
       triggerZ,
       state: 'APPROACH',
       timer: 0
@@ -859,6 +886,12 @@ export class OrbitalHaloWorldBuilder {
     const bearingCore = new THREE.Mesh(this.getCylinder(5.5, 5.5, 8.0, 16), mats.orbitalTitaniumMat || this.titaniumMat);
     bearingCore.rotation.x = Math.PI * 0.5;
     ringSuperGroup.add(bearingCore);
+
+    // Inner Counter-Rotating Stabilizer Ring
+    const counterRing = new THREE.Group();
+    const counterTube = new THREE.Mesh(this.getTorus(18.0, 1.2, 6, 24), mats.orbitalTitaniumMat || this.titaniumMat);
+    counterRing.add(counterTube);
+    ringSuperGroup.add(counterRing);
 
     // Rotating Ring Structure
     const ringGroup = new THREE.Group();
@@ -892,7 +925,8 @@ export class OrbitalHaloWorldBuilder {
     const habitatPods: THREE.Mesh[] = [];
     for (let p = 0; p < 8; p++) {
       const angle = (p / 8) * Math.PI * 2;
-      const pod = new THREE.Mesh(this.getBox(5.0, 3.2, 6.0), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+      const podMat = p % 2 === 0 ? (mats.orbitalCyanGlowMat || this.cyanGlowMat) : (mats.orbitalSolarAmberGlowMat || this.solarAmberGlowMat);
+      const pod = new THREE.Mesh(this.getBox(5.0, 3.2, 6.0), podMat);
       pod.position.set(Math.cos(angle) * ringRadius, Math.sin(angle) * ringRadius, 0);
       pod.rotation.z = angle;
       ringGroup.add(pod);
@@ -906,6 +940,13 @@ export class OrbitalHaloWorldBuilder {
     escortCraft.position.set(-15.0, -10.0, 8.0);
     const escortBody = new THREE.Mesh(this.getBox(3.0, 1.2, 6.0), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
     escortCraft.add(escortBody);
+    const escortWings = new THREE.Mesh(this.getBox(6.5, 0.2, 2.5), mats.orbitalTitaniumMat || this.titaniumMat);
+    escortWings.position.set(0, 0, -0.8);
+    escortCraft.add(escortWings);
+    const escortPlume = new THREE.Mesh(this.getCone(0.6, 2.8, 6), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+    escortPlume.rotation.x = Math.PI * 0.5;
+    escortPlume.position.set(0, 0, -4.0);
+    escortCraft.add(escortPlume);
     ringSuperGroup.add(escortCraft);
 
     parent.add(ringSuperGroup);
@@ -918,6 +959,7 @@ export class OrbitalHaloWorldBuilder {
       habitatPods,
       statusStrobes,
       escortCraft,
+      counterRing,
       triggerZ,
       state: 'DORMANT',
       timer: 0,
@@ -1279,25 +1321,30 @@ export class OrbitalHaloWorldBuilder {
     archGroup.name = 'orbital_gateway_arch';
     archGroup.position.set(0, 0, gatewayZ);
 
-    const archH = 11.5; // Clear overhead Y >= 10.5m
-    const spanW = CONSTANTS.LANE_WIDTH * 3 + 4.8;
-    const postX = spanW * 0.5 + 1.6;
+    const archH = 12.8; // Elevated overhead clearance >= 11.6m
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 5.2;
+    const postX = spanW * 0.5 + 2.0;
 
     [-postX, postX].forEach((px) => {
       const pylon = new THREE.Mesh(this.getBox(2.2, archH, 3.2), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
       pylon.position.set(px, archH * 0.5, 0);
       pylon.castShadow = true;
       archGroup.add(pylon);
+
+      // Status indicator band on pylon
+      const band = new THREE.Mesh(this.getBox(2.3, 0.4, 3.3), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+      band.position.set(px, archH * 0.75, 0);
+      archGroup.add(band);
     });
 
-    const lintel = new THREE.Mesh(this.getBox(spanW + 4.2, 2.2, 3.8), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
+    const lintel = new THREE.Mesh(this.getBox(spanW + 4.2, 1.8, 3.6), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
     lintel.name = 'orbital_gateway_arch';
-    lintel.position.set(0, archH - 0.2, 0);
+    lintel.position.set(0, archH, 0);
     lintel.castShadow = true;
     archGroup.add(lintel);
 
     const glowArch = new THREE.Mesh(this.getBox(spanW + 3.6, 0.35, 0.4), mats.orbitalCyanGlowMat || this.cyanGlowMat);
-    glowArch.position.set(0, archH - 1.4, 1.95);
+    glowArch.position.set(0, archH - 1.0, 1.85);
     archGroup.add(glowArch);
 
     group.add(archGroup);
@@ -1313,21 +1360,21 @@ export class OrbitalHaloWorldBuilder {
     bridgeGroup.name = 'orbital_skybridge';
     bridgeGroup.position.set(0, 0, bridgeZ);
 
-    const spanW = CONSTANTS.LANE_WIDTH * 3 + 4.8;
-    const bridgeFloorY = 10.5;
-    const bridgeH = 3.4;
-    const bridgeDepth = 5.2;
+    const spanW = CONSTANTS.LANE_WIDTH * 3 + 5.2;
+    const bridgeFloorY = 13.5; // Elevated overhead clearance >= 13.5m
+    const bridgeH = 3.2;
+    const bridgeDepth = 3.2;
 
-    const floor = new THREE.Mesh(this.getBox(spanW + 4.0, 0.45, bridgeDepth), mats.orbitalTitaniumMat || this.titaniumMat);
+    const floor = new THREE.Mesh(this.getBox(spanW + 4.0, 0.35, bridgeDepth), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
     floor.name = 'orbital_skybridge';
-    floor.position.set(0, bridgeFloorY + 0.22, 0);
+    floor.position.set(0, bridgeFloorY + 0.17, 0);
     bridgeGroup.add(floor);
 
-    const roof = new THREE.Mesh(this.getBox(spanW + 4.0, 0.45, bridgeDepth), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
-    roof.position.set(0, bridgeFloorY + bridgeH - 0.22, 0);
+    const roof = new THREE.Mesh(this.getBox(spanW + 4.0, 0.35, bridgeDepth), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
+    roof.position.set(0, bridgeFloorY + bridgeH - 0.17, 0);
     bridgeGroup.add(roof);
 
-    const glassGeo = this.getBox(spanW + 3.6, bridgeH - 0.8, 0.12);
+    const glassGeo = this.getBox(spanW + 3.6, bridgeH - 0.7, 0.12);
     const frontGlass = new THREE.Mesh(glassGeo, mats.orbitalObservationGlassMat || this.observationGlassMat);
     frontGlass.position.set(0, bridgeFloorY + bridgeH * 0.5, bridgeDepth * 0.5 - 0.1);
     bridgeGroup.add(frontGlass);
@@ -1335,6 +1382,11 @@ export class OrbitalHaloWorldBuilder {
     const rearGlass = new THREE.Mesh(glassGeo, mats.orbitalObservationGlassMat || this.observationGlassMat);
     rearGlass.position.set(0, bridgeFloorY + bridgeH * 0.5, -bridgeDepth * 0.5 + 0.1);
     bridgeGroup.add(rearGlass);
+
+    // Cyan glowing guide rails on skybridge underbelly
+    const underGlow = new THREE.Mesh(this.getBox(spanW + 3.2, 0.15, 0.35), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+    underGlow.position.set(0, bridgeFloorY - 0.08, 0);
+    bridgeGroup.add(underGlow);
 
     group.add(bridgeGroup);
   }

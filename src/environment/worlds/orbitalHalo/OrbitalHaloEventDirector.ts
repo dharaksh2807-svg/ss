@@ -14,6 +14,8 @@ export interface GrandSpacecraftDockingActor {
   umbilicalTube: THREE.Mesh;
   statusLights: THREE.Mesh[];
   dockingThrusters: THREE.Mesh[];
+  cargoTransferCrane?: THREE.Group;
+  cargoPod?: THREE.Mesh;
   triggerZ: number;
   state: 'APPROACH' | 'DECELERATION' | 'ALIGNMENT' | 'CLAMP_LOCK' | 'UMBILICAL_CONNECT' | 'DOCKED';
   timer: number;
@@ -27,6 +29,7 @@ export interface OrbitalRingAwakeningActor {
   habitatPods: THREE.Mesh[];
   statusStrobes: THREE.Mesh[];
   escortCraft?: THREE.Group;
+  counterRing?: THREE.Group;
   triggerZ: number;
   state: 'DORMANT' | 'POWER_SURGE' | 'ROTATION_SPINUP' | 'HABITAT_ONLINE' | 'FULL_ROTATION';
   timer: number;
@@ -390,13 +393,19 @@ export class OrbitalHaloEventDirector {
         actor.dockingArmLeft.rotation.z = -0.5;
         actor.dockingArmRight.rotation.z = 0.5;
         actor.umbilicalTube.scale.set(0.1, 1.0, 1.0);
+        for (const light of actor.statusLights) {
+          (light.material as any).color?.setHex?.(0xf59e0b); // Warning amber in approach
+        }
       } else if (actor.state === 'DECELERATION') {
         const progress = Math.min(1.0, actor.timer / 2.5);
         actor.spacecraftMesh.position.z = THREE.MathUtils.lerp(24.0, 8.0, progress);
         actor.spacecraftMesh.position.x = THREE.MathUtils.lerp(22.0, 14.5, progress);
         // Thruster puffs firing reverse
-        for (const thruster of actor.dockingThrusters) {
-          thruster.visible = Math.sin(actor.timer * 25.0) > 0.0;
+        for (let ti = 0; ti < actor.dockingThrusters.length; ti++) {
+          actor.dockingThrusters[ti].visible = Math.sin(actor.timer * 25.0 + ti * 2.0) > 0.0;
+        }
+        for (const light of actor.statusLights) {
+          (light.material as any).color?.setHex?.(Math.sin(actor.timer * 12.0) > 0 ? 0xf59e0b : 0x00f5ff);
         }
       } else if (actor.state === 'ALIGNMENT') {
         const progress = Math.min(1.0, actor.timer / 2.0);
@@ -406,6 +415,12 @@ export class OrbitalHaloEventDirector {
         // Mechanical arms begin closing in
         actor.dockingArmLeft.rotation.z = THREE.MathUtils.lerp(-0.5, -0.1, progress);
         actor.dockingArmRight.rotation.z = THREE.MathUtils.lerp(0.5, 0.1, progress);
+        for (const thruster of actor.dockingThrusters) {
+          thruster.visible = Math.sin(actor.timer * 15.0) > 0.3;
+        }
+        for (const light of actor.statusLights) {
+          (light.material as any).color?.setHex?.(0x00f5ff);
+        }
       } else if (actor.state === 'CLAMP_LOCK') {
         const progress = Math.min(1.0, actor.timer / 1.2);
         // Clamps lock onto spacecraft hull
@@ -418,11 +433,26 @@ export class OrbitalHaloEventDirector {
         for (const light of actor.statusLights) {
           (light.material as any).color?.setHex?.(0x00f5ff);
         }
+        for (const thruster of actor.dockingThrusters) {
+          thruster.visible = false;
+        }
       } else if (actor.state === 'UMBILICAL_CONNECT' || actor.state === 'DOCKED') {
         const progress = Math.min(1.0, actor.timer / 1.5);
         actor.umbilicalTube.scale.set(progress, 1.0, 1.0);
         for (const thruster of actor.dockingThrusters) {
           thruster.visible = false;
+        }
+        for (const light of actor.statusLights) {
+          (light.material as any).color?.setHex?.(0x00f5ff);
+        }
+        // Articulated Cargo Transfer Crane Operation
+        if (actor.cargoTransferCrane) {
+          const craneProgress = actor.state === 'DOCKED' ? Math.min(1.0, actor.timer / 1.8) : 0;
+          actor.cargoTransferCrane.rotation.y = THREE.MathUtils.lerp(0.0, 0.65, craneProgress);
+          if (actor.cargoPod) {
+            actor.cargoPod.position.x = THREE.MathUtils.lerp(11.2, 5.5, craneProgress);
+            actor.cargoPod.position.y = 10.5 + Math.sin(craneProgress * Math.PI) * 1.2;
+          }
         }
       }
     }
@@ -455,22 +485,30 @@ export class OrbitalHaloEventDirector {
         actor.ringGroup.rotation.z = 0;
         actor.rotationSpeed = 0;
         for (const strobe of actor.statusStrobes) strobe.visible = false;
+        if (actor.counterRing) actor.counterRing.rotation.z = 0;
       } else if (actor.state === 'POWER_SURGE') {
-        // Strobes pulse along radial spokes
+        // Strobes pulse along radial spokes in running light sequence
         for (let i = 0; i < actor.statusStrobes.length; i++) {
-          actor.statusStrobes[i].visible = Math.sin(actor.timer * 8.0 + i) > 0.2;
+          actor.statusStrobes[i].visible = Math.sin(actor.timer * 10.0 + i * 1.5) > 0.0;
         }
       } else if (actor.state === 'ROTATION_SPINUP') {
         const t = Math.min(1.0, actor.timer / 3.0);
         actor.rotationSpeed = THREE.MathUtils.lerp(0.0, 0.45, t);
         actor.ringGroup.rotation.z += actor.rotationSpeed * dt;
+        if (actor.counterRing) {
+          actor.counterRing.rotation.z -= actor.rotationSpeed * 0.5 * dt;
+        }
         // Pods illuminate progressively
         for (let p = 0; p < actor.habitatPods.length; p++) {
           actor.habitatPods[p].visible = t > p / actor.habitatPods.length;
         }
+        for (const strobe of actor.statusStrobes) strobe.visible = true;
       } else if (actor.state === 'HABITAT_ONLINE' || actor.state === 'FULL_ROTATION') {
         actor.rotationSpeed = 0.45;
         actor.ringGroup.rotation.z += actor.rotationSpeed * dt;
+        if (actor.counterRing) {
+          actor.counterRing.rotation.z -= actor.rotationSpeed * 0.5 * dt;
+        }
         for (const pod of actor.habitatPods) pod.visible = true;
         for (const strobe of actor.statusStrobes) strobe.visible = true;
 

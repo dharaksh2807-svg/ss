@@ -718,38 +718,251 @@ export class WorldScene {
       this.orbitalSkyline!.add(station);
     });
 
-    // 4e. Moving Background Spacecraft (Lightweight Traffic)
+    // 4e. Moving Background Spacecraft (Living Aerospace Orbital Traffic)
     this.backgroundSpacecraft = [];
+    const orbitalTitaniumMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, fog: false });
+    const orbitalGraphiteMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, fog: false });
+    const orbitalGlassMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.70, fog: false });
+
     const craftSpecs = [
-      { startX: -160, y: 75, z: -280, vx: 18.0, vy: 0.5, minX: -220, maxX: 220, scale: 1.0, type: 'SHUTTLE' },
-      { startX: 180, y: 45, z: -250, vx: -14.0, vy: -0.3, minX: -220, maxX: 220, scale: 1.3, type: 'FREIGHTER' },
-      { startX: -80, y: 115, z: -300, vx: 28.0, vy: 1.2, minX: -220, maxX: 220, scale: 0.7, type: 'SCOUT' },
-      { startX: 120, y: 88, z: -340, vx: -8.0, vy: 0.2, minX: -220, maxX: 220, scale: 1.1, type: 'CARGO' }
+      {
+        type: 'SHUTTLE',
+        startX: -160, baseY: 82, baseZ: -280,
+        vx: 20.0, ampY: 8.0, freqY: 0.35, phaseY: 0.0,
+        ampZ: 14.0, freqZ: 0.25, phaseZ: 1.2,
+        minX: -360, maxX: 360, scale: 1.1
+      },
+      {
+        type: 'FREIGHTER',
+        startX: 180, baseY: 48, baseZ: -250,
+        vx: -15.0, ampY: 6.0, freqY: 0.22, phaseY: 2.1,
+        ampZ: 10.0, freqZ: 0.18, phaseZ: 0.5,
+        minX: -360, maxX: 360, scale: 1.35
+      },
+      {
+        type: 'SCOUT',
+        startX: -80, baseY: 118, baseZ: -310,
+        vx: 30.0, ampY: 12.0, freqY: 0.48, phaseY: 4.0,
+        ampZ: 18.0, freqZ: 0.32, phaseZ: 2.7,
+        minX: -360, maxX: 360, scale: 0.85
+      },
+      {
+        type: 'CRUISER',
+        startX: 120, baseY: 94, baseZ: -345,
+        vx: -11.0, ampY: 5.0, freqY: 0.18, phaseY: 1.0,
+        ampZ: 8.0, freqZ: 0.14, phaseZ: 3.5,
+        minX: -360, maxX: 360, scale: 1.45
+      }
     ];
 
-    craftSpecs.forEach((spec) => {
+    craftSpecs.forEach((spec, craftIndex) => {
       const craft = new THREE.Group();
-      craft.position.set(spec.startX, spec.y, spec.z);
+      craft.name = `orbital_craft_${spec.type.toLowerCase()}`;
+      craft.position.set(spec.startX, spec.baseY, spec.baseZ);
+      const thrusterPlumes: THREE.Mesh[] = [];
+
       craft.userData = {
+        type: spec.type,
         vx: spec.vx,
-        vy: spec.vy,
+        vy: 0.5,
+        baseY: spec.baseY,
+        baseZ: spec.baseZ,
+        ampY: spec.ampY,
+        freqY: spec.freqY,
+        phaseY: spec.phaseY,
+        ampZ: spec.ampZ,
+        freqZ: spec.freqZ,
+        phaseZ: spec.phaseZ,
         minX: spec.minX,
-        maxX: spec.maxX
+        maxX: spec.maxX,
+        baseScale: spec.scale,
+        time: craftIndex * 2.5,
+        thrusterPlumes
       };
 
       const s = spec.scale;
-      // Fuselage body
-      const bodyGeo = new THREE.ConeGeometry(2.2 * s, 8.5 * s, 6);
-      const body = new THREE.Mesh(bodyGeo, orbitalWhiteMat);
-      body.rotation.z = spec.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
-      craft.add(body);
 
-      // Ion thruster plume
-      const thrusterGeo = new THREE.ConeGeometry(1.2 * s, 5.0 * s, 6);
-      const thruster = new THREE.Mesh(thrusterGeo, orbitalCyanMat);
-      thruster.position.set(spec.vx > 0 ? -5.5 * s : 5.5 * s, 0, 0);
-      thruster.rotation.z = spec.vx > 0 ? Math.PI / 2 : -Math.PI / 2;
-      craft.add(thruster);
+      if (spec.type === 'SHUTTLE') {
+        // Class A: Orbital Delta Shuttle (streamlined aerodynamic hull, canopy, swept wings, dual ion drive)
+        const fuselage = new THREE.Mesh(new THREE.BoxGeometry(7.5 * s, 1.4 * s, 2.2 * s), orbitalWhiteMat);
+        craft.add(fuselage);
+
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(1.2 * s, 3.2 * s, 6), orbitalWhiteMat);
+        nose.rotation.z = -Math.PI / 2;
+        nose.position.set(5.35 * s, 0, 0);
+        craft.add(nose);
+
+        const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.4 * s, 0.7 * s, 1.5 * s), orbitalGlassMat);
+        canopy.position.set(2.0 * s, 0.8 * s, 0);
+        craft.add(canopy);
+
+        const wings = new THREE.Mesh(new THREE.BoxGeometry(3.6 * s, 0.22 * s, 8.8 * s), orbitalTitaniumMat);
+        wings.position.set(-0.6 * s, 0, 0);
+        craft.add(wings);
+
+        [-4.4 * s, 4.4 * s].forEach((wz) => {
+          const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.25 * s, 6, 6), orbitalCyanMat);
+          beacon.position.set(-0.6 * s, 0.15 * s, wz);
+          craft.add(beacon);
+        });
+
+        const dorsalFin = new THREE.Mesh(new THREE.BoxGeometry(1.8 * s, 1.6 * s, 0.2 * s), orbitalWhiteMat);
+        dorsalFin.position.set(-2.5 * s, 1.1 * s, 0);
+        craft.add(dorsalFin);
+
+        [-0.75 * s, 0.75 * s].forEach((ez) => {
+          const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.65 * s, 1.2 * s, 8), orbitalGraphiteMat);
+          bell.rotation.z = Math.PI / 2;
+          bell.position.set(-4.2 * s, 0, ez);
+          craft.add(bell);
+
+          const plume = new THREE.Mesh(new THREE.ConeGeometry(0.65 * s, 4.2 * s, 8), orbitalCyanMat);
+          plume.rotation.z = Math.PI / 2;
+          plume.position.set(-6.5 * s, 0, ez);
+          craft.add(plume);
+          thrusterPlumes.push(plume);
+        });
+
+      } else if (spec.type === 'FREIGHTER') {
+        // Class B: Modular Cargo Freighter (forward bridge, spine truss, hexagonal pods, quad thrusters)
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(3.6 * s, 2.6 * s, 3.8 * s), orbitalWhiteMat);
+        bridge.position.set(7.5 * s, 0.5 * s, 0);
+        craft.add(bridge);
+
+        const viewports = new THREE.Mesh(new THREE.BoxGeometry(0.5 * s, 0.8 * s, 3.2 * s), orbitalCyanMat);
+        viewports.position.set(9.3 * s, 0.8 * s, 0);
+        craft.add(viewports);
+
+        const spine = new THREE.Mesh(new THREE.BoxGeometry(16.0 * s, 1.4 * s, 1.6 * s), orbitalGraphiteMat);
+        spine.position.set(-1.0 * s, 0, 0);
+        craft.add(spine);
+
+        // Hexagonal cargo container modules along spine
+        const podGeo = new THREE.CylinderGeometry(1.4 * s, 1.4 * s, 2.8 * s, 6);
+        [-5.5 * s, -0.5 * s, 4.5 * s].forEach((px, idx) => {
+          [-2.0 * s, 2.0 * s].forEach((pz) => {
+            const podMat = idx % 2 === 0 ? orbitalWhiteMat : orbitalTitaniumMat;
+            const pod = new THREE.Mesh(podGeo, podMat);
+            pod.rotation.x = Math.PI / 2;
+            pod.position.set(px, 0, pz);
+            craft.add(pod);
+
+            const hazardBand = new THREE.Mesh(new THREE.BoxGeometry(0.4 * s, 1.5 * s, 1.5 * s), orbitalGoldMat);
+            hazardBand.position.set(px, 0, pz);
+            craft.add(hazardBand);
+          });
+        });
+
+        const engineBlock = new THREE.Mesh(new THREE.BoxGeometry(3.2 * s, 3.0 * s, 4.2 * s), orbitalTitaniumMat);
+        engineBlock.position.set(-9.5 * s, 0, 0);
+        craft.add(engineBlock);
+
+        [-1.2 * s, 1.2 * s].forEach((ez) => {
+          [-0.8 * s, 0.8 * s].forEach((ey) => {
+            const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.45 * s, 0.6 * s, 1.0 * s, 8), orbitalGraphiteMat);
+            bell.rotation.z = Math.PI / 2;
+            bell.position.set(-11.2 * s, ey, ez);
+            craft.add(bell);
+
+            const plume = new THREE.Mesh(new THREE.ConeGeometry(0.6 * s, 3.6 * s, 8), orbitalGoldMat);
+            plume.rotation.z = Math.PI / 2;
+            plume.position.set(-13.2 * s, ey, ez);
+            craft.add(plume);
+            thrusterPlumes.push(plume);
+          });
+        });
+
+      } else if (spec.type === 'SCOUT') {
+        // Class C: Deep Space Recon Scout (needle hull, forward sensor dish, outrigger scanner pods)
+        const needle = new THREE.Mesh(new THREE.ConeGeometry(1.3 * s, 13.0 * s, 6), orbitalWhiteMat);
+        needle.rotation.z = -Math.PI / 2;
+        needle.position.set(1.5 * s, 0, 0);
+        craft.add(needle);
+
+        const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 3.5 * s, 6), orbitalTitaniumMat);
+        boom.rotation.z = Math.PI / 2;
+        boom.position.set(9.5 * s, 0, 0);
+        craft.add(boom);
+
+        const dish = new THREE.Mesh(new THREE.SphereGeometry(1.2 * s, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), orbitalCyanMat);
+        dish.rotation.z = -Math.PI / 2;
+        dish.position.set(8.2 * s, 0, 0);
+        craft.add(dish);
+
+        [-3.8 * s, 3.8 * s].forEach((pz) => {
+          const pylon = new THREE.Mesh(new THREE.BoxGeometry(2.4 * s, 0.18 * s, 3.2 * s), orbitalGraphiteMat);
+          pylon.position.set(-0.5 * s, 0, pz * 0.5);
+          craft.add(pylon);
+
+          const pod = new THREE.Mesh(new THREE.BoxGeometry(2.8 * s, 0.8 * s, 0.8 * s), orbitalTitaniumMat);
+          pod.position.set(-0.5 * s, 0, pz);
+          craft.add(pod);
+
+          const sensorLens = new THREE.Mesh(new THREE.SphereGeometry(0.35 * s, 6, 6), orbitalCyanMat);
+          sensorLens.position.set(1.0 * s, 0, pz);
+          craft.add(sensorLens);
+        });
+
+        [-0.8 * s, 0.8 * s].forEach((ez) => {
+          const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.45 * s, 0.55 * s, 1.2 * s, 8), orbitalGraphiteMat);
+          bell.rotation.z = Math.PI / 2;
+          bell.position.set(-5.5 * s, 0, ez);
+          craft.add(bell);
+
+          const plume = new THREE.Mesh(new THREE.ConeGeometry(0.55 * s, 4.8 * s, 8), orbitalCyanMat);
+          plume.rotation.z = Math.PI / 2;
+          plume.position.set(-8.0 * s, 0, ez);
+          craft.add(plume);
+          thrusterPlumes.push(plume);
+        });
+
+      } else {
+        // Class D: Colossal Transport Cruiser (wedge multi-deck superstructure, observation windows, twin warp nacelles)
+        const wedgeHull = new THREE.Mesh(new THREE.BoxGeometry(19.0 * s, 3.2 * s, 4.6 * s), orbitalWhiteMat);
+        craft.add(wedgeHull);
+
+        const prow = new THREE.Mesh(new THREE.ConeGeometry(2.3 * s, 5.0 * s, 6), orbitalWhiteMat);
+        prow.rotation.z = -Math.PI / 2;
+        prow.position.set(12.0 * s, 0, 0);
+        craft.add(prow);
+
+        const promenade = new THREE.Mesh(new THREE.BoxGeometry(12.0 * s, 1.4 * s, 3.2 * s), orbitalWhiteMat);
+        promenade.position.set(1.0 * s, 2.0 * s, 0);
+        craft.add(promenade);
+
+        const windowGallery = new THREE.Mesh(new THREE.BoxGeometry(11.0 * s, 0.45 * s, 3.35 * s), orbitalGlassMat);
+        windowGallery.position.set(1.0 * s, 2.0 * s, 0);
+        craft.add(windowGallery);
+
+        [-5.8 * s, 5.8 * s].forEach((nz) => {
+          const pylon = new THREE.Mesh(new THREE.BoxGeometry(4.5 * s, 0.35 * s, 3.5 * s), orbitalGraphiteMat);
+          pylon.position.set(-1.0 * s, 0, nz * 0.5);
+          craft.add(pylon);
+
+          const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(1.1 * s, 1.1 * s, 12.0 * s, 8), orbitalTitaniumMat);
+          nacelle.rotation.z = Math.PI / 2;
+          nacelle.position.set(-1.0 * s, 0, nz);
+          craft.add(nacelle);
+
+          const intake = new THREE.Mesh(new THREE.CylinderGeometry(1.2 * s, 1.2 * s, 0.8 * s, 8), orbitalCyanMat);
+          intake.rotation.z = Math.PI / 2;
+          intake.position.set(5.2 * s, 0, nz);
+          craft.add(intake);
+        });
+
+        [-1.3 * s, 1.3 * s].forEach((ez) => {
+          const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.7 * s, 0.9 * s, 1.4 * s, 8), orbitalGraphiteMat);
+          bell.rotation.z = Math.PI / 2;
+          bell.position.set(-10.5 * s, 0, ez);
+          craft.add(bell);
+
+          const plume = new THREE.Mesh(new THREE.ConeGeometry(0.9 * s, 5.2 * s, 8), orbitalGoldMat);
+          plume.rotation.z = Math.PI / 2;
+          plume.position.set(-13.4 * s, 0, ez);
+          craft.add(plume);
+          thrusterPlumes.push(plume);
+        });
+      }
 
       this.backgroundSpacecraft.push(craft);
       this.orbitalSkyline!.add(craft);
@@ -2495,17 +2708,60 @@ export class WorldScene {
       pos.needsUpdate = true;
     }
 
-    // Moving background spacecraft in orbital space
+    // Moving background spacecraft in orbital space (Living Aerospace 3D Flight & Banking)
     if (this.backgroundSpacecraft.length > 0 && this.orbitalSkyline && this.orbitalSkyline.visible) {
       const delta = dt || 0.016;
       for (let i = 0; i < this.backgroundSpacecraft.length; i++) {
         const craft = this.backgroundSpacecraft[i];
-        craft.position.x += craft.userData.vx * delta;
-        craft.position.y += craft.userData.vy * delta;
-        if (craft.userData.vx > 0 && craft.position.x > craft.userData.maxX) {
-          craft.position.x = craft.userData.minX;
-        } else if (craft.userData.vx < 0 && craft.position.x < craft.userData.minX) {
-          craft.position.x = craft.userData.maxX;
+        const u = craft.userData;
+        u.time += delta;
+
+        // Advance along X
+        craft.position.x += u.vx * delta;
+
+        // 3D Curved Trajectory calculation
+        const curY = u.baseY + Math.sin(u.time * u.freqY + u.phaseY) * u.ampY;
+        const curZ = u.baseZ + Math.cos(u.time * u.freqZ + u.phaseZ) * u.ampZ;
+        craft.position.y = curY;
+        craft.position.z = curZ;
+
+        // Instantaneous velocity derivatives for realistic flight orientation
+        const vy = Math.cos(u.time * u.freqY + u.phaseY) * (u.freqY * u.ampY);
+        const vz = -Math.sin(u.time * u.freqZ + u.phaseZ) * (u.freqZ * u.ampZ);
+
+        // Orient along velocity vector
+        const velDir = new THREE.Vector3(u.vx, vy, vz).normalize();
+        craft.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), velDir);
+
+        // Dynamic Roll Banking: ships bank realistically into curved turns
+        const bankRoll = -Math.sin(u.time * u.freqY + u.phaseY) * 0.22 * (u.vx > 0 ? 1 : -1);
+        craft.rotateX(bankRoll);
+
+        // Invisible wrap bounds with smooth fade/scale at outer fringes
+        const absX = Math.abs(craft.position.x);
+        const wrapThreshold = Math.abs(u.maxX);
+        const fadeZone = 50.0;
+        if (absX > wrapThreshold - fadeZone) {
+          const fade = THREE.MathUtils.clamp((wrapThreshold - absX) / fadeZone, 0.0, 1.0);
+          craft.scale.setScalar(u.baseScale * fade);
+        } else {
+          craft.scale.setScalar(u.baseScale);
+        }
+
+        if (u.vx > 0 && craft.position.x > u.maxX) {
+          craft.position.x = u.minX;
+          craft.scale.setScalar(0.001);
+        } else if (u.vx < 0 && craft.position.x < u.minX) {
+          craft.position.x = u.maxX;
+          craft.scale.setScalar(0.001);
+        }
+
+        // Ion thruster pulse animation
+        if (u.thrusterPlumes && u.thrusterPlumes.length > 0) {
+          const pulse = 1.0 + Math.sin(u.time * 24.0 + i) * 0.25;
+          for (let p = 0; p < u.thrusterPlumes.length; p++) {
+            u.thrusterPlumes[p].scale.y = pulse;
+          }
         }
       }
     }
