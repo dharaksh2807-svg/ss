@@ -11,10 +11,16 @@ export interface WatcherActor {
   eyes: THREE.Mesh[];
   coatTails: THREE.Object3D[];
   columnMesh?: THREE.Object3D;
+  platformLamp?: THREE.Mesh;
+  closeVergeMesh?: THREE.Object3D;
+  closeVergeEyes?: THREE.Mesh[];
+  closeVergeHead?: THREE.Object3D;
   triggerZ: number;
   baseX: number;
   hideX: number;
-  state: 'WATCHING' | 'STEPPING_BACK' | 'VANISHED';
+  closeX?: number;
+  closeZ?: number;
+  state: 'WATCHING' | 'STEPPING_BACK' | 'VANISHED' | 'DISTANT_WATCHING' | 'TURNING_HEAD' | 'LAMP_DIMMING' | 'REAPPEAR_CLOSE' | 'FADING_OUT';
   timer: number;
 }
 
@@ -23,15 +29,36 @@ export interface LastTrainActor {
   locomotive: THREE.Object3D;
   carriages: THREE.Object3D[];
   headlight?: THREE.Mesh;
+  headlightBeam?: THREE.Mesh;
+  stationSignalLight?: THREE.Mesh;
   windowGlows: THREE.Mesh[];
   ghostPassengers: THREE.Object3D[];
+  emptyCarriage?: THREE.Object3D;
+  finalWindowSpecter?: THREE.Object3D;
   wheels: THREE.Object3D[];
   speed: number;
   triggerZ: number;
   minZ: number;
   maxZ: number;
-  state: 'APPROACHING' | 'PASSING' | 'FADING_INTO_FOG';
+  state: 'APPROACHING' | 'PASSING' | 'FADING_INTO_FOG' | 'DISTANT_SIGNAL' | 'EMERGING' | 'PASSING_ALONGSIDE' | 'FADING_INTO_MIST' | 'VANISHED';
+  timer: number;
   fogFadeTimer: number;
+}
+
+export interface StationAwakensActor {
+  group: THREE.Group;
+  solitaryWindow: THREE.Mesh;
+  windows: THREE.Mesh[];
+  platformLamps: THREE.Mesh[];
+  ghostPassengers: Array<{ group: THREE.Object3D; head: THREE.Object3D; initialRotY: number }>;
+  departureClock?: THREE.Object3D;
+  departureClockHand?: THREE.Object3D;
+  shadowSilhouetteSweep?: THREE.Object3D;
+  finalDistantFigure?: THREE.Object3D;
+  triggerZ: number;
+  state: 'DESERTED' | 'SINGLE_WINDOW' | 'LIGHTS_ACTIVATING' | 'PASSENGERS_APPEARING' | 'CLOCK_REVERSING' | 'SHADOW_SWEEP' | 'PASSENGERS_TURNING' | 'BLACKOUT' | 'FINAL_REVEAL';
+  timer: number;
+  clockAngle: number;
 }
 
 export interface LostConductorActor {
@@ -117,6 +144,16 @@ export interface AmbientHauntingActor {
  * PhantomLineEventDirector
  * Coordinates and animates all flagship encounters, 6 haunted regions, character systems,
  * and ambient supernatural activity with performance safety and leak-free lifecycle pruning.
+ * 
+ * SIGNED-DISTANCE CONVENTION:
+ * For negative-Z forward travel (player running toward -Z):
+ *   distanceAhead = playerZ - encounterZ
+ * When player is at -400m and encounter is at -500m:
+ *   distanceAhead = (-400) - (-500) = +100m (100m ahead).
+ * When player reaches encounter at -500m:
+ *   distanceAhead = (-500) - (-500) = 0m.
+ * When player passes to -520m:
+ *   distanceAhead = (-520) - (-500) = -20m (20m behind).
  */
 export class PhantomLineEventDirector {
   private static instance: PhantomLineEventDirector | null = null;
@@ -127,6 +164,7 @@ export class PhantomLineEventDirector {
   // Registered Actors
   private watchers: WatcherActor[] = [];
   private lastTrains: LastTrainActor[] = [];
+  private stationAwakens: StationAwakensActor[] = [];
   private conductors: LostConductorActor[] = [];
   private passengerCrowds: PassengerCrowdActor[] = [];
   private floodedReflections: FloodedReflectionActor[] = [];
@@ -157,6 +195,10 @@ export class PhantomLineEventDirector {
 
   public registerLastTrain(actor: LastTrainActor): void {
     this.lastTrains.push(actor);
+  }
+
+  public registerStationAwakens(actor: StationAwakensActor): void {
+    this.stationAwakens.push(actor);
   }
 
   public registerConductor(actor: LostConductorActor): void {
@@ -204,6 +246,7 @@ export class PhantomLineEventDirector {
   public reset(): void {
     this.watchers.length = 0;
     this.lastTrains.length = 0;
+    this.stationAwakens.length = 0;
     this.conductors.length = 0;
     this.passengerCrowds.length = 0;
     this.floodedReflections.length = 0;
@@ -215,6 +258,7 @@ export class PhantomLineEventDirector {
     this.ambient.willOWisps.length = 0;
     this.ambient.creakingSigns.length = 0;
     this.totalTime = 0;
+    this.frameCounter = 0;
   }
 
   private isDetached(obj: THREE.Object3D): boolean {
@@ -231,6 +275,7 @@ export class PhantomLineEventDirector {
   private pruneDetached(): void {
     this.watchers = this.watchers.filter((a) => !this.isDetached(a.group));
     this.lastTrains = this.lastTrains.filter((a) => !this.isDetached(a.group));
+    this.stationAwakens = this.stationAwakens.filter((a) => !this.isDetached(a.group));
     this.conductors = this.conductors.filter((a) => !this.isDetached(a.group));
     this.passengerCrowds = this.passengerCrowds.filter((a) => !this.isDetached(a.group));
     this.floodedReflections = this.floodedReflections.filter((a) => !this.isDetached(a.group));
@@ -267,54 +312,100 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 1. VERTICAL SLICE B: THE WATCHER ENCOUNTER
+    // =========================================================================
+    // FLAGSHIP 1: THE WATCHER ENCOUNTER
+    // =========================================================================
     for (let i = 0; i < this.watchers.length; i++) {
       const w = this.watchers[i];
-      const dist = w.triggerZ - pZ; // Positive when player is running towards negative Z
+      // CANONICAL SIGNED DISTANCE FOR NEGATIVE-Z TRAVEL:
+      // Positive when player is running towards the encounter from greater Z
+      const distanceAhead = pZ - w.triggerZ;
 
-      if (w.state === 'WATCHING') {
-        // Subtle unnatural stillness with soft breathing coat sway
-        for (let c = 0; c < w.coatTails.length; c++) {
-          w.coatTails[c].rotation.x = Math.sin(t * 1.8 + c) * 0.05 * motionScale;
+      w.timer += dt;
+
+      // Soft breathing coat sway whenever body is visible
+      for (let c = 0; c < w.coatTails.length; c++) {
+        w.coatTails[c].rotation.x = Math.sin(t * 1.8 + c) * 0.05 * motionScale;
+      }
+
+      // Check state progression based on distanceAhead
+      if (distanceAhead > 130) {
+        // Distant observation: standing motionless under distant lamp
+        w.state = 'WATCHING';
+        if (w.platformLamp) w.platformLamp.scale.setScalar(1.0);
+        if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
+        w.group.visible = true;
+      } else if (distanceAhead > 65) {
+        // Player notices figure during approach; subtle head tracking begins
+        w.state = 'WATCHING';
+        const lookAngle = THREE.MathUtils.clamp((distanceAhead - 90) * 0.015, -0.65, 0.65);
+        w.head.rotation.y = THREE.MathUtils.lerp(w.head.rotation.y, lookAngle, dt * 3.5);
+        w.head.rotation.z = Math.sin(t * 2.0) * 0.04 * motionScale; // Eerie head tilt
+        if (w.platformLamp) w.platformLamp.scale.setScalar(1.0);
+        if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
+      } else if (distanceAhead > 32) {
+        // 3. Figure slowly turns its head toward player; 4. Platform stillness
+        w.state = 'WATCHING';
+        w.head.rotation.y = THREE.MathUtils.lerp(w.head.rotation.y, 0, dt * 4.0); // Directly facing track
+        w.head.rotation.z = Math.sin(t * 1.5) * 0.06 * motionScale;
+        if (w.platformLamp) w.platformLamp.scale.setScalar(0.95);
+        if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
+      } else if (distanceAhead > 18) {
+        // 5. Lamp dims briefly; 6. Figure vanishes
+        w.state = 'STEPPING_BACK';
+        // Platform lamp dips to low eerie pulse
+        if (w.platformLamp) {
+          const dim = Math.max(0.15, 0.4 + 0.3 * Math.sin(t * 12.0));
+          w.platformLamp.scale.setScalar(dim);
         }
-
-        // Slowly turns head toward oncoming runner
-        if (dist < 95 && dist > 15) {
-          const lookAngle = THREE.MathUtils.clamp((pZ - w.triggerZ) * 0.016, -0.65, 0.65);
-          w.head.rotation.y = THREE.MathUtils.lerp(w.head.rotation.y, lookAngle, dt * 3.5);
-          w.head.rotation.z = Math.sin(t * 2.0) * 0.05 * motionScale; // Eerie head tilt
-        }
-
-        // Stepping back behind column when player passes closely
-        if (dist <= 15 && dist > -15) {
-          w.state = 'STEPPING_BACK';
-          w.timer = 0;
-        }
-      } else if (w.state === 'STEPPING_BACK') {
-        w.timer += dt;
-        const progress = Math.min(1.0, w.timer * 2.2);
-        w.group.position.x = THREE.MathUtils.lerp(w.baseX, w.hideX, progress);
-
-        // Eyes pulse and fade into shadow
+        // Figure steps behind column / dissolves into shadows
+        const stepProgress = Math.min(1.0, (32 - distanceAhead) / 14);
+        w.group.position.x = THREE.MathUtils.lerp(w.baseX, w.hideX, stepProgress);
         for (let e = 0; e < w.eyes.length; e++) {
-          w.eyes[e].scale.setScalar(Math.max(0.01, 1.0 - progress));
+          w.eyes[e].scale.setScalar(Math.max(0.01, 1.0 - stepProgress));
         }
+        if (w.closeVergeMesh) w.closeVergeMesh.visible = false;
+      } else if (distanceAhead > -4) {
+        // 7. Figure unexpectedly reappears at closer, safe trackside location!
+        // 8. Stares toward the moving runner!
+        w.state = 'VANISHED'; // Platform watcher is vanished
+        w.group.visible = false;
 
-        if (progress >= 1.0) {
-          w.state = 'VANISHED';
-          w.group.visible = false;
+        if (w.closeVergeMesh) {
+          w.closeVergeMesh.visible = true;
+          // Shock reveal: twin cyan eyes pierce through fog at trackside verge
+          if (w.closeVergeHead) {
+            const trackAngle = THREE.MathUtils.clamp(-distanceAhead * 0.04, -0.85, 0.85);
+            w.closeVergeHead.rotation.y = trackAngle;
+            w.closeVergeHead.rotation.z = 0.08 * motionScale;
+          }
+          if (w.closeVergeEyes) {
+            for (let e = 0; e < w.closeVergeEyes.length; e++) {
+              w.closeVergeEyes[e].scale.setScalar(1.25 + 0.25 * Math.sin(t * 8.0));
+            }
+          }
+        }
+      } else {
+        // 9. Figure fades into darkness as player rushes past
+        w.state = 'VANISHED';
+        w.group.visible = false;
+        if (w.closeVergeMesh) {
+          w.closeVergeMesh.visible = false;
         }
       }
     }
 
-    // 2. VERTICAL SLICE A: THE LAST TRAIN ARRIVAL & DEPARTURE
+    // =========================================================================
+    // FLAGSHIP 2: THE LAST TRAIN ARRIVAL, PASSENGER REVEAL & DEPARTURE
+    // =========================================================================
     for (let i = 0; i < this.lastTrains.length; i++) {
       const lt = this.lastTrains[i];
-      const dist = lt.triggerZ - pZ;
+      const distanceAhead = pZ - lt.triggerZ;
+
+      lt.timer += dt;
 
       // Moves along parallel siding
       lt.group.position.z += lt.speed * dt * motionScale;
-
       if (lt.group.position.z > lt.maxZ) {
         lt.group.position.z = lt.minZ;
       }
@@ -325,32 +416,58 @@ export class PhantomLineEventDirector {
         lt.wheels[w].rotation.x += wheelRot;
       }
 
-      // State progression
-      if (lt.state === 'APPROACHING') {
-        if (dist < 120) {
-          lt.state = 'PASSING';
+      // 1. Distant station signal turns on
+      if (lt.stationSignalLight) {
+        lt.stationSignalLight.visible = distanceAhead < 160 && distanceAhead > -60;
+        const sigPulse = 0.8 + 0.25 * Math.sin(t * 4.0);
+        lt.stationSignalLight.scale.setScalar(sigPulse);
+      }
+
+      // State progression along distance
+      if (distanceAhead > 130) {
+        lt.state = 'APPROACHING';
+        lt.group.visible = true;
+        if (lt.headlightBeam) lt.headlightBeam.scale.set(0.4, 0.4, 0.4);
+      } else if (distanceAhead > 70) {
+        // 2. Spectral train emerges from tunnel; 3. Headlights illuminate fog
+        lt.state = 'APPROACHING';
+        lt.group.visible = true;
+        if (lt.headlightBeam) {
+          const beamPulse = 1.0 + 0.15 * Math.sin(t * 3.0);
+          lt.headlightBeam.scale.set(beamPulse, beamPulse, beamPulse * 1.3);
+          lt.headlightBeam.visible = true;
         }
-      } else if (lt.state === 'PASSING') {
+      } else if (distanceAhead > -25) {
+        // 4. Ghost passengers turn toward runner; 5. Travels alongside; 6. Empty car; 7. Final window figure
+        lt.state = 'PASSING';
+        lt.group.visible = true;
+
         // Glowing cyan passenger windows pulse softly
         for (let g = 0; g < lt.windowGlows.length; g++) {
           const glow = lt.windowGlows[g];
-          const pulse = 0.8 + 0.2 * Math.sin(t * 3.2 + g * 0.5);
+          const pulse = 0.85 + 0.18 * Math.sin(t * 3.2 + g * 0.6);
           glow.scale.set(1.0, pulse, 1.0);
         }
 
-        // Ghost passengers visible through windows sway gently with the train
+        // Ghost passengers visible through windows turn toward runner
         for (let p = 0; p < lt.ghostPassengers.length; p++) {
-          lt.ghostPassengers[p].rotation.z = Math.sin(t * 2.5 + p) * 0.06 * motionScale;
+          const pass = lt.ghostPassengers[p];
+          pass.rotation.z = Math.sin(t * 2.2 + p) * 0.06 * motionScale;
+          const turnAngle = THREE.MathUtils.clamp((distanceAhead - 25) * 0.02, -0.6, 0.6);
+          pass.rotation.y = THREE.MathUtils.lerp(pass.rotation.y, turnAngle, dt * 3.0);
         }
 
-        if (dist < -20) {
-          lt.state = 'FADING_INTO_FOG';
-          lt.fogFadeTimer = 0;
+        // Final window lone figure staring intently
+        if (lt.finalWindowSpecter) {
+          lt.finalWindowSpecter.rotation.y = THREE.MathUtils.lerp(lt.finalWindowSpecter.rotation.y, -0.75, dt * 4.0);
+          lt.finalWindowSpecter.rotation.z = 0.08 * Math.sin(t * 3.5);
         }
-      } else if (lt.state === 'FADING_INTO_FOG') {
+      } else {
+        // 8. Train vanishes into mist
+        lt.state = 'FADING_INTO_FOG';
         lt.fogFadeTimer += dt;
         const fadeProg = Math.min(1.0, lt.fogFadeTimer * 1.5);
-        const scaleVal = 1.0 - fadeProg * 0.6;
+        const scaleVal = Math.max(0.01, 1.0 - fadeProg * 0.7);
         lt.group.scale.set(scaleVal, scaleVal, scaleVal);
 
         if (fadeProg >= 1.0) {
@@ -359,42 +476,143 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 3. THE LOST CONDUCTOR
+    // =========================================================================
+    // FLAGSHIP 3: THE STATION AWAKENS (Grand Large-Scale Environment Event)
+    // =========================================================================
+    for (let i = 0; i < this.stationAwakens.length; i++) {
+      const sa = this.stationAwakens[i];
+      const distanceAhead = pZ - sa.triggerZ;
+
+      sa.timer += dt;
+
+      if (distanceAhead > 130) {
+        // 1. Deserted station: dark and silent
+        sa.state = 'DESERTED';
+        sa.solitaryWindow.visible = false;
+        for (let w = 0; w < sa.windows.length; w++) sa.windows[w].visible = false;
+        for (let l = 0; l < sa.platformLamps.length; l++) sa.platformLamps[l].visible = false;
+        for (let p = 0; p < sa.ghostPassengers.length; p++) sa.ghostPassengers[p].group.visible = false;
+        if (sa.shadowSilhouetteSweep) sa.shadowSilhouetteSweep.visible = false;
+        if (sa.finalDistantFigure) sa.finalDistantFigure.visible = false;
+      } else if (distanceAhead > 105) {
+        // 2. A single window illuminates
+        sa.state = 'SINGLE_WINDOW';
+        sa.solitaryWindow.visible = true;
+        const pulse = 0.85 + 0.15 * Math.sin(t * 5.0);
+        sa.solitaryWindow.scale.setScalar(pulse);
+        for (let w = 0; w < sa.windows.length; w++) sa.windows[w].visible = false;
+        for (let l = 0; l < sa.platformLamps.length; l++) sa.platformLamps[l].visible = false;
+        for (let p = 0; p < sa.ghostPassengers.length; p++) sa.ghostPassengers[p].group.visible = false;
+      } else if (distanceAhead > 75) {
+        // 3. More station lights activate gradually
+        sa.state = 'LIGHTS_ACTIVATING';
+        sa.solitaryWindow.visible = true;
+        const litCount = Math.min(sa.windows.length, Math.floor((105 - distanceAhead) * 0.4));
+        for (let w = 0; w < sa.windows.length; w++) {
+          sa.windows[w].visible = w < litCount;
+        }
+        for (let l = 0; l < sa.platformLamps.length; l++) {
+          sa.platformLamps[l].visible = l < litCount * 0.6;
+        }
+      } else if (distanceAhead > 55) {
+        // 4. Ghostly figures appear along the platform; 5. Departure clock moves backward
+        sa.state = 'PASSENGERS_APPEARING';
+        sa.solitaryWindow.visible = true;
+        for (let w = 0; w < sa.windows.length; w++) sa.windows[w].visible = true;
+        for (let l = 0; l < sa.platformLamps.length; l++) sa.platformLamps[l].visible = true;
+        for (let p = 0; p < sa.ghostPassengers.length; p++) {
+          sa.ghostPassengers[p].group.visible = true;
+          sa.ghostPassengers[p].head.rotation.y = sa.ghostPassengers[p].initialRotY;
+        }
+        // Departure clock spins backward
+        if (sa.departureClockHand) {
+          sa.clockAngle -= dt * 4.5 * motionScale;
+          sa.departureClockHand.rotation.z = sa.clockAngle;
+        }
+      } else if (distanceAhead > 35) {
+        // 6. A shadow crosses the terminal; Clock continuing reverse
+        sa.state = 'SHADOW_SWEEP';
+        if (sa.departureClockHand) {
+          sa.clockAngle -= dt * 6.0 * motionScale;
+          sa.departureClockHand.rotation.z = sa.clockAngle;
+        }
+        if (sa.shadowSilhouetteSweep) {
+          sa.shadowSilhouetteSweep.visible = true;
+          // Sweeps smoothly across terminal vault
+          const sweepProg = (55 - distanceAhead) / 20;
+          sa.shadowSilhouetteSweep.position.x = THREE.MathUtils.lerp(-18, 18, sweepProg);
+        }
+      } else if (distanceAhead > 16) {
+        // 7. ALL ghost passengers suddenly snap heads to turn toward runner!
+        sa.state = 'PASSENGERS_TURNING';
+        if (sa.departureClockHand) {
+          sa.clockAngle -= dt * 8.0 * motionScale;
+          sa.departureClockHand.rotation.z = sa.clockAngle;
+        }
+        for (let p = 0; p < sa.ghostPassengers.length; p++) {
+          const pass = sa.ghostPassengers[p];
+          pass.group.visible = true;
+          // Synchronous snap toward runner
+          pass.head.rotation.y = THREE.MathUtils.lerp(pass.head.rotation.y, 0, dt * 8.0);
+          pass.head.rotation.z = Math.sin(t * 3.0 + p) * 0.08 * motionScale;
+        }
+      } else if (distanceAhead > 6) {
+        // 8. Sudden blackout! All station lights and passengers go dark
+        sa.state = 'BLACKOUT';
+        sa.solitaryWindow.visible = false;
+        for (let w = 0; w < sa.windows.length; w++) sa.windows[w].visible = false;
+        for (let l = 0; l < sa.platformLamps.length; l++) sa.platformLamps[l].visible = false;
+        for (let p = 0; p < sa.ghostPassengers.length; p++) sa.ghostPassengers[p].group.visible = false;
+        if (sa.shadowSilhouetteSweep) sa.shadowSilhouetteSweep.visible = false;
+      } else if (distanceAhead > -35) {
+        // 9. One solitary distant figure remains for unsettling final reveal
+        sa.state = 'FINAL_REVEAL';
+        sa.solitaryWindow.visible = false;
+        for (let w = 0; w < sa.windows.length; w++) sa.windows[w].visible = false;
+        for (let l = 0; l < sa.platformLamps.length; l++) sa.platformLamps[l].visible = false;
+        for (let p = 0; p < sa.ghostPassengers.length; p++) sa.ghostPassengers[p].group.visible = false;
+
+        if (sa.finalDistantFigure) {
+          sa.finalDistantFigure.visible = true;
+          sa.finalDistantFigure.rotation.y = Math.sin(t * 2.0) * 0.25 * motionScale;
+        }
+      } else {
+        // Fully resolved
+        sa.state = 'DESERTED';
+        if (sa.finalDistantFigure) sa.finalDistantFigure.visible = false;
+      }
+    }
+
+    // =========================================================================
+    // 4. THE LOST CONDUCTOR
+    // =========================================================================
     for (let i = 0; i < this.conductors.length; i++) {
       const cond = this.conductors[i];
-      const dist = cond.triggerZ - pZ;
+      const distanceAhead = pZ - cond.triggerZ;
 
-      if (dist < 90 && dist > -20) {
+      if (distanceAhead < 90 && distanceAhead > -20) {
         cond.timer += dt;
 
-        if (cond.state === 'INSPECTING') {
+        if (distanceAhead > 45) {
+          cond.state = 'INSPECTING';
           // Checks antique pocket watch / invisible ticket
           cond.head.rotation.x = 0.25;
           cond.armLantern.rotation.z = Math.sin(t * 2.0) * 0.12 * motionScale;
-
-          if (dist < 50) {
-            cond.state = 'SIGNALING';
-          }
-        } else if (cond.state === 'SIGNALING') {
+        } else if (distanceAhead > -5) {
+          cond.state = 'SIGNALING';
           // Raises glowing lantern to signal track
-          cond.armLantern.rotation.z = THREE.MathUtils.lerp(cond.armLantern.rotation.z, 0.75, dt * 3.0);
-          cond.head.rotation.y = THREE.MathUtils.lerp(cond.head.rotation.y, -0.45, dt * 3.0);
+          cond.armLantern.rotation.z = THREE.MathUtils.lerp(cond.armLantern.rotation.z, 0.75, dt * 3.5);
+          cond.head.rotation.y = THREE.MathUtils.lerp(cond.head.rotation.y, -0.45, dt * 3.5);
 
           if (cond.lanternBulb) {
             const glow = 0.85 + 0.25 * Math.sin(t * 5.0);
             cond.lanternBulb.scale.setScalar(glow);
           }
-
-          if (dist < -10) {
-            cond.state = 'DISSOLVING';
-            cond.timer = 0;
-          }
-        } else if (cond.state === 'DISSOLVING') {
-          cond.timer += dt;
-          const dissolveProg = Math.min(1.0, cond.timer * 2.0);
-          cond.group.scale.setScalar(1.0 - dissolveProg);
+        } else {
+          cond.state = 'DISSOLVING';
+          const dissolveProg = Math.min(1.0, (-distanceAhead - 5) / 12);
+          cond.group.scale.setScalar(Math.max(0.01, 1.0 - dissolveProg));
           cond.group.position.y += dt * 1.2; // Rises into mist
-
           if (dissolveProg >= 1.0) {
             cond.group.visible = false;
           }
@@ -402,12 +620,14 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 4. THE MISSING PASSENGER CROWD
+    // =========================================================================
+    // 5. THE MISSING PASSENGER CROWD
+    // =========================================================================
     for (let i = 0; i < this.passengerCrowds.length; i++) {
       const crowd = this.passengerCrowds[i];
-      const dist = crowd.triggerZ - pZ;
+      const distanceAhead = pZ - crowd.triggerZ;
 
-      if (dist < 110 && dist > -15) {
+      if (distanceAhead < 110 && distanceAhead > -15) {
         crowd.timer += dt;
 
         for (let p = 0; p < crowd.passengers.length; p++) {
@@ -427,19 +647,21 @@ export class PhantomLineEventDirector {
         }
 
         // Fade away before player passes
-        if (dist < 12) {
+        if (distanceAhead < 10) {
           crowd.state = 'VANISHED';
           crowd.group.visible = false;
         }
       }
     }
 
-    // 5. FLOODED GHOST REFLECTION
+    // =========================================================================
+    // 6. FLOODED GHOST REFLECTION
+    // =========================================================================
     for (let i = 0; i < this.floodedReflections.length; i++) {
       const fr = this.floodedReflections[i];
-      const dist = fr.triggerZ - pZ;
+      const distanceAhead = pZ - fr.triggerZ;
 
-      if (dist < 85 && dist > -20) {
+      if (distanceAhead < 90 && distanceAhead > -25) {
         fr.timer += dt;
 
         // Reflection drifts independently across water basin
@@ -447,7 +669,7 @@ export class PhantomLineEventDirector {
         fr.waterReflection.position.x = Math.cos(fr.timer * 1.2 + fr.phase) * 0.8 * motionScale;
 
         // Spectral figure rises slowly from the dark water
-        if (dist < 45 && fr.state === 'INDEPENDENT_DRIFT') {
+        if (distanceAhead < 50 && fr.state === 'INDEPENDENT_DRIFT') {
           fr.state = 'RISING';
         }
 
@@ -456,7 +678,7 @@ export class PhantomLineEventDirector {
           fr.emergingSpecter.position.y = Math.min(2.2, fr.emergingSpecter.position.y + dt * 1.2 * motionScale);
           fr.emergingSpecter.rotation.z = Math.sin(t * 2.2) * 0.08 * motionScale;
 
-          if (dist < -10) {
+          if (distanceAhead < -10) {
             fr.state = 'DISSOLVED';
             fr.emergingSpecter.visible = false;
           }
@@ -464,12 +686,14 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 6. ILLUMINATED SURREAL APARTMENT WINDOWS
+    // =========================================================================
+    // 7. ILLUMINATED SURREAL APARTMENT WINDOWS
+    // =========================================================================
     for (let i = 0; i < this.illuminatedBuildings.length; i++) {
       const bldg = this.illuminatedBuildings[i];
-      const dist = bldg.triggerZ - pZ;
+      const distanceAhead = pZ - bldg.triggerZ;
 
-      if (dist < 120 && dist > -30) {
+      if (distanceAhead < 120 && distanceAhead > -30) {
         bldg.timer += dt;
 
         // Windows gradually illuminate
@@ -493,7 +717,9 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 7. SHADOW ENTITY (Rare Distant Silhouette)
+    // =========================================================================
+    // 8. SHADOW ENTITY (Rare Distant Silhouette)
+    // =========================================================================
     for (let i = 0; i < this.shadowEntities.length; i++) {
       const se = this.shadowEntities[i];
       const entityT = t * 0.65 + se.phase;
@@ -510,12 +736,14 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 8. IMPOSSIBLE CLOCKS
+    // =========================================================================
+    // 9. IMPOSSIBLE CLOCKS
+    // =========================================================================
     for (let i = 0; i < this.impossibleClocks.length; i++) {
       const ic = this.impossibleClocks[i];
-      const dist = ic.triggerZ - pZ;
+      const distanceAhead = pZ - ic.triggerZ;
 
-      if (dist < 90 && dist > -20) {
+      if (distanceAhead < 90 && distanceAhead > -20) {
         ic.timer += dt;
 
         // Clock hand sweeps retrograde (counter-clockwise)
@@ -528,12 +756,14 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 9. SPECTRAL FOOTSTEPS
+    // =========================================================================
+    // 10. SPECTRAL FOOTSTEPS
+    // =========================================================================
     for (let i = 0; i < this.spectralFootsteps.length; i++) {
       const sf = this.spectralFootsteps[i];
-      const dist = sf.triggerZ - pZ;
+      const distanceAhead = pZ - sf.triggerZ;
 
-      if (dist < 80 && dist > -15) {
+      if (distanceAhead < 80 && distanceAhead > -15) {
         sf.timer += dt;
         const revealTarget = Math.min(sf.footprints.length, Math.floor(sf.timer * 2.5));
 
@@ -548,7 +778,9 @@ export class PhantomLineEventDirector {
       }
     }
 
-    // 10. AMBIENT HAUNTINGS: SOFT FLICKERING LAMPS & WILL-O'-THE-WISPS
+    // =========================================================================
+    // 11. AMBIENT HAUNTINGS: SOFT FLICKERING LAMPS & WILL-O'-THE-WISPS
+    // =========================================================================
     for (let i = 0; i < this.ambient.flickeringLamps.length; i++) {
       const lamp = this.ambient.flickeringLamps[i];
       // Gentle sine-wave pulse (no obnoxious high-frequency strobe)
@@ -572,12 +804,13 @@ export class PhantomLineEventDirector {
     }
   }
 
-  // --- Diagnostics ---
+  // --- Diagnostics & Getters ---
 
   public getDiagnostics(): Record<string, number> {
     return {
       watchers: this.watchers.length,
       lastTrains: this.lastTrains.length,
+      stationAwakens: this.stationAwakens.length,
       conductors: this.conductors.length,
       passengerCrowds: this.passengerCrowds.length,
       floodedReflections: this.floodedReflections.length,
@@ -589,5 +822,17 @@ export class PhantomLineEventDirector {
       willOWisps: this.ambient.willOWisps.length,
       creakingSigns: this.ambient.creakingSigns.length
     };
+  }
+
+  public getWatchers(): readonly WatcherActor[] {
+    return this.watchers;
+  }
+
+  public getLastTrains(): readonly LastTrainActor[] {
+    return this.lastTrains;
+  }
+
+  public getStationAwakens(): readonly StationAwakensActor[] {
+    return this.stationAwakens;
   }
 }

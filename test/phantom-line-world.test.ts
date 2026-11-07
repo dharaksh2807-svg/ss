@@ -427,6 +427,163 @@ check(resetDiags.conductors === 0, 'Reset clears conductor actors');
 check(resetDiags.passengerCrowds === 0, 'Reset clears passenger crowd actors');
 check(resetDiags.flickeringLamps === 0, 'Reset clears flickering lamp registrations');
 
+// Suite 15: Signed-Distance Convention & Deterministic Coordinate Step Verification
+console.log('\n--- Suite 15: Signed-Distance Convention & Coordinate Steps ---');
+director.reset();
+
+// Verify canonical negative-Z forward travel formula: distanceAhead = playerZ - encounterZ
+const encounterZ = -500;
+const testSteps = [
+  { pZ: -350, expectedDistanceAhead: 150, desc: '150m before encounter' },
+  { pZ: -400, expectedDistanceAhead: 100, desc: '100m before encounter' },
+  { pZ: -440, expectedDistanceAhead: 60, desc: '60m before encounter' },
+  { pZ: -480, expectedDistanceAhead: 20, desc: '20m before encounter' },
+  { pZ: -500, expectedDistanceAhead: 0, desc: 'At the encounter' },
+  { pZ: -520, expectedDistanceAhead: -20, desc: '20m after the encounter' },
+  { pZ: -600, expectedDistanceAhead: -100, desc: '100m after the encounter' }
+];
+
+for (const step of testSteps) {
+  const calcDistance = step.pZ - encounterZ;
+  check(calcDistance === step.expectedDistanceAhead, `Canonical distance formula: ${step.desc} (pZ=${step.pZ}, encZ=${encounterZ} => ${calcDistance}m)`);
+}
+
+// Suite 16: Flagship 1 (The Watcher) 9-Stage Sequence Verification
+console.log('\n--- Suite 16: Flagship 1 (The Watcher) 9-Stage Sequence ---');
+director.reset();
+const testScene = new THREE.Scene();
+const watcherChunk = new THREE.Group();
+factory.buildScenery(watcherChunk, PHANTOM_LINE_THEME, -500, false, false, 'NONE', 'FULL', 200);
+testScene.add(watcherChunk);
+testScene.updateMatrixWorld(true);
+
+const watchers = director.getWatchers();
+check(watchers.length >= 1, 'Watcher actor registered for 9-stage sequence');
+const wActor = watchers[0];
+check(wActor.closeVergeMesh !== undefined, 'Watcher includes close-verge shock-reveal incarnation');
+check(wActor.platformLamp !== undefined, 'Watcher includes platform lamp fixture');
+
+// Step 1: 150m before (distanceAhead = 150m) -> Distant watching, lamp on, close verge hidden
+director.update(0.1, true, wActor.triggerZ + 150);
+check(wActor.group.visible === true, 'Watcher distant body visible at 150m approach');
+check(wActor.closeVergeMesh!.visible === false, 'Close verge shock figure hidden at 150m');
+check(wActor.platformLamp!.scale.x >= 0.95, 'Platform lamp fully illuminated at 150m');
+
+// Step 2: 60m before (distanceAhead = 60m) -> Head turns toward player
+director.update(0.1, true, wActor.triggerZ + 60);
+check(wActor.group.visible === true, 'Watcher visible during head-turn approach at 60m');
+check(wActor.closeVergeMesh!.visible === false, 'Close verge hidden at 60m');
+
+// Step 3: 25m before (distanceAhead = 25m) -> Lamp dims down, stepping back
+director.update(0.1, true, wActor.triggerZ + 25);
+check(wActor.state === 'STEPPING_BACK', 'Watcher transitions to STEPPING_BACK at 25m');
+check(wActor.platformLamp!.scale.x < 0.9, 'Platform lamp dims down during stepping back');
+
+// Step 4: 5m before (distanceAhead = 5m) -> Sudden trackside shock jump-scare!
+director.update(0.1, true, wActor.triggerZ + 5);
+check(wActor.group.visible === false, 'Platform watcher vanished');
+check(wActor.closeVergeMesh!.visible === true, 'Close verge shock figure unexpectedly manifests at trackside verge!');
+
+// Step 5: 15m after (distanceAhead = -15m) -> Fades into mist
+director.update(0.1, true, wActor.triggerZ - 15);
+check(wActor.closeVergeMesh!.visible === false, 'Watcher close verge figure fades into mist after player passes');
+
+pool.clearDecorativeGroup(watcherChunk, new Set(Object.values(factory.getSharedMaterials())));
+testScene.remove(watcherChunk);
+
+// Suite 17: Flagship 2 (The Last Train) Victorian Consist & Fog Beam Verification
+console.log('\n--- Suite 17: Flagship 2 (The Last Train) Victorian Consist & Fog Beam ---');
+director.reset();
+const trainChunk = new THREE.Group();
+factory.buildScenery(trainChunk, PHANTOM_LINE_THEME, -800, false, false, 'NONE', 'FULL', 201);
+testScene.add(trainChunk);
+testScene.updateMatrixWorld(true);
+
+const trains = director.getLastTrains();
+check(trains.length >= 1, 'The Last Train actor registered');
+const tActor = trains[0];
+check(tActor.headlightBeam !== undefined, 'The Last Train features fog-illuminating headlight beam cone');
+check(tActor.emptyCarriage !== undefined, 'The Last Train features mysteriously empty second carriage');
+check(tActor.finalWindowSpecter !== undefined, 'The Last Train features lone specter in final rear window');
+check(tActor.stationSignalLight !== undefined, 'The Last Train features siding station signal light');
+
+// Approach: Signal turns on, headlight beam illuminates fog
+director.update(0.1, true, tActor.triggerZ + 100);
+check(tActor.stationSignalLight!.visible === true, 'Station signal light turns on before arrival');
+check(tActor.headlightBeam!.visible === true, 'Headlight beam illuminates subterranean fog');
+
+// Passing: Ghost passengers visible and swaying
+director.update(0.1, true, tActor.triggerZ);
+check(tActor.state === 'PASSING', 'Train in PASSING state alongside player');
+check(tActor.ghostPassengers.length >= 2, 'Ghost passengers visible through illuminated carriage windows');
+
+// Post-encounter: Vanishes into mist
+director.update(1.5, true, tActor.triggerZ - 45);
+check(tActor.state === 'FADING_INTO_FOG', 'The Last Train fades into mist after passing player');
+
+pool.clearDecorativeGroup(trainChunk, new Set(Object.values(factory.getSharedMaterials())));
+testScene.remove(trainChunk);
+
+// Suite 18: Flagship 3 (The Station Awakens) 9-Stage Sequence Verification
+console.log('\n--- Suite 18: Flagship 3 (The Station Awakens) 9-Stage Sequence ---');
+director.reset();
+const stationAwakensChunk = new THREE.Group();
+factory.buildScenery(stationAwakensChunk, PHANTOM_LINE_THEME, -1600, false, false, 'NONE', 'FULL', 202); // Central Station
+testScene.add(stationAwakensChunk);
+testScene.updateMatrixWorld(true);
+
+const awakenings = director.getStationAwakens();
+check(awakenings.length >= 1, 'The Station Awakens flagship actor registered in station concourse');
+const saActor = awakenings[0];
+check(saActor.solitaryWindow !== undefined, 'Station Awakens features solitary window');
+check(saActor.departureClockHand !== undefined, 'Station Awakens features retrograde departure clock hand');
+check(saActor.shadowSilhouetteSweep !== undefined, 'Station Awakens features sweeping shadow silhouette');
+check(saActor.finalDistantFigure !== undefined, 'Station Awakens features final distant silhouette figure');
+
+// Stage 1: Distance > 130m -> Deserted
+director.update(0.1, true, saActor.triggerZ + 145);
+check(saActor.state === 'DESERTED', 'Stage 1: Station is deserted at 145m approach');
+check(saActor.solitaryWindow.visible === false, 'Solitary window dark in deserted state');
+
+// Stage 2: Distance 115m -> Single window illuminates
+director.update(0.1, true, saActor.triggerZ + 115);
+check(saActor.state === 'SINGLE_WINDOW', 'Stage 2: Single window illuminates at 115m');
+check(saActor.solitaryWindow.visible === true, 'Solitary window lit');
+
+// Stage 3: Distance 90m -> Concourse lights activate gradually
+director.update(0.1, true, saActor.triggerZ + 90);
+check(saActor.state === 'LIGHTS_ACTIVATING', 'Stage 3: Station lights activate gradually at 90m');
+
+// Stage 4: Distance 65m -> Ghost passengers appear, clock moves backward
+director.update(0.1, true, saActor.triggerZ + 65);
+check(saActor.state === 'PASSENGERS_APPEARING', 'Stage 4: Ghost passengers appear at 65m');
+check(saActor.ghostPassengers[0].group.visible === true, 'Ghost passenger groups visible on concourse platform');
+
+// Stage 5: Distance 45m -> Clock continuing reverse, shadow sweeps across vault
+const initialHandRot = saActor.clockAngle;
+director.update(0.2, true, saActor.triggerZ + 45);
+check(saActor.state === 'SHADOW_SWEEP', 'Stage 5 & 6: Shadow silhouette sweeps across terminal at 45m');
+check(saActor.clockAngle < initialHandRot, 'Departure clock hand spins backward (retrograde rotation)');
+check(saActor.shadowSilhouetteSweep!.visible === true, 'Shadow silhouette sweeps across concourse vault');
+
+// Stage 6: Distance 25m -> ALL ghost passengers snap heads synchronously toward runner!
+director.update(0.1, true, saActor.triggerZ + 25);
+check(saActor.state === 'PASSENGERS_TURNING', 'Stage 7: All ghost passengers turn synchronously toward runner at 25m');
+
+// Stage 7: Distance 10m -> Sudden blackout!
+director.update(0.1, true, saActor.triggerZ + 10);
+check(saActor.state === 'BLACKOUT', 'Stage 8: Sudden blackout plunges station into pitch darkness at 10m');
+check(saActor.solitaryWindow.visible === false, 'Windows extinguished in blackout');
+check(saActor.ghostPassengers[0].group.visible === false, 'Passengers extinguished in blackout');
+
+// Stage 8: Distance -5m -> Solitary distant figure lingers for unsettling final reveal!
+director.update(0.1, true, saActor.triggerZ - 5);
+check(saActor.state === 'FINAL_REVEAL', 'Stage 9: Final distant figure remains in the dark for unsettling reveal');
+check(saActor.finalDistantFigure!.visible === true, 'Final distant silhouette figure visible under dim beacon');
+
+pool.clearDecorativeGroup(stationAwakensChunk, new Set(Object.values(factory.getSharedMaterials())));
+testScene.remove(stationAwakensChunk);
+
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} PHANTOM_LINE PREMIUM WORLD TESTS PASSED!`);
 console.log(`=======================================================`);

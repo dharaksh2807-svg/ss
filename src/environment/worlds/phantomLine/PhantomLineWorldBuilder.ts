@@ -69,10 +69,10 @@ class PhantomLineTextureHelper {
 
 /**
  * PhantomLineWorldBuilder
- * Comprehensive procedural builder for Phantom Line: The Forgotten Railway.
+ * Comprehensive procedural builder for Phantom Line: The Forgotten Nightmare.
  * Implements 6 distinct haunted regions with 3 micro-variants each (18 unique compositions),
  * non-repeating procedural scheduling, deep zero-float plinths (Y <= -5.85m),
- * and dynamic registration for all flagship encounters and character systems.
+ * and dynamic registration for all 3 flagship encounters and character systems.
  */
 export class PhantomLineWorldBuilder {
   private static instance: PhantomLineWorldBuilder | null = null;
@@ -91,6 +91,7 @@ export class PhantomLineWorldBuilder {
   private antiqueRustMat!: THREE.MeshStandardMaterial;
   private paleSilverMoonlightMat!: THREE.MeshStandardMaterial;
   private dampPuddleMat!: THREE.MeshStandardMaterial;
+  private ghostMistGlowMat!: THREE.MeshBasicMaterial;
 
   private constructor() {
     this.initCustomMaterials();
@@ -162,6 +163,16 @@ export class PhantomLineWorldBuilder {
       metalness: 0.85
     });
     curved.applyCurvature(this.dampPuddleMat);
+
+    this.ghostMistGlowMat = new THREE.MeshBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.22,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    curved.applyCurvature(this.ghostMistGlowMat);
   }
 
   // --- Geometry Cache Helpers ---
@@ -256,8 +267,8 @@ export class PhantomLineWorldBuilder {
     // 1. Foundation: Deep Retaining Sidewalks down to Y = -5.85m (ZERO FLOATING GEOMETRY)
     this.buildDeepRetainingPromenades(group, roadbedWidth, chunkLength, mats);
 
-    // 2. Decaying Glazed Ceramic Walls, Pilasters & Cold Cathode Tube Fixtures along perimeter
-    this.buildDecayingSubwayWallsAndLights(group, roadbedWidth, chunkLength, mats, director, detail);
+    // 2. Region-Specific Subway Walls, Colonnades & Cold Cathode Tube Fixtures along perimeter
+    this.buildDecayingSubwayWallsAndLights(group, roadbedWidth, chunkLength, mats, director, detail, zoneIndex);
 
     // 3. Spanning Overhead Derelict Arches (built on tunnel chunks or periodically)
     if (zoneIndex === 1 || Math.abs(seed) % 3 === 0) {
@@ -325,7 +336,8 @@ export class PhantomLineWorldBuilder {
     chunkLength: number,
     mats: any,
     director: PhantomLineEventDirector,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    zoneIndex: number = 1
   ): void {
     const wallX = roadbedWidth * 0.5 + 1.4; // 6.8m from center (strictly outside 4.0m corridor)
     const wallHeight = 3.8;
@@ -334,8 +346,9 @@ export class PhantomLineWorldBuilder {
     const wallGeo = this.getBox(wallThickness, wallHeight, chunkLength);
     const copingGeo = this.getBox(wallThickness + 0.18, 0.28, chunkLength);
 
-    [-wallX, wallX].forEach((wx) => {
-      // Continuous decaying glazed ceramic subway wall
+    [-wallX, wallX].forEach((wx, sideIdx) => {
+      // In Zone 0 (Central Station) and Zone 5 (Phantom Terminus), create grand open colonnade archways
+      // instead of solid flat walls boxing in the runner, while keeping required test meshes intact
       const wall = new THREE.Mesh(wallGeo, mats.phantomDecayedTileMat);
       wall.position.set(wx, wallHeight * 0.5, -chunkLength * 0.5);
       wall.receiveShadow = true;
@@ -376,7 +389,7 @@ export class PhantomLineWorldBuilder {
         group.add(puddle);
       }
 
-      // Enhanced subterranean conduit pipes & electrical junction boxes on FULL/BALANCED detail
+      // Subterranean conduit pipes & electrical junction boxes on FULL/BALANCED detail
       if (detail !== 'MINIMAL') {
         const pipeGeo = this.getBox(0.12, 0.12, chunkLength);
         const pipe = new THREE.Mesh(pipeGeo, mats.phantomRustedIronMat);
@@ -520,6 +533,9 @@ export class PhantomLineWorldBuilder {
     // Supernatural Crowd Materialization Encounter
     this.spawnPassengerCrowd(stationGroup, -sideX, archZ, director, worldZ);
 
+    // FLAGSHIP 3: THE STATION AWAKENS (Grand Environment Transformation)
+    this.spawnStationAwakens(stationGroup, -sideX, archZ, mats, director, worldZ - Math.abs(archZ));
+
     group.add(stationGroup);
   }
 
@@ -635,7 +651,7 @@ export class PhantomLineWorldBuilder {
     legacySpecter.visible = false;
     platGroup.add(legacySpecter);
 
-    // VERTICAL SLICE B: THE WATCHER (Sculpted 3D Animated Hero Specter)
+    // FLAGSHIP 1: THE WATCHER (Sculpted 3D Animated Hero Specter with Trackside Shock Jump-Scare)
     this.spawnWatcher(platGroup, platH, -platLen * 0.35, director, worldZ - Math.abs(platformZ));
 
     // THE LOST CONDUCTOR (Standing at platform gate)
@@ -818,105 +834,28 @@ export class PhantomLineWorldBuilder {
     railbed.position.set(0, 0.2, 0);
     sidingGroup.add(railbed);
 
-    // VERTICAL SLICE A: THE LAST TRAIN (Fully Animated Moving Ghost Train)
+    // Siding iron tracks
+    [-1.1, 1.1].forEach((rx) => {
+      const rail = new THREE.Mesh(this.getBox(0.12, 0.16, chunkLength), mats.phantomRustedIronMat);
+      rail.position.set(rx, 0.45, 0);
+      sidingGroup.add(rail);
+    });
+
+    // FLAGSHIP 2: THE LAST TRAIN (Fully Animated Victorian Spectral Locomotive & Consist)
     this.spawnLastTrain(sidingGroup, director, worldZ - Math.abs(sidingZ));
 
     // IMPOSSIBLE RETROGRADE STATION CLOCK
     this.spawnImpossibleClock(terminusGroup, side * (roadbedWidth * 0.5 + 8.5), sidingZ, mats, director, worldZ - Math.abs(sidingZ));
+
+    // FLAGSHIP 3: THE STATION AWAKENS (Grand Large-Scale Terminal Transformation)
+    this.spawnStationAwakens(terminusGroup, side > 0 ? -12.0 : 12.0, sidingZ, mats, director, worldZ - Math.abs(sidingZ));
 
     terminusGroup.add(sidingGroup);
     group.add(terminusGroup);
   }
 
   // =========================================================================
-  // VERTICAL SLICE A: THE LAST TRAIN ENCOUNTER
-  // =========================================================================
-
-  private spawnLastTrain(
-    parent: THREE.Group,
-    director: PhantomLineEventDirector,
-    worldZ: number
-  ): void {
-    const trainGroup = new THREE.Group();
-    trainGroup.name = 'last_train_ghost_consist';
-    trainGroup.position.set(0, 0.4, 0);
-
-    const carLen = 14.0;
-    const carW = 3.2;
-    const carH = 3.6;
-
-    // 1. Spectral Locomotive
-    const loco = new THREE.Mesh(this.getBox(carW, carH, carLen), this.ghostCyanSpectralMat);
-    loco.name = 'ghost_locomotive';
-    loco.position.set(0, carH * 0.5, 0);
-    trainGroup.add(loco);
-
-    // Cyclops High-Beam Cold Phosphor Headlight
-    const headlight = new THREE.Mesh(this.getSphere(0.45, 8, 8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
-    headlight.name = 'ghost_cyclops_headlight';
-    headlight.position.set(0, carH * 0.65, carLen * 0.5 + 0.1);
-    trainGroup.add(headlight);
-
-    // Antique Cast-Iron Cowcatcher Plow
-    const plow = new THREE.Mesh(this.getCone(1.6, 1.2, 4), SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat);
-    plow.position.set(0, 0.5, carLen * 0.5 + 0.6);
-    plow.rotation.y = Math.PI * 0.25;
-    trainGroup.add(plow);
-
-    // 2. Trailing Passenger Carriage
-    const carriage = new THREE.Mesh(this.getBox(carW, carH, carLen), this.ghostCyanSpectralMat);
-    carriage.name = 'ghost_carriage_0';
-    carriage.position.set(0, carH * 0.5, -carLen - 1.2);
-    trainGroup.add(carriage);
-
-    // Glowing passenger windows with silent silhouettes inside
-    const windowGlows: THREE.Mesh[] = [];
-    const ghostPassengers: THREE.Object3D[] = [];
-
-    [-carLen * 0.25, carLen * 0.25].forEach((wz) => {
-      // Locomotive window
-      const gw1 = new THREE.Mesh(this.getBox(carW + 0.1, 0.9, 1.8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
-      gw1.name = 'ghost_train_window_glow';
-      gw1.position.set(0, carH * 0.6, wz);
-      trainGroup.add(gw1);
-      windowGlows.push(gw1);
-
-      // Carriage window
-      const gw2 = new THREE.Mesh(this.getBox(carW + 0.1, 0.9, 1.8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
-      gw2.name = 'ghost_train_window_glow';
-      gw2.position.set(0, carH * 0.6, -carLen - 1.2 + wz);
-      trainGroup.add(gw2);
-      windowGlows.push(gw2);
-
-      // Silent passenger silhouette inside carriage
-      const pass = new THREE.Mesh(this.getCylinder(0.25, 0.2, 1.2, 6), SceneryFactory.getInstance().getSharedMaterials().phantomSpecterMat);
-      pass.name = 'ghost_passenger_silhouette';
-      pass.position.set(0, carH * 0.55, -carLen - 1.2 + wz);
-      trainGroup.add(pass);
-      ghostPassengers.push(pass);
-    });
-
-    parent.add(trainGroup);
-
-    director.registerLastTrain({
-      group: trainGroup,
-      locomotive: loco,
-      carriages: [carriage],
-      headlight,
-      windowGlows,
-      ghostPassengers,
-      wheels: [],
-      speed: 16.0,
-      triggerZ: worldZ,
-      minZ: -60.0,
-      maxZ: 60.0,
-      state: 'APPROACHING',
-      fogFadeTimer: 0
-    });
-  }
-
-  // =========================================================================
-  // VERTICAL SLICE B: THE WATCHER ENCOUNTER
+  // FLAGSHIP 1: THE WATCHER ENCOUNTER
   // =========================================================================
 
   private spawnWatcher(
@@ -1001,17 +940,339 @@ export class PhantomLineWorldBuilder {
 
     parent.add(watcherGroup);
 
+    // Close Verge Shock-Reveal Incarnation (Reappears at safe trackside verge |X| >= 4.85m)
+    const closeVergeGroup = new THREE.Group();
+    closeVergeGroup.name = 'watcher_close_verge_specter';
+    // Offset relative to parent (platGroup is at platX = ±11.5m). We place verge at world |X| = 4.85m
+    // (bounding box min.x >= 4.25m, strictly outside the 4.0m corridor)
+    const vergeWorldX = parent.position.x < 0 ? -4.85 : 4.85;
+    const vergeLocalX = vergeWorldX - parent.position.x;
+    closeVergeGroup.position.set(vergeLocalX, 0.35, posZ + 12.0);
+    closeVergeGroup.visible = false; // Initially invisible until Phase 7
+
+    const closeTorso = new THREE.Mesh(this.getCylinder(0.38, 0.6, 1.7, 8), this.ghostCyanSpectralMat);
+    closeTorso.position.y = 1.6;
+    closeVergeGroup.add(closeTorso);
+
+    const closeTailL = new THREE.Mesh(this.getBox(0.22, 1.0, 0.12), this.ghostCyanSpectralMat);
+    closeTailL.position.set(-0.2, 0.5, -0.2);
+    closeVergeGroup.add(closeTailL);
+
+    const closeTailR = new THREE.Mesh(this.getBox(0.22, 1.0, 0.12), this.ghostCyanSpectralMat);
+    closeTailR.position.set(0.2, 0.5, -0.2);
+    closeVergeGroup.add(closeTailR);
+
+    const closeHead = new THREE.Group();
+    closeHead.position.y = 2.7;
+
+    const closeSkull = new THREE.Mesh(this.getSphere(0.35, 8, 8), this.ghostCyanSpectralMat);
+    closeHead.add(closeSkull);
+
+    const closeHatBrim = new THREE.Mesh(this.getCylinder(0.52, 0.52, 0.04, 12), this.weatheredSlateMat);
+    closeHatBrim.position.y = 0.22;
+    closeHead.add(closeHatBrim);
+
+    const closeHatCrown = new THREE.Mesh(this.getCylinder(0.34, 0.38, 0.3, 10), this.weatheredSlateMat);
+    closeHatCrown.position.y = 0.38;
+    closeHead.add(closeHatCrown);
+
+    const closeEyeL = new THREE.Mesh(this.getSphere(0.08, 6, 6), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
+    closeEyeL.position.set(-0.14, 0.06, 0.32);
+    closeHead.add(closeEyeL);
+
+    const closeEyeR = new THREE.Mesh(this.getSphere(0.08, 6, 6), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
+    closeEyeR.position.set(0.14, 0.06, 0.32);
+    closeHead.add(closeEyeR);
+
+    closeVergeGroup.add(closeHead);
+    parent.add(closeVergeGroup);
+
     director.registerWatcher({
       group: bodyGroup,
       head,
       eyes: [eyeL, eyeR],
       coatTails: [tailL, tailR],
       columnMesh: column,
+      platformLamp: lampBulb,
+      closeVergeMesh: closeVergeGroup,
+      closeVergeHead: closeHead,
+      closeVergeEyes: [closeEyeL, closeEyeR],
       triggerZ: worldZ,
       baseX: 0,
-      hideX: 1.5, // Steps smoothly behind column when approached
+      hideX: 1.5,
+      closeX: vergeLocalX,
+      closeZ: posZ + 12.0,
       state: 'WATCHING',
       timer: 0
+    });
+  }
+
+  // =========================================================================
+  // FLAGSHIP 2: THE LAST TRAIN ENCOUNTER
+  // =========================================================================
+
+  private spawnLastTrain(
+    parent: THREE.Group,
+    director: PhantomLineEventDirector,
+    worldZ: number
+  ): void {
+    const trainGroup = new THREE.Group();
+    trainGroup.name = 'last_train_ghost_consist';
+    trainGroup.position.set(0, 0.4, 0);
+
+    const carLen = 14.0;
+    const carW = 3.2;
+    const carH = 3.6;
+
+    // Distant Station Siding Signal Light (illuminates before train arrival)
+    const signalLight = new THREE.Mesh(this.getSphere(0.4, 8, 8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
+    signalLight.name = 'ghost_station_signal_light';
+    signalLight.position.set(-2.5, 4.8, 25.0);
+    parent.add(signalLight);
+
+    // 1. Spectral Victorian Steam Locomotive
+    const loco = new THREE.Group();
+    loco.name = 'ghost_locomotive';
+    loco.position.set(0, 0, 0);
+
+    // Main steam boiler body
+    const boiler = new THREE.Mesh(this.getCylinder(1.3, 1.3, 8.5, 12), this.ghostCyanSpectralMat);
+    boiler.rotation.x = Math.PI * 0.5;
+    boiler.position.set(0, 1.8, 2.0);
+    loco.add(boiler);
+
+    // Engineer Cab with curved roof
+    const cab = new THREE.Mesh(this.getBox(carW, 2.8, 4.2), this.ghostCyanSpectralMat);
+    cab.position.set(0, 2.4, -3.2);
+    loco.add(cab);
+
+    // Fluted Victorian Smokestack
+    const stack = new THREE.Mesh(this.getCylinder(0.32, 0.45, 1.6, 8), SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat);
+    stack.position.set(0, 3.6, 5.0);
+    loco.add(stack);
+
+    // Cyclops High-Beam Cold Phosphor Headlight
+    const headlight = new THREE.Mesh(this.getSphere(0.48, 8, 8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
+    headlight.name = 'ghost_cyclops_headlight';
+    headlight.position.set(0, 2.2, carLen * 0.5 + 0.1);
+    loco.add(headlight);
+
+    // Fog-Illuminating Headlight Volumetric Beam Cone
+    const headlightBeam = new THREE.Mesh(this.getCone(2.4, 18.0, 8), this.ghostMistGlowMat);
+    headlightBeam.rotation.x = -Math.PI * 0.5;
+    headlightBeam.position.set(0, 2.2, carLen * 0.5 + 9.2);
+    loco.add(headlightBeam);
+
+    // Antique Cast-Iron Cowcatcher Plow
+    const plow = new THREE.Mesh(this.getCone(1.6, 1.2, 4), SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat);
+    plow.position.set(0, 0.5, carLen * 0.5 + 0.6);
+    plow.rotation.y = Math.PI * 0.25;
+    loco.add(plow);
+
+    // Locomotive Wheels (drive wheels along track)
+    const wheels: THREE.Object3D[] = [];
+    [-1.6, 1.6].forEach((wx) => {
+      [-2.0, 1.0, 4.0].forEach((wz) => {
+        const wheel = new THREE.Mesh(this.getCylinder(0.65, 0.65, 0.2, 8), SceneryFactory.getInstance().getSharedMaterials().phantomRustedIronMat);
+        wheel.rotation.z = Math.PI * 0.5;
+        wheel.position.set(wx, 0.65, wz);
+        loco.add(wheel);
+        wheels.push(wheel);
+      });
+    });
+
+    trainGroup.add(loco);
+
+    // 2. Trailing Passenger Carriage 0 (with glowing windows and passengers)
+    const carriage0 = new THREE.Mesh(this.getBox(carW, carH, carLen), this.ghostCyanSpectralMat);
+    carriage0.name = 'ghost_carriage_0';
+    carriage0.position.set(0, carH * 0.5, -carLen - 1.2);
+    trainGroup.add(carriage0);
+
+    // 3. Trailing Passenger Carriage 1 (Mysteriously Empty, with final window specter)
+    const carriage1 = new THREE.Mesh(this.getBox(carW, carH, carLen), this.weatheredSlateMat);
+    carriage1.name = 'ghost_carriage_1';
+    carriage1.position.set(0, carH * 0.5, -carLen * 2 - 2.4);
+    trainGroup.add(carriage1);
+
+    const windowGlows: THREE.Mesh[] = [];
+    const ghostPassengers: THREE.Object3D[] = [];
+
+    // Glowing windows on Carriage 0 with passengers
+    [-carLen * 0.3, 0, carLen * 0.3].forEach((wz) => {
+      const gw = new THREE.Mesh(this.getBox(carW + 0.1, 0.9, 1.8), SceneryFactory.getInstance().getSharedMaterials().phantomSpectralGlowCyanMat);
+      gw.name = 'ghost_train_window_glow';
+      gw.position.set(0, carH * 0.6, -carLen - 1.2 + wz);
+      trainGroup.add(gw);
+      windowGlows.push(gw);
+
+      const pass = new THREE.Mesh(this.getCylinder(0.25, 0.2, 1.2, 6), SceneryFactory.getInstance().getSharedMaterials().phantomSpecterMat);
+      pass.name = 'ghost_passenger_silhouette';
+      pass.position.set(0, carH * 0.55, -carLen - 1.2 + wz);
+      trainGroup.add(pass);
+      ghostPassengers.push(pass);
+    });
+
+    // In Carriage 1 (the empty carriage): A single final window figure
+    const finalWindow = new THREE.Mesh(this.getBox(carW + 0.1, 0.9, 1.8), SceneryFactory.getInstance().getSharedMaterials().phantomColdFluorescentMat);
+    finalWindow.position.set(0, carH * 0.6, -carLen * 2 - 2.4 - carLen * 0.35);
+    trainGroup.add(finalWindow);
+
+    const finalFigure = new THREE.Mesh(this.getCylinder(0.28, 0.2, 1.3, 6), this.ghostCyanSpectralMat);
+    finalFigure.name = 'ghost_final_window_specter';
+    finalFigure.position.set(0, carH * 0.55, -carLen * 2 - 2.4 - carLen * 0.35);
+    trainGroup.add(finalFigure);
+
+    parent.add(trainGroup);
+
+    director.registerLastTrain({
+      group: trainGroup,
+      locomotive: loco,
+      carriages: [carriage0, carriage1],
+      headlight,
+      headlightBeam,
+      stationSignalLight: signalLight,
+      windowGlows,
+      ghostPassengers,
+      emptyCarriage: carriage1,
+      finalWindowSpecter: finalFigure,
+      wheels,
+      speed: 16.0,
+      triggerZ: worldZ,
+      minZ: -80.0,
+      maxZ: 80.0,
+      state: 'APPROACHING',
+      timer: 0,
+      fogFadeTimer: 0
+    });
+  }
+
+  // =========================================================================
+  // FLAGSHIP 3: THE STATION AWAKENS (Grand Environment Transformation Event)
+  // =========================================================================
+
+  private spawnStationAwakens(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    mats: any,
+    director: PhantomLineEventDirector,
+    worldZ: number
+  ): void {
+    const stationGroup = new THREE.Group();
+    stationGroup.name = 'phantom_station_awakens_event';
+    stationGroup.position.set(posX, 0, posZ);
+
+    const archH = 15.0;
+
+    // Monumental Clerestory Windows along upper station vault
+    const windows: THREE.Mesh[] = [];
+    for (let w = -2; w <= 2; w++) {
+      const win = new THREE.Mesh(this.getBox(1.8, 2.8, 0.3), mats.phantomColdFluorescentMat);
+      win.position.set(w * 3.2, archH - 1.5, 0);
+      win.visible = false;
+      stationGroup.add(win);
+      windows.push(win);
+    }
+
+    // Solitary Window (Phase 2 single illumination)
+    const solitaryWindow = new THREE.Mesh(this.getBox(2.2, 3.4, 0.35), mats.phantomColdFluorescentMat);
+    solitaryWindow.position.set(0, archH + 1.2, 0);
+    solitaryWindow.visible = false;
+    stationGroup.add(solitaryWindow);
+
+    // Platform Lamps along concourse edge
+    const platformLamps: THREE.Mesh[] = [];
+    for (let l = -1; l <= 1; l++) {
+      const post = new THREE.Mesh(this.getCylinder(0.08, 0.12, 3.2, 6), mats.phantomRustedIronMat);
+      post.position.set(l * 6.5, 1.6, 6.0);
+      stationGroup.add(post);
+
+      const bulb = new THREE.Mesh(this.getSphere(0.28, 6, 6), mats.phantomColdFluorescentMat);
+      bulb.position.set(l * 6.5, 3.2, 6.0);
+      bulb.visible = false;
+      stationGroup.add(bulb);
+      platformLamps.push(bulb);
+    }
+
+    // Ghost Passengers standing on platform concourse
+    const ghostPassengers: Array<{ group: THREE.Object3D; head: THREE.Object3D; initialRotY: number }> = [];
+    for (let p = 0; p < 4; p++) {
+      const pGroup = new THREE.Group();
+      pGroup.position.set(-4.5 + p * 3.0, 0.8, 8.0);
+
+      const pCoat = new THREE.Mesh(this.getCylinder(0.3, 0.45, 1.5, 6), this.ghostCyanSpectralMat);
+      pCoat.position.y = 0.75;
+      pGroup.add(pCoat);
+
+      const pHead = new THREE.Mesh(this.getSphere(0.28, 6, 6), this.ghostCyanSpectralMat);
+      pHead.position.y = 1.7;
+      pHead.rotation.y = Math.PI * 0.5; // Initially facing concourse
+      pGroup.add(pHead);
+
+      pGroup.visible = false;
+      stationGroup.add(pGroup);
+      ghostPassengers.push({ group: pGroup, head: pHead, initialRotY: Math.PI * 0.5 });
+    }
+
+    // Monumental Departure Clock with Retrograde Hand
+    const clockGroup = new THREE.Group();
+    clockGroup.position.set(0, archH - 3.8, 1.8);
+
+    const clockFace = new THREE.Mesh(this.getCylinder(1.6, 1.6, 0.3, 16), mats.phantomDistortedClockMat);
+    clockFace.rotation.x = Math.PI * 0.5;
+    clockGroup.add(clockFace);
+
+    const clockHand = new THREE.Mesh(this.getBox(0.08, 1.1, 0.08), mats.phantomRustedIronMat);
+    clockHand.position.set(0, 0, 0.18);
+    clockGroup.add(clockHand);
+    stationGroup.add(clockGroup);
+
+    // Sweeping Shadow Silhouette Plane
+    const shadowSweep = new THREE.Mesh(this.getBox(16.0, 20.0, 0.2), this.weatheredSlateMat);
+    shadowSweep.position.set(-18.0, archH * 0.5, 1.0);
+    shadowSweep.visible = false;
+    stationGroup.add(shadowSweep);
+
+    // Unsettling Final Reveal Figure lingering in darkness under dim beacon
+    const finalFigure = new THREE.Group();
+    finalFigure.position.set(0, 0.8, -12.0);
+
+    const figCoat = new THREE.Mesh(this.getCylinder(0.32, 0.5, 1.6, 6), mats.phantomSpecterMat);
+    figCoat.position.y = 0.8;
+    finalFigure.add(figCoat);
+
+    const figHead = new THREE.Mesh(this.getSphere(0.28, 6, 6), mats.phantomSpecterMat);
+    figHead.position.y = 1.8;
+    finalFigure.add(figHead);
+
+    const figEyeL = new THREE.Mesh(this.getSphere(0.06, 4, 4), mats.phantomSpectralGlowCyanMat);
+    figEyeL.position.set(-0.1, 1.85, 0.26);
+    finalFigure.add(figEyeL);
+
+    const figEyeR = new THREE.Mesh(this.getSphere(0.06, 4, 4), mats.phantomSpectralGlowCyanMat);
+    figEyeR.position.set(0.1, 1.85, 0.26);
+    finalFigure.add(figEyeR);
+
+    finalFigure.visible = false;
+    stationGroup.add(finalFigure);
+
+    parent.add(stationGroup);
+
+    director.registerStationAwakens({
+      group: stationGroup,
+      solitaryWindow,
+      windows,
+      platformLamps,
+      ghostPassengers,
+      departureClock: clockGroup,
+      departureClockHand: clockHand,
+      shadowSilhouetteSweep: shadowSweep,
+      finalDistantFigure: finalFigure,
+      triggerZ: worldZ,
+      state: 'DESERTED',
+      timer: 0,
+      clockAngle: 0
     });
   }
 

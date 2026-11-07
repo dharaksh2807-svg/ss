@@ -2678,7 +2678,7 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'PHANTOM_LINE') {
       const delta = dt || 0.016;
-      PhantomLineEventDirector.getInstance().update(delta, true);
+      PhantomLineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
