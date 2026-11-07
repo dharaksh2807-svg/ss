@@ -14,6 +14,7 @@ import { ChronoKingdomEventDirector } from '../environment/worlds/chronoKingdom/
 import { InfernoExpressEventDirector } from '../environment/worlds/infernoExpress/InfernoExpressEventDirector';
 import { JurassicRushEventDirector } from '../environment/worlds/jurassicRush/JurassicRushEventDirector';
 import { FeverDirector } from '../environment/worlds/vivaHeat/FeverDirector';
+import { HauntedCarnivalEventDirector } from '../environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2664,6 +2665,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'CHRONO_KINGDOM') {
       const delta = dt || 0.016;
       ChronoKingdomEventDirector.getInstance().update(delta, true);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'HAUNTED_CARNIVAL') {
+      const delta = dt || 0.016;
+      HauntedCarnivalEventDirector.getInstance().update(delta, true);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {

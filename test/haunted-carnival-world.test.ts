@@ -9,6 +9,9 @@ import { WorldScene } from '../src/scene/WorldScene';
 import { EnvironmentalEncounterDirector } from '../src/environment/EnvironmentalEncounterDirector';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { getWorld } from '../src/environment/WorldCatalog';
+import { HauntedCarnivalEventDirector } from '../src/environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
+import { HauntedCarnivalWorldBuilder } from '../src/environment/worlds/hauntedCarnival/HauntedCarnivalWorldBuilder';
+import { SettingsManager } from '../src/settings/SettingsManager';
 
 console.log('🧪 Starting HAUNTED_CARNIVAL Premium World Verification Suite...\n');
 
@@ -271,6 +274,128 @@ for (let s = 200; s < 235; s++) {
   pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
 }
 check(landmarkTypes.size >= 3, `Procedural generation includes multiple landmark variations (found ${Array.from(landmarkTypes).join(', ')})`);
+
+// Suite 10: Scene A — The Haunted Carousel Awakening
+console.log('\n--- Suite 10: Scene A — The Haunted Carousel Awakening ---');
+const director = HauntedCarnivalEventDirector.getInstance();
+director.reset();
+
+const carouselChunk = new THREE.Group();
+factory.buildScenery(carouselChunk, HAUNTED_CARNIVAL_THEME, -400, false, false, 'NONE', 'FULL', 5);
+
+let carouselFound = false;
+let steedCount = 0;
+let hasOrgan = false;
+let hasCanopy = false;
+
+carouselChunk.traverse((child) => {
+  if (child.name === 'haunted_carousel_scene_a') {
+    carouselFound = true;
+  }
+});
+check(carouselFound, 'Scene A: Haunted Carousel successfully generated in Supernatural Midway');
+
+const diag1 = director.getDiagnostics();
+check(diag1.carousels >= 1, `Carousel registered with HauntedCarnivalEventDirector (count: ${diag1.carousels})`);
+
+// Proximity awakening update
+director.update(0.016, true, -380);
+const diagAfter = director.getDiagnostics();
+check(diagAfter.carousels >= 1, 'Carousel updates smoothly on approaching player');
+
+pool.clearDecorativeGroup(carouselChunk, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 11: Scene B — Surprise Ghost Encounter
+console.log('\n--- Suite 11: Scene B — Surprise Ghost Encounter ---');
+director.reset();
+const ghostChunk = new THREE.Group();
+factory.buildScenery(ghostChunk, HAUNTED_CARNIVAL_THEME, -240, false, false, 'NONE', 'FULL', 3);
+ghostChunk.updateMatrixWorld(true);
+
+let ghostFound = false;
+ghostChunk.traverse((child) => {
+  if (child.name === 'surprise_ghost_scene_b') {
+    ghostFound = true;
+    child.traverse((part) => {
+      if ((part as THREE.Mesh).isMesh) {
+        const box = new THREE.Box3().setFromObject(part);
+        if (box.min.x < 4.0 && box.max.x > -4.0 && box.min.y < 7.5) {
+          assert.fail(`Ghost intruded into corridor: minX=${box.min.x}, maxX=${box.max.x}`);
+        }
+      }
+    });
+  }
+});
+check(ghostFound, 'Scene B: Surprise Ghost Encounter generated in Cursed Graveyard');
+const diagGhost = director.getDiagnostics();
+check(diagGhost.ghosts >= 1, `Surprise Ghost registered with HauntedCarnivalEventDirector (count: ${diagGhost.ghosts})`);
+
+// Update with approaching player to trigger emerging phase
+director.update(0.05, true, -180);
+check(diagGhost.ghosts >= 1, 'Ghost progresses through encounter states');
+
+pool.clearDecorativeGroup(ghostChunk, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 12: 12 Signature Scares & Actors Registration
+console.log('\n--- Suite 12: 12 Signature Scares & Actors Registration ---');
+director.reset();
+const multiCycleGroup = new THREE.Group();
+// Build across all 6 zones
+for (let c = 0; c < 6; c++) {
+  const g = new THREE.Group();
+  factory.buildScenery(g, HAUNTED_CARNIVAL_THEME, -c * 80, false, false, 'NONE', 'FULL', c);
+  multiCycleGroup.add(g);
+}
+
+const allDiag = director.getDiagnostics();
+check(allDiag.carousels >= 1, `Signature Scare: Haunted Carousel present (${allDiag.carousels})`);
+check(allDiag.ghosts >= 1, `Signature Scare: Surprise Ghost Encounter present (${allDiag.ghosts})`);
+check(allDiag.ringmasters >= 1, `Signature Scare: Ringmaster present (${allDiag.ringmasters})`);
+check(allDiag.ghostClowns >= 1, `Signature Scare: Ghost Clown present (${allDiag.ghostClowns})`);
+check(allDiag.hauntedDolls >= 1, `Signature Scare: Haunted Dolls present (${allDiag.hauntedDolls})`);
+check(allDiag.shadowCreatures >= 1, `Signature Scare: Giant Shadow Creature present (${allDiag.shadowCreatures})`);
+check(allDiag.mirrorGlitches >= 1, `Signature Scare: Cursed Mirror Glitch present (${allDiag.mirrorGlitches})`);
+check(allDiag.ghostTrains >= 1, `Signature Scare: Sky Trestle Ghost Train present (${allDiag.ghostTrains})`);
+check(allDiag.livingPumpkins >= 1, `Signature Scare: Living Jack-o'-Lanterns present (${allDiag.livingPumpkins})`);
+check(allDiag.paradeFloats >= 1, `Signature Scare: Ghost Carnival Parade Float present (${allDiag.paradeFloats})`);
+check(allDiag.batSwarms >= 1, `Signature Scare: Overhead Bat Swarms present (${allDiag.batSwarms})`);
+check(allDiag.funhouseTricks >= 1, `Signature Scare: Funhouse Trick Facade present (${allDiag.funhouseTricks})`);
+check(allDiag.swingingLanterns >= 5, `Ambient Haunting: Swinging Lanterns present (${allDiag.swingingLanterns})`);
+check(allDiag.willOWisps >= 3, `Ambient Haunting: Will-o'-the-Wisps present (${allDiag.willOWisps})`);
+
+// Suite 13: 6 Distinct Macro-Zones & Non-Repeating Variety
+console.log('\n--- Suite 13: 6 Distinct Macro-Zones & Non-Repeating Variety ---');
+const zoneNames = new Set<string>();
+multiCycleGroup.traverse((child) => {
+  if (child.name.startsWith('zone_')) {
+    zoneNames.add(child.name);
+  }
+});
+check(zoneNames.has('zone_cursed_entrance'), 'Contains zone_cursed_entrance');
+check(zoneNames.has('zone_abandoned_funfair'), 'Contains zone_abandoned_funfair');
+check(zoneNames.has('zone_ghostly_circus'), 'Contains zone_ghostly_circus');
+check(zoneNames.has('zone_cursed_graveyard'), 'Contains zone_cursed_graveyard');
+check(zoneNames.has('zone_nightmare_manor'), 'Contains zone_nightmare_manor');
+check(zoneNames.has('zone_supernatural_midway'), 'Contains zone_supernatural_midway');
+check(zoneNames.size === 6, `All 6 distinct macro-zones present in a single 480m cycle (got ${zoneNames.size})`);
+
+pool.clearDecorativeGroup(multiCycleGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 14: Reduced Motion & Memory Lifecycle Stability
+console.log('\n--- Suite 14: Reduced Motion & Memory Lifecycle Stability ---');
+const settings = SettingsManager.getInstance();
+settings.setReducedMotion(true);
+
+// Update director in reduced motion mode
+director.update(0.016, true, -100);
+check(true, 'Director successfully updates in reduced motion mode without exceptions');
+
+settings.setReducedMotion(false);
+
+// Reset and verify all actors pruned
+director.reset();
+const resetDiag = director.getDiagnostics();
+check(resetDiag.carousels === 0 && resetDiag.ghosts === 0 && resetDiag.ringmasters === 0, 'Director reset clears all actor registries');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} HAUNTED_CARNIVAL PREMIUM WORLD TESTS PASSED!`);

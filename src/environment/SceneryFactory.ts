@@ -12,6 +12,7 @@ import { ChronoKingdomWorldBuilder } from './worlds/chronoKingdom/ChronoKingdomW
 import { InfernoExpressWorldBuilder } from './worlds/infernoExpress/InfernoExpressWorldBuilder';
 import { JurassicRushWorldBuilder } from './worlds/jurassicRush/JurassicRushWorldBuilder';
 import { VivaHeatWorldBuilder } from './worlds/vivaHeat/VivaHeatWorldBuilder';
+import { HauntedCarnivalWorldBuilder } from './worlds/hauntedCarnival/HauntedCarnivalWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1574,7 +1575,7 @@ export class SceneryFactory {
     } else if (theme.id === 'PHANTOM_LINE') {
       this.buildPhantomLineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'HAUNTED_CARNIVAL') {
-      this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildHauntedCarnivalScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'VIP_EXPRESS') {
       this.buildVipExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'RAHULVERSE') {
@@ -7076,37 +7077,12 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const rng = new SeededRandom(seed);
     const carnivalGroup = new THREE.Group();
     carnivalGroup.name = 'haunted_carnival_scenery';
-
-    // 1. Gothic cemetery retaining stone walls & wrought-iron picket fence
-    this.buildHauntedCemeteryFencesAndWalls(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
-
-    // 2. High overhead pointed gothic cast-iron spans with hanging pumpkin lanterns (clearance >= 10.2m)
-    this.buildHauntedOverheadGothicArches(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
-
-    // 3. Trackside carnival set dressing & directional signposts
-    if (detail !== 'MINIMAL') {
-      this.buildHauntedCarnivalProps(carnivalGroup, roadbedWidth, chunkLength, rng, detail);
-    }
-
-    // 4. Deterministic Landmark Encounter (Seeded variation across runs)
-    const landmarkChoice = Math.abs(seed) % 4;
-    const landmarkZ = -chunkLength * 0.5;
-
-    if (landmarkChoice === 0) {
-      this.buildCarnivalHauntedMansion(carnivalGroup, chunkLength, landmarkZ, rng);
-    } else if (landmarkChoice === 1) {
-      this.buildCarnivalSpookyTent(carnivalGroup, chunkLength, landmarkZ, rng);
-    } else if (landmarkChoice === 2) {
-      this.buildCarnivalPumpkinShrine(carnivalGroup, chunkLength, landmarkZ, rng);
-    } else {
-      this.buildCarnivalGraveyardCrypt(carnivalGroup, chunkLength, landmarkZ, rng);
-    }
-
+    HauntedCarnivalWorldBuilder.getInstance().buildDistrictScenery(carnivalGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
     group.add(carnivalGroup);
   }
 

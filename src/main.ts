@@ -17,6 +17,7 @@ import { ChronoKingdomEventDirector } from './environment/worlds/chronoKingdom/C
 import { InfernoExpressEventDirector } from './environment/worlds/infernoExpress/InfernoExpressEventDirector';
 import { JurassicRushEventDirector } from './environment/worlds/jurassicRush/JurassicRushEventDirector';
 import { FeverDirector } from './environment/worlds/vivaHeat/FeverDirector';
+import { HauntedCarnivalEventDirector } from './environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -36,6 +37,7 @@ if (isDeveloperMode()) {
   (window as any).__INFERNO_DIRECTOR__ = InfernoExpressEventDirector.getInstance();
   (window as any).__JURASSIC_DIRECTOR__ = JurassicRushEventDirector.getInstance();
   (window as any).__FEVER_DIRECTOR__ = FeverDirector.getInstance();
+  (window as any).__HAUNTED_DIRECTOR__ = HauntedCarnivalEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };
