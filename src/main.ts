@@ -23,6 +23,7 @@ import { AbyssalGlasslineEventDirector } from './environment/worlds/abyssalGlass
 import { NeonRainlineEventDirector } from './environment/worlds/neonRainline/NeonRainlineEventDirector';
 import { DoomsdayEventDirector } from './environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 import { OrbitalHaloEventDirector } from './environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
+import { ModernMetroEventDirector } from './environment/worlds/modernMetro/ModernMetroEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -48,6 +49,7 @@ if (isDeveloperMode()) {
   (window as any).__NEON_DIRECTOR__ = NeonRainlineEventDirector.getInstance();
   (window as any).__DOOMSDAY_DIRECTOR__ = DoomsdayEventDirector.getInstance();
   (window as any).__ORBITAL_DIRECTOR__ = OrbitalHaloEventDirector.getInstance();
+  (window as any).__MODERN_METRO_DIRECTOR__ = ModernMetroEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };
@@ -57,6 +59,8 @@ if (isDeveloperMode()) {
     const preview = urlParams.get('world') || urlParams.get('preview');
     if (preview && preview.toUpperCase() === 'VIVA_HEAT') {
       EnvironmentManager.getInstance().setDevPreviewEnvironment('VIVA_HEAT');
+    } else if (preview && (preview.toUpperCase() === 'MODERN_METRO' || preview.toUpperCase() === 'MODERN')) {
+      EnvironmentManager.getInstance().setDevPreviewEnvironment('MODERN_METRO');
     }
   }
 }

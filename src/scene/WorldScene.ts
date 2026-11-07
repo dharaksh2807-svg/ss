@@ -20,6 +20,7 @@ import { AbyssalGlasslineEventDirector } from '../environment/worlds/abyssalGlas
 import { NeonRainlineEventDirector } from '../environment/worlds/neonRainline/NeonRainlineEventDirector';
 import { DoomsdayEventDirector } from '../environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 import { OrbitalHaloEventDirector } from '../environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
+import { ModernMetroEventDirector } from '../environment/worlds/modernMetro/ModernMetroEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2756,6 +2757,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'VIVA_HEAT') {
       const delta = dt || 0.016;
       FeverDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'MODERN_METRO') {
+      const delta = dt || 0.016;
+      ModernMetroEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
   }
 

@@ -18,6 +18,7 @@ import { AbyssalGlasslineWorldBuilder } from './worlds/abyssalGlassline/AbyssalG
 import { NeonRainlineWorldBuilder } from './worlds/neonRainline/NeonRainlineWorldBuilder';
 import { DoomsdayWorldBuilder } from './worlds/doomsdayLastTransit/DoomsdayWorldBuilder';
 import { OrbitalHaloWorldBuilder } from './worlds/orbitalHalo/OrbitalHaloWorldBuilder';
+import { ModernMetroWorldBuilder } from './worlds/modernMetro/ModernMetroWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1596,7 +1597,7 @@ export class SceneryFactory {
     } else if (theme.id === 'VIVA_HEAT') {
       this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else {
-      this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     }
 
     if (smallMoment) {
@@ -1619,128 +1620,18 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const mats = this.getSharedMaterials();
-    const rng = new SeededRandom(seed);
-
-    const wallHeight = 2.4;
-    const wallThick = 0.6;
-    const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, chunkLength);
-
-    // 1. Concrete Retaining Walls
-    const leftWall = new THREE.Mesh(wallGeo, mats.modernConcreteMat);
-    leftWall.position.set(-wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    leftWall.castShadow = true;
-    leftWall.receiveShadow = true;
-    group.add(leftWall);
-
-    const rightWall = new THREE.Mesh(wallGeo, mats.modernConcreteMat);
-    rightWall.position.set(wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    rightWall.castShadow = true;
-    rightWall.receiveShadow = true;
-    group.add(rightWall);
-
-    // Coping caps
-    const capGeo = new THREE.BoxGeometry(wallThick + 0.15, 0.18, chunkLength);
-    const leftCap = new THREE.Mesh(capGeo, mats.curbMat);
-    leftCap.position.set(-wallX, wallHeight + 0.09, -chunkLength * 0.5);
-    group.add(leftCap);
-
-    const rightCap = new THREE.Mesh(capGeo, mats.curbMat);
-    rightCap.position.set(wallX, wallHeight + 0.09, -chunkLength * 0.5);
-    group.add(rightCap);
-
-    // Neon cyan accent strip
-    const neonGeo = new THREE.BoxGeometry(0.06, 0.06, chunkLength);
-    [-wallX + wallThick * 0.5, wallX - wallThick * 0.5].forEach((nx) => {
-      const neon = new THREE.Mesh(neonGeo, mats.modernNeonMat);
-      neon.position.set(nx, wallHeight + 0.05, -chunkLength * 0.5);
-      group.add(neon);
-    });
-
-    // Yellow safety railing
-    const railBarGeo = new THREE.BoxGeometry(0.06, 0.06, chunkLength);
-    const yellowMat = new THREE.MeshStandardMaterial({ color: 0xffd600, roughness: 0.3 });
-    CurvedShaderManager.getInstance().applyCurvature(yellowMat);
-
-    [-wallX, wallX].forEach((wx) => {
-      const topBar = new THREE.Mesh(railBarGeo, yellowMat);
-      topBar.position.set(wx, wallHeight + 0.8, -chunkLength * 0.5);
-      group.add(topBar);
-
-      if (detail !== 'MINIMAL') {
-        const railPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 6);
-        for (let z = 0; z < chunkLength; z += 6) {
-          const post = new THREE.Mesh(railPostGeo, yellowMat);
-          post.position.set(wx, wallHeight + 0.45, -z - 3);
-          group.add(post);
-        }
-      }
-    });
-
-    // Street graffiti decals
-    if (detail !== 'MINIMAL') {
-      const decalGeo = new THREE.PlaneGeometry(6.0, 1.8);
-      const decal1 = new THREE.Mesh(decalGeo, mats.graffitiMat1);
-      decal1.rotation.y = Math.PI / 2;
-      decal1.position.set(-wallX + wallThick * 0.5 + 0.02, 1.3, -chunkLength * 0.3);
-      group.add(decal1);
-
-      const decal2 = new THREE.Mesh(decalGeo, mats.graffitiMat2);
-      decal2.rotation.y = -Math.PI / 2;
-      decal2.position.set(wallX - wallThick * 0.5 - 0.02, 1.3, -chunkLength * 0.7);
-      group.add(decal2);
-    }
-
-    // Modern curved LED streetlights along retaining walls
-    if (detail !== 'MINIMAL') {
-      const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 6.2, 8);
-      const armGeo = new THREE.BoxGeometry(1.4, 0.08, 0.08);
-      const lampHeadGeo = new THREE.BoxGeometry(0.8, 0.12, 0.3);
-      const lampLightGeo = new THREE.PlaneGeometry(0.7, 0.24);
-      const ledMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-      CurvedShaderManager.getInstance().applyCurvature(ledMat);
-
-      for (let z = 12; z < chunkLength; z += 26) {
-        [-wallX, wallX].forEach((wx) => {
-          const lightGroup = new THREE.Group();
-          const inwardSign = wx < 0 ? 1 : -1;
-          lightGroup.position.set(wx, wallHeight, -z);
-
-          const pole = new THREE.Mesh(poleGeo, mats.modernSteelMat);
-          pole.position.y = 3.1;
-          lightGroup.add(pole);
-
-          const arm = new THREE.Mesh(armGeo, mats.modernSteelMat);
-          arm.position.set(inwardSign * 0.6, 6.1, 0);
-          lightGroup.add(arm);
-
-          const head = new THREE.Mesh(lampHeadGeo, mats.modernSteelMat);
-          head.position.set(inwardSign * 1.2, 6.05, 0);
-          lightGroup.add(head);
-
-          const lightPlane = new THREE.Mesh(lampLightGeo, ledMat);
-          lightPlane.rotation.x = Math.PI / 2;
-          lightPlane.position.set(inwardSign * 1.2, 5.98, 0);
-          lightGroup.add(lightPlane);
-
-          group.add(lightGroup);
-        });
-      }
-    }
-
-    // 2. Modern Overhead Catenaries
-    this.buildModernCatenarySystem(group, chunkLength);
-
-    // 3. Modular Modern Buildings with Dynamic Architectural Variations
-    this.buildModernModularCity(group, chunkLength, rng, detail);
-
-    // 4. Overhead Skybridge (deterministic placement based on seed)
-    if (rng.chance(0.55)) {
-      this.buildModernSkybridge(group, chunkLength);
-    }
+    ModernMetroWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ
+    );
   }
 
   private buildModernCatenarySystem(group: THREE.Group, chunkLength: number): void {
