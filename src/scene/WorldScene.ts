@@ -1684,16 +1684,16 @@ export class WorldScene {
     const jurassicSkyline = new THREE.Group();
     this.jurassicSkyline = jurassicSkyline;
     this.jurassicSkylineMaterial = this.skylineMaterial.clone();
-    this.jurassicSkylineMaterial.color.setHex(0x14281a);
+    this.jurassicSkylineMaterial.color.setHex(0x164e3b);
     this.jurassicSkylineMaterial.transparent = true;
     this.jurassicSkylineMaterial.opacity = 0.88;
 
     const jurassicMat = this.jurassicSkylineMaterial;
-    const volcanicRockMat = new THREE.MeshBasicMaterial({ color: 0x1f2923 });
-    const magmaGlowMat = new THREE.MeshBasicMaterial({ color: 0xd97706, transparent: true, opacity: 0.75 });
-    const pterosaurWingMat = new THREE.MeshBasicMaterial({ color: 0x111c14 });
+    const volcanicRockMat = jurassicMat;
+    const magmaGlowMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.75 });
+    const pterosaurWingMat = new THREE.MeshBasicMaterial({ color: 0x064e3b });
 
-    // Ring of 18 Primordial Volcanoes & Craggy Jungle Ridges around the horizon (dist = 335m)
+    // Ring of 18 Primordial Mountain Ridges & Sprawling Volcanoes around the horizon (dist = 335m)
     for (let i = 0; i < 18; i++) {
       const angle = (i / 18) * Math.PI * 2;
       const dist = 335;
@@ -1701,38 +1701,38 @@ export class WorldScene {
       const peakGroup = new THREE.Group();
       peakGroup.position.set(
         Math.cos(angle) * dist,
-        -15,
+        -18,
         Math.sin(angle) * dist
       );
 
-      // Massive Volcanic Mountain Cone
-      const coneH = 90 + (i % 5) * 22;
-      const coneR = 36 + (i % 3) * 10;
-      const coneGeo = new THREE.ConeGeometry(coneR, coneH, 7);
+      // Sprawling Majestic Ancient Mountain Ridge (broad volcanic shield slope)
+      const coneH = 38 + (i % 5) * 8;
+      const coneR = 85 + (i % 3) * 18;
+      const coneGeo = new THREE.CylinderGeometry(coneR * 0.18, coneR, coneH, 10);
       const coneMesh = new THREE.Mesh(coneGeo, volcanicRockMat);
       coneMesh.position.y = coneH * 0.5;
       peakGroup.add(coneMesh);
 
       // Glowing Magma Summit Caldera on key volcanic peaks
       if (i % 3 === 0) {
-        const craterRim = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.18, coneR * 0.22, 6.0, 8), volcanicRockMat);
-        craterRim.position.y = coneH - 2.0;
+        const craterRim = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.20, coneR * 0.26, 4.0, 10), volcanicRockMat);
+        craterRim.position.y = coneH - 0.5;
         peakGroup.add(craterRim);
 
-        const magmaGlow = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.14, coneR * 0.14, 2.0, 8), magmaGlowMat);
-        magmaGlow.position.y = coneH;
+        const magmaGlow = new THREE.Mesh(new THREE.CylinderGeometry(coneR * 0.16, coneR * 0.16, 1.8, 10), magmaGlowMat);
+        magmaGlow.position.y = coneH + 0.2;
         peakGroup.add(magmaGlow);
       }
 
-      // Flanking Craggy Foothills & Jungle Ridge Ridges
-      const ridgeH = coneH * 0.45;
+      // Flanking Craggy Foothills & Jungle Ridges
+      const ridgeH = coneH * 0.55;
       const ridgeW = coneR * 0.75;
-      const ridgeMesh = new THREE.Mesh(new THREE.ConeGeometry(ridgeW, ridgeH, 5), jurassicMat);
-      ridgeMesh.position.set(coneR * 0.65, ridgeH * 0.5, 0);
+      const ridgeMesh = new THREE.Mesh(new THREE.CylinderGeometry(ridgeW * 0.20, ridgeW, ridgeH, 8), jurassicMat);
+      ridgeMesh.position.set(coneR * 0.55, ridgeH * 0.5, 0);
       peakGroup.add(ridgeMesh);
 
-      const ridgeMesh2 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW * 0.85, ridgeH * 0.8, 5), jurassicMat);
-      ridgeMesh2.position.set(-coneR * 0.65, ridgeH * 0.4, 0);
+      const ridgeMesh2 = new THREE.Mesh(new THREE.CylinderGeometry(ridgeW * 0.18, ridgeW * 0.85, ridgeH * 0.75, 8), jurassicMat);
+      ridgeMesh2.position.set(-coneR * 0.55, ridgeH * 0.38, 0);
       peakGroup.add(ridgeMesh2);
 
       // Distant Sauropod silhouette walking on foothills
@@ -2112,7 +2112,7 @@ export class WorldScene {
       const getThemeGroundColor = (id: string): number => {
         switch (id) {
           case 'INFERNO_EXPRESS': return 0x140806;
-          case 'JURASSIC_RUSH': return 0x1a2612;
+          case 'JURASSIC_RUSH': return 0x143522;
           case 'VIP_EXPRESS':
           case 'RAHULVERSE': return 0x8a623a;
           case 'MIDNIGHT_VELVET': return 0x121720;
@@ -2356,14 +2356,14 @@ export class WorldScene {
         isRain = false;
         break;
       case 'JURASSIC_PRIMORDIAL_DAWN':
-        sunColorHex = 0xfef08a;
-        sunIntensity = 1.35;
-        skyTopHex = 0x032b1e;
-        skyBottomHex = 0xca8a04;
-        fogColorHex = 0x14402e;
-        fogDensity = 0.0028;
-        fillColorHex = 0x064e3b;
-        fillIntensity = 0.60;
+        sunColorHex = 0xfff1c2;
+        sunIntensity = 1.55;
+        skyTopHex = 0x0a5c44;
+        skyBottomHex = 0xfcd34d;
+        fogColorHex = 0x184e3d;
+        fogDensity = 0.0022;
+        fillColorHex = 0x15803d;
+        fillIntensity = 0.95;
         isRain = false;
         break;
       case 'VIVA_HEAT_SUNSET_FEVER':

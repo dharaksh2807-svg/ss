@@ -37,48 +37,48 @@ export const JURASSIC_RUSH_THEME: EnvironmentTheme = {
     'INFERNO_EXPRESS'
   ],
   sky: {
-    top: 0x032b1e,    // Deep prehistoric jungle canopy twilight
-    bottom: 0xca8a04 // Golden primordial morning sunlight & misty amber horizon
+    top: 0x0a5c44,    // Lush prehistoric jungle canopy emerald sky
+    bottom: 0xfcd34d // Golden primordial morning sunlight & misty amber horizon
   },
   fog: {
-    color: 0x14402e,  // Dense prehistoric jungle mist
-    density: 0.0028   // Atmospheric depth preserving high obstacle visibility
+    color: 0x184e3d,  // Atmospheric lush prehistoric jungle mist
+    density: 0.0022   // Atmospheric depth preserving high obstacle visibility and long vistas
   },
   sun: {
-    color: 0xfef08a,  // Warm golden prehistoric sunlight
-    intensity: 1.35,
-    position: { x: -35, y: 75, z: -50 }
+    color: 0xfff1c2,  // Warm golden prehistoric sunlight
+    intensity: 1.55,
+    position: { x: -28, y: 70, z: -35 }
   },
   fill: {
-    color: 0x064e3b,  // Lush jungle shadow fill
-    intensity: 0.60
+    color: 0x15803d,  // Vibrant emerald canopy shadow fill
+    intensity: 0.95
   },
   hemi: {
-    sky: 0x065f46,    // Emerald rainforest canopy bounce
-    ground: 0xb45309, // Warm canyon ochre earth reflection
-    intensity: 1.20
+    sky: 0x34d399,    // Radiant emerald rainforest canopy bounce
+    ground: 0xd97706, // Warm canyon ochre earth reflection
+    intensity: 1.30
   },
   skyline: {
-    color: 0x0d3326,  // Silhouettes of towering prehistoric mountains and peaks
-    opacity: 0.90,
+    color: 0x164e3b,  // Silhouettes of towering prehistoric mountains and peaks
+    opacity: 0.88,
     style: 'HISTORIC'
   },
   clouds: {
-    color: 0x1c4a38,  // Humid jungle mist and mountain clouds
-    roughness: 0.88
+    color: 0x2dd4bf,  // Humid jungle mist and mountain clouds
+    roughness: 0.82
   },
   materials: {
-    ballastColor: 0x292524,     // Crushed ancient riverbed gravel and mossy basalt
-    sleeperColor: 0x1c1917,     // Weathered heavy petrified ironwood ties
-    wallBaseColor: 0x1f2937,    // Ancient stone masonry & heavy timber trestles
+    ballastColor: 0x374151,     // Crushed ancient riverbed gravel and mossy basalt
+    sleeperColor: 0x292524,     // Weathered heavy petrified ironwood ties
+    wallBaseColor: 0x27272a,    // Ancient stone masonry & heavy timber trestles
     wallAccentColor: 0x10b981,  // Vibrant prehistoric moss, vines, and fern fronds
     curbColor: 0xfacc15,        // Bright amber petrified wood curb (extreme running contrast!)
-    catenaryColor: 0x3f4f2c,    // Heavy timber and riveted bronze catenary frames
+    catenaryColor: 0x4d5d36,    // Heavy timber and riveted bronze catenary frames
     insulatorColor: 0xfbbf24,   // Amber fossilized resin insulators
-    pipeColor: 0x78350f,        // Weathered copper & timber conduits
-    bridgeMainColor: 0x27272a,  // Heavy rugged expedition steel & timber viaduct trestles
+    pipeColor: 0x92400e,        // Weathered copper & timber conduits
+    bridgeMainColor: 0x3f3f46,  // Heavy rugged expedition steel & timber viaduct trestles
     bridgeAccentColor: 0x10b981,// Climbing emerald vine creepers and brass brackets
-    groundPlaneColor: 0x0f291e
+    groundPlaneColor: 0x143522
   },
   ambience: {
     baseToneFreq: 82,
