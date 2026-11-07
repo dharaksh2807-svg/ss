@@ -9,6 +9,8 @@ import { WorldScene } from '../src/scene/WorldScene';
 import { EnvironmentalEncounterDirector } from '../src/environment/EnvironmentalEncounterDirector';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { getWorld } from '../src/environment/WorldCatalog';
+import { NeonRainlineEventDirector } from '../src/environment/worlds/neonRainline/NeonRainlineEventDirector';
+import { NeonRainlineWorldBuilder } from '../src/environment/worlds/neonRainline/NeonRainlineWorldBuilder';
 
 console.log('🧪 Starting NEON_RAINLINE Premium World Verification Suite...\n');
 
@@ -235,6 +237,172 @@ check(minMeshes >= 15, `MINIMAL detail retains essential railway retaining walls
 
 pool.clearDecorativeGroup(fullGroup, new Set(Object.values(factory.getSharedMaterials())));
 pool.clearDecorativeGroup(minGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+// Suite 9: 8 Distinct Cyberpunk Districts & Permutation Cycles
+console.log('\n--- Suite 9: 8 Distinct Cyberpunk Districts & Permutation Cycles ---');
+const director = NeonRainlineEventDirector.getInstance();
+director.reset();
+
+const zoneSet = new Set<string>();
+const chunkGroups: THREE.Group[] = [];
+for (let c = 0; c < 16; c++) {
+  const g = new THREE.Group();
+  const wz = -c * 80;
+  factory.buildScenery(g, NEON_RAINLINE_THEME, wz, false, false, 'NONE', 'FULL', 2000 + c);
+  g.traverse((child) => {
+    if (child.name && child.name.startsWith('zone_')) {
+      zoneSet.add(child.name);
+    }
+  });
+  chunkGroups.push(g);
+}
+
+const requiredZones = [
+  'zone_neon_downtown',
+  'zone_cyber_market',
+  'zone_aerial_highway',
+  'zone_rain_waterfront',
+  'zone_quantum_research',
+  'zone_neon_gardens',
+  'zone_industrial_core',
+  'zone_grand_transit_terminal'
+];
+
+requiredZones.forEach((expectedZone) => {
+  check(zoneSet.has(expectedZone), `Procedural generator successfully manifests ${expectedZone}`);
+});
+
+// Suite 10: Gate A — Open Neon Plaza (Vertical Slice)
+console.log('\n--- Suite 10: Gate A — Open Neon Plaza (Vertical Slice) ---');
+const plazaGroup = new THREE.Group();
+const plazaWorldZ = -4 * 80; // chunk 4 in Cycle 0 is Quantum Plaza
+factory.buildScenery(plazaGroup, NEON_RAINLINE_THEME, plazaWorldZ, false, false, 'NONE', 'FULL', 3004);
+
+let foundPlazaFloor = false;
+let foundQuantumSculpture = false;
+let foundColonnade = false;
+
+plazaGroup.traverse((child) => {
+  if (child.name === 'zone_quantum_research') {
+    child.traverse((plazaPart) => {
+      if ((plazaPart as THREE.Mesh).isMesh) {
+        const mesh = plazaPart as THREE.Mesh;
+        if (mesh.geometry instanceof THREE.BoxGeometry) {
+          const params = mesh.geometry.parameters;
+          // Expansive open plaza floor
+          if (params.width > 20 && params.depth > 30) {
+            foundPlazaFloor = true;
+          }
+        }
+        if (mesh.geometry instanceof THREE.CylinderGeometry) {
+          const params = mesh.geometry.parameters;
+          if (params.height >= 8) {
+            foundColonnade = true;
+          }
+        }
+        if (mesh.geometry instanceof THREE.TorusGeometry) {
+          foundQuantumSculpture = true;
+        }
+      }
+    });
+  }
+});
+
+check(foundPlazaFloor, 'Gate A contains expansive open plaza floor breaking repetitive corridors');
+check(foundQuantumSculpture, 'Gate A contains monumental quantum superconducting sculpture');
+check(foundColonnade, 'Gate A features illuminated modern colonnade architecture');
+
+// Suite 11: Gate B — Air-Traffic Spectacle & Hover Vehicles
+console.log('\n--- Suite 11: Gate B — Air-Traffic Spectacle & Hover Vehicles ---');
+const highwayGroup = new THREE.Group();
+const highwayWorldZ = -2 * 80; // chunk 2 in Cycle 0 is Aerial Highway
+factory.buildScenery(highwayGroup, NEON_RAINLINE_THEME, highwayWorldZ, false, false, 'NONE', 'FULL', 3002);
+
+let foundSkywayDecks = false;
+highwayGroup.traverse((child) => {
+  if (child.name === 'zone_aerial_highway') {
+    child.traverse((p) => {
+      if ((p as THREE.Mesh).isMesh) {
+        const geo = (p as THREE.Mesh).geometry;
+        if (geo instanceof THREE.BoxGeometry && geo.parameters.width > 8 && geo.parameters.depth >= 70) {
+          foundSkywayDecks = true;
+        }
+      }
+    });
+  }
+});
+check(foundSkywayDecks, 'Gate B features multi-lane aerial highway decks spanning corridor');
+
+const swarms = director.getAirTrafficSwarms();
+check(swarms.length > 0, `Air-traffic swarm registered in director (count: ${swarms.length})`);
+const swarm = swarms[0];
+check(swarm.vehicles.length >= 3, `Air-traffic swarm contains flocking hover vehicles (${swarm.vehicles.length} vehicles)`);
+check(swarm.vehicles[0].mesh !== undefined, 'Vehicle contains 3D sculpted mesh group');
+check(typeof swarm.vehicles[0].flightPathSpeed === 'number', 'Vehicle has defined flight speed');
+
+// Suite 12: 7 Cinematic Surprises
+console.log('\n--- Suite 12: 7 Cinematic Surprises Verification ---');
+const diag = director.getDiagnostics();
+check(diag.airTrafficSwarms > 0, 'Cinematic Surprise 1: Air-Traffic Swarm registered');
+check(diag.holoAwakenings > 0, 'Cinematic Surprise 2: Holographic City Awakening registered');
+check(diag.maglevCrossovers > 0, 'Cinematic Surprise 3: Maglev Transit Crossover registered');
+check(diag.techBlackouts > 0, 'Cinematic Surprise 4: Technology Blackout & Cascading Restore registered');
+check(diag.droneShows > 0, 'Cinematic Surprise 5: Megacity Drone Light Show registered');
+check(diag.skybridgeTransforms > 0, 'Cinematic Surprise 6: Telescopic Skybridge Transformation registered');
+check(diag.cityStorms > 0, 'Cinematic Surprise 7: Rainstorm Over The City with Soft Lightning registered');
+
+// Suite 13: Signed-Distance Convention Verification
+console.log('\n--- Suite 13: Signed-Distance Convention Verification ---');
+// For negative-Z forward travel: distanceAhead = playerZ - triggerZ
+const testMaglev = director.getMaglevCrossovers()[0];
+const triggerZ = testMaglev.triggerZ;
+
+// At 150m ahead (approach)
+director.update(0.016, true, triggerZ + 150);
+check(testMaglev.state === 'APPROACHING', `At +150m ahead, maglev is in APPROACHING state (got ${testMaglev.state})`);
+
+// At 20m ahead (crossing overhead)
+director.update(0.016, true, triggerZ + 20);
+check(testMaglev.state === 'CROSSING_OVERHEAD', `At +20m ahead, maglev is in CROSSING_OVERHEAD state (got ${testMaglev.state})`);
+
+// At -60m behind (receding)
+director.update(0.016, true, triggerZ - 60);
+check(testMaglev.state === 'RECEDING', `At -60m behind, maglev is in RECEDING state (got ${testMaglev.state})`);
+
+// Suite 14: Dynamic Ambient City Life
+console.log('\n--- Suite 14: Dynamic Ambient City Life ---');
+check(diag.flyingCars > 0, `Ambient flying cars active (count: ${diag.flyingCars})`);
+check(diag.deliveryDrones > 0, `Ambient delivery drones active (count: ${diag.deliveryDrones})`);
+check(diag.waterTaxis > 0, `Ambient water taxis active (count: ${diag.waterTaxis})`);
+check(diag.industrialCranes > 0, `Ambient industrial cranes active (count: ${diag.industrialCranes})`);
+check(diag.glassElevators > 0, `Ambient glass elevators active (count: ${diag.glassElevators})`);
+
+// Tick update and verify animation state update without exception
+let noException = true;
+try {
+  for (let f = 0; f < 30; f++) {
+    director.update(0.016, true, -500 - f * 2);
+  }
+} catch (e) {
+  noException = false;
+}
+check(noException, 'Director updates ambient animation frames without runtime exceptions');
+
+// Suite 15: Memory Lifecycle & Scenery Pool Recycling
+console.log('\n--- Suite 15: Memory Lifecycle & Scenery Pool Recycling ---');
+for (const g of chunkGroups) {
+  pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
+  check(g.children.length === 0, 'Chunk decorative group cleaned by pool');
+}
+pool.clearDecorativeGroup(plazaGroup, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(highwayGroup, new Set(Object.values(factory.getSharedMaterials())));
+
+director.pruneDetached();
+director.reset();
+const cleanDiag = director.getDiagnostics();
+check(cleanDiag.airTrafficSwarms === 0, 'Air traffic swarms reset to 0');
+check(cleanDiag.maglevCrossovers === 0, 'Maglev crossovers reset to 0');
+check(cleanDiag.flyingCars === 0, 'Flying cars reset to 0');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} NEON_RAINLINE PREMIUM WORLD TESTS PASSED!`);

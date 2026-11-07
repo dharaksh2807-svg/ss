@@ -17,6 +17,7 @@ import { FeverDirector } from '../environment/worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from '../environment/worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 import { PhantomLineEventDirector } from '../environment/worlds/phantomLine/PhantomLineEventDirector';
 import { AbyssalGlasslineEventDirector } from '../environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
+import { NeonRainlineEventDirector } from '../environment/worlds/neonRainline/NeonRainlineEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2687,6 +2688,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'ABYSSAL_GLASSLINE') {
       const delta = dt || 0.016;
       AbyssalGlasslineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'NEON_RAINLINE') {
+      const delta = dt || 0.016;
+      NeonRainlineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
