@@ -40,6 +40,12 @@ interface ClockTowerGag {
   minuteHand?: THREE.Object3D;
 }
 
+interface PaparazziFlash {
+  mesh: THREE.Mesh;
+  timer: number;
+  interval: number;
+}
+
 export class MidnightVelvetEventDirector {
   private static instance: MidnightVelvetEventDirector | null = null;
 
@@ -49,6 +55,7 @@ export class MidnightVelvetEventDirector {
   private marinaYachts: MarinaYacht[] = [];
   private hotelMarquees: HotelMarquee[] = [];
   private clockTowers: ClockTowerGag[] = [];
+  private paparazziFlashes: PaparazziFlash[] = [];
 
   private globalTime: number = 0;
 
@@ -68,10 +75,15 @@ export class MidnightVelvetEventDirector {
     this.marinaYachts = [];
     this.hotelMarquees = [];
     this.clockTowers = [];
+    this.paparazziFlashes = [];
     this.globalTime = 0;
   }
 
   // --- Registration Hooks ---
+
+  public registerPaparazziFlash(mesh: THREE.Mesh, interval: number = 1.2): void {
+    this.paparazziFlashes.push({ mesh, timer: Math.random() * interval, interval });
+  }
 
   public registerMotorcadeCar(car: THREE.Group, speed: number = 18.0, minZ: number = -140, maxZ: number = 40): void {
     this.motorcadeCars.push({ group: car, speed, minZ, maxZ });
@@ -123,6 +135,7 @@ export class MidnightVelvetEventDirector {
     this.marinaYachts = this.marinaYachts.filter(y => isAttached(y.group));
     this.hotelMarquees = this.hotelMarquees.filter(m => m.bulbs.length > 0 && isAttached(m.bulbs[0]));
     this.clockTowers = this.clockTowers.filter(ct => isAttached(ct.pendulum));
+    this.paparazziFlashes = this.paparazziFlashes.filter(p => isAttached(p.mesh));
   }
 
   // --- Animation Update Loop ---
@@ -218,6 +231,23 @@ export class MidnightVelvetEventDirector {
       }
       if (ct.minuteHand) {
         ct.minuteHand.rotation.z = -(this.globalTime * 0.05) % (Math.PI * 2);
+      }
+    }
+
+    // 7. Paparazzi Flash Bulbs flashing on the red carpet
+    if (!reducedMotion) {
+      for (let p = 0; p < this.paparazziFlashes.length; p++) {
+        const pf = this.paparazziFlashes[p];
+        pf.timer += delta;
+        if (pf.timer >= pf.interval) {
+          pf.mesh.visible = true;
+          if (pf.timer >= pf.interval + 0.08) {
+            pf.mesh.visible = false;
+            pf.timer = Math.random() * 0.4; // slight jitter for next flash
+          }
+        } else {
+          pf.mesh.visible = false;
+        }
       }
     }
   }

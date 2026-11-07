@@ -1580,7 +1580,7 @@ export class SceneryFactory {
     } else if (theme.id === 'RAHULVERSE') {
       this.buildRahulverseScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'MIDNIGHT_VELVET') {
-      this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'CHRONO_KINGDOM') {
       this.buildChronoKingdomScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
     } else if (theme.id === 'INFERNO_EXPRESS') {
@@ -7626,13 +7626,14 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ?: number
   ): void {
     const velvetGroup = new THREE.Group();
     velvetGroup.name = 'midnight_velvet_scenery';
 
     // Delegate to the 4 distinct luxury Art Deco nightlife districts
-    MidnightVelvetWorldBuilder.getInstance().buildDistrictScenery(velvetGroup, roadbedWidth, chunkLength, seed, detail);
+    MidnightVelvetWorldBuilder.getInstance().buildDistrictScenery(velvetGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
 
     group.add(velvetGroup);
   }

@@ -33,6 +33,7 @@ export class WorldScene {
   public phantomSkyline: THREE.Group | null = null;
   public hauntedCarnivalSkyline: THREE.Group | null = null;
   public vipExpressSkyline: THREE.Group | null = null;
+  public midnightVelvetSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -42,10 +43,13 @@ export class WorldScene {
   private phantomSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private hauntedCarnivalSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private vipExpressSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private midnightVelvetSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private vipSearchlights: THREE.Mesh[] = [];
+  private midnightSkylineSearchlights: THREE.Mesh[] = [];
   private vipConfettiGeo: THREE.BufferGeometry | null = null;
   private vipConfettiPos: Float32Array | null = null;
   private vipSearchlightTime: number = 0;
+  private midnightSkylineSearchlightTime: number = 0;
   private backgroundSpacecraft: THREE.Group[] = [];
   private backgroundMarineCreatures: THREE.Group[] = [];
   private abyssalCreatureTime: number = 0;
@@ -1583,6 +1587,90 @@ export class WorldScene {
 
     group.add(this.vipExpressSkyline);
 
+    // 9. Art Deco Metropolis Skyline & Searchlights (Midnight Velvet: After Dark)
+    this.midnightSkylineSearchlights = [];
+    const velvetSkyline = new THREE.Group();
+    this.midnightVelvetSkyline = velvetSkyline;
+    this.midnightVelvetSkylineMaterial = this.skylineMaterial.clone();
+    this.midnightVelvetSkylineMaterial.color.setHex(0x0f0b1a);
+    this.midnightVelvetSkylineMaterial.transparent = true;
+    this.midnightVelvetSkylineMaterial.opacity = 0.88;
+
+    const velvetMat = this.midnightVelvetSkylineMaterial;
+    const goldSpireMat = new THREE.MeshBasicMaterial({ color: 0xd4af37 });
+    const warmWindowMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.65 });
+
+    // Ring of 24 Stepped-Back Art Deco Skyscrapers around the horizon (dist = 330m)
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      const dist = 330;
+
+      const towerGroup = new THREE.Group();
+      towerGroup.position.set(
+        Math.cos(angle) * dist,
+        -10,
+        Math.sin(angle) * dist
+      );
+
+      // Art Deco Step-back heights and tiers
+      const baseH = 70 + (i % 5) * 16;
+      const baseW = 24 + (i % 3) * 6;
+      const baseMesh = new THREE.Mesh(towerGeo, velvetMat);
+      baseMesh.scale.set(baseW, baseH, baseW);
+      baseMesh.position.y = baseH * 0.5;
+      towerGroup.add(baseMesh);
+
+      // Glowing warm window grids on facade facing tracks
+      const winMesh = new THREE.Mesh(new THREE.PlaneGeometry(baseW * 0.75, baseH * 0.70), warmWindowMat);
+      winMesh.position.set(0, baseH * 0.5, baseW * 0.52);
+      winMesh.rotation.y = Math.PI;
+      towerGroup.add(winMesh);
+
+      // Stepped tier 1
+      const tier1H = baseH * 0.45;
+      const tier1W = baseW * 0.68;
+      const tier1Mesh = new THREE.Mesh(towerGeo, velvetMat);
+      tier1Mesh.scale.set(tier1W, tier1H, tier1W);
+      tier1Mesh.position.y = baseH + tier1H * 0.5;
+      towerGroup.add(tier1Mesh);
+
+      // Stepped tier 2
+      const tier2H = tier1H * 0.55;
+      const tier2W = tier1W * 0.62;
+      const tier2Mesh = new THREE.Mesh(towerGeo, velvetMat);
+      tier2Mesh.scale.set(tier2W, tier2H, tier2W);
+      tier2Mesh.position.y = baseH + tier1H + tier2H * 0.5;
+      towerGroup.add(tier2Mesh);
+
+      // Crown Spire with gilded needle
+      const spireH = 22 + (i % 4) * 8;
+      const spireMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 1.2, spireH, 6), goldSpireMat);
+      spireMesh.position.y = baseH + tier1H + tier2H + spireH * 0.5;
+      towerGroup.add(spireMesh);
+
+      velvetSkyline.add(towerGroup);
+    }
+
+    // Horizon Sweeping Nightclub Searchlights (2 pairs cutting through violet twilight)
+    const velvetSearchlightGeo = new THREE.CylinderGeometry(0.6, 7.5, 95.0, 10);
+    velvetSearchlightGeo.translate(0, 47.5, 0);
+    const velvetSearchlightMat = new THREE.MeshBasicMaterial({
+      color: 0xffeedd,
+      transparent: true,
+      opacity: 0.25,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    [-110.0, -45.0, 45.0, 110.0].forEach((lx) => {
+      const beam = new THREE.Mesh(velvetSearchlightGeo, velvetSearchlightMat);
+      beam.position.set(lx, 20.0, -380.0);
+      velvetSkyline.add(beam);
+      this.midnightSkylineSearchlights.push(beam);
+    });
+
+    group.add(this.midnightVelvetSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -1592,6 +1680,7 @@ export class WorldScene {
     this.phantomSkyline.visible = this.currentTheme.id === 'PHANTOM_LINE';
     this.hauntedCarnivalSkyline.visible = this.currentTheme.id === 'HAUNTED_CARNIVAL';
     this.vipExpressSkyline.visible = this.currentTheme.id === 'VIP_EXPRESS';
+    this.midnightVelvetSkyline.visible = this.currentTheme.id === 'MIDNIGHT_VELVET';
 
     return group;
   }
@@ -1689,6 +1778,12 @@ export class WorldScene {
       isVip(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isMidnightVelvet = (env: EnvironmentTheme) => env.id === 'MIDNIGHT_VELVET';
+    const midnightVelvetOpacity = THREE.MathUtils.lerp(
+      isMidnightVelvet(base) ? base.skyline.opacity : 0,
+      isMidnightVelvet(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -1725,6 +1820,10 @@ export class WorldScene {
       this.vipExpressSkylineMaterial.color.copy(skylineColor);
       this.vipExpressSkylineMaterial.opacity = vipOpacity;
     }
+    if (this.midnightVelvetSkylineMaterial) {
+      this.midnightVelvetSkylineMaterial.color.copy(skylineColor);
+      this.midnightVelvetSkylineMaterial.opacity = midnightVelvetOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -1734,6 +1833,7 @@ export class WorldScene {
     if (this.phantomSkyline) this.phantomSkyline.visible = phantomOpacity > 0.01;
     if (this.hauntedCarnivalSkyline) this.hauntedCarnivalSkyline.visible = hauntedOpacity > 0.01;
     if (this.vipExpressSkyline) this.vipExpressSkyline.visible = vipOpacity > 0.01;
+    if (this.midnightVelvetSkyline) this.midnightVelvetSkyline.visible = midnightVelvetOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -2272,6 +2372,17 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'MIDNIGHT_VELVET') {
       const delta = dt || 0.016;
       MidnightVelvetEventDirector.getInstance().update(delta, true);
+
+      // Animate sweeping Art Deco nightclub skyline searchlights
+      if (this.midnightVelvetSkyline && this.midnightVelvetSkyline.visible) {
+        this.midnightSkylineSearchlightTime += delta;
+        for (let i = 0; i < this.midnightSkylineSearchlights.length; i++) {
+          const light = this.midnightSkylineSearchlights[i];
+          const offset = i * 1.57;
+          light.rotation.z = Math.sin(this.midnightSkylineSearchlightTime * 0.65 + offset) * 0.32;
+          light.rotation.x = Math.cos(this.midnightSkylineSearchlightTime * 0.45 + offset) * 0.15;
+        }
+      }
     }
 
     if (this.currentTheme && this.currentTheme.id === 'CHRONO_KINGDOM') {
