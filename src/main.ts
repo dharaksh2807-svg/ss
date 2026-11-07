@@ -21,6 +21,7 @@ import { HauntedCarnivalEventDirector } from './environment/worlds/hauntedCarniv
 import { PhantomLineEventDirector } from './environment/worlds/phantomLine/PhantomLineEventDirector';
 import { AbyssalGlasslineEventDirector } from './environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 import { NeonRainlineEventDirector } from './environment/worlds/neonRainline/NeonRainlineEventDirector';
+import { DoomsdayEventDirector } from './environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -44,6 +45,7 @@ if (isDeveloperMode()) {
   (window as any).__PHANTOM_DIRECTOR__ = PhantomLineEventDirector.getInstance();
   (window as any).__ABYSSAL_DIRECTOR__ = AbyssalGlasslineEventDirector.getInstance();
   (window as any).__NEON_DIRECTOR__ = NeonRainlineEventDirector.getInstance();
+  (window as any).__DOOMSDAY_DIRECTOR__ = DoomsdayEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };

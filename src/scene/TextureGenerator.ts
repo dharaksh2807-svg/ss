@@ -3612,6 +3612,34 @@ export class TextureGenerator {
     });
   }
 
+  /**
+   * Soft Radial Ember & Ash Particle Texture
+   * Circular feathered radial gradient eliminating square particle artifacts.
+   */
+  public static getSoftEmberParticleTexture(): THREE.Texture {
+    return this.getOrCreate('doomsday_soft_ember', () => {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+      grad.addColorStop(0.25, 'rgba(255, 235, 200, 0.9)');
+      grad.addColorStop(0.65, 'rgba(249, 115, 22, 0.45)');
+      grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      return texture;
+    });
+  }
+
   // -------------------------------------------------------------------------
   // PHANTOM LINE: GHOST HORROR PREMIUM WORLD TEXTURES
   // -------------------------------------------------------------------------

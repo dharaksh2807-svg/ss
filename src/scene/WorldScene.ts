@@ -18,6 +18,7 @@ import { HauntedCarnivalEventDirector } from '../environment/worlds/hauntedCarni
 import { PhantomLineEventDirector } from '../environment/worlds/phantomLine/PhantomLineEventDirector';
 import { AbyssalGlasslineEventDirector } from '../environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 import { NeonRainlineEventDirector } from '../environment/worlds/neonRainline/NeonRainlineEventDirector';
+import { DoomsdayEventDirector } from '../environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -960,10 +961,13 @@ export class WorldScene {
     this.doomsdayEmbersPositions = emberPositions;
 
     const emberMat = new THREE.PointsMaterial({
-      size: 1.6,
+      size: 2.2,
+      map: TextureGenerator.getSoftEmberParticleTexture(),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
       vertexColors: true,
       transparent: true,
-      opacity: 0.90,
+      opacity: 0.85,
       fog: false
     });
     const embers = new THREE.Points(emberGeo, emberMat);
@@ -2693,6 +2697,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'NEON_RAINLINE') {
       const delta = dt || 0.016;
       NeonRainlineEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT') {
+      const delta = dt || 0.016;
+      DoomsdayEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
