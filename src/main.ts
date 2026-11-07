@@ -26,6 +26,7 @@ import { OrbitalHaloEventDirector } from './environment/worlds/orbitalHalo/Orbit
 import { ModernMetroEventDirector } from './environment/worlds/modernMetro/ModernMetroEventDirector';
 import { HistoricQuarterEventDirector } from './environment/worlds/historicQuarter/HistoricQuarterEventDirector';
 import { UndergroundMetroEventDirector } from './environment/worlds/undergroundMetro/UndergroundMetroEventDirector';
+import { NeonIndustrialEventDirector } from './environment/worlds/neonIndustrial/NeonIndustrialEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -54,6 +55,7 @@ if (isDeveloperMode()) {
   (window as any).__MODERN_METRO_DIRECTOR__ = ModernMetroEventDirector.getInstance();
   (window as any).__HISTORIC_DIRECTOR__ = HistoricQuarterEventDirector.getInstance();
   (window as any).__UNDERGROUND_DIRECTOR__ = UndergroundMetroEventDirector.getInstance();
+  (window as any).__INDUSTRIAL_DIRECTOR__ = NeonIndustrialEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };
@@ -69,6 +71,8 @@ if (isDeveloperMode()) {
       EnvironmentManager.getInstance().setDevPreviewEnvironment('HISTORIC_QUARTER');
     } else if (preview && (preview.toUpperCase() === 'UNDERGROUND_METRO' || preview.toUpperCase() === 'UNDERGROUND')) {
       EnvironmentManager.getInstance().setDevPreviewEnvironment('UNDERGROUND_METRO');
+    } else if (preview && (preview.toUpperCase() === 'NEON_INDUSTRIAL' || preview.toUpperCase() === 'INDUSTRIAL')) {
+      EnvironmentManager.getInstance().setDevPreviewEnvironment('NEON_INDUSTRIAL');
     }
   }
 }

@@ -21,6 +21,7 @@ import { OrbitalHaloWorldBuilder } from './worlds/orbitalHalo/OrbitalHaloWorldBu
 import { ModernMetroWorldBuilder } from './worlds/modernMetro/ModernMetroWorldBuilder';
 import { HistoricQuarterWorldBuilder } from './worlds/historicQuarter/HistoricQuarterWorldBuilder';
 import { UndergroundMetroWorldBuilder } from './worlds/undergroundMetro/UndergroundMetroWorldBuilder';
+import { NeonIndustrialWorldBuilder } from './worlds/neonIndustrial/NeonIndustrialWorldBuilder';
 
 export class SeededRandom {
   private s: number;
@@ -1571,7 +1572,7 @@ export class SceneryFactory {
     } else if (theme.id === 'HISTORIC_QUARTER') {
       this.buildHistoricQuarterScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'NEON_INDUSTRIAL') {
-      this.buildNeonIndustrialScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildNeonIndustrialScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'NEON_RAINLINE') {
       this.buildNeonRainlineScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'ORBITAL_HALO') {
@@ -2315,151 +2316,18 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
-    const mats = this.getSharedMaterials();
-    const rng = new SeededRandom(seed);
-
-    const wallHeight = 2.5;
-    const wallThick = 0.65;
-    const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
-    const wallGeo = new THREE.BoxGeometry(wallThick, wallHeight, chunkLength);
-
-    // 1. Heavy Board-Formed Concrete & Rusted Steel Retaining Walls
-    const leftWall = new THREE.Mesh(wallGeo, mats.industrialConcreteMat);
-    leftWall.position.set(-wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    leftWall.castShadow = true;
-    leftWall.receiveShadow = true;
-    group.add(leftWall);
-
-    const rightWall = new THREE.Mesh(wallGeo, mats.industrialConcreteMat);
-    rightWall.position.set(wallX, wallHeight * 0.5, -chunkLength * 0.5);
-    rightWall.castShadow = true;
-    rightWall.receiveShadow = true;
-    group.add(rightWall);
-
-    // Hazard stripe coping cap
-    const capGeo = new THREE.BoxGeometry(wallThick + 0.15, 0.2, chunkLength);
-    const leftCap = new THREE.Mesh(capGeo, mats.hazardStripeMat);
-    leftCap.position.set(-wallX, wallHeight + 0.1, -chunkLength * 0.5);
-    group.add(leftCap);
-
-    const rightCap = new THREE.Mesh(capGeo, mats.hazardStripeMat);
-    rightCap.position.set(wallX, wallHeight + 0.1, -chunkLength * 0.5);
-    group.add(rightCap);
-
-    // 2. Heavy Lattice Gantries
-    this.buildIndustrialGantrySystem(group, chunkLength);
-
-    // 3. Modular Industrial Warehouses & Refineries
-    this.buildIndustrialModularBuildings(group, chunkLength, rng, detail);
-  }
-
-  private buildIndustrialGantrySystem(group: THREE.Group, chunkLength: number): void {
-    const mats = this.getSharedMaterials();
-    const gantrySpacing = 26.0;
-    const gantryCount = Math.floor(chunkLength / gantrySpacing);
-    const poleHeight = 10.0;
-    const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8;
-
-    for (let g = 0; g < gantryCount; g++) {
-      const gz = -g * gantrySpacing - 13.0;
-      const gantryGroup = new THREE.Group();
-      gantryGroup.position.set(0, 0, gz);
-
-      const colGeo = new THREE.BoxGeometry(0.45, poleHeight, 0.45);
-      [-spanWidth * 0.5, spanWidth * 0.5].forEach((cx) => {
-        const col = new THREE.Mesh(colGeo, mats.industrialSteelMat);
-        col.position.set(cx, poleHeight * 0.5, 0);
-        gantryGroup.add(col);
-      });
-
-      const girder = new THREE.Mesh(new THREE.BoxGeometry(spanWidth + 0.8, 0.5, 0.5), mats.industrialSteelMat);
-      girder.position.set(0, poleHeight - 0.25, 0);
-      gantryGroup.add(girder);
-
-      // Warning searchlights elevated at 9.4m
-      CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
-        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), mats.sodiumLampMat);
-        lamp.position.set(laneX, poleHeight - 0.60, 0.15);
-        gantryGroup.add(lamp);
-      });
-
-      group.add(gantryGroup);
-    }
-  }
-
-  private buildIndustrialModularBuildings(
-    group: THREE.Group,
-    chunkLength: number,
-    rng: SeededRandom,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
-  ): void {
-    const mats = this.getSharedMaterials();
-    const setback = 10.5;
-    const numBuildings = 4;
-    const lotLength = chunkLength / numBuildings;
-
-    for (let b = 0; b < numBuildings; b++) {
-      const bz = -b * lotLength - lotLength * 0.5;
-      const bStyle = rng.int(0, 2);
-
-      [-1, 1].forEach((side) => {
-        const bGroup = new THREE.Group();
-        const bX = side * (setback + 5.5 + (side > 0 ? 0.5 : 0));
-        bGroup.position.set(bX, 0, bz);
-
-        if (bStyle === 0) {
-          // Corrugated Steel Warehouse
-          const bW = rng.range(12.0, 15.0);
-          const bH = rng.range(14.0, 24.0);
-          const bD = lotLength * 0.94;
-
-          const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.corrugatedMetalMat);
-          mainBody.position.y = bH * 0.5;
-          bGroup.add(mainBody);
-
-          // Roof exhaust turbine
-          if (detail !== 'MINIMAL') {
-            const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.0, 4.0, 8), mats.rustIronMat);
-            stack.position.set(0, bH + 2.0, 0);
-            bGroup.add(stack);
-          }
-        } else if (bStyle === 1) {
-          // Refining Complex with Twin Storage Silos
-          const siloGeo = new THREE.CylinderGeometry(3.5, 3.5, 20.0, 12);
-          const silo1 = new THREE.Mesh(siloGeo, mats.industrialSteelMat);
-          silo1.position.set(0, 10.0, -lotLength * 0.22);
-          bGroup.add(silo1);
-
-          const silo2 = new THREE.Mesh(siloGeo, mats.industrialSteelMat);
-          silo2.position.set(0, 10.0, lotLength * 0.22);
-          bGroup.add(silo2);
-
-          // Connecting pipeline
-          const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, lotLength * 0.5, 6), mats.industrialPipeMat);
-          pipe.rotation.x = Math.PI / 2;
-          pipe.position.set(0, 16.0, 0);
-          bGroup.add(pipe);
-        } else {
-          // Railroad Dispatch Tower
-          const bW = 10.0;
-          const bH = rng.range(22.0, 32.0);
-          const bD = lotLength * 0.85;
-
-          const mainBody = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), mats.industrialConcreteMat);
-          mainBody.position.y = bH * 0.5;
-          bGroup.add(mainBody);
-
-          // Top observation cab with panoramic windows
-          const cab = new THREE.Mesh(new THREE.BoxGeometry(bW * 1.15, 4.5, bD * 1.15), mats.industrialSteelMat);
-          cab.position.y = bH - 2.0;
-          bGroup.add(cab);
-        }
-
-        group.add(bGroup);
-      });
-    }
+    NeonIndustrialWorldBuilder.getInstance().buildDistrictScenery(
+      group,
+      roadbedWidth,
+      curbWidth,
+      chunkLength,
+      seed,
+      detail,
+      worldZ
+    );
   }
 
   // -------------------------------------------------------------------------

@@ -23,6 +23,7 @@ import { OrbitalHaloEventDirector } from '../environment/worlds/orbitalHalo/Orbi
 import { ModernMetroEventDirector } from '../environment/worlds/modernMetro/ModernMetroEventDirector';
 import { HistoricQuarterEventDirector } from '../environment/worlds/historicQuarter/HistoricQuarterEventDirector';
 import { UndergroundMetroEventDirector } from '../environment/worlds/undergroundMetro/UndergroundMetroEventDirector';
+import { NeonIndustrialEventDirector } from '../environment/worlds/neonIndustrial/NeonIndustrialEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2774,6 +2775,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'UNDERGROUND_METRO') {
       const delta = dt || 0.016;
       UndergroundMetroEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'NEON_INDUSTRIAL') {
+      const delta = dt || 0.016;
+      NeonIndustrialEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
   }
 
