@@ -267,6 +267,79 @@ class RahulverseTextureCache {
       return canvas;
     });
   }
+
+  public static getYatraProcessionBannerTexture(): THREE.Texture {
+    return this.getOrCreate('rv_yatra_procession_banner', () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      // Saffron to Green gradient with white band
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#ea580c');
+      grad.addColorStop(0.35, '#f97316');
+      grad.addColorStop(0.5, '#ffffff');
+      grad.addColorStop(0.65, '#16a34a');
+      grad.addColorStop(1, '#15803d');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '900 26px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🚩 THE NEVER-ENDING YATRA 🚩', w * 0.5, 48);
+
+      ctx.fillStyle = '#1e3a8a';
+      ctx.font = '900 18px monospace';
+      ctx.fillText('3,570 KM DONE • 3,000 KM TO GO!', w * 0.5, 82);
+
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('EVERYONE KEEP WALKING • NO SHORTCUTS ALLOWED', w * 0.5, 110);
+
+      return canvas;
+    });
+  }
+
+  public static getHugAndWinkMarqueeTexture(): THREE.Texture {
+    return this.getOrCreate('rv_hug_and_wink_marquee', () => {
+      const w = 512;
+      const h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.fillStyle = '#064e3b'; // Parliamentary Green
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#f59e0b'; // Gold border
+      ctx.lineWidth = 6;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '900 24px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏛️ PARLIAMENT THEATRE: THE EMBRACE & WINK 😉', w * 0.5, 48);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('★ UNEXPECTED DIPLOMATIC ACCORD ★', w * 0.5, 82);
+
+      ctx.fillStyle = '#a7f3d0';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText('LIVE COVERAGE • PRESS GALLERY IN SHOCK', w * 0.5, 110);
+
+      return canvas;
+    });
+  }
 }
 
 /**
@@ -442,17 +515,14 @@ export class RahulSatireWorldBuilder {
     const director = RahulComedyEventDirector.getInstance();
 
     let districtIndex: number;
-    let worldZ = (worldZIn !== 0 && seed !== 999) ? worldZIn : 0;
-    if (worldZ === 0 && group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0) {
-      worldZ = group.parent.position.z;
-    }
-
     if (seed >= 0 && seed < 5) {
       districtIndex = seed;
-    } else if (worldZ !== 0) {
-      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
     } else {
-      districtIndex = Math.floor(Math.abs(seed) / 4) % 5;
+      let worldZ = (typeof worldZIn === 'number' && !isNaN(worldZIn)) ? worldZIn : 0;
+      if (worldZ === 0 && group.parent && typeof group.parent.position?.z === 'number') {
+        worldZ = group.parent.position.z;
+      }
+      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
     }
 
     switch (districtIndex) {
@@ -495,8 +565,8 @@ export class RahulSatireWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL'
   ): void {
     const wallX = roadbedWidth * 0.5 + 2.5;
-    // Setback building facade line: X = 24.5m, front face at X = 21.0m (outside track envelope |X| <= 4.2m)
-    const facadeX = side * (wallX + 17.0);
+    // Setback building facade line: X = 20.1m, front face at X = 16.6m (well outside running envelope |X| <= 4.2m)
+    const facadeX = side * (wallX + 10.5);
     const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
 
     // Three articulated modules per side with open courtyard gaps
@@ -535,9 +605,9 @@ export class RahulSatireWorldBuilder {
         wallMat = bIdx % 2 === 0 ? this.mediaBlueMat : this.parliamentSandstoneMat;
       }
 
-      // 0. Subterranean Foundation Plinth down to Y = -4.0m (prevents floating scenery)
-      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.8, 4.0, bDepth + 0.8), this.parliamentSandstoneMat);
-      plinth.position.y = -2.0;
+      // 0. Subterranean Foundation Plinth down to Y = -5.2m (prevents floating scenery)
+      const plinth = new THREE.Mesh(this.getBox(bWidth + 0.8, 5.5, bDepth + 0.8), this.parliamentSandstoneMat);
+      plinth.position.y = -2.45;
       bGroup.add(plinth);
 
       // 1. Ground Floor Plinth & Main Mass
@@ -646,8 +716,8 @@ export class RahulSatireWorldBuilder {
       cyGroup.position.set(facadeX + (side > 0 ? -1.5 : 1.5), 0, cyZ);
 
       // Subterranean Courtyard Foundation Plinth
-      const cyPlinth = new THREE.Mesh(this.getBox(3.2, 4.0, 6.2), this.parliamentSandstoneMat);
-      cyPlinth.position.y = -2.0;
+      const cyPlinth = new THREE.Mesh(this.getBox(3.2, 5.5, 6.2), this.parliamentSandstoneMat);
+      cyPlinth.position.y = -2.45;
       cyGroup.add(cyPlinth);
 
       const postL = new THREE.Mesh(this.getCylinder(0.18, 0.24, 4.8, 6), this.yatraBlueMat);
@@ -673,6 +743,170 @@ export class RahulSatireWorldBuilder {
   // =========================================================================
   // DISTRICT A — YATRA NEVER ENDS
   // =========================================================================
+
+  /**
+   * Animated Moving Yatra March Procession along the sidewalk promenade.
+   * Features:
+   * - Column of animated supporters in white kurtas, tricolor sashes, and sneakers
+   * - High-knee marching strides, counter-cadence arm swings, swaying flags
+   * - Supporter carrying giant golden megaphone with pulsing cyan sound waves
+   * - Supporter carrying official "3,570 KM DONE • 3,000 KM TO GO!" tricolor banner
+   * - Supporter jogging with water bottle and sweat towel
+   * - Registered with RahulComedyEventDirector for continuous animated motion
+   */
+  public buildYatraMarchProcession(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const procGroup = new THREE.Group();
+    procGroup.name = 'rahul_yatra_march_procession';
+    procGroup.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(6.5, 5.5, 22.0), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    procGroup.add(plinth);
+
+    const marchers: {
+      figure: THREE.Group;
+      legL: THREE.Object3D;
+      legR: THREE.Object3D;
+      armL: THREE.Object3D;
+      armR: THREE.Object3D;
+      flag?: THREE.Object3D;
+      banner?: THREE.Object3D;
+      phaseOffset: number;
+    }[] = [];
+
+    const soundWaves: THREE.Mesh[] = [];
+
+    const marcherDefs = [
+      { z: 6.0, type: 'FLAG', phase: 0.0 },
+      { z: 2.0, type: 'MEGAPHONE', phase: 1.2 },
+      { z: -2.0, type: 'BANNER', phase: 2.4 },
+      { z: -6.0, type: 'WATER', phase: 3.6 }
+    ];
+
+    marcherDefs.forEach((mDef) => {
+      const mFig = new THREE.Group();
+      mFig.position.set(0, 0.4, mDef.z);
+
+      // Left Leg & Sneaker
+      const legL = new THREE.Group();
+      legL.position.set(-0.18, 0.75, 0);
+      const legMeshL = new THREE.Mesh(this.getBox(0.18, 0.75, 0.22), this.yatraWhiteMat);
+      legMeshL.position.y = -0.375;
+      legL.add(legMeshL);
+      const shoeL = new THREE.Mesh(this.getBox(0.20, 0.12, 0.32), this.goldMetalMat);
+      shoeL.position.set(0, -0.75, 0.05);
+      legL.add(shoeL);
+      mFig.add(legL);
+
+      // Right Leg & Sneaker
+      const legR = new THREE.Group();
+      legR.position.set(0.18, 0.75, 0);
+      const legMeshR = new THREE.Mesh(this.getBox(0.18, 0.75, 0.22), this.yatraWhiteMat);
+      legMeshR.position.y = -0.375;
+      legR.add(legMeshR);
+      const shoeR = new THREE.Mesh(this.getBox(0.20, 0.12, 0.32), this.goldMetalMat);
+      shoeR.position.set(0, -0.75, 0.05);
+      legR.add(shoeR);
+      mFig.add(legR);
+
+      // Torso with Tricolor Sash
+      const torso = new THREE.Mesh(this.getBox(0.48, 0.7, 0.32), this.yatraWhiteMat);
+      torso.position.y = 1.1;
+      mFig.add(torso);
+
+      const sash = new THREE.Mesh(this.getBox(0.50, 0.18, 0.34), this.yatraOrangeMat);
+      sash.position.set(0, 1.1, 0);
+      sash.rotation.z = 0.3;
+      mFig.add(sash);
+
+      // Head with Hair
+      const head = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonSkinMat);
+      head.position.y = 1.62;
+      mFig.add(head);
+
+      const hair = new THREE.Mesh(this.getSphere(0.20, 8), this.cartoonHairDarkMat);
+      hair.position.set(0, 1.76, -0.02);
+      mFig.add(hair);
+
+      // Arms
+      const armL = new THREE.Group();
+      armL.position.set(-0.32, 1.35, 0);
+      const armMeshL = new THREE.Mesh(this.getBox(0.14, 0.55, 0.14), this.yatraWhiteMat);
+      armMeshL.position.y = -0.275;
+      armL.add(armMeshL);
+      mFig.add(armL);
+
+      const armR = new THREE.Group();
+      armR.position.set(0.32, 1.35, 0);
+      const armMeshR = new THREE.Mesh(this.getBox(0.14, 0.55, 0.14), this.yatraWhiteMat);
+      armMeshR.position.y = -0.275;
+      armR.add(armMeshR);
+      mFig.add(armR);
+
+      let flagObj: THREE.Object3D | undefined;
+      let bannerObj: THREE.Object3D | undefined;
+
+      if (mDef.type === 'FLAG') {
+        const flagStaff = new THREE.Mesh(this.getCylinder(0.04, 0.04, 3.2, 6), this.woodMat);
+        flagStaff.position.set(0.15, 0.8, 0.3);
+        armR.add(flagStaff);
+
+        const flagCloth = new THREE.Mesh(this.getBox(0.03, 0.9, 1.5), this.yatraOrangeMat);
+        flagCloth.position.set(0.15, 2.0, 1.0);
+        armR.add(flagCloth);
+        flagObj = flagCloth;
+      } else if (mDef.type === 'MEGAPHONE') {
+        const megaphone = new THREE.Mesh(this.getCylinder(0.28, 0.08, 0.7, 8), this.goldMetalMat);
+        megaphone.position.set(0.15, 0.1, 0.4);
+        megaphone.rotation.x = Math.PI / 2;
+        armR.add(megaphone);
+
+        // Animated sound waves
+        for (let s = 0; s < 2; s++) {
+          const waveMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
+          const ring = new THREE.Mesh(this.getCylinder(0.35 + s * 0.2, 0.35 + s * 0.2, 0.04, 8), waveMat);
+          ring.position.set(0.15, 0.1, 0.8 + s * 0.4);
+          ring.rotation.x = Math.PI / 2;
+          armR.add(ring);
+          soundWaves.push(ring);
+        }
+      } else if (mDef.type === 'BANNER') {
+        const bTex = RahulverseTextureCache.getYatraProcessionBannerTexture();
+        const bMesh = new THREE.Mesh(this.getBox(3.4, 0.9, 0.06), new THREE.MeshBasicMaterial({ map: bTex }));
+        bMesh.position.set(0, 1.6, 0.4);
+        mFig.add(bMesh);
+        bannerObj = bMesh;
+      } else if (mDef.type === 'WATER') {
+        const bottle = new THREE.Mesh(this.getCylinder(0.14, 0.14, 0.5, 8), this.mediaStudioGlassMat);
+        bottle.position.set(0.15, 0, 0.25);
+        armR.add(bottle);
+      }
+
+      procGroup.add(mFig);
+      marchers.push({
+        figure: mFig,
+        legL,
+        legR,
+        armL,
+        armR,
+        flag: flagObj,
+        banner: bannerObj,
+        phaseOffset: mDef.phase
+      });
+    });
+
+    director.registerYatraMarchProcession(procGroup, marchers, undefined, undefined, undefined, soundWaves);
+    group.add(procGroup);
+    return procGroup;
+  }
+
   public buildYatraNeverEndsDistrict(
     group: THREE.Group,
     roadbedWidth: number,
@@ -695,8 +929,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -2.45, -chunkLength * 0.5);
       districtA.add(walk);
 
       // Cheerful cartoon cheering crowd lining sidewalks
@@ -722,13 +956,13 @@ export class RahulSatireWorldBuilder {
       }
     });
 
-    // 1a. Roadside Chai & Snack Dhaba Kiosk at X = -15.5m
+    // 1a. Roadside Chai & Snack Dhaba Kiosk at X = -11.5m
     const dhabaGroup = new THREE.Group();
-    dhabaGroup.position.set(-15.5, 0.6, -chunkLength * 0.2);
+    dhabaGroup.position.set(-11.5, 0.6, -chunkLength * 0.25);
 
     // Deep Subterranean Foundation Plinth
-    const dhabaPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 5.0), this.parliamentSandstoneMat);
-    dhabaPlinth.position.y = -2.0;
+    const dhabaPlinth = new THREE.Mesh(this.getBox(7.0, 5.5, 5.0), this.parliamentSandstoneMat);
+    dhabaPlinth.position.y = -2.45;
     dhabaGroup.add(dhabaPlinth);
 
     const dhabaBase = new THREE.Mesh(this.getBox(6.5, 3.2, 4.5), this.parliamentSandstoneMat);
@@ -748,14 +982,17 @@ export class RahulSatireWorldBuilder {
 
     districtA.add(dhabaGroup);
 
-    // 1b. 3D Open-Top Campaign Support Van with 4 Loudspeaker Horns & Supply Crates (East sidewalk)
+    // 1b. Moving Yatra March Procession with animated marchers & banners (East sidewalk)
+    this.buildYatraMarchProcession(districtA, 11.2, 0.6, -chunkLength * 0.22, director);
+
+    // 1c. 3D Open-Top Campaign Support Van with 4 Loudspeaker Horns & Supply Crates (East sidewalk)
     const vanGroup = new THREE.Group();
     vanGroup.name = 'rahul_campaign_van';
-    vanGroup.position.set(14.5, 0.6, -chunkLength * 0.25);
+    vanGroup.position.set(11.5, 0.6, -chunkLength * 0.42);
 
     // Deep Subterranean Van Foundation Plinth
-    const vanPlinth = new THREE.Mesh(this.getBox(6.5, 4.0, 4.5), this.parliamentSandstoneMat);
-    vanPlinth.position.y = -2.0;
+    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 5.5, 5.0), this.parliamentSandstoneMat);
+    vanPlinth.position.y = -2.45;
     vanGroup.add(vanPlinth);
 
     // Van Body (Campaign Navy & Saffron)
@@ -773,11 +1010,13 @@ export class RahulSatireWorldBuilder {
     vanGroup.add(windshield);
 
     // 4 Wheels
+    const vanWheels: THREE.Mesh[] = [];
     [[-1.8, -1.3], [-1.8, 1.3], [1.6, -1.3], [1.6, 1.3]].forEach(([wx, wz]) => {
       const wheel = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.45, 12), this.darkSuitMat);
       wheel.position.set(wx, 0.55, wz);
       wheel.rotation.x = Math.PI / 2;
       vanGroup.add(wheel);
+      vanWheels.push(wheel);
 
       const hubcap = new THREE.Mesh(this.getCylinder(0.22, 0.22, 0.48, 8), this.silverMat);
       hubcap.position.set(wx, 0.55, wz);
@@ -833,16 +1072,20 @@ export class RahulSatireWorldBuilder {
       vanGroup.add(flag);
     });
 
+    // Campaign leader waving to supporters from rear bed of van
+    const leaderFig = this.buildRahulCaricature(vanGroup, -1.0, 1.8, 0, 'VICTORY', director);
+    leaderFig.name = 'yatra_van_leader_rahul';
+
     districtA.add(vanGroup);
 
     // 2. Animated Giant Golden Walking Shoe Monument on Motorized Treadmill
     const shoeGroup = new THREE.Group();
     shoeGroup.name = 'rahul_shoe_monument';
-    shoeGroup.position.set(-16.0, 0.6, -chunkLength * 0.5);
+    shoeGroup.position.set(-11.8, 0.6, -chunkLength * 0.55);
 
     // Deep Subterranean Treadmill Foundation Plinth
-    const shoePlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 8.5), this.parliamentSandstoneMat);
-    shoePlinth.position.y = -2.0;
+    const shoePlinth = new THREE.Mesh(this.getBox(8.0, 5.5, 8.5), this.parliamentSandstoneMat);
+    shoePlinth.position.y = -2.45;
     shoeGroup.add(shoePlinth);
 
     const pedestal = new THREE.Mesh(this.getBox(7.2, 1.4, 7.8), this.parliamentSandstoneMat);
@@ -972,7 +1215,7 @@ export class RahulSatireWorldBuilder {
     // 4. Special Animated Finish Line Flip Arch (High clearance envelope Y > 8.8m, lintel at Y = 9.4m)
     const archGroup = new THREE.Group();
     archGroup.name = 'yatra_finish_flip_arch';
-    archGroup.position.set(0, 0, -chunkLength * 0.35);
+    archGroup.position.set(0, 0, -chunkLength * 0.68);
 
     // High side pillars outside running envelope (|X| = 8.8m > 4.2m)
     const archH = 9.4;
@@ -1071,25 +1314,28 @@ export class RahulSatireWorldBuilder {
     group.add(archGroup);
 
     // 5. Second Distant Finish Line Arch ("REVISED FINISH LINE: MAYBE")
-    const distantArch = new THREE.Group();
-    distantArch.position.set(0, 0, -chunkLength * 0.85);
+    // Only placed on extended chunks so Chunk 0 has an unobstructed view of the flip arch
+    if (chunkLength > 120) {
+      const distantArch = new THREE.Group();
+      distantArch.position.set(0, 0, -chunkLength * 0.85);
 
-    [-roadbedWidth * 0.5 - 2.8, roadbedWidth * 0.5 + 2.8].forEach((px) => {
-      const dp = new THREE.Mesh(this.getBox(1.5, 9.4, 1.5), this.yatraBlueMat);
-      dp.position.set(px, 4.7, 0);
-      distantArch.add(dp);
-    });
+      [-roadbedWidth * 0.5 - 2.8, roadbedWidth * 0.5 + 2.8].forEach((px) => {
+        const dp = new THREE.Mesh(this.getBox(1.5, 9.4, 1.5), this.yatraBlueMat);
+        dp.position.set(px, 4.7, 0);
+        distantArch.add(dp);
+      });
 
-    const dLintel = new THREE.Mesh(this.getBox(roadbedWidth + 6.0, 1.0, 1.4), this.yatraOrangeMat);
-    dLintel.position.set(0, 10.0, 0);
-    distantArch.add(dLintel);
+      const dLintel = new THREE.Mesh(this.getBox(roadbedWidth + 6.0, 1.0, 1.4), this.yatraOrangeMat);
+      dLintel.position.set(0, 10.0, 0);
+      distantArch.add(dLintel);
 
-    const revTex = RahulverseTextureCache.getRevisedFinishTexture();
-    const revSign = new THREE.Mesh(this.getBox(roadbedWidth + 1.0, 1.5, 0.1), new THREE.MeshBasicMaterial({ map: revTex }));
-    revSign.position.set(0, 10.0, 0.1);
-    distantArch.add(revSign);
+      const revTex = RahulverseTextureCache.getRevisedFinishTexture();
+      const revSign = new THREE.Mesh(this.getBox(roadbedWidth + 1.0, 1.5, 0.1), new THREE.MeshBasicMaterial({ map: revTex }));
+      revSign.position.set(0, 10.0, 0.1);
+      distantArch.add(revSign);
 
-    group.add(distantArch);
+      group.add(distantArch);
+    }
 
     // Distant Scenic Mountain Ridges along Yatra route
     [-1, 1].forEach((side) => {
@@ -1132,8 +1378,8 @@ export class RahulSatireWorldBuilder {
 
       const gallW = 22.0;
       const gx = side * (curbEdge + gallW * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(gallW, 4.3, chunkLength), this.parliamentSandstoneMat);
-      gallery.position.set(gx, -1.85, -chunkLength * 0.5);
+      const gallery = new THREE.Mesh(this.getBox(gallW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      gallery.position.set(gx, -2.45, -chunkLength * 0.5);
       districtB.add(gallery);
 
       // Grand Sandstone Columns
@@ -1159,11 +1405,11 @@ export class RahulSatireWorldBuilder {
     // 2. Animated Runaway Mechanical Microphone Gag & Point of Order Button
     const micStage = new THREE.Group();
     micStage.name = 'runaway_microphone_arm';
-    micStage.position.set(-16.0, 0.6, -chunkLength * 0.5);
+    micStage.position.set(-16.0, 0.6, -chunkLength * 0.65);
 
     // Deep Subterranean Foundation Plinth
-    const micPlinth = new THREE.Mesh(this.getBox(6.5, 4.0, 6.0), this.parliamentSandstoneMat);
-    micPlinth.position.y = -2.0;
+    const micPlinth = new THREE.Mesh(this.getBox(6.5, 5.5, 6.0), this.parliamentSandstoneMat);
+    micPlinth.position.y = -2.45;
     micStage.add(micPlinth);
 
     // Mahogany Speaker Podium
@@ -1210,11 +1456,11 @@ export class RahulSatireWorldBuilder {
 
     // 3. Reverse Debate Countdown Clock with Backwards Spinning Hands
     const clockGroup = new THREE.Group();
-    clockGroup.position.set(16.5, 0.6, -chunkLength * 0.5);
+    clockGroup.position.set(16.5, 0.6, -chunkLength * 0.7);
 
     // Deep Subterranean Clock Plinth
-    const clockPlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
-    clockPlinth.position.y = -2.0;
+    const clockPlinth = new THREE.Mesh(this.getBox(6.0, 5.5, 6.0), this.parliamentSandstoneMat);
+    clockPlinth.position.y = -2.45;
     clockGroup.add(clockPlinth);
 
     const clockStand = new THREE.Mesh(this.getBox(1.5, 5.5, 1.5), this.parliamentSandstoneMat);
@@ -1245,14 +1491,14 @@ export class RahulSatireWorldBuilder {
     director.registerTimerMesh(clockDisplay, { hourHand, minuteHand });
     districtB.add(clockGroup);
 
-    // 3b. Strategy War-Room Pavilion with Giant Whiteboard Flowchart & Relaunch 5.0 Reset Button
+    // 3b. Strategy War-Room Pavilion with Giant Whiteboard Flowchart & Relaunch 5.0 Reset Button (West sidewalk)
     const warRoomGroup = new THREE.Group();
     warRoomGroup.name = 'rahul_strategy_war_room';
-    warRoomGroup.position.set(16.5, 0.6, -chunkLength * 0.35);
+    warRoomGroup.position.set(-16.5, 0.6, -chunkLength * 0.35);
 
     // Deep Subterranean War-Room Plinth
-    const warPlinth = new THREE.Mesh(this.getBox(8.0, 4.0, 8.0), this.parliamentSandstoneMat);
-    warPlinth.position.y = -2.0;
+    const warPlinth = new THREE.Mesh(this.getBox(8.0, 5.5, 8.0), this.parliamentSandstoneMat);
+    warPlinth.position.y = -2.45;
     warRoomGroup.add(warPlinth);
 
     // Hardwood War-Room Platform
@@ -1339,7 +1585,7 @@ export class RahulSatireWorldBuilder {
 
     // Revolving Coalition Door at X = 16.0m
     const doorGroup = new THREE.Group();
-    doorGroup.position.set(16.0, 0.6, -chunkLength * 0.25);
+    doorGroup.position.set(16.0, 0.6, -chunkLength * 0.15);
     const doorFrame = new THREE.Mesh(this.getCylinder(2.2, 2.2, 4.0, 12), this.woodMat);
     doorFrame.position.y = 2.0;
     doorGroup.add(doorFrame);
@@ -1356,8 +1602,10 @@ export class RahulSatireWorldBuilder {
     director.registerRevolvingDoor(rotorGroup, 1.4);
     group.add(doorGroup);
 
-    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (East side at X = +16.5m, Z = -chunkLength * 0.75)
-    this.buildParliamentHugAndWinkStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (Angled towards player camera at X = +12.6m)
+    const hugStage = this.buildParliamentHugAndWinkStage(group, 12.6, 0.6, -chunkLength * 0.35, director);
+    hugStage.rotation.y = -Math.PI * 0.35;
+    hugStage.scale.set(1.25, 1.25, 1.25);
 
     // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
     this.buildMicrophoneChaosStage(group, -16.5, 0.6, -chunkLength * 0.85, director);
@@ -1387,8 +1635,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -2.45, -chunkLength * 0.5);
       districtC.add(walk);
     });
 
@@ -1398,8 +1646,8 @@ export class RahulSatireWorldBuilder {
     vanGroup.position.set(15.5, 0.6, -chunkLength * 0.5);
 
     // Deep Subterranean Van Foundation Plinth
-    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 4.0, 5.0), this.parliamentSandstoneMat);
-    vanPlinth.position.y = -2.0;
+    const vanPlinth = new THREE.Mesh(this.getBox(7.0, 5.5, 5.0), this.parliamentSandstoneMat);
+    vanPlinth.position.y = -2.45;
     vanGroup.add(vanPlinth);
 
     // Broadcast Truck Body
@@ -1458,8 +1706,8 @@ export class RahulSatireWorldBuilder {
     const monitorGroup = new THREE.Group();
     monitorGroup.position.set(2.2, 0, -2.4);
 
-    const monPlinth = new THREE.Mesh(this.getBox(4.0, 4.0, 1.0), this.parliamentSandstoneMat);
-    monPlinth.position.y = -2.0;
+    const monPlinth = new THREE.Mesh(this.getBox(4.0, 5.5, 1.0), this.parliamentSandstoneMat);
+    monPlinth.position.y = -2.45;
     monitorGroup.add(monPlinth);
 
     const monPole = new THREE.Mesh(this.getCylinder(0.08, 0.08, 2.0, 6), this.silverMat);
@@ -1481,8 +1729,8 @@ export class RahulSatireWorldBuilder {
     podiumScrumGroup.name = 'rahul_podium_scrum';
     podiumScrumGroup.position.set(-15.5, 0.6, -chunkLength * 0.25);
 
-    const scrumPlinth = new THREE.Mesh(this.getBox(5.0, 4.0, 4.0), this.parliamentSandstoneMat);
-    scrumPlinth.position.y = -2.0;
+    const scrumPlinth = new THREE.Mesh(this.getBox(5.0, 5.5, 4.0), this.parliamentSandstoneMat);
+    scrumPlinth.position.y = -2.45;
     podiumScrumGroup.add(scrumPlinth);
 
     const scrumPodium = new THREE.Mesh(this.getBox(2.4, 1.8, 1.4), this.woodMat);
@@ -1518,8 +1766,8 @@ export class RahulSatireWorldBuilder {
     congaGroup.position.set(-15.5, 0.6, -chunkLength * 0.45);
 
     // Deep Subterranean Conga Plinth
-    const congaPlinth = new THREE.Mesh(this.getBox(4.0, 4.0, 10.0), this.parliamentSandstoneMat);
-    congaPlinth.position.y = -2.0;
+    const congaPlinth = new THREE.Mesh(this.getBox(4.0, 5.5, 10.0), this.parliamentSandstoneMat);
+    congaPlinth.position.y = -2.45;
     congaGroup.add(congaPlinth);
 
     for (let c = 0; c < 4; c++) {
@@ -1582,8 +1830,8 @@ export class RahulSatireWorldBuilder {
     anchorStage.position.set(16.5, 0.6, -chunkLength * 0.3);
 
     // Deep Subterranean Foundation Plinth
-    const anchorPlinth = new THREE.Mesh(this.getBox(7.2, 4.0, 7.2), this.parliamentSandstoneMat);
-    anchorPlinth.position.y = -2.0;
+    const anchorPlinth = new THREE.Mesh(this.getBox(7.2, 5.5, 7.2), this.parliamentSandstoneMat);
+    anchorPlinth.position.y = -2.45;
     anchorStage.add(anchorPlinth);
 
     const stagePlatform = new THREE.Mesh(this.getCylinder(3.5, 3.5, 0.8, 16), this.woodMat);
@@ -1642,8 +1890,8 @@ export class RahulSatireWorldBuilder {
     teacupStage.position.set(-16.5, 0.6, -chunkLength * 0.65);
 
     // Deep Subterranean Foundation Plinth
-    const teacupPlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
-    teacupPlinth.position.y = -2.0;
+    const teacupPlinth = new THREE.Mesh(this.getBox(6.0, 5.5, 6.0), this.parliamentSandstoneMat);
+    teacupPlinth.position.y = -2.45;
     teacupStage.add(teacupPlinth);
 
     const teacupStand = new THREE.Mesh(this.getBox(5.0, 1.0, 5.0), this.parliamentSandstoneMat);
@@ -1704,8 +1952,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -2.45, -chunkLength * 0.5);
       districtD.add(walk);
     });
 
@@ -1746,8 +1994,8 @@ export class RahulSatireWorldBuilder {
       statueGroup.position.set(side * 16.5, 0.6, -chunkLength * 0.5);
 
       // Deep Subterranean Statue Plinth
-      const statuePlinth = new THREE.Mesh(this.getBox(6.0, 4.0, 6.0), this.parliamentSandstoneMat);
-      statuePlinth.position.y = -2.0;
+      const statuePlinth = new THREE.Mesh(this.getBox(6.0, 5.5, 6.0), this.parliamentSandstoneMat);
+      statuePlinth.position.y = -2.45;
       statueGroup.add(statuePlinth);
 
       const pedestal = new THREE.Mesh(this.getBox(5.0, 3.0, 5.0), this.yatraWhiteMat);
@@ -1782,6 +2030,11 @@ export class RahulSatireWorldBuilder {
     const disputeStage = new THREE.Group();
     disputeStage.name = 'middle_seat_dispute';
     disputeStage.position.set(-16.0, 0.6, -chunkLength * 0.4);
+
+    // Deep Subterranean Carousel Plinth down to Y = -5.2m
+    const arenaPlinth = new THREE.Mesh(this.getBox(10.5, 5.5, 10.5), this.parliamentSandstoneMat);
+    arenaPlinth.position.y = -2.45;
+    disputeStage.add(arenaPlinth);
 
     const arenaBase = new THREE.Mesh(this.getCylinder(4.8, 5.2, 0.8, 16), this.parliamentSandstoneMat);
     arenaBase.position.y = 0.4;
@@ -1906,8 +2159,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 4.3, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -1.85, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -2.45, -chunkLength * 0.5);
       districtE.add(walk);
     });
 
@@ -1918,8 +2171,8 @@ export class RahulSatireWorldBuilder {
         spireGroup.position.set(side * 16.5, 0.6, -z);
 
         // Deep Subterranean Spire Plinth
-        const spirePlinth = new THREE.Mesh(this.getBox(4.2, 4.0, 4.2), this.parliamentSandstoneMat);
-        spirePlinth.position.y = -2.0;
+        const spirePlinth = new THREE.Mesh(this.getBox(4.2, 5.5, 4.2), this.parliamentSandstoneMat);
+        spirePlinth.position.y = -2.45;
         spireGroup.add(spirePlinth);
 
         const base = new THREE.Mesh(this.getBox(3.4, 1.0, 3.4), this.yatraBlueMat);
@@ -2344,14 +2597,28 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_parliament_hug_and_wink';
     stage.position.set(x, y, z);
 
-    // Sandstone Plinth & Green Leather Floor
-    const plinth = new THREE.Mesh(this.getBox(9.0, 0.8, 9.0), this.parliamentSandstoneMat);
-    plinth.position.y = 0.4;
+    // Deep Subterranean Sandstone Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.5, 9.5), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
     stage.add(plinth);
 
-    const greenFloor = new THREE.Mesh(this.getBox(8.2, 0.06, 8.2), this.parliamentGreenMat);
-    greenFloor.position.set(0, 0.83, 0);
+    const greenFloor = new THREE.Mesh(this.getBox(8.8, 0.08, 8.8), this.parliamentGreenMat);
+    greenFloor.position.set(0, 0.34, 0);
     stage.add(greenFloor);
+
+    // Overhead Marquee Banner
+    const marqueeTex = RahulverseTextureCache.getHugAndWinkMarqueeTexture();
+    const marqueeMesh = new THREE.Mesh(this.getBox(7.2, 1.5, 0.12), new THREE.MeshBasicMaterial({ map: marqueeTex }));
+    marqueeMesh.position.set(0, 4.8, -3.4);
+    stage.add(marqueeMesh);
+
+    // Warm parliamentary spotlights shining onto stage
+    [-2.6, 2.6].forEach((lx) => {
+      const lamp = new THREE.Mesh(this.getCylinder(0.25, 0.1, 0.4, 8), this.goldMetalMat);
+      lamp.position.set(lx, 4.6, -3.2);
+      lamp.rotation.x = 0.4;
+      stage.add(lamp);
+    });
 
     // Treasury Bench with Seated Modi on Left
     const treasuryBench = new THREE.Mesh(this.getBox(2.2, 1.1, 1.4), this.parliamentGreenMat);
@@ -2508,9 +2775,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_mic_chaos';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.0, 0.8, 8.0), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.0, 5.5, 8.0), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const stageFloor = new THREE.Mesh(this.getBox(7.6, 0.08, 7.6), this.parliamentSandstoneMat);
+    stageFloor.position.y = 0.34;
+    stage.add(stageFloor);
 
     // Central Debating Table
     const table = new THREE.Mesh(this.getCylinder(2.4, 2.5, 0.9, 12), this.woodMat);
@@ -2559,9 +2830,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_press_scrum';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.0, 0.8, 8.0), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.0, 5.5, 8.0), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const stageFloor = new THREE.Mesh(this.getBox(7.6, 0.08, 7.6), this.parliamentSandstoneMat);
+    stageFloor.position.y = 0.34;
+    stage.add(stageFloor);
 
     const reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[] = [];
     const radius = 2.0;
@@ -2614,9 +2889,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_alliance_chairs_runaway';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.5, 5.5, 8.5), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const deck = new THREE.Mesh(this.getBox(8.0, 0.1, 8.0), this.parliamentSandstoneMat);
+    deck.position.y = 0.34;
+    stage.add(deck);
 
     // Large Round Conference Table
     const table = new THREE.Mesh(this.getCylinder(2.6, 2.7, 0.9, 16), this.woodMat);
@@ -2678,9 +2957,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_crossover_hug_loop';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.5, 5.5, 8.5), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const deck = new THREE.Mesh(this.getBox(8.0, 0.1, 8.0), this.parliamentSandstoneMat);
+    deck.position.y = 0.34;
+    stage.add(deck);
 
     const turntable = new THREE.Group();
     turntable.position.set(0, 0.8, 0);
@@ -2718,9 +3001,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_crossover_selfie_battle';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.5, 5.5, 8.5), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const deck = new THREE.Mesh(this.getBox(8.0, 0.1, 8.0), this.parliamentSandstoneMat);
+    deck.position.y = 0.34;
+    stage.add(deck);
 
     const modi = this.buildModiCaricature(stage, -2.2, 0.8, 0, 'VICTORY', director);
     const rahul = this.buildRahulCaricature(stage, 2.2, 0.8, 0, 'VICTORY', director);
@@ -2779,8 +3066,8 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_crossover_mic_chase';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(7.5, 0.8, 12.0), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(7.5, 5.5, 12.0), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
 
     const runway = new THREE.Mesh(this.getBox(3.0, 0.06, 11.0), this.yatraOrangeMat);
@@ -2836,9 +3123,13 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_crossover_office_mixup';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.parliamentSandstoneMat);
-    base.position.y = 0.4;
+    const base = new THREE.Mesh(this.getBox(8.5, 5.5, 8.5), this.parliamentSandstoneMat);
+    base.position.y = -2.45;
     stage.add(base);
+
+    const deck = new THREE.Mesh(this.getBox(8.0, 0.1, 8.0), this.parliamentSandstoneMat);
+    deck.position.y = 0.34;
+    stage.add(deck);
 
     const portal = new THREE.Group();
     portal.position.set(0, 0.8, 0);

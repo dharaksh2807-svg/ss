@@ -125,6 +125,28 @@ export interface ParliamentHugAndWinkEvent {
   timer: number;
 }
 
+/** Gate A: Moving Yatra March Procession with Animated Marchers & Support Van */
+export interface YatraMarchProcessionEvent {
+  processionGroup: THREE.Group;
+  vanGroup?: THREE.Group;
+  vanWheels?: THREE.Object3D[];
+  vanLoudspeakers?: THREE.Object3D[];
+  soundWaves?: THREE.Object3D[];
+  marchers: {
+    figure: THREE.Group;
+    legL: THREE.Object3D;
+    legR: THREE.Object3D;
+    armL: THREE.Object3D;
+    armR: THREE.Object3D;
+    flag?: THREE.Object3D;
+    banner?: THREE.Object3D;
+    phaseOffset: number;
+  }[];
+  leaderWavingArm?: THREE.Object3D;
+  bannerMesh?: THREE.Object3D;
+  timer: number;
+}
+
 /** Gate A: The Never-Ending Yatra Mechanical Flip & Infinite Map */
 export interface NeverEndingYatraEvent {
   archGroup: THREE.Group;
@@ -228,6 +250,7 @@ export class RahulComedyEventDirector {
 
   // Gate A, B & Crossover Gags
   private parliamentHugAndWinks: ParliamentHugAndWinkEvent[] = [];
+  private yatraMarchProcessions: YatraMarchProcessionEvent[] = [];
   private neverEndingYatras: NeverEndingYatraEvent[] = [];
   private microphoneChaoses: MicrophoneChaosEvent[] = [];
   private pressScrums: PressScrumEvent[] = [];
@@ -265,6 +288,7 @@ export class RahulComedyEventDirector {
     this.clockHands = [];
 
     this.parliamentHugAndWinks = [];
+    this.yatraMarchProcessions = [];
     this.neverEndingYatras = [];
     this.microphoneChaoses = [];
     this.pressScrums = [];
@@ -475,6 +499,38 @@ export class RahulComedyEventDirector {
     });
   }
 
+  public registerYatraMarchProcession(
+    processionGroup: THREE.Group,
+    marchers: {
+      figure: THREE.Group;
+      legL: THREE.Object3D;
+      legR: THREE.Object3D;
+      armL: THREE.Object3D;
+      armR: THREE.Object3D;
+      flag?: THREE.Object3D;
+      banner?: THREE.Object3D;
+      phaseOffset: number;
+    }[],
+    vanGroup?: THREE.Group,
+    vanWheels?: THREE.Object3D[],
+    vanLoudspeakers?: THREE.Object3D[],
+    soundWaves?: THREE.Object3D[],
+    leaderWavingArm?: THREE.Object3D,
+    bannerMesh?: THREE.Object3D
+  ): void {
+    this.yatraMarchProcessions.push({
+      processionGroup,
+      marchers,
+      vanGroup,
+      vanWheels,
+      vanLoudspeakers,
+      soundWaves,
+      leaderWavingArm,
+      bannerMesh,
+      timer: 0
+    });
+  }
+
   public registerNeverEndingYatra(
     archGroup: THREE.Group,
     flipBanner: THREE.Object3D,
@@ -566,6 +622,7 @@ export class RahulComedyEventDirector {
 
   // Gate A, B & Crossover Getters
   public getParliamentHugAndWinkCount(): number { return this.parliamentHugAndWinks.length; }
+  public getYatraMarchProcessionCount(): number { return this.yatraMarchProcessions.length; }
   public getNeverEndingYatraCount(): number { return this.neverEndingYatras.length; }
   public getMicrophoneChaosCount(): number { return this.microphoneChaoses.length; }
   public getPressScrumCount(): number { return this.pressScrums.length; }
@@ -581,7 +638,7 @@ export class RahulComedyEventDirector {
       this.shoeMonuments.length + this.puzzlePieces.length + this.mediaCongaLines.length +
       this.timerMeshes.length + this.emptyChairDebates.length + this.teacupDebates.length +
       this.cosmicMicLaunches.length + this.accordionMaps.length + this.handshakeStatues.length +
-      this.parliamentHugAndWinks.length + this.neverEndingYatras.length + this.microphoneChaoses.length +
+      this.parliamentHugAndWinks.length + this.yatraMarchProcessions.length + this.neverEndingYatras.length + this.microphoneChaoses.length +
       this.pressScrums.length + this.allianceChairsRunaways.length + this.hugLoops.length +
       this.selfieBattles.length + this.microphoneChases.length + this.partyOfficeMixups.length;
   }
@@ -612,6 +669,7 @@ export class RahulComedyEventDirector {
     this.clockHands = this.clockHands.filter(ch => isAttached(ch.hourHand));
 
     this.parliamentHugAndWinks = this.parliamentHugAndWinks.filter(hw => isAttached(hw.rahulFigure) && isAttached(hw.modiFigure));
+    this.yatraMarchProcessions = this.yatraMarchProcessions.filter(p => isAttached(p.processionGroup));
     this.neverEndingYatras = this.neverEndingYatras.filter(ney => isAttached(ney.archGroup) && isAttached(ney.runnerRahul));
     this.microphoneChaoses = this.microphoneChaoses.filter(mc => isAttached(mc.tableGroup));
     this.pressScrums = this.pressScrums.filter(ps => isAttached(ps.scrumGroup));
@@ -999,6 +1057,73 @@ export class RahulComedyEventDirector {
         g.sparkleStar.visible = false;
         g.cameramanFigure.rotation.x = -Math.PI * 0.45 * (1.0 - recT);
         g.cameramanTripod.rotation.z = -0.55 * (1.0 - recT);
+      }
+    }
+
+    // GATE A: Moving Yatra March Procession with Animated Marchers & Support Van
+    for (let i = 0; i < this.yatraMarchProcessions.length; i++) {
+      const g = this.yatraMarchProcessions[i];
+      g.timer += delta * motionMultiplier;
+      const t = g.timer;
+
+      // Animate Marchers with rhythmic high-knee strides
+      for (let mIdx = 0; mIdx < g.marchers.length; mIdx++) {
+        const m = g.marchers[mIdx];
+        const marchPhase = t * 6.0 + m.phaseOffset;
+
+        // Dynamic marching strides: legs swing back & forth
+        m.legL.rotation.x = Math.sin(marchPhase) * 0.45;
+        m.legR.rotation.x = -Math.sin(marchPhase) * 0.45;
+
+        // Arms swing in counter-cadence
+        m.armL.rotation.x = -Math.sin(marchPhase) * 0.45;
+        m.armR.rotation.x = Math.sin(marchPhase) * 0.45;
+
+        // Vertical step bounce
+        m.figure.position.y = Math.abs(Math.sin(marchPhase * 2.0)) * 0.12;
+
+        // Flags fluttering & swaying with march cadence
+        if (m.flag) {
+          m.flag.rotation.z = Math.sin(t * 3.5 + mIdx) * 0.15;
+          m.flag.rotation.y = Math.cos(t * 4.0 + mIdx) * 0.18;
+        }
+
+        // Banners swaying
+        if (m.banner) {
+          m.banner.rotation.z = Math.sin(t * 2.5) * 0.08;
+        }
+      }
+
+      // Leader waving arm from open platform
+      if (g.leaderWavingArm) {
+        g.leaderWavingArm.rotation.z = -0.5 + Math.sin(t * 6.0) * 0.45;
+        g.leaderWavingArm.rotation.x = Math.sin(t * 4.0) * 0.15;
+      }
+
+      // Support van wheels rotating
+      if (g.vanWheels) {
+        for (let w = 0; w < g.vanWheels.length; w++) {
+          g.vanWheels[w].rotation.x += delta * 6.0 * motionMultiplier;
+        }
+      }
+
+      // Support van body suspension bounce
+      if (g.vanGroup) {
+        g.vanGroup.position.y = 0.6 + Math.sin(t * 8.0) * 0.04;
+      }
+
+      // Megaphone pulsing sound waves
+      if (g.soundWaves) {
+        for (let sw = 0; sw < g.soundWaves.length; sw++) {
+          const wave = g.soundWaves[sw];
+          const waveCycle = (t * 2.5 + sw * 0.3) % 1.0;
+          wave.scale.set(1.0 + waveCycle * 1.5, 1.0 + waveCycle * 1.5, 1.0 + waveCycle * 1.5);
+          if ((wave as THREE.Mesh).material) {
+            const mat = (wave as THREE.Mesh).material as THREE.MeshBasicMaterial;
+            mat.opacity = Math.max(0, 1.0 - waveCycle);
+            mat.transparent = true;
+          }
+        }
       }
     }
 
