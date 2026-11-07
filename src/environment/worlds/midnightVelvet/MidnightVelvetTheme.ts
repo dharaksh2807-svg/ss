@@ -29,26 +29,26 @@ export const MIDNIGHT_VELVET_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x050711,    // Deep midnight obsidian with subtle navy undertone
-    bottom: 0x1f0b18 // Rich burgundy twilight velvet glow on horizon
+    top: 0x080c1e,    // Deep midnight obsidian sapphire
+    bottom: 0x241228  // Rich burgundy twilight velvet glow on horizon
   },
   fog: {
-    color: 0x120a1c,  // Muted violet velvet night haze
-    density: 0.0028
+    color: 0x151226,  // Muted midnight velvet haze (reduced density for crystal clarity)
+    density: 0.0018
   },
   sun: {
-    color: 0xffeedd,  // Silvery champagne moonlight
-    intensity: 1.25,
+    color: 0xfff4e6,  // Warm champagne moonlight
+    intensity: 1.65,
     position: { x: -40, y: 75, z: -50 }
   },
   fill: {
-    color: 0x2e1065,  // Muted deep violet night shadow fill
-    intensity: 0.55
+    color: 0x3b1d60,  // Rich royal violet night shadow fill (lifts crushed blacks!)
+    intensity: 0.65
   },
   hemi: {
-    sky: 0x1e1b4b,    // Midnight sapphire upper
-    ground: 0xd97706, // Warm amber city street bounce
-    intensity: 1.15
+    sky: 0x1e2246,    // Midnight sapphire upper
+    ground: 0xf59e0b, // Warm amber city street bounce
+    intensity: 1.35
   },
   skyline: {
     color: 0x0f0b1a,  // Silhouette of Art Deco spires and step-back towers

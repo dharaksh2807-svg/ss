@@ -2312,14 +2312,14 @@ export class WorldScene {
         isRain = true;
         break;
       case 'MIDNIGHT_VELVET_AFTERDARK':
-        sunColorHex = 0xffeedd;
-        sunIntensity = 1.25;
-        skyTopHex = 0x050711;
-        skyBottomHex = 0x1f0b18;
-        fogColorHex = 0x120a1c;
-        fogDensity = 0.0028;
-        fillColorHex = 0x2e1065;
-        fillIntensity = 0.55;
+        sunColorHex = 0xfff4e6;
+        sunIntensity = 1.65;
+        skyTopHex = 0x080c1e;
+        skyBottomHex = 0x241228;
+        fogColorHex = 0x151226;
+        fogDensity = 0.0018;
+        fillColorHex = 0x3b1d60;
+        fillIntensity = 0.65;
         isRain = false;
         break;
       case 'MIDNIGHT_VELVET_RAIN':
