@@ -22,6 +22,7 @@ import { PhantomLineEventDirector } from './environment/worlds/phantomLine/Phant
 import { AbyssalGlasslineEventDirector } from './environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 import { NeonRainlineEventDirector } from './environment/worlds/neonRainline/NeonRainlineEventDirector';
 import { DoomsdayEventDirector } from './environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
+import { OrbitalHaloEventDirector } from './environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
 
 // Expose on window only in development mode for runtime testing and diagnostic scripts
 if (isDeveloperMode()) {
@@ -46,6 +47,7 @@ if (isDeveloperMode()) {
   (window as any).__ABYSSAL_DIRECTOR__ = AbyssalGlasslineEventDirector.getInstance();
   (window as any).__NEON_DIRECTOR__ = NeonRainlineEventDirector.getInstance();
   (window as any).__DOOMSDAY_DIRECTOR__ = DoomsdayEventDirector.getInstance();
+  (window as any).__ORBITAL_DIRECTOR__ = OrbitalHaloEventDirector.getInstance();
   (window as any).__DEV_SET_WORLD__ = (worldId: any) => {
     EnvironmentManager.getInstance().setDevPreviewEnvironment(worldId);
   };

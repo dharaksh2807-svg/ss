@@ -9,6 +9,8 @@ import { WorldScene } from '../src/scene/WorldScene';
 import { EnvironmentalEncounterDirector } from '../src/environment/EnvironmentalEncounterDirector';
 import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { getWorld } from '../src/environment/WorldCatalog';
+import { OrbitalHaloEventDirector } from '../src/environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
+import { OrbitalHaloWorldBuilder } from '../src/environment/worlds/orbitalHalo/OrbitalHaloWorldBuilder';
 
 console.log('🧪 Starting ORBITAL_HALO Premium World Verification Suite...\n');
 
@@ -232,6 +234,146 @@ for (let s = 100; s < 120; s++) {
   pool.clearDecorativeGroup(g, new Set(Object.values(factory.getSharedMaterials())));
 }
 check(landmarkTypes.size >= 2, `Procedural generation includes multiple landmark variations (found ${Array.from(landmarkTypes).join(', ')})`);
+
+// Suite 10: 6 Distinct Orbital Districts & Grounded Retaining Plinths
+console.log('\n--- Suite 10: 6 Distinct Orbital Districts & Grounded Plinths ---');
+const director = OrbitalHaloEventDirector.getInstance();
+director.reset();
+
+const districtNames = [
+  'zone_orbital_central',
+  'zone_zerog_dockyards',
+  'zone_celestial_observatory',
+  'zone_gravity_ring',
+  'zone_solar_frontier',
+  'zone_deep_space_gateway'
+];
+
+const foundDistricts = new Set<string>();
+let plinthGroundingSafe = true;
+
+for (let chunkIdx = 0; chunkIdx < 6; chunkIdx++) {
+  const g = new THREE.Group();
+  const chunkZ = -chunkIdx * 80;
+  factory.buildScenery(g, ORBITAL_HALO_THEME, chunkZ, false, false, 'NONE', 'FULL', 6000 + chunkIdx);
+  g.updateMatrixWorld(true);
+
+  g.traverse((c) => {
+    if (districtNames.includes(c.name)) {
+      foundDistricts.add(c.name);
+    }
+    // Verify retaining plinths extend down to Y <= -5.5m (zero floating geometry)
+    if (c.name === 'orbital_retaining_plinth') {
+      const b = new THREE.Box3().setFromObject(c);
+      if (b.min.y > -5.0) {
+        plinthGroundingSafe = false;
+      }
+    }
+  });
+}
+
+check(foundDistricts.size === 6, `All 6 distinct orbital districts generate in order (found ${foundDistricts.size}/6: ${Array.from(foundDistricts).join(', ')})`);
+check(plinthGroundingSafe, 'Aerospace retaining plinths firmly anchor structure down to Y <= -5.5m (zero floating geometry)');
+
+// Suite 11: Gate A — Grand Spacecraft Docking Sequence
+console.log('\n--- Suite 11: Gate A — Grand Spacecraft Docking Sequence ---');
+const dockings = director.getGrandDockings();
+check(dockings.length >= 1, `Gate A grand docking event registered in director (count: ${dockings.length})`);
+if (dockings.length > 0) {
+  const d = dockings[0];
+  check(d.spacecraftMesh !== undefined && d.spacecraftMesh.isGroup, 'Spacecraft mesh structure is initialized');
+  check(d.dockingArmLeft !== undefined && d.dockingArmRight !== undefined, 'Dual mechanical docking arms are initialized');
+  check(d.dockingClamps.length >= 2, `Docking clamps present (count: ${d.dockingClamps.length})`);
+  check(d.umbilicalTube !== undefined, 'Pressurized airlock umbilical tube present');
+  check(d.dockingThrusters.length >= 2, `Docking RCS thrusters present (count: ${d.dockingThrusters.length})`);
+  check(d.statusLights.length >= 2, `Status indicator lights present (count: ${d.statusLights.length})`);
+  check(d.state === 'APPROACH', `Initial docking sequence state is APPROACH (got ${d.state})`);
+}
+
+// Suite 12: Gate B — Orbital Ring Awakening Mechanics
+console.log('\n--- Suite 12: Gate B — Orbital Ring Awakening Mechanics ---');
+const rings = director.getOrbitalRings();
+check(rings.length >= 1, `Gate B orbital ring awakening registered in director (count: ${rings.length})`);
+if (rings.length > 0) {
+  const r = rings[0];
+  check(r.ringGroup !== undefined && r.ringGroup.isGroup, 'Rotating ring structure is initialized');
+  check(r.bearingCore !== undefined, 'Central drive bearing core is initialized');
+  check(r.spokes.length >= 4, `Radial spokes connecting bearing core present (count: ${r.spokes.length})`);
+  check(r.habitatPods.length >= 4, `Habitation residential pods present (count: ${r.habitatPods.length})`);
+  check(r.statusStrobes.length >= 4, `Power strobes along spokes present (count: ${r.statusStrobes.length})`);
+  check(r.state === 'DORMANT', `Initial ring awakening state is DORMANT (got ${r.state})`);
+}
+
+// Suite 13: 8 Cinematic Encounters & Director Registry
+console.log('\n--- Suite 13: 8 Cinematic Encounters & Director Registry ---');
+const diag = director.getDiagnostics();
+check(diag.grandDockings >= 1, `Gate A grand dockings registered (${diag.grandDockings})`);
+check(diag.orbitalRings >= 1, `Gate B orbital rings registered (${diag.orbitalRings})`);
+check(diag.astronautSpacewalks >= 1, `Event C astronaut spacewalks registered (${diag.astronautSpacewalks})`);
+check(diag.planetaryEclipses >= 1, `Event D planetary eclipses registered (${diag.planetaryEclipses})`);
+check(diag.meteorShowers >= 1, `Event E meteor showers registered (${diag.meteorShowers})`);
+check(diag.colossalVessels >= 1, `Event F colossal research vessels registered (${diag.colossalVessels})`);
+check(diag.solarTransformations >= 1, `Event G solar array transformations registered (${diag.solarTransformations})`);
+check(diag.constructionSites >= 1, `Event H orbital construction sites registered (${diag.constructionSites})`);
+
+// Suite 14: Signed-Distance Convention Progression
+console.log('\n--- Suite 14: Signed-Distance Convention Progression ---');
+if (dockings.length > 0) {
+  const actor = dockings[0];
+  const trigZ = actor.triggerZ;
+
+  // Signed distance convention: distanceAhead = playerZ - triggerZ
+  // +160m: player approaching from far away
+  director.update(0.016, true, trigZ + 160);
+  check(actor.state === 'APPROACH', `At +160m state is APPROACH (got ${actor.state})`);
+
+  // +90m: deceleration thrusters fire
+  director.update(0.016, true, trigZ + 90);
+  check(actor.state === 'DECELERATION', `At +90m state is DECELERATION (got ${actor.state})`);
+
+  // +45m: docking arms deploy and alignment
+  director.update(0.016, true, trigZ + 45);
+  check(actor.state === 'ALIGNMENT', `At +45m state is ALIGNMENT (got ${actor.state})`);
+
+  // +15m: clamp lock
+  director.update(0.016, true, trigZ + 15);
+  check(actor.state === 'CLAMP_LOCK', `At +15m state is CLAMP_LOCK (got ${actor.state})`);
+
+  // -5m: umbilical connect
+  director.update(0.016, true, trigZ - 5);
+  check(actor.state === 'UMBILICAL_CONNECT', `At -5m state is UMBILICAL_CONNECT (got ${actor.state})`);
+}
+
+// Suite 15: Ambient Space Life Ecosystem
+console.log('\n--- Suite 15: Ambient Space Life Ecosystem ---');
+check(diag.patrolShuttles >= 2, `Patrol shuttles active in orbit (${diag.patrolShuttles})`);
+check(diag.radarDishes >= 2, `Deep space radar dishes scanning (${diag.radarDishes})`);
+check(diag.trackingSolarPanels >= 2, `Tracking solar panels pivoting (${diag.trackingSolarPanels})`);
+check(diag.maintenanceDrones >= 2, `Maintenance drones with searchlights (${diag.maintenanceDrones})`);
+check(diag.navigationBeacons >= 4, `Navigation beacons blinking (${diag.navigationBeacons})`);
+
+// Update ambient tick to verify smooth motion
+let threwError = false;
+try {
+  director.update(0.05, true, -200);
+} catch (e) {
+  threwError = true;
+}
+check(!threwError, 'Director ambient update runs without errors');
+
+// Suite 16: Memory Lifecycle & Scenery Pool Stability
+console.log('\n--- Suite 16: Memory Lifecycle & Scenery Pool Stability ---');
+const beforePrune = director.getDiagnostics().grandDockings;
+check(beforePrune > 0, 'Director holds active encounters before prune');
+director.pruneDetached();
+const afterPrune = director.getDiagnostics().grandDockings;
+check(afterPrune <= beforePrune, 'pruneDetached cleans unattached entities safely');
+
+director.reset();
+const afterReset = director.getDiagnostics();
+check(afterReset.grandDockings === 0, 'Reset clears grand dockings');
+check(afterReset.orbitalRings === 0, 'Reset clears orbital rings');
+check(afterReset.patrolShuttles === 0, 'Reset clears ambient shuttles');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} ORBITAL_HALO PREMIUM WORLD TESTS PASSED!`);

@@ -19,6 +19,7 @@ import { PhantomLineEventDirector } from '../environment/worlds/phantomLine/Phan
 import { AbyssalGlasslineEventDirector } from '../environment/worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
 import { NeonRainlineEventDirector } from '../environment/worlds/neonRainline/NeonRainlineEventDirector';
 import { DoomsdayEventDirector } from '../environment/worlds/doomsdayLastTransit/DoomsdayEventDirector';
+import { OrbitalHaloEventDirector } from '../environment/worlds/orbitalHalo/OrbitalHaloEventDirector';
 
 export class WorldScene {
   public scene: THREE.Scene;
@@ -2702,6 +2703,11 @@ export class WorldScene {
     if (this.currentTheme && this.currentTheme.id === 'DOOMSDAY_LAST_TRANSIT') {
       const delta = dt || 0.016;
       DoomsdayEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
+    }
+
+    if (this.currentTheme && this.currentTheme.id === 'ORBITAL_HALO') {
+      const delta = dt || 0.016;
+      OrbitalHaloEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
