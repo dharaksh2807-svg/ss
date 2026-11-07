@@ -1582,7 +1582,7 @@ export class SceneryFactory {
     } else if (theme.id === 'MIDNIGHT_VELVET') {
       this.buildMidnightVelvetScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'CHRONO_KINGDOM') {
-      this.buildChronoKingdomScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail);
+      this.buildChronoKingdomScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'INFERNO_EXPRESS') {
       this.buildInfernoExpressScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'JURASSIC_RUSH') {
@@ -7648,11 +7648,12 @@ export class SceneryFactory {
     curbWidth: number,
     chunkLength: number,
     seed: number,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    worldZ: number = 0
   ): void {
     const chronoGroup = new THREE.Group();
     chronoGroup.name = 'chrono_kingdom_scenery';
-    ChronoKingdomWorldBuilder.getInstance().buildDistrictScenery(chronoGroup, roadbedWidth, chunkLength, seed, detail);
+    ChronoKingdomWorldBuilder.getInstance().buildDistrictScenery(chronoGroup, roadbedWidth, chunkLength, seed, detail, worldZ);
     group.add(chronoGroup);
   }
 

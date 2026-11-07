@@ -37,26 +37,26 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x071126,    // Celestial midnight sapphire
-    bottom: 0x3d1d11 // Deep bronze and warm furnace twilight glow on the horizon
+    top: 0x0c1e3d,    // Celestial midnight sapphire
+    bottom: 0x7c3417 // Radiant bronze and warm furnace twilight glow on the horizon
   },
   fog: {
-    color: 0x1c1719,  // Atmospheric bronze steam haze
-    density: 0.0028   // Subtle haze that maintains crisp obstacle visibility
+    color: 0x241712,  // Atmospheric bronze steam haze
+    density: 0.0022   // Subtle haze that maintains crisp obstacle visibility
   },
   sun: {
-    color: 0xffdf99,  // Warm golden celestial spotlight
-    intensity: 1.35,
+    color: 0xffe6a3,  // Warm golden celestial spotlight
+    intensity: 1.45,
     position: { x: -35, y: 80, z: -45 }
   },
   fill: {
-    color: 0x1e1b4b,  // Deep twilight fill shadow
-    intensity: 0.60
+    color: 0x854d27,  // Rich Victorian bronze fill light
+    intensity: 0.85
   },
   hemi: {
-    sky: 0x1e293b,    // Midnight sky reflection
+    sky: 0x334155,    // Midnight sky reflection
     ground: 0xb45309, // Warm burnished copper & furnace bounce light
-    intensity: 1.15
+    intensity: 1.25
   },
   skyline: {
     color: 0x13121d,  // Silhouette of colossal clock towers and spires

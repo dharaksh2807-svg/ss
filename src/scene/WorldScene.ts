@@ -2279,25 +2279,25 @@ export class WorldScene {
         isRain = false;
         break;
       case 'CHRONO_CELESTIAL_CLOCKWORK':
-        sunColorHex = 0xffdf99;
-        sunIntensity = 1.35;
-        skyTopHex = 0x071126;
-        skyBottomHex = 0x3d1d11;
-        fogColorHex = 0x1c1719;
-        fogDensity = 0.0028;
-        fillColorHex = 0x1e1b4b;
-        fillIntensity = 0.60;
+        sunColorHex = 0xffe6a3;
+        sunIntensity = 1.45;
+        skyTopHex = 0x0c1e3d;
+        skyBottomHex = 0x7c3417;
+        fogColorHex = 0x241712;
+        fogDensity = 0.0022;
+        fillColorHex = 0x854d27;
+        fillIntensity = 0.85;
         isRain = false;
         break;
       case 'CHRONO_STEAM_RAIN':
-        sunColorHex = 0xd4af37;
-        sunIntensity = 0.95;
-        skyTopHex = 0x050c1b;
-        skyBottomHex = 0x2d150c;
-        fogColorHex = 0x161214;
-        fogDensity = 0.0042;
-        fillColorHex = 0x18153a;
-        fillIntensity = 0.50;
+        sunColorHex = 0xeab308;
+        sunIntensity = 1.05;
+        skyTopHex = 0x081324;
+        skyBottomHex = 0x4a1f0e;
+        fogColorHex = 0x1a1210;
+        fogDensity = 0.0035;
+        fillColorHex = 0x6e3c1b;
+        fillIntensity = 0.70;
         isRain = true;
         break;
       case 'MIDNIGHT_VELVET_AFTERDARK':
