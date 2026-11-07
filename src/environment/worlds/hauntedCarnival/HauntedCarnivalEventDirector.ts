@@ -631,6 +631,8 @@ export class HauntedCarnivalEventDirector {
         watcher.state = 'DORMANT';
         watcher.distantFigure.visible = true;
         watcher.closeFigure.visible = false;
+        watcher.closeFigure.scale.set(1, 1, 1);
+        watcher.closeFigure.position.set(0, 0.6, 0);
         watcher.distantLampLight.scale.setScalar(1.0);
         watcher.distantHead.rotation.y = 0;
       } else if (distanceAhead > 75) {
@@ -672,10 +674,10 @@ export class HauntedCarnivalEventDirector {
         watcher.distantFigure.visible = false;
         watcher.closeFigure.visible = true;
 
-        // Unnatural lunging movement toward viewing edge
+        // Unnatural lunging movement toward viewing edge (strictly |X| >= 5.15m)
         const lungeProgress = Math.min(1.0, Math.max(0.0, (22 - distanceAhead) / 10));
-        const lungeX = watcher.side * (watcher.closeFigure.userData.baseX + lungeProgress * 0.9);
-        watcher.closeFigure.position.x = lungeX;
+        const lungeOffset = lungeProgress * 0.45;
+        watcher.closeFigure.position.x = (watcher.side > 0 ? -lungeOffset : lungeOffset);
         watcher.closeFigure.position.z = Math.sin(t * 22.0) * 0.08 * motionScale;
 
         // Limbs reach forward unnaturally
@@ -693,7 +695,7 @@ export class HauntedCarnivalEventDirector {
         const dissolveProg = Math.min(1.0, (-12 - distanceAhead) / 28);
         const scaleVal = Math.max(0.001, 1.0 - dissolveProg);
         watcher.closeFigure.scale.set(scaleVal, scaleVal, scaleVal);
-        watcher.closeFigure.position.y += dt * 1.5; // Drifts upward into mist
+        watcher.closeFigure.position.y = 0.6 + dissolveProg * 2.2; // Drifts upward into mist
 
         if (dissolveProg >= 1.0) {
           watcher.closeFigure.visible = false;

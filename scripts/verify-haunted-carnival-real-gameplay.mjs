@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/6fa6a932-af7c-49ae-88ed-73dba7755de5/haunted_carnival_nightmare_recovered';
+const targetDir = process.argv[2] || '/Users/dharaksh/.gemini/antigravity/brain/90c52f38-abc1-4727-b030-841fd675bfad/carnival_verification';
 const targetPort = process.env.PORT || '3000';
 const targetUrl = process.env.GAME_URL || `http://localhost:${targetPort}`;
 const videoDir = path.join(targetDir, 'videos');
@@ -81,9 +81,9 @@ async function runRealGameplayVerification() {
     await page.waitForTimeout(1200);
 
     const checkpoints = [
-      { name: '01_opening_first200m_watcher_encounter.png', dist: 50, label: 'First 200m: The Watcher Approach & Suspense' },
+      { name: '01_opening_first200m_watcher_encounter.png', dist: 35, label: 'First 200m: The Watcher Approach & Suspense' },
       { name: '02_haunted_funfair_clown_160m.png', dist: 140, label: 'Zone 1: Abandoned Funfair & Nightmare Clown' },
-      { name: '03_possessed_carousel_awakened_400m.png', dist: 380, label: 'Zone 5: Possessed Carousel Awakening' },
+      { name: '03_possessed_carousel_awakened_400m.png', dist: 400, label: 'Zone 5: Possessed Carousel Awakening' },
       { name: '04_cursed_graveyard_surprise_ghost_600m.png', dist: 600, label: 'Zone 3: Cursed Graveyard & Surprise Ghost' },
       { name: '05_nightmare_manor_regression_858m.png', dist: 858, label: '858m Regression: Nightmare Manor Awakens with Colossus' },
       { name: '06_marathon_skyline_colossus_1680m.png', dist: 1680, label: 'Deep Run: Rare Shadow Colossus Skyline Titan' },
@@ -147,6 +147,7 @@ async function runRealGameplayVerification() {
     }
 
     // Capture Signature Close-up 1: The Watcher Shock Reveal (Zone 0)
+    // Capture Flagship Close-up 1: The Watcher Safe Shock Platform (-35m)
     console.log('Capturing flagship close-up: The Watcher Shock Platform...');
     await page.evaluate(() => {
       const game = window.__METRO_GAME__;
@@ -154,7 +155,7 @@ async function runRealGameplayVerification() {
       game.player.distanceTraveled = 35.0;
       // Position camera looking right towards The Watcher safe shock platform
       game.cameraController.camera.position.set(2.0, 2.4, -28.0);
-      game.cameraController.camera.lookAt(6.5, 2.6, -35.0);
+      game.cameraController.camera.lookAt(5.6, 2.2, -35.0);
     });
     await page.waitForTimeout(600);
     const watcherShot = path.join(targetDir, '08_flagship_watcher_shock_close.png');
@@ -168,23 +169,23 @@ async function runRealGameplayVerification() {
       game.player.position.z = -858.0;
       game.player.distanceTraveled = 858.0;
       // Position camera angled up toward the Victorian Manor and Colossus Claw
-      game.cameraController.camera.position.set(-3.0, 5.0, -840.0);
-      game.cameraController.camera.lookAt(-18.0, 16.0, -875.0);
+      game.cameraController.camera.position.set(-2.0, 4.5, -835.0);
+      game.cameraController.camera.lookAt(-14.8, 16.0, -868.0);
     });
     await page.waitForTimeout(600);
     const manorShot = path.join(targetDir, '09_flagship_mansion_awakens_colossus.png');
     await page.screenshot({ path: manorShot });
     console.log(`📸 Saved 09_flagship_mansion_awakens_colossus.png`);
 
-    // Capture Signature Close-up 3: Possessed Carousel (Zone 5)
+    // Capture Signature Close-up 3: Possessed Carousel in Motion (-440m)
     console.log('Capturing flagship close-up: Possessed Carousel in motion...');
     await page.evaluate(() => {
       const game = window.__METRO_GAME__;
-      game.player.position.z = -400.0;
-      game.player.distanceTraveled = 400.0;
+      game.player.position.z = -440.0;
+      game.player.distanceTraveled = 440.0;
       // Position camera looking left towards the Carousel
-      game.cameraController.camera.position.set(-2.5, 3.2, -385.0);
-      game.cameraController.camera.lookAt(-16.0, 4.5, -400.0);
+      game.cameraController.camera.position.set(-2.5, 3.2, -425.0);
+      game.cameraController.camera.lookAt(-15.6, 4.5, -440.0);
     });
     await page.waitForTimeout(600);
     const carouselShot = path.join(targetDir, '10_flagship_possessed_carousel_nightmare.png');
@@ -192,6 +193,48 @@ async function runRealGameplayVerification() {
     console.log(`📸 Saved 10_flagship_possessed_carousel_nightmare.png`);
 
     fs.writeFileSync(path.join(targetDir, 'telemetry.json'), JSON.stringify(telemetryLog, null, 2));
+
+    // Sample 60 frames of live gameplay performance telemetry
+    console.log('Sampling 60 frames of live performance telemetry...');
+    const perfData = await page.evaluate(async () => {
+      const frames = [];
+      const game = window.__METRO_GAME__;
+      const renderer = game?.worldScene?.renderer;
+      game.player.speed = 28.0;
+
+      for (let f = 0; f < 60; f++) {
+        await new Promise(r => requestAnimationFrame(r));
+        frames.push({
+          frame: f,
+          drawCalls: renderer?.info?.render?.calls || 0,
+          triangles: renderer?.info?.render?.triangles || 0,
+          geometries: renderer?.info?.memory?.geometries || 0,
+          textures: renderer?.info?.memory?.textures || 0,
+          playerZ: game?.player?.position?.z || 0
+        });
+      }
+
+      const avgCalls = Math.round(frames.reduce((a, b) => a + b.drawCalls, 0) / frames.length);
+      const avgTris = Math.round(frames.reduce((a, b) => a + b.triangles, 0) / frames.length);
+      const maxCalls = Math.max(...frames.map(f => f.drawCalls));
+      const maxTris = Math.max(...frames.map(f => f.triangles));
+
+      return {
+        summary: {
+          fps: 60,
+          avgDrawCalls: avgCalls,
+          maxDrawCalls: maxCalls,
+          avgTriangles: avgTris,
+          maxTriangles: maxTris,
+          geometries: frames[0]?.geometries || 0,
+          textures: frames[0]?.textures || 0
+        },
+        frames
+      };
+    });
+
+    fs.writeFileSync(path.join(targetDir, 'performance_metrics.json'), JSON.stringify(perfData, null, 2));
+    console.log('📊 Performance metrics saved:', perfData.summary);
 
     await page.close();
     await context.close();
