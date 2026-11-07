@@ -1837,39 +1837,50 @@ export class WorldScene {
         Math.sin(angle) * dist
       );
 
-      // Colossal Volcanic Mountain Cone
-      const coneH = 85 + (i % 6) * 18;
-      const coneR = 36 + (i % 4) * 8;
-      const coneGeo = new THREE.ConeGeometry(coneR, coneH, 8);
+      // Broad Volcanic Shield Mountain (sweeping base, dramatic caldera)
+      const coneH = 44 + (i % 5) * 10;
+      const coneR = 88 + (i % 4) * 16;
+      const coneGeo = new THREE.CylinderGeometry(coneR * 0.18, coneR, coneH, 10);
       const coneMesh = new THREE.Mesh(coneGeo, calderaMat);
       coneMesh.position.y = coneH * 0.5;
       peakGroup.add(coneMesh);
 
       // Summit Caldera Crater Rim
-      const rimGeo = new THREE.CylinderGeometry(coneR * 0.22, coneR * 0.28, 5.0, 8);
+      const rimGeo = new THREE.CylinderGeometry(coneR * 0.20, coneR * 0.26, 4.0, 10);
       const craterRim = new THREE.Mesh(rimGeo, basaltMat);
-      craterRim.position.y = coneH - 2.0;
+      craterRim.position.y = coneH - 0.5;
       peakGroup.add(craterRim);
 
       // Incandescent Glowing Magma Caldera Lake
-      const magmaGeo = new THREE.CylinderGeometry(coneR * 0.18, coneR * 0.18, 2.0, 8);
+      const magmaGeo = new THREE.CylinderGeometry(coneR * 0.16, coneR * 0.16, 1.8, 10);
       const magmaGlow = new THREE.Mesh(magmaGeo, infernoMagmaGlowMat);
-      magmaGlow.position.y = coneH;
+      magmaGlow.position.y = coneH + 0.2;
       peakGroup.add(magmaGlow);
 
       // White-hot center core
-      const coreGeo = new THREE.CylinderGeometry(coneR * 0.08, coneR * 0.08, 2.2, 8);
+      const coreGeo = new THREE.CylinderGeometry(coneR * 0.08, coneR * 0.08, 2.0, 10);
       const core = new THREE.Mesh(coreGeo, innerCoreMat);
-      core.position.y = coneH + 0.1;
+      core.position.y = coneH + 0.4;
       peakGroup.add(core);
 
       // Cascading Molten Magma River streaming down the volcano slope
-      const riverW = 3.5 + (i % 3) * 1.5;
-      const riverGeo = new THREE.BoxGeometry(riverW, coneH * 0.65, 1.2);
+      const riverW = 4.5 + (i % 3) * 2.0;
+      const riverGeo = new THREE.BoxGeometry(riverW, coneH * 0.70, 1.5);
       const river = new THREE.Mesh(riverGeo, lavaVeinMat);
-      river.position.set(0, coneH * 0.45, coneR * 0.45);
-      river.rotation.x = 0.52;
+      river.position.set(0, coneH * 0.45, coneR * 0.52);
+      river.rotation.x = 0.58;
       peakGroup.add(river);
+
+      // Flanking Craggy Basalt Foothills & Molten Ridges
+      const footH = coneH * 0.52;
+      const footW = coneR * 0.75;
+      const footMesh = new THREE.Mesh(new THREE.CylinderGeometry(footW * 0.20, footW, footH, 8), calderaMat);
+      footMesh.position.set(coneR * 0.55, footH * 0.5, 0);
+      peakGroup.add(footMesh);
+
+      const footMesh2 = new THREE.Mesh(new THREE.CylinderGeometry(footW * 0.18, footW * 0.85, footH * 0.70, 8), calderaMat);
+      footMesh2.position.set(-coneR * 0.55, footH * 0.35, 0);
+      peakGroup.add(footMesh2);
 
       // Billowing Volcanic Ash & Smoke Plume
       const plumeR = 12.0 + (i % 3) * 4.0;
@@ -1885,21 +1896,21 @@ export class WorldScene {
         phase: i * 0.85
       });
 
-      // Flanking Jagged Basalt Ridges
-      const ridgeH = coneH * 0.45;
-      const ridgeW = coneR * 0.70;
-      const ridgeMesh1 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW, ridgeH, 5), basaltMat);
-      ridgeMesh1.position.set(coneR * 0.65, ridgeH * 0.5, 0);
-      peakGroup.add(ridgeMesh1);
+      // Flanking Jagged Basalt Outer Ridges
+      const outerRidgeH = coneH * 0.45;
+      const outerRidgeW = coneR * 0.70;
+      const outerRidgeMesh1 = new THREE.Mesh(new THREE.ConeGeometry(outerRidgeW, outerRidgeH, 5), basaltMat);
+      outerRidgeMesh1.position.set(coneR * 0.65, outerRidgeH * 0.5, 0);
+      peakGroup.add(outerRidgeMesh1);
 
-      const ridgeMesh2 = new THREE.Mesh(new THREE.ConeGeometry(ridgeW * 0.8, ridgeH * 0.8, 5), basaltMat);
-      ridgeMesh2.position.set(-coneR * 0.65, ridgeH * 0.4, 0);
-      peakGroup.add(ridgeMesh2);
+      const outerRidgeMesh2 = new THREE.Mesh(new THREE.ConeGeometry(outerRidgeW * 0.8, outerRidgeH * 0.8, 5), basaltMat);
+      outerRidgeMesh2.position.set(-coneR * 0.65, outerRidgeH * 0.4, 0);
+      peakGroup.add(outerRidgeMesh2);
 
       // Distant Spired Basalt Citadel Monoliths
       if (i % 3 === 1) {
         const citadelSpire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 32.0, 6), basaltMat);
-        citadelSpire.position.set(coneR * 0.45, ridgeH + 12.0, 8.0);
+        citadelSpire.position.set(coneR * 0.45, outerRidgeH + 12.0, 8.0);
         peakGroup.add(citadelSpire);
       }
 
@@ -2111,7 +2122,7 @@ export class WorldScene {
     if (this.infiniteSubterraneanBed) {
       const getThemeGroundColor = (id: string): number => {
         switch (id) {
-          case 'INFERNO_EXPRESS': return 0x140806;
+          case 'INFERNO_EXPRESS': return 0x7f1d1d;
           case 'JURASSIC_RUSH': return 0x143522;
           case 'VIP_EXPRESS':
           case 'RAHULVERSE': return 0x8a623a;
@@ -2345,14 +2356,14 @@ export class WorldScene {
         isRain = false;
         break;
       case 'INFERNO_VOLCANIC_MAGMA':
-        sunColorHex = 0xff7733;
-        sunIntensity = 1.35;
-        skyTopHex = 0x0f0407;
-        skyBottomHex = 0x450a0a;
-        fogColorHex = 0x1f0a0d;
-        fogDensity = 0.0028;
+        sunColorHex = 0xff6622;
+        sunIntensity = 1.65;
+        skyTopHex = 0x0a0305;
+        skyBottomHex = 0x581111;
+        fogColorHex = 0x22080a;
+        fogDensity = 0.0022;
         fillColorHex = 0x3d0b0b;
-        fillIntensity = 0.60;
+        fillIntensity = 0.85;
         isRain = false;
         break;
       case 'JURASSIC_PRIMORDIAL_DAWN':

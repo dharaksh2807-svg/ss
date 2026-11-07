@@ -37,26 +37,26 @@ export const INFERNO_EXPRESS_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0f0407,    // Deep volcanic void abyss
-    bottom: 0x450a0a // Intense crimson and fiery molten twilight glow
+    top: 0x0a0305,    // Deep stygian volcanic void
+    bottom: 0x581111 // Intense fiery crimson & molten twilight glow
   },
   fog: {
-    color: 0x1f0a0d,  // Deep volcanic smoke haze
-    density: 0.0028   // Atmospheric without obscuring obstacle readability
+    color: 0x22080a,  // Atmospheric volcanic smoke & sulfur haze
+    density: 0.0022   // Atmospheric depth preserving high obstacle readability
   },
   sun: {
-    color: 0xff7733,  // Radiant molten volcanic glare
-    intensity: 1.35,
+    color: 0xff6622,  // Radiant molten volcanic glare
+    intensity: 1.65,
     position: { x: -35, y: 70, z: -55 }
   },
   fill: {
-    color: 0x2a0808,  // Fiery crimson fill light
-    intensity: 0.65
+    color: 0x3d0b0b,  // Fiery crimson fill light
+    intensity: 0.85
   },
   hemi: {
-    sky: 0x1c1917,    // Dark volcanic ash canopy
-    ground: 0xea580c, // Vibrant molten lava upward reflection
-    intensity: 1.25
+    sky: 0x1a0f0d,    // Dark volcanic ash canopy
+    ground: 0xff4400, // Vibrant molten lava upward reflection
+    intensity: 1.45
   },
   skyline: {
     color: 0x140608,  // Silhouette of jagged volcanoes and obsidian towers

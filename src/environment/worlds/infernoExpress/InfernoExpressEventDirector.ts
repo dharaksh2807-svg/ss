@@ -63,6 +63,7 @@ export class InfernoExpressEventDirector {
   private geysers: LavaGeyser[] = [];
   private collapsingRocks: CollapsingRock[] = [];
   private blastDoors: FurnaceBlastDoor[] = [];
+  private lavaTexture: THREE.Texture | null = null;
 
   private globalTime: number = 0;
 
@@ -103,7 +104,12 @@ export class InfernoExpressEventDirector {
     this.geysers = [];
     this.collapsingRocks = [];
     this.blastDoors = [];
+    this.lavaTexture = null;
     this.globalTime = 0;
+  }
+
+  public registerLavaTexture(texture: THREE.Texture): void {
+    this.lavaTexture = texture;
   }
 
   // =========================================================================
@@ -233,6 +239,12 @@ export class InfernoExpressEventDirector {
 
     const reducedMotion = SettingsManager.getInstance().isReducedMotion();
     const motionScale = reducedMotion ? 0.2 : 1.0;
+
+    // Real-time flowing molten lava surface currents
+    if (this.lavaTexture) {
+      this.lavaTexture.offset.y = (this.lavaTexture.offset.y - clampedDelta * 0.12 * motionScale) % 1.0;
+      this.lavaTexture.offset.x = Math.sin(this.globalTime * 0.4) * 0.02 * motionScale;
+    }
 
     // --- 1. Distant Volcano Eruptions ---
     for (let i = 0; i < this.volcanoes.length; i++) {

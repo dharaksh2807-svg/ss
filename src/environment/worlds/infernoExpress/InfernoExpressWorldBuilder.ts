@@ -12,7 +12,7 @@ class InfernoExpressTextureHelper {
   private static cache = new Map<string, THREE.Texture>();
 
   public static getLavaOceanTexture(): THREE.Texture {
-    const key = 'inferno_lava_ocean_crust';
+    const key = 'inferno_lava_ocean_crust_v2';
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const size = 512;
@@ -21,47 +21,86 @@ class InfernoExpressTextureHelper {
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
 
-    // Fiery orange/red molten base
-    const lavaGrad = ctx.createRadialGradient(size * 0.5, size * 0.5, size * 0.1, size * 0.5, size * 0.5, size * 0.5);
-    lavaGrad.addColorStop(0, '#fef08a'); // White-hot molten center
-    lavaGrad.addColorStop(0.35, '#f97316'); // Radiant orange
-    lavaGrad.addColorStop(0.75, '#ea580c'); // Deep magma red
-    lavaGrad.addColorStop(1.0, '#7f1d1d'); // Scorched edge
+    // 1. Incandescent Molten Magma Gradient Base
+    const lavaGrad = ctx.createLinearGradient(0, 0, size, size);
+    lavaGrad.addColorStop(0, '#fef08a');   // White-hot molten gold
+    lavaGrad.addColorStop(0.2, '#f97316'); // Searing radiant orange
+    lavaGrad.addColorStop(0.5, '#ea580c'); // Deep flowing lava
+    lavaGrad.addColorStop(0.8, '#b91c1c'); // Searing crimson magma
+    lavaGrad.addColorStop(1.0, '#7f1d1d'); // Deep volcanic red
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(0, 0, size, size);
 
-    // Floating black cooled obsidian crust plates
-    ctx.fillStyle = '#0f0f12';
+    // 2. Polygonal Cooling Basalt Crust Plates
+    ctx.fillStyle = '#0f0f13';
     const plates = [
-      [60, 60, 70, 50],
-      [220, 80, 110, 80],
-      [400, 50, 80, 90],
-      [120, 240, 90, 70],
-      [310, 220, 130, 95],
-      [70, 390, 100, 80],
-      [260, 380, 85, 75],
-      [420, 340, 75, 110]
+      [20, 20, 110, 85],
+      [160, 15, 120, 95],
+      [310, 30, 90, 80],
+      [420, 10, 80, 100],
+      [35, 140, 130, 110],
+      [195, 135, 115, 105],
+      [340, 140, 145, 95],
+      [15, 280, 100, 105],
+      [140, 270, 130, 120],
+      [295, 265, 110, 110],
+      [430, 260, 75, 125],
+      [30, 410, 125, 90],
+      [180, 415, 105, 85],
+      [315, 400, 110, 100],
+      [445, 410, 60, 90]
     ];
 
-    plates.forEach(([px, py, pw, ph]) => {
+    plates.forEach(([px, py, pw, ph], idx) => {
       ctx.beginPath();
-      ctx.roundRect(px, py, pw, ph, 14);
+      ctx.roundRect(px, py, pw, ph, 12);
       ctx.fill();
 
-      // Glowing molten fissures through crust
-      ctx.strokeStyle = '#fdba74';
-      ctx.lineWidth = 2.5;
+      // Basalt crust shading & cooling rims
+      ctx.strokeStyle = '#27272a';
+      ctx.lineWidth = 3.0;
+      ctx.stroke();
+
+      // Stress fractures glowing through crust
+      ctx.strokeStyle = idx % 2 === 0 ? '#f97316' : '#ea580c';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(px + pw * 0.2, py + ph * 0.1);
-      ctx.lineTo(px + pw * 0.5, py + ph * 0.6);
-      ctx.lineTo(px + pw * 0.8, py + ph * 0.9);
+      ctx.moveTo(px + pw * 0.25, py + ph * 0.15);
+      ctx.lineTo(px + pw * 0.55, py + ph * 0.5);
+      ctx.lineTo(px + pw * 0.85, py + ph * 0.85);
       ctx.stroke();
     });
+
+    // 3. Blazing Convective Molten Fissures between plates
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = '#f97316';
+    ctx.shadowBlur = 10;
+
+    const fissures = [
+      [[0, 120], [140, 125], [180, 130], [320, 120], [512, 125]],
+      [[0, 255], [130, 250], [175, 260], [300, 250], [425, 255], [512, 250]],
+      [[0, 395], [150, 400], [285, 390], [430, 400], [512, 390]],
+      [[145, 0], [140, 125], [130, 250], [150, 400], [145, 512]],
+      [[295, 0], [320, 120], [300, 250], [285, 390], [305, 512]],
+      [[425, 0], [420, 120], [425, 255], [430, 400], [435, 512]]
+    ];
+
+    fissures.forEach((pts) => {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i][0], pts[i][1]);
+      }
+      ctx.stroke();
+    });
+
+    ctx.shadowBlur = 0;
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(4, 8);
+    tex.repeat.set(6, 12);
     this.cache.set(key, tex);
     return tex;
   }
@@ -186,6 +225,9 @@ export class InfernoExpressWorldBuilder {
   private runeMat: THREE.MeshStandardMaterial;
   private grateMat: THREE.MeshStandardMaterial;
   private splashWaveMat: THREE.MeshBasicMaterial;
+  private volcanicBasaltMat: THREE.MeshStandardMaterial;
+  private moltenWhiteCoreMat: THREE.MeshStandardMaterial;
+  private lavaOceanTexture: THREE.Texture;
 
   private constructor() {
     this.blackObsidianMat = new THREE.MeshStandardMaterial({
@@ -268,14 +310,31 @@ export class InfernoExpressWorldBuilder {
     this.splashMat = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.75 });
     curved.applyCurvature(this.splashMat);
 
+    this.lavaOceanTexture = InfernoExpressTextureHelper.getLavaOceanTexture();
     this.lavaOceanMat = new THREE.MeshStandardMaterial({
-      map: InfernoExpressTextureHelper.getLavaOceanTexture(),
-      roughness: 0.35,
-      metalness: 0.3,
-      emissive: 0xea580c,
-      emissiveIntensity: 0.95
+      map: this.lavaOceanTexture,
+      roughness: 0.32,
+      metalness: 0.25,
+      emissive: 0xf97316,
+      emissiveIntensity: 1.25
     });
     curved.applyCurvature(this.lavaOceanMat);
+
+    this.volcanicBasaltMat = new THREE.MeshStandardMaterial({
+      color: 0x18181b,
+      roughness: 0.82,
+      metalness: 0.20
+    });
+    curved.applyCurvature(this.volcanicBasaltMat);
+
+    this.moltenWhiteCoreMat = new THREE.MeshStandardMaterial({
+      color: 0xffedd5,
+      emissive: 0xfef08a,
+      emissiveIntensity: 1.85,
+      roughness: 0.20,
+      metalness: 0.10
+    });
+    curved.applyCurvature(this.moltenWhiteCoreMat);
 
     this.ringMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.5 });
     curved.applyCurvature(this.ringMat);
@@ -363,19 +422,16 @@ export class InfernoExpressWorldBuilder {
   ): void {
     const rng = new SeededRandom(seed);
     const director = InfernoExpressEventDirector.getInstance();
+    director.registerLavaTexture(this.lavaOceanTexture);
 
-    // Deterministic 400m sustained thematic districts in gameplay, seed-based in unit tests
-    const effectiveZ = worldZIn !== 0
-      ? worldZIn
-      : (group.parent && typeof group.parent.position?.z === 'number' && group.parent.position.z !== 0
-        ? group.parent.position.z
-        : 0);
-
+    // Authoritative deterministic district progression across 400m blocks
     let districtIndex: number;
     if (seed >= 0 && seed < 4) {
       districtIndex = seed;
+    } else if (worldZIn !== undefined && Number.isFinite(worldZIn)) {
+      districtIndex = Math.floor(Math.abs(worldZIn) / 400) % 4;
     } else {
-      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 4;
+      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
     }
 
     switch (districtIndex) {
@@ -402,32 +458,103 @@ export class InfernoExpressWorldBuilder {
    */
   private addViaductBridgePiers(districtGroup: THREE.Group, roadbedWidth: number, chunkLength: number): void {
     const pierH = 7.0;
-    const corbelH = 1.0;
-    for (let z = 16; z < chunkLength; z += 32) {
+    const corbelH = 1.2;
+    for (let z = 14; z < chunkLength; z += 28) {
       const pierGroup = new THREE.Group();
       pierGroup.position.set(0, 0, -z);
 
-      // Central viaduct column under tracks: Y in [-7.5m, -0.5m]
-      const pierMesh = new THREE.Mesh(this.getCylinder(2.8, 3.8, pierH, 8), this.blackObsidianMat);
-      pierMesh.position.y = -0.5 - pierH * 0.5;
+      // Central monumental octagonal basalt viaduct column under tracks: Y in [-7.6m, -0.6m]
+      const pierMesh = new THREE.Mesh(this.getCylinder(3.2, 4.8, pierH, 8), this.blackObsidianMat);
+      pierMesh.position.y = -0.6 - pierH * 0.5;
       pierGroup.add(pierMesh);
 
-      // Corbel capital supporting roadbed: Y in [-1.0m, 0.0m]
-      const corbel = new THREE.Mesh(this.getBox(roadbedWidth + 1.2, corbelH, 4.2), this.titaniumArmorMat);
+      // Arched corbel capital supporting roadbed: Y in [-1.2m, 0.0m]
+      const corbel = new THREE.Mesh(this.getBox(roadbedWidth + 1.8, corbelH, 4.8), this.titaniumArmorMat);
       corbel.position.y = -corbelH * 0.5;
       pierGroup.add(corbel);
 
-      // Molten wake / splash ring where pier penetrates the lava sea at Y = -3.5m
+      // Side arched buttresses bracing the pier against molten currents
+      [-1, 1].forEach((side) => {
+        const buttress = new THREE.Mesh(this.getBox(1.8, 4.5, 3.2), this.volcanicBasaltMat);
+        buttress.position.set(side * (roadbedWidth * 0.5 - 0.4), -3.2, 0);
+        pierGroup.add(buttress);
+      });
+
+      // Molten wake / splash ring where pier penetrates the boiling lava sea at Y = -3.85m
       const splash = new THREE.Mesh(
-        this.getTorus(4.4, 0.25, 6, 16),
+        this.getTorus(5.4, 0.32, 6, 16),
         this.splashMat
       );
       splash.rotation.x = Math.PI / 2;
-      splash.position.y = -3.45;
+      splash.position.y = -3.85;
       pierGroup.add(splash);
 
       districtGroup.add(pierGroup);
     }
+  }
+
+  /**
+   * Vast boiling molten lava ocean spanning 280m across entire world below viaduct at Y = -3.85m.
+   */
+  private addBoilingLavaOcean(districtGroup: THREE.Group, chunkLength: number): void {
+    const lavaOcean = new THREE.Mesh(
+      this.getPlane(280.0, chunkLength + 10.0, 8, 16),
+      this.lavaOceanMat
+    );
+    lavaOcean.rotation.x = -Math.PI / 2;
+    lavaOcean.position.set(0, -3.85, -chunkLength * 0.5);
+    districtGroup.add(lavaOcean);
+  }
+
+  /**
+   * Narrow Viaduct Safety Promenade (Width 2.4m, alongside tracks) with cantilever brackets,
+   * molten magma channel curb, and wrought-iron ruby-finial balustrades.
+   * Ensures 100% open panoramic sightlines from the running corridor down into the boiling lava sea.
+   */
+  private addViaductPromenadeAndCurb(districtGroup: THREE.Group, roadbedWidth: number, chunkLength: number): void {
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      // Narrow Viaduct Safety Promenade (Width 2.4m, strictly alongside tracks)
+      const walkW = 2.4;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walkH = 0.55;
+      const walk = new THREE.Mesh(this.getBox(walkW, walkH, chunkLength), this.titaniumArmorMat);
+      walk.position.set(wx, -0.25, -chunkLength * 0.5);
+      districtGroup.add(walk);
+
+      // Cantilevered triangular obsidian/iron corbel brackets anchoring walkway to viaduct
+      for (let bz = 8; bz < chunkLength; bz += 16) {
+        const bracket = new THREE.Mesh(this.getBox(walkW + 0.4, 2.2, 1.2), this.scorchedIronMat);
+        bracket.position.set(wx, -1.35, -bz);
+        districtGroup.add(bracket);
+      }
+
+      // Searing Molten Magma Channel Curb (Grounded from Y = -2.5m to +0.85m)
+      const curbH = 3.35;
+      const curb = new THREE.Mesh(this.getBox(0.48, curbH, chunkLength), this.moltenMagmaMat);
+      curb.position.set(side * (curbEdge + 0.24), 0.85 - curbH * 0.5, -chunkLength * 0.5);
+      districtGroup.add(curb);
+
+      // Volcanic Wrought-Iron Safety Balustrade along outer edge of walkway (at X = side * (curbEdge + 2.35m))
+      for (let rz = 4; rz < chunkLength; rz += 8) {
+        // Stanchion Post
+        const stanchion = new THREE.Mesh(this.getCylinder(0.08, 0.12, 1.2, 6), this.scorchedIronMat);
+        stanchion.position.set(side * (curbEdge + 2.35), 0.60, -rz);
+        districtGroup.add(stanchion);
+
+        // Glowing Ruby Heat-Insulator Finial
+        const finial = new THREE.Mesh(this.getSphere(0.14, 6), this.rubyInsulatorMat);
+        finial.position.set(side * (curbEdge + 2.35), 1.25, -rz);
+        districtGroup.add(finial);
+      }
+
+      // Horizontal Guard Rail
+      const railH = new THREE.Mesh(this.getCylinder(0.04, 0.04, chunkLength, 4), this.scorchedIronMat);
+      railH.rotation.x = Math.PI / 2;
+      railH.position.set(side * (curbEdge + 2.35), 1.05, -chunkLength * 0.5);
+      districtGroup.add(railH);
+    });
   }
 
   // =========================================================================
@@ -446,60 +573,57 @@ export class InfernoExpressWorldBuilder {
     districtA.name = 'district_a_lava_sea';
     group.add(districtA);
 
-    const wallX = roadbedWidth * 0.5 + 2.4; // 8.4m from center
+    const curbEdge = roadbedWidth * 0.5 + 0.5; // ~7.0m
 
-    // 1. Vast Molten Lava Sea Ocean below Viaduct on flanking horizons (Y = -3.5m, width 120m per flank)
-    [-1, 1].forEach((side) => {
-      const lavaOcean = new THREE.Mesh(
-        this.getPlane(120.0, chunkLength + 10.0, 4, 12),
-        this.lavaOceanMat
-      );
-      lavaOcean.rotation.x = -Math.PI / 2;
-      lavaOcean.position.set(side * (wallX + 60.0), -3.5, -chunkLength * 0.5);
-      districtA.add(lavaOcean);
-    });
-
-    // 2. Viaduct Bridge Piers supporting railway above the molten sea
+    // 1. Boiling Molten Lava Ocean & Monumental Viaduct Infrastructure
+    this.addBoilingLavaOcean(districtA, chunkLength);
     this.addViaductBridgePiers(districtA, roadbedWidth, chunkLength);
+    this.addViaductPromenadeAndCurb(districtA, roadbedWidth, chunkLength);
 
-    // 3. Floating semi-solidified obsidian crust plates across the lava sea
+    // 2. Floating semi-solidified obsidian crust plates drifting across the lava ocean
     [-1, 1].forEach((side) => {
-      [0.2, 0.5, 0.8].forEach((ratio, idx) => {
-        const crustPlate = new THREE.Mesh(this.getBox(12.0 + idx * 2.0, 0.2, 14.0), this.blackObsidianMat);
-        crustPlate.position.set(side * (wallX + 16.0 + idx * 4.0), -3.38, -chunkLength * ratio);
+      [0.15, 0.45, 0.75].forEach((ratio, idx) => {
+        const crustW = 14.0 + (idx % 2) * 4.0;
+        const crustD = 16.0 + (idx % 3) * 3.0;
+        const crustPlate = new THREE.Mesh(this.getBox(crustW, 0.35, crustD), this.blackObsidianMat);
+        crustPlate.position.set(side * (curbEdge + 14.0 + idx * 5.0), -3.72, -chunkLength * ratio);
         districtA.add(crustPlate);
+
+        // Glowing molten stress fissures through floating crust
+        const fissure = new THREE.Mesh(this.getBox(crustW * 0.7, 0.4, 0.8), this.moltenMagmaMat);
+        fissure.position.set(side * (curbEdge + 14.0 + idx * 5.0), -3.70, -chunkLength * ratio);
+        fissure.rotation.y = 0.4 * (idx + 1);
+        districtA.add(fissure);
       });
     });
 
     [-1, 1].forEach((side) => {
-      // 4. Grounded Titanium Viaduct Walkway with Deep Foundations (Y = -4.4m to +0.8m)
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walkH = 5.2;
-      const walk = new THREE.Mesh(this.getBox(walkW, walkH, chunkLength), this.titaniumArmorMat);
-      walk.position.set(wx, 0.8 - walkH * 0.5, -chunkLength * 0.5);
-      districtA.add(walk);
+      // 3. Colossal Jagged Obsidian Sea-Stacks & Columnar Basalt Spires rising from the Lava Sea
+      for (let z = 16; z < chunkLength - 16; z += 38) {
+        const seaStackGroup = new THREE.Group();
+        seaStackGroup.position.set(side * (curbEdge + 14.5), 0, -z);
 
-      // Glowing Magma Channel Curb (Grounded from Y = -4.4m to +0.9m)
-      const curbH = 5.3;
-      const curb = new THREE.Mesh(this.getBox(0.45, curbH, chunkLength), this.moltenMagmaMat);
-      curb.position.set(side * (wallX + 0.22), 0.9 - curbH * 0.5, -chunkLength * 0.5);
-      districtA.add(curb);
+        // Anchored base rising from bedrock through lava: Y = -6.0m to +24.0m
+        const stackH = 30.0;
+        const seaStack = new THREE.Mesh(this.getCylinder(2.6, 5.5, stackH, 8), this.blackObsidianMat);
+        seaStack.position.y = -6.0 + stackH * 0.5;
+        seaStackGroup.add(seaStack);
 
-      // 5. Colossal Octagonal Basalt Pillars rising from Lava
-      for (let z = 14; z < chunkLength - 14; z += 36) {
-        const pillar = new THREE.Mesh(this.getCylinder(2.5, 3.8, 28.0, 8), this.blackObsidianMat);
-        pillar.position.set(side * (wallX + 7.5), 6.5, -z);
-        districtA.add(pillar);
+        // Jagged summit horns
+        const horn = new THREE.Mesh(this.getCylinder(0.3, 1.8, 8.0, 6), this.volcanicBasaltMat);
+        horn.position.set(-side * 0.8, stackH - 4.0, 0.5);
+        seaStackGroup.add(horn);
 
-        // Heavy Industrial Suspension Chains
+        districtA.add(seaStackGroup);
+
+        // Heavy Shifting Industrial Suspension Chains suspended between sea-stacks
         const chainGroup = new THREE.Group();
-        chainGroup.position.set(side * (wallX + 2.5), 6.5, -z);
+        chainGroup.position.set(side * (curbEdge + 6.5), 8.5, -z);
 
         const chainMesh = new THREE.Mesh(this.getCylinder(0.12, 0.12, 10.0, 6), this.scorchedIronMat);
         chainGroup.add(chainMesh);
 
-        const counterweight = new THREE.Mesh(this.getBox(1.2, 1.8, 1.2), this.titaniumArmorMat);
+        const counterweight = new THREE.Mesh(this.getBox(1.4, 2.0, 1.4), this.titaniumArmorMat);
         counterweight.position.y = -5.0;
         chainGroup.add(counterweight);
 
@@ -507,63 +631,68 @@ export class InfernoExpressWorldBuilder {
         director.registerShiftingChain(chainGroup, counterweight, 1.2, 0.22, z * 0.1);
       }
 
-      // 6. Molten Magma Waterfall (Cataract) cascading on cliffside
+      // 4. Molten Magma Waterfall (Cataract) cascading on cliffside into the lava sea
       const fallGroup = new THREE.Group();
-      fallGroup.position.set(side * (wallX + 18.0), 12.0, -chunkLength * 0.5);
+      fallGroup.position.set(side * (curbEdge + 22.0), 12.0, -chunkLength * 0.5);
 
-      const fallH = 34.0;
-      const fallMesh = new THREE.Mesh(this.getBox(6.0, fallH, 1.2), this.moltenMagmaMat);
+      const fallH = 36.0;
+      const fallMesh = new THREE.Mesh(this.getBox(6.5, fallH, 1.4), this.moltenMagmaMat);
       fallMesh.position.y = -5.0 + fallH * 0.5 - 12.0;
       fallGroup.add(fallMesh);
 
       const splashRings: THREE.Mesh[] = [];
       for (let r = 0; r < 2; r++) {
         const ring = new THREE.Mesh(
-          this.getTorus(4.5, 0.2, 6, 16),
+          this.getTorus(5.2, 0.25, 6, 16),
           this.ringMat
         );
         ring.rotation.x = Math.PI / 2;
-        ring.position.set(0, -3.45 - 12.0, 0);
+        ring.position.set(0, -3.85 - 12.0, 0);
         fallGroup.add(ring);
         splashRings.push(ring);
       }
 
       districtA.add(fallGroup);
-      director.registerLavaWaterfall(fallMesh, splashRings, 1.1, 2.5);
+      director.registerLavaWaterfall(fallMesh, splashRings, 1.25, 2.8);
 
-      // 7. Lava Geyser far out in the lava ocean (|X| = 26m)
-      const geyser = new THREE.Mesh(this.getCylinder(0.4, 1.8, 14.0, 8), this.moltenMagmaMat);
-      geyser.position.set(side * (wallX + 18.0), -6.0, -chunkLength * 0.35);
+      // 5. Lava Geyser erupting far out in the lava ocean (|X| = 28m)
+      const geyser = new THREE.Mesh(this.getCylinder(0.6, 2.2, 16.0, 8), this.moltenMagmaMat);
+      geyser.position.set(side * (curbEdge + 21.0), -6.0, -chunkLength * 0.35);
       geyser.visible = false;
       districtA.add(geyser);
 
-      const geyserSpray = new THREE.Mesh(this.getSphere(2.2, 8), this.furnaceFireMat);
-      geyserSpray.position.set(side * (wallX + 18.0), 0, -chunkLength * 0.35);
+      const geyserSpray = new THREE.Mesh(this.getSphere(2.6, 8), this.furnaceFireMat);
+      geyserSpray.position.set(side * (curbEdge + 21.0), 0, -chunkLength * 0.35);
       geyserSpray.visible = false;
       districtA.add(geyserSpray);
 
-      director.registerLavaGeyser(geyser, geyserSpray, -4.0, 22.0, 8.0);
+      director.registerLavaGeyser(geyser, geyserSpray, -4.0, 24.0, 8.0);
     });
 
-    // 8. Distant Erupting Volcano Cone (Z = -85m, X = 38m)
+    // 6. Distant Erupting Volcano Cone with Sweeping Lava Ridges (Z = -chunkLength * 0.85, X = 48m)
     if (detail !== 'MINIMAL') {
       const volcanoGroup = new THREE.Group();
-      volcanoGroup.position.set(38.0, 0, -chunkLength * 0.85);
+      volcanoGroup.position.set(48.0, 0, -chunkLength * 0.85);
 
-      // Volcano Mountain Cone firmly grounded to Y = -6.0m
-      const mtnH = 42.0;
-      const mountain = new THREE.Mesh(this.getCylinder(4.0, 24.0, mtnH, 10), this.ashRockMat);
+      const mtnH = 46.0;
+      const mountain = new THREE.Mesh(this.getCylinder(6.0, 28.0, mtnH, 12), this.volcanicBasaltMat);
       mountain.position.y = -6.0 + mtnH * 0.5;
       volcanoGroup.add(mountain);
 
       // Glowing Crater Caldera
-      const crater = new THREE.Mesh(this.getCylinder(3.8, 3.8, 2.0, 10), this.furnaceFireMat);
+      const crater = new THREE.Mesh(this.getCylinder(5.5, 5.5, 2.5, 12), this.furnaceFireMat);
       crater.position.y = -6.0 + mtnH;
       volcanoGroup.add(crater);
 
-      // Volcanic Eruption Plume
-      const plume = new THREE.Mesh(this.getSphere(8.0, 10), this.volcanicSmokeMat);
-      plume.position.y = -6.0 + mtnH + 8.0;
+      // Cascading Molten Lava Rivers down the volcano cone
+      const vRiver = new THREE.Mesh(this.getBox(3.5, mtnH * 0.7, 1.5), this.moltenMagmaMat);
+      vRiver.position.set(0, -6.0 + mtnH * 0.45, 14.0);
+      vRiver.rotation.x = 0.55;
+      volcanoGroup.add(vRiver);
+
+      // Volcanic Eruption Ash Plume
+      const plume = new THREE.Mesh(this.getSphere(9.5, 10), this.volcanicSmokeMat);
+      plume.position.y = -6.0 + mtnH + 9.5;
       plume.visible = false;
       volcanoGroup.add(plume);
 
@@ -588,84 +717,101 @@ export class InfernoExpressWorldBuilder {
     districtB.name = 'district_b_obsidian_citadel';
     group.add(districtB);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Viaduct Bridge Piers supporting railway
+    // 1. Boiling Molten Lava Ocean & Monumental Viaduct Infrastructure
+    this.addBoilingLavaOcean(districtB, chunkLength);
     this.addViaductBridgePiers(districtB, roadbedWidth, chunkLength);
+    this.addViaductPromenadeAndCurb(districtB, roadbedWidth, chunkLength);
 
+    // 2. Stepped Gothic Bastions & Obsidian Fortresses rising from the Lava Sea
     [-1, 1].forEach((side) => {
-      // 2. Grounded Obsidian Citadel Walkway with Deep Foundations (Y = -4.4m to +0.8m)
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walkH = 5.2;
-      const walk = new THREE.Mesh(this.getBox(walkW, walkH, chunkLength), this.blackObsidianMat);
-      walk.position.set(wx, 0.8 - walkH * 0.5, -chunkLength * 0.5);
-      districtB.add(walk);
-
-      const curbH = 5.3;
-      const curb = new THREE.Mesh(this.getBox(0.45, curbH, chunkLength), this.moltenMagmaMat);
-      curb.position.set(side * (wallX + 0.22), 0.9 - curbH * 0.5, -chunkLength * 0.5);
-      districtB.add(curb);
-
-      // 3. Stepped Gothic Bastions with 26m Open Sightline Vistas (No Monolithic Black Walls)
+      // Bastions spaced every 40m with wide open sightlines in between
       for (let z = 18; z < chunkLength - 18; z += 40) {
         const towerGroup = new THREE.Group();
-        towerGroup.position.set(side * (wallX + 8.5), 0, -z);
+        towerGroup.position.set(side * (curbEdge + 9.5), 0, -z);
 
-        // Grounded Bastion Base: Y from -4.5m to 11.5m (height 16m, center Y = 3.5m)
-        const bastionH = 16.0;
-        const bastion = new THREE.Mesh(this.getBox(12.0, bastionH, 14.0), this.blackObsidianMat);
-        bastion.position.y = -4.5 + bastionH * 0.5;
+        // Grounded Bastion Foundation Base: Y from -6.0m to +14.0m (height 20m, center Y = 4.0m)
+        const bastionH = 20.0;
+        const bastion = new THREE.Mesh(this.getBox(10.0, bastionH, 14.0), this.blackObsidianMat);
+        bastion.position.y = -6.0 + bastionH * 0.5;
         towerGroup.add(bastion);
 
-        // Flanking buttress reinforcements
-        const buttress = new THREE.Mesh(this.getBox(2.2, 12.0, 3.0), this.scorchedIronMat);
-        buttress.position.set(-side * 5.0, 3.5, 0);
+        // Arched Flying Buttress Bracing Footing (grounded Y = -6.0m to +8.0m)
+        const buttressH = 14.0;
+        const buttress = new THREE.Mesh(this.getBox(2.2, buttressH, 3.2), this.volcanicBasaltMat);
+        buttress.position.set(-side * 4.2, -6.0 + buttressH * 0.5, 0);
         towerGroup.add(buttress);
 
         // Ancient Fire Runes carved on Citadel facade facing tracks
         const runePlane = new THREE.Mesh(this.getPlane(7.0, 7.0), this.runeMat);
-        runePlane.position.set(-side * 6.1, 5.0, 0);
+        runePlane.position.set(-side * 5.1, 5.0, 0);
         runePlane.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
         towerGroup.add(runePlane);
 
-        // Upper Spired Fortress Crown (reaching Y = 34m)
-        const crownH = 14.0;
-        const crown = new THREE.Mesh(this.getBox(8.0, crownH, 10.0), this.titaniumArmorMat);
-        crown.position.y = 11.5 + crownH * 0.5;
+        // Upper Spired Fortress Crown (reaching Y = 26.0m)
+        const crownH = 12.0;
+        const crown = new THREE.Mesh(this.getBox(7.2, crownH, 9.6), this.titaniumArmorMat);
+        crown.position.y = 14.0 + crownH * 0.5;
         towerGroup.add(crown);
 
-        // Lava Slit Windows
-        [-3.0, 0, 3.0].forEach((wz) => {
-          const slit = new THREE.Mesh(this.getBox(0.4, 3.5, 1.0), this.furnaceFireMat);
-          slit.position.set(-side * 4.1, 18.5, wz);
+        // Lava Slit Windows glowing with intense furnace fire
+        [-2.8, 0, 2.8].forEach((wz) => {
+          const slit = new THREE.Mesh(this.getBox(0.4, 3.6, 1.0), this.furnaceFireMat);
+          slit.position.set(-side * 3.7, 19.0, wz);
           towerGroup.add(slit);
         });
 
-        // Tapered Spire Crown
-        const spire = new THREE.Mesh(this.getCylinder(0.2, 2.8, 12.0, 6), this.blackObsidianMat);
-        spire.position.y = 31.5;
+        // Tapered Obsidian Spire Crown reaching Y = 36.0m
+        const spireH = 12.0;
+        const spire = new THREE.Mesh(this.getCylinder(0.2, 2.4, spireH, 6), this.blackObsidianMat);
+        spire.position.y = 26.0 + spireH * 0.5;
         towerGroup.add(spire);
+
+        // Glowing Ruby Spire Apex
+        const spireApex = new THREE.Mesh(this.getSphere(0.45, 6), this.rubyInsulatorMat);
+        spireApex.position.y = 32.2;
+        towerGroup.add(spireApex);
 
         // Parapet Flaming Fire-Brazier
         const brazier = new THREE.Mesh(this.getCylinder(1.2, 0.6, 1.2, 8), this.furnaceFireMat);
-        brazier.position.set(-side * 3.5, 12.1, 5.0);
+        brazier.position.set(-side * 3.2, 14.6, 4.8);
         towerGroup.add(brazier);
 
         districtB.add(towerGroup);
       }
+
+      // Cooling obsidian crust plates drifting in the chasm between bastions
+      [0.25, 0.75].forEach((ratio, idx) => {
+        const crustW = 12.0 + idx * 3.0;
+        const crustD = 14.0;
+        const plate = new THREE.Mesh(this.getBox(crustW, 0.35, crustD), this.blackObsidianMat);
+        plate.position.set(side * (curbEdge + 15.0), -3.72, -chunkLength * ratio);
+        districtB.add(plate);
+
+        const fissure = new THREE.Mesh(this.getBox(crustW * 0.6, 0.4, 0.6), this.moltenMagmaMat);
+        fissure.position.set(side * (curbEdge + 15.0), -3.70, -chunkLength * ratio);
+        fissure.rotation.y = 0.6;
+        districtB.add(fissure);
+      });
     });
 
-    // 4. Citadel Blast Furnace Gate with Animated Sliding Doors (spanning above track at Y = 17.5m)
+    // 3. Citadel Blast Furnace Gate with Animated Sliding Doors (spanning above track at Y = 17.5m)
     const gateGroup = new THREE.Group();
     gateGroup.name = 'citadel_furnace_blast_gate';
     gateGroup.position.set(0, 17.5, -chunkLength * 0.5);
 
-    // Towering armored blast furnace jambs grounded into the volcanic bedrock
+    // Towering armored blast furnace jambs grounded into the volcanic bedrock (Y = -6.0m to +24.0m)
     [-1, 1].forEach((side) => {
-      const jamb = new THREE.Mesh(this.getBox(3.5, 22.0, 4.0), this.scorchedIronMat);
-      jamb.position.set(side * (roadbedWidth * 0.5 + 4.8), -6.5, 0);
+      const jambH = 30.0;
+      const jamb = new THREE.Mesh(this.getBox(3.5, jambH, 4.2), this.scorchedIronMat);
+      jamb.position.set(side * (roadbedWidth * 0.5 + 4.8), -6.0 + jambH * 0.5 - 17.5, 0);
       gateGroup.add(jamb);
+
+      // Molten orange heat band along jamb
+      const heatTrim = new THREE.Mesh(this.getBox(3.6, 0.5, 4.3), this.moltenMagmaMat);
+      heatTrim.position.set(side * (roadbedWidth * 0.5 + 4.8), 2.5, 0);
+      gateGroup.add(heatTrim);
     });
 
     const interiorGlow = new THREE.Mesh(this.getPlane(8.0, 5.0), this.furnaceFireMat);
@@ -700,42 +846,40 @@ export class InfernoExpressWorldBuilder {
     districtC.name = 'district_c_magma_foundry';
     group.add(districtC);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Viaduct Bridge Piers supporting railway
+    // 1. Boiling Molten Lava Ocean & Monumental Viaduct Infrastructure
+    this.addBoilingLavaOcean(districtC, chunkLength);
     this.addViaductBridgePiers(districtC, roadbedWidth, chunkLength);
+    this.addViaductPromenadeAndCurb(districtC, roadbedWidth, chunkLength);
 
+    // 2. Magma Processing Blast Furnaces & Industrial Refinery Halls
     [-1, 1].forEach((side) => {
-      // 2. Grounded Scorched Metal Promenade with Deep Foundations (Y = -4.4m to +0.8m)
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walkH = 5.2;
-      const walk = new THREE.Mesh(this.getBox(walkW, walkH, chunkLength), this.scorchedIronMat);
-      walk.position.set(wx, 0.8 - walkH * 0.5, -chunkLength * 0.5);
-      districtC.add(walk);
-
-      const curbH = 5.3;
-      const curb = new THREE.Mesh(this.getBox(0.45, curbH, chunkLength), this.moltenMagmaMat);
-      curb.position.set(side * (wallX + 0.22), 0.9 - curbH * 0.5, -chunkLength * 0.5);
-      districtC.add(curb);
-
-      // Glowing Molten-Metal Channels flowing beside railway
-      const channel = new THREE.Mesh(this.getBox(1.8, 0.4, chunkLength), this.moltenMagmaMat);
-      channel.position.set(side * (wallX + 1.4), 0.3, -chunkLength * 0.5);
-      districtC.add(channel);
-
-      // 3. Magma Processing Refinery Halls with 26m Open Sightline Vistas
       for (let z = 18; z < chunkLength - 18; z += 40) {
         const foundryHall = new THREE.Group();
-        foundryHall.position.set(side * (wallX + 8.5), 0, -z);
+        foundryHall.position.set(side * (curbEdge + 10.5), 0, -z);
 
-        // Grounded Blast Furnace Chamber Base (Y = -4.5m to +13.5m)
-        const furnaceBaseH = 18.0;
+        // Grounded Blast Furnace Chamber Base: Y from -6.0m to +16.0m (height 22m, center Y = 5.0m)
+        const furnaceBaseH = 22.0;
         const furnaceBase = new THREE.Mesh(this.getBox(11.0, furnaceBaseH, 14.0), this.scorchedIronMat);
-        furnaceBase.position.y = -4.5 + furnaceBaseH * 0.5;
+        furnaceBase.position.y = -6.0 + furnaceBaseH * 0.5;
         foundryHall.add(furnaceBase);
 
-        // Blazing Furnace Grate
+        // Cylindrical Blast Furnace stack grounded through the hall: Y = -6.0m to +24.0m
+        const furnaceStackH = 30.0;
+        const furnaceStack = new THREE.Mesh(this.getCylinder(3.6, 4.4, furnaceStackH, 12), this.volcanicBasaltMat);
+        furnaceStack.position.set(0, -6.0 + furnaceStackH * 0.5, 0);
+        foundryHall.add(furnaceStack);
+
+        // Titanium Heat Ring Reinforcements
+        [-2.0, 6.0, 14.0].forEach((ringY) => {
+          const hRing = new THREE.Mesh(this.getTorus(4.42, 0.22, 6, 16), this.titaniumArmorMat);
+          hRing.rotation.x = Math.PI / 2;
+          hRing.position.y = ringY;
+          foundryHall.add(hRing);
+        });
+
+        // Blazing Furnace Grate facing tracks
         const grate = new THREE.Mesh(this.getPlane(7.0, 7.0), this.grateMat);
         grate.position.set(-side * 5.6, 6.0, 0);
         grate.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
@@ -747,22 +891,69 @@ export class InfernoExpressWorldBuilder {
         turbine.rotation.y = Math.PI / 2;
         foundryHall.add(turbine);
 
-        // Heavy Smelting Exhaust Stacks
-        const stack = new THREE.Mesh(this.getCylinder(1.4, 2.0, 24.0, 8), this.titaniumArmorMat);
-        stack.position.set(0, 25.0, -4.0);
+        // Heavy Smelting Exhaust Stacks reaching Y = 34.0m
+        const stackH = 22.0;
+        const stack = new THREE.Mesh(this.getCylinder(1.2, 1.8, stackH, 8), this.titaniumArmorMat);
+        stack.position.set(0, 12.0 + stackH * 0.5, -4.0);
         foundryHall.add(stack);
+
+        // Molten Slag Flume pouring liquid fire into the lava sea below
+        const flumeH = 8.0;
+        const flume = new THREE.Mesh(this.getBox(1.6, flumeH, 1.2), this.moltenMagmaMat);
+        flume.position.set(-side * 4.0, -3.85 + flumeH * 0.5, 0);
+        foundryHall.add(flume);
+
+        // Molten Splash Ring at lava sea surface
+        const flumeSplash = new THREE.Mesh(this.getTorus(2.2, 0.22, 6, 16), this.splashMat);
+        flumeSplash.rotation.x = Math.PI / 2;
+        flumeSplash.position.set(-side * 4.0, -3.85, 0);
+        foundryHall.add(flumeSplash);
 
         districtC.add(foundryHall);
       }
     });
 
-    // 4. Grounded Elevated Siding Platform with Parked Armored Locomotive (Y = -4.5m to +1.2m)
-    const sidingH = 5.7;
-    const sidingPlatform = new THREE.Mesh(this.getBox(6.0, sidingH, 26.0), this.blackObsidianMat);
-    sidingPlatform.position.set(wallX + 8.5, 1.2 - sidingH * 0.5, -chunkLength * 0.45);
+    // 3. Overhead Magma Transport Conduit Pipelines (spanning high at Y = 16.5m across track)
+    [-0.28, -0.72].forEach((ratio) => {
+      const pipeGroup = new THREE.Group();
+      pipeGroup.position.set(0, 16.5, -chunkLength * Math.abs(ratio));
+
+      // Main transport pipe
+      const pipeLen = roadbedWidth + 24.0;
+      const pipe = new THREE.Mesh(this.getCylinder(1.2, 1.2, pipeLen, 8), this.scorchedIronMat);
+      pipe.rotation.z = Math.PI / 2;
+      pipeGroup.add(pipe);
+
+      // Glowing molten thermal rings along pipe
+      [-8.0, 0, 8.0].forEach((px) => {
+        const ring = new THREE.Mesh(this.getTorus(1.35, 0.16, 6, 12), this.moltenMagmaMat);
+        ring.rotation.y = Math.PI / 2;
+        ring.position.x = px;
+        pipeGroup.add(ring);
+      });
+
+      // Feeder down-tubes connecting to furnaces
+      [-1, 1].forEach((side) => {
+        const dropTube = new THREE.Mesh(this.getCylinder(0.8, 0.8, 8.0, 6), this.titaniumArmorMat);
+        dropTube.position.set(side * (roadbedWidth * 0.5 + 8.5), -4.0, 0);
+        pipeGroup.add(dropTube);
+      });
+
+      districtC.add(pipeGroup);
+    });
+
+    // 4. Grounded Elevated Siding Platform with Parked Armored Locomotive (Y = -6.0m to +1.2m)
+    const sidingH = 7.2;
+    const sidingPlatform = new THREE.Mesh(this.getBox(6.0, sidingH, 28.0), this.blackObsidianMat);
+    sidingPlatform.position.set(curbEdge + 9.5, 1.2 - sidingH * 0.5, -chunkLength * 0.45);
     districtC.add(sidingPlatform);
 
-    const parkedTrain = this.buildInfernoExpressShowcaseTrain(wallX + 8.5, 1.2, -chunkLength * 0.45);
+    // Glowing magma curb along siding platform
+    const sidingCurb = new THREE.Mesh(this.getBox(0.35, 0.5, 28.0), this.moltenMagmaMat);
+    sidingCurb.position.set(curbEdge + 6.6, 1.4, -chunkLength * 0.45);
+    districtC.add(sidingCurb);
+
+    const parkedTrain = this.buildInfernoExpressShowcaseTrain(curbEdge + 9.5, 1.2, -chunkLength * 0.45);
     districtC.add(parkedTrain);
   }
 
@@ -782,47 +973,57 @@ export class InfernoExpressWorldBuilder {
     districtD.name = 'district_d_ashfall_summit';
     group.add(districtD);
 
-    const wallX = roadbedWidth * 0.5 + 2.4;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Viaduct Bridge Piers supporting railway
+    // 1. Boiling Molten Lava Ocean & Monumental Viaduct Infrastructure
+    this.addBoilingLavaOcean(districtD, chunkLength);
     this.addViaductBridgePiers(districtD, roadbedWidth, chunkLength);
+    this.addViaductPromenadeAndCurb(districtD, roadbedWidth, chunkLength);
 
+    // 2. Towering Hexagonal Columnar Basalt Formations & Cooling Lava Spikes
     [-1, 1].forEach((side) => {
-      // 2. Grounded Columnar Basalt Promenade with Deep Foundations (Y = -4.4m to +0.8m)
-      const walkW = 16.0;
-      const wx = side * (wallX + walkW * 0.5);
-      const walkH = 5.2;
-      const walk = new THREE.Mesh(this.getBox(walkW, walkH, chunkLength), this.ashRockMat);
-      walk.position.set(wx, 0.8 - walkH * 0.5, -chunkLength * 0.5);
-      districtD.add(walk);
-
-      const curbH = 5.3;
-      const curb = new THREE.Mesh(this.getBox(0.45, curbH, chunkLength), this.moltenMagmaMat);
-      curb.position.set(side * (wallX + 0.22), 0.9 - curbH * 0.5, -chunkLength * 0.5);
-      districtD.add(curb);
-
-      // 3. Towering Hexagonal Columnar Basalt Formations & Cooling Lava Spikes
       for (let z = 14; z < chunkLength - 14; z += 35) {
         const peakGroup = new THREE.Group();
-        peakGroup.position.set(side * (wallX + 11.0), 0, -z);
+        peakGroup.position.set(side * (curbEdge + 10.0), 0, -z);
 
-        // Grounded Hexagonal Basalt Column (Y = -4.5m to +25.5m)
-        const basaltPillar = new THREE.Mesh(this.getCylinder(2.2, 3.4, 30.0, 6), this.blackObsidianMat);
-        basaltPillar.position.y = 10.5;
-        peakGroup.add(basaltPillar);
+        // Organ-pipe clusters of hexagonal basalt columns grounded deep into bedrock (Y = -6.0m to +28.0m)
+        const heights = [28.0, 36.0, 22.0];
+        const radii = [2.6, 3.2, 2.2];
+        const offsets = [
+          { x: 0, z: 0 },
+          { x: side * 3.5, z: 2.5 },
+          { x: -side * 1.5, z: -3.0 }
+        ];
 
-        // Glowing magma fissures climbing up the peak
-        const vein = new THREE.Mesh(this.getCylinder(0.2, 0.2, 22.0, 4), this.moltenMagmaMat);
-        vein.position.set(0, 11.0, 1.8);
-        peakGroup.add(vein);
+        heights.forEach((h, idx) => {
+          const r = radii[idx];
+          const off = offsets[idx];
+          const basaltPillar = new THREE.Mesh(this.getCylinder(r * 0.85, r, h, 6), this.blackObsidianMat);
+          basaltPillar.position.set(off.x, -6.0 + h * 0.5, off.z);
+          peakGroup.add(basaltPillar);
+
+          // Glowing magma fissures climbing up the peak
+          const veinH = h * 0.7;
+          const vein = new THREE.Mesh(this.getCylinder(0.18, 0.18, veinH, 4), this.moltenMagmaMat);
+          vein.position.set(off.x - side * (r * 0.8), -6.0 + veinH * 0.5 + 4.0, off.z);
+          peakGroup.add(vein);
+        });
+
+        // Volcanic ash smoke wisp near the summit
+        if (detail !== 'MINIMAL') {
+          const smokeWisp = new THREE.Mesh(this.getSphere(1.8, 6), this.volcanicSmokeMat);
+          smokeWisp.position.set(0, 31.0, 0);
+          peakGroup.add(smokeWisp);
+        }
 
         districtD.add(peakGroup);
       }
     });
 
-    // 4. Distant Collapsing Basalt Monolith outside gameplay (|X| = 34m, Z = -chunkLength * 0.6)
-    const monolith = new THREE.Mesh(this.getCylinder(2.5, 4.0, 24.0, 6), this.blackObsidianMat);
-    monolith.position.set(-wallX - 22.0, 12.0, -chunkLength * 0.6);
+    // 3. Distant Collapsing Basalt Monolith outside gameplay (|X| = 34m, Z = -chunkLength * 0.6)
+    const monolithH = 28.0;
+    const monolith = new THREE.Mesh(this.getCylinder(2.4, 4.2, monolithH, 6), this.blackObsidianMat);
+    monolith.position.set(-curbEdge - 24.0, -6.0 + monolithH * 0.5, -chunkLength * 0.6);
     districtD.add(monolith);
 
     const splashWave = new THREE.Mesh(
@@ -830,29 +1031,35 @@ export class InfernoExpressWorldBuilder {
       this.splashWaveMat
     );
     splashWave.rotation.x = Math.PI / 2;
-    splashWave.position.set(-wallX - 22.0, 0, -chunkLength * 0.6);
+    splashWave.position.set(-curbEdge - 24.0, -3.85, -chunkLength * 0.6);
     splashWave.visible = false;
     districtD.add(splashWave);
 
     director.registerCollapsingRock(monolith, splashWave, 12.0);
 
-    // 5. Monumental Ashfall Chasm Suspension Arch (spanning high at Y = 17.5m)
+    // 4. Monumental Ashfall Chasm Suspension Arch (spanning high at Y = 17.5m)
     const archGroup = new THREE.Group();
     archGroup.name = 'ashfall_suspension_arch';
     archGroup.position.set(0, 17.5, -chunkLength * 0.5);
 
-    const archSpan = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 1.4, 4.0), this.titaniumArmorMat);
+    const archSpan = new THREE.Mesh(this.getBox(roadbedWidth + 14.0, 1.6, 4.2), this.titaniumArmorMat);
     archGroup.add(archSpan);
 
-    // Towering basalt pylons anchoring the suspension arch to bedrock
+    // Towering basalt pylons anchoring the suspension arch to bedrock: Y = -6.0m to +24.0m
     [-1, 1].forEach((side) => {
-      const pylon = new THREE.Mesh(this.getBox(3.4, 22.0, 3.8), this.blackObsidianMat);
-      pylon.position.set(side * (roadbedWidth * 0.5 + 4.8), -6.5, 0);
+      const pylonH = 30.0;
+      const pylon = new THREE.Mesh(this.getBox(3.5, pylonH, 4.0), this.blackObsidianMat);
+      pylon.position.set(side * (roadbedWidth * 0.5 + 4.8), -6.0 + pylonH * 0.5 - 17.5, 0);
       archGroup.add(pylon);
+
+      // Glowing molten accent band on pylon
+      const pylonTrim = new THREE.Mesh(this.getBox(3.6, 0.5, 4.1), this.moltenMagmaMat);
+      pylonTrim.position.set(side * (roadbedWidth * 0.5 + 4.8), 2.5, 0);
+      archGroup.add(pylonTrim);
     });
 
-    const archTrim = new THREE.Mesh(this.getBox(roadbedWidth + 12.4, 0.4, 4.2), this.moltenMagmaMat);
-    archTrim.position.y = 0.8;
+    const archTrim = new THREE.Mesh(this.getBox(roadbedWidth + 14.4, 0.4, 4.4), this.moltenMagmaMat);
+    archTrim.position.y = 0.9;
     archGroup.add(archTrim);
 
     districtD.add(archGroup);
