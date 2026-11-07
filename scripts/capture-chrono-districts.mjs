@@ -64,9 +64,13 @@ async function captureAllChronoDistricts() {
 
     const shots = [
       { name: '01_district_a_grand_clockwork_capital_15m.png', targetDist: 15 },
-      { name: '02_district_b_time_foundry_415m.png', targetDist: 415 },
-      { name: '03_district_c_chrono_observatory_825m.png', targetDist: 825 },
-      { name: '04_district_d_fractured_time_1230m.png', targetDist: 1230 }
+      { name: '02_district_a_horologium_clock_face_and_pendulum_45m.png', targetDist: 45 },
+      { name: '03_district_b_drop_forge_steam_press_415m.png', targetDist: 415 },
+      { name: '04_district_b_furnace_arch_and_flywheel_465m.png', targetDist: 465 },
+      { name: '05_district_c_astrolabe_pavilion_825m.png', targetDist: 825 },
+      { name: '06_district_c_armillary_rings_and_orrery_885m.png', targetDist: 885 },
+      { name: '07_district_d_anchored_stasis_chambers_1230m.png', targetDist: 1230 },
+      { name: '08_district_d_temporal_rift_vortex_portal_1275m.png', targetDist: 1275 }
     ];
 
     for (const shot of shots) {

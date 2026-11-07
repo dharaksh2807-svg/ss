@@ -170,6 +170,18 @@ export class ChronoKingdomEventDirector {
   }
 
   /**
+   * Alias for registerRetractableBridge
+   */
+  public registerBridge(
+    group: THREE.Object3D,
+    leftSpan: THREE.Object3D,
+    rightSpan: THREE.Object3D,
+    maxExtension: number = 4.5
+  ): void {
+    this.registerRetractableBridge(group, leftSpan, rightSpan, maxExtension);
+  }
+
+  /**
    * Event 4: Register Timed Industrial Steam Piston with reciprocating stroke
    */
   public registerPiston(

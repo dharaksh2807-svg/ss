@@ -37,26 +37,26 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0c1e3d,    // Celestial midnight sapphire
-    bottom: 0x7c3417 // Radiant bronze and warm furnace twilight glow on the horizon
+    top: 0x0f172a,    // Deep celestial twilight sapphire
+    bottom: 0x854d0e  // Radiant bronze and warm sunset furnace glow on horizon
   },
   fog: {
-    color: 0x241712,  // Atmospheric bronze steam haze
-    density: 0.0022   // Subtle haze that maintains crisp obstacle visibility
+    color: 0x3d1a12,  // Atmospheric warm bronze steam haze
+    density: 0.0016   // Crystal clarity for monumental clock towers and mechanisms
   },
   sun: {
-    color: 0xffe6a3,  // Warm golden celestial spotlight
-    intensity: 1.45,
-    position: { x: -35, y: 80, z: -45 }
+    color: 0xffedd5,  // Radiant golden steam era sunlight
+    intensity: 1.70,
+    position: { x: -28, y: 58, z: 22 } // Positioned above and behind player to light all facades and gears down-track
   },
   fill: {
-    color: 0x854d27,  // Rich Victorian bronze fill light
-    intensity: 0.85
+    color: 0xb45309,  // Rich Victorian bronze & copper canyon bounce fill
+    intensity: 0.90
   },
   hemi: {
-    sky: 0x334155,    // Midnight sky reflection
-    ground: 0xb45309, // Warm burnished copper & furnace bounce light
-    intensity: 1.25
+    sky: 0x475569,    // Lighter celestial sky ambient reflection
+    ground: 0xd97706, // Warm radiant golden-amber cobblestone bounce
+    intensity: 1.45
   },
   skyline: {
     color: 0x13121d,  // Silhouette of colossal clock towers and spires
