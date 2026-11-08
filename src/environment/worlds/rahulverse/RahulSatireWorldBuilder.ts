@@ -525,7 +525,8 @@ export class RahulSatireWorldBuilder {
 
   /**
    * Main Entrypoint for building a chunk's scenery in Rahulverse.
-   * Deterministically rotates through the 5 distinct comedy districts!
+   * Deterministically rotates through the 6 distinct Indian political comedy environments!
+   * Alternates scenic travel with theatrical public-event set pieces.
    */
   public buildDistrictScenery(
     group: THREE.Group,
@@ -539,14 +540,22 @@ export class RahulSatireWorldBuilder {
     const director = RahulComedyEventDirector.getInstance();
 
     let districtIndex: number;
-    if (seed >= 0 && seed < 5) {
+    if (seed >= 0 && seed < 6) {
       districtIndex = seed;
     } else {
       let worldZ = (typeof worldZIn === 'number' && !isNaN(worldZIn)) ? worldZIn : 0;
       if (worldZ === 0 && group.parent && typeof group.parent.position?.z === 'number') {
         worldZ = group.parent.position.z;
       }
-      districtIndex = Math.floor(Math.abs(worldZ) / 400) % 5;
+      // Canonical 6-environment progression:
+      // 0: Never-Ending Yatra
+      // 5: Regional Town & Roadshow
+      // 1: Parliament Pandemonium
+      // 2: Press Conference Panic
+      // 3: Alliance Circus & Musical Chairs
+      // 4: Political Glitch Multiverse
+      const canonicalOrder = [0, 5, 1, 2, 3, 4];
+      districtIndex = canonicalOrder[Math.floor(Math.abs(worldZ) / 400) % 6];
     }
 
     switch (districtIndex) {
@@ -563,8 +572,11 @@ export class RahulSatireWorldBuilder {
         this.buildAllianceRollercoasterDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
       case 4:
-      default:
         this.buildPoliticalMultiverseDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        break;
+      case 5:
+      default:
+        this.buildRegionalRoadshowDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
     }
   }
@@ -1669,6 +1681,10 @@ export class RahulSatireWorldBuilder {
 
       // Grand Sandstone Columns
       for (let z = 6; z < chunkLength - 6; z += 12) {
+        // Skip columns on the right side directly in front of the Parliament Hug & Wink stage
+        // to guarantee an unobstructed, cinematic sightline from the oncoming railway tracks
+        if (side > 0 && z >= 16 && z <= 56) continue;
+
         const col = new THREE.Mesh(this.getCylinder(0.6, 0.6, 8.5, 8), this.parliamentSandstoneMat);
         col.position.set(side * (curbEdge + 2.2), 4.85, -z);
         districtB.add(col);
@@ -1681,6 +1697,8 @@ export class RahulSatireWorldBuilder {
 
       // Rows of Green Leather Parliament Benches
       for (let z = 8; z < chunkLength - 8; z += 10) {
+        if (side > 0 && z >= 16 && z <= 56) continue;
+
         const bench = new THREE.Mesh(this.getBox(3.4, 0.9, 1.4), this.parliamentGreenMat);
         bench.position.set(side * (curbEdge + 5.2), 1.5, -z);
         districtB.add(bench);
@@ -1887,13 +1905,13 @@ export class RahulSatireWorldBuilder {
     director.registerRevolvingDoor(rotorGroup, 1.4);
     group.add(doorGroup);
 
-    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK (Angled towards player camera at X = +13.5m)
-    const hugStage = this.buildParliamentHugAndWinkStage(group, 13.5, 0.6, -chunkLength * 0.35, director);
-    hugStage.rotation.y = -Math.PI * 0.35;
+    // GATE A HERO GAG: THE PARLIAMENT HUG & WINK
+    // Placed directly along the right sidewalk curb at X = +8.6m with an unobstructed sightline
+    const hugStage = this.buildParliamentHugAndWinkStage(districtB, 8.6, 0.6, -chunkLength * 0.36, director);
     hugStage.scale.set(1.15, 1.15, 1.15);
 
     // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
-    this.buildMicrophoneChaosStage(group, -16.5, 0.6, -chunkLength * 0.85, director);
+    this.buildMicrophoneChaosStage(districtB, -16.5, 0.6, -chunkLength * 0.85, director);
   }
 
   // =========================================================================
@@ -2420,10 +2438,11 @@ export class RahulSatireWorldBuilder {
     group.add(marquee);
 
     // 5. Gate B Hero Gag: The Alliance Musical Chairs & Nitish 360 Spin
-    this.buildAllianceChairsRunawayStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+    // Placed prominently on the west sidewalk at X = -7.4m for direct player sightline
+    this.buildAllianceChairsRunawayStage(districtD, -7.4, 0.6, -chunkLength * 0.72, director);
 
     // 6. Crossover Gag: The Microphone Chase
-    this.buildMicrophoneChaseStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
+    this.buildMicrophoneChaseStage(districtD, 16.5, 0.6, -chunkLength * 0.75, director);
   }
 
   // =========================================================================
@@ -2888,26 +2907,27 @@ export class RahulSatireWorldBuilder {
     stage.position.set(x, y, z);
 
     // Deep Subterranean Sandstone Foundation Plinth down to Y = -5.2m
-    const plinth = new THREE.Mesh(this.getBox(8.8, 5.5, 8.8), this.parliamentSandstoneMat);
+    // Width 6.0m, centered at X = 7.6m -> Left edge at 7.6 - 3.0 = 4.6m (strictly outside |X| <= 4.2m envelope)
+    const plinth = new THREE.Mesh(this.getBox(6.0, 5.5, 8.4), this.parliamentSandstoneMat);
     plinth.position.y = -2.45;
     stage.add(plinth);
 
     // Pristine White Makrana Marble Concourse Floor
-    const marbleFloor = new THREE.Mesh(this.getBox(8.4, 0.12, 8.4), this.parliamentMarbleMat);
+    const marbleFloor = new THREE.Mesh(this.getBox(5.8, 0.12, 8.0), this.parliamentMarbleMat);
     marbleFloor.position.set(0, 0.35, 0);
     stage.add(marbleFloor);
 
     // Inlaid Green Carpet Center Aisle
-    const greenCarpet = new THREE.Mesh(this.getBox(2.8, 0.14, 8.0), this.parliamentGreenMat);
+    const greenCarpet = new THREE.Mesh(this.getBox(2.4, 0.14, 7.6), this.parliamentGreenMat);
     greenCarpet.position.set(0, 0.36, 0);
     stage.add(greenCarpet);
 
     // Fluted Sandstone Colonnade along back wall (z = -3.8)
-    const backWall = new THREE.Mesh(this.getBox(8.4, 4.6, 0.4), this.parliamentSandstoneMat);
+    const backWall = new THREE.Mesh(this.getBox(5.8, 4.6, 0.4), this.parliamentSandstoneMat);
     backWall.position.set(0, 2.65, -3.9);
     stage.add(backWall);
 
-    for (let c = -3.6; c <= 3.6; c += 1.8) {
+    for (let c = -2.4; c <= 2.4; c += 1.6) {
       const col = new THREE.Mesh(this.getCylinder(0.20, 0.22, 4.4, 12), this.parliamentSandstoneMat);
       col.position.set(c, 2.55, -3.7);
       stage.add(col);
@@ -2920,12 +2940,12 @@ export class RahulSatireWorldBuilder {
 
     // Overhead Marquee Banner
     const marqueeTex = RahulverseTextureCache.getHugAndWinkMarqueeTexture();
-    const marqueeMesh = new THREE.Mesh(this.getBox(7.0, 1.4, 0.14), new THREE.MeshBasicMaterial({ map: marqueeTex }));
+    const marqueeMesh = new THREE.Mesh(this.getBox(5.6, 1.4, 0.14), new THREE.MeshBasicMaterial({ map: marqueeTex }));
     marqueeMesh.position.set(0, 5.1, -3.5);
     stage.add(marqueeMesh);
 
     // Warm parliamentary brass chandeliers / spotlights
-    [-2.8, 2.8].forEach((lx) => {
+    [-1.8, 1.8].forEach((lx) => {
       const lamp = new THREE.Mesh(this.getCylinder(0.28, 0.12, 0.45, 8), this.goldMetalMat);
       lamp.position.set(lx, 4.9, -3.4);
       lamp.rotation.x = 0.35;
@@ -2933,12 +2953,12 @@ export class RahulSatireWorldBuilder {
     });
 
     // Treasury Bench with Seated Modi on Left
-    const treasuryBench = new THREE.Mesh(this.getBox(2.6, 1.15, 1.5), this.parliamentGreenMat);
+    const treasuryBench = new THREE.Mesh(this.getBox(2.4, 1.15, 1.5), this.parliamentGreenMat);
     treasuryBench.position.set(-0.8, 1.1, 0);
     stage.add(treasuryBench);
 
     // Polished Wooden Desk with Microphones & Papers
-    const desk = new THREE.Mesh(this.getBox(2.4, 0.85, 0.7), this.woodMat);
+    const desk = new THREE.Mesh(this.getBox(2.2, 0.85, 0.7), this.woodMat);
     desk.position.set(-0.8, 0.8, 0.85);
     stage.add(desk);
 
@@ -3254,16 +3274,18 @@ export class RahulSatireWorldBuilder {
     stage.name = 'rahul_alliance_chairs_runaway';
     stage.position.set(x, y, z);
 
-    const base = new THREE.Mesh(this.getBox(8.5, 5.5, 8.5), this.parliamentSandstoneMat);
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    // Width 6.0m at X = -7.4m -> Right edge at -7.4 + 3.0 = -4.4m (strictly outside |X| <= 4.2m envelope)
+    const base = new THREE.Mesh(this.getBox(6.0, 5.5, 7.6), this.parliamentSandstoneMat);
     base.position.y = -2.45;
     stage.add(base);
 
-    const deck = new THREE.Mesh(this.getBox(8.0, 0.1, 8.0), this.parliamentSandstoneMat);
+    const deck = new THREE.Mesh(this.getBox(5.8, 0.1, 7.4), this.parliamentSandstoneMat);
     deck.position.y = 0.34;
     stage.add(deck);
 
     // Large Round Conference Table
-    const table = new THREE.Mesh(this.getCylinder(2.6, 2.7, 0.9, 16), this.woodMat);
+    const table = new THREE.Mesh(this.getCylinder(1.8, 1.9, 0.9, 16), this.woodMat);
     table.position.y = 1.25;
     stage.add(table);
 
@@ -3284,7 +3306,7 @@ export class RahulSatireWorldBuilder {
     for (let c = 0; c < 4; c++) {
       const cAng = (c / 4) * Math.PI * 2;
       const cGroup = new THREE.Group();
-      cGroup.position.set(Math.cos(cAng) * 3.2, 0.8, Math.sin(cAng) * 3.2);
+      cGroup.position.set(Math.cos(cAng) * 1.8, 0.8, Math.sin(cAng) * 1.8);
 
       const cSeat = new THREE.Mesh(this.getBox(0.7, 0.7, 0.7), this.yatraTealMat);
       cSeat.position.y = 0.6;
@@ -3572,5 +3594,501 @@ export class RahulSatireWorldBuilder {
     crowdGroup.add(flag);
 
     group.add(crowdGroup);
+  }
+
+  // =========================================================================
+  // DISTRICT F — REGIONAL TOWN AND ROADSHOW (AUTHENTIC INDIAN STREETSCAPE)
+  // =========================================================================
+
+  /**
+   * District F: Regional Town and Roadshow
+   * Authentic bustling Indian regional bazaar, wooden verandas, terracotta & marigold
+   * shopfronts, flower garland stalls, open chabutras with neem trees, campaign van
+   * with rotating loudspeakers and animated soundwaves, cheering roadside crowds with tricolor flags.
+   */
+  public buildRegionalRoadshowDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: RahulComedyEventDirector
+  ): void {
+    const districtF = new THREE.Group();
+    districtF.name = 'district_f_regional_roadshow';
+    group.add(districtF);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    // 1. Vibrant Regional Bazaar Facade on both sides with verandas, jharokhas, and terracotta roofs
+    [-1, 1].forEach((side) => {
+      this.buildSurrealYatraFacade(districtF, roadbedWidth, chunkLength, side, 0, rng, detail);
+
+      const walkW = 22.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      districtF.add(walk);
+
+      // Yellow/white crowd barricades with cheering spectators along sidewalk curb
+      for (let z = 10; z < chunkLength - 10; z += 18) {
+        this.buildRoadsideBarricadeWithCrowd(districtF, side * (curbEdge + 1.2), 0.6, -z, side > 0);
+      }
+    });
+
+    // 2. Open-Roof Campaign Support Van with 4 Loudspeaker Horns & Waving Leader (East promenade at X = 6.8m)
+    this.buildCampaignSupportVan(districtF, 6.8, 0.6, -chunkLength * 0.32, director);
+
+    // 3. Roadside Tea Dhaba & Flower Garland Bazaar Stall (West promenade at X = -7.2m)
+    this.buildMarketplaceBazaar(districtF, -7.2, 0.6, -chunkLength * 0.35);
+
+    // 4. Circular Stone Sitting Chabutra wrapping around lush green Peepal/Neem Tree (East promenade at X = 8.2m)
+    this.buildChabutraWithPeepal(districtF, 8.2, 0.6, -chunkLength * 0.68);
+
+    // 5. Yatra Water Hydration Station with Earthen Clay Matkas & Volunteers (West promenade at X = -7.0m)
+    this.buildWaterStation(districtF, -7.0, 0.6, -chunkLength * 0.72);
+  }
+
+  /**
+   * Roadside Yellow/White Crowd Barricade with cheering spectator waving tricolor flag
+   */
+  public buildRoadsideBarricadeWithCrowd(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    isRight: boolean
+  ): THREE.Group {
+    const barGroup = new THREE.Group();
+    barGroup.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(0.8, 5.5, 4.2), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    barGroup.add(plinth);
+
+    // Yellow & White Traffic Barricade Frame
+    const railBottom = new THREE.Mesh(this.getBox(0.12, 0.12, 3.8), this.yatraMarigoldMat);
+    railBottom.position.y = 0.35;
+    barGroup.add(railBottom);
+
+    const railTop = new THREE.Mesh(this.getBox(0.12, 0.12, 3.8), this.yatraMarigoldMat);
+    railTop.position.y = 0.95;
+    barGroup.add(railTop);
+
+    // Vertical barrier legs
+    [-1.7, 1.7].forEach((lz) => {
+      const leg = new THREE.Mesh(this.getCylinder(0.04, 0.04, 1.1, 6), this.silverMat);
+      leg.position.set(0, 0.55, lz);
+      barGroup.add(leg);
+
+      const foot = new THREE.Mesh(this.getBox(0.6, 0.08, 0.15), this.silverMat);
+      foot.position.set(0, 0.04, lz);
+      barGroup.add(foot);
+    });
+
+    // Barricade signboard panel
+    const panel = new THREE.Mesh(this.getBox(0.06, 0.45, 3.4), this.yatraMarigoldMat);
+    panel.position.y = 0.65;
+    barGroup.add(panel);
+
+    // 2 Cheering crowd figures behind barricade
+    [-0.8, 0.8].forEach((cz, cIdx) => {
+      const crowdX = isRight ? 0.45 : -0.45;
+      this.buildCheeringCrowdMember(barGroup, crowdX, 0, cz, isRight);
+    });
+
+    group.add(barGroup);
+    return barGroup;
+  }
+
+  /**
+   * Yatra Water Hydration Station
+   * Folding table with terracotta earthen pots (matkas), copper ladles, paper cups,
+   * hydration banner, and 2 volunteer caricatures in white kurtas.
+   */
+  public buildWaterStation(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number
+  ): THREE.Group {
+    const station = new THREE.Group();
+    station.name = 'rahul_yatra_water_station';
+    station.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(3.4, 5.5, 4.8), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    station.add(plinth);
+
+    // Sandstone platform
+    const platform = new THREE.Mesh(this.getBox(3.2, 0.25, 4.6), this.parliamentSandstoneMat);
+    platform.position.y = 0.125;
+    station.add(platform);
+
+    // Folding wooden table
+    const tableTop = new THREE.Mesh(this.getBox(1.6, 0.12, 3.6), this.woodMat);
+    tableTop.position.set(0, 0.85, 0);
+    station.add(tableTop);
+
+    [-1.6, 1.6].forEach((tz) => {
+      const tLeg = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.8, 6), this.woodMat);
+      tLeg.position.set(0, 0.4, tz);
+      station.add(tLeg);
+    });
+
+    // 3 Traditional Earthen Clay Water Pots (Matkas) with flared rims
+    [-1.0, 0, 1.0].forEach((mz, mIdx) => {
+      const matkaBody = new THREE.Mesh(this.getSphere(0.32, 10), this.yatraTerracottaMat);
+      matkaBody.position.set(-0.2, 1.25, mz);
+      station.add(matkaBody);
+
+      const matkaRim = new THREE.Mesh(this.getCylinder(0.16, 0.14, 0.12, 8), this.yatraTerracottaMat);
+      matkaRim.position.set(-0.2, 1.58, mz);
+      station.add(matkaRim);
+
+      // Long copper water ladle
+      const ladle = new THREE.Mesh(this.getCylinder(0.015, 0.015, 0.65, 4), this.goldMetalMat);
+      ladle.position.set(-0.2, 1.7, mz);
+      ladle.rotation.z = 0.25;
+      station.add(ladle);
+    });
+
+    // Paper cups stacked on table
+    [0.3, 0.6].forEach((cz) => {
+      const cupStack = new THREE.Mesh(this.getCylinder(0.06, 0.05, 0.35, 6), this.paperWhiteMat);
+      cupStack.position.set(0.35, 1.05, cz);
+      station.add(cupStack);
+    });
+
+    // Overhead Tricolor Hydration Banner on bamboo poles
+    [-1.9, 1.9].forEach((pz) => {
+      const pole = new THREE.Mesh(this.getCylinder(0.05, 0.05, 3.2, 6), this.woodMat);
+      pole.position.set(0, 1.6, pz);
+      station.add(pole);
+    });
+
+    const bannerBeam = new THREE.Mesh(this.getBox(0.08, 0.65, 4.0), this.yatraOrangeMat);
+    bannerBeam.position.set(0, 3.0, 0);
+    station.add(bannerBeam);
+
+    const bannerBottom = new THREE.Mesh(this.getBox(0.08, 0.3, 4.0), this.yatraBannerGreenMat);
+    bannerBottom.position.set(0, 2.65, 0);
+    station.add(bannerBottom);
+
+    // 2 Volunteers in White Kurtas serving water
+    [-0.8, 0.8].forEach((vz, vIdx) => {
+      const volGroup = new THREE.Group();
+      volGroup.position.set(0.8, 0.25, vz);
+
+      const vLegs = new THREE.Mesh(this.getBox(0.36, 0.7, 0.28), this.yatraWhiteMat);
+      vLegs.position.y = 0.35;
+      volGroup.add(vLegs);
+
+      const vTorso = new THREE.Mesh(this.getBox(0.42, 0.65, 0.3), this.yatraWhiteMat);
+      vTorso.position.y = 0.95;
+      volGroup.add(vTorso);
+
+      // Tricolor sash
+      const sash = new THREE.Mesh(this.getBox(0.44, 0.14, 0.32), this.yatraOrangeMat);
+      sash.position.set(0, 0.95, 0);
+      sash.rotation.z = 0.35;
+      volGroup.add(sash);
+
+      const vHead = new THREE.Mesh(this.getCylinder(0.16, 0.16, 0.32, 8), this.cartoonSkinMat);
+      vHead.position.y = 1.42;
+      volGroup.add(vHead);
+
+      station.add(volGroup);
+    });
+
+    group.add(station);
+    return station;
+  }
+
+  /**
+   * 3D Open-Top Campaign Support Van (Mahindra/Tata Tempo)
+   * With roof-mounted loudspeakers, pulsing soundwaves, rotating wheels, and waving leader.
+   */
+  public buildCampaignSupportVan(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: RahulComedyEventDirector
+  ): THREE.Group {
+    const vanGroup = new THREE.Group();
+    vanGroup.name = 'rahul_campaign_van';
+    vanGroup.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(4.4, 5.5, 6.8), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    vanGroup.add(plinth);
+
+    // Automotive Van Chassis & Body (Cream & Saffron Indian commercial vehicle)
+    const vanBody = new THREE.Mesh(this.getBox(2.6, 1.8, 5.6), this.yatraIvoryMat);
+    vanBody.position.y = 1.35;
+    vanGroup.add(vanBody);
+
+    const vanCab = new THREE.Mesh(this.getBox(2.5, 1.4, 2.2), this.yatraIvoryMat);
+    vanCab.position.set(0, 2.5, -1.5);
+    vanGroup.add(vanCab);
+
+    // Tinted windshield & side windows
+    const windshield = new THREE.Mesh(this.getBox(2.3, 0.9, 0.1), this.mediaStudioGlassMat);
+    windshield.position.set(0, 2.6, -2.62);
+    vanGroup.add(windshield);
+
+    // Front grille and bumper
+    const bumper = new THREE.Mesh(this.getBox(2.7, 0.45, 0.4), this.darkSuitMat);
+    bumper.position.set(0, 0.6, -2.85);
+    vanGroup.add(bumper);
+
+    const grille = new THREE.Mesh(this.getBox(1.8, 0.5, 0.1), this.goldMetalMat);
+    grille.position.set(0, 1.1, -2.82);
+    vanGroup.add(grille);
+
+    // Headlights
+    [-1.0, 1.0].forEach((hx) => {
+      const headlight = new THREE.Mesh(this.getSphere(0.2, 8), this.yatraLitWindowMat);
+      headlight.position.set(hx, 1.1, -2.82);
+      vanGroup.add(headlight);
+    });
+
+    // Roof rack luggage rack
+    const rack = new THREE.Mesh(this.getBox(2.4, 0.25, 3.2), this.goldMetalMat);
+    rack.position.set(0, 3.3, 0.5);
+    vanGroup.add(rack);
+
+    // Spare wheel mounted on tailgate
+    const spareWheel = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.28, 10), this.cartoonHairDarkMat);
+    spareWheel.position.set(0, 1.4, 2.9);
+    spareWheel.rotation.x = Math.PI / 2;
+    vanGroup.add(spareWheel);
+
+    // 4 Megaphone Loudspeakers on crossbars pointing in 4 directions
+    const speakers: THREE.Object3D[] = [];
+    const soundWaves: THREE.Object3D[] = [];
+    const speakerAngles = [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5];
+
+    speakerAngles.forEach((ang) => {
+      const spkGroup = new THREE.Group();
+      spkGroup.position.set(Math.sin(ang) * 0.8, 3.8, Math.cos(ang) * 0.8);
+      spkGroup.rotation.y = ang;
+
+      const horn = new THREE.Mesh(this.getCylinder(0.26, 0.08, 0.65, 8), this.goldMetalMat);
+      horn.rotation.x = Math.PI / 2;
+      spkGroup.add(horn);
+
+      // Cyan sound wave ring
+      const wave = new THREE.Mesh(this.getTorus(0.4, 0.04, 6, 12), this.neonCyanMat);
+      wave.position.z = 0.5;
+      spkGroup.add(wave);
+
+      vanGroup.add(spkGroup);
+      speakers.push(spkGroup);
+      soundWaves.push(wave);
+    });
+
+    // 4 Animated Rubber Wheels
+    const wheels: THREE.Object3D[] = [];
+    [[-1.3, -1.6], [1.3, -1.6], [-1.3, 1.6], [1.3, 1.6]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(this.getCylinder(0.45, 0.45, 0.35, 12), this.cartoonHairDarkMat);
+      wheel.position.set(wx, 0.45, wz);
+      wheel.rotation.z = Math.PI / 2;
+      vanGroup.add(wheel);
+      wheels.push(wheel);
+
+      // Hubcap
+      const hub = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.38, 8), this.goldMetalMat);
+      hub.position.set(wx, 0.45, wz);
+      hub.rotation.z = Math.PI / 2;
+      vanGroup.add(hub);
+    });
+
+    // Open Rear Deck Platform with Animated Waving Leader
+    const wavingArm = new THREE.Mesh(this.getBox(0.14, 0.65, 0.14), this.yatraWhiteMat);
+    wavingArm.position.set(0.45, 3.2, 1.2);
+    vanGroup.add(wavingArm);
+
+    const leaderBody = new THREE.Mesh(this.getBox(0.5, 0.75, 0.35), this.yatraWhiteMat);
+    leaderBody.position.set(0, 2.7, 1.2);
+    vanGroup.add(leaderBody);
+
+    const leaderHead = new THREE.Mesh(this.getCylinder(0.2, 0.2, 0.35, 8), this.cartoonSkinMat);
+    leaderHead.position.set(0, 3.25, 1.2);
+    vanGroup.add(leaderHead);
+
+    director.registerYatraMarchProcession(vanGroup, [], vanGroup, wheels, speakers, soundWaves, wavingArm);
+
+    group.add(vanGroup);
+    return vanGroup;
+  }
+
+  /**
+   * Regional Marketplace Bazaar
+   * Traditional Indian flower garland stall & tea dhaba with samovar and marigold ropes.
+   */
+  public buildMarketplaceBazaar(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number
+  ): THREE.Group {
+    const bazaar = new THREE.Group();
+    bazaar.name = 'rahul_marketplace_bazaar';
+    bazaar.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(3.4, 5.5, 5.8), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    bazaar.add(plinth);
+
+    // Sandstone paved bazaar stall platform
+    const platform = new THREE.Mesh(this.getBox(3.2, 0.25, 5.6), this.parliamentSandstoneMat);
+    platform.position.y = 0.125;
+    bazaar.add(platform);
+
+    // 1. Flower Garland Stall (Marigold strings)
+    const flowerStall = new THREE.Group();
+    flowerStall.position.set(0, 0.25, -1.4);
+
+    const fCounter = new THREE.Mesh(this.getBox(1.6, 0.85, 2.2), this.woodMat);
+    fCounter.position.y = 0.425;
+    flowerStall.add(fCounter);
+
+    // Sloped marigold awning
+    const fAwning = new THREE.Mesh(this.getBox(1.8, 0.1, 2.4), this.yatraMarigoldMat);
+    fAwning.position.set(0, 2.6, 0);
+    fAwning.rotation.x = 0.18;
+    flowerStall.add(fAwning);
+
+    // Bamboo awning posts
+    [[-0.8, -1.0], [0.8, -1.0], [-0.8, 1.0], [0.8, 1.0]].forEach(([px, pz]) => {
+      const p = new THREE.Mesh(this.getCylinder(0.03, 0.03, 2.4, 4), this.woodMat);
+      p.position.set(px, 1.2, pz);
+      flowerStall.add(p);
+    });
+
+    // Hanging ropes of bright orange & yellow marigolds (Genda Phool)
+    for (let r = -0.7; r <= 0.7; r += 0.35) {
+      const garland = new THREE.Mesh(this.getCylinder(0.08, 0.08, 1.2, 6), this.yatraMarigoldMat);
+      garland.position.set(0.65, 1.6, r);
+      flowerStall.add(garland);
+    }
+    bazaar.add(flowerStall);
+
+    // 2. Roadside Chai Dhaba with Brass Samovar
+    const chaiStall = new THREE.Group();
+    chaiStall.position.set(0, 0.25, 1.4);
+
+    const cCounter = new THREE.Mesh(this.getBox(1.6, 0.85, 2.2), this.parliamentSandstoneMat);
+    cCounter.position.y = 0.425;
+    chaiStall.add(cCounter);
+
+    // Striped green awning
+    const cAwning = new THREE.Mesh(this.getBox(1.8, 0.1, 2.4), this.yatraBannerGreenMat);
+    cAwning.position.set(0, 2.6, 0);
+    cAwning.rotation.x = -0.18;
+    chaiStall.add(cAwning);
+
+    // Giant brass chai kettle / samovar on counter
+    const samovar = new THREE.Mesh(this.getCylinder(0.28, 0.35, 0.75, 10), this.goldMetalMat);
+    samovar.position.set(0, 1.225, 0);
+    chaiStall.add(samovar);
+
+    const samovarChimney = new THREE.Mesh(this.getCylinder(0.08, 0.08, 0.35, 6), this.goldMetalMat);
+    samovarChimney.position.set(0, 1.65, 0);
+    chaiStall.add(samovarChimney);
+
+    // Wire tray of cutting chai glasses
+    const tray = new THREE.Mesh(this.getBox(0.45, 0.04, 0.7), this.silverMat);
+    tray.position.set(0.45, 0.88, 0.5);
+    chaiStall.add(tray);
+
+    bazaar.add(chaiStall);
+
+    group.add(bazaar);
+    return bazaar;
+  }
+
+  /**
+   * Circular Stone Chabutra wrapping around a massive lush Peepal/Neem Tree
+   * With 3 village elder onlooker figures in traditional dhotis and kurtas.
+   */
+  public buildChabutraWithPeepal(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number
+  ): THREE.Group {
+    const chabutraGroup = new THREE.Group();
+    chabutraGroup.name = 'rahul_chabutra_peepal';
+    chabutraGroup.position.set(x, y, z);
+
+    // Deep Subterranean Foundation Plinth down to Y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(5.2, 5.5, 5.2), this.parliamentSandstoneMat);
+    plinth.position.y = -2.45;
+    chabutraGroup.add(plinth);
+
+    // Circular stone sitting platform (Chabutra)
+    const chabutra = new THREE.Mesh(this.getCylinder(2.4, 2.6, 0.75, 12), this.parliamentSandstoneMat);
+    chabutra.position.y = 0.375;
+    chabutraGroup.add(chabutra);
+
+    // Sandstone coping rim
+    const coping = new THREE.Mesh(this.getTorus(2.45, 0.12, 6, 16), this.yatraSandstonePlasterMat);
+    coping.position.y = 0.75;
+    coping.rotation.x = Math.PI / 2;
+    chabutraGroup.add(coping);
+
+    // Massive branching tree trunk
+    const trunk = new THREE.Mesh(this.getCylinder(0.55, 0.85, 4.8, 8), this.yatraBarkBrownMat);
+    trunk.position.y = 2.8;
+    chabutraGroup.add(trunk);
+
+    // Spreading canopy layers
+    const tier1 = new THREE.Mesh(this.getCylinder(1.2, 2.9, 2.4, 8), this.yatraFoliageGreenMat);
+    tier1.position.y = 5.2;
+    chabutraGroup.add(tier1);
+
+    const tier2 = new THREE.Mesh(this.getCylinder(0.8, 2.4, 2.0, 8), this.yatraFoliageGreenMat);
+    tier2.position.y = 6.8;
+    chabutraGroup.add(tier2);
+
+    const crown = new THREE.Mesh(this.getSphere(1.6, 8), this.yatraFoliageGreenMat);
+    crown.position.y = 8.2;
+    chabutraGroup.add(crown);
+
+    // 3 Village Elders seated on the stone chabutra
+    const elderAngles = [-0.8, 0, 0.8];
+    elderAngles.forEach((ang) => {
+      const elder = new THREE.Group();
+      elder.position.set(Math.sin(ang) * 1.8, 0.75, Math.cos(ang) * 1.8);
+      elder.rotation.y = ang + Math.PI; // Looking outward toward the railway tracks
+
+      const eDhoti = new THREE.Mesh(this.getBox(0.42, 0.45, 0.42), this.yatraWhiteMat);
+      eDhoti.position.y = 0.225;
+      elder.add(eDhoti);
+
+      const eKurta = new THREE.Mesh(this.getBox(0.46, 0.58, 0.35), this.yatraSandstonePlasterMat);
+      eKurta.position.y = 0.72;
+      elder.add(eKurta);
+
+      const eHead = new THREE.Mesh(this.getCylinder(0.16, 0.16, 0.32, 8), this.cartoonSkinMat);
+      eHead.position.y = 1.15;
+      elder.add(eHead);
+
+      const eTurban = new THREE.Mesh(this.getCylinder(0.24, 0.2, 0.22, 8), this.yatraMarigoldMat);
+      eTurban.position.y = 1.34;
+      elder.add(eTurban);
+
+      chabutraGroup.add(elder);
+    });
+
+    group.add(chabutraGroup);
+    return chabutraGroup;
   }
 }

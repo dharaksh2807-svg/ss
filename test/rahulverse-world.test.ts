@@ -218,6 +218,14 @@ check(gE.getObjectByName('district_e_political_multiverse') !== undefined, 'Dist
 check(gE.getObjectByName('multiverse_vortex_portal') !== undefined, 'District E: Multiverse vortex portal exists');
 verifyDistrictClearance(gE, 'District E (The Great Political Multiverse)');
 
+// District F: Regional Town & Roadshow
+const gF = new THREE.Group();
+sceneryFactory.buildScenery(gF, RAHULVERSE_THEME, 0, false, false, 'NONE', 'FULL', 5);
+check(gF.getObjectByName('district_f_regional_roadshow') !== undefined, 'District F: Regional Town & Roadshow exists');
+check(gF.getObjectByName('rahul_campaign_van') !== undefined, 'District F: Campaign support van exists');
+check(gF.getObjectByName('rahul_yatra_water_station') !== undefined, 'District F: Matka water station exists');
+verifyDistrictClearance(gF, 'District F (Regional Town & Roadshow)');
+
 // =========================================================================
 // Suite 5: Rahulverse Playable Train Livery & Hitboxes
 // =========================================================================
@@ -313,8 +321,8 @@ check(nitishCaricature.name === 'caricature_nitish', 'Nitish caricature generate
 director.reset();
 const testDistrictGroup = new THREE.Group();
 
-// Build all 5 districts into testDistrictGroup
-for (let d = 0; d < 5; d++) {
+// Build all 6 districts into testDistrictGroup
+for (let d = 0; d < 6; d++) {
   builder.buildDistrictScenery(testDistrictGroup, 12, 100, d, 'FULL');
 }
 

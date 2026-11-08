@@ -732,11 +732,27 @@ export class RahulComedyEventDirector {
       SettingsManager.getInstance().isReducedMotion();
     const motionMultiplier = isReducedMotion ? 0.35 : 1.0;
 
-    // 1. Flip Board on Finish Line Arch & Exploding Confetti (Flips every 4.0 seconds)
+    // 1. Flip Board on Finish Line Arch & Exploding Confetti
+    // Synchronized to player distance when running; continuous timer fallback when stationary
     for (let i = 0; i < this.flipBoards.length; i++) {
       const fb = this.flipBoards[i];
-      const cycle = (this.globalClock * 0.35 * motionMultiplier) % 2.0;
-      const flipTarget = cycle > 1.0 ? Math.PI : 0;
+      let flipTarget: number;
+
+      if (typeof _playerZ === 'number' && fb.pivotGroup.parent) {
+        const wp = new THREE.Vector3();
+        fb.pivotGroup.getWorldPosition(wp);
+        const distAhead = _playerZ - wp.z; // positive when player is approaching from behind
+        // Flip to "NEXT YATRA STARTS HERE" as player arrives within 28m, reset after passing by 16m
+        if (distAhead <= 28.0 && distAhead >= -16.0) {
+          flipTarget = Math.PI;
+        } else {
+          flipTarget = 0;
+        }
+      } else {
+        const cycle = (this.globalClock * 0.35 * motionMultiplier) % 2.0;
+        flipTarget = cycle > 1.0 ? Math.PI : 0;
+      }
+
       fb.angle += (flipTarget - fb.angle) * 0.15;
       fb.pivotGroup.rotation.x = fb.angle;
 
@@ -1037,10 +1053,39 @@ export class RahulComedyEventDirector {
 
     // GATE A: The Parliament Hug & Wink
     // 7.0s cycle: Stride (0-2.2s) -> Bear Hug & Heart (2.2-3.8s) -> Turn & Wink + Cameraman Fall (3.8-5.4s) -> Recovery (5.4-7s)
+    // Synchronized to oncoming player distance; smooth continuous fallback timer when stationary
     for (let i = 0; i < this.parliamentHugAndWinks.length; i++) {
       const g = this.parliamentHugAndWinks[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 7.0;
+      let cycle: number;
+
+      if (typeof _playerZ === 'number' && g.rahulFigure.parent) {
+        const wp = new THREE.Vector3();
+        g.rahulFigure.getWorldPosition(wp);
+        const distanceAhead = _playerZ - wp.z; // positive when player is approaching from behind
+        if (distanceAhead > -15.0 && distanceAhead < 65.0) {
+          // Approach (65m down to 25m): Stride towards Modi across green carpet
+          if (distanceAhead >= 25.0) {
+            cycle = (1.0 - (distanceAhead - 25.0) / 40.0) * 2.2;
+          }
+          // Climax 1: Bear Hug & Modi Spectacles Pop (25m down to 12m)
+          else if (distanceAhead >= 12.0) {
+            cycle = 2.2 + (1.0 - (distanceAhead - 12.0) / 13.0) * 1.6;
+          }
+          // Climax 2: Turn directly to camera, Iconic Wink + Tooth Sparkle + Cameraman topples (12m down to -5m)
+          else if (distanceAhead >= -5.0) {
+            cycle = 3.8 + (1.0 - (distanceAhead - (-5.0)) / 17.0) * 1.6;
+          }
+          // Recovery (-5m down to -15m)
+          else {
+            cycle = 5.4 + (1.0 - (distanceAhead - (-15.0)) / 10.0) * 1.6;
+          }
+        } else {
+          cycle = g.timer % 7.0;
+        }
+      } else {
+        cycle = g.timer % 7.0;
+      }
 
       if (cycle < 2.2) {
         // Stride across parliament floor
@@ -1193,10 +1238,39 @@ export class RahulComedyEventDirector {
 
     // GATE A: The Never-Ending Yatra Mechanical Flip & Infinite Map
     // 6.5s cycle: Sprint (0-2.5s) -> Ratchet Spin & Flip (2.5-3.5s) -> Map Unroll & Synchronized Disbelief (3.5-5s) -> Resume (5-6.5s)
+    // Synchronized to player approach distance with continuous looping fallback
     for (let i = 0; i < this.neverEndingYatras.length; i++) {
       const g = this.neverEndingYatras[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.5;
+      let cycle: number;
+
+      if (typeof _playerZ === 'number' && g.archGroup.parent) {
+        const wp = new THREE.Vector3();
+        g.archGroup.getWorldPosition(wp);
+        const distanceAhead = _playerZ - wp.z; // positive when player is approaching from behind
+        if (distanceAhead > -20.0 && distanceAhead < 75.0) {
+          // Approach (75m down to 28m): Sprint towards finish arch, crowd anticipates victory
+          if (distanceAhead >= 28.0) {
+            cycle = (1.0 - (distanceAhead - 28.0) / 47.0) * 2.5;
+          }
+          // Climax: Ratchet spin & 180° flip to NEXT YATRA (28m down to 14m)
+          else if (distanceAhead >= 14.0) {
+            cycle = 2.5 + (1.0 - (distanceAhead - 14.0) / 14.0) * 1.0;
+          }
+          // Reaction: Accordion map unrolls, synchronized crowd disbelief freeze (14m down to -4m)
+          else if (distanceAhead >= -4.0) {
+            cycle = 3.5 + (1.0 - (distanceAhead - (-4.0)) / 18.0) * 1.5;
+          }
+          // Aftermath: Runner wipes brow with towel, shrugs and continues jog (-4m down to -20m)
+          else {
+            cycle = 5.0 + (1.0 - (distanceAhead - (-20.0)) / 16.0) * 1.5;
+          }
+        } else {
+          cycle = g.timer % 6.5;
+        }
+      } else {
+        cycle = g.timer % 6.5;
+      }
 
       if (cycle < 2.5) {
         // Sprint towards finish arch
@@ -1300,18 +1374,48 @@ export class RahulComedyEventDirector {
     }
 
     // GATE B: The Alliance Musical Chairs with Running Legs
+    // Synchronized to oncoming player: dignified rotation -> chairs run away -> leaders squeeze
     for (let i = 0; i < this.allianceChairsRunaways.length; i++) {
       const g = this.allianceChairsRunaways[i];
       g.timer += delta * motionMultiplier;
 
-      // Nitish chair in 360-degree continuous swivel
-      g.nitishChair.rotation.y += delta * 2.5;
+      // Nitish chair in continuous 360-degree comical swivel
+      g.nitishChair.rotation.y += delta * 2.8;
 
-      // Other chairs with legs scampering around table
+      let scamperPhase: number;
+      let isScramble: boolean = false;
+
+      if (typeof _playerZ === 'number' && g.tableGroup.parent) {
+        const wp = new THREE.Vector3();
+        g.tableGroup.getWorldPosition(wp);
+        const distanceAhead = _playerZ - wp.z;
+        if (distanceAhead > -10.0 && distanceAhead < 55.0) {
+          isScramble = distanceAhead < 18.0;
+          scamperPhase = (55.0 - distanceAhead) * 0.15;
+        } else {
+          scamperPhase = this.globalClock * 1.8;
+          isScramble = ((this.globalClock * 0.4) % 2.0) > 1.2;
+        }
+      } else {
+        scamperPhase = this.globalClock * 1.8;
+        isScramble = ((this.globalClock * 0.4) % 2.0) > 1.2;
+      }
+
+      // Chairs with legs scampering around table or scrambling for front seat
       g.runningChairs.forEach((rc, idx) => {
-        const scamper = this.globalClock * 3.0 + idx * 1.5;
-        rc.chair.position.x = Math.sin(scamper * 0.4 + rc.baseAngle) * 3.2;
-        rc.chair.position.z = Math.cos(scamper * 0.4 + rc.baseAngle) * 3.2;
+        const scamper = scamperPhase * 3.0 + idx * 1.5;
+        if (!isScramble) {
+          rc.chair.position.x = Math.sin(scamper * 0.4 + rc.baseAngle) * 3.2;
+          rc.chair.position.z = Math.cos(scamper * 0.4 + rc.baseAngle) * 3.2;
+          rc.chair.rotation.y = -scamper * 0.4 - rc.baseAngle + Math.PI * 0.5;
+        } else {
+          // Scramble for front seat!
+          const targetX = -1.5 + idx * 1.0;
+          const targetZ = 1.4;
+          rc.chair.position.x += (targetX - rc.chair.position.x) * 0.12;
+          rc.chair.position.z += (targetZ - rc.chair.position.z) * 0.12;
+          rc.chair.rotation.y = 0;
+        }
         rc.legL.rotation.x = Math.sin(scamper * 4.0) * 0.5;
         rc.legR.rotation.x = -Math.sin(scamper * 4.0) * 0.5;
       });
