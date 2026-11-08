@@ -584,6 +584,14 @@ export class ChronoKingdomWorldBuilder {
     return this.geoCache.get(key) as THREE.TorusGeometry;
   }
 
+  private getIcosahedron(r: number, detail: number = 0): THREE.IcosahedronGeometry {
+    const key = `icosahedron_${r}_${detail}`;
+    if (!this.geoCache.has(key)) {
+      this.geoCache.set(key, new THREE.IcosahedronGeometry(r, detail));
+    }
+    return this.geoCache.get(key) as THREE.IcosahedronGeometry;
+  }
+
   /**
    * Procedural Cog/Gear Generator with central hub, spoke cutouts, and teeth
    */
@@ -779,6 +787,8 @@ export class ChronoKingdomWorldBuilder {
       if (variant === 0) {
         // --- VARIANT 0: ROYAL HOROLOGIUM PLAZA (The Monumental Clock Tower) ---
         for (let z = 16; z < chunkLength - 16; z += 42) {
+          // Reserve z ≈ 50 on the Titan's promenade side for the monumental Colossus Plaza
+          if (side === 1 && Math.abs(z - 50) < 28) continue;
           const towerGroup = new THREE.Group();
           towerGroup.position.set(side * (curbEdge + 6.5), 0.35, -z);
 
@@ -984,6 +994,7 @@ export class ChronoKingdomWorldBuilder {
       } else if (variant === 1) {
         // --- VARIANT 1: BRASS CATHEDRAL AVENUE (Gothic Arches & Rose Windows) ---
         for (let z = 18; z < chunkLength - 18; z += 46) {
+          if (side === 1 && Math.abs(z - 50) < 28) continue;
           const cathedralGroup = new THREE.Group();
           cathedralGroup.position.set(side * (curbEdge + 7.5), 0.35, -z);
 
@@ -1062,6 +1073,7 @@ export class ChronoKingdomWorldBuilder {
       } else {
         // --- VARIANT 2: THE THOUSAND-BELL CARILLON (Campanile Towers & Swinging Bells) ---
         for (let z = 20; z < chunkLength - 15; z += 48) {
+          if (side === 1 && Math.abs(z - 50) < 28) continue;
           const carillonTower = new THREE.Group();
           carillonTower.position.set(side * (curbEdge + 7.0), 0.35, -z);
 
@@ -2189,157 +2201,368 @@ export class ChronoKingdomWorldBuilder {
   ): THREE.Group {
     const titanGroup = new THREE.Group();
     titanGroup.name = 'blockbuster_clockwork_titan';
-    const tx = side * 13.5;
+    const tx = side * 12.0;
     const tz = -50.0;
     titanGroup.position.set(tx, 0, tz);
+    titanGroup.rotation.y = -side * 0.22;
 
-    // 1. Deep Subterranean Foundation Plinth down to Y = -5.65m (Zero floating geometry)
+    // 1. Deep Subterranean Foundation Pedestal down to Y = -5.65m (Zero floating geometry)
     const plinthDepth = 6.0;
-    const plinth = new THREE.Mesh(this.getBox(8.0, plinthDepth, 8.0), this.darkIronstoneMat);
+    const plinth = new THREE.Mesh(this.getBox(8.4, plinthDepth, 8.4), this.darkIronstoneMat);
     plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
     titanGroup.add(plinth);
 
-    const plinthCap = new THREE.Mesh(this.getBox(8.4, 0.6, 8.4), this.antiqueGoldMat);
-    plinthCap.position.set(0, 0.65, 0);
-    titanGroup.add(plinthCap);
+    // Imperial Colossus Alcove Backdrop (zero clipping, solid depth down to Y = -5.65m)
+    const backdropGroup = new THREE.Group();
+    backdropGroup.position.set(5.2, 0, 0);
+    const backPlinth = new THREE.Mesh(this.getBox(3.2, plinthDepth, 18.0), this.darkIronstoneMat);
+    backPlinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    backdropGroup.add(backPlinth);
 
-    // 2. Colossal Articulated Legs / Pylon Greaves
-    [-2.0, 2.0].forEach((lx) => {
-      const legPillar = new THREE.Mesh(this.getBox(2.0, 6.5, 2.2), this.midnightSteelMat);
-      legPillar.position.set(lx, 3.9, 0);
-      titanGroup.add(legPillar);
+    const backWall = new THREE.Mesh(this.getBox(2.6, 24.0, 16.0), this.midnightSteelMat);
+    backWall.position.set(0, 12.0, 0);
+    backdropGroup.add(backWall);
 
-      const kneeGear = this.buildGearMesh(1.1, 10, 0.25, this.antiqueGoldMat);
-      kneeGear.position.set(lx, 4.0, 1.15);
-      titanGroup.add(kneeGear);
+    [-7.2, 7.2].forEach((cz) => {
+      const col = new THREE.Mesh(this.getCylinder(0.65, 0.85, 24.0, 10), this.antiqueGoldMat);
+      col.position.set(-1.1, 12.0, cz);
+      backdropGroup.add(col);
     });
 
-    // 3. Pelvis & Gear Ring
-    const waistRing = new THREE.Mesh(this.getTorus(2.6, 0.35, 6, 20), this.antiqueGoldMat);
-    waistRing.position.set(0, 7.3, 0);
+    const archPediment = new THREE.Mesh(this.getBox(3.4, 2.6, 17.5), this.burnishedCopperMat);
+    archPediment.position.set(0, 24.5, 0);
+    backdropGroup.add(archPediment);
+
+    const alcoveGear = this.buildGearMesh(3.8, 16, 0.3, this.antiqueGoldMat);
+    alcoveGear.position.set(-1.2, 18.0, 0);
+    alcoveGear.rotation.y = Math.PI * 0.5;
+    backdropGroup.add(alcoveGear);
+    director.registerGear(alcoveGear, -0.4, 'z');
+
+    titanGroup.add(backdropGroup);
+
+    // Tiered plinth cap with carved classical moldings and brass relief frieze
+    const plinthCap1 = new THREE.Mesh(this.getBox(8.8, 0.45, 8.8), this.burnishedCopperMat);
+    plinthCap1.position.set(0, 0.55, 0);
+    titanGroup.add(plinthCap1);
+
+    const plinthCap2 = new THREE.Mesh(this.getBox(8.2, 0.35, 8.2), this.antiqueGoldMat);
+    plinthCap2.position.set(0, 0.85, 0);
+    titanGroup.add(plinthCap2);
+
+    // 4 Heavy Octagonal Anchor Bolts with brass nut plates
+    [-3.6, 3.6].forEach((bx) => {
+      [-3.6, 3.6].forEach((bz) => {
+        const bolt = new THREE.Mesh(this.getCylinder(0.28, 0.32, 0.45, 8), this.agedBrassMat);
+        bolt.position.set(bx, 1.05, bz);
+        titanGroup.add(bolt);
+      });
+    });
+
+    // Pedestal relief clockwork ring on front facade
+    const baseReliefGear = this.buildGearMesh(2.2, 12, 0.18, this.antiqueGoldMat);
+    baseReliefGear.position.set(0, 0.35, 4.25);
+    titanGroup.add(baseReliefGear);
+
+    // 2. Nearby City Response: Street Steam Vents & Resonant Gas Lanterns
+    const cityVents: THREE.Mesh[] = [];
+    const cityLanterns: THREE.Mesh[] = [];
+    [-4.5, 4.5].forEach((vx) => {
+      // Curb-side brass steam grate
+      const grateRim = new THREE.Mesh(this.getCylinder(0.75, 0.75, 0.15, 12), this.agedBrassMat);
+      grateRim.position.set(vx, 0.4, -4.8);
+      titanGroup.add(grateRim);
+
+      const ventSteam = new THREE.Mesh(this.getSphere(0.85, 8), this.steamPuffMat);
+      ventSteam.position.set(vx, 1.4, -4.8);
+      ventSteam.visible = false;
+      titanGroup.add(ventSteam);
+      cityVents.push(ventSteam);
+
+      // Ornate Victorian Street Lantern
+      const lampPost = new THREE.Mesh(this.getCylinder(0.12, 0.18, 4.2, 8), this.darkBronzeMat);
+      lampPost.position.set(vx * 0.8, 2.45, 4.2);
+      titanGroup.add(lampPost);
+
+      const lampLantern = new THREE.Mesh(this.getCylinder(0.35, 0.25, 0.8, 6), this.warmGlassAmberMat);
+      lampLantern.position.set(vx * 0.8, 4.7, 4.2);
+      titanGroup.add(lampLantern);
+      cityLanterns.push(lampLantern);
+    });
+
+    // 3. Colossal Articulated Legs, Armored Greaves & Hydraulic Pistons
+    const legPistons: THREE.Object3D[] = [];
+    [-2.2, 2.2].forEach((lx) => {
+      const legGroup = new THREE.Group();
+      legGroup.position.set(lx, 0.85, 0);
+      titanGroup.add(legGroup);
+
+      // Armored Sabatons (Foot)
+      const footBox = new THREE.Mesh(this.getBox(2.2, 0.9, 3.2), this.darkBronzeMat);
+      footBox.position.set(0, 0.45, 0.3);
+      legGroup.add(footBox);
+
+      const toePlate = new THREE.Mesh(this.getBox(2.0, 0.5, 1.2), this.antiqueGoldMat);
+      toePlate.position.set(0, 0.25, 1.6);
+      legGroup.add(toePlate);
+
+      // Segmented Shin Greave
+      const shinCore = new THREE.Mesh(this.getBox(1.9, 5.2, 2.2), this.midnightSteelMat);
+      shinCore.position.set(0, 3.4, 0);
+      legGroup.add(shinCore);
+
+      const shinArmorPlate = new THREE.Mesh(this.getBox(1.7, 4.4, 0.6), this.darkBronzeMat);
+      shinArmorPlate.position.set(0, 3.4, 1.15);
+      legGroup.add(shinArmorPlate);
+
+      const calfCowling = new THREE.Mesh(this.getBox(1.7, 3.8, 0.6), this.burnishedCopperMat);
+      calfCowling.position.set(0, 3.2, -1.15);
+      legGroup.add(calfCowling);
+
+      // Articulated Hydraulic Knee Pistons (outer and inner)
+      [-1.05, 1.05].forEach((px) => {
+        const pistonCylinder = new THREE.Mesh(this.getCylinder(0.18, 0.22, 2.4, 8), this.midnightSteelMat);
+        pistonCylinder.position.set(px, 4.2, 0);
+        legGroup.add(pistonCylinder);
+
+        const pistonRod = new THREE.Mesh(this.getCylinder(0.10, 0.10, 1.8, 8), this.agedBrassMat);
+        pistonRod.position.set(px, 5.2, 0);
+        legGroup.add(pistonRod);
+        legPistons.push(pistonRod);
+      });
+
+      // Massive Knee Spur Gear
+      const kneeGear = this.buildGearMesh(1.2, 10, 0.32, this.antiqueGoldMat);
+      kneeGear.position.set(0, 6.2, 0.95);
+      legGroup.add(kneeGear);
+
+      // Thigh Casing
+      const thighMesh = new THREE.Mesh(this.getBox(2.1, 3.4, 2.4), this.burnishedCopperMat);
+      thighMesh.position.set(0, 7.8, 0);
+      legGroup.add(thighMesh);
+    });
+
+    // 4. Pelvis & Articulated Gear Housing
+    const pelvisHousing = new THREE.Mesh(this.getBox(5.6, 1.8, 3.8), this.darkBronzeMat);
+    pelvisHousing.position.set(0, 9.8, 0);
+    titanGroup.add(pelvisHousing);
+
+    const waistRing = new THREE.Mesh(this.getTorus(2.8, 0.40, 8, 24), this.antiqueGoldMat);
+    waistRing.position.set(0, 9.8, 0);
     waistRing.rotation.x = Math.PI / 2;
     titanGroup.add(waistRing);
 
-    // 4. Heavy Bronze Armored Torso
+    // 5. Heavy Armored Torso & Recessed Clockwork Engine Cavity
     const torsoGroup = new THREE.Group();
-    torsoGroup.position.set(0, 7.5, 0);
+    torsoGroup.position.set(0, 10.7, 0);
     titanGroup.add(torsoGroup);
 
-    const chestArmor = new THREE.Mesh(this.getBox(5.2, 5.8, 3.6), this.darkBronzeMat);
-    chestArmor.position.set(0, 3.2, 0);
-    torsoGroup.add(chestArmor);
+    // Torso Frame & Interior Cavity
+    const torsoFrame = new THREE.Mesh(this.getBox(5.6, 6.2, 3.8), this.midnightSteelMat);
+    torsoFrame.position.set(0, 3.1, 0);
+    torsoGroup.add(torsoFrame);
 
-    const breastPlate = new THREE.Mesh(this.getBox(4.4, 4.6, 1.2), this.burnishedCopperMat);
-    breastPlate.position.set(0, 3.4, 1.5);
-    torsoGroup.add(breastPlate);
+    // Recessed Clockwork Engine Cavity (Dark ironstone chamber background)
+    const engineChamber = new THREE.Mesh(this.getBox(4.4, 4.8, 1.2), this.darkIronstoneMat);
+    engineChamber.position.set(0, 3.1, 1.4);
+    torsoGroup.add(engineChamber);
 
-    // Exposed Internal Gear Mechanism (3 intermeshed cogs)
+    // Multi-tier Gear Train (Sun gear, 2 planet gears, escapement wheel)
     const coreGears: THREE.Object3D[] = [];
-    const gear1 = this.buildGearMesh(1.1, 12, 0.18, this.antiqueGoldMat);
-    gear1.position.set(-0.8, 3.6, 2.15);
-    torsoGroup.add(gear1);
-    coreGears.push(gear1);
+    const sunGear = this.buildGearMesh(1.4, 14, 0.22, this.antiqueGoldMat);
+    sunGear.position.set(0.0, 3.4, 1.95);
+    torsoGroup.add(sunGear);
+    coreGears.push(sunGear);
 
-    const gear2 = this.buildGearMesh(0.85, 9, 0.18, this.burnishedCopperMat);
-    gear2.position.set(0.8, 3.4, 2.15);
-    torsoGroup.add(gear2);
-    coreGears.push(gear2);
+    const planetGear1 = this.buildGearMesh(0.95, 10, 0.20, this.burnishedCopperMat);
+    planetGear1.position.set(-1.15, 4.3, 1.95);
+    torsoGroup.add(planetGear1);
+    coreGears.push(planetGear1);
 
-    const gear3 = this.buildGearMesh(0.65, 8, 0.18, this.agedBrassMat);
-    gear3.position.set(0.0, 4.5, 2.15);
-    torsoGroup.add(gear3);
-    coreGears.push(gear3);
+    const planetGear2 = this.buildGearMesh(0.75, 8, 0.18, this.agedBrassMat);
+    planetGear2.position.set(1.15, 2.5, 1.95);
+    torsoGroup.add(planetGear2);
+    coreGears.push(planetGear2);
 
-    // Pulsing Temporal Reactor Core
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.8 });
+    // Pulsing Temporal Reactor Core with Concentric Orbit Rings
+    const reactorCoreGroup = new THREE.Group();
+    reactorCoreGroup.position.set(0, 2.2, 1.9);
+    torsoGroup.add(reactorCoreGroup);
+
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.85 });
     CurvedShaderManager.getInstance().applyCurvature(coreMat);
-    const coreMesh = new THREE.Mesh(this.getSphere(0.85, 12), coreMat);
-    coreMesh.position.set(0, 2.4, 2.0);
-    torsoGroup.add(coreMesh);
+    const coreMesh = new THREE.Mesh(this.getSphere(0.9, 14), coreMat);
+    reactorCoreGroup.add(coreMesh);
+
+    const orbitRing1 = new THREE.Mesh(this.getTorus(1.2, 0.08, 6, 16), this.antiqueGoldMat);
+    orbitRing1.rotation.x = Math.PI / 4;
+    reactorCoreGroup.add(orbitRing1);
+
+    const orbitRing2 = new THREE.Mesh(this.getTorus(1.4, 0.08, 6, 16), this.burnishedCopperMat);
+    orbitRing2.rotation.y = Math.PI / 4;
+    reactorCoreGroup.add(orbitRing2);
+
+    // 6. Unfolding Bi-Fold Pectoral Cuirass Armor Wings
+    const cuirassLeft = new THREE.Group();
+    cuirassLeft.position.set(-2.4, 3.2, 2.0);
+    torsoGroup.add(cuirassLeft);
+
+    const armorWingL = new THREE.Mesh(this.getBox(2.3, 4.6, 0.45), this.darkBronzeMat);
+    armorWingL.position.set(1.15, 0, 0);
+    cuirassLeft.add(armorWingL);
+
+    const armorCrestL = new THREE.Mesh(this.getBox(1.9, 3.8, 0.25), this.burnishedCopperMat);
+    armorCrestL.position.set(1.15, 0, 0.25);
+    cuirassLeft.add(armorCrestL);
+
+    const armorRivetL = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.35, 6), this.antiqueGoldMat);
+    armorRivetL.position.set(1.9, 1.6, 0.35);
+    armorRivetL.rotation.x = Math.PI / 2;
+    cuirassLeft.add(armorRivetL);
+
+    const cuirassRight = new THREE.Group();
+    cuirassRight.position.set(2.4, 3.2, 2.0);
+    torsoGroup.add(cuirassRight);
+
+    const armorWingR = new THREE.Mesh(this.getBox(2.3, 4.6, 0.45), this.darkBronzeMat);
+    armorWingR.position.set(-1.15, 0, 0);
+    cuirassRight.add(armorWingR);
+
+    const armorCrestR = new THREE.Mesh(this.getBox(1.9, 3.8, 0.25), this.burnishedCopperMat);
+    armorCrestR.position.set(-1.15, 0, 0.25);
+    cuirassRight.add(armorCrestR);
+
+    const armorRivetR = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.35, 6), this.antiqueGoldMat);
+    armorRivetR.position.set(-1.9, 1.6, 0.35);
+    armorRivetR.rotation.x = Math.PI / 2;
+    cuirassRight.add(armorRivetR);
 
     // Twin Exhaust Stacks at rear
     const exhaustPipes: THREE.Object3D[] = [];
     const steamPlumes: THREE.Mesh[] = [];
-    [-1.6, 1.6].forEach((px) => {
-      const pipe = new THREE.Mesh(this.getCylinder(0.4, 0.45, 3.2, 8), this.darkIronstoneMat);
-      pipe.position.set(px, 6.2, -1.6);
+    [-1.8, 1.8].forEach((px) => {
+      const pipe = new THREE.Mesh(this.getCylinder(0.42, 0.48, 3.6, 8), this.darkIronstoneMat);
+      pipe.position.set(px, 6.4, -1.8);
       torsoGroup.add(pipe);
       exhaustPipes.push(pipe);
 
-      const pipeRim = new THREE.Mesh(this.getCylinder(0.52, 0.42, 0.35, 8), this.antiqueGoldMat);
-      pipeRim.position.set(px, 7.8, -1.6);
+      const pipeRim = new THREE.Mesh(this.getCylinder(0.55, 0.44, 0.45, 8), this.antiqueGoldMat);
+      pipeRim.position.set(px, 8.2, -1.8);
       torsoGroup.add(pipeRim);
 
-      const steamPuff = new THREE.Mesh(this.getSphere(0.75, 8), this.steamPuffMat);
-      steamPuff.position.set(px, 8.6, -1.6);
+      const steamPuff = new THREE.Mesh(this.getSphere(0.9, 8), this.steamPuffMat);
+      steamPuff.position.set(px, 9.2, -1.8);
       steamPuff.visible = false;
       torsoGroup.add(steamPuff);
       steamPlumes.push(steamPuff);
     });
 
-    // 5. Articulated Head & Imperial Crown
+    // 7. Sculpted Articulated Head & Imperial Chronometer Crown
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 6.8, 0.4);
+    headGroup.position.set(0, 6.6, 0.6);
     torsoGroup.add(headGroup);
 
+    // Chiseled Bronze Jaw & Faceplate
     const headVisage = new THREE.Mesh(this.getBox(2.2, 2.4, 2.0), this.darkBronzeMat);
     headVisage.position.set(0, 1.2, 0);
     headGroup.add(headVisage);
 
-    const crown = new THREE.Mesh(this.getCylinder(1.35, 1.15, 0.8, 8), this.antiqueGoldMat);
-    crown.position.set(0, 2.6, 0);
-    headGroup.add(crown);
+    const cheekPlateL = new THREE.Mesh(this.getBox(0.4, 1.8, 1.4), this.burnishedCopperMat);
+    cheekPlateL.position.set(-1.15, 1.1, 0.1);
+    headGroup.add(cheekPlateL);
 
-    // Glowing Optical Sensor Eyes
+    const cheekPlateR = new THREE.Mesh(this.getBox(0.4, 1.8, 1.4), this.burnishedCopperMat);
+    cheekPlateR.position.set(1.15, 1.1, 0.1);
+    headGroup.add(cheekPlateR);
+
+    // Furrowed Aged Brass Brow
+    const brow = new THREE.Mesh(this.getBox(2.3, 0.4, 0.6), this.agedBrassMat);
+    brow.position.set(0, 2.0, 0.95);
+    headGroup.add(brow);
+
+    // Imperial Chronometer Diadem Crown
+    const crownBase = new THREE.Mesh(this.getCylinder(1.4, 1.2, 0.6, 12), this.antiqueGoldMat);
+    crownBase.position.set(0, 2.6, 0);
+    headGroup.add(crownBase);
+
+    const crownSpire = new THREE.Mesh(this.getCylinder(0.2, 0.5, 1.4, 8), this.antiqueGoldMat);
+    crownSpire.position.set(0, 3.6, 0);
+    headGroup.add(crownSpire);
+
+    // Glowing Optical Sensor Eyes with Brass Bezels
     const eyes: THREE.Mesh[] = [];
     [-0.55, 0.55].forEach((ex) => {
-      const eye = new THREE.Mesh(this.getSphere(0.22, 8), this.warmGlassAmberMat);
-      eye.position.set(ex, 1.35, 1.05);
+      const bezel = new THREE.Mesh(this.getCylinder(0.32, 0.32, 0.2, 8), this.agedBrassMat);
+      bezel.position.set(ex, 1.5, 1.02);
+      bezel.rotation.x = Math.PI / 2;
+      headGroup.add(bezel);
+
+      const eye = new THREE.Mesh(this.getSphere(0.24, 8), this.warmGlassAmberMat);
+      eye.position.set(ex, 1.5, 1.12);
       headGroup.add(eye);
       eyes.push(eye);
     });
 
-    // 6. Articulated Right Arm (Saluting / Power Posture)
+    // 8. Articulated Right Arm (Grand Imperial Salute)
     const armRightGroup = new THREE.Group();
-    armRightGroup.position.set(3.0, 5.2, 0);
+    armRightGroup.position.set(3.2, 5.4, 0);
     torsoGroup.add(armRightGroup);
 
-    const shoulderR = this.buildGearMesh(1.2, 12, 0.3, this.antiqueGoldMat);
+    // Lamellar Shoulder Pauldron
+    const pauldronR = new THREE.Mesh(this.getSphere(1.6, 8), this.burnishedCopperMat);
+    pauldronR.scale.set(1.2, 1.0, 1.4);
+    pauldronR.position.set(0.6, 0.4, 0);
+    armRightGroup.add(pauldronR);
+
+    const shoulderR = this.buildGearMesh(1.3, 12, 0.32, this.antiqueGoldMat);
     shoulderR.rotation.y = Math.PI / 2;
     armRightGroup.add(shoulderR);
 
-    const upperArmR = new THREE.Mesh(this.getBox(1.3, 3.8, 1.3), this.burnishedCopperMat);
-    upperArmR.position.set(0.6, -1.9, 0);
+    const upperArmR = new THREE.Mesh(this.getBox(1.5, 3.8, 1.5), this.burnishedCopperMat);
+    upperArmR.position.set(0.6, -2.0, 0);
     armRightGroup.add(upperArmR);
 
     const forearmRightGroup = new THREE.Group();
     forearmRightGroup.position.set(0.6, -3.8, 0);
     armRightGroup.add(forearmRightGroup);
 
-    const lowerArmR = new THREE.Mesh(this.getBox(1.1, 3.5, 1.1), this.midnightSteelMat);
-    lowerArmR.position.set(0, -1.75, 0);
+    const elbowGearR = this.buildGearMesh(0.95, 10, 0.28, this.antiqueGoldMat);
+    elbowGearR.rotation.y = Math.PI / 2;
+    forearmRightGroup.add(elbowGearR);
+
+    const lowerArmR = new THREE.Mesh(this.getBox(1.3, 3.6, 1.3), this.midnightSteelMat);
+    lowerArmR.position.set(0, -1.8, 0);
     forearmRightGroup.add(lowerArmR);
 
-    const gauntletR = new THREE.Mesh(this.getBox(1.4, 1.2, 1.4), this.antiqueGoldMat);
+    const gauntletR = new THREE.Mesh(this.getBox(1.6, 1.4, 1.6), this.antiqueGoldMat);
     gauntletR.position.set(0, -3.8, 0);
     forearmRightGroup.add(gauntletR);
 
-    // 7. Articulated Left Arm (Guarding Stance)
+    // 9. Articulated Left Arm (Commanding Guard Pose)
     const armLeftGroup = new THREE.Group();
-    armLeftGroup.position.set(-3.0, 5.2, 0);
+    armLeftGroup.position.set(-3.2, 5.4, 0);
     torsoGroup.add(armLeftGroup);
 
-    const shoulderL = this.buildGearMesh(1.2, 12, 0.3, this.antiqueGoldMat);
+    const pauldronL = new THREE.Mesh(this.getSphere(1.6, 8), this.burnishedCopperMat);
+    pauldronL.scale.set(1.2, 1.0, 1.4);
+    pauldronL.position.set(-0.6, 0.4, 0);
+    armLeftGroup.add(pauldronL);
+
+    const shoulderL = this.buildGearMesh(1.3, 12, 0.32, this.antiqueGoldMat);
     shoulderL.rotation.y = Math.PI / 2;
     armLeftGroup.add(shoulderL);
 
-    const upperArmL = new THREE.Mesh(this.getBox(1.3, 3.8, 1.3), this.burnishedCopperMat);
-    upperArmL.position.set(-0.6, -1.9, 0);
+    const upperArmL = new THREE.Mesh(this.getBox(1.5, 3.8, 1.5), this.burnishedCopperMat);
+    upperArmL.position.set(-0.6, -2.0, 0);
     armLeftGroup.add(upperArmL);
 
-    const lowerArmL = new THREE.Mesh(this.getBox(1.1, 3.5, 1.1), this.midnightSteelMat);
-    lowerArmL.position.set(-0.6, -5.5, 0);
+    const lowerArmL = new THREE.Mesh(this.getBox(1.3, 3.6, 1.3), this.midnightSteelMat);
+    lowerArmL.position.set(-0.6, -5.6, 0);
     armLeftGroup.add(lowerArmL);
+
+    const gauntletL = new THREE.Mesh(this.getBox(1.6, 1.4, 1.6), this.antiqueGoldMat);
+    gauntletL.position.set(-0.6, -7.6, 0);
+    armLeftGroup.add(gauntletL);
 
     // Register with Director
     const triggerZ = worldZ !== 0 ? worldZ : parent.position?.z || 0;
@@ -2353,10 +2576,15 @@ export class ChronoKingdomWorldBuilder {
       armLeft: armLeftGroup,
       armRight: armRightGroup,
       forearmRight: forearmRightGroup,
+      cuirassLeft,
+      cuirassRight,
+      legPistons,
       coreGears,
       coreLight: coreMesh,
       exhaustPipes,
       steamPlumes,
+      cityVents,
+      cityLanterns,
       timer: 0,
       side
     });
@@ -2376,32 +2604,90 @@ export class ChronoKingdomWorldBuilder {
   ): THREE.Group {
     const riftGroup = new THREE.Group();
     riftGroup.name = 'blockbuster_time_rift';
-    const rx = side * 14.5;
+    const rx = side * 12.5;
     const rz = -50.0;
     riftGroup.position.set(rx, 0, rz);
+    riftGroup.rotation.y = -side * 0.22;
 
-    // 1. Dual Gothic Bronze Pylons grounded down to Y = -5.65m
+    // 1. Dual Monumental Gothic Pylons grounded to Y = -5.65m
     const pylonDepth = 6.0;
-    [-3.8, 3.8].forEach((px) => {
-      const plinth = new THREE.Mesh(this.getBox(2.8, pylonDepth, 2.8), this.darkIronstoneMat);
+    [-4.0, 4.0].forEach((px) => {
+      const plinth = new THREE.Mesh(this.getBox(3.0, pylonDepth, 3.0), this.darkIronstoneMat);
       plinth.position.set(px, 0.35 - pylonDepth * 0.5, 0);
       riftGroup.add(plinth);
 
-      const pylon = new THREE.Mesh(this.getCylinder(1.1, 1.5, 22.0, 8), this.darkBronzeMat);
+      const pylon = new THREE.Mesh(this.getCylinder(1.2, 1.6, 22.0, 8), this.darkBronzeMat);
       pylon.position.set(px, 11.35, 0);
       riftGroup.add(pylon);
 
-      const capital = new THREE.Mesh(this.getBox(2.6, 1.4, 2.6), this.antiqueGoldMat);
+      const capital = new THREE.Mesh(this.getBox(2.8, 1.4, 2.8), this.antiqueGoldMat);
       capital.position.set(px, 22.5, 0);
       riftGroup.add(capital);
     });
 
-    // 2. Transverse Gantry Beam at Y = 22.0m
-    const gantry = new THREE.Mesh(this.getBox(10.5, 1.6, 2.4), this.burnishedCopperMat);
+    // 2. Heavy Transverse Arch Gantry at Y = 22.0m
+    const gantry = new THREE.Mesh(this.getBox(11.0, 1.8, 2.8), this.burnishedCopperMat);
     gantry.position.set(0, 22.2, 0);
     riftGroup.add(gantry);
 
-    // 3. Center Ring Suspension Assembly at Y = 16.0m
+    // 3. Deep 3D Dimensional Portal Chamber (Recessed along -Z from Z = 0 to Z = -12m)
+    const chamberGroup = new THREE.Group();
+    chamberGroup.position.set(0, 16.0, 0);
+    riftGroup.add(chamberGroup);
+
+    // Outer octagonal barrel shell
+    const chamberLength = 12.0;
+    const chamberShell = new THREE.Mesh(this.getCylinder(6.8, 6.8, chamberLength, 8), this.darkIronstoneMat);
+    chamberShell.position.set(0, 0, -chamberLength * 0.5);
+    chamberShell.rotation.x = Math.PI / 2;
+    chamberGroup.add(chamberShell);
+
+    // 4 Stepped Concentric Depth Rings inside the chamber creating authentic perspective depth
+    [-2.5, -5.5, -8.5, -11.0].forEach((dz, idx) => {
+      const ringRadius = 6.4 - idx * 0.45;
+      const ringMat = idx % 2 === 0 ? this.antiqueGoldMat : this.burnishedCopperMat;
+      const stepRing = new THREE.Mesh(this.getTorus(ringRadius, 0.28, 8, 24), ringMat);
+      stepRing.position.set(0, 0, dz);
+      chamberGroup.add(stepRing);
+    });
+
+    // 4. Alternate Mechanical Skyline Silhouette (visible through deep portal aperture)
+    const alternateSkyline = new THREE.Group();
+    alternateSkyline.position.set(0, 0, -11.5);
+    chamberGroup.add(alternateSkyline);
+
+    // Miniature Inverted Clockwork Metropolis Spire Diorama
+    const centerSpire = new THREE.Mesh(this.getBox(1.8, 6.5, 1.2), this.midnightSteelMat);
+    centerSpire.position.set(0, -0.5, 0);
+    alternateSkyline.add(centerSpire);
+
+    const spireClockFace = new THREE.Mesh(this.getCylinder(0.85, 0.85, 0.2, 12), this.warmGlassAmberMat);
+    spireClockFace.position.set(0, 1.2, 0.7);
+    spireClockFace.rotation.x = Math.PI / 2;
+    alternateSkyline.add(spireClockFace);
+
+    [-2.2, 2.2].forEach((sx) => {
+      const subTower = new THREE.Mesh(this.getBox(1.3, 5.0, 1.0), this.midnightSteelMat);
+      subTower.position.set(sx, -1.2, 0);
+      alternateSkyline.add(subTower);
+
+      const subClock = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.15, 8), this.warmGlassAmberMat);
+      subClock.position.set(sx, 0.2, 0.55);
+      subClock.rotation.x = Math.PI / 2;
+      alternateSkyline.add(subClock);
+    });
+
+    // Floating Celestial Gear Ring suspended inside the dimensional void
+    const voidGear = this.buildGearMesh(2.4, 12, 0.16, this.antiqueGoldMat);
+    voidGear.position.set(0, 2.5, 0.2);
+    alternateSkyline.add(voidGear);
+
+    // Deep Cosmic Nebula Void Backing
+    const voidBacking = new THREE.Mesh(this.getCircle(6.2, 16), this.midnightSteelMat);
+    voidBacking.position.set(0, 0, -0.4);
+    alternateSkyline.add(voidBacking);
+
+    // 5. Gimbal Rings & Center Aperture Assembly at Y = 16.0m
     const ringAssembly = new THREE.Group();
     ringAssembly.position.set(0, 16.0, 0);
     riftGroup.add(ringAssembly);
@@ -2418,43 +2704,62 @@ export class ChronoKingdomWorldBuilder {
     const innerRing = new THREE.Mesh(this.getTorus(3.5, 0.32, 8, 24), this.agedBrassMat);
     ringAssembly.add(innerRing);
 
-    // 4. 4 Articulated Locking Clamps
+    // 4 Articulated Escapement Locking Dog Clamps
     const lockingClamps: THREE.Object3D[] = [];
     [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].forEach((angle) => {
       const clampPivot = new THREE.Group();
       clampPivot.position.set(Math.cos(angle) * 6.5, Math.sin(angle) * 6.5, 0);
       clampPivot.rotation.z = angle;
 
-      const clampJaw = new THREE.Mesh(this.getBox(0.9, 1.8, 0.6), this.darkBronzeMat);
-      clampJaw.position.set(0, 0.9, 0);
+      const clampJaw = new THREE.Mesh(this.getBox(1.1, 1.9, 0.7), this.darkBronzeMat);
+      clampJaw.position.set(0, 0.95, 0);
       clampPivot.add(clampJaw);
 
-      const clampTooth = new THREE.Mesh(this.getBox(0.5, 0.5, 0.7), this.antiqueGoldMat);
-      clampTooth.position.set(0, 1.8, 0);
+      const clampTooth = new THREE.Mesh(this.getBox(0.6, 0.6, 0.8), this.antiqueGoldMat);
+      clampTooth.position.set(0, 1.9, 0);
       clampPivot.add(clampTooth);
 
       ringAssembly.add(clampPivot);
       lockingClamps.push(clampPivot);
     });
 
-    // 5. Swirling Temporal Vortex Disc
-    const vortexTex = ChronoKingdomTextureHelper.getVortexTexture();
-    const vortexMat = new THREE.MeshBasicMaterial({
-      map: vortexTex,
+    // 6. 3D Faceted Temporal Singularity Energy Core
+    const singularityGroup = new THREE.Group();
+    ringAssembly.add(singularityGroup);
+
+    // Faceted icosahedral temporal crystal
+    const singularityCrystal = new THREE.Mesh(this.getIcosahedron(1.35, 0), this.warmGlassAmberMat);
+    singularityGroup.add(singularityCrystal);
+
+    // Inner pulsating singularity heart
+    const singularityHeart = new THREE.Mesh(this.getSphere(0.85, 12), this.furnaceFireMat);
+    singularityGroup.add(singularityHeart);
+
+    // Counter-rotating concentric fine gimbal rings
+    const coreGimbal1 = new THREE.Mesh(this.getTorus(1.85, 0.12, 6, 20), this.antiqueGoldMat);
+    coreGimbal1.rotation.x = Math.PI / 3;
+    singularityGroup.add(coreGimbal1);
+
+    const coreGimbal2 = new THREE.Mesh(this.getTorus(2.35, 0.12, 6, 20), this.burnishedCopperMat);
+    coreGimbal2.rotation.y = Math.PI / 3;
+    singularityGroup.add(coreGimbal2);
+
+    // Volumetric stasis lens aura
+    const stasisLensMat = new THREE.MeshBasicMaterial({
+      color: 0x06b6d4,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.28,
       side: THREE.DoubleSide
     });
-    CurvedShaderManager.getInstance().applyCurvature(vortexMat);
-    const vortexMesh = new THREE.Mesh(this.getPlane(7.0, 7.0), vortexMat);
-    vortexMesh.scale.set(0.2, 0.2, 0.2);
-    ringAssembly.add(vortexMesh);
+    CurvedShaderManager.getInstance().applyCurvature(stasisLensMat);
+    const stasisLens = new THREE.Mesh(this.getSphere(3.2, 16), stasisLensMat);
+    singularityGroup.add(stasisLens);
 
-    // 6. 8 Radiating Dimensional Energy Rays
+    // 8 Radiating Dimensional Energy Rays (Tapered glowing prisms)
     const energyRays: THREE.Mesh[] = [];
     for (let r = 0; r < 8; r++) {
       const rAngle = (r * Math.PI) / 4;
-      const ray = new THREE.Mesh(this.getCylinder(0.08, 0.25, 6.0, 6), this.glowingCyanMat);
+      const ray = new THREE.Mesh(this.getCylinder(0.04, 0.32, 5.5, 6), this.warmGlassAmberMat);
       ray.position.set(Math.cos(rAngle) * 3.0, Math.sin(rAngle) * 3.0, 0);
       ray.rotation.z = rAngle - Math.PI / 2;
       ray.visible = false;
@@ -2462,7 +2767,7 @@ export class ChronoKingdomWorldBuilder {
       energyRays.push(ray);
     }
 
-    // 7. Orbiting Golden Particle Sparkles
+    // 12 Celestial Sparkles
     const sparklesGroup = new THREE.Group();
     for (let p = 0; p < 12; p++) {
       const pAngle = (p * Math.PI) / 6;
@@ -2483,7 +2788,10 @@ export class ChronoKingdomWorldBuilder {
       middleRing,
       innerRing,
       lockingClamps,
-      portalVortex: vortexMesh,
+      portalVortex: singularityGroup as any,
+      portalChamber: chamberGroup,
+      alternateSkyline,
+      energySingularity: singularityGroup,
       energyRays,
       sparkles: sparklesGroup as any,
       timer: 0,

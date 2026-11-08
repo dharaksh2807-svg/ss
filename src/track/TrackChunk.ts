@@ -609,11 +609,15 @@ export class TrackChunk {
   public updateTerrainTheme(theme: EnvironmentTheme | string): void {
     const themeId = typeof theme === 'string' ? theme : theme.id;
     const pair = TrackChunk.getTerrainMaterials(themeId);
+    const isInferno = themeId === 'INFERNO_EXPRESS';
+    const terrainY = isInferno ? -3.25 - 1.25 : -1.25;
     if (this.leftTerrainMesh) {
       this.leftTerrainMesh.material = pair.left;
+      this.leftTerrainMesh.position.y = terrainY;
     }
     if (this.rightTerrainMesh) {
       this.rightTerrainMesh.material = pair.right;
+      this.rightTerrainMesh.position.y = terrainY;
     }
   }
 
@@ -656,15 +660,18 @@ export class TrackChunk {
 
     const initialTerrainMats = TrackChunk.getTerrainMaterials(this.currentTheme.id);
 
+    const isInferno = this.currentTheme.id === 'INFERNO_EXPRESS';
+    const terrainY = isInferno ? -3.25 - terrainHeight * 0.5 : -terrainHeight * 0.5;
+
     this.leftTerrainMesh = new THREE.Mesh(TrackChunk.terrainGeo, initialTerrainMats.left);
     this.leftTerrainMesh.name = 'chunk_left_terrain';
-    this.leftTerrainMesh.position.set(-curbEdge - terrainWidth * 0.5, -terrainHeight * 0.5, -this.length * 0.5);
+    this.leftTerrainMesh.position.set(-curbEdge - terrainWidth * 0.5, terrainY, -this.length * 0.5);
     this.leftTerrainMesh.receiveShadow = true;
     this.group.add(this.leftTerrainMesh);
 
     this.rightTerrainMesh = new THREE.Mesh(TrackChunk.terrainGeo, initialTerrainMats.right);
     this.rightTerrainMesh.name = 'chunk_right_terrain';
-    this.rightTerrainMesh.position.set(curbEdge + terrainWidth * 0.5, -terrainHeight * 0.5, -this.length * 0.5);
+    this.rightTerrainMesh.position.set(curbEdge + terrainWidth * 0.5, terrainY, -this.length * 0.5);
     this.rightTerrainMesh.receiveShadow = true;
     this.group.add(this.rightTerrainMesh);
 

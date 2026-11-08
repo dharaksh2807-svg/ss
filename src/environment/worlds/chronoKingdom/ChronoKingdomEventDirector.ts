@@ -109,10 +109,15 @@ export interface ClockworkTitanActor {
   armLeft?: THREE.Object3D;
   armRight?: THREE.Object3D;
   forearmRight?: THREE.Object3D;
+  cuirassLeft?: THREE.Object3D;
+  cuirassRight?: THREE.Object3D;
+  legPistons?: THREE.Object3D[];
   coreGears: THREE.Object3D[];
   coreLight: THREE.Mesh;
   exhaustPipes?: THREE.Object3D[];
   steamPlumes?: THREE.Mesh[];
+  cityVents?: THREE.Mesh[];
+  cityLanterns?: THREE.Mesh[];
   timer: number;
   side: number;
 }
@@ -125,9 +130,12 @@ export interface GreatTimeRiftActor {
   middleRing: THREE.Object3D;
   innerRing: THREE.Object3D;
   lockingClamps: THREE.Object3D[];
-  portalVortex: THREE.Mesh;
+  portalVortex: THREE.Mesh | THREE.Object3D;
+  portalChamber?: THREE.Group;
+  alternateSkyline?: THREE.Group;
+  energySingularity?: THREE.Object3D;
   energyRays: THREE.Mesh[];
-  sparkles?: THREE.Points;
+  sparkles?: THREE.Points | THREE.Group;
   timer: number;
   side: number;
 }
@@ -811,48 +819,67 @@ export class ChronoKingdomEventDirector {
       }
 
       // Internal gear train velocity
-      let gearSpeed = 0.5;
-      if (titan.state === 'ANTICIPATION') gearSpeed = 1.4;
-      else if (titan.state === 'ACTIVATION') gearSpeed = 3.6;
-      else if (titan.state === 'CLIMAX') gearSpeed = 5.2;
-      else if (titan.state === 'AFTERMATH') gearSpeed = 1.0;
+      let gearSpeed = 0.4;
+      if (titan.state === 'ANTICIPATION') gearSpeed = 1.8;
+      else if (titan.state === 'ACTIVATION') gearSpeed = 3.8;
+      else if (titan.state === 'CLIMAX') gearSpeed = 5.8;
+      else if (titan.state === 'AFTERMATH') gearSpeed = 1.2;
 
       for (let g = 0; g < titan.coreGears.length; g++) {
         titan.coreGears[g].rotation.z += (g % 2 === 0 ? 1 : -1) * gearSpeed * motionScale * clampedDelta;
       }
 
+      // Unfolding Bi-Fold Pectoral Cuirass Armor
+      let targetCuirassAngle = 0.0;
+      if (titan.state === 'ANTICIPATION') {
+        targetCuirassAngle = 0.32 * motionScale;
+      } else if (titan.state === 'ACTIVATION') {
+        targetCuirassAngle = 0.82 * motionScale;
+      } else if (titan.state === 'CLIMAX') {
+        targetCuirassAngle = 0.95 * motionScale;
+      } else if (titan.state === 'AFTERMATH') {
+        targetCuirassAngle = 0.15 * motionScale;
+      }
+
+      if (titan.cuirassLeft) {
+        titan.cuirassLeft.rotation.y = THREE.MathUtils.lerp(titan.cuirassLeft.rotation.y, -targetCuirassAngle, clampedDelta * 4.5);
+      }
+      if (titan.cuirassRight) {
+        titan.cuirassRight.rotation.y = THREE.MathUtils.lerp(titan.cuirassRight.rotation.y, targetCuirassAngle, clampedDelta * 4.5);
+      }
+
       // Core luminescence & eye flaring
-      let targetCoreEmissive = 0.4;
+      let targetCoreEmissive = 0.35;
       let targetEyeScale = 0.0;
       if (titan.state === 'ANTICIPATION') {
-        targetCoreEmissive = 0.8 + 0.3 * Math.sin(titan.timer * 4.0);
-        targetEyeScale = 0.5;
+        targetCoreEmissive = 1.0 + 0.35 * Math.sin(titan.timer * 4.5);
+        targetEyeScale = 0.65;
       } else if (titan.state === 'ACTIVATION') {
-        targetCoreEmissive = 1.6 + 0.4 * Math.sin(titan.timer * 6.0);
-        targetEyeScale = 1.0;
+        targetCoreEmissive = 1.8 + 0.45 * Math.sin(titan.timer * 7.0);
+        targetEyeScale = 1.1;
       } else if (titan.state === 'CLIMAX') {
-        targetCoreEmissive = 2.4 + 0.5 * Math.sin(titan.timer * 8.0);
-        targetEyeScale = 1.25;
+        targetCoreEmissive = 2.6 + 0.6 * Math.sin(titan.timer * 9.0);
+        targetEyeScale = 1.35;
       } else if (titan.state === 'AFTERMATH') {
-        targetCoreEmissive = 0.6;
-        targetEyeScale = 0.3;
+        targetCoreEmissive = 0.7;
+        targetEyeScale = 0.4;
       }
 
       const coreMat = titan.coreLight.material as THREE.MeshBasicMaterial;
       if (coreMat) {
-        coreMat.opacity = Math.min(1.0, targetCoreEmissive * 0.5);
+        coreMat.opacity = Math.min(1.0, targetCoreEmissive * 0.45);
       }
       for (let e = 0; e < titan.eyes.length; e++) {
         titan.eyes[e].scale.set(targetEyeScale, targetEyeScale, targetEyeScale);
       }
 
       // Head articulation: rises from dormant bow, turns toward runner
-      let headPitch = 0.22; // resting head bowed down
+      let headPitch = 0.28; // resting head bowed down
       let headYaw = 0.0;
       if (titan.state === 'ACTIVATION' || titan.state === 'CLIMAX') {
         const runnerAngle = Math.atan2(0 - titan.group.position.x, playerZ - titan.triggerZ);
-        headYaw = runnerAngle * 0.55 * motionScale;
-        headPitch = -0.15; // looking up and at runner
+        headYaw = runnerAngle * 0.60 * motionScale;
+        headPitch = -0.18; // looking up and at runner
       } else if (titan.state === 'AFTERMATH') {
         headYaw = 0.0;
         headPitch = 0.05;
@@ -864,9 +891,9 @@ export class ChronoKingdomEventDirector {
       if (titan.armRight) {
         let armAngle = 0.0;
         if (titan.state === 'CLIMAX') {
-          armAngle = -0.75 * motionScale;
+          armAngle = -0.85 * motionScale;
         } else if (titan.state === 'ACTIVATION') {
-          armAngle = -0.32 * motionScale;
+          armAngle = -0.42 * motionScale;
         }
         titan.armRight.rotation.z = THREE.MathUtils.lerp(titan.armRight.rotation.z, armAngle, clampedDelta * 3.5);
       }
@@ -880,6 +907,29 @@ export class ChronoKingdomEventDirector {
           if (steamActive) {
             const pScale = 1.0 + 0.45 * Math.sin(titan.timer * 9.0 + s * 1.5);
             plume.scale.set(pScale, pScale * 1.6, pScale);
+          }
+        }
+      }
+
+      // Nearby City Responds: Street steam vents & resonant lantern flares
+      if (titan.cityVents) {
+        const citySteamActive = titan.state === 'ACTIVATION' || titan.state === 'CLIMAX';
+        for (let v = 0; v < titan.cityVents.length; v++) {
+          const cv = titan.cityVents[v];
+          cv.visible = citySteamActive;
+          if (citySteamActive) {
+            const vScale = 0.8 + 0.5 * Math.sin(titan.timer * 8.0 + v * 2.0);
+            cv.scale.set(vScale, vScale * 2.0, vScale);
+          }
+        }
+      }
+      if (titan.cityLanterns) {
+        const lanternActive = titan.state === 'ACTIVATION' || titan.state === 'CLIMAX';
+        for (let l = 0; l < titan.cityLanterns.length; l++) {
+          const cl = titan.cityLanterns[l];
+          const mat = cl.material as THREE.MeshStandardMaterial;
+          if (mat && mat.emissive) {
+            mat.emissiveIntensity = lanternActive ? 1.8 + 0.5 * Math.sin(titan.timer * 6.0) : 0.6;
           }
         }
       }
@@ -913,13 +963,13 @@ export class ChronoKingdomEventDirector {
 
       // Locking dog clamps: unlock and pivot outward
       let clampAngle = 0.0;
-      if (rift.state === 'ANTICIPATION') clampAngle = 0.28;
-      else if (rift.state === 'ACTIVATION' || rift.state === 'CLIMAX') clampAngle = 0.70;
+      if (rift.state === 'ANTICIPATION') clampAngle = 0.32;
+      else if (rift.state === 'ACTIVATION' || rift.state === 'CLIMAX') clampAngle = 0.78;
       for (let c = 0; c < rift.lockingClamps.length; c++) {
         rift.lockingClamps[c].rotation.z = (c % 2 === 0 ? 1 : -1) * clampAngle;
       }
 
-      // Vortex core and radiating energy rays
+      // Vortex core, 3D Singularity, and radiating energy rays
       let coreScale = 0.2;
       let energyRayScale = 0.0;
       if (rift.state === 'ANTICIPATION') {
@@ -936,6 +986,26 @@ export class ChronoKingdomEventDirector {
 
       rift.portalVortex.scale.set(coreScale, coreScale, 1.0);
       rift.portalVortex.rotation.z += rate * 2.6;
+
+      if (rift.energySingularity) {
+        rift.energySingularity.scale.set(coreScale * 0.8, coreScale * 0.8, coreScale * 0.8);
+        rift.energySingularity.rotation.y += rate * 1.5;
+        rift.energySingularity.rotation.x += rate * 1.1;
+      }
+
+      // Alternate mechanical skyline ambient motion inside deep chamber
+      if (rift.alternateSkyline) {
+        const skylineActive = rift.state === 'ACTIVATION' || rift.state === 'CLIMAX';
+        rift.alternateSkyline.visible = true;
+        rift.alternateSkyline.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const mat = child.material as THREE.MeshStandardMaterial;
+            if (mat && mat.emissive) {
+              mat.emissiveIntensity = skylineActive ? 1.4 + 0.4 * Math.sin(rift.timer * 5.0) : 0.3;
+            }
+          }
+        });
+      }
 
       for (let r = 0; r < rift.energyRays.length; r++) {
         const ray = rift.energyRays[r];

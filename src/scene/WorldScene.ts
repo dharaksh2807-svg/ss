@@ -2644,10 +2644,10 @@ export class WorldScene {
     if (this.jurassicSkyline) this.jurassicSkyline.visible = jurassicOpacity > 0.01;
     if (this.infernoSkyline) this.infernoSkyline.visible = infernoOpacity > 0.01;
 
-    // Clouds fade for tunnel, orbital space, underwater abyss & subterranean crypt transitions
+    // Clouds fade for tunnel, orbital space, underwater abyss, volcanic empire & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
-      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' || base.id === 'PHANTOM_LINE' ? 0 : 1,
-      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' ? 0 : 1,
+      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' || base.id === 'PHANTOM_LINE' || base.id === 'INFERNO_EXPRESS' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' || targetTheme.id === 'INFERNO_EXPRESS' ? 0 : 1,
       t
     );
     if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
@@ -2827,23 +2827,23 @@ export class WorldScene {
         isRain = false;
         break;
       case 'CHRONO_CELESTIAL_CLOCKWORK':
-        sunColorHex = 0xffe6a3;
-        sunIntensity = 1.45;
-        skyTopHex = 0x0c1e3d;
-        skyBottomHex = 0x7c3417;
-        fogColorHex = 0x241712;
-        fogDensity = 0.0022;
-        fillColorHex = 0x854d27;
+        sunColorHex = 0xffeed8;
+        sunIntensity = 1.85;
+        skyTopHex = 0x0a1324;
+        skyBottomHex = 0x221828;
+        fogColorHex = 0x16131f;
+        fogDensity = 0.0014;
+        fillColorHex = 0x8a4b28;
         fillIntensity = 0.85;
         isRain = false;
         break;
       case 'CHRONO_STEAM_RAIN':
-        sunColorHex = 0xeab308;
-        sunIntensity = 1.05;
-        skyTopHex = 0x081324;
-        skyBottomHex = 0x4a1f0e;
-        fogColorHex = 0x1a1210;
-        fogDensity = 0.0035;
+        sunColorHex = 0xe8d0b5;
+        sunIntensity = 1.35;
+        skyTopHex = 0x08101c;
+        skyBottomHex = 0x1c1622;
+        fogColorHex = 0x14111a;
+        fogDensity = 0.0028;
         fillColorHex = 0x6e3c1b;
         fillIntensity = 0.70;
         isRain = true;
@@ -2893,14 +2893,14 @@ export class WorldScene {
         isRain = false;
         break;
       case 'INFERNO_VOLCANIC_MAGMA':
-        sunColorHex = 0xff6622;
-        sunIntensity = 1.65;
-        skyTopHex = 0x0a0305;
-        skyBottomHex = 0x581111;
-        fogColorHex = 0x22080a;
-        fogDensity = 0.0022;
-        fillColorHex = 0x3d0b0b;
-        fillIntensity = 0.85;
+        sunColorHex = 0xff7a28;
+        sunIntensity = 1.95;
+        skyTopHex = 0x0c0306;
+        skyBottomHex = 0x4a0e08;
+        fogColorHex = 0x160506;
+        fogDensity = 0.0014;
+        fillColorHex = 0x6a1610;
+        fillIntensity = 1.05;
         isRain = false;
         break;
       case 'JURASSIC_PRIMORDIAL_DAWN':
@@ -3385,7 +3385,7 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'INFERNO_EXPRESS') {
       const delta = dt || 0.016;
-      InfernoExpressEventDirector.getInstance().update(delta, true);
+      InfernoExpressEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
 
       // Animate pulsing magma calderas and drifting ash plumes across volcanic skyline
       if (this.infernoSkyline && this.infernoSkyline.visible) {

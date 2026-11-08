@@ -37,26 +37,26 @@ export const INFERNO_EXPRESS_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x180608,    // Atmospheric volcanic twilight void
-    bottom: 0x881c10 // Intense fiery crimson & molten twilight horizon glow
+    top: 0x0c0306,    // Deep atmospheric obsidian twilight void (#0c0306)
+    bottom: 0x4a0e08 // Rich fiery volcanic crimson & molten twilight horizon glow (#4a0e08)
   },
   fog: {
-    color: 0x22070a,  // Atmospheric volcanic smoke & sulfur haze
-    density: 0.0016   // Atmospheric depth preserving crisp panoramic vistas of distant volcanoes
+    color: 0x160506,  // Atmospheric volcanic smoke & sulfur haze (#160506)
+    density: 0.0014   // Crisp panoramic depth preserving sharp vistas of distant volcanoes
   },
   sun: {
-    color: 0xff7722,  // Radiant molten volcanic glare
-    intensity: 1.85,
+    color: 0xff7a28,  // Radiant molten volcanic glare
+    intensity: 1.95,
     position: { x: -28, y: 64, z: 28 } // Forward illumination highlighting obsidian facets & viaducts
   },
   fill: {
-    color: 0x661814,  // Rich volcanic crimson fill light
+    color: 0x6a1610,  // Rich volcanic crimson fill light
     intensity: 1.05
   },
   hemi: {
-    sky: 0x2e1214,    // Smoky ember ash canopy bounce
+    sky: 0x24080a,    // Smoky ember ash canopy bounce
     ground: 0xf97316, // Vibrant molten lava ocean upward reflection
-    intensity: 1.55
+    intensity: 1.65
   },
   skyline: {
     color: 0x160507,  // Silhouette of jagged volcanoes and obsidian towers

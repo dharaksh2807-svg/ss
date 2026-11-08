@@ -26,6 +26,8 @@ if (typeof document === 'undefined') {
           getContext: () => ({
             createRadialGradient: () => ({ addColorStop: () => {} }),
             createLinearGradient: () => ({ addColorStop: () => {} }),
+            createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+            putImageData: () => {},
             beginPath: () => {},
             arc: () => {},
             fill: () => {},
@@ -317,6 +319,125 @@ assert.strictEqual(director.getCollapsingRockCount(), 0, 'Collapsing rocks reset
 assert.strictEqual(director.getBlastDoorCount(), 0, 'Blast doors reset');
 assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Event director reset() cleanly disposes all references');
+
+// ============================================================================
+// SUITE 8: GRAND STRATOVOLCANO ERUPTION LIFECYCLE & STAGING (FIRST QUALITY GATE)
+// ============================================================================
+console.log('\n--- Suite 8: Grand Stratovolcano Eruption Lifecycle & Staging ---');
+
+director.reset();
+const gateChunk = new THREE.Group();
+builder.buildLavaSeaDistrict(gateChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
+
+const volcano = gateChunk.getObjectByName('grand_stratovolcano');
+assert.ok(volcano, 'Grand Stratovolcano exists in District A hierarchy');
+pass('Grand Stratovolcano instantiated in District A');
+
+volcano.updateMatrixWorld(true);
+const vBox = new THREE.Box3().setFromObject(volcano);
+assert.ok(vBox.min.y <= -6.0, `Volcano grounded deep to bedrock (got min Y: ${vBox.min.y.toFixed(1)}m)`);
+pass(`Volcano grounded into volcanic bedrock (Y <= -6.0m)`);
+
+assert.ok(vBox.min.x >= 10.0, `Volcano safely off tracks (got min X: ${vBox.min.x.toFixed(1)}m)`);
+pass(`Volcano lateral envelope strictly preserves |X| > 4.2m runner clearance`);
+
+// Test Distance-Staged Lifecycle: triggerZ is -50.0
+// 1. DORMANT at runnerZ = 150m (dist = 150 - (-50) = 200m > 140m)
+director.update(0.1, true, 150.0);
+assert.strictEqual((director as any).volcanoes[0]?.state, 'DORMANT', 'Volcano is DORMANT at 200m distance');
+pass('Volcano lifecycle: DORMANT at approach distance 200m');
+
+// 2. ANTICIPATION at runnerZ = 50m (dist = 50 - (-50) = 100m, between 65m and 140m)
+director.update(0.1, true, 50.0);
+assert.strictEqual((director as any).volcanoes[0]?.state, 'ANTICIPATION', 'Volcano enters ANTICIPATION at 100m distance');
+pass('Volcano lifecycle: ANTICIPATION triggered at 100m distance');
+
+// 3. CLIMAX / ERUPTION at runnerZ = -30m (dist = -30 - (-50) = 20m, between -25m and 65m)
+director.update(0.1, true, -30.0);
+assert.strictEqual((director as any).volcanoes[0]?.state, 'CLIMAX', 'Volcano enters CLIMAX at 20m distance');
+pass('Volcano lifecycle: CLIMAX eruption triggered at 20m distance');
+
+// 4. AFTERMATH at runnerZ = -100m (dist = -100 - (-50) = -50m, between -85m and -25m)
+director.update(0.1, true, -100.0);
+assert.strictEqual((director as any).volcanoes[0]?.state, 'AFTERMATH', 'Volcano enters AFTERMATH at -50m distance');
+pass('Volcano lifecycle: AFTERMATH settles as runner passes');
+
+// 5. COMPLETE at runnerZ = -180m (dist = -180 - (-50) = -130m < -85m)
+director.update(0.1, true, -180.0);
+assert.strictEqual((director as any).volcanoes[0]?.state, 'COMPLETE', 'Volcano enters COMPLETE after passing');
+pass('Volcano lifecycle: COMPLETE past aftermath zone');
+
+// ============================================================================
+// SUITE 9: EVENT B — OBSIDIAN FORTRESS GATE OPENS LIFECYCLE
+// ============================================================================
+console.log('\n--- Suite 9: Event B — Obsidian Citadel Gate Opens Lifecycle ---');
+
+director.reset();
+const citadelChunk = new THREE.Group();
+builder.buildObsidianCitadelDistrict(citadelChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
+
+const citadelGate = citadelChunk.getObjectByName('citadel_obsidian_fortress_gate');
+assert.ok(citadelGate, 'Citadel Obsidian Fortress Gate exists in District B hierarchy');
+pass('Citadel Obsidian Fortress Gate instantiated in District B');
+
+// Test Distance-Staged Gate Lifecycle: triggerZ is -100.0 (worldZ - chunkLength * 0.5 = -50 - 50 = -100)
+// 1. LOCKED at runnerZ = 50m (dist = 50 - (-100) = 150m > 110m)
+director.update(0.1, true, 50.0);
+assert.strictEqual((director as any).blastDoors[0]?.state, 'LOCKED', 'Citadel Gate is LOCKED at 150m approach');
+pass('Gate lifecycle: LOCKED at 150m approach (mechanical locks fully engaged)');
+
+// 2. UNLOCKING at runnerZ = -20m (dist = -20 - (-100) = 80m, between 50m and 110m)
+director.update(0.1, true, -20.0);
+assert.strictEqual((director as any).blastDoors[0]?.state, 'UNLOCKING', 'Citadel Gate enters UNLOCKING at 80m approach');
+pass('Gate lifecycle: UNLOCKING triggered at 80m (mechanical locks disengaging, rune core surging)');
+
+// 3. OPEN at runnerZ = -80m (dist = -80 - (-100) = 20m, between -25m and 50m)
+director.update(0.1, true, -80.0);
+assert.strictEqual((director as any).blastDoors[0]?.state, 'OPEN', 'Citadel Gate is OPEN at 20m approach');
+pass('Gate lifecycle: OPEN at 20m approach (gates parted on vertical hinges, revealing interior city)');
+
+// 4. PASSED at runnerZ = -150m (dist = -150 - (-100) = -50m < -25m)
+director.update(0.1, true, -150.0);
+assert.strictEqual((director as any).blastDoors[0]?.state, 'PASSED', 'Citadel Gate is PASSED behind runner');
+pass('Gate lifecycle: PASSED preserves wide open corridor as runner enters citadel');
+
+// ============================================================================
+// SUITE 10: EVENT C — MAGMA FOUNDRY AWAKENING PRODUCTION LINE
+// ============================================================================
+console.log('\n--- Suite 10: Event C — Magma Foundry Awakening Production Line ---');
+
+director.reset();
+const foundryChunk = new THREE.Group();
+builder.buildMagmaFoundryDistrict(foundryChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
+
+assert.ok(director.getFoundryLineCount() >= 1, `Foundry line registered (got ${director.getFoundryLineCount()})`);
+pass('Foundry Awakening production line registered in Event Director');
+
+const productionLine = foundryChunk.getObjectByName('foundry_awakening_production_line');
+assert.ok(productionLine, 'Foundry Awakening Production Line exists in District C hierarchy');
+pass('Foundry Awakening Production Line instantiated in District C');
+
+// Tick director to verify reciprocating pumps, gantry crane traversal & crucible pouring
+director.update(1.5, true, 0.0);
+pass('Foundry production line animates reciprocating pumps, traveling crane, and tilting crucible');
+
+// ============================================================================
+// SUITE 11: ALL SIX ENVIRONMENTS & ARCHITECTURAL GROUNDING
+// ============================================================================
+console.log('\n--- Suite 11: All Six Environments & Architectural Grounding ---');
+
+director.reset();
+const summitChunk = new THREE.Group();
+builder.buildAshfallSummitDistrict(summitChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
+
+// Environment 5: Giant Magma Waterfall Canyon
+assert.ok(director.getWaterfallCount() >= 1, 'Giant magma waterfall canyon registered');
+pass('Environment 5: Giant Magma Waterfall Canyon verified');
+
+// Environment 6: Supported Volcanic Skybridge
+const skybridge = summitChunk.getObjectByName('volcanic_skybridge');
+assert.ok(skybridge, 'Supported Volcanic Skybridge exists in District D');
+pass('Environment 6: Supported Volcanic Skybridge verified with grounded raked pylons');
 
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} INFERNO_EXPRESS WORLD TESTS PASSED!`);

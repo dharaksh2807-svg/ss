@@ -37,26 +37,26 @@ export const CHRONO_KINGDOM_THEME: EnvironmentTheme = {
     'JURASSIC_RUSH'
   ],
   sky: {
-    top: 0x0f172a,    // Deep celestial twilight midnight sapphire (#0f172a)
-    bottom: 0x542337  // Sophisticated Victorian twilight burgundy-amber horizon (#542337)
+    top: 0x0a1324,    // Deep celestial twilight midnight sapphire (#0a1324)
+    bottom: 0x221828  // Victorian twilight indigo/bronze-navy horizon (#221828)
   },
   fog: {
-    color: 0x24151e,  // Atmospheric twilight bronze-burgundy haze (#24151e)
+    color: 0x16131f,  // Atmospheric bronze-slate mist (#16131f)
     density: 0.0014   // Crystal clarity for monumental clock towers and mechanisms
   },
   sun: {
-    color: 0xffedd5,  // Radiant golden steam era sunlight
-    intensity: 1.80,
+    color: 0xffeed8,  // Radiant warm champagne amber sunlight
+    intensity: 1.85,
     position: { x: -26, y: 60, z: 24 } // Positioned above and behind player to light all facades and gears down-track
   },
   fill: {
-    color: 0x9a4f21,  // Rich antique brass & burnished copper canyon fill
+    color: 0x8a4b28,  // Rich antique brass & burnished copper canyon fill
     intensity: 0.85
   },
   hemi: {
-    sky: 0x334155,    // Cool midnight steel celestial ambient reflection
-    ground: 0xae623b, // Radiant burnished copper & warm amber clockwork floor bounce
-    intensity: 1.50
+    sky: 0x2b3952,    // Cool midnight steel celestial ambient reflection
+    ground: 0x9a5633, // Radiant burnished copper & warm amber clockwork floor bounce
+    intensity: 1.45
   },
   skyline: {
     color: 0x161c2a,  // Chiseled silhouette of colossal clock towers and spires (#161c2a)

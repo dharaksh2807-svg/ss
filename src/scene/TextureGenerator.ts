@@ -6114,94 +6114,111 @@ export class TextureGenerator {
    * Scorched Volcanic Basalt & Magma Fissure Texture (Convective Boiling Molten Lava Ocean)
    */
   public static getVolcanicBasaltTexture(): THREE.Texture {
-    return this.getOrCreate('terrain_volcanic_basalt_convective_v4', () => {
+    return this.getOrCreate('terrain_volcanic_basalt_convective_v5_voronoi', () => {
       const size = 512;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx || typeof ctx.createImageData !== 'function') {
+        return new THREE.CanvasTexture(canvas);
+      }
 
-      // 1. Incandescent Molten Magma Gradient Base
-      const lavaGrad = ctx.createLinearGradient(0, 0, size, size);
-      lavaGrad.addColorStop(0.0, '#ffffff');  // White-hot incandescent core
-      lavaGrad.addColorStop(0.15, '#fef08a'); // Brilliant molten gold
-      lavaGrad.addColorStop(0.35, '#f97316'); // Radiant fiery orange
-      lavaGrad.addColorStop(0.65, '#ea580c'); // Deep churning lava
-      lavaGrad.addColorStop(0.85, '#b91c1c'); // Searing crimson magma
-      lavaGrad.addColorStop(1.0, '#5c1111');  // Deep volcanic crust
-      ctx.fillStyle = lavaGrad;
-      ctx.fillRect(0, 0, size, size);
+      // 1. Organic Voronoi Convection Cells for Real Molten Magma Ocean
+      // 22 pseudo-random seed points wrapped toroidally for 100% seamless tiling
+      const rng = (seed: number) => () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+      const rand = rng(1337);
+      const numPoints = 22;
+      const points: { x: number; y: number }[] = [];
+      for (let i = 0; i < numPoints; i++) {
+        points.push({
+          x: rand() * size,
+          y: rand() * size
+        });
+      }
 
-      // 2. Polygonal Cooling Basalt Crust Plates
-      ctx.fillStyle = '#1c1619';
-      const plates = [
-        [24, 24, 105, 80],
-        [155, 18, 125, 90],
-        [310, 28, 95, 75],
-        [425, 15, 75, 95],
-        [30, 135, 125, 105],
-        [190, 130, 120, 100],
-        [340, 135, 140, 90],
-        [18, 275, 95, 100],
-        [135, 265, 135, 115],
-        [295, 260, 115, 105],
-        [430, 255, 70, 120],
-        [25, 405, 120, 85],
-        [175, 410, 110, 80],
-        [310, 395, 115, 95],
-        [445, 405, 55, 85]
-      ];
+      const imgData = ctx.createImageData(size, size);
+      const data = imgData.data;
 
-      plates.forEach(([px, py, pw, ph], idx) => {
-        ctx.beginPath();
-        ctx.roundRect(px, py, pw, ph, 14);
-        ctx.fill();
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          let d1 = 9999999;
+          let d2 = 9999999;
 
-        // Basalt crust shading & cooling rims
-        ctx.strokeStyle = '#382b30';
-        ctx.lineWidth = 3.2;
-        ctx.stroke();
+          for (let i = 0; i < numPoints; i++) {
+            let dx = Math.abs(x - points[i].x);
+            if (dx > size * 0.5) dx = size - dx;
+            let dy = Math.abs(y - points[i].y);
+            if (dy > size * 0.5) dy = size - dy;
 
-        // Stress fractures glowing through cooling crust
-        ctx.strokeStyle = idx % 2 === 0 ? '#f97316' : '#ea580c';
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.moveTo(px + pw * 0.22, py + ph * 0.18);
-        ctx.lineTo(px + pw * 0.52, py + ph * 0.52);
-        ctx.lineTo(px + pw * 0.82, py + ph * 0.82);
-        ctx.stroke();
-      });
+            const distSq = dx * dx + dy * dy;
+            if (distSq < d1) {
+              d2 = d1;
+              d1 = distSq;
+            } else if (distSq < d2) {
+              d2 = distSq;
+            }
+          }
 
-      // 3. Blazing Convective Molten Fissures between plates
-      ctx.strokeStyle = '#fef08a';
-      ctx.lineWidth = 2.4;
-      ctx.shadowColor = '#f97316';
-      ctx.shadowBlur = 12;
+          // Distance to the cell boundary fissure
+          const delta = Math.sqrt(d2) - Math.sqrt(d1);
+          const idx = (y * size + x) * 4;
 
-      const fissures = [
-        [[0, 118], [140, 122], [180, 128], [320, 118], [512, 122]],
-        [[0, 252], [130, 248], [175, 256], [300, 248], [425, 252], [512, 248]],
-        [[0, 392], [150, 398], [285, 388], [430, 398], [512, 388]],
-        [[145, 0], [140, 122], [130, 248], [150, 398], [145, 512]],
-        [[295, 0], [320, 118], [300, 248], [285, 388], [305, 512]],
-        [[425, 0], [420, 118], [425, 252], [430, 398], [435, 512]]
-      ];
-
-      fissures.forEach((pts) => {
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length; i++) {
-          ctx.lineTo(pts[i][0], pts[i][1]);
+          if (delta < 2.2) {
+            // White-hot incandescent thermal core fissure
+            data[idx] = 255;
+            data[idx + 1] = 255;
+            data[idx + 2] = 255;
+            data[idx + 3] = 255;
+          } else if (delta < 5.5) {
+            // Brilliant molten gold
+            const t = (delta - 2.2) / 3.3;
+            data[idx] = 255;
+            data[idx + 1] = Math.round(255 * (1 - t) + 220 * t);
+            data[idx + 2] = Math.round(255 * (1 - t) + 80 * t);
+            data[idx + 3] = 255;
+          } else if (delta < 11.0) {
+            // Radiant fiery orange magma
+            const t = (delta - 5.5) / 5.5;
+            data[idx] = Math.round(255 * (1 - t) + 245 * t);
+            data[idx + 1] = Math.round(220 * (1 - t) + 95 * t);
+            data[idx + 2] = Math.round(80 * (1 - t) + 18 * t);
+            data[idx + 3] = 255;
+          } else if (delta < 18.0) {
+            // Deep churning crimson magma
+            const t = (delta - 11.0) / 7.0;
+            data[idx] = Math.round(245 * (1 - t) + 175 * t);
+            data[idx + 1] = Math.round(95 * (1 - t) + 25 * t);
+            data[idx + 2] = Math.round(18 * (1 - t) + 20 * t);
+            data[idx + 3] = 255;
+          } else if (delta < 26.0) {
+            // Cooling basalt crust perimeter
+            const t = (delta - 18.0) / 8.0;
+            data[idx] = Math.round(175 * (1 - t) + 40 * t);
+            data[idx + 1] = Math.round(25 * (1 - t) + 22 * t);
+            data[idx + 2] = Math.round(20 * (1 - t) + 26 * t);
+            data[idx + 3] = 255;
+          } else {
+            // Cooled porous basalt rock plate
+            const cellNoise = ((x ^ y) & 7) * 2;
+            data[idx] = 22 + cellNoise;
+            data[idx + 1] = 16 + cellNoise;
+            data[idx + 2] = 18 + cellNoise;
+            data[idx + 3] = 255;
+          }
         }
-        ctx.stroke();
-      });
+      }
 
-      ctx.shadowBlur = 0;
+      ctx.putImageData(imgData, 0, 0);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(6, 12);
+      // 72.7m wide by 100m long -> 2.5 repeats along X (29m/cell), 3.5 repeats along Z (28.5m/cell)
+      tex.repeat.set(2.5, 3.5);
       return tex;
     });
   }
