@@ -383,7 +383,7 @@ EventBus.getInstance().on('ENVIRONMENT_CHANGED', (newEnvId: string) => {
 
 // Simulate running through multiple chunk recycles to trigger a transition
 const mockPlayer = new Player();
-for (let step = 0; step < 15; step++) {
+for (let step = 0; step < 20; step++) {
   mockPlayer.position.z -= 80;
   mockPlayer.distanceTraveled += 80;
   trackMgr.update(mockPlayer, 0.1, step * 0.1);

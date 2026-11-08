@@ -276,10 +276,10 @@ export class VipSatireWorldBuilder {
         : 0);
 
     let districtIndex: number;
-    if (seed >= 0 && seed < 5) {
+    if (seed >= 0 && seed < 6) {
       districtIndex = seed;
     } else {
-      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 5;
+      districtIndex = Math.floor(Math.abs(effectiveZ) / 400) % 6;
     }
 
     const isTestSeed = seed === 12345;
@@ -298,8 +298,11 @@ export class VipSatireWorldBuilder {
         this.buildBreakingNewsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
       case 4:
-      default:
         this.buildParliamentMayhemDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        break;
+      case 5:
+      default:
+        this.buildMasterstrokeMegacityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
         break;
     }
 
@@ -823,8 +826,8 @@ export class VipSatireWorldBuilder {
       });
 
       // 2. Ground-Floor Arcaded Street Veranda with Scalloped Arches & Brass Lanterns
-      const columnSpacing = 4.0;
-      const colCount = Math.floor(bWidth / columnSpacing);
+      const columnSpacing = 5.2;
+      const colCount = Math.min(3, Math.floor(bWidth / columnSpacing));
       const startX = -((colCount - 1) * columnSpacing) * 0.5;
 
       for (let c = 0; c < colCount; c++) {
@@ -838,22 +841,20 @@ export class VipSatireWorldBuilder {
         const cap = new THREE.Mesh(this.getBox(0.65, 0.35, 0.65), this.sandstoneMat);
         cap.position.set(colX, 4.3, bDepth * 0.5 + 1.4);
         bGroup.add(cap);
-
-        // Scalloped Arch Spans between pillars
-        if (c < colCount - 1) {
-          const archSpan = new THREE.Mesh(this.getBox(columnSpacing - 0.2, 0.45, 0.35), this.sandstoneMat);
-          archSpan.position.set(colX + columnSpacing * 0.5, 4.3, bDepth * 0.5 + 1.4);
-          bGroup.add(archSpan);
-        }
-
-        // Hanging Brass Lantern
-        const lanternPole = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.6, 4), this.goldMetalMat);
-        lanternPole.position.set(colX, 3.8, bDepth * 0.5 + 0.8);
-        bGroup.add(lanternPole);
-        const lanternGlow = new THREE.Mesh(this.getCylinder(0.12, 0.18, 0.32, 6), this.windowGlassLitMat);
-        lanternGlow.position.set(colX, 3.4, bDepth * 0.5 + 0.8);
-        bGroup.add(lanternGlow);
       }
+
+      // Continuous Scalloped Arch Lintel across veranda
+      const archSpan = new THREE.Mesh(this.getBox(bWidth - 0.8, 0.45, 0.35), this.sandstoneMat);
+      archSpan.position.set(0, 4.3, bDepth * 0.5 + 1.4);
+      bGroup.add(archSpan);
+
+      // Central Hanging Brass Lantern with warm glowing light
+      const lanternPole = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.6, 4), this.goldMetalMat);
+      lanternPole.position.set(0, 3.8, bDepth * 0.5 + 0.8);
+      bGroup.add(lanternPole);
+      const lanternGlow = new THREE.Mesh(this.getCylinder(0.12, 0.18, 0.32, 6), this.windowGlassLitMat);
+      lanternGlow.position.set(0, 3.4, bDepth * 0.5 + 0.8);
+      bGroup.add(lanternGlow);
 
       // Continuous Carved Stone Chhajja Sunshade Shelf over Arcade
       const chhajja = new THREE.Mesh(this.getBox(bWidth + 0.8, 0.15, 1.6), this.sandstoneMat);
@@ -862,7 +863,7 @@ export class VipSatireWorldBuilder {
       bGroup.add(chhajja);
 
       // Recessed Inner Shops inside Veranda
-      const shopCount = Math.floor(bWidth / 5.0);
+      const shopCount = Math.min(2, Math.floor(bWidth / 7.0));
       const shopSpacing = bWidth / (shopCount + 1);
       const awningMats = [this.awningStripeOrangeMat, this.awningStripeMaroonMat, this.awningStripeGreenMat];
 
@@ -887,43 +888,41 @@ export class VipSatireWorldBuilder {
         bGroup.add(awning);
       }
 
-      // 3. Cantilevered Jharokha Balconies on Upper Floors
-      for (let s = 1; s < bDef.stories; s++) {
-        const floorY = s * storyH;
-        const jharokhaCount = Math.floor(bWidth / 5.5);
-        const jSpacing = bWidth / (jharokhaCount + 1);
+      // 3. Cantilevered Jharokha Balconies on Upper Floors (2 distinct showcase Jharokhas per building)
+      const jharokhaConfigs = [
+        { floor: 1, x: -bWidth * 0.25 },
+        { floor: bDef.stories > 2 ? 2 : 1, x: bWidth * 0.25 }
+      ];
 
-        for (let j = 0; j < jharokhaCount; j++) {
-          const jX = -bWidth * 0.5 + (j + 1) * jSpacing;
+      jharokhaConfigs.forEach((jc) => {
+        const floorY = jc.floor * storyH;
+        const jX = jc.x;
 
-          // Jharokha Base Platform
-          const jBase = new THREE.Mesh(this.getBox(2.0, 0.35, 1.2), this.sandstoneMat);
-          jBase.position.set(jX, floorY + 0.6, bDepth * 0.5 + 0.6);
-          bGroup.add(jBase);
+        // Jharokha Base Platform
+        const jBase = new THREE.Mesh(this.getBox(2.2, 0.35, 1.2), this.sandstoneMat);
+        jBase.position.set(jX, floorY + 0.6, bDepth * 0.5 + 0.6);
+        bGroup.add(jBase);
 
-          // Support Corbel Brackets
-          [-0.7, 0.7].forEach((bx) => {
-            const bracket = new THREE.Mesh(this.getBox(0.22, 0.60, 0.7), this.sandstoneMat);
-            bracket.position.set(jX + bx, floorY + 0.2, bDepth * 0.5 + 0.35);
-            bGroup.add(bracket);
-          });
+        // Support Corbel Bracket
+        const bracket = new THREE.Mesh(this.getBox(1.8, 0.45, 0.7), this.sandstoneMat);
+        bracket.position.set(jX, floorY + 0.2, bDepth * 0.5 + 0.35);
+        bGroup.add(bracket);
 
-          // Pierced Jali Balustrade Railing
-          const railing = new THREE.Mesh(this.getBox(2.0, 0.85, 0.12), this.jaliStoneMat);
-          railing.position.set(jX, floorY + 1.15, bDepth * 0.5 + 1.15);
-          bGroup.add(railing);
+        // Pierced Jali Balustrade Railing
+        const railing = new THREE.Mesh(this.getBox(2.2, 0.85, 0.12), this.jaliStoneMat);
+        railing.position.set(jX, floorY + 1.15, bDepth * 0.5 + 1.15);
+        bGroup.add(railing);
 
-          // Arched Sun Canopy over Balcony
-          const canopy = new THREE.Mesh(this.getCylinder(0.15, 1.1, 0.38, 6), this.chhatriDomeMat);
-          canopy.position.set(jX, floorY + 2.7, bDepth * 0.5 + 0.6);
-          bGroup.add(canopy);
+        // Arched Sun Canopy over Balcony
+        const canopy = new THREE.Mesh(this.getCylinder(0.15, 1.2, 0.38, 6), this.chhatriDomeMat);
+        canopy.position.set(jX, floorY + 2.7, bDepth * 0.5 + 0.6);
+        bGroup.add(canopy);
 
-          // Glowing Arched Window behind Jharokha
-          const win = new THREE.Mesh(this.getBox(1.3, 1.7, 0.05), this.windowGlassLitMat);
-          win.position.set(jX, floorY + 1.8, bDepth * 0.5 + 0.05);
-          bGroup.add(win);
-        }
-      }
+        // Glowing Arched Window behind Jharokha
+        const win = new THREE.Mesh(this.getBox(1.4, 1.7, 0.05), this.windowGlassLitMat);
+        win.position.set(jX, floorY + 1.8, bDepth * 0.5 + 0.05);
+        bGroup.add(win);
+      });
 
       // 4. Rooftop Crowns: Rajasthani Chhatris or Kangura Battlements or Antennas
       if (bDef.roofType === 'CHHATRI') {
@@ -1610,6 +1609,242 @@ export class VipSatireWorldBuilder {
     if (detail !== 'MINIMAL' || isTestSeed) {
       this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director);
     }
+
+    // 8. EVENT C: THE PHOTOGRAPHY CHAOS (East Promenade at X = +14.8m, Z = -0.22 * chunkLength)
+    if (detail !== 'MINIMAL' || isTestSeed) {
+      this.buildPhotographyChaosStage(group, 14.8, 0.3, -chunkLength * 0.22, director);
+    }
+
+    // 9. AUTHENTIC INDIAN CROWD CONTROL POLICE BARRICADES WITH MARIGOLD GARLANDS
+    this.buildCrowdBarricades(group, roadbedWidth, chunkLength, detail);
+  }
+
+  /**
+   * Constructs authentic yellow and saffron crowd control police barricades with marigold garlands.
+   * Positioned along sidewalk curbs to create genuine Indian political rally atmosphere.
+   */
+  public buildCrowdBarricades(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL'
+  ): void {
+    if (detail === 'MINIMAL') return;
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+    const barX = curbEdge + 0.9;
+    const step = 12;
+
+    [-1, 1].forEach((side) => {
+      for (let z = 6; z < chunkLength - 6; z += step) {
+        const barGroup = new THREE.Group();
+        barGroup.position.set(side * barX, 0.3, -z);
+
+        // Subsurface anchor plinth
+        const plinth = new THREE.Mesh(this.getBox(0.4, 3.0, 3.8), this.sandstoneMat);
+        plinth.position.set(0, -1.5, 0);
+        barGroup.add(plinth);
+
+        // Steel frame legs
+        [-1.6, 1.6].forEach((lz) => {
+          const leg = new THREE.Mesh(this.getCylinder(0.04, 0.04, 1.2, 6), this.tinRoofMat);
+          leg.position.set(0, 0.6, lz);
+          barGroup.add(leg);
+
+          const foot = new THREE.Mesh(this.getBox(0.5, 0.08, 0.12), this.tinRoofMat);
+          foot.position.set(0, 0.04, lz);
+          barGroup.add(foot);
+        });
+
+        // Horizontal steel frame rails
+        [0.2, 1.15].forEach((ry) => {
+          const rail = new THREE.Mesh(this.getCylinder(0.035, 0.035, 3.3, 6), this.tinRoofMat);
+          rail.rotation.x = Math.PI / 2;
+          rail.position.set(0, ry, 0);
+          barGroup.add(rail);
+        });
+
+        // Center Warning Barrier Plate (Bright Saffron/Yellow with reflective diagonal stripes)
+        const plate = new THREE.Mesh(this.getBox(0.06, 0.65, 3.0), this.yellowMarigoldMat);
+        plate.position.set(0, 0.68, 0);
+        barGroup.add(plate);
+
+        // Stenciled diagonal warning bars
+        [-0.8, 0, 0.8].forEach((sz) => {
+          const stripe = new THREE.Mesh(this.getBox(0.07, 0.55, 0.28), this.commandoSuitMat);
+          stripe.position.set(0, 0.68, sz);
+          stripe.rotation.x = 0.45;
+          barGroup.add(stripe);
+        });
+
+        // Festive Marigold garland swag draped over the top rail
+        const garland = new THREE.Mesh(this.getTorus(0.85, 0.06, 6), this.saffronFloralMat);
+        garland.rotation.y = Math.PI / 2;
+        garland.position.set(side > 0 ? -0.06 : 0.06, 1.05, 0);
+        barGroup.add(garland);
+
+        group.add(barGroup);
+      }
+    });
+  }
+
+  /**
+   * EVENT C: The Photography Chaos
+   * A political roadshow photo-call transforms into an absurd scramble among paparazzi,
+   * until a cheerful street Chai-Wala bumbles into center frame and becomes the superstar!
+   */
+  public buildPhotographyChaosStage(
+    group: THREE.Group,
+    x: number,
+    y: number,
+    z: number,
+    director: VipComedyEventDirector
+  ): THREE.Group {
+    const stage = new THREE.Group();
+    stage.name = 'vip_photography_chaos';
+    stage.position.set(x, y, z);
+
+    // Deep Subsurface Foundation Plinth down to y = -5.2m
+    const plinth = new THREE.Mesh(this.getBox(9.5, 5.2, 9.5), this.sandstoneMat);
+    plinth.position.y = -2.6;
+    stage.add(plinth);
+
+    // Marble Podium Base & Red Carpet
+    const base = new THREE.Mesh(this.getBox(8.5, 0.8, 8.5), this.ivoryMarbleMat);
+    base.position.y = 0.4;
+    stage.add(base);
+
+    const carpet = new THREE.Mesh(this.getBox(7.8, 0.08, 7.8), this.redCarpetMat);
+    carpet.position.y = 0.84;
+    stage.add(carpet);
+
+    // Brass Stanchions & Velvet Ropes
+    [[-3.8, -3.8], [3.8, -3.8], [-3.8, 3.8], [3.8, 3.8]].forEach(([px, pz]) => {
+      const pole = new THREE.Mesh(this.getCylinder(0.08, 0.08, 1.1, 6), this.goldMetalMat);
+      pole.position.set(px, 1.35, pz);
+      stage.add(pole);
+      const ball = new THREE.Mesh(this.getSphere(0.14, 6), this.goldMetalMat);
+      ball.position.set(px, 1.95, pz);
+      stage.add(ball);
+    });
+
+    // Modi Caricature on Rostrum
+    const modiFigure = this.buildModiCaricature(stage, 0, 0.8, -1.8, 'VICTORY', director);
+
+    // 3 Cartoon Paparazzi Photographers crouching and jostling
+    const photographers: THREE.Object3D[] = [];
+    const cameraFlashes: THREE.Mesh[] = [];
+
+    const pCoords = [
+      { x: -2.2, z: 2.2, ry: 0.35 },
+      { x: 0, z: 2.8, ry: 0 },
+      { x: 2.2, z: 2.2, ry: -0.35 }
+    ];
+
+    pCoords.forEach((pc) => {
+      const pGroup = new THREE.Group();
+      pGroup.position.set(pc.x, 0.8, pc.z);
+      pGroup.rotation.y = pc.ry;
+
+      // Body in khaki safari vest & denim trousers
+      const legs = new THREE.Mesh(this.getBox(0.34, 0.65, 0.28), this.cartoonNavyPantsMat);
+      legs.position.y = 0.32;
+      pGroup.add(legs);
+
+      const torso = new THREE.Mesh(this.getBox(0.42, 0.58, 0.30), this.haveliWoodMat);
+      torso.position.y = 0.90;
+      pGroup.add(torso);
+
+      const head = new THREE.Mesh(this.getSphere(0.16, 6), this.cartoonNpcSkinMat);
+      head.position.y = 1.30;
+      pGroup.add(head);
+
+      // Oversized Professional Telephoto Camera
+      const cam = new THREE.Group();
+      cam.position.set(0, 1.25, 0.35);
+
+      const camBody = new THREE.Mesh(this.getBox(0.35, 0.25, 0.30), this.parliamentWoodMat);
+      cam.add(camBody);
+
+      // Massive white professional zoom lens
+      const lens = new THREE.Mesh(this.getCylinder(0.12, 0.16, 0.75, 8), this.suvWhiteMat);
+      lens.rotation.x = Math.PI / 2;
+      lens.position.set(0, 0, 0.45);
+      cam.add(lens);
+
+      const hood = new THREE.Mesh(this.getCylinder(0.16, 0.14, 0.15, 8), this.commandoSuitMat);
+      hood.rotation.x = Math.PI / 2;
+      hood.position.set(0, 0, 0.85);
+      cam.add(hood);
+
+      const flash = new THREE.Mesh(this.getBox(0.15, 0.12, 0.08), this.flashLightMat);
+      flash.position.set(0.12, 0.18, 0.1);
+      flash.visible = false;
+      cam.add(flash);
+      cameraFlashes.push(flash);
+
+      pGroup.add(cam);
+      stage.add(pGroup);
+      photographers.push(pGroup);
+    });
+
+    // The Unexpected Guest: Cartoon Chai-Wala with wire tea glass rack!
+    const chaiVendor = new THREE.Group();
+    chaiVendor.name = 'chai_vendor_intruder';
+    chaiVendor.position.set(4.5, 0.8, 0);
+    chaiVendor.visible = false;
+
+    const vLegs = new THREE.Mesh(this.getBox(0.32, 0.70, 0.26), this.cartoonKurtaWhiteMat);
+    vLegs.position.y = 0.35;
+    chaiVendor.add(vLegs);
+
+    const vTorso = new THREE.Mesh(this.getBox(0.40, 0.58, 0.28), this.terracottaMat);
+    vTorso.position.y = 0.95;
+    chaiVendor.add(vTorso);
+
+    const vHead = new THREE.Mesh(this.getSphere(0.16, 6), this.cartoonNpcSkinMat);
+    vHead.position.y = 1.35;
+    chaiVendor.add(vHead);
+
+    // Red Gamcha cloth wrapped around neck
+    const gamcha = new THREE.Mesh(this.getTorus(0.18, 0.05, 6), this.velvetCurtainMat);
+    gamcha.position.set(0, 1.25, 0);
+    gamcha.rotation.x = Math.PI / 2;
+    chaiVendor.add(gamcha);
+
+    // Arm holding wire chai rack & glass
+    const chaiArm = new THREE.Group();
+    chaiArm.name = 'chai_arm';
+    chaiArm.position.set(0.25, 1.1, 0);
+
+    const armMesh = new THREE.Mesh(this.getCylinder(0.05, 0.05, 0.45, 6), this.terracottaMat);
+    armMesh.position.y = -0.22;
+    chaiArm.add(armMesh);
+
+    // Wire tea glass holder tray
+    const tray = new THREE.Mesh(this.getBox(0.45, 0.04, 0.35), this.tinRoofMat);
+    tray.position.set(0, -0.45, 0.25);
+    chaiArm.add(tray);
+
+    // 4 Cutting chai glasses on tray
+    [-0.12, 0.12].forEach((tx) => {
+      [-0.08, 0.08].forEach((tz) => {
+        const glass = new THREE.Mesh(this.getCylinder(0.045, 0.035, 0.12, 6), this.teaGlassMat);
+        glass.position.set(tx, -0.38, 0.25 + tz);
+        chaiArm.add(glass);
+
+        const tea = new THREE.Mesh(this.getCylinder(0.038, 0.03, 0.08, 6), this.teaLiquidMat);
+        tea.position.set(tx, -0.39, 0.25 + tz);
+        chaiArm.add(tea);
+      });
+    });
+
+    chaiVendor.add(chaiArm);
+    stage.add(chaiVendor);
+
+    director.registerPhotographyChaos(stage, modiFigure, photographers, chaiVendor, cameraFlashes);
+
+    group.add(stage);
+    return stage;
   }
 
   // =========================================================================
@@ -2030,7 +2265,7 @@ export class VipSatireWorldBuilder {
     }
 
     director.registerScissors(shears1L, shears1R, 4.0);
-    director.registerRecursiveScissors(shears1L, shears1R, shears2L, shears2R, craneGroup, rapidArm, ribbonMesh);
+    director.registerRecursiveScissors(shears1L, shears1R, shears2L, shears2R, craneGroup, rapidArm, ribbonMesh, tinyCupGroup);
 
     // High-contrast Satirical Signboard
     const inaugTex = TextureGenerator.getInaugurationInfinitySignTexture(1);
@@ -2764,26 +2999,17 @@ export class VipSatireWorldBuilder {
     sunglasses.add(sunglassBridge);
     stage.add(sunglasses);
 
-    // Silver Cloche: Grounded on an ornate gold side table with a silver waiter's tray, tilted open!
+    // Silver Cloche: Grounded directly on central pedestal covering the fruit until the dramatic reveal!
     const cloche = new THREE.Group();
     cloche.name = 'interview_cloche';
-    cloche.position.set(-3.2, 0.8, -1.2);
+    cloche.position.set(0, 2.3, 0);
 
-    const clocheStand = new THREE.Mesh(this.getCylinder(0.45, 0.55, 1.2, 10), this.goldMetalMat);
-    clocheStand.position.y = 0.6;
-    cloche.add(clocheStand);
-
-    const clocheTray = new THREE.Mesh(this.getCylinder(0.7, 0.7, 0.08, 12), this.silverMetalMat);
-    clocheTray.position.y = 1.24;
-    cloche.add(clocheTray);
-
-    const dome = new THREE.Mesh(this.getCylinder(0.12, 0.60, 1.2, 14), this.silverMetalMat);
-    dome.position.set(0.08, 1.82, 0);
-    dome.rotation.z = 0.38; // Tilted open on tray
+    const dome = new THREE.Mesh(this.getCylinder(0.35, 1.35, 2.4, 16), this.silverMetalMat);
+    dome.position.set(0, 1.2, 0);
     cloche.add(dome);
 
-    const handle = new THREE.Mesh(this.getSphere(0.12, 8), this.goldMetalMat);
-    handle.position.set(0.24, 2.42, 0);
+    const handle = new THREE.Mesh(this.getSphere(0.22, 10), this.goldMetalMat);
+    handle.position.set(0, 2.5, 0);
     cloche.add(handle);
     stage.add(cloche);
 
@@ -2797,6 +3023,19 @@ export class VipSatireWorldBuilder {
     sparkle.add(ray2);
     sparkle.visible = false;
     stage.add(sparkle);
+
+    // Articulated Studio Boom Microphone hanging from above
+    const boomMic = new THREE.Group();
+    boomMic.name = 'studio_boom_mic';
+    boomMic.position.set(-1.2, 3.2, 0);
+    const boomArm = new THREE.Mesh(this.getCylinder(0.04, 0.04, 3.2, 6), this.tinRoofMat);
+    boomArm.rotation.z = Math.PI / 4;
+    boomArm.position.set(0.8, 1.2, 0);
+    boomMic.add(boomArm);
+    const micHead = new THREE.Mesh(this.getCylinder(0.10, 0.10, 0.40, 8), this.parliamentWoodMat);
+    micHead.position.set(0, 0, 0);
+    boomMic.add(micHead);
+    stage.add(boomMic);
 
     // 4 Articulated Broadcast Studio Cameras on heavy tripods with telephoto lenses & red tally lights
     const cameras: THREE.Object3D[] = [];
@@ -2888,6 +3127,13 @@ export class VipSatireWorldBuilder {
 
     stage.add(backdropArch);
 
+    // Collect camera flashes
+    const cameraFlashes: THREE.Mesh[] = [];
+    cameras.forEach(c => {
+      const fl = c.children.find(ch => (ch as THREE.Mesh).material === this.flashLightMat);
+      if (fl) cameraFlashes.push(fl as THREE.Mesh);
+    });
+
     director.registerMangoInterview(
       stage,
       cloche,
@@ -2897,7 +3143,9 @@ export class VipSatireWorldBuilder {
       spotlights,
       modiFigure,
       interviewerFigure,
-      sparkle
+      sparkle,
+      boomMic,
+      cameraFlashes
     );
 
     group.add(stage);
