@@ -680,7 +680,12 @@ export class RahulComedyEventDirector {
    */
   private pruneDetached(): void {
     const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
-      return !!(obj && obj.parent);
+      if (!obj || !obj.parent) return false;
+      let cur: THREE.Object3D = obj;
+      while (cur.parent) {
+        cur = cur.parent;
+      }
+      return cur.type === 'Scene';
     };
 
     this.flipBoards = this.flipBoards.filter(fb => isAttached(fb.pivotGroup));
@@ -715,7 +720,7 @@ export class RahulComedyEventDirector {
   /**
    * Main animation loop update hook
    */
-  public update(dt: number, isWorldActive: boolean = true): void {
+  public update(dt: number, isWorldActive: boolean = true, _playerZ?: number): void {
     if (!this.isEnabled || !isWorldActive) return;
 
     this.pruneDetached();

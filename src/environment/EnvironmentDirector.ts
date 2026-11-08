@@ -16,6 +16,14 @@ import { JurassicRushEventDirector } from './worlds/jurassicRush/JurassicRushEve
 import { FeverDirector } from './worlds/vivaHeat/FeverDirector';
 import { HauntedCarnivalEventDirector } from './worlds/hauntedCarnival/HauntedCarnivalEventDirector';
 import { PhantomLineEventDirector } from './worlds/phantomLine/PhantomLineEventDirector';
+import { AbyssalGlasslineEventDirector } from './worlds/abyssalGlassline/AbyssalGlasslineEventDirector';
+import { DoomsdayEventDirector } from './worlds/doomsdayLastTransit/DoomsdayEventDirector';
+import { OrbitalHaloEventDirector } from './worlds/orbitalHalo/OrbitalHaloEventDirector';
+import { NeonRainlineEventDirector } from './worlds/neonRainline/NeonRainlineEventDirector';
+import { NeonIndustrialEventDirector } from './worlds/neonIndustrial/NeonIndustrialEventDirector';
+import { UndergroundMetroEventDirector } from './worlds/undergroundMetro/UndergroundMetroEventDirector';
+import { HistoricQuarterEventDirector } from './worlds/historicQuarter/HistoricQuarterEventDirector';
+import { ModernMetroEventDirector } from './worlds/modernMetro/ModernMetroEventDirector';
 import type { TrackChunk } from '../track/TrackChunk';
 import type { WorldScene } from '../scene/WorldScene';
 
@@ -88,6 +96,14 @@ export class EnvironmentDirector {
     FeverDirector.getInstance().reset();
     HauntedCarnivalEventDirector.getInstance().reset();
     PhantomLineEventDirector.getInstance().reset();
+    AbyssalGlasslineEventDirector.getInstance().reset();
+    DoomsdayEventDirector.getInstance().reset();
+    OrbitalHaloEventDirector.getInstance().reset();
+    NeonRainlineEventDirector.getInstance().reset();
+    NeonIndustrialEventDirector.getInstance().reset();
+    UndergroundMetroEventDirector.getInstance().reset();
+    HistoricQuarterEventDirector.getInstance().reset();
+    ModernMetroEventDirector.getInstance().reset();
   }
 
   public setRunSeed(seed: number, isDebug: boolean = false): void {

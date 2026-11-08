@@ -1565,10 +1565,8 @@ export class SceneryFactory {
 
     if (landmark) {
       this.buildLandmarkEncounter(landmark, decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, theme);
-    } else if (theme.id === 'UNDERGROUND_METRO' || isTunnel) {
+    } else if (theme.id === 'UNDERGROUND_METRO' || (theme.id === 'MODERN_METRO' && isTunnel)) {
       this.buildUndergroundMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, worldZ, seed, detail, tunnelPortal, isAerialCorridor);
-    } else if (isTransition) {
-      this.buildTransitionPortalScenery(decorativeGroup, roadbedWidth, curbWidth, theme, chunkLength);
     } else if (theme.id === 'HISTORIC_QUARTER') {
       this.buildHistoricQuarterScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else if (theme.id === 'NEON_INDUSTRIAL') {
@@ -1601,6 +1599,10 @@ export class SceneryFactory {
       this.buildVivaHeatScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
     } else {
       this.buildModernMetroScenery(decorativeGroup, roadbedWidth, curbWidth, chunkLength, seed, detail, worldZ);
+    }
+
+    if (isTransition) {
+      this.buildTransitionPortalScenery(decorativeGroup, roadbedWidth, curbWidth, theme, chunkLength);
     }
 
     if (smallMoment) {

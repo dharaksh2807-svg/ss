@@ -167,7 +167,12 @@ export class JurassicRushEventDirector {
    */
   private pruneDetached(): void {
     const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
-      return !!(obj && obj.parent);
+      if (!obj || !obj.parent) return false;
+      let cur: THREE.Object3D = obj;
+      while (cur.parent) {
+        cur = cur.parent;
+      }
+      return cur.type === 'Scene';
     };
 
     this.sauropods = this.sauropods.filter(s => isAttached(s.group));

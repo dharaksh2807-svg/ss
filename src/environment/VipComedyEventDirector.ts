@@ -891,12 +891,7 @@ export class VipComedyEventDirector {
       while (curr.parent) {
         curr = curr.parent;
       }
-      if (curr.type === 'Scene') return true;
-      if (curr.name === 'vip_express_scenery') {
-        // Chunk scenery group was detached from track hierarchy when recycled
-        return false;
-      }
-      return true;
+      return curr.type === 'Scene';
     };
 
     this.scissorsList = this.scissorsList.filter(s => isAttached(s.leftBlade) && isAttached(s.rightBlade));
@@ -936,7 +931,7 @@ export class VipComedyEventDirector {
   /**
    * Called every animation frame from WorldScene / Game loop
    */
-  public update(dt: number, isVipActive: boolean = true): void {
+  public update(dt: number, isVipActive: boolean = true, _playerZ?: number): void {
     if (!this.isEnabled || !isVipActive) return;
 
     // Prune any elements whose chunks have been recycled

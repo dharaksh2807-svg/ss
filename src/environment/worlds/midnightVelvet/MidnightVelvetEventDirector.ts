@@ -186,7 +186,12 @@ export class MidnightVelvetEventDirector {
    */
   private pruneDetached(): void {
     const isAttached = (obj: THREE.Object3D | null | undefined): boolean => {
-      return !!(obj && obj.parent);
+      if (!obj || !obj.parent) return false;
+      let cur: THREE.Object3D = obj;
+      while (cur.parent) {
+        cur = cur.parent;
+      }
+      return cur.type === 'Scene';
     };
 
     this.motorcadeCars = this.motorcadeCars.filter(c => isAttached(c.group));
@@ -202,7 +207,7 @@ export class MidnightVelvetEventDirector {
 
   // --- Animation Update Loop ---
 
-  public update(delta: number, isActive: boolean = true): void {
+  public update(delta: number, isActive: boolean = true, _playerZ?: number): void {
     if (!isActive || delta <= 0) return;
 
     this.pruneDetached();

@@ -3417,17 +3417,17 @@ export class WorldScene {
       }
 
       // Update VipComedyEventDirector animated satire gags across districts
-      VipComedyEventDirector.getInstance().update(delta, true);
+      VipComedyEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'RAHULVERSE') {
       const delta = dt || 0.016;
-      RahulComedyEventDirector.getInstance().update(delta, true);
+      RahulComedyEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
     }
 
     if (this.currentTheme && this.currentTheme.id === 'MIDNIGHT_VELVET') {
       const delta = dt || 0.016;
-      MidnightVelvetEventDirector.getInstance().update(delta, true);
+      MidnightVelvetEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
 
       // Animate sweeping Art Deco nightclub skyline searchlights
       if (this.midnightVelvetSkyline && this.midnightVelvetSkyline.visible) {
