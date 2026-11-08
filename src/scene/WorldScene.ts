@@ -2849,25 +2849,25 @@ export class WorldScene {
         isRain = true;
         break;
       case 'MIDNIGHT_VELVET_AFTERDARK':
-        sunColorHex = 0xfff4e6;
-        sunIntensity = 1.65;
-        skyTopHex = 0x080c1e;
-        skyBottomHex = 0x241228;
-        fogColorHex = 0x151226;
-        fogDensity = 0.0018;
-        fillColorHex = 0x3b1d60;
-        fillIntensity = 0.65;
+        sunColorHex = 0xffeedd;
+        sunIntensity = 2.4;
+        skyTopHex = 0x0d172e;
+        skyBottomHex = 0x38183c;
+        fogColorHex = 0x18132c;
+        fogDensity = 0.0012;
+        fillColorHex = 0x5a2d82;
+        fillIntensity = 1.15;
         isRain = false;
         break;
       case 'MIDNIGHT_VELVET_RAIN':
-        sunColorHex = 0xd8c8b8;
-        sunIntensity = 0.85;
-        skyTopHex = 0x03040a;
-        skyBottomHex = 0x160812;
-        fogColorHex = 0x0e0816;
-        fogDensity = 0.0040;
-        fillColorHex = 0x220c4a;
-        fillIntensity = 0.45;
+        sunColorHex = 0xe8e0f0;
+        sunIntensity = 1.6;
+        skyTopHex = 0x0a1024;
+        skyBottomHex = 0x261430;
+        fogColorHex = 0x141022;
+        fogDensity = 0.0024;
+        fillColorHex = 0x482272;
+        fillIntensity = 0.85;
         isRain = true;
         break;
       case 'VIP_CEREMONIAL_SUNSET':

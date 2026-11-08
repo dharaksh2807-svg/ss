@@ -140,9 +140,9 @@ decorativeGroup.traverse((obj) => {
 check(intrusions === 0, `Scenery strictly preserves 100% collision clearance envelope (found ${intrusions} intrusions)`);
 
 // =========================================================================
-// Suite 4: Verification of All 4 Distinct Luxury Districts
+// Suite 4: Verification of All 6 Distinct Luxury Districts
 // =========================================================================
-console.log('\n--- Suite 4: Verification of All 4 Distinct Luxury Districts ---');
+console.log('\n--- Suite 4: Verification of All 6 Distinct Luxury Districts ---');
 
 // District A: Velvet Boulevard
 const gA = new THREE.Group();
@@ -170,6 +170,20 @@ sceneryFactory.buildScenery(gD, MIDNIGHT_VELVET_THEME, 0, false, false, 'NONE', 
 check(gD.getObjectByName('district_d_midnight_grand') !== undefined, 'District D: Midnight Grand exists');
 check(gD.getObjectByName('midnight_grand_clock_tower') !== undefined, 'District D: Gilded clock tower exists');
 check(gD.getObjectByName('midnight_grand_siding_carriage') !== undefined, 'District D: Pullman luxury siding carriage exists');
+
+// District E: Open Luxury Hotel Plaza (Directly solves 1,939m failure)
+const gE = new THREE.Group();
+sceneryFactory.buildScenery(gE, MIDNIGHT_VELVET_THEME, 0, false, false, 'NONE', 'FULL', 4);
+check(gE.getObjectByName('district_e_luxury_hotel_plaza') !== undefined, 'District E: Open Luxury Hotel Plaza exists');
+check(gE.getObjectByName('plaza_grand_fountain') !== undefined, 'District E: Grand Art Deco fountain exists');
+check(gE.getObjectByName('plaza_golden_obelisk') !== undefined, 'District E: Gilded monumental obelisk exists');
+
+// District F: Rooftop Garden & High-Society Fashion Promenade
+const gF = new THREE.Group();
+sceneryFactory.buildScenery(gF, MIDNIGHT_VELVET_THEME, 0, false, false, 'NONE', 'FULL', 5);
+check(gF.getObjectByName('district_f_rooftop_fashion') !== undefined, 'District F: Rooftop Garden Fashion exists');
+check(gF.getObjectByName('fashion_display_pavilion') !== undefined, 'District F: Fashion runway pavilion exists');
+check(gF.getObjectByName('lounge_fire_pit') !== undefined, 'District F: Sunken VIP fire pit lounge exists');
 
 // =========================================================================
 // Suite 5: Midnight Velvet Luxury Train Livery & Hitboxes
