@@ -38,25 +38,25 @@ export const JURASSIC_RUSH_THEME: EnvironmentTheme = {
   ],
   sky: {
     top: 0x0284c7,    // Vibrant Cretaceous tropical azure-cerulean sky
-    bottom: 0x6ee7b7 // Luminous golden-emerald rainforest horizon mist
+    bottom: 0x86efac // Luminous golden-emerald rainforest horizon mist
   },
   fog: {
     color: 0x0f4a3c,  // Atmospheric lush Cretaceous jungle mist
-    density: 0.0016   // Crisp scenic depth with panoramic vistas of colossal dinosaurs
+    density: 0.0015   // Crisp scenic depth with breathtaking panoramic vistas of colossal dinosaurs
   },
   sun: {
-    color: 0xfff8db,  // Radiant golden prehistoric morning sunlight
-    intensity: 1.75,
-    position: { x: -26, y: 58, z: 22 } // Illuminates down-track dinosaur faces and lush foliage
+    color: 0xfffbeb,  // Radiant golden prehistoric morning sunlight
+    intensity: 1.85,
+    position: { x: -28, y: 62, z: 24 } // Dynamic rim light on dinosaur anatomy and lush foliage
   },
   fill: {
     color: 0x065f46,  // Deep emerald rainforest canopy shadow fill
-    intensity: 0.95
+    intensity: 1.10
   },
   hemi: {
     sky: 0x38bdf8,    // Tropical azure sky bounce
-    ground: 0x15803d, // Vibrant rainforest floor green reflection
-    intensity: 1.45
+    ground: 0x16a34a, // Vibrant rainforest floor green reflection
+    intensity: 1.65
   },
   skyline: {
     color: 0x064e3b,  // Towering prehistoric volcanic peaks and mist-shrouded mountain silhouettes

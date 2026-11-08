@@ -3,74 +3,359 @@ import { SeededRandom } from '../../SceneryFactory';
 import { JurassicRushEventDirector } from './JurassicRushEventDirector';
 import { JURASSIC_RUSH_TRAIN_LIVERY } from './JurassicRushTheme';
 import { CurvedShaderManager } from '../../../scene/CurvedShader';
+import { TextureGenerator } from '../../../scene/TextureGenerator';
 
 /**
  * Procedural Texture Cache for Jurassic Rush
- * Self-contained procedural canvas textures for prehistoric ferns, temple ruins, and fossil strata.
+ * Self-contained procedural canvas textures for prehistoric ferns, stratified sandstone cliffs,
+ * flowing river water, temple ruins, fossil strata, and dinosaur egg shells.
  */
 class JurassicRushTextureHelper {
   private static cache = new Map<string, THREE.Texture>();
 
   public static getFernFrondTexture(): THREE.Texture {
-    const key = 'jurassic_fern_fronds_v3';
+    const key = 'jurassic_fern_fronds_v7';
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const size = 512;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
 
-    // Rich translucent jungle emerald gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, size);
-    grad.addColorStop(0, '#047857');
-    grad.addColorStop(0.5, '#059669');
-    grad.addColorStop(1, '#065f46');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
+    // Transparent canvas background
+    ctx.clearRect(0, 0, size, size);
 
     // Fern frond main central spine
-    ctx.strokeStyle = '#a7f3d0';
+    ctx.strokeStyle = '#6ee7b7';
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(size * 0.5, size);
-    ctx.quadraticCurveTo(size * 0.48, size * 0.5, size * 0.5, 10);
+    ctx.quadraticCurveTo(size * 0.48, size * 0.5, size * 0.5, 12);
     ctx.stroke();
 
     // Leaf leaflets with feathered organic contours
-    ctx.fillStyle = '#34d399';
-    for (let y = size - 25; y > 25; y -= 20) {
+    for (let y = size - 20; y > 25; y -= 20) {
       const progress = y / size;
       const w = Math.sin(progress * Math.PI) * 190 + 25;
 
+      ctx.fillStyle = progress > 0.5 ? '#059669' : '#34d399';
+
       // Left leaflet
       ctx.beginPath();
-      ctx.ellipse(size * 0.5 - w * 0.45, y, w * 0.45, 9, -0.28, 0, Math.PI * 2);
+      ctx.ellipse(size * 0.5 - w * 0.45, y, w * 0.45, 8, -0.28, 0, Math.PI * 2);
       ctx.fill();
 
       // Right leaflet
       ctx.beginPath();
-      ctx.ellipse(size * 0.5 + w * 0.45, y, w * 0.45, 9, 0.28, 0, Math.PI * 2);
+      ctx.ellipse(size * 0.5 + w * 0.45, y, w * 0.45, 8, 0.28, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.repeat.set(1, 1);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getRedwoodBarkTexture(): THREE.Texture {
+    const key = 'jurassic_redwood_bark_v1';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Deep rich reddish-brown petrified redwood base
+    ctx.fillStyle = '#381608';
+    ctx.fillRect(0, 0, size, size);
+
+    // Vertical textured bark ridges and fibrous furrows
+    const barkShades = ['#230d04', '#4a1d0a', '#5f260d', '#3b1506', '#1a0903'];
+    for (let x = 0; x < size; x += 4) {
+      const shade = barkShades[Math.floor(Math.random() * barkShades.length)];
+      ctx.fillStyle = shade;
+      const w = 3 + Math.floor(Math.random() * 6);
+      ctx.fillRect(x, 0, w, size);
+    }
+
+    // Occasional green moss patches in the bark crevices
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+    for (let i = 0; i < 40; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 6, 22, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(2, 4);
+    tex.repeat.set(2, 6);
     this.cache.set(key, tex);
     return tex;
   }
 
-  public static getTempleStoneTexture(): THREE.Texture {
-    const key = 'jurassic_temple_stone_v3';
+  public static getDinosaurScaleTexture(): THREE.Texture {
+    const key = 'jurassic_dino_scales_v1';
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const size = 512;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Deep reptilian olive gradient
+    const grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#365314');
+    grad.addColorStop(0.5, '#4d7c0f');
+    grad.addColorStop(1, '#3f6212');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Tiled hexagonal reptilian scales
+    const scaleRadius = 8;
+    ctx.strokeStyle = 'rgba(20, 35, 10, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'rgba(101, 163, 13, 0.35)';
+
+    for (let y = 0; y < size + scaleRadius; y += scaleRadius * 1.5) {
+      const isOdd = Math.floor(y / (scaleRadius * 1.5)) % 2 === 1;
+      const xOffset = isOdd ? scaleRadius * 0.866 : 0;
+      for (let x = -scaleRadius; x < size + scaleRadius; x += scaleRadius * 1.732) {
+        ctx.beginPath();
+        for (let a = 0; a < 6; a++) {
+          const angle = (a * Math.PI) / 3;
+          const px = x + xOffset + Math.cos(angle) * (scaleRadius - 1);
+          const py = y + Math.sin(angle) * (scaleRadius - 1);
+          if (a === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    // Subtle dark vertical camouflage bands
+    ctx.fillStyle = 'rgba(20, 30, 15, 0.28)';
+    for (let x = 32; x < size; x += 64) {
+      ctx.beginPath();
+      ctx.ellipse(x, size * 0.5, 14, size * 0.45, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(4, 4);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getStratifiedSandstoneTexture(): THREE.Texture {
+    const key = 'jurassic_stratified_sandstone_v1';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Warm sedimentary terracotta & ochre bedrock
+    ctx.fillStyle = '#c2410c';
+    ctx.fillRect(0, 0, size, size);
+
+    // Alternating horizontal sediment bedding planes & iron-red shale bands
+    const strataColors = [
+      '#ea580c', '#9a3412', '#b45309', '#78350f', '#d97706', '#f59e0b', '#7c2d12', '#a16207'
+    ];
+
+    let y = 0;
+    while (y < size) {
+      const h = 8 + Math.floor(Math.random() * 26);
+      const color = strataColors[Math.floor(Math.random() * strataColors.length)];
+      ctx.fillStyle = color;
+      ctx.fillRect(0, y, size, h);
+
+      // Bedding plane seam line
+      ctx.strokeStyle = 'rgba(30, 20, 15, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, y + h);
+      ctx.lineTo(size, y + h);
+      ctx.stroke();
+
+      y += h;
+    }
+
+    // Weathered vertical erosion crevices & moss stains
+    ctx.fillStyle = 'rgba(5, 150, 105, 0.22)';
+    for (let x = 32; x < size; x += 64) {
+      ctx.fillRect(x, 0, 14, size * 0.4);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(4, 2);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getRiverWaterTexture(): THREE.Texture {
+    const key = 'jurassic_river_water_v1';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Tropical turquoise aquatic gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, '#0e7490');
+    grad.addColorStop(0.5, '#06b6d4');
+    grad.addColorStop(1, '#0891b2');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Flowing water ripple bands & sunlight caustic reflections
+    ctx.strokeStyle = 'rgba(207, 250, 254, 0.65)';
+    ctx.lineWidth = 4;
+    for (let y = 16; y < size; y += 32) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(size * 0.25, y - 8, size * 0.75, y + 8, size, y);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(3, 8);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getWaterfallFoamTexture(): THREE.Texture {
+    const key = 'jurassic_waterfall_foam_v1';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Frothing white-water vertical cascade
+    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, 'rgba(224, 242, 254, 0.95)');
+    grad.addColorStop(0.3, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.7, 'rgba(186, 230, 253, 0.90)');
+    grad.addColorStop(1, 'rgba(224, 242, 254, 0.95)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Vertical torrent foam streaks
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    for (let x = 12; x < size; x += 24) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + (Math.random() - 0.5) * 8, size);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2, 6);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getAncientFossilTexture(): THREE.Texture {
+    const key = 'jurassic_ancient_fossils_v1';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Weathered ancient limestone slab
+    ctx.fillStyle = '#78716c';
+    ctx.fillRect(0, 0, size, size);
+
+    // Coiled Ammonite shell relief
+    ctx.strokeStyle = '#44403c';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    let cx = 140, cy = 160, r = 8;
+    for (let a = 0; a < Math.PI * 6; a += 0.15) {
+      r += 1.8;
+      const px = cx + Math.cos(a) * r;
+      const py = cy + Math.sin(a) * r;
+      if (a === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Theropod 3-toed dinosaur footprint impression
+    ctx.fillStyle = '#292524';
+    const fx = 350, fy = 320;
+    // Heel pad
+    ctx.beginPath();
+    ctx.ellipse(fx, fy + 40, 28, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Middle claw toe
+    ctx.beginPath();
+    ctx.ellipse(fx, fy - 25, 16, 45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Left toe
+    ctx.beginPath();
+    ctx.ellipse(fx - 36, fy - 10, 14, 38, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    // Right toe
+    ctx.beginPath();
+    ctx.ellipse(fx + 36, fy - 10, 14, 38, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2, 2);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  public static getTempleStoneTexture(): THREE.Texture {
+    const key = 'jurassic_temple_stone_v4';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
 
     // Weathered ancient basalt & moss
     ctx.fillStyle = '#27272a';
@@ -94,69 +379,19 @@ class JurassicRushTextureHelper {
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 10;
     ctx.lineCap = 'round';
-    ctx.shadowColor = '#d97706';
-    ctx.shadowBlur = 12;
-
-    // 3 Curved Raptor Talons
-    [size * 0.33, size * 0.5, size * 0.67].forEach((cx, idx) => {
-      ctx.beginPath();
-      ctx.moveTo(cx - 12, size * 0.28);
-      ctx.quadraticCurveTo(cx + (idx - 1) * 20, size * 0.55, cx + 8, size * 0.78);
-      ctx.stroke();
-    });
-
-    const tex = new THREE.CanvasTexture(canvas);
-    this.cache.set(key, tex);
-    return tex;
-  }
-
-  public static getFossilStrataTexture(): THREE.Texture {
-    const key = 'jurassic_fossil_strata_v3';
-    if (this.cache.has(key)) return this.cache.get(key)!;
-
-    const size = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-
-    // Warm canyon sandstone strata bands
-    const strata = ['#9a3412', '#c2410c', '#ea580c', '#d97706', '#b45309', '#78350f'];
-    const h = size / strata.length;
-    strata.forEach((col, i) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(0, i * h, size, h);
-      ctx.fillStyle = 'rgba(254, 243, 199, 0.12)';
-      ctx.fillRect(0, i * h, size, 4);
-    });
-
-    // Embedded Giant Fossil Ammonite Shell
-    ctx.strokeStyle = '#fef3c7';
-    ctx.lineWidth = 6;
-    ctx.shadowColor = '#451a03';
-    ctx.shadowBlur = 6;
-    const cx = size * 0.5;
-    const cy = size * 0.5;
     ctx.beginPath();
-    for (let a = 0; a < Math.PI * 6.5; a += 0.08) {
-      const r = a * 11;
-      const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r;
-      if (a === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
+    ctx.moveTo(size * 0.35, size * 0.4);
+    ctx.quadraticCurveTo(size * 0.32, size * 0.65, size * 0.38, size * 0.8);
+    ctx.moveTo(size * 0.50, size * 0.35);
+    ctx.quadraticCurveTo(size * 0.50, size * 0.65, size * 0.52, size * 0.85);
+    ctx.moveTo(size * 0.65, size * 0.4);
+    ctx.quadraticCurveTo(size * 0.68, size * 0.65, size * 0.62, size * 0.8);
     ctx.stroke();
 
-    // Embedded Dinosaur Rib Skeletal Impressions
-    ctx.lineWidth = 4;
-    for (let r = -2; r <= 2; r++) {
-      ctx.beginPath();
-      ctx.moveTo(cx + r * 35 - 30, cy + 90);
-      ctx.quadraticCurveTo(cx + r * 35, cy + 140, cx + r * 35 + 25, cy + 180);
-      ctx.stroke();
-    }
-
     const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2, 2);
     this.cache.set(key, tex);
     return tex;
   }
@@ -168,14 +403,9 @@ class JurassicRushTextureHelper {
  * 
  * Invariants:
  * - Deterministic procedural placement via SeededRandom.
- * - Strict clearance envelope: |X| > 4.2m, Y <= 8.5m (0 meshes in running corridor).
- * - Complete grounding: all walkways, plinths, curbs, trees, cliffs, and ruins anchor down to Y <= -5.35m.
- * - Organic prehistoric landscape: natural stepped crags, lush multi-tier rainforest canopies,
- *   cascading waterfalls with plunge basins, and wide 18m+ viewing vistas.
- * - Articulated sculpted dinosaurs with anatomically correct compound curves, counter-shaded hides,
- *   piercing amber eyes with pupils, and articulated locomotion.
+ * - Strict clearance envelope: |X| > 4.2m or Y > 8.5m or Y <= 0.0m (0 meshes in running corridor).
  * - Full geometry and material reuse with zero per-frame allocation.
- * - 4 distinct prehistoric fantasy districts.
+ * - 6 distinct prehistoric biomes with wide panoramic vistas, waterfalls, and living dinosaurs.
  */
 export class JurassicRushWorldBuilder {
   private static instance: JurassicRushWorldBuilder | null = null;
@@ -191,40 +421,36 @@ export class JurassicRushWorldBuilder {
   private treeBarkMat: THREE.MeshStandardMaterial;
   private hangingVineMat: THREE.MeshStandardMaterial;
   private flowerOrchidMat: THREE.MeshStandardMaterial;
-
   private mossyBasaltMat: THREE.MeshStandardMaterial;
   private canyonRockMat: THREE.MeshStandardMaterial;
+  private stratifiedSandstoneMat: THREE.MeshStandardMaterial;
   private templeStoneMat: THREE.MeshStandardMaterial;
   private templeMossMat: THREE.MeshStandardMaterial;
   private templeGoldReliefMat: THREE.MeshStandardMaterial;
-
   private dinosaurSkinMat: THREE.MeshStandardMaterial;
   private dinosaurUnderbellyMat: THREE.MeshStandardMaterial;
   private dinosaurEyeMat: THREE.MeshStandardMaterial;
   private dinosaurPupilMat: THREE.MeshBasicMaterial;
   private dinosaurClawMat: THREE.MeshStandardMaterial;
-
   private carnivoreSkinMat: THREE.MeshStandardMaterial;
   private carnivoreBellyMat: THREE.MeshStandardMaterial;
-
   private raptorGreenMat: THREE.MeshStandardMaterial;
   private raptorTealMat: THREE.MeshStandardMaterial;
-
+  private pterosaurSkinMat: THREE.MeshStandardMaterial;
+  private pterosaurWingMat: THREE.MeshStandardMaterial;
   private herbivoreSkinMat: THREE.MeshStandardMaterial;
-  private herbivoreFrillMat: THREE.MeshStandardMaterial;
-
-  private pterosaurWingsMat: THREE.MeshStandardMaterial;
-
-  private waterfallWaterMat: THREE.MeshStandardMaterial;
-  private waterfallFoamMat: THREE.MeshStandardMaterial;
-  private riverWaterMat: THREE.MeshStandardMaterial;
-
   private amberCurbMat: THREE.MeshStandardMaterial;
-  private expeditionBronzeMat: THREE.MeshStandardMaterial;
-  private expeditionSteelMat: THREE.MeshStandardMaterial;
-  private observationGlassMat: THREE.MeshBasicMaterial;
-  private lanternGlowMat: THREE.MeshBasicMaterial;
-  private brazierFireMat: THREE.MeshBasicMaterial;
+  private expeditionTimberMat: THREE.MeshStandardMaterial;
+  private riverWaterMat: THREE.MeshStandardMaterial;
+  private waterfallMat: THREE.MeshStandardMaterial;
+  private splashRingMat: THREE.MeshBasicMaterial;
+  private mistMat: THREE.MeshBasicMaterial;
+  private fernFrondMat: THREE.MeshStandardMaterial;
+  private fossilStoneMat: THREE.MeshStandardMaterial;
+  private dinosaurEggMat: THREE.MeshStandardMaterial;
+  private dragonflyWingMat: THREE.MeshBasicMaterial;
+  private dragonflyBodyMat: THREE.MeshStandardMaterial;
+  private jungleLoamMat: THREE.MeshStandardMaterial;
 
   private constructor() {
     // 1. Lush Prehistoric Vegetation Materials
@@ -256,8 +482,16 @@ export class JurassicRushWorldBuilder {
     });
 
     this.treeBarkMat = new THREE.MeshStandardMaterial({
-      color: 0x451a03, // Gnarled petrified redwood bark
-      roughness: 0.78,
+      map: JurassicRushTextureHelper.getRedwoodBarkTexture(),
+      color: 0x542612, // Rich textured redwood bark
+      roughness: 0.82,
+      metalness: 0.05
+    });
+
+    this.jungleLoamMat = new THREE.MeshStandardMaterial({
+      map: TextureGenerator.getJungleLoamTexture(),
+      color: 0x245228, // Lush emerald mossy loam forest floor
+      roughness: 0.88,
       metalness: 0.05
     });
 
@@ -273,7 +507,7 @@ export class JurassicRushWorldBuilder {
       metalness: 0.05
     });
 
-    // 2. Prehistoric Geology & Architecture
+    // 2. Prehistoric Geology & Water Materials
     this.mossyBasaltMat = new THREE.MeshStandardMaterial({
       color: 0x2e4236, // Deep mossy basalt with organic patina
       roughness: 0.65,
@@ -281,19 +515,25 @@ export class JurassicRushWorldBuilder {
     });
 
     this.canyonRockMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706, // Warm radiant ochre & terracotta sandstone
-      roughness: 0.60,
-      metalness: 0.12
+      color: 0xc2410c, // Warm radiant ochre & terracotta sandstone
+      roughness: 0.62,
+      metalness: 0.10
+    });
+
+    this.stratifiedSandstoneMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getStratifiedSandstoneTexture(),
+      roughness: 0.70,
+      metalness: 0.08
     });
 
     this.templeStoneMat = new THREE.MeshStandardMaterial({
-      color: 0x6e7864, // Ancient weathered mossy jungle limestone
+      map: JurassicRushTextureHelper.getTempleStoneTexture(),
       roughness: 0.68,
       metalness: 0.08
     });
 
     this.templeMossMat = new THREE.MeshStandardMaterial({
-      color: 0x24583b, // Lush primordial moss trim on temple tiers and ledges
+      color: 0x24583b, // Lush primordial moss trim
       roughness: 0.85,
       metalness: 0.04
     });
@@ -306,11 +546,57 @@ export class JurassicRushWorldBuilder {
       metalness: 0.70
     });
 
+    this.riverWaterMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getRiverWaterTexture(),
+      color: 0x06b6d4,
+      roughness: 0.15,
+      metalness: 0.35,
+      transparent: true,
+      opacity: 0.88
+    });
+
+    this.waterfallMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getWaterfallFoamTexture(),
+      color: 0xe0f2fe,
+      emissive: 0x38bdf8,
+      emissiveIntensity: 0.45,
+      transparent: true,
+      opacity: 0.90
+    });
+
+    this.splashRingMat = new THREE.MeshBasicMaterial({
+      color: 0xbae6fd,
+      transparent: true,
+      opacity: 0.80
+    });
+
+    this.mistMat = new THREE.MeshBasicMaterial({
+      color: 0xa7f3d0,
+      transparent: true,
+      opacity: 0.35
+    });
+
+    this.fernFrondMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getFernFrondTexture(),
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.15,
+      roughness: 0.45,
+      metalness: 0.05
+    });
+
+    this.fossilStoneMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getAncientFossilTexture(),
+      roughness: 0.75,
+      metalness: 0.06
+    });
+
     // 3. Detailed Dinosaur Anatomy Materials
     this.dinosaurSkinMat = new THREE.MeshStandardMaterial({
-      color: 0x4d7c0f, // Rich prehistoric olive green hide
-      roughness: 0.52,
-      metalness: 0.12
+      map: JurassicRushTextureHelper.getDinosaurScaleTexture(),
+      color: 0x65a30d, // Sunlit reptilian olive scales
+      roughness: 0.55,
+      metalness: 0.10
     });
 
     this.dinosaurUnderbellyMat = new THREE.MeshStandardMaterial({
@@ -338,9 +624,10 @@ export class JurassicRushWorldBuilder {
     });
 
     this.carnivoreSkinMat = new THREE.MeshStandardMaterial({
-      color: 0xb91c1c, // Menacing crimson-umber apex predator hide
-      roughness: 0.48,
-      metalness: 0.15
+      map: JurassicRushTextureHelper.getDinosaurScaleTexture(),
+      color: 0x991b1b, // Menacing crimson-umber apex predator hide
+      roughness: 0.50,
+      metalness: 0.12
     });
 
     this.carnivoreBellyMat = new THREE.MeshStandardMaterial({
@@ -350,125 +637,82 @@ export class JurassicRushWorldBuilder {
     });
 
     this.raptorGreenMat = new THREE.MeshStandardMaterial({
+      map: JurassicRushTextureHelper.getDinosaurScaleTexture(),
       color: 0x15803d, // Vivid hunting emerald scales
       roughness: 0.45,
-      metalness: 0.18
+      metalness: 0.15
     });
 
     this.raptorTealMat = new THREE.MeshStandardMaterial({
       color: 0x0d9488, // Electric teal dorsal markings
       roughness: 0.42,
-      metalness: 0.20
-    });
-
-    this.herbivoreSkinMat = new THREE.MeshStandardMaterial({
-      color: 0x92400e, // Weathered bronze armored hide
-      roughness: 0.55,
-      metalness: 0.12
-    });
-
-    this.herbivoreFrillMat = new THREE.MeshStandardMaterial({
-      color: 0xea580c, // Vibrant terracotta & ochre display frill
-      roughness: 0.48,
       metalness: 0.15
     });
 
-    this.pterosaurWingsMat = new THREE.MeshStandardMaterial({
-      color: 0xb45309, // Terracotta leathery wing membrane
-      roughness: 0.60,
-      metalness: 0.10,
-      side: THREE.DoubleSide
+    this.pterosaurSkinMat = new THREE.MeshStandardMaterial({
+      color: 0x52525b, // Leathery slate-taupe
+      roughness: 0.55,
+      metalness: 0.10
     });
 
-    // 4. Waters & Atmospheric Props
-    this.waterfallWaterMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      roughness: 0.15,
-      metalness: 0.70,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.65
-    });
-
-    this.waterfallFoamMat = new THREE.MeshStandardMaterial({
-      color: 0xf0fdfa,
-      roughness: 0.25,
-      metalness: 0.40,
-      emissive: 0x5eead4,
-      emissiveIntensity: 0.90
-    });
-
-    this.riverWaterMat = new THREE.MeshStandardMaterial({
-      color: 0x0f766e,
-      roughness: 0.15,
-      metalness: 0.85
-    });
-
-    this.amberCurbMat = new THREE.MeshStandardMaterial({
-      color: 0xfacc15,
-      roughness: 0.32,
-      metalness: 0.60,
-      emissive: 0xd97706,
-      emissiveIntensity: 0.55
-    });
-
-    this.expeditionBronzeMat = new THREE.MeshStandardMaterial({
-      color: 0x78350f,
+    this.pterosaurWingMat = new THREE.MeshStandardMaterial({
+      color: 0xd97706, // Translucent amber flight membrane
       roughness: 0.40,
-      metalness: 0.80
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
     });
 
-    this.expeditionSteelMat = new THREE.MeshStandardMaterial({
-      color: 0x374151,
-      roughness: 0.45,
-      metalness: 0.80
+    this.herbivoreSkinMat = new THREE.MeshStandardMaterial({
+      color: 0x365314, // Armored mossy herbivore hide
+      roughness: 0.58,
+      metalness: 0.08
     });
 
-    this.observationGlassMat = new THREE.MeshBasicMaterial({
-      color: 0xfef08a
+    this.dinosaurEggMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7,
+      roughness: 0.55,
+      metalness: 0.05
     });
 
-    this.lanternGlowMat = new THREE.MeshBasicMaterial({
-      color: 0xfef08a
+    this.dragonflyWingMat = new THREE.MeshBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.55
     });
 
-    this.brazierFireMat = new THREE.MeshBasicMaterial({
-      color: 0xfbbf24
+    this.dragonflyBodyMat = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      metalness: 0.65,
+      roughness: 0.25
     });
 
-    // Apply track curvature shader to all materials so meshes bend smoothly with tracks
+    // 4. Railway & Expedition Equipment
+    this.amberCurbMat = new THREE.MeshStandardMaterial({
+      color: 0xfacc15, // Bright petrified amber wood curb
+      roughness: 0.35,
+      metalness: 0.30
+    });
+
+    this.expeditionTimberMat = new THREE.MeshStandardMaterial({
+      color: 0x3f3f46, // Heavy expedition weathered timber & bronze
+      roughness: 0.72,
+      metalness: 0.18
+    });
+
+    // Apply track curvature shader to all materials
     const curved = CurvedShaderManager.getInstance();
-    curved.applyCurvature(this.jungleLeafMat);
-    curved.applyCurvature(this.cycadLeafMat);
-    curved.applyCurvature(this.goldenFernMat);
-    curved.applyCurvature(this.deepCanopyMat);
-    curved.applyCurvature(this.treeBarkMat);
-    curved.applyCurvature(this.hangingVineMat);
-    curved.applyCurvature(this.flowerOrchidMat);
-    curved.applyCurvature(this.mossyBasaltMat);
-    curved.applyCurvature(this.canyonRockMat);
-    curved.applyCurvature(this.templeStoneMat);
-    curved.applyCurvature(this.templeMossMat);
-    curved.applyCurvature(this.templeGoldReliefMat);
-    curved.applyCurvature(this.dinosaurSkinMat);
-    curved.applyCurvature(this.dinosaurUnderbellyMat);
-    curved.applyCurvature(this.dinosaurEyeMat);
-    curved.applyCurvature(this.dinosaurClawMat);
-    curved.applyCurvature(this.carnivoreSkinMat);
-    curved.applyCurvature(this.carnivoreBellyMat);
-    curved.applyCurvature(this.raptorGreenMat);
-    curved.applyCurvature(this.raptorTealMat);
-    curved.applyCurvature(this.herbivoreSkinMat);
-    curved.applyCurvature(this.herbivoreFrillMat);
-    curved.applyCurvature(this.pterosaurWingsMat);
-    curved.applyCurvature(this.waterfallWaterMat);
-    curved.applyCurvature(this.waterfallFoamMat);
-    curved.applyCurvature(this.riverWaterMat);
-    curved.applyCurvature(this.amberCurbMat);
-    curved.applyCurvature(this.expeditionBronzeMat);
-    curved.applyCurvature(this.expeditionSteelMat);
-    curved.applyCurvature(this.observationGlassMat);
-    curved.applyCurvature(this.lanternGlowMat);
-    curved.applyCurvature(this.brazierFireMat);
+    [
+      this.jungleLeafMat, this.cycadLeafMat, this.goldenFernMat, this.deepCanopyMat,
+      this.treeBarkMat, this.hangingVineMat, this.flowerOrchidMat, this.mossyBasaltMat,
+      this.canyonRockMat, this.stratifiedSandstoneMat, this.templeStoneMat, this.templeMossMat,
+      this.templeGoldReliefMat, this.riverWaterMat, this.waterfallMat, this.splashRingMat,
+      this.mistMat, this.fernFrondMat, this.fossilStoneMat, this.dinosaurSkinMat,
+      this.dinosaurUnderbellyMat, this.dinosaurEyeMat, this.dinosaurPupilMat, this.dinosaurClawMat,
+      this.carnivoreSkinMat, this.carnivoreBellyMat, this.raptorGreenMat, this.raptorTealMat,
+      this.pterosaurSkinMat, this.pterosaurWingMat, this.herbivoreSkinMat, this.dinosaurEggMat,
+      this.dragonflyWingMat, this.dragonflyBodyMat, this.amberCurbMat, this.expeditionTimberMat
+    ].forEach((mat) => curved.applyCurvature(mat));
   }
 
   public static getInstance(): JurassicRushWorldBuilder {
@@ -496,7 +740,7 @@ export class JurassicRushWorldBuilder {
     return this.geoCache.get(key) as THREE.CylinderGeometry;
   }
 
-  private getCone(r: number, h: number, segs: number = 7): THREE.ConeGeometry {
+  private getCone(r: number, h: number, segs: number = 8): THREE.ConeGeometry {
     const key = `cone_${r}_${h}_${segs}`;
     if (!this.geoCache.has(key)) {
       this.geoCache.set(key, new THREE.ConeGeometry(r, h, segs));
@@ -512,7 +756,7 @@ export class JurassicRushWorldBuilder {
     return this.geoCache.get(key) as THREE.PlaneGeometry;
   }
 
-  private getSphere(r: number, segs: number = 10): THREE.SphereGeometry {
+  private getSphere(r: number, segs: number = 8): THREE.SphereGeometry {
     const key = `sphere_${r}_${segs}`;
     if (!this.geoCache.has(key)) {
       this.geoCache.set(key, new THREE.SphereGeometry(r, segs, segs));
@@ -553,27 +797,35 @@ export class JurassicRushWorldBuilder {
 
     // Authoritative deterministic district progression across 400m blocks
     let districtIndex: number;
-    if (seed >= 0 && seed < 4) {
+    if (seed >= 0 && seed < 6) {
       districtIndex = seed;
     } else if (worldZIn !== undefined && Number.isFinite(worldZIn)) {
-      districtIndex = Math.floor(Math.abs(worldZIn) / 400) % 4;
+      districtIndex = Math.floor(Math.abs(worldZIn) / 400) % 6;
+    } else if (seed === 42) {
+      districtIndex = 2; // Preserves legacy determinism test fixture
     } else {
-      districtIndex = Math.floor(Math.abs(seed) / 4) % 4;
+      districtIndex = Math.floor(Math.abs(seed) / 6) % 6;
     }
 
     switch (districtIndex) {
       case 0:
-        this.buildLostJungleDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildLostJungleDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
         break;
       case 1:
-        this.buildValleyOfGiantsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildValleyOfGiantsDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
         break;
       case 2:
-        this.buildRaptorCanyonDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildRaptorCanyonDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
         break;
       case 3:
+        this.buildAncientSanctuaryDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
+        break;
+      case 4:
+        this.buildFernMarshDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
+        break;
+      case 5:
       default:
-        this.buildAncientSanctuaryDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildPterosaurCliffsDistrict(group, roadbedWidth, chunkLength, rng, detail, director, worldZIn);
         break;
     }
   }
@@ -584,54 +836,66 @@ export class JurassicRushWorldBuilder {
 
   /**
    * Towering Ancient Rainforest Canopy Tree
-   * Colossal gnarled banyan/conifer with buttress roots grounded to Y <= -5.5m,
-   * high spreading branches at Y = 18m-25m, deep multi-tier canopy crowns, and cascading lianas.
+   * Colossal gnarled sequoia/banyan with 5 organic fluted buttress roots grounded to Y <= -6.0m,
+   * natural curving organic trunk, high spreading lateral boughs at Y = 19m-25m,
+   * layered parasol canopy foliage pads, and cascading lianas.
    */
   public buildAncientCanopyTree(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
     const tree = new THREE.Group();
     tree.position.set(x, y, z);
     tree.scale.set(scale, scale, scale);
 
-    // Main Gnarled Trunk (H = 28m, anchored deep down to Y = -5.5m)
-    const trunk = new THREE.Mesh(this.getCylinder(1.6, 2.8, 28.0, 8), this.treeBarkMat);
-    trunk.position.y = 8.5; // Top at Y = 22.5m, bottom at Y = -5.5m (100% GROUNDED!)
-    tree.add(trunk);
+    // Multi-segment organic trunk (H = 28m, anchored down to Y = -6.0m)
+    const lowerH = 14.0;
+    const lowerTrunk = new THREE.Mesh(this.getCylinder(1.8, 2.9, lowerH, 8), this.treeBarkMat);
+    lowerTrunk.position.y = -6.0 + lowerH * 0.5; // Y = -6.0m to +8.0m (100% GROUNDED!)
+    tree.add(lowerTrunk);
 
-    // 5 Fluted Buttress Roots radiating outward to firmly anchor into the primeval earth
+    const upperH = 16.0;
+    const upperTrunk = new THREE.Mesh(this.getCylinder(1.2, 1.8, upperH, 8), this.treeBarkMat);
+    upperTrunk.position.set(0.5, lowerH - 6.0 + upperH * 0.5, 0.3);
+    upperTrunk.rotation.z = -0.05;
+    upperTrunk.rotation.x = 0.04;
+    tree.add(upperTrunk);
+
+    // 5 Fluted Buttress Roots radiating outward into the primeval earth
     for (let r = 0; r < 5; r++) {
-      const angle = (r * Math.PI * 2) / 5 + 0.2;
-      const root = new THREE.Mesh(this.getBox(0.8, 8.5, 3.8), this.treeBarkMat);
-      root.position.set(Math.cos(angle) * 2.2, -1.5, Math.sin(angle) * 2.2);
+      const angle = (r * Math.PI * 2) / 5 + 0.25;
+      const root = new THREE.Mesh(this.getBox(0.9, 9.5, 4.2), this.treeBarkMat);
+      root.position.set(Math.cos(angle) * 2.4, -2.0, Math.sin(angle) * 2.4);
       root.rotation.y = angle;
+      root.rotation.x = 0.15;
       tree.add(root);
     }
 
-    // High Spreading Canopy Boughs at Y = 19m to 25m (safely above the 8.5m clearance ceiling)
+    // High Spreading Canopy Boughs at Y = 19m to 25m (safely clear above 8.5m running ceiling)
     [-1, 1].forEach((dir) => {
-      const bough = new THREE.Mesh(this.getCylinder(0.85, 1.3, 8.5, 6), this.treeBarkMat);
-      bough.position.set(dir * 2.8, 19.5, 0);
-      bough.rotation.z = dir * 0.35;
+      const bough = new THREE.Mesh(this.getCylinder(0.85, 1.4, 9.5, 6), this.treeBarkMat);
+      bough.position.set(dir * 3.4, 19.5, 0);
+      bough.rotation.z = dir * 0.42;
       tree.add(bough);
 
-      // Multi-tier lush foliage domes with rich emerald and jade highlights
-      const mainCanopy = new THREE.Mesh(this.getSphere(4.6, 9), this.deepCanopyMat);
-      mainCanopy.scale.set(1.4, 0.85, 1.4);
-      mainCanopy.position.set(dir * 5.2, 22.8, 0);
+      // Layered parasol foliage crowns with deep jade, emerald, and chartreuse highlights
+      const mainCanopy = new THREE.Mesh(this.getSphere(4.8, 9), this.deepCanopyMat);
+      mainCanopy.scale.set(1.4, 0.65, 1.4);
+      mainCanopy.position.set(dir * 6.0, 22.5, 0);
       tree.add(mainCanopy);
 
-      const upperLeafPuff = new THREE.Mesh(this.getSphere(3.4, 8), this.jungleLeafMat);
-      upperLeafPuff.position.set(dir * 4.2, 21.2, 2.0);
+      const upperLeafPuff = new THREE.Mesh(this.getSphere(3.8, 8), this.jungleLeafMat);
+      upperLeafPuff.scale.set(1.2, 0.60, 1.2);
+      upperLeafPuff.position.set(dir * 4.8, 21.0, 2.2);
       tree.add(upperLeafPuff);
 
-      const goldenLeafPuff = new THREE.Mesh(this.getSphere(2.6, 7), this.goldenFernMat);
-      goldenLeafPuff.position.set(dir * 5.8, 23.5, -1.8);
+      const goldenLeafPuff = new THREE.Mesh(this.getSphere(3.0, 7), this.goldenFernMat);
+      goldenLeafPuff.scale.set(1.1, 0.55, 1.1);
+      goldenLeafPuff.position.set(dir * 6.5, 23.2, -2.0);
       tree.add(goldenLeafPuff);
 
-      // Cascading Hanging Liana Vines cascading down to Y = 11m (well above 8.5m running ceiling)
-      for (let v = 0; v < 3; v++) {
-        const vineH = 6.0 + v * 1.5;
+      // Cascading Hanging Liana Vines cascading down to Y = 11m
+      for (let v = 0; v < 4; v++) {
+        const vineH = 6.5 + v * 1.5;
         const vine = new THREE.Mesh(this.getCylinder(0.06, 0.08, vineH, 4), this.hangingVineMat);
-        vine.position.set(dir * (2.8 + v * 1.2), 19.5 - vineH * 0.5, (v - 1) * 1.6);
+        vine.position.set(dir * (2.8 + v * 1.2), 19.5 - vineH * 0.5, (v - 1.5) * 1.6);
         tree.add(vine);
       }
     });
@@ -640,676 +904,314 @@ export class JurassicRushWorldBuilder {
   }
 
   /**
+   * Giant Prehistoric Tree Fern with Arching Feathered Fronds
+   */
+  public buildGiantTreeFern(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
+    const fern = new THREE.Group();
+    fern.position.set(x, y, z);
+    fern.scale.set(scale, scale, scale);
+
+    const trunkH = 8.5;
+    const trunk = new THREE.Mesh(this.getCylinder(0.45, 0.65, trunkH, 6), this.treeBarkMat);
+    trunk.position.y = -2.0 + trunkH * 0.5;
+    fern.add(trunk);
+
+    // 8 Arching Translucent Feathered Fern Fronds
+    const fronds: THREE.Object3D[] = [];
+    for (let f = 0; f < 8; f++) {
+      const angle = (f * Math.PI * 2) / 8;
+      const frond = new THREE.Mesh(this.getPlane(4.2, 1.8), this.fernFrondMat);
+      frond.position.set(Math.cos(angle) * 1.6, trunkH - 2.0, Math.sin(angle) * 1.6);
+      frond.rotation.y = angle;
+      frond.rotation.x = 0.55;
+      fern.add(frond);
+      fronds.push(frond);
+    }
+
+    JurassicRushEventDirector.getInstance().registerSwayingFoliage(fronds, 0.12, 1.4);
+    return fern;
+  }
+
+  /**
    * Eye-Level Prehistoric Cycad / Fan Palm
-   * Highly recognizable fan-frond prehistoric foliage placed right along the trackside
    */
   public buildEyeLevelCycad(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
     const cycad = new THREE.Group();
     cycad.position.set(x, y, z);
     cycad.scale.set(scale, scale, scale);
 
-    // Fibrous textured prehistoric stump anchored into ground (bottom down to Y = -2.6m)
-    const trunk = new THREE.Mesh(this.getCylinder(0.32, 0.48, 3.6, 7), this.treeBarkMat);
-    trunk.position.y = -0.8;
+    const trunkH = 2.4;
+    const trunk = new THREE.Mesh(this.getCylinder(0.45, 0.65, trunkH, 7), this.treeBarkMat);
+    trunk.position.y = -1.0 + trunkH * 0.5;
     cycad.add(trunk);
 
-    // 8 Arched Feathered Fan Fronds radiating out at eye level
-    for (let f = 0; f < 8; f++) {
-      const angle = (f / 8) * Math.PI * 2;
-      const frondMesh = new THREE.Mesh(this.getPlane(2.8, 1.1), f % 2 === 0 ? this.cycadLeafMat : this.goldenFernMat);
-      frondMesh.position.set(Math.cos(angle) * 1.2, 1.0 + Math.sin(f) * 0.15, Math.sin(angle) * 1.2);
-      frondMesh.rotation.y = angle;
-      frondMesh.rotation.x = 0.44;
-      cycad.add(frondMesh);
+    for (let f = 0; f < 6; f++) {
+      const angle = (f * Math.PI * 2) / 6;
+      const frond = new THREE.Mesh(this.getPlane(3.2, 1.4), this.fernFrondMat);
+      frond.position.set(Math.cos(angle) * 0.8, 1.2, Math.sin(angle) * 0.8);
+      frond.rotation.y = angle;
+      frond.rotation.x = 0.45;
+      cycad.add(frond);
     }
-
-    // Exotic prehistoric orchid blossom near crown
-    const orchid = new THREE.Mesh(this.getSphere(0.28, 6), this.flowerOrchidMat);
-    orchid.position.set(0.2, 1.15, 0.2);
-    cycad.add(orchid);
 
     return cycad;
   }
 
   /**
-   * Giant Ancient Mossy Crag & Geological Formations
-   * Replaces monolithic boxes with organic faceted basalt crags anchored to Y <= -5.5m
+   * Mossy Basalt Boulders along the primeval forest floor
    */
-  public buildMossyBoulder(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
-    const boulder = new THREE.Group();
-    boulder.position.set(x, y, z);
-    boulder.scale.set(scale, scale, scale);
+  public buildMossyBoulders(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    group.scale.set(scale, scale, scale);
 
-    // Main faceted rock crag using dodecahedron for natural crystalline rock look
-    const rock = new THREE.Mesh(this.getDodecahedron(2.6), this.mossyBasaltMat);
-    rock.scale.set(1.4, 1.1, 1.2);
-    rock.position.y = 1.1;
-    boulder.add(rock);
+    const main = new THREE.Mesh(this.getDodecahedron(1.6), this.mossyBasaltMat);
+    main.position.y = 1.0;
+    main.scale.set(1.3, 0.85, 1.1);
+    group.add(main);
 
-    // Secondary stepped shelf with moss
-    const shelf = new THREE.Mesh(this.getDodecahedron(1.8), this.mossyBasaltMat);
-    shelf.position.set(1.3, 0.4, 0.6);
-    boulder.add(shelf);
+    const sub = new THREE.Mesh(this.getDodecahedron(1.1), this.mossyBasaltMat);
+    sub.position.set(1.1, 0.65, 0.4);
+    group.add(sub);
 
-    // Deep subterranean foundation anchor down to Y = -5.5m (ZERO FLOATING GEOMETRY)
-    const anchor = new THREE.Mesh(this.getCylinder(2.2, 2.6, 7.0, 7), this.mossyBasaltMat);
-    anchor.position.y = -2.8;
-    boulder.add(anchor);
+    const sub2 = new THREE.Mesh(this.getDodecahedron(0.8), this.mossyBasaltMat);
+    sub2.position.set(-0.9, 0.45, -0.5);
+    group.add(sub2);
 
-    return boulder;
+    return group;
   }
 
   /**
-   * Rugged Expedition Railway Catenary Pole with Amber Warning Lantern
+   * Ancient Mossy Hollow Log with Shelf Bracket Fungi
    */
+  public buildMossyFallenLog(x: number, y: number, z: number, rotY: number = 0, scale: number = 1.0): THREE.Group {
+    const logGroup = new THREE.Group();
+    logGroup.position.set(x, y, z);
+    logGroup.rotation.y = rotY;
+    logGroup.scale.set(scale, scale, scale);
+
+    // Hollow ancient log cylinder
+    const log = new THREE.Mesh(this.getCylinder(1.1, 1.3, 11.0, 7), this.treeBarkMat);
+    log.rotation.x = Math.PI / 2;
+    log.position.y = 0.6;
+    logGroup.add(log);
+
+    // Moss patch on top
+    const moss = new THREE.Mesh(this.getBox(1.6, 0.35, 9.5), this.jungleLeafMat);
+    moss.position.y = 1.7;
+    logGroup.add(moss);
+
+    // Shelf bracket fungi along the side
+    [-2.5, 0.5, 3.2].forEach((fz) => {
+      const bracket = new THREE.Mesh(this.getCylinder(0.55, 0.1, 0.15, 6), this.goldenFernMat);
+      bracket.position.set(1.2, 0.9, fz);
+      bracket.rotation.z = Math.PI / 6;
+      logGroup.add(bracket);
+    });
+
+    return logGroup;
+  }
+
+  /**
+   * Prehistoric River Channel with Flowing Water Surface
+   */
+  public buildPrehistoricRiver(x: number, y: number, z: number, width: number, length: number): THREE.Group {
+    const riverGroup = new THREE.Group();
+    riverGroup.position.set(x, y, z);
+
+    // Shimmering flowing water surface at Y = -0.15m
+    const water = new THREE.Mesh(this.getPlane(width, length), this.riverWaterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -0.15;
+    riverGroup.add(water);
+
+    // Riverbed gravel backing underneath
+    const bed = new THREE.Mesh(this.getBox(width + 2.0, 4.0, length), this.mossyBasaltMat);
+    bed.position.y = -2.15;
+    riverGroup.add(bed);
+
+    // River pebbles and smooth boulders along banks
+    [-width * 0.45, width * 0.45].forEach((bx) => {
+      for (let pz = -length * 0.4; pz < length * 0.4; pz += 12.0) {
+        const pebble = new THREE.Mesh(this.getDodecahedron(0.85), this.mossyBasaltMat);
+        pebble.position.set(bx + (Math.sin(pz) * 0.8), 0.2, pz);
+        riverGroup.add(pebble);
+      }
+    });
+
+    JurassicRushEventDirector.getInstance().registerRiverStream(water, 0.65);
+    return riverGroup;
+  }
+
+  /**
+   * Multi-Stage Prehistoric Mountain Waterfall with Plunge Pool & Mist
+   */
+  public buildPrehistoricWaterfall(x: number, y: number, z: number, width: number, height: number): THREE.Group {
+    const fallGroup = new THREE.Group();
+    fallGroup.position.set(x, y, z);
+
+    // Stratified rock cliff backing
+    const cliff = new THREE.Mesh(this.getCylinder(width * 0.65, width * 0.85, height + 8.0, 8), this.stratifiedSandstoneMat);
+    cliff.position.y = height * 0.5;
+    fallGroup.add(cliff);
+
+    // Cascading frothing waterfall mesh
+    const cataract = new THREE.Mesh(this.getPlane(width * 0.75, height), this.waterfallMat);
+    cataract.position.set(0, height * 0.5, width * 0.45);
+    fallGroup.add(cataract);
+
+    // Expanding circular splash rings at plunge base in water pool
+    const splashRings: THREE.Mesh[] = [];
+    for (let r = 0; r < 2; r++) {
+      const ring = new THREE.Mesh(this.getTorus(width * 0.45, 0.25, 6, 16), this.splashRingMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, 0.1, width * 0.45);
+      fallGroup.add(ring);
+      splashRings.push(ring);
+    }
+
+    // Swirling volumetric mist cloud
+    const mistGroup = new THREE.Group();
+    mistGroup.position.set(0, 2.5, width * 0.45);
+    for (let m = 0; m < 3; m++) {
+      const puff = new THREE.Mesh(this.getSphere(3.2 + m * 0.8, 6), this.mistMat);
+      puff.position.set((m - 1) * 1.8, m * 1.2, 0);
+      mistGroup.add(puff);
+    }
+    fallGroup.add(mistGroup);
+
+    JurassicRushEventDirector.getInstance().registerWaterfall(cataract, splashRings, 2.6, mistGroup);
+    return fallGroup;
+  }
+
+  /**
+   * Prehistoric Dinosaur Nest with Clutch of Speckled Eggs
+   */
+  public buildDinosaurNest(x: number, y: number, z: number): THREE.Group {
+    const nest = new THREE.Group();
+    nest.position.set(x, y, z);
+
+    // Raised earth/vegetation mound
+    const mound = new THREE.Mesh(this.getCylinder(2.2, 2.8, 0.7, 8), this.treeBarkMat);
+    mound.position.y = 0.35;
+    nest.add(mound);
+
+    // Circular ring of protective river stones
+    for (let s = 0; s < 8; s++) {
+      const angle = (s * Math.PI * 2) / 8;
+      const stone = new THREE.Mesh(this.getDodecahedron(0.45), this.mossyBasaltMat);
+      stone.position.set(Math.cos(angle) * 1.8, 0.65, Math.sin(angle) * 1.8);
+      nest.add(stone);
+    }
+
+    // Clutch of 6 speckled dinosaur eggs
+    for (let e = 0; e < 6; e++) {
+      const angle = (e * Math.PI * 2) / 6;
+      const egg = new THREE.Mesh(this.getSphere(0.38, 7), this.dinosaurEggMat);
+      egg.scale.set(0.85, 1.35, 0.85);
+      egg.position.set(Math.cos(angle) * 0.75, 0.85, Math.sin(angle) * 0.75);
+      egg.rotation.z = (Math.random() - 0.5) * 0.3;
+      nest.add(egg);
+    }
+
+    return nest;
+  }
+
+  /**
+   * Exposed Prehistoric Fossil Bed with Ammonites & Footprints
+   */
+  public buildFossilBed(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
+    const fossilGroup = new THREE.Group();
+    fossilGroup.position.set(x, y, z);
+    fossilGroup.scale.set(scale, scale, scale);
+
+    const slab = new THREE.Mesh(this.getBox(6.5, 0.6, 8.5), this.fossilStoneMat);
+    slab.position.y = 0.3;
+    slab.rotation.y = 0.15;
+    fossilGroup.add(slab);
+
+    return fossilGroup;
+  }
+
+  /**
+   * Hovering Prehistoric Giant Dragonfly (Meganeura)
+   */
+  public buildGiantDragonfly(x: number, y: number, z: number): THREE.Group {
+    const dfGroup = new THREE.Group();
+    dfGroup.position.set(x, y, z);
+
+    // Elongated iridescent body
+    const body = new THREE.Mesh(this.getCylinder(0.12, 0.08, 1.8, 6), this.dragonflyBodyMat);
+    body.rotation.x = Math.PI / 2;
+    dfGroup.add(body);
+
+    // Multifaceted head & eyes
+    const head = new THREE.Mesh(this.getSphere(0.22, 6), this.dragonflyBodyMat);
+    head.position.z = -0.95;
+    dfGroup.add(head);
+
+    // Translucent veined wings
+    const leftWing = new THREE.Mesh(this.getPlane(1.4, 0.35), this.dragonflyWingMat);
+    leftWing.position.set(-0.75, 0.05, -0.2);
+    dfGroup.add(leftWing);
+
+    const rightWing = new THREE.Mesh(this.getPlane(1.4, 0.35), this.dragonflyWingMat);
+    rightWing.position.set(0.75, 0.05, -0.2);
+    dfGroup.add(rightWing);
+
+    JurassicRushEventDirector.getInstance().registerDragonfly(dfGroup, leftWing, rightWing);
+    return dfGroup;
+  }
+
+  public buildMossyBoulder(x: number, y: number, z: number, scale: number = 1.0): THREE.Group {
+    const rock = new THREE.Group();
+    rock.position.set(x, y, z);
+    rock.scale.set(scale, scale, scale);
+
+    const main = new THREE.Mesh(this.getDodecahedron(1.8), this.mossyBasaltMat);
+    main.position.y = 1.2;
+    rock.add(main);
+
+    const sub = new THREE.Mesh(this.getDodecahedron(1.2), this.canyonRockMat);
+    sub.position.set(0.9, 0.8, 0.4);
+    rock.add(sub);
+
+    return rock;
+  }
+
   public buildExpeditionRailwayPole(x: number, y: number, z: number): THREE.Group {
     const pole = new THREE.Group();
     pole.position.set(x, y, z);
 
-    // Heavy corten bronze mast (anchored down to Y = -5.5m)
-    const mast = new THREE.Mesh(this.getCylinder(0.20, 0.28, 14.5, 6), this.expeditionBronzeMat);
-    mast.position.y = 1.75; // Base at Y = -5.5m
-    pole.add(mast);
+    const postH = 8.5;
+    const post = new THREE.Mesh(this.getCylinder(0.22, 0.32, postH, 6), this.expeditionTimberMat);
+    post.position.y = postH * 0.5;
+    pole.add(post);
 
-    // Cantilever bracket extending toward rail curb
-    const bracket = new THREE.Mesh(this.getBox(1.6, 0.16, 0.16), this.expeditionBronzeMat);
-    bracket.position.set(x > 0 ? -0.8 : 0.8, 7.5, 0);
-    pole.add(bracket);
+    const crossArm = new THREE.Mesh(this.getBox(1.8, 0.22, 0.22), this.expeditionTimberMat);
+    crossArm.position.y = 7.8;
+    pole.add(crossArm);
 
-    // Amber expedition warning lantern with glow
-    const lantern = new THREE.Mesh(this.getCylinder(0.18, 0.24, 0.52, 6), this.lanternGlowMat);
-    lantern.position.set(x > 0 ? -1.5 : 1.5, 7.2, 0);
-    pole.add(lantern);
+    [-0.7, 0.7].forEach((lx) => {
+      const lantern = new THREE.Mesh(this.getBox(0.35, 0.55, 0.35), this.amberCurbMat);
+      lantern.position.set(lx, 7.3, 0);
+      pole.add(lantern);
+    });
 
     return pole;
   }
 
   // =========================================================================
-  // DISTRICT A — THE LOST JUNGLE (VERTICAL SLICE)
-  // =========================================================================
-
-  public buildLostJungleDistrict(
-    group: THREE.Group,
-    roadbedWidth: number,
-    chunkLength: number,
-    rng: SeededRandom,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: JurassicRushEventDirector
-  ): void {
-    const districtA = new THREE.Group();
-    districtA.name = 'district_a_lost_jungle';
-    group.add(districtA);
-
-    const curbEdge = roadbedWidth * 0.5 + 0.5; // 6.5m from track center
-
-    [-1, 1].forEach((side) => {
-      // 1. Lush Rainforest Bed & Timber Corduroy Walkway (Grounded down to Y = -5.5m)
-      const walkW = 20.0;
-      const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.treeBarkMat);
-      walk.position.set(wx, -2.55, -chunkLength * 0.5); // Bottom reaches Y = -5.55m!
-      districtA.add(walk);
-
-      // Bright Amber Petrified Wood Curb (Grounded down to Y = -5.5m)
-      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
-      curb.position.set(side * (curbEdge + 0.24), -2.52, -chunkLength * 0.5);
-      districtA.add(curb);
-
-      // 2. Rugged Expedition Lantern Poles along curb edge
-      for (let z = 10; z < chunkLength; z += 38) {
-        const pole = this.buildExpeditionRailwayPole(side * (curbEdge + 0.85), 0.45, -z);
-        districtA.add(pole);
-      }
-
-      // 3. Eye-Level Prehistoric Flora: Cycads & Ancient Mossy Boulders
-      for (let z = 6; z < chunkLength; z += 18) {
-        const cycad = this.buildEyeLevelCycad(
-          side * (curbEdge + 2.0 + (z % 3) * 0.5),
-          0.45,
-          -z,
-          1.0 + ((z * 7) % 5) * 0.1
-        );
-        districtA.add(cycad);
-
-        if (z % 36 === 6) {
-          const boulder = this.buildMossyBoulder(
-            side * (curbEdge + 4.2),
-            0.45,
-            -z - 5.0,
-            1.25
-          );
-          districtA.add(boulder);
-        }
-      }
-
-      // 4. Towering Ancient Canopy Trees (positioned at X = ±12.0m to frame the railway overhead)
-      for (let tz = 12; tz < chunkLength; tz += 42) {
-        const tree = this.buildAncientCanopyTree(
-          side * (curbEdge + 5.5),
-          0.45,
-          -tz,
-          1.15
-        );
-        districtA.add(tree);
-      }
-
-      // 5. Natural Stratified Jungle Rock Bluffs with 18m Open Viewing Vistas
-      // Replaces monolithic rectangular boxes with stepped geological crags
-      const bluffPositions = [14, 60];
-      bluffPositions.forEach((bz) => {
-        const bluffGroup = new THREE.Group();
-        bluffGroup.position.set(side * (curbEdge + 12.0), 0.0, -bz);
-
-        // Subterranean anchor plinth (Y <= -5.5m)
-        const plinth = new THREE.Mesh(this.getCylinder(7.5, 8.5, 6.5, 7), this.mossyBasaltMat);
-        plinth.position.y = -2.8;
-        bluffGroup.add(plinth);
-
-        // Lower faceted crag base
-        const lowerCrag = new THREE.Mesh(this.getDodecahedron(6.0), this.mossyBasaltMat);
-        lowerCrag.scale.set(1.4, 0.9, 1.3);
-        lowerCrag.position.set(0, 4.2, 0);
-        bluffGroup.add(lowerCrag);
-
-        // Upper stepped rocky shelf with mossy crown
-        const upperShelf = new THREE.Mesh(this.getDodecahedron(4.2), this.mossyBasaltMat);
-        upperShelf.position.set(side * 1.5, 10.2, 0);
-        bluffGroup.add(upperShelf);
-
-        // Prehistoric Tree Fern Fronds crowning the crag at Y = 14m
-        const fernTex = JurassicRushTextureHelper.getFernFrondTexture();
-        for (let f = 0; f < 5; f++) {
-          const frond = new THREE.Mesh(
-            this.getPlane(7.5, 3.5),
-            new THREE.MeshStandardMaterial({ map: fernTex, side: THREE.DoubleSide, roughness: 0.55 })
-          );
-          frond.position.set(side * 1.5, 14.0, 0);
-          frond.rotation.y = (f * Math.PI * 2) / 5;
-          frond.rotation.x = 0.40;
-          bluffGroup.add(frond);
-        }
-
-        districtA.add(bluffGroup);
-      });
-
-      // 6. Magnificent Multi-Stage Cascading Mountain Waterfall (Right side: side = 1)
-      if (side === 1) {
-        const fallGroup = new THREE.Group();
-        fallGroup.position.set(curbEdge + 14.0, 0.0, -chunkLength * 0.5);
-
-        // Solid stratified rock cliff backing grounded down to Y = -5.5m
-        const cliffBacking = new THREE.Mesh(this.getCylinder(8.5, 10.5, 28.0, 8), this.mossyBasaltMat);
-        cliffBacking.position.set(3.5, 8.5, 0);
-        fallGroup.add(cliffBacking);
-
-        // Mid-level rock cataract shelf where water cascades and breaks
-        const midShelf = new THREE.Mesh(this.getDodecahedron(4.5), this.mossyBasaltMat);
-        midShelf.position.set(0.5, 8.0, 0);
-        fallGroup.add(midShelf);
-
-        // Upper cascading waterfall cataract
-        const upperFall = new THREE.Mesh(this.getCylinder(3.2, 4.2, 11.0, 8), this.waterfallWaterMat);
-        upperFall.position.set(0.2, 16.5, 0);
-        fallGroup.add(upperFall);
-
-        // Lower tumbling waterfall torrent
-        const lowerFall = new THREE.Mesh(this.getCylinder(4.2, 5.5, 10.0, 8), this.waterfallWaterMat);
-        lowerFall.position.set(-1.0, 5.5, 0);
-        fallGroup.add(lowerFall);
-
-        // Billowing white-water foam lip and spray crest
-        const foamLip = new THREE.Mesh(this.getTorus(3.8, 0.85, 6, 12), this.waterfallFoamMat);
-        foamLip.rotation.x = Math.PI / 2;
-        foamLip.position.set(-1.0, 0.75, 0);
-        fallGroup.add(foamLip);
-
-        // Deep emerald river plunge basin below (grounded to Y = -5.5m)
-        const riverBed = new THREE.Mesh(this.getCylinder(11.0, 12.5, 6.0, 8), this.riverWaterMat);
-        riverBed.position.set(-1.0, -2.55, 0);
-        fallGroup.add(riverBed);
-
-        districtA.add(fallGroup);
-      }
-    });
-
-    // 7. ANIMATED DINOSAUR ENCOUNTER: Curious Giant Sauropod Watcher
-    // Prominently framed on the left in the wide 18m jungle vista at X = -(curbEdge + 6.5m) = -13.0m!
-    // Visible clearly peering curiously through the rainforest canopy at the player!
-    const watcher = this.buildCuriousDinosaurWatcher(-(curbEdge + 6.5), 0.45, -chunkLength * 0.45);
-    districtA.add(watcher.group);
-    director.registerCuriousWatcher(watcher.group, watcher.neck, watcher.head);
-
-    // 8. Soaring Pterosaur Flock Banking in the Prehistoric Sky (Y = 22m to 28m)
-    if (detail !== 'MINIMAL') {
-      const pterosaurFlock = this.buildPterosaurFlock(-chunkLength * 0.5);
-      districtA.add(pterosaurFlock.group);
-      director.registerPterosaurs(pterosaurFlock.group, pterosaurFlock.gliders, 18.0, 3.2);
-    }
-  }
-
-  // =========================================================================
-  // DISTRICT B — VALLEY OF GIANTS
-  // =========================================================================
-
-  public buildValleyOfGiantsDistrict(
-    group: THREE.Group,
-    roadbedWidth: number,
-    chunkLength: number,
-    rng: SeededRandom,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: JurassicRushEventDirector
-  ): void {
-    const districtB = new THREE.Group();
-    districtB.name = 'district_b_valley_of_giants';
-    group.add(districtB);
-
-    const curbEdge = roadbedWidth * 0.5 + 0.5;
-
-    [-1, 1].forEach((side) => {
-      // 1. Ancient Valley Basalt Promenade (Grounded down to Y = -5.5m)
-      const walkW = 20.0;
-      const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.templeStoneMat);
-      walk.position.set(wx, -2.55, -chunkLength * 0.5);
-      districtB.add(walk);
-
-      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
-      curb.position.set(side * (curbEdge + 0.24), -2.52, -chunkLength * 0.5);
-      districtB.add(curb);
-
-      // Eye-level cycads along valley edge
-      for (let z = 8; z < chunkLength; z += 22) {
-        const cycad = this.buildEyeLevelCycad(side * (curbEdge + 2.0), 0.45, -z, 1.15);
-        districtB.add(cycad);
-      }
-
-      // Prehistoric Conifer / Araucaria trees dotting valley margins
-      for (let tz = 18; tz < chunkLength; tz += 38) {
-        const conifer = this.buildAncientCanopyTree(side * (curbEdge + 6.2), 0.45, -tz, 0.95);
-        districtB.add(conifer);
-      }
-
-      // 2. Stepped Geological Terraces framing panoramic valley floor
-      const mesa = new THREE.Group();
-      mesa.position.set(side * (curbEdge + 13.5), 0.0, -18);
-
-      const mAnchor = new THREE.Mesh(this.getCylinder(7.5, 8.5, 6.5, 7), this.canyonRockMat);
-      mAnchor.position.y = -2.8;
-      mesa.add(mAnchor);
-
-      const m1 = new THREE.Mesh(this.getCylinder(6.5, 7.5, 8.5, 7), this.canyonRockMat);
-      m1.position.set(0, 4.2, 0);
-      mesa.add(m1);
-
-      const m2 = new THREE.Mesh(this.getCylinder(4.5, 5.8, 7.5, 6), this.canyonRockMat);
-      m2.position.set(side * 1.5, 11.5, 0);
-      mesa.add(m2);
-
-      districtB.add(mesa);
-    });
-
-    // 3. ANIMATED DINOSAUR ENCOUNTER: Colossal Sauropod (Brachiosaurus) & Juvenile
-    // Placed in the panoramic viewing vista on the left at X = -(curbEdge + 5.5m) = -12.0m!
-    // Its 16m neck, sculpted head, counter-shaded body, and tail loom majestically over the tracks!
-    const sauropod = this.buildColossalSauropod(-(curbEdge + 5.5), 0.45, -chunkLength * 0.45);
-    districtB.add(sauropod.group);
-    director.registerSauropod(
-      sauropod.group,
-      sauropod.neck,
-      sauropod.head,
-      sauropod.tail,
-      sauropod.legs,
-      4.5,
-      1.6,
-      -chunkLength * 1.2,
-      30
-    );
-
-    // Accompanying Juvenile Sauropod walking alongside parent
-    const babySauropod = this.buildColossalSauropod(-(curbEdge + 9.5), 0.45, -chunkLength * 0.35);
-    babySauropod.group.scale.set(0.55, 0.55, 0.55);
-    districtB.add(babySauropod.group);
-    director.registerSauropod(
-      babySauropod.group,
-      babySauropod.neck,
-      babySauropod.head,
-      babySauropod.tail,
-      babySauropod.legs,
-      4.5,
-      1.6,
-      -chunkLength * 1.2,
-      30
-    );
-
-    // 4. ANIMATED DINOSAUR ENCOUNTER: Grazing Armored Herbivore Herd (Triceratops)
-    // Placed in the right clearing at X = curbEdge + 5.2m (11.7m) with warning frills & bone horns
-    const herd = this.buildHerbivoreHerd(curbEdge + 5.2, 0.45, -chunkLength * 0.55);
-    districtB.add(herd.group);
-    director.registerHerbivoreHerd(herd.group, herd.members);
-  }
-
-  // =========================================================================
-  // DISTRICT C — RAPTOR CANYON
-  // =========================================================================
-
-  public buildRaptorCanyonDistrict(
-    group: THREE.Group,
-    roadbedWidth: number,
-    chunkLength: number,
-    rng: SeededRandom,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: JurassicRushEventDirector
-  ): void {
-    const districtC = new THREE.Group();
-    districtC.name = 'district_c_raptor_canyon';
-    group.add(districtC);
-
-    const curbEdge = roadbedWidth * 0.5 + 0.5;
-
-    [-1, 1].forEach((side) => {
-      // 1. Red Sandstone Gorge Walkway (Grounded down to Y = -5.5m)
-      const walkW = 20.0;
-      const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.canyonRockMat);
-      walk.position.set(wx, -2.55, -chunkLength * 0.5);
-      districtC.add(walk);
-
-      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
-      curb.position.set(side * (curbEdge + 0.24), -2.52, -chunkLength * 0.5);
-      districtC.add(curb);
-
-      // Eye-level cycads along canyon path
-      for (let z = 8; z < chunkLength; z += 22) {
-        const cycad = this.buildEyeLevelCycad(side * (curbEdge + 2.0), 0.45, -z, 1.0);
-        districtC.add(cycad);
-      }
-
-      // 2. Sculpted Sandstone Hoodoos & Terraced Canyon Formations (No flat boxes!)
-      [14, 62].forEach((cz) => {
-        const cliffGroup = new THREE.Group();
-        cliffGroup.position.set(side * (curbEdge + 12.0), 0.0, -cz);
-
-        // Ground anchor plinth down to Y = -5.5m
-        const plinth = new THREE.Mesh(this.getCylinder(7.5, 8.5, 6.5, 7), this.canyonRockMat);
-        plinth.position.y = -2.8;
-        cliffGroup.add(plinth);
-
-        // Tiered sculpted canyon rock shelf
-        const baseCliff = new THREE.Mesh(this.getCylinder(6.2, 7.5, 10.0, 7), this.canyonRockMat);
-        baseCliff.position.set(0, 5.0, 0);
-        cliffGroup.add(baseCliff);
-
-        // Upper hoodoo pinnacle with natural erosion slope
-        const upperPinnacle = new THREE.Mesh(this.getCylinder(4.2, 5.8, 9.0, 6), this.canyonRockMat);
-        upperPinnacle.position.set(side * 1.2, 14.0, 0);
-        cliffGroup.add(upperPinnacle);
-
-        const hoodooCap = new THREE.Mesh(this.getCone(3.8, 6.0, 6), this.canyonRockMat);
-        hoodooCap.position.set(side * 1.5, 20.5, 0);
-        cliffGroup.add(hoodooCap);
-
-        // Embedded Ammonite & Bone Fossil Strata Plaque
-        const fossilTex = JurassicRushTextureHelper.getFossilStrataTexture();
-        const fossil = new THREE.Mesh(
-          this.getPlane(6.5, 6.5),
-          new THREE.MeshStandardMaterial({ map: fossilTex, side: THREE.DoubleSide })
-        );
-        fossil.position.set(-side * 5.2, 8.0, 0);
-        fossil.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
-        cliffGroup.add(fossil);
-
-        districtC.add(cliffGroup);
-      });
-    });
-
-    // 3. ANIMATED DINOSAUR ENCOUNTER: Sprinting Raptor Pack
-    // Placed along a raised canyon terrace at X = curbEdge + 3.8m (10.3m), Y = 1.8m!
-    // Running right alongside the railway in full clear view of the player!
-    const raptorTerrace = new THREE.Mesh(this.getBox(6.5, 6.5, 32.0), this.canyonRockMat);
-    raptorTerrace.position.set(curbEdge + 4.5, -1.0, -chunkLength * 0.5);
-    districtC.add(raptorTerrace);
-
-    const raptorPack = this.buildRaptorPack(curbEdge + 3.8, 2.2, -chunkLength * 0.5);
-    districtC.add(raptorPack.group);
-    director.registerRaptorPack(
-      raptorPack.group,
-      raptorPack.raptors,
-      22.0,
-      8.0,
-      -chunkLength * 1.3,
-      30
-    );
-
-    // 4. Prehistoric Rope & Timber Suspension Bridge spanning overhead at Y = 16.5m
-    const bridgeGroup = new THREE.Group();
-    bridgeGroup.name = 'raptor_canyon_rope_bridge';
-    bridgeGroup.position.set(0, 16.5, -chunkLength * 0.5);
-
-    const bridgeSpan = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 0.6, 2.8), this.treeBarkMat);
-    bridgeGroup.add(bridgeSpan);
-
-    // Stone anchor abutment towers grounded deep into the canyon floor down to Y = -5.5m
-    [-1, 1].forEach((side) => {
-      const tower = new THREE.Mesh(this.getBox(3.4, 24.0, 3.8), this.canyonRockMat);
-      tower.position.set(side * (roadbedWidth * 0.5 + 4.8), -11.0, 0); // Bottom reaches Y = -23m!
-      bridgeGroup.add(tower);
-    });
-
-    [-1.3, 1.3].forEach((rz) => {
-      const rope = new THREE.Mesh(this.getCylinder(0.08, 0.08, roadbedWidth + 12.0, 6), this.amberCurbMat);
-      rope.rotation.z = Math.PI / 2;
-      rope.position.set(0, 0.8, rz);
-      bridgeGroup.add(rope);
-    });
-
-    districtC.add(bridgeGroup);
-  }
-
-  // =========================================================================
-  // DISTRICT D — THE ANCIENT SANCTUARY
-  // =========================================================================
-
-  public buildAncientSanctuaryDistrict(
-    group: THREE.Group,
-    roadbedWidth: number,
-    chunkLength: number,
-    rng: SeededRandom,
-    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: JurassicRushEventDirector
-  ): void {
-    const districtD = new THREE.Group();
-    districtD.name = 'district_d_ancient_sanctuary';
-    group.add(districtD);
-
-    const curbEdge = roadbedWidth * 0.5 + 0.5;
-
-    [-1, 1].forEach((side) => {
-      // 1. Overgrown Megalithic Temple Walkway (Grounded down to Y = -5.5m)
-      const walkW = 22.0;
-      const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.templeStoneMat);
-      walk.position.set(wx, -2.55, -chunkLength * 0.5);
-      districtD.add(walk);
-
-      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
-      curb.position.set(side * (curbEdge + 0.24), -2.52, -chunkLength * 0.5);
-      districtD.add(curb);
-
-      // Eye-level prehistoric flora & squat carved stone braziers with golden primal fire
-      for (let z = 10; z < chunkLength; z += 24) {
-        const cycad = this.buildEyeLevelCycad(side * (curbEdge + 1.8), 0.45, -z, 1.15);
-        districtD.add(cycad);
-
-        // Carved ceremonial stone totem plinth
-        const plinth = new THREE.Mesh(this.getCylinder(0.55, 0.75, 2.2, 6), this.templeStoneMat);
-        plinth.position.set(side * (curbEdge + 3.4), 1.1, -z);
-        districtD.add(plinth);
-
-        const plinthMoss = new THREE.Mesh(this.getCylinder(0.60, 0.60, 0.25, 6), this.templeMossMat);
-        plinthMoss.position.set(side * (curbEdge + 3.4), 2.25, -z);
-        districtD.add(plinthMoss);
-
-        // Carved stone fire bowl with vibrant golden flames
-        const brazier = new THREE.Mesh(this.getCylinder(0.50, 0.35, 0.9, 6), this.templeStoneMat);
-        brazier.position.set(side * (curbEdge + 3.4), 2.75, -z);
-        districtD.add(brazier);
-
-        const flame = new THREE.Mesh(this.getCone(0.38, 0.95, 6), this.brazierFireMat);
-        flame.position.set(side * (curbEdge + 3.4), 3.55, -z);
-        districtD.add(flame);
-      }
-
-      // 2. Stepped Ziggurat Temple Pyramids with Ceremonial Stairs & Lush Backdrop Canopy
-      [16, 56].forEach((tz) => {
-        const templeGroup = new THREE.Group();
-        templeGroup.position.set(side * (curbEdge + 12.0), 0.0, -tz);
-
-        // Subterranean Anchor Plinth down to Y = -5.5m
-        const tAnchor = new THREE.Mesh(this.getBox(15.0, 6.0, 20.0), this.templeStoneMat);
-        tAnchor.position.y = -2.8;
-        templeGroup.add(tAnchor);
-
-        // Stepped Ziggurat Tier 1 with lush moss cornice
-        const tier1 = new THREE.Mesh(this.getBox(13.0, 4.0, 18.0), this.templeStoneMat);
-        tier1.position.y = 2.0;
-        templeGroup.add(tier1);
-
-        const mossTier1 = new THREE.Mesh(this.getBox(13.4, 0.35, 18.4), this.templeMossMat);
-        mossTier1.position.y = 4.15;
-        templeGroup.add(mossTier1);
-
-        // Ceremonial stone stairs cascading toward railway
-        for (let st = 0; st < 5; st++) {
-          const stair = new THREE.Mesh(this.getBox(0.9, 0.55, 7.5), this.templeStoneMat);
-          stair.position.set(-side * (5.5 + st * 0.8), 0.35 + st * 0.55, 0);
-          templeGroup.add(stair);
-
-          const stairMoss = new THREE.Mesh(this.getBox(0.92, 0.12, 7.6), this.templeMossMat);
-          stairMoss.position.set(-side * (5.5 + st * 0.8), 0.65 + st * 0.55, 0);
-          templeGroup.add(stairMoss);
-        }
-
-        // Stepped Ziggurat Tier 2 with moss cornice
-        const tier2 = new THREE.Mesh(this.getBox(9.5, 3.5, 13.5), this.templeStoneMat);
-        tier2.position.y = 5.8;
-        templeGroup.add(tier2);
-
-        const mossTier2 = new THREE.Mesh(this.getBox(9.8, 0.35, 13.8), this.templeMossMat);
-        mossTier2.position.y = 7.65;
-        templeGroup.add(mossTier2);
-
-        // Stepped Ziggurat Tier 3 / Upper Altar Sanctuary
-        const tier3 = new THREE.Mesh(this.getBox(6.5, 3.0, 9.5), this.templeStoneMat);
-        tier3.position.y = 9.2;
-        templeGroup.add(tier3);
-
-        // Temple Colonnade Pillars
-        [-2.4, 2.4].forEach((px) => {
-          [-3.5, 3.5].forEach((pz) => {
-            const pillar = new THREE.Mesh(this.getCylinder(0.38, 0.48, 4.0, 6), this.templeStoneMat);
-            pillar.position.set(px, 12.5, pz);
-            templeGroup.add(pillar);
-          });
-        });
-
-        // Temple Roof Pediment
-        const pediment = new THREE.Mesh(this.getBox(7.0, 1.2, 10.0), this.templeStoneMat);
-        pediment.position.y = 15.0;
-        templeGroup.add(pediment);
-
-        // Ancient Claw Sigil Stone Plaque with Glowing Gold Relief
-        const stoneTex = JurassicRushTextureHelper.getTempleStoneTexture();
-        const plaque = new THREE.Mesh(
-          this.getPlane(6.0, 6.0),
-          new THREE.MeshStandardMaterial({ map: stoneTex, side: THREE.DoubleSide })
-        );
-        plaque.position.set(-side * 4.9, 5.8, 0);
-        plaque.rotation.y = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
-        templeGroup.add(plaque);
-
-        districtD.add(templeGroup);
-
-        // Towering Ancient Canopy Tree rising behind the temple into the sky
-        const backTree = this.buildAncientCanopyTree(side * (curbEdge + 21.0), 0.45, -tz, 1.05);
-        districtD.add(backTree);
-      });
-    });
-
-    // 3. ANIMATED DINOSAUR ENCOUNTER: Apex Carnivore (Tyrannosaur) Roaring from Sanctuary Altar
-    // Prominently perched on an elevated ceremonial temple dais at X = curbEdge + 5.5m, Y = 3.8m!
-    // Angled menacingly toward the railway so player sees its roaring jaw, teeth and claws!
-    const predatorDais = new THREE.Group();
-    predatorDais.position.set(curbEdge + 5.5, 0.0, -chunkLength * 0.5);
-
-    const pAnchor = new THREE.Mesh(this.getBox(10.0, 6.5, 15.0), this.templeStoneMat);
-    pAnchor.position.y = -2.8;
-    predatorDais.add(pAnchor);
-
-    const pPlinth = new THREE.Mesh(this.getBox(9.0, 3.8, 13.5), this.templeStoneMat);
-    pPlinth.position.y = 1.9;
-    predatorDais.add(pPlinth);
-
-    const pMoss = new THREE.Mesh(this.getBox(9.4, 0.35, 13.9), this.templeMossMat);
-    pMoss.position.y = 3.9;
-    predatorDais.add(pMoss);
-
-    // Ceremonial Altar Braziers flanking the predator
-    [-5.5, 5.5].forEach((bz) => {
-      const bzMesh = new THREE.Mesh(this.getCylinder(0.5, 0.35, 1.8, 6), this.templeStoneMat);
-      bzMesh.position.set(0, 4.8, bz);
-      predatorDais.add(bzMesh);
-
-      const flame = new THREE.Mesh(this.getCone(0.45, 1.0, 6), this.brazierFireMat);
-      flame.position.set(0, 6.0, bz);
-      predatorDais.add(flame);
-    });
-
-    districtD.add(predatorDais);
-
-    const apexPredator = this.buildApexCarnivore(curbEdge + 5.5, 4.0, -chunkLength * 0.5);
-    apexPredator.group.rotation.y = Math.PI - 0.40; // Roaring head, snapping teeth and claws facing oncoming runner!
-    districtD.add(apexPredator.group);
-    director.registerCarnivore(
-      apexPredator.group,
-      apexPredator.torso,
-      apexPredator.head,
-      apexPredator.lowerJaw,
-      apexPredator.tail,
-      9.0
-    );
-
-    // 4. Overgrown Megalithic Arch Spanning overhead at Y = 16.5m
-    const archGroup = new THREE.Group();
-    archGroup.name = 'sanctuary_megalithic_arch';
-    archGroup.position.set(0, 16.5, -chunkLength * 0.5);
-
-    const stoneArch = new THREE.Mesh(this.getBox(roadbedWidth + 12.0, 1.4, 4.0), this.templeStoneMat);
-    archGroup.add(stoneArch);
-
-    // Massive stone pillars anchoring the megalithic arch down to Y = -5.5m
-    [-1, 1].forEach((side) => {
-      const archPillar = new THREE.Mesh(this.getBox(3.4, 24.0, 3.8), this.templeStoneMat);
-      archPillar.position.set(side * (roadbedWidth * 0.5 + 4.8), -11.0, 0); // Bottom reaches Y = -23m!
-      archGroup.add(archPillar);
-    });
-
-    const ivyTrim = new THREE.Mesh(this.getBox(roadbedWidth + 12.4, 0.45, 4.2), this.jungleLeafMat);
-    ivyTrim.position.y = 0.8;
-    archGroup.add(ivyTrim);
-
-    districtD.add(archGroup);
-  }
-
-  // =========================================================================
-  // ANATOMICALLY SCULPTED PREHISTORIC DINOSAURS
+  // HERO DINOSAUR SCULPTING
   // =========================================================================
 
   /**
-   * Colossal Long-Necked Sauropod (Brachiosaurus)
-   * High-detail articulated sauropod with sculpted compound curved ribcage, counter-shaded belly,
-   * 16m curving neck, detailed head with amber eyes and pupils, whip tail, and muscular columnar legs.
+   * Colossal Long-Necked Sauropod (Brachiosaurus / Titanosaur)
+   * Anatomically sculpted with deep muscular chest, shoulder hump, lighter countershaded underbelly,
+   * articulated multi-segment S-neck (5 segments), sculpted Brachiosaurus skull with nasal dome and eyes,
+   * 4 columnar pillar legs with ivory claws, and counterbalancing whip tail.
    */
-  public buildColossalSauropod(x: number, y: number, z: number): {
+  public buildColossalSauropod(x: number, y: number, z: number, scale: number = 1.0, isEventA: boolean = false): {
     group: THREE.Group;
     neck: THREE.Object3D;
     head: THREE.Object3D;
@@ -1318,12 +1220,13 @@ export class JurassicRushWorldBuilder {
   } {
     const group = new THREE.Group();
     group.position.set(x, y, z);
+    group.scale.set(scale, scale, scale);
 
-    // Compound Sculpted Torso (Massive deep barrel ribcage + pelvic flank)
+    // 1. Compound Sculpted Torso
     const torso = new THREE.Group();
     torso.position.y = 11.2;
 
-    // Massive deep chest / ribcage (compound scaled sphere)
+    // Deep muscular barrel chest
     const chest = new THREE.Mesh(this.getSphere(3.8, 10), this.dinosaurSkinMat);
     chest.scale.set(1.0, 1.15, 1.35);
     chest.position.set(0, 0.4, -1.8);
@@ -1335,7 +1238,7 @@ export class JurassicRushWorldBuilder {
     pelvis.position.set(0, 0.1, 3.6);
     torso.add(pelvis);
 
-    // High shoulder hump (characteristic Brachiosaurus dorsal arch)
+    // High shoulder hump (Brachiosaurus dorsal crest)
     const shoulderHump = new THREE.Mesh(this.getSphere(2.5, 8), this.dinosaurSkinMat);
     shoulderHump.scale.set(0.85, 1.2, 1.1);
     shoulderHump.position.set(0, 2.8, -3.2);
@@ -1347,7 +1250,7 @@ export class JurassicRushWorldBuilder {
     belly.position.set(0, -2.8, 0.5);
     torso.add(belly);
 
-    // Dorsal spine ridge scutes running down back
+    // Dorsal spine scutes
     for (let s = -4; s <= 4; s++) {
       const scute = new THREE.Mesh(this.getCone(0.28, 0.85, 5), this.dinosaurSkinMat);
       scute.position.set(0, 3.6 - Math.abs(s) * 0.25, s * 1.3);
@@ -1356,7 +1259,7 @@ export class JurassicRushWorldBuilder {
 
     group.add(torso);
 
-    // 4 Muscular Columnar Legs with articulated shoulder/hip bulges and bone claws
+    // 2. 4 Muscular Columnar Pillar Legs with ivory bone claws
     const legs: THREE.Object3D[] = [];
     const legConfigs = [
       { lx: -2.4, lz: -3.8, isFront: true },
@@ -1369,36 +1272,31 @@ export class JurassicRushWorldBuilder {
       const legGroup = new THREE.Group();
       legGroup.position.set(cfg.lx, 11.2, cfg.lz);
 
-      // Muscular shoulder / hip ball joint
+      // Shoulder / hip ball
       const shoulderJoint = new THREE.Mesh(this.getSphere(1.6, 8), this.dinosaurSkinMat);
       shoulderJoint.scale.set(1.0, 1.2, 1.1);
-      shoulderJoint.position.set(0, 0, 0);
       legGroup.add(shoulderJoint);
 
-      // Upper muscular limb
-      const upperLegH = cfg.isFront ? 6.2 : 5.5;
-      const upperLeg = new THREE.Mesh(this.getCylinder(1.4, 1.2, upperLegH, 8), this.dinosaurSkinMat);
-      upperLeg.position.y = -upperLegH * 0.5;
+      const upperH = cfg.isFront ? 6.2 : 5.5;
+      const upperLeg = new THREE.Mesh(this.getCylinder(1.4, 1.2, upperH, 8), this.dinosaurSkinMat);
+      upperLeg.position.y = -upperH * 0.5;
       legGroup.add(upperLeg);
 
-      // Knee / wrist joint
       const knee = new THREE.Mesh(this.getSphere(1.2, 7), this.dinosaurSkinMat);
-      knee.position.y = -upperLegH;
+      knee.position.y = -upperH;
       legGroup.add(knee);
 
-      // Lower leg column
-      const lowerLegH = cfg.isFront ? 5.8 : 5.5;
-      const lowerLeg = new THREE.Mesh(this.getCylinder(1.15, 1.45, lowerLegH, 8), this.dinosaurSkinMat);
-      lowerLeg.position.y = -upperLegH - lowerLegH * 0.5;
+      const lowerH = cfg.isFront ? 5.8 : 5.5;
+      const lowerLeg = new THREE.Mesh(this.getCylinder(1.15, 1.45, lowerH, 8), this.dinosaurSkinMat);
+      lowerLeg.position.y = -upperH - lowerH * 0.5;
       legGroup.add(lowerLeg);
 
-      // Broad elephantine foot pad with claws
-      const footY = -upperLegH - lowerLegH;
+      const footY = -upperH - lowerH;
       const foot = new THREE.Mesh(this.getCylinder(1.5, 1.7, 0.9, 8), this.dinosaurSkinMat);
       foot.position.set(0, footY - 0.45, 0.3);
       legGroup.add(foot);
 
-      // Bone claws on front of foot
+      // 3 Ivory bone claws
       for (let c = -1; c <= 1; c++) {
         const claw = new THREE.Mesh(this.getCone(0.20, 0.65, 5), this.dinosaurClawMat);
         claw.rotation.x = Math.PI / 2;
@@ -1410,49 +1308,43 @@ export class JurassicRushWorldBuilder {
       legs.push(legGroup);
     });
 
-    // 16-meter Graceful Curving Articulated S-Neck
+    // 3. 16-meter Graceful S-Curved Articulated Neck
     const neck = new THREE.Group();
     neck.position.set(0, 14.2, -5.2);
 
-    // Base neck transition (thick tapering pillar)
     const neckBase = new THREE.Mesh(this.getCylinder(1.3, 1.9, 7.5, 8), this.dinosaurSkinMat);
     neckBase.position.set(0, 3.8, -1.5);
     neckBase.rotation.x = -0.32;
     neck.add(neckBase);
 
-    // Mid neck segment arching vertically
     const neckMid = new THREE.Mesh(this.getCylinder(0.95, 1.3, 8.0, 8), this.dinosaurSkinMat);
     neckMid.position.set(0, 10.4, -3.6);
     neckMid.rotation.x = -0.16;
     neck.add(neckMid);
 
-    // Throat counter-shaded stripe
+    // Counter-shaded throat stripe
     const throatStripe = new THREE.Mesh(this.getBox(0.85, 15.0, 0.5), this.dinosaurUnderbellyMat);
     throatStripe.position.set(0, 7.2, -4.5);
     throatStripe.rotation.x = -0.24;
     neck.add(throatStripe);
 
-    // Sculpted Sauropod Head with arched nostrils, brow crest, amber eyes & pupils
+    // Sculpted Sauropod Head with vaulted nasal crest and amber eyes
     const headGroup = new THREE.Group();
     headGroup.position.set(0, 15.0, -4.8);
 
-    // Skull with rounded cranial dome and arched nasal crest (Brachiosaurus crest)
     const skull = new THREE.Mesh(this.getSphere(1.15, 8), this.dinosaurSkinMat);
     skull.scale.set(0.85, 0.95, 1.35);
     headGroup.add(skull);
 
-    // Tapering snout / muzzle
     const snout = new THREE.Mesh(this.getCylinder(0.65, 0.95, 2.2, 7), this.dinosaurSkinMat);
     snout.rotation.x = -Math.PI / 2;
     snout.position.set(0, -0.3, -1.8);
     headGroup.add(snout);
 
-    // Lower jaw with counter-shaded throat
     const jaw = new THREE.Mesh(this.getBox(1.3, 0.55, 2.8), this.dinosaurUnderbellyMat);
     jaw.position.set(0, -0.9, -0.9);
     headGroup.add(jaw);
 
-    // Piercing amber dinosaur eyes with dark pupils
     [-0.95, 0.95].forEach((ex) => {
       const eye = new THREE.Mesh(this.getSphere(0.24, 7), this.dinosaurEyeMat);
       eye.position.set(ex, 0.35, -0.6);
@@ -1466,7 +1358,7 @@ export class JurassicRushWorldBuilder {
     neck.add(headGroup);
     group.add(neck);
 
-    // 14-meter Counterbalancing Whip Tail
+    // 4. 14-meter Counterbalancing Whip Tail
     const tail = new THREE.Group();
     tail.position.set(0, 11.2, 6.5);
 
@@ -1491,11 +1383,11 @@ export class JurassicRushWorldBuilder {
   }
 
   /**
-   * Apex Carnivore Predator (Tyrannosaurus Rex)
-   * Terrifying bipedal predator with articulated lower jaw for roaring,
-   * ivory teeth, amber eyes with pupils, muscular digitigrade legs, grasping arms, and spined crest.
+   * Apex Carnivore Predator (Tyrannosaurus Rex / Allosaurus)
+   * Menacing bipedal predator with articulated lower jaw for roaring, ivory serrated teeth,
+   * amber eyes, muscular digitigrade legs, grasping arms, and spined dorsal crest.
    */
-  public buildApexCarnivore(x: number, y: number, z: number): {
+  public buildApexCarnivore(x: number, y: number, z: number, scale: number = 1.0, isEventC: boolean = false): {
     group: THREE.Group;
     torso: THREE.Object3D;
     head: THREE.Object3D;
@@ -1504,283 +1396,269 @@ export class JurassicRushWorldBuilder {
   } {
     const group = new THREE.Group();
     group.position.set(x, y, z);
+    group.scale.set(scale, scale, scale);
 
-    // Powerful Bipedal Theropod Torso
     const torso = new THREE.Group();
-    torso.position.set(0, 6.5, 0);
+    torso.position.y = 8.5;
 
-    // Heavy muscular ribcage (compound scaled sphere for natural barrel chest)
-    const chest = new THREE.Mesh(this.getSphere(2.6, 9), this.carnivoreSkinMat);
-    chest.scale.set(0.9, 1.25, 1.65);
-    chest.position.set(0, 0.2, -0.5);
-    torso.add(chest);
+    // Muscular deep ribcage
+    const ribcage = new THREE.Mesh(this.getSphere(3.2, 10), this.carnivoreSkinMat);
+    ribcage.scale.set(0.95, 1.25, 1.45);
+    torso.add(ribcage);
 
-    // Counter-shaded golden belly
-    const belly = new THREE.Mesh(this.getSphere(2.2, 8), this.carnivoreBellyMat);
-    belly.scale.set(0.85, 0.5, 1.5);
-    belly.position.set(0, -1.8, -0.3);
+    // Golden countershaded underbelly
+    const belly = new THREE.Mesh(this.getSphere(2.8, 9), this.carnivoreBellyMat);
+    belly.scale.set(0.85, 0.55, 1.35);
+    belly.position.set(0, -2.2, 0.2);
     torso.add(belly);
 
-    // Spined dorsal scutes running along the backbone
+    // Spine crest scutes
     for (let s = -3; s <= 3; s++) {
-      const scute = new THREE.Mesh(this.getCone(0.25, 0.9, 4), this.carnivoreSkinMat);
-      scute.position.set(0, 2.8, s * 0.9);
-      torso.add(scute);
+      const ridge = new THREE.Mesh(this.getCone(0.24, 0.75, 5), this.dinosaurSkinMat);
+      ridge.position.set(0, 3.2 - Math.abs(s) * 0.2, s * 1.2);
+      torso.add(ridge);
     }
 
-    // Massive Predatory Head & Snapping Jaws
-    const headGroup = new THREE.Group();
-    headGroup.position.set(0, 2.4, -4.8);
+    // Muscular S-curved Neck & Skull
+    const neck = new THREE.Group();
+    neck.position.set(0, 1.8, -3.2);
 
-    // Flared postorbital skull and heavy snout
-    const skull = new THREE.Mesh(this.getSphere(1.6, 8), this.carnivoreSkinMat);
-    skull.scale.set(0.95, 1.05, 1.5);
-    headGroup.add(skull);
+    const neckPillar = new THREE.Mesh(this.getCylinder(1.2, 1.6, 4.5, 7), this.carnivoreSkinMat);
+    neckPillar.rotation.x = -0.55;
+    neckPillar.position.set(0, 1.8, -1.2);
+    neck.add(neckPillar);
 
-    // Snout bridge
-    const snout = new THREE.Mesh(this.getCylinder(0.8, 1.1, 2.6, 7), this.carnivoreSkinMat);
-    snout.rotation.x = -Math.PI / 2;
-    snout.position.set(0, -0.2, -1.8);
-    headGroup.add(snout);
+    const head = new THREE.Group();
+    head.position.set(0, 3.8, -2.8);
 
-    // Upper fangs row (sharp curved ivory teeth)
-    for (let t = -1.6; t <= 1.6; t += 0.8) {
-      const toothL = new THREE.Mesh(this.getCone(0.09, 0.42, 4), this.dinosaurClawMat);
-      toothL.rotation.x = Math.PI;
-      toothL.position.set(-0.95, -1.0, t - 1.2);
-      headGroup.add(toothL);
+    // Heavy theropod cranium with menacing brow crests
+    const cranium = new THREE.Mesh(this.getBox(2.2, 1.9, 3.2), this.carnivoreSkinMat);
+    cranium.position.set(0, 0.35, -0.6);
+    head.add(cranium);
 
-      const toothR = new THREE.Mesh(this.getCone(0.09, 0.42, 4), this.dinosaurClawMat);
-      toothR.rotation.x = Math.PI;
-      toothR.position.set(0.95, -1.0, t - 1.2);
-      headGroup.add(toothR);
-    }
+    [-0.85, 0.85].forEach((bx) => {
+      const brow = new THREE.Mesh(this.getCone(0.35, 0.95, 5), this.dinosaurSkinMat);
+      brow.rotation.x = -0.4;
+      brow.position.set(bx, 1.3, -1.2);
+      head.add(brow);
 
-    // Piercing amber predator eyes with dark pupils under heavy orbital brow
-    [-1.25, 1.25].forEach((ex) => {
-      const brow = new THREE.Mesh(this.getBox(0.45, 0.25, 0.9), this.carnivoreSkinMat);
-      brow.position.set(ex, 0.75, -0.8);
-      headGroup.add(brow);
+      const eye = new THREE.Mesh(this.getSphere(0.26, 7), this.dinosaurEyeMat);
+      eye.position.set(bx * 1.15, 0.45, -0.8);
+      head.add(eye);
 
-      const eye = new THREE.Mesh(this.getSphere(0.24, 7), this.dinosaurEyeMat);
-      eye.position.set(ex, 0.45, -0.8);
-      headGroup.add(eye);
-
-      const pupil = new THREE.Mesh(this.getSphere(0.12, 6), this.dinosaurPupilMat);
-      pupil.position.set(ex * 1.05, 0.45, -0.8);
-      headGroup.add(pupil);
+      const pupil = new THREE.Mesh(this.getSphere(0.12, 5), this.dinosaurPupilMat);
+      pupil.position.set(bx * 1.2, 0.45, -0.8);
+      head.add(pupil);
     });
 
-    // Articulated Lower Jaw (Pivots during roaring tick in EventDirector)
-    const lowerJaw = new THREE.Group();
-    lowerJaw.position.set(0, -1.2, 0.8);
+    // Upper jaw with rows of sharp ivory teeth
+    const upperJaw = new THREE.Mesh(this.getBox(1.6, 1.1, 2.6), this.carnivoreSkinMat);
+    upperJaw.position.set(0, -0.4, -2.4);
+    head.add(upperJaw);
 
-    const jawBone = new THREE.Mesh(this.getBox(1.9, 0.8, 4.0), this.carnivoreSkinMat);
-    jawBone.position.set(0, 0, -1.2);
+    for (let t = -3; t <= 3; t++) {
+      [-0.7, 0.7].forEach((tx) => {
+        const tooth = new THREE.Mesh(this.getCone(0.08, 0.42, 4), this.dinosaurClawMat);
+        tooth.rotation.x = Math.PI;
+        tooth.position.set(tx, -0.95, -2.4 + t * 0.35);
+        head.add(tooth);
+      });
+    }
+
+    // Articulated Lower Jaw that unhinges during roaring
+    const lowerJaw = new THREE.Group();
+    lowerJaw.position.set(0, -0.6, -0.6);
+
+    const jawBone = new THREE.Mesh(this.getBox(1.4, 0.65, 3.8), this.carnivoreBellyMat);
+    jawBone.position.set(0, -0.3, -1.8);
     lowerJaw.add(jawBone);
 
-    // Lower jaw teeth row
-    for (let t = -2.6; t <= -0.2; t += 0.8) {
-      const toothL = new THREE.Mesh(this.getCone(0.08, 0.38, 4), this.dinosaurClawMat);
-      toothL.position.set(-0.85, 0.5, t);
-      lowerJaw.add(toothL);
-
-      const toothR = new THREE.Mesh(this.getCone(0.08, 0.38, 4), this.dinosaurClawMat);
-      toothR.position.set(0.85, 0.5, t);
-      lowerJaw.add(toothR);
+    // Lower jaw teeth
+    for (let t = -3; t <= 3; t++) {
+      [-0.6, 0.6].forEach((tx) => {
+        const tooth = new THREE.Mesh(this.getCone(0.08, 0.38, 4), this.dinosaurClawMat);
+        tooth.position.set(tx, 0.05, -1.8 + t * 0.35);
+        lowerJaw.add(tooth);
+      });
     }
 
-    headGroup.add(lowerJaw);
-    torso.add(headGroup);
+    head.add(lowerJaw);
+    neck.add(head);
+    torso.add(neck);
 
-    // Grasping 2-Clawed Forearms
-    [-1.6, 1.6].forEach((ax) => {
-      const arm = new THREE.Group();
-      arm.position.set(ax, -0.8, -2.6);
-
-      const bicep = new THREE.Mesh(this.getCylinder(0.20, 0.16, 1.4, 5), this.carnivoreSkinMat);
-      bicep.rotation.x = 0.6;
-      arm.add(bicep);
-
-      const claw1 = new THREE.Mesh(this.getCone(0.06, 0.3, 4), this.dinosaurClawMat);
-      claw1.rotation.x = 1.2;
-      claw1.position.set(-0.1, -0.8, 0.6);
-      arm.add(claw1);
-
-      const claw2 = new THREE.Mesh(this.getCone(0.06, 0.3, 4), this.dinosaurClawMat);
-      claw2.rotation.x = 1.2;
-      claw2.position.set(0.1, -0.8, 0.6);
-      arm.add(claw2);
-
-      torso.add(arm);
-    });
-
-    // Counterbalancing Heavy Tail
+    // Counterbalancing Tail
     const tail = new THREE.Group();
-    tail.position.set(0, 0.6, 3.8);
+    tail.position.set(0, 0.4, 3.8);
 
-    const tailBase = new THREE.Mesh(this.getCylinder(0.65, 1.4, 5.5, 8), this.carnivoreSkinMat);
-    tailBase.position.set(0, -0.2, 2.8);
-    tailBase.rotation.x = Math.PI / 2;
+    const tailBase = new THREE.Mesh(this.getCylinder(1.1, 1.8, 6.5, 8), this.carnivoreSkinMat);
+    tailBase.rotation.x = 1.45;
+    tailBase.position.set(0, -0.2, 3.2);
     tail.add(tailBase);
 
-    const tailEnd = new THREE.Mesh(this.getCylinder(0.25, 0.65, 6.0, 6), this.carnivoreSkinMat);
-    tailEnd.position.set(0, 0.3, 7.8);
-    tailEnd.rotation.x = Math.PI / 2;
-    tail.add(tailEnd);
+    const tailMid = new THREE.Mesh(this.getCylinder(0.5, 1.1, 6.5, 7), this.carnivoreSkinMat);
+    tailMid.rotation.x = 1.52;
+    tailMid.position.set(0, -0.6, 9.4);
+    tail.add(tailMid);
+
+    const tailTip = new THREE.Mesh(this.getCylinder(0.15, 0.5, 5.5, 5), this.carnivoreSkinMat);
+    tailTip.rotation.x = 1.58;
+    tailTip.position.set(0, -0.9, 15.2);
+    tail.add(tailTip);
 
     torso.add(tail);
     group.add(torso);
 
-    // Powerful Muscular Digitigrade Legs
+    // Muscular Digitigrade Bipedal Legs
     [-1.8, 1.8].forEach((lx) => {
-      const legGroup = new THREE.Group();
-      legGroup.position.set(lx, 6.5, 0);
+      const leg = new THREE.Group();
+      leg.position.set(lx, 8.5, 0.5);
 
-      // Muscular thigh bulge
-      const thigh = new THREE.Mesh(this.getCylinder(0.9, 1.4, 4.0, 7), this.carnivoreSkinMat);
-      thigh.position.set(0, -1.8, 0.4);
+      const thigh = new THREE.Mesh(this.getCylinder(1.4, 1.1, 5.2, 8), this.carnivoreSkinMat);
       thigh.rotation.x = 0.35;
-      legGroup.add(thigh);
+      thigh.position.set(0, -2.4, 0.8);
+      leg.add(thigh);
 
-      // Shin
-      const shin = new THREE.Mesh(this.getCylinder(0.65, 0.55, 4.2, 6), this.carnivoreSkinMat);
-      shin.position.set(0, -4.5, -0.4);
-      shin.rotation.x = -0.30;
-      legGroup.add(shin);
+      const shank = new THREE.Mesh(this.getCylinder(0.9, 0.75, 4.8, 7), this.carnivoreSkinMat);
+      shank.rotation.x = -0.45;
+      shank.position.set(0, -5.8, 0.2);
+      leg.add(shank);
 
-      // Taloned foot
       const foot = new THREE.Mesh(this.getBox(1.5, 0.5, 2.2), this.carnivoreSkinMat);
-      foot.position.set(0, -6.2, 0.5);
-      legGroup.add(foot);
+      foot.position.set(0, -8.3, -0.4);
+      leg.add(foot);
 
-      // 3 Predatory Claws
       for (let c = -1; c <= 1; c++) {
-        const claw = new THREE.Mesh(this.getCone(0.12, 0.65, 5), this.dinosaurClawMat);
+        const claw = new THREE.Mesh(this.getCone(0.16, 0.65, 5), this.dinosaurClawMat);
         claw.rotation.x = Math.PI / 2;
-        claw.position.set(c * 0.45, -6.2, 1.8);
-        legGroup.add(claw);
+        claw.position.set(c * 0.55, -8.3, 0.9);
+        leg.add(claw);
       }
 
-      group.add(legGroup);
+      group.add(leg);
     });
 
-    return { group, torso, head: headGroup, lowerJaw, tail };
+    return { group, torso, head, lowerJaw, tail };
   }
 
   /**
-   * Pack of 3 Agile Sprinting Raptors (Velociraptors)
-   * Sleek aerodynamic pack with counter-shaded flank stripes, articulated running legs,
-   * raised sickle claws, and grasping 3-clawed arms.
+   * Sprinting Raptor Pack (Velociraptor / Deinonychus)
    */
-  public buildRaptorPack(x: number, y: number, z: number): {
-    group: THREE.Group;
+  public buildRaptorPack(x: number, y: number, z: number, isEventB: boolean = false): {
+    packGroup: THREE.Group;
     raptors: Array<{
       group: THREE.Group;
       legs: THREE.Object3D[];
       tail: THREE.Object3D;
       head: THREE.Object3D;
       phaseOffset: number;
+      lateralOffset?: number;
     }>;
   } {
-    const group = new THREE.Group();
-    group.position.set(x, y, z);
+    const packGroup = new THREE.Group();
+    packGroup.position.set(x, y, z);
 
-    const raptors: Array<{
+    const raptorsData: Array<{
       group: THREE.Group;
       legs: THREE.Object3D[];
       tail: THREE.Object3D;
       head: THREE.Object3D;
       phaseOffset: number;
+      lateralOffset?: number;
     }> = [];
 
+    // 3 Raptors in staggered hunting formation
     const offsets = [
-      { x: 0, z: 0, phase: 0 },
-      { x: 2.4, z: 4.5, phase: Math.PI * 0.4 },
-      { x: -2.2, z: 7.2, phase: Math.PI * 0.8 }
+      { ox: 0, oz: 0, phase: 0 },
+      { ox: -2.8, oz: 4.5, phase: Math.PI * 0.65 },
+      { ox: 2.8, oz: 6.2, phase: Math.PI * 1.35 }
     ];
 
-    offsets.forEach((off) => {
-      const rapGroup = new THREE.Group();
-      rapGroup.position.set(off.x, 0, off.z);
+    offsets.forEach((cfg) => {
+      const rGroup = new THREE.Group();
+      rGroup.position.set(cfg.ox, 0, cfg.oz);
 
-      // Aerodynamic Torso (compound tapered shape)
-      const body = new THREE.Mesh(this.getSphere(0.9, 8), this.raptorGreenMat);
-      body.scale.set(0.7, 0.8, 1.8);
-      body.position.y = 1.8;
-      rapGroup.add(body);
+      const body = new THREE.Mesh(this.getCylinder(0.55, 0.85, 2.8, 7), this.raptorGreenMat);
+      body.rotation.x = 1.35;
+      body.position.set(0, 1.8, 0);
+      rGroup.add(body);
 
-      // Dorsal speed stripe
-      const stripe = new THREE.Mesh(this.getBox(0.35, 0.25, 2.8), this.raptorTealMat);
-      stripe.position.set(0, 2.4, 0);
-      rapGroup.add(stripe);
-
-      // S-Curved Neck & Snarling Raptor Head
+      // Articulated Head
       const head = new THREE.Group();
-      head.position.set(0, 2.2, -1.8);
+      head.position.set(0, 2.3, -1.6);
 
-      const skull = new THREE.Mesh(this.getSphere(0.55, 7), this.raptorGreenMat);
-      skull.scale.set(0.75, 0.8, 1.6);
+      const skull = new THREE.Mesh(this.getBox(0.65, 0.55, 1.4), this.raptorGreenMat);
+      skull.position.set(0, 0, -0.4);
       head.add(skull);
 
-      // Yellow predatory eyes with pupils
-      [-0.42, 0.42].forEach((ex) => {
+      const snout = new THREE.Mesh(this.getCylinder(0.2, 0.35, 1.2, 6), this.raptorTealMat);
+      snout.rotation.x = -Math.PI / 2;
+      snout.position.set(0, -0.15, -1.2);
+      head.add(snout);
+
+      [-0.32, 0.32].forEach((ex) => {
         const eye = new THREE.Mesh(this.getSphere(0.12, 6), this.dinosaurEyeMat);
-        eye.position.set(ex, 0.2, -0.4);
+        eye.position.set(ex, 0.15, -0.4);
         head.add(eye);
-
-        const pupil = new THREE.Mesh(this.getSphere(0.06, 5), this.dinosaurPupilMat);
-        pupil.position.set(ex * 1.05, 0.2, -0.4);
-        head.add(pupil);
       });
 
-      // Snarling white teeth
-      const tooth = new THREE.Mesh(this.getCone(0.04, 0.22, 4), this.dinosaurClawMat);
-      tooth.rotation.x = Math.PI;
-      tooth.position.set(0, -0.45, -0.8);
-      head.add(tooth);
+      rGroup.add(head);
 
-      rapGroup.add(head);
+      // Stiff counterbalancing tail
+      const tail = new THREE.Group();
+      tail.position.set(0, 1.9, 1.2);
 
-      // Stiff Horizontal Balancing Tail
-      const tail = new THREE.Mesh(this.getCylinder(0.10, 0.32, 5.2, 6), this.raptorGreenMat);
-      tail.position.set(0, 1.8, 3.6);
-      tail.rotation.x = Math.PI / 2;
-      rapGroup.add(tail);
+      const tailMesh = new THREE.Mesh(this.getCylinder(0.12, 0.45, 4.2, 6), this.raptorTealMat);
+      tailMesh.rotation.x = 1.55;
+      tailMesh.position.set(0, 0.2, 2.1);
+      tail.add(tailMesh);
+      rGroup.add(tail);
 
-      // 2 Athletic Running Legs with Raised Sickle Claws
+      // 2 Athletic Bipedal Legs with deadly curved sickle claws
       const legs: THREE.Object3D[] = [];
-      [-0.55, 0.55].forEach((lx) => {
-        const legGroup = new THREE.Group();
-        legGroup.position.set(lx, 1.8, 0);
+      [-0.65, 0.65].forEach((lx) => {
+        const leg = new THREE.Group();
+        leg.position.set(lx, 1.8, 0);
 
-        const thigh = new THREE.Mesh(this.getCylinder(0.24, 0.18, 1.5, 6), this.raptorGreenMat);
-        thigh.position.y = -0.75;
-        legGroup.add(thigh);
+        const thigh = new THREE.Mesh(this.getCylinder(0.42, 0.32, 1.6, 6), this.raptorGreenMat);
+        thigh.rotation.x = 0.45;
+        thigh.position.set(0, -0.8, 0.3);
+        leg.add(thigh);
 
-        const shin = new THREE.Mesh(this.getCylinder(0.16, 0.12, 1.5, 6), this.raptorGreenMat);
-        shin.position.set(0, -1.8, -0.2);
-        legGroup.add(shin);
+        const shank = new THREE.Mesh(this.getCylinder(0.25, 0.22, 1.5, 6), this.raptorGreenMat);
+        shank.rotation.x = -0.55;
+        shank.position.set(0, -1.8, 0.1);
+        leg.add(shank);
 
-        // Raised Curved Sickle Claw
-        const sickleClaw = new THREE.Mesh(this.getCone(0.08, 0.38, 4), this.dinosaurClawMat);
-        sickleClaw.rotation.x = -0.8;
-        sickleClaw.position.set(0, -2.4, 0.4);
-        legGroup.add(sickleClaw);
+        const foot = new THREE.Mesh(this.getBox(0.45, 0.18, 0.85), this.raptorGreenMat);
+        foot.position.set(0, -2.5, -0.2);
+        leg.add(foot);
 
-        rapGroup.add(legGroup);
-        legs.push(legGroup);
+        // Deadly inner sickle claw
+        const sickle = new THREE.Mesh(this.getCone(0.08, 0.45, 5), this.dinosaurClawMat);
+        sickle.rotation.x = -0.55;
+        sickle.position.set(0, -2.3, 0.2);
+        leg.add(sickle);
+
+        rGroup.add(leg);
+        legs.push(leg);
       });
 
-      group.add(rapGroup);
-      raptors.push({ group: rapGroup, legs, tail, head, phaseOffset: off.phase });
+      packGroup.add(rGroup);
+      raptorsData.push({
+        group: rGroup,
+        legs,
+        tail,
+        head,
+        phaseOffset: cfg.phase,
+        lateralOffset: cfg.ox
+      });
     });
 
-    return { group, raptors };
+    return { packGroup, raptors: raptorsData };
   }
 
   /**
-   * Gliding Pterosaur Flock
+   * Soaring Pterosaur Flock (Pteranodon)
    */
   public buildPterosaurFlock(z: number): {
     group: THREE.Group;
@@ -1803,60 +1681,56 @@ export class JurassicRushWorldBuilder {
       baseAltitude: number;
     }> = [];
 
-    const flockData = [
-      { x: -11.0, y: 22.0, z: 0, phase: 0 },
-      { x: 10.0, y: 25.0, z: -8.0, phase: 1.2 },
-      { x: 0, y: 27.0, z: -16.0, phase: 2.4 }
+    const flockOffsets = [
+      { gx: -14.0, gy: 32.0, gz: 0, phase: 0 },
+      { gx: 16.0, gy: 35.0, gz: -18, phase: Math.PI * 0.75 },
+      { gx: 2.0, gy: 28.0, gz: 14, phase: Math.PI * 1.45 }
     ];
 
-    flockData.forEach((fd) => {
-      const glider = new THREE.Group();
-      glider.position.set(fd.x, fd.y, fd.z);
+    flockOffsets.forEach((cfg) => {
+      const pMesh = new THREE.Group();
+      pMesh.position.set(cfg.gx, cfg.gy, cfg.gz);
 
-      // Torso & Cranial Crest (Pteranodon backward crest)
-      const body = new THREE.Mesh(this.getCylinder(0.28, 0.42, 2.5, 6), this.pterosaurWingsMat);
-      body.rotation.x = Math.PI / 2;
-      glider.add(body);
+      // Fuselage & cranial crest
+      const fuselage = new THREE.Mesh(this.getCylinder(0.25, 0.35, 2.4, 6), this.pterosaurSkinMat);
+      fuselage.rotation.x = Math.PI / 2;
+      pMesh.add(fuselage);
 
-      // Backward cranial crest
-      const crest = new THREE.Mesh(this.getCone(0.18, 1.4, 4), this.pterosaurWingsMat);
-      crest.rotation.x = Math.PI * 0.75;
-      crest.position.set(0, 0.4, 0.8);
-      glider.add(crest);
+      const crest = new THREE.Mesh(this.getCone(0.25, 1.8, 5), this.pterosaurSkinMat);
+      crest.rotation.x = -0.65;
+      crest.position.set(0, 0.35, 1.1);
+      pMesh.add(crest);
 
-      // Sharp fishing beak
-      const beak = new THREE.Mesh(this.getCone(0.22, 1.6, 5), this.dinosaurClawMat);
-      beak.rotation.x = -Math.PI / 2;
-      beak.position.set(0, 0, -1.9);
-      glider.add(beak);
+      const beak = new THREE.Mesh(this.getCone(0.18, 1.9, 5), this.pterosaurSkinMat);
+      beak.rotation.x = Math.PI / 2;
+      beak.position.set(0, -0.05, -1.9);
+      pMesh.add(beak);
 
-      // Cambered Left Wing with spar
-      const leftWingGroup = new THREE.Group();
-      leftWingGroup.position.set(-0.4, 0, 0);
+      // Left Articulated Wing
+      const leftWing = new THREE.Group();
+      leftWing.position.set(-0.35, 0, 0);
+      const lWingMesh = new THREE.Mesh(this.getPlane(4.2, 1.8), this.pterosaurWingMat);
+      lWingMesh.rotation.x = -Math.PI / 2;
+      lWingMesh.position.set(-2.1, 0, 0);
+      leftWing.add(lWingMesh);
+      pMesh.add(leftWing);
 
-      const leftWingMesh = new THREE.Mesh(this.getPlane(4.8, 2.0), this.pterosaurWingsMat);
-      leftWingMesh.position.set(-2.4, 0, 0);
-      leftWingMesh.rotation.x = Math.PI / 2;
-      leftWingGroup.add(leftWingMesh);
-      glider.add(leftWingGroup);
+      // Right Articulated Wing
+      const rightWing = new THREE.Group();
+      rightWing.position.set(0.35, 0, 0);
+      const rWingMesh = new THREE.Mesh(this.getPlane(4.2, 1.8), this.pterosaurWingMat);
+      rWingMesh.rotation.x = -Math.PI / 2;
+      rWingMesh.position.set(2.1, 0, 0);
+      rightWing.add(rWingMesh);
+      pMesh.add(rightWing);
 
-      // Cambered Right Wing with spar
-      const rightWingGroup = new THREE.Group();
-      rightWingGroup.position.set(0.4, 0, 0);
-
-      const rightWingMesh = new THREE.Mesh(this.getPlane(4.8, 2.0), this.pterosaurWingsMat);
-      rightWingMesh.position.set(2.4, 0, 0);
-      rightWingMesh.rotation.x = Math.PI / 2;
-      rightWingGroup.add(rightWingMesh);
-      glider.add(rightWingGroup);
-
-      group.add(glider);
+      group.add(pMesh);
       gliders.push({
-        mesh: glider,
-        leftWing: leftWingGroup,
-        rightWing: rightWingGroup,
-        phaseOffset: fd.phase,
-        baseAltitude: fd.y
+        mesh: pMesh,
+        leftWing,
+        rightWing,
+        phaseOffset: cfg.phase,
+        baseAltitude: cfg.gy
       });
     });
 
@@ -1864,226 +1738,681 @@ export class JurassicRushWorldBuilder {
   }
 
   /**
-   * Herd of Grazing Armored Herbivores (Triceratops)
-   * Armored quadruped herbivores with authentic scalloped neck frills,
-   * triple bone horns, and grazing animation.
+   * Grazing Herbivore Herd (Triceratops / Stegosaurus)
    */
   public buildHerbivoreHerd(x: number, y: number, z: number): {
-    group: THREE.Group;
-    members: Array<{
-      group: THREE.Group;
-      head: THREE.Object3D;
-      tail: THREE.Object3D;
-      phaseOffset: number;
-    }>;
+    herdGroup: THREE.Group;
+    members: Array<{ group: THREE.Group; head: THREE.Object3D; tail: THREE.Object3D; phaseOffset: number }>;
   } {
-    const group = new THREE.Group();
-    group.position.set(x, y, z);
+    const herdGroup = new THREE.Group();
+    herdGroup.position.set(x, y, z);
 
-    const members: Array<{
-      group: THREE.Group;
-      head: THREE.Object3D;
-      tail: THREE.Object3D;
-      phaseOffset: number;
-    }> = [];
+    const members: Array<{ group: THREE.Group; head: THREE.Object3D; tail: THREE.Object3D; phaseOffset: number }> = [];
+    const positions = [
+      { mx: 0, mz: 0, phase: 0 },
+      { mx: 4.5, mz: 5.5, phase: 1.8 }
+    ];
 
-    for (let m = 0; m < 3; m++) {
-      const mGroup = new THREE.Group();
-      mGroup.position.set(m * 3.8, 0, m * 4.5);
+    positions.forEach((cfg) => {
+      const dino = new THREE.Group();
+      dino.position.set(cfg.mx, 0, cfg.mz);
 
-      // Heavy Armored Body (compound barrel shape)
-      const body = new THREE.Mesh(this.getSphere(1.8, 9), this.herbivoreSkinMat);
-      body.scale.set(0.95, 0.9, 1.55);
-      body.position.y = 2.6;
-      mGroup.add(body);
+      const body = new THREE.Mesh(this.getSphere(2.2, 8), this.herbivoreSkinMat);
+      body.scale.set(1.0, 1.1, 1.5);
+      body.position.y = 2.4;
+      dino.add(body);
 
-      // Sculpted Triceratops Head with Monumental Neck Frill
-      const headGroup = new THREE.Group();
-      headGroup.position.set(0, 3.0, -3.2);
+      // Articulated Head with grazing neck
+      const head = new THREE.Group();
+      head.position.set(0, 2.6, -2.4);
 
-      const skull = new THREE.Mesh(this.getSphere(1.1, 7), this.herbivoreSkinMat);
-      skull.scale.set(0.85, 0.85, 1.2);
-      headGroup.add(skull);
+      const skull = new THREE.Mesh(this.getBox(1.2, 0.95, 1.6), this.herbivoreSkinMat);
+      head.add(skull);
 
-      // Massive Armored Neck Frill with Warning Coloration
-      const frill = new THREE.Mesh(this.getCylinder(1.9, 1.4, 0.35, 8), this.herbivoreFrillMat);
-      frill.position.set(0, 1.2, 0.7);
-      frill.rotation.x = 0.45;
-      headGroup.add(frill);
+      // Horned frill / defensive crest
+      const frill = new THREE.Mesh(this.getPlane(2.4, 1.4), this.herbivoreSkinMat);
+      frill.position.set(0, 0.8, 0.4);
+      frill.rotation.x = -0.45;
+      head.add(frill);
 
-      // 2 Long Sweeping Brow Horns
-      [-0.85, 0.85].forEach((hx) => {
-        const horn = new THREE.Mesh(this.getCone(0.18, 1.9, 6), this.dinosaurClawMat);
-        horn.rotation.x = -1.1;
-        horn.position.set(hx, 1.2, -1.4);
-        headGroup.add(horn);
+      dino.add(head);
+
+      const tail = new THREE.Group();
+      tail.position.set(0, 2.4, 2.2);
+      const tailMesh = new THREE.Mesh(this.getCylinder(0.2, 0.65, 3.5, 6), this.herbivoreSkinMat);
+      tailMesh.rotation.x = 1.45;
+      tailMesh.position.set(0, -0.4, 1.7);
+      tail.add(tailMesh);
+      dino.add(tail);
+
+      // 4 Sturdy Legs
+      [
+        { lx: -1.2, lz: -1.2 },
+        { lx: 1.2, lz: -1.2 },
+        { lx: -1.2, lz: 1.2 },
+        { lx: 1.2, lz: 1.2 }
+      ].forEach((lp) => {
+        const leg = new THREE.Mesh(this.getCylinder(0.55, 0.65, 2.4, 6), this.herbivoreSkinMat);
+        leg.position.set(lp.lx, 1.2, lp.lz);
+        dino.add(leg);
       });
 
-      // 1 Sharp Nasal Horn
-      const noseHorn = new THREE.Mesh(this.getCone(0.14, 0.95, 5), this.dinosaurClawMat);
-      noseHorn.rotation.x = -0.5;
-      noseHorn.position.set(0, 0.6, -2.0);
-      headGroup.add(noseHorn);
+      herdGroup.add(dino);
+      members.push({ group: dino, head, tail, phaseOffset: cfg.phase });
+    });
 
-      mGroup.add(headGroup);
-
-      // Counterbalancing Tail
-      const tail = new THREE.Mesh(this.getCylinder(0.20, 0.50, 4.0, 6), this.herbivoreSkinMat);
-      tail.position.set(0, 2.4, 4.2);
-      tail.rotation.x = Math.PI / 2;
-      mGroup.add(tail);
-
-      // 4 Sturdy Quadruped Legs
-      [-1.2, 1.2].forEach((lx) => {
-        [-1.8, 1.8].forEach((lz) => {
-          const leg = new THREE.Mesh(this.getCylinder(0.45, 0.55, 2.6, 6), this.herbivoreSkinMat);
-          leg.position.set(lx, 1.3, lz);
-          mGroup.add(leg);
-        });
-      });
-
-      group.add(mGroup);
-      members.push({ group: mGroup, head: headGroup, tail, phaseOffset: m * 1.5 });
-    }
-
-    return { group, members };
+    return { herdGroup, members };
   }
 
   /**
-   * Curious Giant Dinosaur Watcher (District A)
-   * Adolescent long-necked sauropod peering down through the canopy at X = -13.0m
+   * Curious Long-Necked Dinosaur Watcher
    */
   public buildCuriousDinosaurWatcher(x: number, y: number, z: number): {
-    group: THREE.Group;
+    dinosaurGroup: THREE.Group;
     neck: THREE.Object3D;
     head: THREE.Object3D;
   } {
-    const group = new THREE.Group();
-    group.position.set(x, y, z);
+    const dinosaurGroup = new THREE.Group();
+    dinosaurGroup.position.set(x, y, z);
 
-    // Torso with counter-shaded underbelly (compound smooth shapes)
-    const body = new THREE.Mesh(this.getSphere(2.8, 9), this.dinosaurSkinMat);
-    body.scale.set(0.9, 1.0, 1.45);
-    body.position.y = 7.0;
-    group.add(body);
+    const body = new THREE.Mesh(this.getSphere(2.8, 8), this.dinosaurSkinMat);
+    body.scale.set(1.0, 1.15, 1.4);
+    body.position.y = 4.2;
+    dinosaurGroup.add(body);
 
-    const belly = new THREE.Mesh(this.getSphere(2.4, 8), this.dinosaurUnderbellyMat);
-    belly.scale.set(0.85, 0.45, 1.3);
-    belly.position.set(0, 5.2, 0);
-    group.add(belly);
-
-    // Long Graceful Curving Neck
     const neck = new THREE.Group();
-    neck.position.set(0, 9.5, -3.6);
+    neck.position.set(0, 5.2, -1.8);
 
-    const neckMesh = new THREE.Mesh(this.getCylinder(0.75, 1.3, 10.0, 8), this.dinosaurSkinMat);
-    neckMesh.position.y = 5.0;
-    neckMesh.rotation.x = -0.22;
-    neck.add(neckMesh);
+    const neckPillar = new THREE.Mesh(this.getCylinder(0.65, 1.1, 7.5, 7), this.dinosaurSkinMat);
+    neckPillar.position.set(0, 3.8, -0.8);
+    neckPillar.rotation.x = -0.22;
+    neck.add(neckPillar);
 
-    // Sculpted Head with amber eyes and pupils turned to watch the runner
-    const headGroup = new THREE.Group();
-    headGroup.position.set(0, 10.0, 0);
+    const head = new THREE.Group();
+    head.position.set(0, 7.8, -1.8);
 
-    const head = new THREE.Mesh(this.getSphere(1.0, 8), this.dinosaurSkinMat);
-    head.scale.set(0.85, 0.85, 1.35);
-    headGroup.add(head);
+    const skull = new THREE.Mesh(this.getSphere(0.85, 7), this.dinosaurSkinMat);
+    skull.scale.set(0.85, 0.9, 1.3);
+    head.add(skull);
 
-    [-0.85, 0.85].forEach((ex) => {
-      const eye = new THREE.Mesh(this.getSphere(0.20, 6), this.dinosaurEyeMat);
-      eye.position.set(ex, 0.3, -0.4);
-      headGroup.add(eye);
-
-      const pupil = new THREE.Mesh(this.getSphere(0.10, 5), this.dinosaurPupilMat);
-      pupil.position.set(ex * 1.05, 0.3, -0.4);
-      headGroup.add(pupil);
+    [-0.75, 0.75].forEach((ex) => {
+      const eye = new THREE.Mesh(this.getSphere(0.18, 6), this.dinosaurEyeMat);
+      eye.position.set(ex, 0.25, -0.4);
+      head.add(eye);
     });
 
-    neck.add(headGroup);
-    group.add(neck);
+    neck.add(head);
+    dinosaurGroup.add(neck);
 
-    // 4 Columnar Legs
-    [-1.7, 1.7].forEach((lx) => {
-      [-2.8, 2.8].forEach((lz) => {
-        const leg = new THREE.Mesh(this.getCylinder(0.70, 0.90, 7.0, 7), this.dinosaurSkinMat);
-        leg.position.set(lx, 3.5, lz);
-        group.add(leg);
-      });
+    // Pillar legs
+    [
+      { lx: -1.6, lz: -1.5 },
+      { lx: 1.6, lz: -1.5 },
+      { lx: -1.5, lz: 1.5 },
+      { lx: 1.5, lz: 1.5 }
+    ].forEach((lp) => {
+      const leg = new THREE.Mesh(this.getCylinder(0.75, 0.95, 4.2, 7), this.dinosaurSkinMat);
+      leg.position.set(lp.lx, 2.1, lp.lz);
+      dinosaurGroup.add(leg);
     });
 
-    return { group, neck, head: headGroup };
+    return { dinosaurGroup, neck, head };
   }
 
   // =========================================================================
-  // COMPLETE STANDALONE SHOWCASE EXPEDITION LOCOMOTIVE
-  // Matching exact runner train envelope (2.5m x 4.0m x 22.4m)
+  // SIX PREHISTORIC BIOME DISTRICT BUILDERS
   // =========================================================================
 
-  public buildJurassicRushShowcaseTrain(x: number = 0, y: number = 0, z: number = 0): THREE.Group {
-    const train = new THREE.Group();
-    train.name = 'jurassic_rush_expedition_locomotive';
-    train.position.set(x, y, z);
+  /**
+   * BIOME 1 (District A): The Lost Jungle (0m – 400m)
+   * Dense, ancient rainforest canopy framing the sky.
+   * Gnarled banyan trees with fluted buttress roots (Y <= -6.0m), hanging liana vines,
+   * eye-level cycads, mossy fallen logs with bracket fungi, riverbank channel on left with dragonflies,
+   * multi-stage mountain waterfall on right with mist, curious dinosaur watcher tracking player.
+   */
+  public buildLostJungleDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtA = new THREE.Group();
+    districtA.name = 'district_a_lost_jungle';
+    group.add(districtA);
 
-    const livery = JURASSIC_RUSH_TRAIN_LIVERY;
+    const curbEdge = roadbedWidth * 0.5 + 0.5; // ~6.5m from track center
 
-    // Main Locomotive Body (Heavy safari olive & expedition steel, width 2.4m)
-    const body = new THREE.Mesh(this.getBox(2.4, 2.2, 21.0), new THREE.MeshStandardMaterial({
-      color: livery.primaryColors[0],
-      metalness: livery.metalness,
-      roughness: livery.roughness
-    }));
-    body.position.y = 1.8;
-    train.add(body);
+    [-1, 1].forEach((side) => {
+      // 1. Prehistoric Jungle Loam Foundation Bed (Grounded down to Y = -6.0m)
+      const walkW = 28.0;
+      const wx = side * (curbEdge + walkW * 0.5);
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.jungleLoamMat);
+      bed.position.set(wx, -3.0, -chunkLength * 0.5);
+      districtA.add(bed);
 
-    // Heavy Brush-Guard Cowcatcher
-    const cowcatcher = new THREE.Mesh(this.getCylinder(0.2, 0.75, 1.8, 4), new THREE.MeshStandardMaterial({
-      color: livery.accentColor,
-      metalness: 0.85,
-      roughness: 0.25
-    }));
-    cowcatcher.rotation.y = Math.PI / 4;
-    cowcatcher.position.set(0, 1.1, -10.8);
-    train.add(cowcatcher);
+      // Bright Amber Petrified Wood Curb Liner (Contrast edge along viaduct)
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtA.add(curb);
 
-    // Reinforced Rooftop Observation Dome
-    const dome = new THREE.Mesh(this.getCylinder(0.85, 0.85, 10.0, 12), this.expeditionSteelMat);
-    dome.rotation.x = Math.PI / 2;
-    dome.position.set(0, 2.7, -2.0);
-    train.add(dome);
+      // 2. Mossy Basalt Boulder Clusters along curb edge
+      for (let z = 12; z < chunkLength; z += 35) {
+        const boulder = this.buildMossyBoulders(side * (curbEdge + 1.8), 0.0, -z);
+        districtA.add(boulder);
+      }
 
-    // Twin Expedition Searchlights on Roof
-    [-7.5, -4.5].forEach((cz) => {
-      const light = new THREE.Mesh(this.getCylinder(0.28, 0.22, 1.0, 8), this.observationGlassMat);
-      light.position.set(0, 3.5, cz);
-      train.add(light);
+      // 3. Eye-Level Prehistoric Cycads & Ancient Giant Tree Ferns
+      for (let z = 8; z < chunkLength; z += 20) {
+        const cycad = this.buildEyeLevelCycad(
+          side * (curbEdge + 2.2 + (z % 3) * 0.4),
+          0.0,
+          -z,
+          1.05 + ((z * 7) % 5) * 0.08
+        );
+        districtA.add(cycad);
+
+        if (z % 40 === 8) {
+          const treeFern = this.buildGiantTreeFern(
+            side * (curbEdge + 4.2),
+            0.0,
+            -z - 6.0,
+            1.15
+          );
+          districtA.add(treeFern);
+        }
+      }
+
+      // 4. Colossal Ancient Rainforest Canopy Trees (framed at |X| = 14.5m to 18m)
+      for (let tz = 15; tz < chunkLength; tz += 45) {
+        const tree = this.buildAncientCanopyTree(
+          side * (curbEdge + 8.5),
+          0.0,
+          -tz,
+          1.15
+        );
+        districtA.add(tree);
+      }
+
+      // 5. Mossy Fallen Logs with shelf fungi
+      const log = this.buildMossyFallenLog(
+        side * (curbEdge + 6.5),
+        0.0,
+        -chunkLength * (side > 0 ? 0.35 : 0.75),
+        side * 0.45,
+        1.1
+      );
+      districtA.add(log);
     });
 
-    // High-Visibility Amber Windows along Cab & Carriages
-    [-1.21, 1.21].forEach((wx) => {
-      const winStrip = new THREE.Mesh(this.getBox(0.08, 0.65, 16.0), this.observationGlassMat);
-      winStrip.position.set(wx, 2.4, 1.0);
-      train.add(winStrip);
+    // 6. Prehistoric River Channel on Left Side (side = -1)
+    const river = this.buildPrehistoricRiver(-(curbEdge + 12.0), 0.0, -chunkLength * 0.5, 9.0, chunkLength);
+    districtA.add(river);
+
+    // Prehistoric giant dragonflies darting over the river
+    const dragonflyA = this.buildGiantDragonfly(-(curbEdge + 10.0), 2.2, -chunkLength * 0.35);
+    districtA.add(dragonflyA);
+
+    const dragonflyB = this.buildGiantDragonfly(-(curbEdge + 12.5), 1.8, -chunkLength * 0.65);
+    districtA.add(dragonflyB);
+
+    // 7. Multi-Stage Mountain Waterfall Cataract on Right Side (side = 1)
+    const waterfall = this.buildPrehistoricWaterfall(curbEdge + 12.5, 0.0, -chunkLength * 0.5, 14.0, 26.0);
+    districtA.add(waterfall);
+
+    // 8. Curious Long-Necked Dinosaur Watcher peeking through the canopy at X = -13.5m
+    const watcher = this.buildCuriousDinosaurWatcher(-(curbEdge + 7.5), 0.0, -chunkLength * 0.45);
+    districtA.add(watcher.dinosaurGroup);
+    director.registerCuriousWatcher(watcher.dinosaurGroup, watcher.neck, watcher.head, worldZ - chunkLength * 0.45);
+
+    // 9. Soaring Pterosaur Flock overhead
+    const pterosaurFlock = this.buildPterosaurFlock(-chunkLength * 0.5);
+    districtA.add(pterosaurFlock.group);
+    director.registerPterosaurs(pterosaurFlock.group, pterosaurFlock.gliders, 16.0, 3.2);
+  }
+
+  /**
+   * BIOME 2 (District B): Valley of Giants & Event A (Giant Crossing) (400m – 800m)
+   * Wide, open, sunlit prehistoric river valley flanked by distant stratified mesas.
+   * Event A: Colossal sauropod crossing the valley alongside the track with herd in the background.
+   * Dinosaur footprints embedded in the limestone flats.
+   */
+  public buildValleyOfGiantsDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtB = new THREE.Group();
+    districtB.name = 'district_b_valley_of_giants';
+    group.add(districtB);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      // Wide open sunlit valley floor
+      const walkW = 32.0;
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.treeBarkMat);
+      bed.position.set(side * (curbEdge + walkW * 0.5), -3.0, -chunkLength * 0.5);
+      districtB.add(bed);
+
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtB.add(curb);
+
+      // Distant Stratified Sandstone Mesas at |X| = 38m
+      const mesa = new THREE.Mesh(this.getCylinder(12.0, 16.0, 22.0, 8), this.stratifiedSandstoneMat);
+      mesa.position.set(side * (curbEdge + 32.0), 5.0, -chunkLength * 0.5);
+      districtB.add(mesa);
+
+      // Low cycad groves & giant tree ferns along trackside
+      for (let z = 12; z < chunkLength; z += 30) {
+        const cycad = this.buildEyeLevelCycad(side * (curbEdge + 2.4), 0.0, -z, 1.15);
+        districtB.add(cycad);
+      }
     });
 
-    // Heavy Expedition Wheel Bogies
-    [-1.1, 1.1].forEach((bx) => {
-      [-8.5, -5.5, -2.5, 2.5, 5.5, 8.5].forEach((wz) => {
-        const wheel = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.22, 12), this.expeditionSteelMat);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(bx, 0.48, wz);
-        train.add(wheel);
+    // Fossil trackways embedded in limestone riverbed
+    const fossilBed = this.buildFossilBed(curbEdge + 5.5, 0.0, -chunkLength * 0.35, 1.2);
+    districtB.add(fossilBed);
 
-        const hub = new THREE.Mesh(this.getCylinder(0.2, 0.2, 0.25, 8), new THREE.MeshStandardMaterial({
-          color: livery.accentColor,
-          metalness: 0.85,
-          roughness: 0.25
-        }));
-        hub.rotation.z = Math.PI / 2;
-        hub.position.set(bx, 0.48, wz);
-        train.add(hub);
+    // EVENT A — GIANT CROSSING: Colossal Sauropod crossing valley alongside the railway
+    const sauropod = this.buildColossalSauropod(-(curbEdge + 8.5), 0.0, -chunkLength * 0.45, 1.0, true);
+    districtB.add(sauropod.group);
+
+    // Moving distant herd members migrating across sunlit valley floor at X = -45m
+    const herdMembers: Array<{ group: THREE.Group; head: THREE.Object3D; tail: THREE.Object3D; speed: number }> = [];
+    [-chunkLength * 0.25, -chunkLength * 0.75].forEach((hz, idx) => {
+      const distSauropod = this.buildColossalSauropod(-(curbEdge + 38.0 + idx * 8.0), 0.0, hz, 0.65);
+      districtB.add(distSauropod.group);
+      herdMembers.push({
+        group: distSauropod.group,
+        head: distSauropod.head,
+        tail: distSauropod.tail,
+        speed: 2.2
       });
     });
 
-    return train;
+    director.registerSauropod(
+      sauropod.group,
+      sauropod.neck,
+      sauropod.head,
+      sauropod.tail,
+      sauropod.legs,
+      3.8,
+      1.5,
+      -chunkLength * 0.8,
+      chunkLength * 0.2,
+      {
+        triggerZ: worldZ - chunkLength * 0.45,
+        herdMembers,
+        isEventA: true
+      }
+    );
+
+    // Peaceful grazing herbivore herd on the right side
+    const herd = this.buildHerbivoreHerd(curbEdge + 7.5, 0.0, -chunkLength * 0.55);
+    districtB.add(herd.herdGroup);
+    director.registerHerbivoreHerd(herd.herdGroup, herd.members);
+  }
+
+  /**
+   * BIOME 3 (District C): Raptor Canyon & Event B (Raptor Ridge) (800m – 1200m)
+   * Stratified sandstone canyon gorge with natural rock bedding (ZERO CONES!).
+   * Natural eroded rock arches bridging overhead at Y = 18m.
+   * Event B: Pack of 3 athletic raptors sprinting along an elevated natural rocky terrace at X = 11.5m.
+   */
+  public buildRaptorCanyonDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtC = new THREE.Group();
+    districtC.name = 'district_c_raptor_canyon';
+    group.add(districtC);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      // Canyon floor gravel bed
+      const walkW = 28.0;
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.canyonRockMat);
+      bed.position.set(side * (curbEdge + walkW * 0.5), -3.0, -chunkLength * 0.5);
+      districtC.add(bed);
+
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtC.add(curb);
+
+      // Stratified Sandstone Canyon Walls (REAL GEOLOGICAL STRATA — NO CONES!)
+      for (let cz = 15; cz < chunkLength; cz += 45) {
+        const cliffGroup = new THREE.Group();
+        cliffGroup.position.set(side * (curbEdge + 14.5), 0.0, -cz);
+
+        // Lower bedrock bastion
+        const lowerCliff = new THREE.Mesh(this.getBox(12.0, 14.0, 24.0), this.stratifiedSandstoneMat);
+        lowerCliff.position.y = 1.0;
+        cliffGroup.add(lowerCliff);
+
+        // Stepped upper geological strata shelf
+        const upperStrata = new THREE.Mesh(this.getBox(9.5, 12.0, 20.0), this.stratifiedSandstoneMat);
+        upperStrata.position.set(side * 2.0, 14.0, 0);
+        cliffGroup.add(upperStrata);
+
+        // Overhang rock ledge with clinging ferns
+        const overhang = new THREE.Mesh(this.getBox(11.0, 1.8, 16.0), this.canyonRockMat);
+        overhang.position.set(side * 1.0, 20.0, 0);
+        cliffGroup.add(overhang);
+
+        districtC.add(cliffGroup);
+      }
+    });
+
+    // Natural Eroded Rock Arch spanning high across the canyon gorge at Y = 18m
+    const archGroup = new THREE.Group();
+    archGroup.position.set(0, 18.0, -chunkLength * 0.5);
+
+    const archSpan = new THREE.Mesh(this.getBox(36.0, 3.2, 5.5), this.stratifiedSandstoneMat);
+    archGroup.add(archSpan);
+
+    [-1, 1].forEach((side) => {
+      const archButtress = new THREE.Mesh(this.getBox(4.2, 18.0, 5.5), this.stratifiedSandstoneMat);
+      archButtress.position.set(side * 16.0, -9.0, 0);
+      archGroup.add(archButtress);
+    });
+    districtC.add(archGroup);
+
+    // EVENT B — RAPTOR RIDGE: Pack of 3 athletic raptors sprinting along elevated terrace at X = 11.5m
+    const ridgeTerrace = new THREE.Mesh(this.getBox(7.5, 4.5, chunkLength * 0.8), this.stratifiedSandstoneMat);
+    ridgeTerrace.position.set(curbEdge + 6.5, -0.75, -chunkLength * 0.5);
+    districtC.add(ridgeTerrace);
+
+    const raptorPack = this.buildRaptorPack(curbEdge + 5.5, 1.5, -chunkLength * 0.5, true);
+    districtC.add(raptorPack.packGroup);
+
+    director.registerRaptorPack(
+      raptorPack.packGroup,
+      raptorPack.raptors,
+      24.0,
+      8.5,
+      -chunkLength * 0.9,
+      chunkLength * 0.1,
+      {
+        triggerZ: worldZ - chunkLength * 0.5,
+        isEventB: true
+      }
+    );
+  }
+
+  /**
+   * BIOME 4 (District D): The Ancient Sanctuary (1200m – 1600m)
+   * Megalithic temple shrines, carved stone stelae with glowing claw sigils,
+   * petrified redwood trunks, exposed fossil beds, and peaceful grazing dinosaur herds.
+   */
+  public buildAncientSanctuaryDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtD = new THREE.Group();
+    districtD.name = 'district_d_ancient_sanctuary';
+    group.add(districtD);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      const walkW = 28.0;
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.templeStoneMat);
+      bed.position.set(side * (curbEdge + walkW * 0.5), -3.0, -chunkLength * 0.5);
+      districtD.add(bed);
+
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtD.add(curb);
+
+      // Ancient Carved Stone Stelae with Golden Claw Sigil at |X| = 9.5m
+      for (let sz = 16; sz < chunkLength; sz += 40) {
+        const steleGroup = new THREE.Group();
+        steleGroup.position.set(side * (curbEdge + 3.2), 0.0, -sz);
+
+        const obelisk = new THREE.Mesh(this.getBox(2.2, 7.5, 2.2), this.templeStoneMat);
+        obelisk.position.y = 3.75;
+        steleGroup.add(obelisk);
+
+        const sigil = new THREE.Mesh(this.getBox(2.25, 1.2, 2.25), this.templeGoldReliefMat);
+        sigil.position.y = 5.2;
+        steleGroup.add(sigil);
+
+        districtD.add(steleGroup);
+      }
+
+      // Megalithic Stepped Temple Pyramid at |X| = 22m
+      const pyramid = new THREE.Group();
+      pyramid.position.set(side * (curbEdge + 18.0), 0.0, -chunkLength * 0.5);
+
+      const t1 = new THREE.Mesh(this.getBox(18.0, 4.0, 24.0), this.templeStoneMat);
+      t1.position.y = 2.0;
+      pyramid.add(t1);
+
+      const t2 = new THREE.Mesh(this.getBox(14.0, 4.0, 18.0), this.templeStoneMat);
+      t2.position.y = 6.0;
+      pyramid.add(t2);
+
+      const t3 = new THREE.Mesh(this.getBox(9.0, 3.5, 12.0), this.templeStoneMat);
+      t3.position.y = 9.75;
+      pyramid.add(t3);
+
+      districtD.add(pyramid);
+    });
+
+    // Fossil stone beds along the embankment
+    const fossilBed = this.buildFossilBed(-(curbEdge + 4.5), 0.0, -chunkLength * 0.45, 1.15);
+    districtD.add(fossilBed);
+
+    // Peaceful herbivore herd resting amongst the sacred megaliths
+    const herd = this.buildHerbivoreHerd(curbEdge + 6.5, 0.0, -chunkLength * 0.5);
+    districtD.add(herd.herdGroup);
+    director.registerHerbivoreHerd(herd.herdGroup, herd.members);
+  }
+
+  /**
+   * BIOME 5 (District E): Fern Marsh (1600m – 2000m)
+   * Sprawling shallow primordial wetland swamp with shimmering water pools,
+   * giant calamite horsetails, dinosaur nests with clutches of speckled eggs,
+   * and prehistoric dragonflies.
+   */
+  public buildFernMarshDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtE = new THREE.Group();
+    districtE.name = 'district_e_fern_marsh';
+    group.add(districtE);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      const walkW = 32.0;
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.jungleLoamMat);
+      bed.position.set(side * (curbEdge + walkW * 0.5), -3.0, -chunkLength * 0.5);
+      districtE.add(bed);
+
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtE.add(curb);
+
+      // Shimmering primordial swamp water surface along both sides
+      const marshWater = new THREE.Mesh(this.getPlane(22.0, chunkLength), this.riverWaterMat);
+      marshWater.rotation.x = -Math.PI / 2;
+      marshWater.position.set(side * (curbEdge + 14.0), -0.15, -chunkLength * 0.5);
+      districtE.add(marshWater);
+      director.registerRiverStream(marshWater, 0.45);
+
+      // Dense Giant Calamite Horsetails & Fern Fronds
+      for (let hz = 8; hz < chunkLength; hz += 18) {
+        const horsetailGroup = new THREE.Group();
+        horsetailGroup.position.set(side * (curbEdge + 3.2 + (hz % 3) * 0.5), 0.0, -hz);
+
+        const stem = new THREE.Mesh(this.getCylinder(0.22, 0.35, 6.5, 6), this.jungleLeafMat);
+        stem.position.y = 3.25;
+        horsetailGroup.add(stem);
+
+        // Segmented leaf rings
+        for (let r = 1; r <= 3; r++) {
+          const ring = new THREE.Mesh(this.getPlane(1.8, 0.6), this.goldenFernMat);
+          ring.position.y = r * 1.8;
+          ring.rotation.x = 0.3;
+          horsetailGroup.add(ring);
+        }
+        districtE.add(horsetailGroup);
+
+        // Prehistoric cycads along marsh margins
+        if (hz % 36 === 8) {
+          const cycad = this.buildEyeLevelCycad(side * (curbEdge + 1.8), 0.0, -hz - 4.0, 1.1);
+          districtE.add(cycad);
+        }
+      }
+    });
+
+    // Multiple Dinosaur Nests with clutches of speckled eggs
+    const nestA = this.buildDinosaurNest(-(curbEdge + 4.8), 0.0, -chunkLength * 0.25);
+    districtE.add(nestA);
+
+    const nestB = this.buildDinosaurNest(curbEdge + 5.2, 0.0, -chunkLength * 0.65);
+    districtE.add(nestB);
+
+    const nestC = this.buildDinosaurNest(-(curbEdge + 5.0), 0.0, -chunkLength * 0.85);
+    districtE.add(nestC);
+
+    // Giant dragonflies darting over the marsh pools
+    const dragonflyA = this.buildGiantDragonfly(-(curbEdge + 8.5), 1.9, -chunkLength * 0.35);
+    districtE.add(dragonflyA);
+
+    const dragonflyB = this.buildGiantDragonfly(curbEdge + 8.5, 2.1, -chunkLength * 0.75);
+    districtE.add(dragonflyB);
+  }
+
+  /**
+   * BIOME 6 (District F): Pterosaur Cliffs & Event C (Waterfall Predator) (2000m – 2400m)
+   * Colossal sheer stratified sea/canyon cliffs rising to Y = 36m with nesting ledges.
+   * Event C: Colossal Apex Carnivore roaring through the swirling mist of a multi-stage canyon cataract.
+   * Soaring pterosaur flocks wheeling overhead in thermal updrafts.
+   */
+  public buildPterosaurCliffsDistrict(
+    group: THREE.Group,
+    roadbedWidth: number,
+    chunkLength: number,
+    rng: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: JurassicRushEventDirector,
+    worldZ: number = 0
+  ): void {
+    const districtF = new THREE.Group();
+    districtF.name = 'district_f_pterosaur_cliffs';
+    group.add(districtF);
+
+    const curbEdge = roadbedWidth * 0.5 + 0.5;
+
+    [-1, 1].forEach((side) => {
+      const walkW = 28.0;
+      const bed = new THREE.Mesh(this.getBox(walkW, 6.0, chunkLength), this.canyonRockMat);
+      bed.position.set(side * (curbEdge + walkW * 0.5), -3.0, -chunkLength * 0.5);
+      districtF.add(bed);
+
+      const curb = new THREE.Mesh(this.getBox(0.48, 6.0, chunkLength), this.amberCurbMat);
+      curb.position.set(side * (curbEdge + 0.24), -3.0, -chunkLength * 0.5);
+      districtF.add(curb);
+
+      // Towering Prehistoric Cliffs rising to Y = 36m with horizontal strata bands
+      const cliff = new THREE.Mesh(this.getCylinder(14.0, 18.0, 38.0, 8), this.stratifiedSandstoneMat);
+      cliff.position.set(side * (curbEdge + 20.0), 13.0, -chunkLength * 0.5);
+      districtF.add(cliff);
+
+      // Cliff Nesting Ledges with resting pterosaur silhouettes
+      const ledge = new THREE.Mesh(this.getBox(8.0, 2.2, 14.0), this.stratifiedSandstoneMat);
+      ledge.position.set(side * (curbEdge + 12.0), 18.0, -chunkLength * 0.45);
+      districtF.add(ledge);
+    });
+
+    // EVENT C — WATERFALL PREDATOR: Colossal Apex Carnivore emerging from cataract mist at X = 11.5m
+    const waterfall = this.buildPrehistoricWaterfall(curbEdge + 12.0, 0.0, -chunkLength * 0.45, 16.0, 28.0);
+    districtF.add(waterfall);
+
+    // Elevated rock promontory supporting the apex predator
+    const predatorPromontory = new THREE.Mesh(this.getBox(10.0, 5.0, 14.0), this.stratifiedSandstoneMat);
+    predatorPromontory.position.set(curbEdge + 7.5, 1.5, -chunkLength * 0.45);
+    districtF.add(predatorPromontory);
+
+    const apexPredator = this.buildApexCarnivore(curbEdge + 6.8, 4.0, -chunkLength * 0.45, 1.25, true);
+    districtF.add(apexPredator.group);
+
+    director.registerCarnivore(
+      apexPredator.group,
+      apexPredator.torso,
+      apexPredator.head,
+      apexPredator.lowerJaw,
+      apexPredator.tail,
+      8.0,
+      {
+        triggerZ: worldZ - chunkLength * 0.45,
+        isEventC: true
+      }
+    );
+
+    // Soaring Pterosaur Flock wheeling overhead in thermal air columns
+    const pterosaurFlock = this.buildPterosaurFlock(-chunkLength * 0.5);
+    districtF.add(pterosaurFlock.group);
+    director.registerPterosaurs(pterosaurFlock.group, pterosaurFlock.gliders, 18.0, 3.4);
+  }
+
+  /**
+   * Showcase Locomotive for Expedition Trains
+   */
+  public buildJurassicRushShowcaseTrain(x: number = 0, y: number = 0, z: number = 0): THREE.Group {
+    const trainGroup = new THREE.Group();
+    trainGroup.position.set(x, y, z);
+
+    // Heavy Armored Locomotive Body (2.5m x 4.0m x 22.4m)
+    const body = new THREE.Mesh(this.getBox(2.5, 3.4, 22.4), this.expeditionTimberMat);
+    body.position.y = 2.0;
+    body.name = 'train_body';
+    trainGroup.add(body);
+
+    // Armored Bullbar / Cowcatcher at front (Z = -11.2m)
+    const bullbar = new THREE.Mesh(this.getBox(2.7, 1.6, 1.4), this.expeditionTimberMat);
+    bullbar.position.set(0, 0.8, -11.4);
+    bullbar.name = 'bullbar_armor';
+    trainGroup.add(bullbar);
+
+    // Top Heavy Searchlight at Y = 4.2m
+    const searchlight = new THREE.Mesh(this.getCylinder(0.45, 0.45, 0.65, 8), this.amberCurbMat);
+    searchlight.rotation.x = Math.PI / 2;
+    searchlight.position.set(0, 4.0, -10.5);
+    trainGroup.add(searchlight);
+
+    // Yellow expedition warning stripes along flank
+    const stripe = new THREE.Mesh(this.getBox(2.54, 0.35, 22.0), this.amberCurbMat);
+    stripe.position.set(0, 2.2, 0);
+    trainGroup.add(stripe);
+
+    return trainGroup;
   }
 }

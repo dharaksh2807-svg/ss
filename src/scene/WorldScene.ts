@@ -2644,10 +2644,10 @@ export class WorldScene {
     if (this.jurassicSkyline) this.jurassicSkyline.visible = jurassicOpacity > 0.01;
     if (this.infernoSkyline) this.infernoSkyline.visible = infernoOpacity > 0.01;
 
-    // Clouds fade for tunnel, orbital space, underwater abyss, volcanic empire & subterranean crypt transitions
+    // Clouds fade for tunnel, orbital space, underwater abyss, volcanic empire, prehistoric world & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
-      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' || base.id === 'PHANTOM_LINE' || base.id === 'INFERNO_EXPRESS' ? 0 : 1,
-      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' || targetTheme.id === 'INFERNO_EXPRESS' ? 0 : 1,
+      base.id === 'UNDERGROUND_METRO' || base.id === 'ORBITAL_HALO' || base.id === 'ABYSSAL_GLASSLINE' || base.id === 'PHANTOM_LINE' || base.id === 'INFERNO_EXPRESS' || base.id === 'JURASSIC_RUSH' ? 0 : 1,
+      targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' || targetTheme.id === 'INFERNO_EXPRESS' || targetTheme.id === 'JURASSIC_RUSH' ? 0 : 1,
       t
     );
     if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
@@ -3407,7 +3407,7 @@ export class WorldScene {
 
     if (this.currentTheme && this.currentTheme.id === 'JURASSIC_RUSH') {
       const delta = dt || 0.016;
-      JurassicRushEventDirector.getInstance().update(delta, true);
+      JurassicRushEventDirector.getInstance().update(delta, true, this.lastPlayerZ);
 
       // Animate soaring pterosaur flocks in prehistoric sky
       if (this.jurassicSkyline && this.jurassicSkyline.visible) {

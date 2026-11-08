@@ -34,11 +34,18 @@ if (typeof document === 'undefined') {
             moveTo: () => {},
             lineTo: () => {},
             quadraticCurveTo: () => {},
+            bezierCurveTo: () => {},
             fillRect: () => {},
             strokeRect: () => {},
             roundRect: () => {},
             fillText: () => {},
             closePath: () => {},
+            save: () => {},
+            restore: () => {},
+            scale: () => {},
+            rotate: () => {},
+            translate: () => {},
+            clearRect: () => {},
             set strokeStyle(_: any) {},
             set fillStyle(_: any) {},
             set lineWidth(_: any) {},
@@ -89,9 +96,9 @@ assert.ok(JURASSIC_RUSH_THEME.districtRange.minLengthMeters >= 500, 'Min distric
 pass('District range defined with proper length scaling');
 
 // ============================================================================
-// SUITE 2: DETERMINISTIC GENERATION ACROSS ALL 4 DISTRICTS
+// SUITE 2: DETERMINISTIC GENERATION ACROSS ALL 6 BIOME DISTRICTS
 // ============================================================================
-console.log('\n--- Suite 2: Deterministic Generation Across All 4 Districts ---');
+console.log('\n--- Suite 2: Deterministic Generation Across All 6 Biome Districts ---');
 
 const builder = JurassicRushWorldBuilder.getInstance();
 const director = JurassicRushEventDirector.getInstance();
@@ -128,6 +135,22 @@ const distD = groupD.getObjectByName('district_d_ancient_sanctuary');
 assert.ok(distD, 'District D Ancient Sanctuary generated');
 pass('District D — The Ancient Sanctuary generated successfully');
 
+// District E (Seed 4)
+const groupE = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupE, 12, 100, 4, 'FULL');
+const distE = groupE.getObjectByName('district_e_fern_marsh');
+assert.ok(distE, 'District E Fern Marsh generated');
+pass('District E — Fern Marsh generated successfully');
+
+// District F (Seed 5)
+const groupF = new THREE.Group();
+director.reset();
+builder.buildDistrictScenery(groupF, 12, 100, 5, 'FULL');
+const distF = groupF.getObjectByName('district_f_pterosaur_cliffs');
+assert.ok(distF, 'District F Pterosaur Cliffs generated');
+pass('District F — Pterosaur Cliffs generated successfully');
+
 // Determinism test
 const groupA1 = new THREE.Group();
 const groupA2 = new THREE.Group();
@@ -146,10 +169,12 @@ pass('Deterministic generation: identical seeds yield identical hierarchies');
 console.log('\n--- Suite 3: Running Corridor Clearance Envelope (Zero Intrusions) ---');
 
 const allGroups = [
-  { name: 'District A', group: groupA },
-  { name: 'District B', group: groupB },
-  { name: 'District C', group: groupC },
-  { name: 'District D', group: groupD }
+  { name: 'District A (Lost Jungle)', group: groupA },
+  { name: 'District B (Valley of Giants)', group: groupB },
+  { name: 'District C (Raptor Canyon)', group: groupC },
+  { name: 'District D (Ancient Sanctuary)', group: groupD },
+  { name: 'District E (Fern Marsh)', group: groupE },
+  { name: 'District F (Pterosaur Cliffs)', group: groupF }
 ];
 
 allGroups.forEach(({ name, group }) => {
@@ -181,9 +206,9 @@ allGroups.forEach(({ name, group }) => {
 });
 
 // ============================================================================
-// SUITE 4: ALL 6 ANIMATED PREHISTORIC DINOSAUR ENCOUNTERS
+// SUITE 4: ALL 6 ANIMATED PREHISTORIC DINOSAUR ENCOUNTERS & CINEMATIC EVENTS
 // ============================================================================
-console.log('\n--- Suite 4: All 6 Animated Prehistoric Dinosaur Encounters ---');
+console.log('\n--- Suite 4: All 6 Animated Prehistoric Dinosaur Encounters & Cinematic Events ---');
 
 director.reset();
 const testChunk = new THREE.Group();
@@ -191,6 +216,8 @@ builder.buildLostJungleDistrict(testChunk, 12, 100, new (class { next() { return
 builder.buildValleyOfGiantsDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
 builder.buildRaptorCanyonDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
 builder.buildAncientSanctuaryDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+builder.buildFernMarshDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
+builder.buildPterosaurCliffsDistrict(testChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director);
 
 // Verify Event Registrations
 assert.ok(director.getSauropodCount() >= 1, `Sauropod walker registered (got ${director.getSauropodCount()})`);
@@ -211,11 +238,38 @@ pass(`Encounter 5: Grazing herbivore herd registered with dipping head and tail 
 assert.ok(director.getCuriousWatcherCount() >= 1, `Curious watcher registered (got ${director.getCuriousWatcherCount()})`);
 pass(`Encounter 6: Curious giant dinosaur watcher registered turning to track passing runner`);
 
-// Test Director Tick & Motion
-director.update(0.16, true);
-pass('Director tick executes smoothly without exceptions');
+assert.ok(director.getWaterfallCount() >= 1, `Prehistoric waterfalls registered (got ${director.getWaterfallCount()})`);
+pass(`Environment 1: Prehistoric waterfalls registered with scrolling foam & mist`);
 
-director.update(2.0, true);
+assert.ok(director.getRiverCount() >= 1, `Prehistoric rivers registered (got ${director.getRiverCount()})`);
+pass(`Environment 2: Prehistoric rivers registered with caustic ripple flow`);
+
+assert.ok(director.getDragonflyCount() >= 1, `Meganeura giant dragonflies registered (got ${director.getDragonflyCount()})`);
+pass(`Environment 3: Meganeura giant dragonflies registered with rapid wing flutter`);
+
+// Test Director Tick & Motion with Player Position
+director.update(0.16, true, -100);
+pass('Director tick executes smoothly without exceptions at playerZ = -100');
+
+// Test Event A lifecycle (Giant Crossing around Z = -450)
+director.update(0.5, true, -350); // approach
+director.update(0.5, true, -440); // crossing
+director.update(0.5, true, -550); // passing
+pass('Event A (Giant Sauropod Crossing) transitions through approach, crossing, and passing states');
+
+// Test Event B lifecycle (Raptor Ridge around Z = -850)
+director.update(0.5, true, -750); // perched
+director.update(0.5, true, -840); // sprinting & weaving
+director.update(0.5, true, -950); // leaping & retreating
+pass('Event B (Raptor Ridge Sprint) transitions through perched, sprinting, weaving, and retreating');
+
+// Test Event C lifecycle (Waterfall Predator around Z = -2050)
+director.update(0.5, true, -1950); // concealed / emerging
+director.update(0.5, true, -2040); // roaring with jaw unhinged
+director.update(0.5, true, -2150); // retreating into jungle
+pass('Event C (Waterfall Predator Roar) transitions through emerging, roaring, and retreating');
+
+director.update(2.0, true, -1000);
 pass('Director multi-second update cycles walking, roaring, sprinting, gliding, and grazing');
 
 // Test Reduced Motion Support
