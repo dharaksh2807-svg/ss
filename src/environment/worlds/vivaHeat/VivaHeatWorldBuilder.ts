@@ -20,8 +20,8 @@ import { VIVA_PALETTE } from './VivaHeatTheme';
  * - District E: Royal Palm Colonnade & Gala Ballroom (Illuminated Royal Palms, Parabolic Silk Arches, Masquerade)
  * - District F: Grand Sunset Carnival & Fireworks Bay (Offshore Ferris Wheel of Fire, Flame Towers, Triumphal Gateway)
  *
- * Enforces zero-float geometry (deep foundations down to Y = -5.85m), safe running corridors
- * (|X| >= 4.2m below Y = 7.5m; overhead clearance >= 8.5m), and non-repeating permutation cycles.
+ * Enforces zero-float geometry (deep foundations down to Y <= -5.5m), safe running corridors
+ * (|X| >= 4.2m below Y = 8.5m; overhead clearance >= 8.5m), and non-repeating permutation cycles.
  */
 export class VivaHeatWorldBuilder {
   private static instance: VivaHeatWorldBuilder | null = null;
@@ -32,15 +32,18 @@ export class VivaHeatWorldBuilder {
   private sphereCache: Map<string, THREE.SphereGeometry> = new Map();
   private planeCache: Map<string, THREE.PlaneGeometry> = new Map();
   private torusCache: Map<string, THREE.TorusGeometry> = new Map();
+  private coneCache: Map<string, THREE.ConeGeometry> = new Map();
 
   // Master Curvature-Aware Materials
   private coralMarbleMat!: THREE.MeshStandardMaterial;
+  private creamMarbleMat!: THREE.MeshStandardMaterial;
   private sunsetGoldMat!: THREE.MeshStandardMaterial;
   private velvetCrimsonMat!: THREE.MeshStandardMaterial;
   private oceanWaterMat!: THREE.MeshStandardMaterial;
   private oceanFoamMat!: THREE.MeshBasicMaterial;
   private palmTrunkMat!: THREE.MeshStandardMaterial;
   private palmFrondMat!: THREE.MeshStandardMaterial;
+  private bougainvilleaMat!: THREE.MeshStandardMaterial;
   private kineticPetalMat!: THREE.MeshStandardMaterial;
   private goldenStamenMat!: THREE.MeshBasicMaterial;
   private sunCoreMat!: THREE.MeshBasicMaterial;
@@ -79,6 +82,13 @@ export class VivaHeatWorldBuilder {
     });
     curved.applyCurvature(this.coralMarbleMat);
 
+    this.creamMarbleMat = new THREE.MeshStandardMaterial({
+      color: VIVA_PALETTE.marbleIvory,
+      roughness: 0.25,
+      metalness: 0.15
+    });
+    curved.applyCurvature(this.creamMarbleMat);
+
     this.sunsetGoldMat = new THREE.MeshStandardMaterial({
       color: VIVA_PALETTE.sunsetGold,
       metalness: 0.88,
@@ -95,7 +105,7 @@ export class VivaHeatWorldBuilder {
 
     this.oceanWaterMat = new THREE.MeshStandardMaterial({
       color: VIVA_PALETTE.coastalOcean,
-      roughness: 0.12,
+      roughness: 0.10,
       metalness: 0.85
     });
     curved.applyCurvature(this.oceanWaterMat);
@@ -103,7 +113,7 @@ export class VivaHeatWorldBuilder {
     this.oceanFoamMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.45
+      opacity: 0.55
     });
     curved.applyCurvature(this.oceanFoamMat);
 
@@ -122,12 +132,20 @@ export class VivaHeatWorldBuilder {
     });
     curved.applyCurvature(this.palmFrondMat);
 
+    this.bougainvilleaMat = new THREE.MeshStandardMaterial({
+      color: 0xe11d48, // Rich magenta bougainvillea
+      roughness: 0.45,
+      metalness: 0.10,
+      side: THREE.DoubleSide
+    });
+    curved.applyCurvature(this.bougainvilleaMat);
+
     this.kineticPetalMat = new THREE.MeshStandardMaterial({
       color: 0xf43f5e,
-      roughness: 0.35,
+      roughness: 0.32,
       metalness: 0.30,
       emissive: new THREE.Color(0x9f1239),
-      emissiveIntensity: 0.20,
+      emissiveIntensity: 0.25,
       side: THREE.DoubleSide
     });
     curved.applyCurvature(this.kineticPetalMat);
@@ -145,7 +163,7 @@ export class VivaHeatWorldBuilder {
     this.sunCoronaMat = new THREE.MeshBasicMaterial({
       color: VIVA_PALETTE.sunsetGold,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.70,
       side: THREE.DoubleSide
     });
     curved.applyCurvature(this.sunCoronaMat);
@@ -155,7 +173,7 @@ export class VivaHeatWorldBuilder {
       roughness: 0.40,
       metalness: 0.10,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.90,
       side: THREE.DoubleSide
     });
     curved.applyCurvature(this.silkBannerMat);
@@ -163,7 +181,7 @@ export class VivaHeatWorldBuilder {
     this.spotlightBeamMat = new THREE.MeshBasicMaterial({
       color: VIVA_PALETTE.champagneGold,
       transparent: true,
-      opacity: 0.30,
+      opacity: 0.32,
       side: THREE.DoubleSide
     });
     curved.applyCurvature(this.spotlightBeamMat);
@@ -176,7 +194,7 @@ export class VivaHeatWorldBuilder {
     this.yachtHullMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.15,
-      metalness: 0.70
+      metalness: 0.75
     });
     curved.applyCurvature(this.yachtHullMat);
 
@@ -253,12 +271,20 @@ export class VivaHeatWorldBuilder {
     return this.planeCache.get(key)!;
   }
 
-  private getTorus(r: number, tube: number, segsR: number = 8, segsT: number = 12): THREE.TorusGeometry {
-    const key = `${r}_${tube}_${segsR}_${segsT}`;
+  private getTorus(r: number, tube: number, segsR: number = 8, segsT: number = 12, arc: number = Math.PI * 2): THREE.TorusGeometry {
+    const key = `${r}_${tube}_${segsR}_${segsT}_${arc}`;
     if (!this.torusCache.has(key)) {
-      this.torusCache.set(key, new THREE.TorusGeometry(r, tube, segsR, segsT));
+      this.torusCache.set(key, new THREE.TorusGeometry(r, tube, segsR, segsT, arc));
     }
     return this.torusCache.get(key)!;
+  }
+
+  private getCone(r: number, h: number, segs: number = 8): THREE.ConeGeometry {
+    const key = `${r}_${h}_${segs}`;
+    if (!this.coneCache.has(key)) {
+      this.coneCache.set(key, new THREE.ConeGeometry(r, h, segs));
+    }
+    return this.coneCache.get(key)!;
   }
 
   // =========================================================================
@@ -298,14 +324,20 @@ export class VivaHeatWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = FeverDirector.getInstance();
 
-    // 1. Foundation: Deep grounded retaining plinths & seawalls down to Y = -5.85m
+    // 1. Foundation: Deep grounded retaining plinths & seawalls down to Y <= -5.5m
     this.buildGroundedRetainingPlinths(group, roadbedWidth, curbWidth, chunkLength);
 
-    // 2. Continuous Seaside Boardwalk & Ocean Surface (+X flank)
-    const wallX = roadbedWidth * 0.5 + 2.4; // 8.4m from track center (Playable envelope |X| <= 4.2m is 100% clear)
+    // 2. Playable Envelope Clearance Boundary
+    // Roadbed center clearance is |X| <= 4.2m. Lateral walls sit at |X| >= 8.4m.
+    const wallX = roadbedWidth * 0.5 + 2.4; // 8.4m from track center
+
+    // 3. Continuous Seaside Boardwalk & Ocean Surface (+X flank)
     this.buildContinuousOceanAndPromenade(group, wallX, chunkLength, detail, director);
 
-    // 3. District Cycle Determination (6 distinct districts across endless runs)
+    // 4. Continuous Inland Festival Boulevard & VIP Lounges (-X flank)
+    this.buildContinuousInlandPromenade(group, -wallX, chunkLength, detail, director, rng);
+
+    // 5. District Cycle Determination (6 distinct districts across endless runs)
     const chunkIdx = Math.floor(Math.abs(worldZ) / Math.max(1, chunkLength));
     const districtType = chunkIdx % 6;
 
@@ -330,12 +362,12 @@ export class VivaHeatWorldBuilder {
         break;
     }
 
-    // 4. Backward Compatibility: Ensure signature test landmarks exist for single-chunk / seed verification
-    this.ensureRequiredTestObjects(group, chunkLength, director);
+    // 6. Ensure Act I and required test landmarks exist for determinism & unit test suites
+    this.ensureRequiredTestObjects(group, chunkLength, director, wallX);
   }
 
   // =========================================================================
-  // FOUNDATION: GROUNDED RETAINING PLINTHS (Y = -5.85m)
+  // FOUNDATION: GROUNDED RETAINING PLINTHS (Y <= -5.5m)
   // =========================================================================
 
   private buildGroundedRetainingPlinths(
@@ -349,7 +381,7 @@ export class VivaHeatWorldBuilder {
 
     const wallX = roadbedWidth * 0.5 + 2.0;
     const plinthW = 2.4;
-    const plinthH = 7.0; // Y from -5.85m to +1.15m
+    const plinthH = 7.0; // Y from -5.85m to +1.15m (solid ground depth!)
 
     // Left retaining plinth (-X)
     const leftPlinth = new THREE.Mesh(this.getBox(plinthW, plinthH, chunkLength), this.velvetCrimsonMat);
@@ -372,6 +404,15 @@ export class VivaHeatWorldBuilder {
     curbRight.position.set(wallX - curbW * 0.5, 0.22, -chunkLength * 0.5);
     plinthGroup.add(curbRight);
 
+    // Golden curb inlay beading
+    const beadLeft = new THREE.Mesh(this.getBox(0.12, 0.12, chunkLength), this.sunsetGoldMat);
+    beadLeft.position.set(-wallX + curbW * 0.5, 0.46, -chunkLength * 0.5);
+    plinthGroup.add(beadLeft);
+
+    const beadRight = new THREE.Mesh(this.getBox(0.12, 0.12, chunkLength), this.sunsetGoldMat);
+    beadRight.position.set(wallX - curbW * 0.5, 0.46, -chunkLength * 0.5);
+    plinthGroup.add(beadRight);
+
     group.add(plinthGroup);
   }
 
@@ -390,36 +431,42 @@ export class VivaHeatWorldBuilder {
     seasideGroup.name = 'viva_heat_seaside_promenade';
 
     // Ocean Surface Plane extending to the horizon
-    const oceanW = 95.0;
-    const oceanMesh = new THREE.Mesh(this.getPlane(oceanW, chunkLength * 1.4), this.oceanWaterMat);
+    const oceanW = 120.0;
+    const oceanMesh = new THREE.Mesh(this.getPlane(oceanW, chunkLength * 1.5), this.oceanWaterMat);
     oceanMesh.rotation.x = -Math.PI * 0.5;
     oceanMesh.position.set(wallX + oceanW * 0.5 + 4.0, -1.2, -chunkLength * 0.5);
     seasideGroup.add(oceanMesh);
 
+    // Coastal Waterline Foam Breaker Strip along retaining seawall
+    const foamMesh = new THREE.Mesh(this.getPlane(2.5, chunkLength * 1.5), this.oceanFoamMat);
+    foamMesh.rotation.x = -Math.PI * 0.5;
+    foamMesh.position.set(wallX + 8.2, -1.16, -chunkLength * 0.5);
+    seasideGroup.add(foamMesh);
+
     // Sunset Specular Reflection Band on Ocean Surface
     const sunReflection = new THREE.Mesh(
-      this.getPlane(16.0, chunkLength * 1.4),
+      this.getPlane(8.0, chunkLength * 1.5),
       new THREE.MeshBasicMaterial({
         color: VIVA_PALETTE.sunsetGold,
         transparent: true,
-        opacity: 0.28,
+        opacity: 0.08, // Subtle shimmering reflection, preserving rich coastal water
         side: THREE.DoubleSide
       })
     );
     sunReflection.rotation.x = -Math.PI * 0.5;
-    sunReflection.position.set(wallX + 22.0, -1.18, -chunkLength * 0.5);
+    sunReflection.position.set(wallX + 24.0, -1.18, -chunkLength * 0.5);
     seasideGroup.add(sunReflection);
 
     // Seaside Promenade Marble Boardwalk Deck
-    const deckW = 6.8;
+    const deckW = 7.5;
     const deckH = 0.8;
     const deckMesh = new THREE.Mesh(this.getBox(deckW, deckH, chunkLength), this.coralMarbleMat);
     deckMesh.position.set(wallX + deckW * 0.5 + 0.4, -0.4, -chunkLength * 0.5);
     seasideGroup.add(deckMesh);
 
-    // Promenade Balustrade with Golden Rails
-    const balustradeRail = new THREE.Mesh(this.getBox(0.3, 0.15, chunkLength), this.sunsetGoldMat);
-    balustradeRail.position.set(wallX + deckW + 0.2, 0.9, -chunkLength * 0.5);
+    // Promenade Balustrade with Golden Rails at edge of water
+    const balustradeRail = new THREE.Mesh(this.getBox(0.3, 0.18, chunkLength), this.sunsetGoldMat);
+    balustradeRail.position.set(wallX + deckW + 0.2, 0.95, -chunkLength * 0.5);
     seasideGroup.add(balustradeRail);
 
     // Balustrade Posts & Amber Globe Lanterns
@@ -427,15 +474,160 @@ export class VivaHeatWorldBuilder {
     for (let i = 0; i <= postCount; i++) {
       const pz = -i * 12;
       const postMesh = new THREE.Mesh(this.getCylinder(0.18, 0.22, 1.0, 6), this.velvetCrimsonMat);
-      postMesh.position.set(wallX + deckW + 0.2, 0.4, pz);
+      postMesh.position.set(wallX + deckW + 0.2, 0.45, pz);
       seasideGroup.add(postMesh);
 
-      const globe = new THREE.Mesh(this.getSphere(0.35, 8), this.amberLanternMat);
-      globe.position.set(wallX + deckW + 0.2, 1.15, pz);
+      const globe = new THREE.Mesh(this.getSphere(0.38, 8), this.amberLanternMat);
+      globe.position.set(wallX + deckW + 0.2, 1.2, pz);
       seasideGroup.add(globe);
     }
 
+    // Floating Festival Beacon Buoys in water
+    if (detail !== 'MINIMAL') {
+      const buoyCount = Math.floor(chunkLength / 35);
+      for (let b = 0; b < buoyCount; b++) {
+        const bz = -b * 35 - 15.0;
+        const buoyGroup = new THREE.Group();
+        buoyGroup.position.set(wallX + 28.0 + (b % 2) * 12.0, -0.6, bz);
+
+        const buoyBody = new THREE.Mesh(this.getCylinder(0.8, 0.4, 1.6, 6), this.coralMarbleMat);
+        buoyGroup.add(buoyBody);
+
+        const buoyMast = new THREE.Mesh(this.getCylinder(0.1, 0.1, 1.8, 5), this.sunsetGoldMat);
+        buoyMast.position.y = 1.3;
+        buoyGroup.add(buoyMast);
+
+        const buoyLight = new THREE.Mesh(this.getSphere(0.35, 6), this.amberLanternMat);
+        buoyLight.position.y = 2.3;
+        buoyGroup.add(buoyLight);
+
+        seasideGroup.add(buoyGroup);
+      }
+    }
+
     group.add(seasideGroup);
+  }
+
+  // =========================================================================
+  // CONTINUOUS INLAND FESTIVAL PROMENADE & VIP LOUNGES (-X FLANK)
+  // =========================================================================
+
+  private buildContinuousInlandPromenade(
+    group: THREE.Group,
+    flankX: number,
+    chunkLength: number,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL',
+    director: FeverDirector,
+    rng: SeededRandom
+  ): void {
+    const inlandGroup = new THREE.Group();
+    inlandGroup.name = 'viva_heat_inland_promenade';
+
+    // Wide Inland Promenade Floor ($X = -8.4m$ to $-26.0m$)
+    const floorW = 18.0;
+    const floorH = 0.8;
+    const floorMesh = new THREE.Mesh(this.getBox(floorW, floorH, chunkLength), this.coralMarbleMat);
+    floorMesh.position.set(flankX - floorW * 0.5 - 0.4, -0.4, -chunkLength * 0.5);
+    inlandGroup.add(floorMesh);
+
+    // Decorative Cream Marble Inlay Stripe
+    const stripeMesh = new THREE.Mesh(this.getBox(1.6, 0.82, chunkLength), this.creamMarbleMat);
+    stripeMesh.position.set(flankX - 5.0, -0.39, -chunkLength * 0.5);
+    inlandGroup.add(stripeMesh);
+
+    // Trackside Promenade Balustrade at $X = -8.6m$
+    const railMesh = new THREE.Mesh(this.getBox(0.28, 0.18, chunkLength), this.sunsetGoldMat);
+    railMesh.position.set(flankX - 0.2, 0.95, -chunkLength * 0.5);
+    inlandGroup.add(railMesh);
+
+    // Balustrade Posts & Amber Globe Lanterns
+    const postCount = Math.floor(chunkLength / 12);
+    for (let i = 0; i <= postCount; i++) {
+      const pz = -i * 12;
+      const post = new THREE.Mesh(this.getCylinder(0.18, 0.22, 1.0, 6), this.velvetCrimsonMat);
+      post.position.set(flankX - 0.2, 0.45, pz);
+      inlandGroup.add(post);
+
+      const globe = new THREE.Mesh(this.getSphere(0.38, 8), this.amberLanternMat);
+      globe.position.set(flankX - 0.2, 1.2, pz);
+      inlandGroup.add(globe);
+    }
+
+    // VIP Lounge Cabanas with Striped Sunshades & Cocktail Lounges
+    if (detail !== 'MINIMAL') {
+      const cabanaCount = Math.floor(chunkLength / 32);
+      for (let c = 0; c < cabanaCount; c++) {
+        const cz = -c * 32 - 16.0;
+        const cabanaGroup = new THREE.Group();
+        const cabanaX = flankX - 4.5;
+        cabanaGroup.position.set(cabanaX, 0, cz);
+
+        // 4 Slender Gilded Pillars
+        for (const dx of [-1.8, 1.8]) {
+          for (const dz of [-1.8, 1.8]) {
+            const pillar = new THREE.Mesh(this.getCylinder(0.12, 0.14, 3.8, 6), this.sunsetGoldMat);
+            pillar.position.set(dx, 1.9, dz);
+            cabanaGroup.add(pillar);
+          }
+        }
+
+        // Scalloped Striped Sunshade Canopy
+        const canopyMesh = new THREE.Mesh(this.getBox(4.2, 0.35, 4.2), this.coralMarbleMat);
+        canopyMesh.position.y = 3.9;
+        cabanaGroup.add(canopyMesh);
+
+        const canopyAccent = new THREE.Mesh(this.getBox(3.8, 0.4, 1.2), this.creamMarbleMat);
+        canopyAccent.position.y = 3.92;
+        cabanaGroup.add(canopyAccent);
+
+        // Velvet Lounge Daybed
+        const daybed = new THREE.Mesh(this.getBox(2.8, 0.6, 2.0), this.velvetCrimsonMat);
+        daybed.position.set(0, 0.3, 0);
+        cabanaGroup.add(daybed);
+
+        // Brass Cocktail Table with Champagne Glass
+        const table = new THREE.Mesh(this.getCylinder(0.55, 0.45, 0.75, 7), this.sunsetGoldMat);
+        table.position.set(1.8, 0.38, 0.8);
+        cabanaGroup.add(table);
+
+        const glass = new THREE.Mesh(this.getCylinder(0.08, 0.04, 0.35, 5), this.champagneSprayMat);
+        glass.position.set(1.8, 0.9, 0.8);
+        cabanaGroup.add(glass);
+
+        // Staged Haute Couture Reveler at VIP cabana
+        const reveler = VivaHeatCharacters.createHauteCoutureReveler(cabanaX + 1.2, 0.4, cz + 0.6, c % 2 === 0 ? 'warm' : 'deep');
+        inlandGroup.add(reveler.group);
+        director.registerAdultDancer(reveler.dancer);
+
+        inlandGroup.add(cabanaGroup);
+      }
+
+      // Stone Bougainvillea Planter Urns with overflowing blossoms
+      const planterCount = Math.floor(chunkLength / 20);
+      for (let p = 0; p < planterCount; p++) {
+        const pz = -p * 20 - 8.0;
+        const urnGroup = new THREE.Group();
+        urnGroup.position.set(flankX - 1.2, 0, pz);
+
+        const baseUrn = new THREE.Mesh(this.getCylinder(0.65, 0.5, 0.8, 6), this.velvetCrimsonMat);
+        baseUrn.position.y = 0.4;
+        urnGroup.add(baseUrn);
+
+        const foliage = new THREE.Mesh(this.getSphere(0.85, 6), this.palmFrondMat);
+        foliage.position.y = 1.0;
+        foliage.scale.set(1.2, 0.8, 1.2);
+        urnGroup.add(foliage);
+
+        const flowers = new THREE.Mesh(this.getSphere(0.9, 6), this.bougainvilleaMat);
+        flowers.position.y = 1.05;
+        flowers.scale.set(1.15, 0.75, 1.15);
+        urnGroup.add(flowers);
+
+        inlandGroup.add(urnGroup);
+      }
+    }
+
+    group.add(inlandGroup);
   }
 
   // =========================================================================
@@ -460,8 +652,15 @@ export class VivaHeatWorldBuilder {
     // 2. Flagship Encounter 1: Grand Mega-Yacht Arrival & Champagne Docking
     this.buildGrandMegaYachtArrivalEncounter(district, wallX, chunkLength, director, worldZ);
 
-    // 3. Inland Promenade Flank (-X): Tropical Royal Palms & Raised VIP Pavilions
+    // 3. Raised VIP Stage on Inland Promenade Flank (-X) with Haute Couture Reveler
     this.buildInlandFestivalBoulevard(district, -wallX, chunkLength, rng, detail, director);
+
+    // 4. Parabolic Festival Arches
+    this.buildParabolicFestivalArches(district, wallX * 2, chunkLength);
+
+    // 5. Kinetic Flower Pod & Royal Palms
+    this.buildKineticFlowerPod(district, -wallX - 9.0, -chunkLength * 0.35, director, 0);
+    this.buildTropicalRoyalPalms(district, wallX, chunkLength, rng, detail);
 
     group.add(district);
   }
@@ -482,15 +681,15 @@ export class VivaHeatWorldBuilder {
     const district = new THREE.Group();
     district.name = 'zone_gilded_amphitheatre';
 
-    const stageX = -wallX - 16.0;
+    const stageX = -wallX - 14.0;
     const stageZ = -chunkLength * 0.5;
 
     // Colossal Tiered Festival Stage Structure
-    const stageBase = new THREE.Mesh(this.getBox(24.0, 3.5, 36.0), this.velvetCrimsonMat);
+    const stageBase = new THREE.Mesh(this.getBox(22.0, 3.5, 34.0), this.velvetCrimsonMat);
     stageBase.position.set(stageX, 0.8, stageZ);
     district.add(stageBase);
 
-    const stagePlatter = new THREE.Mesh(this.getBox(20.0, 0.6, 32.0), this.sunsetGoldMat);
+    const stagePlatter = new THREE.Mesh(this.getBox(18.0, 0.6, 30.0), this.sunsetGoldMat);
     stagePlatter.position.set(stageX, 2.7, stageZ);
     stagePlatter.name = 'viva_heat_festival_stage';
     district.add(stagePlatter);
@@ -499,12 +698,12 @@ export class VivaHeatWorldBuilder {
     for (const sign of [-1, 1]) {
       const towerZ = stageZ + sign * 14.0;
       const soundTower = new THREE.Mesh(this.getBox(3.0, 16.0, 3.0), this.soundSpeakerMat);
-      soundTower.position.set(stageX - 8.0, 8.0, towerZ);
+      soundTower.position.set(stageX - 7.0, 8.0, towerZ);
       district.add(soundTower);
 
       // Pyrotechnic Flame Tower on top of sound tower
       const flamePlume = new THREE.Mesh(this.getCylinder(0.2, 1.4, 5.0, 6), this.flamePlumeMat);
-      flamePlume.position.set(stageX - 8.0, 18.5, towerZ);
+      flamePlume.position.set(stageX - 7.0, 18.5, towerZ);
       flamePlume.visible = false;
       district.add(flamePlume);
 
@@ -522,11 +721,11 @@ export class VivaHeatWorldBuilder {
 
     // Haute Couture Revelers & Dancers on Stage
     if (detail !== 'MINIMAL') {
-      const dancer1 = VivaHeatCharacters.createFestivalDancer(stageX - 2.0, 3.0, stageZ - 4.0);
+      const dancer1 = VivaHeatCharacters.createFestivalDancer(stageX - 1.0, 3.0, stageZ - 4.0);
       district.add(dancer1.group);
       director.registerAdultDancer(dancer1.dancer);
 
-      const dancer2 = VivaHeatCharacters.createFestivalDancer(stageX - 2.0, 3.0, stageZ + 4.0);
+      const dancer2 = VivaHeatCharacters.createFestivalDancer(stageX - 1.0, 3.0, stageZ + 4.0);
       district.add(dancer2.group);
       director.registerAdultDancer(dancer2.dancer);
 
@@ -560,8 +759,8 @@ export class VivaHeatWorldBuilder {
     // 2. Botanical Garden Tier of Ambient Kinetic Lotus Sculptures
     const flowerSpacing = chunkLength / 3;
     for (let i = 0; i < 3; i++) {
-      const fz = -i * flowerSpacing - 12.0;
-      this.buildKineticFlowerPod(district, -wallX - 9.0, fz, director, i * 1.5);
+      const fz = -i * flowerSpacing - 14.0;
+      this.buildKineticFlowerPod(district, -wallX - 8.5, fz, director, i * 1.5);
     }
 
     // 3. Floating Illuminated Sky Lantern Swarm
@@ -591,13 +790,13 @@ export class VivaHeatWorldBuilder {
     const marinaZ = -chunkLength * 0.5;
 
     // Marina Pier Extension Wooden Boardwalk into water (+X)
-    const pierW = 16.0;
-    const pierMesh = new THREE.Mesh(this.getBox(pierW, 0.8, 28.0), this.yachtDeckWoodMat);
-    pierMesh.position.set(wallX + pierW * 0.5 + 4.0, -0.4, marinaZ);
+    const pierW = 18.0;
+    const pierMesh = new THREE.Mesh(this.getBox(pierW, 0.8, 30.0), this.yachtDeckWoodMat);
+    pierMesh.position.set(wallX + pierW * 0.5 + 3.0, -0.4, marinaZ);
     district.add(pierMesh);
 
-    // Marina Wooden Pilings extending down to Y = -6.0m
-    for (let px = wallX + 6.0; px <= wallX + pierW + 2.0; px += 6.0) {
+    // Marina Wooden Pilings extending down to Y <= -5.5m
+    for (let px = wallX + 5.0; px <= wallX + pierW + 2.0; px += 6.0) {
       for (let pz = marinaZ - 12.0; pz <= marinaZ + 12.0; pz += 12.0) {
         const piling = new THREE.Mesh(this.getCylinder(0.35, 0.35, 5.5, 6), this.palmTrunkMat);
         piling.position.set(px, -3.0, pz);
@@ -610,15 +809,15 @@ export class VivaHeatWorldBuilder {
     yachtGroup.name = 'viva_heat_luxury_yacht';
     yachtGroup.position.set(wallX + pierW + 10.0, -0.8, marinaZ);
 
-    const hull = new THREE.Mesh(this.getBox(8.0, 3.2, 24.0), this.yachtHullMat);
+    const hull = new THREE.Mesh(this.getBox(8.5, 3.4, 26.0), this.yachtHullMat);
     hull.position.y = 1.0;
     yachtGroup.add(hull);
 
-    const cabin = new THREE.Mesh(this.getBox(6.0, 2.5, 12.0), this.coralMarbleMat);
+    const cabin = new THREE.Mesh(this.getBox(6.2, 2.6, 14.0), this.coralMarbleMat);
     cabin.position.set(0, 3.2, -2.0);
     yachtGroup.add(cabin);
 
-    const neonRail = new THREE.Mesh(this.getBox(7.8, 0.2, 23.8), this.neonCyanGlowMat);
+    const neonRail = new THREE.Mesh(this.getBox(8.2, 0.2, 25.8), this.neonCyanGlowMat);
     neonRail.position.y = 2.7;
     yachtGroup.add(neonRail);
 
@@ -634,7 +833,7 @@ export class VivaHeatWorldBuilder {
 
     // Waterside Champagne Lounge & Masquerade Maestro
     if (detail !== 'MINIMAL') {
-      const maestro = VivaHeatCharacters.createMasqueradeMaestro(-wallX - 6.0, 0.4, marinaZ);
+      const maestro = VivaHeatCharacters.createMasqueradeMaestro(-wallX - 6.5, 0.4, marinaZ);
       district.add(maestro.group);
       director.registerAdultDancer(maestro.dancer);
     }
@@ -666,11 +865,11 @@ export class VivaHeatWorldBuilder {
 
     // 3. High-Fashion Masquerade Gala Performers on promenade
     if (detail !== 'MINIMAL') {
-      const model = VivaHeatCharacters.createAvantGardeModel(-wallX - 6.0, 0.4, -chunkLength * 0.4);
+      const model = VivaHeatCharacters.createAvantGardeModel(-wallX - 6.5, 0.4, -chunkLength * 0.4);
       district.add(model.group);
       director.registerAdultDancer(model.dancer);
 
-      const reveler = VivaHeatCharacters.createHauteCoutureReveler(-wallX - 6.0, 0.4, -chunkLength * 0.7, 'deep');
+      const reveler = VivaHeatCharacters.createHauteCoutureReveler(-wallX - 6.5, 0.4, -chunkLength * 0.7, 'deep');
       district.add(reveler.group);
       director.registerAdultDancer(reveler.dancer);
     }
@@ -699,12 +898,12 @@ export class VivaHeatWorldBuilder {
     // Colossal Offshore Ferris Wheel of Fire (+X flank over ocean)
     const wheelGroup = new THREE.Group();
     wheelGroup.name = 'viva_heat_ferris_wheel';
-    wheelGroup.position.set(wallX + 42.0, 22.0, carnivalZ);
+    wheelGroup.position.set(wallX + 44.0, 22.0, carnivalZ);
 
-    const outerRim = new THREE.Mesh(this.getTorus(18.0, 0.6, 8, 24), this.ferrisWheelGlowMat);
+    const outerRim = new THREE.Mesh(this.getTorus(18.0, 0.65, 8, 24), this.ferrisWheelGlowMat);
     wheelGroup.add(outerRim);
 
-    const innerRim = new THREE.Mesh(this.getTorus(12.0, 0.4, 8, 20), this.coralMarbleMat);
+    const innerRim = new THREE.Mesh(this.getTorus(12.0, 0.45, 8, 20), this.coralMarbleMat);
     wheelGroup.add(innerRim);
 
     for (let i = 0; i < 12; i++) {
@@ -771,29 +970,47 @@ export class VivaHeatWorldBuilder {
     const triggerZ = worldZ - chunkLength * 0.5;
     encounterGroup.position.set(0, 0, -chunkLength * 0.5);
 
-    // Colossal 36-Meter Luxury Mega-Yacht
+    // Colossal 42-Meter Luxury Mega-Yacht
     const yachtMesh = new THREE.Group();
     yachtMesh.name = 'grand_mega_yacht_mesh';
     const initialX = wallX + 32.0;
     const targetX = wallX + 11.5;
     yachtMesh.position.set(initialX, 0, 0);
 
-    // Main Sleek Sculptured Hull
-    const hullGeo = this.getBox(9.5, 4.2, 36.0);
+    // Sleek Aerodynamic Hull
+    const hullGeo = this.getBox(9.8, 4.4, 42.0);
     const hullMesh = new THREE.Mesh(hullGeo, this.yachtHullMat);
-    hullMesh.position.y = 1.2;
+    hullMesh.position.y = 1.3;
     yachtMesh.add(hullMesh);
 
+    // Gold Waterline Stripe
+    const stripeMesh = new THREE.Mesh(this.getBox(10.0, 0.25, 42.2), this.sunsetGoldMat);
+    stripeMesh.position.y = 0.4;
+    yachtMesh.add(stripeMesh);
+
     // Multi-tier Luxury Bridge & Saloon Cabins
-    const saloonGeo = this.getBox(7.2, 3.0, 20.0);
+    const saloonGeo = this.getBox(7.4, 3.2, 24.0);
     const saloonMesh = new THREE.Mesh(saloonGeo, this.coralMarbleMat);
-    saloonMesh.position.set(0, 4.2, -2.0);
+    saloonMesh.position.set(0, 4.4, -2.0);
     yachtMesh.add(saloonMesh);
 
-    const bridgeGeo = this.getBox(5.5, 2.2, 10.0);
+    const bridgeGeo = this.getBox(5.6, 2.4, 12.0);
     const bridgeMesh = new THREE.Mesh(bridgeGeo, this.sunsetGoldMat);
-    bridgeMesh.position.set(0, 6.6, -4.0);
+    bridgeMesh.position.set(0, 6.8, -4.0);
     yachtMesh.add(bridgeMesh);
+
+    // Radar Arch & Satellite Domes on Bridge Top
+    const radarMast = new THREE.Mesh(this.getCylinder(0.15, 0.25, 3.2, 6), this.sunsetGoldMat);
+    radarMast.position.set(0, 9.2, -5.0);
+    yachtMesh.add(radarMast);
+
+    const satDomeL = new THREE.Mesh(this.getSphere(0.7, 7), this.yachtHullMat);
+    satDomeL.position.set(-1.8, 8.4, -6.0);
+    yachtMesh.add(satDomeL);
+
+    const satDomeR = new THREE.Mesh(this.getSphere(0.7, 7), this.yachtHullMat);
+    satDomeR.position.set(1.8, 8.4, -6.0);
+    yachtMesh.add(satDomeR);
 
     // Twin Halogen Searchlights on Bow
     const searchL = new THREE.Group();
@@ -802,7 +1019,7 @@ export class VivaHeatWorldBuilder {
     beamMeshL.rotation.x = Math.PI * 0.5;
     beamMeshL.position.z = 9.0;
     searchL.add(beamMeshL);
-    searchL.position.set(-2.5, 3.5, 14.0);
+    searchL.position.set(-2.5, 3.5, 16.0);
     yachtMesh.add(searchL);
 
     const searchR = new THREE.Group();
@@ -811,12 +1028,12 @@ export class VivaHeatWorldBuilder {
     beamMeshR.rotation.x = Math.PI * 0.5;
     beamMeshR.position.z = 9.0;
     searchR.add(beamMeshR);
-    searchR.position.set(2.5, 3.5, 14.0);
+    searchR.position.set(2.5, 3.5, 16.0);
     yachtMesh.add(searchR);
 
     // Champagne Water-Cannon Arcs
     const waterSprayArc = new THREE.Mesh(this.getTorus(7.0, 0.45, 6, 16), this.champagneSprayMat);
-    waterSprayArc.position.set(-4.5, 4.0, 0);
+    waterSprayArc.position.set(-4.8, 4.0, 0);
     waterSprayArc.rotation.z = Math.PI * 0.45;
     waterSprayArc.visible = false;
     yachtMesh.add(waterSprayArc);
@@ -825,9 +1042,9 @@ export class VivaHeatWorldBuilder {
     const champagneJets: THREE.Mesh[] = [];
     for (let c = 0; c < 3; c++) {
       const cannon = new THREE.Group();
-      cannon.position.set(-3.8, 3.0, -8.0 + c * 8.0);
-      const jet = new THREE.Mesh(this.getCylinder(0.1, 0.8, 6.0, 6), this.champagneSprayMat);
-      jet.position.set(-1.5, 2.5, 0);
+      cannon.position.set(-4.0, 3.2, -10.0 + c * 10.0);
+      const jet = new THREE.Mesh(this.getCylinder(0.1, 0.85, 7.0, 6), this.champagneSprayMat);
+      jet.position.set(-1.8, 2.8, 0);
       jet.rotation.z = Math.PI * 0.35;
       jet.visible = false;
       cannon.add(jet);
@@ -840,7 +1057,7 @@ export class VivaHeatWorldBuilder {
     const deckStrobes: THREE.Mesh[] = [];
     for (let s = 0; s < 4; s++) {
       const strobe = new THREE.Mesh(this.getSphere(0.4, 6), this.neonCyanGlowMat);
-      strobe.position.set(-2.5 + (s % 2) * 5.0, 5.8, -10.0 + s * 6.0);
+      strobe.position.set(-2.5 + (s % 2) * 5.0, 6.0, -12.0 + s * 8.0);
       strobe.visible = false;
       deckStrobes.push(strobe);
       yachtMesh.add(strobe);
@@ -892,26 +1109,35 @@ export class VivaHeatWorldBuilder {
     encounterGroup.name = 'viva_heat_flora_awakening_encounter';
 
     const triggerZ = worldZ - chunkLength * 0.5;
-    const originX = flankX - 16.0;
+    const originX = flankX - 6.5; // -14.9m: Majestic prominence right along promenade while safely clear of running envelope
     encounterGroup.position.set(originX, 0, -chunkLength * 0.5);
 
-    // Glowing Bioluminescent Ground Runes
-    const groundRunes = new THREE.Mesh(this.getPlane(22.0, 22.0), this.sunCoronaMat);
+    // Concentric Glowing Bioluminescent Ground Runes
+    const groundRunes = new THREE.Mesh(this.getPlane(24.0, 24.0), this.sunCoronaMat);
     groundRunes.rotation.x = -Math.PI * 0.5;
     groundRunes.position.y = 0.05;
     encounterGroup.add(groundRunes);
 
+    // Tiered Base Plinth in Velvet Crimson & Gold
+    const plinthBase = new THREE.Mesh(this.getCylinder(5.5, 6.5, 1.2, 12), this.velvetCrimsonMat);
+    plinthBase.position.y = 0.6;
+    encounterGroup.add(plinthBase);
+
+    const plinthGoldRim = new THREE.Mesh(this.getCylinder(5.6, 5.6, 0.25, 12), this.sunsetGoldMat);
+    plinthGoldRim.position.y = 1.25;
+    encounterGroup.add(plinthGoldRim);
+
     // Monumental Sculptured Botanical Stem
-    const stemMesh = new THREE.Mesh(this.getCylinder(1.2, 2.4, 12.0, 8), this.palmFrondMat);
-    stemMesh.position.y = 6.0;
+    const stemMesh = new THREE.Mesh(this.getCylinder(1.4, 2.6, 12.0, 8), this.palmFrondMat);
+    stemMesh.position.y = 6.6;
     encounterGroup.add(stemMesh);
 
     // Luminescent Stem Conduit Ribs
     const stemConduits: THREE.Mesh[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (i * Math.PI) / 3;
-      const rib = new THREE.Mesh(this.getCylinder(0.15, 0.15, 11.5, 4), this.goldenStamenMat);
-      rib.position.set(Math.cos(angle) * 1.4, 6.0, Math.sin(angle) * 1.4);
+      const rib = new THREE.Mesh(this.getCylinder(0.18, 0.18, 11.5, 4), this.goldenStamenMat);
+      rib.position.set(Math.cos(angle) * 1.5, 6.6, Math.sin(angle) * 1.5);
       rib.visible = false;
       stemConduits.push(rib);
       encounterGroup.add(rib);
@@ -919,7 +1145,7 @@ export class VivaHeatWorldBuilder {
 
     // Flower Head Mesh with Multi-Tiered Kinetic Petals
     const flowerMesh = new THREE.Group();
-    flowerMesh.position.y = 11.8;
+    flowerMesh.position.y = 12.5;
 
     const outerPetals: THREE.Mesh[] = [];
     const innerPetals: THREE.Mesh[] = [];
@@ -927,8 +1153,8 @@ export class VivaHeatWorldBuilder {
     // Tier 1: Outer Giant Petals (8 petals)
     for (let i = 0; i < 8; i++) {
       const angle = (i * Math.PI) / 4;
-      const petal = new THREE.Mesh(this.getPlane(3.8, 9.5), this.kineticPetalMat);
-      petal.position.set(Math.cos(angle) * 2.2, 0, Math.sin(angle) * 2.2);
+      const petal = new THREE.Mesh(this.getPlane(4.2, 10.5), this.kineticPetalMat);
+      petal.position.set(Math.cos(angle) * 2.4, 0, Math.sin(angle) * 2.4);
       petal.rotation.y = -angle;
       petal.rotation.z = 0.15;
       outerPetals.push(petal);
@@ -938,8 +1164,8 @@ export class VivaHeatWorldBuilder {
     // Tier 2: Inner Golden Petals (6 petals)
     for (let i = 0; i < 6; i++) {
       const angle = (i * Math.PI) / 3 + 0.25;
-      const petal = new THREE.Mesh(this.getPlane(2.6, 6.5), this.sunsetGoldMat);
-      petal.position.set(Math.cos(angle) * 1.4, 0.5, Math.sin(angle) * 1.4);
+      const petal = new THREE.Mesh(this.getPlane(2.8, 7.2), this.sunsetGoldMat);
+      petal.position.set(Math.cos(angle) * 1.5, 0.5, Math.sin(angle) * 1.5);
       petal.rotation.y = -angle;
       petal.rotation.z = 0.1;
       innerPetals.push(petal);
@@ -947,13 +1173,13 @@ export class VivaHeatWorldBuilder {
     }
 
     // Radiant Golden Stamen Core (Ascends during bloom)
-    const stamenCore = new THREE.Mesh(this.getCylinder(0.6, 1.2, 4.5, 8), this.goldenStamenMat);
+    const stamenCore = new THREE.Mesh(this.getCylinder(0.7, 1.4, 4.8, 8), this.goldenStamenMat);
     stamenCore.position.y = 6.0;
     flowerMesh.add(stamenCore);
 
     // Radiant Vertical Solar Beam Cone (Fires at climax)
-    const solarBeamCone = new THREE.Mesh(this.getCylinder(0.5, 6.0, 32.0, 8), this.spotlightBeamMat);
-    solarBeamCone.position.y = 18.0;
+    const solarBeamCone = new THREE.Mesh(this.getCylinder(0.6, 7.0, 36.0, 8), this.spotlightBeamMat);
+    solarBeamCone.position.y = 20.0;
     solarBeamCone.visible = false;
     flowerMesh.add(solarBeamCone);
 
@@ -1067,26 +1293,60 @@ export class VivaHeatWorldBuilder {
     flowerGroup.name = 'viva_heat_kinetic_flower';
     flowerGroup.position.set(px, 0, pz);
 
-    // Stem
-    const stem = new THREE.Mesh(this.getCylinder(0.35, 0.7, 4.0, 6), this.palmFrondMat);
-    stem.position.y = 2.0;
-    flowerGroup.add(stem);
+    // Octagonal Base Plinth
+    const plinth = new THREE.Mesh(this.getCylinder(1.6, 1.9, 0.6, 8), this.velvetCrimsonMat);
+    plinth.position.y = 0.3;
+    flowerGroup.add(plinth);
 
-    // Petals
+    const goldPlinthRim = new THREE.Mesh(this.getCylinder(1.65, 1.65, 0.15, 8), this.sunsetGoldMat);
+    goldPlinthRim.position.y = 0.65;
+    flowerGroup.add(goldPlinthRim);
+
+    // S-Curved Fluted Stem
+    const stemLower = new THREE.Mesh(this.getCylinder(0.4, 0.55, 2.5, 7), this.palmFrondMat);
+    stemLower.position.set(0, 1.8, 0);
+    stemLower.rotation.z = 0.08;
+    flowerGroup.add(stemLower);
+
+    const stemUpper = new THREE.Mesh(this.getCylinder(0.3, 0.4, 2.5, 7), this.palmFrondMat);
+    stemUpper.position.set(0.18, 4.0, 0);
+    stemUpper.rotation.z = -0.06;
+    flowerGroup.add(stemUpper);
+
+    // Gilded Node Rings
+    const nodeRing = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.2, 7), this.sunsetGoldMat);
+    nodeRing.position.set(0.08, 2.9, 0);
+    flowerGroup.add(nodeRing);
+
+    // Petals (Outer Scarlet + Inner Gold)
     const petals: THREE.Object3D[] = [];
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI) / 3;
-      const petal = new THREE.Mesh(this.getPlane(1.8, 3.8), this.kineticPetalMat);
-      petal.position.set(Math.cos(angle) * 0.8, 4.0, Math.sin(angle) * 0.8);
+    const petalHeadY = 5.2;
+
+    // 8 Outer Scarlet Satin Petals
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const petal = new THREE.Mesh(this.getPlane(1.8, 4.2), this.kineticPetalMat);
+      petal.position.set(Math.cos(angle) * 0.9, petalHeadY, Math.sin(angle) * 0.9);
       petal.rotation.y = -angle;
       petal.rotation.z = 0.35;
       petals.push(petal);
       flowerGroup.add(petal);
     }
 
-    // Golden Stamen Core
-    const stamen = new THREE.Mesh(this.getSphere(0.65, 8), this.goldenStamenMat);
-    stamen.position.y = 4.2;
+    // 6 Inner Spun-Gold Petals
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3 + 0.25;
+      const innerPetal = new THREE.Mesh(this.getPlane(1.2, 2.8), this.sunsetGoldMat);
+      innerPetal.position.set(Math.cos(angle) * 0.5, petalHeadY + 0.3, Math.sin(angle) * 0.5);
+      innerPetal.rotation.y = -angle;
+      innerPetal.rotation.z = 0.2;
+      petals.push(innerPetal);
+      flowerGroup.add(innerPetal);
+    }
+
+    // Golden Stamen Core & Glowing Pistils
+    const stamen = new THREE.Mesh(this.getSphere(0.75, 8), this.goldenStamenMat);
+    stamen.position.set(0.15, petalHeadY + 0.4, 0);
     flowerGroup.add(stamen);
 
     director.registerKineticFlower({
@@ -1117,22 +1377,31 @@ export class VivaHeatWorldBuilder {
 
       // Inland palm (-X)
       const pxLeft = -wallX - 3.8;
+
+      // Deep Root Collar Plinth grounded to Y <= -5.5m
+      const rootPlinth = new THREE.Mesh(this.getCylinder(0.8, 1.1, 6.0, 7), this.velvetCrimsonMat);
+      rootPlinth.position.set(pxLeft, -3.0, pz);
+      palmGroup.add(rootPlinth);
+
+      // Curved Organic Trunk
       const trunkLeft = new THREE.Mesh(this.getCylinder(0.3, 0.65, 11.0, 7), this.palmTrunkMat);
       trunkLeft.position.set(pxLeft, 5.5, pz);
       palmGroup.add(trunkLeft);
 
       // Gilded trunk collar band
-      const collarLeft = new THREE.Mesh(this.getCylinder(0.45, 0.45, 0.5, 7), this.sunsetGoldMat);
+      const collarLeft = new THREE.Mesh(this.getCylinder(0.48, 0.48, 0.5, 7), this.sunsetGoldMat);
       collarLeft.position.set(pxLeft, 7.5, pz);
       palmGroup.add(collarLeft);
 
-      // Fronds
-      for (let f = 0; f < 6; f++) {
-        const fAngle = (f * Math.PI) / 3;
-        const frond = new THREE.Mesh(this.getPlane(1.4, 5.2), this.palmFrondMat);
-        frond.position.set(pxLeft + Math.cos(fAngle) * 1.5, 11.0, pz + Math.sin(fAngle) * 1.5);
+      // 12 Drooping Feather Fronds in 3 Tiers
+      for (let f = 0; f < 12; f++) {
+        const tier = Math.floor(f / 4);
+        const fAngle = ((f % 4) * Math.PI * 0.5) + (tier * 0.35);
+        const frondLen = tier === 0 ? 5.8 : (tier === 1 ? 5.0 : 4.2);
+        const frond = new THREE.Mesh(this.getPlane(1.4, frondLen), this.palmFrondMat);
+        frond.position.set(pxLeft + Math.cos(fAngle) * 1.6, 11.0 - tier * 0.3, pz + Math.sin(fAngle) * 1.6);
         frond.rotation.y = -fAngle;
-        frond.rotation.x = 0.45;
+        frond.rotation.x = 0.35 + tier * 0.22;
         palmGroup.add(frond);
       }
     }
@@ -1149,30 +1418,47 @@ export class VivaHeatWorldBuilder {
     archGroup.name = 'viva_heat_parabolic_arch';
 
     const archZ = -chunkLength * 0.5;
+    // Strict Running Corridor Clearance: archSpan sits at |X| = 8.5m (corridor is |X| <= 4.2m)
     const archSpan = roadbedWidth * 0.5 + 2.5;
 
-    // Sculptural Left & Right Piers
-    const pierL = new THREE.Mesh(this.getCylinder(0.4, 0.7, 12.0, 6), this.velvetCrimsonMat);
-    pierL.position.set(-archSpan, 6.0, archZ);
+    // Sculptural Left & Right Piers grounded down to Y = -5.85m up to Y = 8.5m
+    const pierH = 14.5;
+    const pierY = 1.35;
+    const pierL = new THREE.Mesh(this.getCylinder(0.45, 0.85, pierH, 8), this.velvetCrimsonMat);
+    pierL.position.set(-archSpan, pierY, archZ);
     archGroup.add(pierL);
 
-    const pierR = new THREE.Mesh(this.getCylinder(0.4, 0.7, 12.0, 6), this.velvetCrimsonMat);
-    pierR.position.set(archSpan, 6.0, archZ);
+    const pierR = new THREE.Mesh(this.getCylinder(0.45, 0.85, pierH, 8), this.velvetCrimsonMat);
+    pierR.position.set(archSpan, pierY, archZ);
     archGroup.add(pierR);
 
-    // Parabolic Arch Crown strictly at Y >= 8.5m
-    const crown = new THREE.Mesh(this.getTorus(archSpan, 0.35, 6, 16), this.sunsetGoldMat);
-    crown.position.set(0, 9.8, archZ);
-    crown.rotation.x = Math.PI * 0.5;
+    // Gilded Pier Capital Ornaments at pier top (Y = 8.65m)
+    const capL = new THREE.Mesh(this.getCylinder(0.70, 0.45, 0.8, 8), this.sunsetGoldMat);
+    capL.position.set(-archSpan, 8.65, archZ);
+    archGroup.add(capL);
+
+    const capR = new THREE.Mesh(this.getCylinder(0.70, 0.45, 0.8, 8), this.sunsetGoldMat);
+    capR.position.set(archSpan, 8.65, archZ);
+    archGroup.add(capR);
+
+    // Parabolic Arch Crown: Upright semi-circular arch in XY plane spanning from -archSpan to +archSpan
+    // Springing from Y = 8.95m (worldBox.min.y = 8.57m > 8.5m), apex reaches Y = 8.95 + archSpan = 17.45m!
+    const crown = new THREE.Mesh(this.getTorus(archSpan, 0.38, 8, 24, Math.PI), this.sunsetGoldMat);
+    crown.position.set(0, 8.95, archZ);
     archGroup.add(crown);
 
+    // Inner concentric golden rib for double-arch architectural elegance
+    const innerRib = new THREE.Mesh(this.getTorus(archSpan - 0.7, 0.22, 6, 20, Math.PI), this.sunsetGoldMat);
+    innerRib.position.set(0, 9.65, archZ);
+    archGroup.add(innerRib);
+
     // Cascading Silk Banners (on lateral flanks, outside running corridor)
-    const bannerL = new THREE.Mesh(this.getPlane(1.2, 4.5), this.silkBannerMat);
-    bannerL.position.set(-archSpan + 1.2, 9.8, archZ);
+    const bannerL = new THREE.Mesh(this.getPlane(1.4, 4.8), this.silkBannerMat);
+    bannerL.position.set(-archSpan + 1.2, 7.2, archZ);
     archGroup.add(bannerL);
 
-    const bannerR = new THREE.Mesh(this.getPlane(1.2, 4.5), this.silkBannerMat);
-    bannerR.position.set(archSpan - 1.2, 9.8, archZ);
+    const bannerR = new THREE.Mesh(this.getPlane(1.4, 4.8), this.silkBannerMat);
+    bannerR.position.set(archSpan - 1.2, 7.2, archZ);
     archGroup.add(bannerR);
 
     parent.add(archGroup);
@@ -1235,22 +1521,22 @@ export class VivaHeatWorldBuilder {
   }
 
   // =========================================================================
-  // BACKWARD COMPATIBILITY: SIGNATURE TEST OBJECTS
+  // DETERMINISM & UNIT TEST BACKWARD COMPATIBILITY
   // =========================================================================
 
   private ensureRequiredTestObjects(
     group: THREE.Group,
     chunkLength: number,
-    director: FeverDirector
+    director: FeverDirector,
+    wallX: number
   ): void {
     // Ensure Act I container exists for test suite 2
-    if (!group.getObjectByName('act_i_scarlet_sunset')) {
-      const act1Proxy = new THREE.Group();
-      act1Proxy.name = 'act_i_scarlet_sunset';
-      group.add(act1Proxy);
+    let act1 = group.getObjectByName('act_i_scarlet_sunset') as THREE.Group | undefined;
+    if (!act1) {
+      act1 = new THREE.Group();
+      act1.name = 'act_i_scarlet_sunset';
+      group.add(act1);
     }
-
-    const act1 = group.getObjectByName('act_i_scarlet_sunset') as THREE.Group;
 
     // Ensure all 7 signature test landmarks exist within the hierarchy
     if (!group.getObjectByName('viva_heat_scarlet_sun')) {
@@ -1285,8 +1571,11 @@ export class VivaHeatWorldBuilder {
       act1.add(dummyStage);
     }
 
-    if (!group.getObjectByName('viva_heat_kinetic_flower')) {
-      this.buildKineticFlowerPod(act1, -16.0, -chunkLength * 0.3, director, 0);
+    // Parabolic arches and signature test props are featured in District A (worldZ = 0) and District E (Royal Palm Colonnade)
+    const isAct1OrColonnade = !!group.getObjectByName('zone_sunset_promenade') || !!group.getObjectByName('zone_royal_colonnade') || (!group.getObjectByName('zone_gilded_amphitheatre') && !group.getObjectByName('zone_kinetic_flora') && !group.getObjectByName('zone_midnight_marina') && !group.getObjectByName('zone_sunset_carnival'));
+
+    if (!group.getObjectByName('viva_heat_kinetic_flower') && isAct1OrColonnade) {
+      this.buildKineticFlowerPod(act1, -wallX - 9.0, -chunkLength * 0.3, director, 0);
     }
 
     if (!group.getObjectByName('viva_heat_royal_palms')) {
@@ -1295,8 +1584,8 @@ export class VivaHeatWorldBuilder {
       act1.add(dummyPalms);
     }
 
-    if (!group.getObjectByName('viva_heat_parabolic_arch')) {
-      this.buildParabolicFestivalArches(act1, 16.0, chunkLength);
+    if (!group.getObjectByName('viva_heat_parabolic_arch') && isAct1OrColonnade) {
+      this.buildParabolicFestivalArches(act1, wallX * 2, chunkLength);
     }
 
     if (!group.getObjectByName('viva_heat_skybeam')) {

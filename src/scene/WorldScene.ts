@@ -46,6 +46,7 @@ export class WorldScene {
   public midnightVelvetSkyline: THREE.Group | null = null;
   public jurassicSkyline: THREE.Group | null = null;
   public infernoSkyline: THREE.Group | null = null;
+  public vivaHeatSkyline: THREE.Group | null = null;
   public skylineMaterial: THREE.MeshBasicMaterial | null = null;
   private historicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private neonSkylineMaterial: THREE.MeshBasicMaterial | null = null;
@@ -58,6 +59,7 @@ export class WorldScene {
   private midnightVelvetSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private jurassicSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private infernoSkylineMaterial: THREE.MeshBasicMaterial | null = null;
+  private vivaHeatSkylineMaterial: THREE.MeshBasicMaterial | null = null;
   private infernoSkylineVolcanoes: Array<{ craterGlow: THREE.Mesh; plume: THREE.Mesh; phase: number }> = [];
   private infernoSkylineTime: number = 0;
   private vipSearchlights: THREE.Mesh[] = [];
@@ -2452,6 +2454,79 @@ export class WorldScene {
 
     group.add(this.infernoSkyline);
 
+    // =========================================================================
+    // 12. VIVA HEAT: Tropical Coastal Headlands, Island Pavilions, Palatial Minarets,
+    //     & Swaying Palm Silhouettes on the Ocean Horizon
+    // =========================================================================
+    const vivaHeatSkyline = new THREE.Group();
+    this.vivaHeatSkyline = vivaHeatSkyline;
+    this.vivaHeatSkylineMaterial = this.skylineMaterial.clone();
+    this.vivaHeatSkylineMaterial.color.setHex(0x2e061b); // Deep velvet maroon silhouette
+    this.vivaHeatSkylineMaterial.transparent = true;
+    this.vivaHeatSkylineMaterial.opacity = 0.88;
+
+    const vivaSkylineMat = this.vivaHeatSkylineMaterial;
+    const vivaGlowAmberMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.85 });
+
+    // Ring of 16 Coastal Headlands & Exotic Resort Pavilions around horizon (dist = 330m)
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const dist = 330;
+      const hGroup = new THREE.Group();
+      hGroup.position.set(
+        Math.cos(angle) * dist,
+        -16,
+        Math.sin(angle) * dist
+      );
+      hGroup.rotation.y = -angle + Math.PI * 0.5;
+
+      // Island Headland Ridge
+      const ridgeW = 75.0 + ((i * 17) % 35);
+      const ridgeH = 24.0 + ((i * 11) % 18);
+      const ridgeGeo = new THREE.ConeGeometry(ridgeW * 0.5, ridgeH, 7);
+      const ridgeMesh = new THREE.Mesh(ridgeGeo, vivaSkylineMat);
+      ridgeMesh.scale.set(1.4, 1.0, 0.45);
+      ridgeMesh.position.y = ridgeH * 0.45;
+      hGroup.add(ridgeMesh);
+
+      // Coastal Resort Palace / Minaret Towers on every other headland
+      if (i % 2 === 0) {
+        const palTower = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 3.5, 38.0, 6), vivaSkylineMat);
+        palTower.position.set(-8.0, ridgeH * 0.6 + 12.0, 0);
+        hGroup.add(palTower);
+
+        // Gilded Pavilion Dome Crown
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(3.6, 6, 6), vivaGlowAmberMat);
+        dome.position.set(-8.0, ridgeH * 0.6 + 32.0, 0);
+        dome.scale.set(1.0, 1.4, 1.0);
+        hGroup.add(dome);
+
+        // Lit Windows on silhouette
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2), vivaGlowAmberMat);
+        win.position.set(-8.0, ridgeH * 0.6 + 18.0, 3.2);
+        hGroup.add(win);
+      }
+
+      // Distant Palm Clusters silhouetted along the ridge crest
+      const palmCount = 3 + (i % 3);
+      for (let p = 0; p < palmCount; p++) {
+        const px = -ridgeW * 0.25 + p * (ridgeW * 0.16);
+        const palmTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.6, 16.0, 5), vivaSkylineMat);
+        palmTrunk.position.set(px, ridgeH * 0.55 + 7.0, 0);
+        palmTrunk.rotation.z = (p % 2 === 0 ? 0.12 : -0.12);
+        hGroup.add(palmTrunk);
+
+        // Palm canopy umbrella
+        const canopy = new THREE.Mesh(new THREE.ConeGeometry(4.5, 2.8, 6), vivaSkylineMat);
+        canopy.position.set(px, ridgeH * 0.55 + 15.5, 0);
+        hGroup.add(canopy);
+      }
+
+      vivaHeatSkyline.add(hGroup);
+    }
+
+    group.add(this.vivaHeatSkyline);
+
     this.modernSkyline.visible = this.currentTheme.id === 'MODERN_METRO' || this.currentTheme.id === 'NEON_INDUSTRIAL';
     this.historicSkyline.visible = this.currentTheme.id === 'HISTORIC_QUARTER';
     this.neonSkyline.visible = this.currentTheme.id === 'NEON_RAINLINE';
@@ -2464,6 +2539,7 @@ export class WorldScene {
     this.midnightVelvetSkyline.visible = this.currentTheme.id === 'MIDNIGHT_VELVET';
     this.jurassicSkyline.visible = this.currentTheme.id === 'JURASSIC_RUSH';
     this.infernoSkyline.visible = this.currentTheme.id === 'INFERNO_EXPRESS';
+    this.vivaHeatSkyline.visible = this.currentTheme.id === 'VIVA_HEAT';
 
     return group;
   }
@@ -2583,6 +2659,12 @@ export class WorldScene {
       isInferno(targetTheme) ? targetTheme.skyline.opacity : 0,
       t
     );
+    const isVivaHeat = (env: EnvironmentTheme) => env.id === 'VIVA_HEAT';
+    const vivaHeatOpacity = THREE.MathUtils.lerp(
+      isVivaHeat(base) ? base.skyline.opacity : 0,
+      isVivaHeat(targetTheme) ? targetTheme.skyline.opacity : 0,
+      t
+    );
     if (this.skylineMaterial) {
       this.skylineMaterial.color.copy(skylineColor);
       this.skylineMaterial.opacity = modernOpacity;
@@ -2631,6 +2713,10 @@ export class WorldScene {
       this.infernoSkylineMaterial.color.copy(skylineColor);
       this.infernoSkylineMaterial.opacity = infernoOpacity;
     }
+    if (this.vivaHeatSkylineMaterial) {
+      this.vivaHeatSkylineMaterial.color.copy(skylineColor);
+      this.vivaHeatSkylineMaterial.opacity = vivaHeatOpacity;
+    }
     if (this.modernSkyline) this.modernSkyline.visible = modernOpacity > 0.01;
     if (this.historicSkyline) this.historicSkyline.visible = historicOpacity > 0.01;
     if (this.neonSkyline) this.neonSkyline.visible = neonOpacity > 0.01;
@@ -2643,6 +2729,7 @@ export class WorldScene {
     if (this.midnightVelvetSkyline) this.midnightVelvetSkyline.visible = midnightVelvetOpacity > 0.01;
     if (this.jurassicSkyline) this.jurassicSkyline.visible = jurassicOpacity > 0.01;
     if (this.infernoSkyline) this.infernoSkyline.visible = infernoOpacity > 0.01;
+    if (this.vivaHeatSkyline) this.vivaHeatSkyline.visible = vivaHeatOpacity > 0.01;
 
     // Clouds fade for tunnel, orbital space, underwater abyss, volcanic empire, prehistoric world & subterranean crypt transitions
     const cloudOpacity = THREE.MathUtils.lerp(
@@ -2650,7 +2737,14 @@ export class WorldScene {
       targetTheme.id === 'UNDERGROUND_METRO' || targetTheme.id === 'ORBITAL_HALO' || targetTheme.id === 'ABYSSAL_GLASSLINE' || targetTheme.id === 'PHANTOM_LINE' || targetTheme.id === 'INFERNO_EXPRESS' || targetTheme.id === 'JURASSIC_RUSH' ? 0 : 1,
       t
     );
-    if (this.cloudMaterial) this.cloudMaterial.opacity = cloudOpacity;
+    if (this.cloudMaterial) {
+      this.cloudMaterial.opacity = cloudOpacity;
+      if (targetTheme.clouds?.color) {
+        this.cloudMaterial.color.copy(
+          EnvironmentManager.lerpColor(base.clouds?.color || 0xffffff, targetTheme.clouds.color, t)
+        );
+      }
+    }
     if (this.cloudsGroup) {
       this.cloudsGroup.visible = this.currentConfig.cloudsVisible && cloudOpacity > 0.01;
     }
