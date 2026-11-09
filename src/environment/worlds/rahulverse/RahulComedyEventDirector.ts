@@ -129,6 +129,7 @@ export interface ParliamentHugAndWinkEvent {
     armL: THREE.Object3D;
     armR: THREE.Object3D;
   }[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -151,6 +152,7 @@ export interface YatraMarchProcessionEvent {
   }[];
   leaderWavingArm?: THREE.Object3D;
   bannerMesh?: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -169,6 +171,7 @@ export interface NeverEndingYatraEvent {
     head: THREE.Object3D;
     baseY: number;
   }[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -176,6 +179,7 @@ export interface NeverEndingYatraEvent {
 export interface MicrophoneChaosEvent {
   tableGroup: THREE.Group;
   mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -183,6 +187,7 @@ export interface MicrophoneChaosEvent {
 export interface PressScrumEvent {
   scrumGroup: THREE.Group;
   reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -191,6 +196,7 @@ export interface AllianceChairsRunawayEvent {
   tableGroup: THREE.Group;
   nitishChair: THREE.Group;
   runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -200,6 +206,7 @@ export interface AnimatedHugLoop {
   modiFigure: THREE.Object3D;
   rahulFigure: THREE.Object3D;
   heartIcon: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -210,6 +217,7 @@ export interface AnimatedSelfieBattle {
   cameraDrone: THREE.Object3D;
   chaiVendor: THREE.Object3D;
   flashLight: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -218,6 +226,7 @@ export interface AnimatedMicrophoneChase {
   rollingMic: THREE.Object3D;
   modiFigure: THREE.Object3D;
   rahulFigure: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -227,6 +236,7 @@ export interface AnimatedPartyOfficeMixup {
   politicianFigure: THREE.Object3D;
   signA: THREE.Object3D;
   signB: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -504,7 +514,8 @@ export class RahulComedyEventDirector {
       group: THREE.Group;
       armL: THREE.Object3D;
       armR: THREE.Object3D;
-    }[]
+    }[],
+    worldZ?: number
   ): void {
     this.parliamentHugAndWinks.push({
       rahulFigure,
@@ -519,6 +530,7 @@ export class RahulComedyEventDirector {
       modiArmL,
       modiArmR,
       gallerySpectators,
+      worldZ,
       timer: 0
     });
   }
@@ -540,7 +552,8 @@ export class RahulComedyEventDirector {
     vanLoudspeakers?: THREE.Object3D[],
     soundWaves?: THREE.Object3D[],
     leaderWavingArm?: THREE.Object3D,
-    bannerMesh?: THREE.Object3D
+    bannerMesh?: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.yatraMarchProcessions.push({
       processionGroup,
@@ -551,6 +564,7 @@ export class RahulComedyEventDirector {
       soundWaves,
       leaderWavingArm,
       bannerMesh,
+      worldZ,
       timer: 0
     });
   }
@@ -568,7 +582,8 @@ export class RahulComedyEventDirector {
       armR: THREE.Object3D;
       head: THREE.Object3D;
       baseY: number;
-    }[]
+    }[],
+    worldZ?: number
   ): void {
     this.neverEndingYatras.push({
       archGroup,
@@ -578,39 +593,44 @@ export class RahulComedyEventDirector {
       runnerRahul,
       sweatTowel,
       crowdMembers,
+      worldZ,
       timer: 0
     });
   }
 
   public registerMicrophoneChaos(
     tableGroup: THREE.Group,
-    mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[]
+    mics: { group: THREE.Group; stem: THREE.Object3D; head: THREE.Object3D; wheels?: THREE.Object3D }[],
+    worldZ?: number
   ): void {
-    this.microphoneChaoses.push({ tableGroup, mics, timer: 0 });
+    this.microphoneChaoses.push({ tableGroup, mics, worldZ, timer: 0 });
   }
 
   public registerPressScrum(
     scrumGroup: THREE.Group,
-    reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[]
+    reporters: { group: THREE.Group; micArm: THREE.Object3D; baseAngle: number }[],
+    worldZ?: number
   ): void {
-    this.pressScrums.push({ scrumGroup, reporters, timer: 0 });
+    this.pressScrums.push({ scrumGroup, reporters, worldZ, timer: 0 });
   }
 
   public registerAllianceChairsRunaway(
     tableGroup: THREE.Group,
     nitishChair: THREE.Group,
-    runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[]
+    runningChairs: { chair: THREE.Group; legL: THREE.Object3D; legR: THREE.Object3D; baseAngle: number }[],
+    worldZ?: number
   ): void {
-    this.allianceChairsRunaways.push({ tableGroup, nitishChair, runningChairs, timer: 0 });
+    this.allianceChairsRunaways.push({ tableGroup, nitishChair, runningChairs, worldZ, timer: 0 });
   }
 
   public registerHugLoop(
     turntable: THREE.Object3D,
     modiFigure: THREE.Object3D,
     rahulFigure: THREE.Object3D,
-    heartIcon: THREE.Object3D
+    heartIcon: THREE.Object3D,
+    worldZ?: number
   ): void {
-    this.hugLoops.push({ turntable, modiFigure, rahulFigure, heartIcon, timer: 0 });
+    this.hugLoops.push({ turntable, modiFigure, rahulFigure, heartIcon, worldZ, timer: 0 });
   }
 
   public registerSelfieBattle(
@@ -618,26 +638,29 @@ export class RahulComedyEventDirector {
     rahulFigure: THREE.Object3D,
     cameraDrone: THREE.Object3D,
     chaiVendor: THREE.Object3D,
-    flashLight: THREE.Object3D
+    flashLight: THREE.Object3D,
+    worldZ?: number
   ): void {
-    this.selfieBattles.push({ modiFigure, rahulFigure, cameraDrone, chaiVendor, flashLight, timer: 0 });
+    this.selfieBattles.push({ modiFigure, rahulFigure, cameraDrone, chaiVendor, flashLight, worldZ, timer: 0 });
   }
 
   public registerMicrophoneChase(
     rollingMic: THREE.Object3D,
     modiFigure: THREE.Object3D,
-    rahulFigure: THREE.Object3D
+    rahulFigure: THREE.Object3D,
+    worldZ?: number
   ): void {
-    this.microphoneChases.push({ rollingMic, modiFigure, rahulFigure, timer: 0 });
+    this.microphoneChases.push({ rollingMic, modiFigure, rahulFigure, worldZ, timer: 0 });
   }
 
   public registerPartyOfficeMixup(
     revolvingPortal: THREE.Object3D,
     politicianFigure: THREE.Object3D,
     signA: THREE.Object3D,
-    signB: THREE.Object3D
+    signB: THREE.Object3D,
+    worldZ?: number
   ): void {
-    this.partyOfficeMixups.push({ revolvingPortal, politicianFigure, signA, signB, timer: 0 });
+    this.partyOfficeMixups.push({ revolvingPortal, politicianFigure, signA, signB, worldZ, timer: 0 });
   }
 
   // --- Public Diagnostics Getters ---
@@ -715,6 +738,37 @@ export class RahulComedyEventDirector {
     this.selfieBattles = this.selfieBattles.filter(sb => isAttached(sb.cameraDrone) && isAttached(sb.chaiVendor));
     this.microphoneChases = this.microphoneChases.filter(mc => isAttached(mc.rollingMic) && isAttached(mc.modiFigure));
     this.partyOfficeMixups = this.partyOfficeMixups.filter(pom => isAttached(pom.revolvingPortal) && isAttached(pom.politicianFigure));
+  }
+
+  /**
+   * Deterministic approach-aware 4-beat cycle calculation.
+   * When approaching on the track (playerZ and gagWorldZ defined), maps the 75m approach window
+   * across Beat 1 (Setup), Beat 2 (Approach/Anticipation), Beat 3 (PUNCHLINE in third-person view 38m->10m),
+   * and Beat 4 (Reaction/hold as player passes).
+   * Otherwise falls back cleanly to autonomous timer % cycleDuration.
+   */
+  public getGagCycle(timer: number, cycleDuration: number, gagWorldZ?: number, playerZ?: number): number {
+    if (playerZ !== undefined && gagWorldZ !== undefined) {
+      const distanceAhead = playerZ - gagWorldZ;
+      // Approach window: from 75m ahead down to 15m past
+      if (distanceAhead >= -15 && distanceAhead <= 75) {
+        const approachT = (75 - distanceAhead) / 75; // 0.0 at 75m, 1.0 at 0m (passing)
+        if (approachT < 0.25) {
+          // Beat 1: Setup
+          return (approachT / 0.25) * (cycleDuration * 0.25);
+        } else if (approachT < 0.50) {
+          // Beat 2: Anticipation / Approach
+          return (cycleDuration * 0.25) + ((approachT - 0.25) / 0.25) * (cycleDuration * 0.25);
+        } else if (approachT < 0.85) {
+          // Beat 3: PAYOFF & PUNCHLINE (38m to 10m ahead, in full runner camera view!)
+          return (cycleDuration * 0.50) + ((approachT - 0.50) / 0.35) * (cycleDuration * 0.25);
+        } else {
+          // Beat 4: Reaction & laugh hold as runner sweeps past
+          return (cycleDuration * 0.75) + Math.min(1.0, (approachT - 0.85) / 0.35) * (cycleDuration * 0.25);
+        }
+      }
+    }
+    return timer % cycleDuration;
   }
 
   /**
@@ -1057,35 +1111,14 @@ export class RahulComedyEventDirector {
     for (let i = 0; i < this.parliamentHugAndWinks.length; i++) {
       const g = this.parliamentHugAndWinks[i];
       g.timer += delta * motionMultiplier;
-      let cycle: number;
 
-      if (typeof _playerZ === 'number' && g.rahulFigure.parent) {
-        const wp = new THREE.Vector3();
-        g.rahulFigure.getWorldPosition(wp);
-        const distanceAhead = _playerZ - wp.z; // positive when player is approaching from behind
-        if (distanceAhead > -15.0 && distanceAhead < 65.0) {
-          // Approach (65m down to 25m): Stride towards Modi across green carpet
-          if (distanceAhead >= 25.0) {
-            cycle = (1.0 - (distanceAhead - 25.0) / 40.0) * 2.2;
-          }
-          // Climax 1: Bear Hug & Modi Spectacles Pop (25m down to 12m)
-          else if (distanceAhead >= 12.0) {
-            cycle = 2.2 + (1.0 - (distanceAhead - 12.0) / 13.0) * 1.6;
-          }
-          // Climax 2: Turn directly to camera, Iconic Wink + Tooth Sparkle + Cameraman topples (12m down to -5m)
-          else if (distanceAhead >= -5.0) {
-            cycle = 3.8 + (1.0 - (distanceAhead - (-5.0)) / 17.0) * 1.6;
-          }
-          // Recovery (-5m down to -15m)
-          else {
-            cycle = 5.4 + (1.0 - (distanceAhead - (-15.0)) / 10.0) * 1.6;
-          }
-        } else {
-          cycle = g.timer % 7.0;
-        }
-      } else {
-        cycle = g.timer % 7.0;
-      }
+      const gagZ = (typeof g.worldZ === 'number')
+        ? g.worldZ
+        : (g.rahulFigure.parent ? g.rahulFigure.getWorldPosition(new THREE.Vector3()).z : undefined);
+      const cycle = this.getGagCycle(g.timer, 7.0, gagZ, _playerZ);
+
+      const rJoints = (g.rahulFigure.userData && g.rahulFigure.userData.joints) ? g.rahulFigure.userData.joints : null;
+      const mJoints = (g.modiFigure.userData && g.modiFigure.userData.joints) ? g.modiFigure.userData.joints : null;
 
       if (cycle < 2.2) {
         // Stride across parliament floor
@@ -1096,6 +1129,7 @@ export class RahulComedyEventDirector {
         g.modiSpectacles.position.y = 1.62; // Spectacles on Modi's face
         if (g.modiArmL) g.modiArmL.rotation.z = 0.3;
         if (g.modiArmR) g.modiArmR.rotation.z = -0.3;
+        if (mJoints && mJoints.jaw) mJoints.jaw.position.y = -0.06;
         g.heartMesh.scale.set(0.01, 0.01, 0.01);
         g.eyebrowL.position.y = 0;
         g.eyelidL.scale.y = 1.0;
@@ -1108,6 +1142,15 @@ export class RahulComedyEventDirector {
             g.gallerySpectators[s].armR.rotation.z = -0.2;
           }
         }
+        if (rJoints) {
+          if (rJoints.legL) rJoints.legL.rotation.x = Math.sin(this.globalClock * 10.0) * 0.5;
+          if (rJoints.legR) rJoints.legR.rotation.x = -Math.sin(this.globalClock * 10.0) * 0.5;
+          if (rJoints.armL) rJoints.armL.rotation.x = -Math.sin(this.globalClock * 10.0) * 0.4;
+          if (rJoints.armR) rJoints.armR.rotation.x = Math.sin(this.globalClock * 10.0) * 0.4;
+          if (rJoints.headGroup) rJoints.headGroup.rotation.y = 0;
+          if (rJoints.winkLid) rJoints.winkLid.scale.y = 1.0;
+          if (rJoints.sparkleStar) rJoints.sparkleStar.visible = false;
+        }
       } else if (cycle < 3.8) {
         // Bear Hug!
         g.rahulFigure.position.x = -0.7;
@@ -1118,9 +1161,18 @@ export class RahulComedyEventDirector {
         // Modi arms throw up in shock
         if (g.modiArmL) g.modiArmL.rotation.z = 1.2;
         if (g.modiArmR) g.modiArmR.rotation.z = -1.2;
+        if (mJoints && mJoints.jaw) mJoints.jaw.position.y = -0.14; // Jaw drops in shock
         // Heart icon pulses above
         const heartPulse = 1.0 + Math.sin(this.globalClock * 10.0) * 0.25;
         g.heartMesh.scale.set(heartPulse, heartPulse, heartPulse);
+        if (rJoints) {
+          if (rJoints.armL) rJoints.armL.rotation.set(-0.8, 0.6, 0.4);
+          if (rJoints.armR) rJoints.armR.rotation.set(-0.8, -0.6, -0.4);
+          if (rJoints.elbowL) rJoints.elbowL.rotation.set(-0.5, 0.3, 0);
+          if (rJoints.elbowR) rJoints.elbowR.rotation.set(-0.5, -0.3, 0);
+          if (rJoints.legL) rJoints.legL.rotation.x = 0;
+          if (rJoints.legR) rJoints.legR.rotation.x = 0;
+        }
       } else if (cycle < 5.4) {
         // The Turn & Iconic Wink directly to player camera!
         g.rahulFigure.position.x = 0;
@@ -1129,6 +1181,7 @@ export class RahulComedyEventDirector {
         g.modiSpectacles.position.y = 1.62;
         if (g.modiArmL) g.modiArmL.rotation.z = 0.4;
         if (g.modiArmR) g.modiArmR.rotation.z = -0.4;
+        if (mJoints && mJoints.jaw) mJoints.jaw.position.y = -0.06;
 
         // Eyebrow arches high, left eyelid snaps shut in wink
         g.eyebrowL.position.y = 0.16;
@@ -1139,6 +1192,18 @@ export class RahulComedyEventDirector {
         g.sparkleStar.rotation.z += delta * 6.0;
         const spScale = 1.1 + Math.sin(this.globalClock * 12.0) * 0.3;
         g.sparkleStar.scale.set(spScale, spScale, spScale);
+
+        if (rJoints) {
+          if (rJoints.armR) rJoints.armR.rotation.set(-0.6, 0.2, 0.1);
+          if (rJoints.elbowR) rJoints.elbowR.rotation.x = -0.4;
+          if (rJoints.armL) rJoints.armL.rotation.set(0.2, 0, 0.3);
+          if (rJoints.winkLid) rJoints.winkLid.scale.y = 0.08;
+          if (rJoints.eyebrowL) rJoints.eyebrowL.position.y = 0.28;
+          if (rJoints.sparkleStar) {
+            rJoints.sparkleStar.visible = true;
+            rJoints.sparkleStar.rotation.z += delta * 6.0;
+          }
+        }
 
         // Cameraman in press gallery topples backwards in shock!
         const fallT = Math.min(1.0, (cycle - 3.8) / 0.8);
@@ -1160,6 +1225,11 @@ export class RahulComedyEventDirector {
         g.sparkleStar.visible = false;
         g.cameramanFigure.rotation.x = -Math.PI * 0.45 * (1.0 - recT);
         g.cameramanTripod.rotation.z = -0.55 * (1.0 - recT);
+        if (rJoints) {
+          if (rJoints.winkLid) rJoints.winkLid.scale.y = 0.08 + recT * 0.92;
+          if (rJoints.eyebrowL) rJoints.eyebrowL.position.y = 0.24 + (1.0 - recT) * 0.04;
+          if (rJoints.sparkleStar) rJoints.sparkleStar.visible = false;
+        }
         if (g.gallerySpectators) {
           for (let s = 0; s < g.gallerySpectators.length; s++) {
             g.gallerySpectators[s].armL.rotation.z = 1.3 * (1.0 - recT);
@@ -1242,35 +1312,13 @@ export class RahulComedyEventDirector {
     for (let i = 0; i < this.neverEndingYatras.length; i++) {
       const g = this.neverEndingYatras[i];
       g.timer += delta * motionMultiplier;
-      let cycle: number;
 
-      if (typeof _playerZ === 'number' && g.archGroup.parent) {
-        const wp = new THREE.Vector3();
-        g.archGroup.getWorldPosition(wp);
-        const distanceAhead = _playerZ - wp.z; // positive when player is approaching from behind
-        if (distanceAhead > -20.0 && distanceAhead < 75.0) {
-          // Approach (75m down to 28m): Sprint towards finish arch, crowd anticipates victory
-          if (distanceAhead >= 28.0) {
-            cycle = (1.0 - (distanceAhead - 28.0) / 47.0) * 2.5;
-          }
-          // Climax: Ratchet spin & 180° flip to NEXT YATRA (28m down to 14m)
-          else if (distanceAhead >= 14.0) {
-            cycle = 2.5 + (1.0 - (distanceAhead - 14.0) / 14.0) * 1.0;
-          }
-          // Reaction: Accordion map unrolls, synchronized crowd disbelief freeze (14m down to -4m)
-          else if (distanceAhead >= -4.0) {
-            cycle = 3.5 + (1.0 - (distanceAhead - (-4.0)) / 18.0) * 1.5;
-          }
-          // Aftermath: Runner wipes brow with towel, shrugs and continues jog (-4m down to -20m)
-          else {
-            cycle = 5.0 + (1.0 - (distanceAhead - (-20.0)) / 16.0) * 1.5;
-          }
-        } else {
-          cycle = g.timer % 6.5;
-        }
-      } else {
-        cycle = g.timer % 6.5;
-      }
+      const gagZ = (typeof g.worldZ === 'number')
+        ? g.worldZ
+        : (g.archGroup.parent ? g.archGroup.getWorldPosition(new THREE.Vector3()).z : undefined);
+      const cycle = this.getGagCycle(g.timer, 6.5, gagZ, _playerZ);
+
+      const rJoints = (g.runnerRahul.userData && g.runnerRahul.userData.joints) ? g.runnerRahul.userData.joints : null;
 
       if (cycle < 2.5) {
         // Sprint towards finish arch
@@ -1281,6 +1329,16 @@ export class RahulComedyEventDirector {
         g.accordionMap.scale.z = 0.05;
         if (g.sweatTowel) g.sweatTowel.visible = false;
         g.runnerRahul.rotation.y = 0;
+        g.archGroup.position.z = 0;
+
+        if (rJoints) {
+          if (rJoints.legL) rJoints.legL.rotation.x = Math.sin(this.globalClock * 12.0) * 0.7;
+          if (rJoints.legR) rJoints.legR.rotation.x = -Math.sin(this.globalClock * 12.0) * 0.7;
+          if (rJoints.armL) rJoints.armL.rotation.x = -Math.sin(this.globalClock * 12.0) * 0.6;
+          if (rJoints.armR) rJoints.armR.rotation.x = Math.sin(this.globalClock * 12.0) * 0.6;
+          if (rJoints.elbowL) rJoints.elbowL.rotation.x = -0.5;
+          if (rJoints.elbowR) rJoints.elbowR.rotation.x = -0.5;
+        }
 
         // Crowd jumps and waves in victory celebration anticipation
         if (g.crowdMembers) {
@@ -1293,10 +1351,18 @@ export class RahulComedyEventDirector {
           }
         }
       } else if (cycle < 3.5) {
-        // Ratchet gear spins furiously!
+        // Ratchet gear spins furiously & arch mechanically rolls farther away!
         g.ratchetGear.rotation.z += delta * 20.0;
         const flipT = (cycle - 2.5) / 1.0;
         g.flipBanner.rotation.x = flipT * Math.PI; // 180° flip to STARTING LINE 2
+        g.archGroup.position.z = -flipT * 3.0; // Arch rolls backwards comically!
+
+        if (rJoints) {
+          if (rJoints.legL) rJoints.legL.rotation.x = 0;
+          if (rJoints.legR) rJoints.legR.rotation.x = 0;
+          if (rJoints.armL) rJoints.armL.rotation.set(-0.8, 0, 0.4);
+          if (rJoints.armR) rJoints.armR.rotation.set(-0.8, 0, -0.4);
+        }
 
         // Crowd freezes in shock
         if (g.crowdMembers) {
@@ -1314,6 +1380,10 @@ export class RahulComedyEventDirector {
         g.accordionMap.scale.z = 0.05 + mapT * 1.8;
         // Head shakes left-right in classic cartoon double-take
         g.runnerRahul.rotation.y = Math.sin(this.globalClock * 12.0) * 0.45;
+
+        if (rJoints && rJoints.headGroup) {
+          rJoints.headGroup.rotation.y = Math.sin(this.globalClock * 12.0) * 0.5;
+        }
 
         // Synchronized disbelief: crowd drops arms and shakes heads in disbelief
         if (g.crowdMembers) {
@@ -1333,6 +1403,13 @@ export class RahulComedyEventDirector {
         const jogT = (cycle - 5.0) / 1.5;
         g.runnerRahul.position.z = -2.0 + jogT * 3.0;
         g.runnerRahul.position.y = Math.abs(Math.sin(this.globalClock * 8.0)) * 0.15;
+
+        if (rJoints) {
+          if (rJoints.headGroup) rJoints.headGroup.rotation.y = 0;
+          if (rJoints.legL) rJoints.legL.rotation.x = Math.sin(this.globalClock * 8.0) * 0.4;
+          if (rJoints.legR) rJoints.legR.rotation.x = -Math.sin(this.globalClock * 8.0) * 0.4;
+          if (rJoints.armR) rJoints.armR.rotation.set(-1.2, 0, 0.3); // wiping brow
+        }
 
         if (g.crowdMembers) {
           for (let c = 0; c < g.crowdMembers.length; c++) {

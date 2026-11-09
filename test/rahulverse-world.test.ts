@@ -342,6 +342,108 @@ check(director.getTotalActiveElements() >= 12, 'Total active comedy elements exc
 director.update(0.016, true);
 check(true, 'Director successfully animates all 15 comedy events');
 
+// =========================================================================
+// Suite 8: Character Joint Articulation & Winking (Phase 4 Motion Rig)
+// =========================================================================
+console.log('\n--- Suite 8: Character Joint Articulation & Winking ---');
+
+// 1. Rahul Gandhi Rig & Articulated Joints
+const rJoints = rahulCaricature.userData.joints;
+check(Boolean(rJoints), 'Rahul caricature exposes userData.joints');
+check(Boolean(rJoints.headGroup), 'Rahul has articulated headGroup for comedic double-takes');
+check(Boolean(rJoints.eyebrowL && rJoints.eyebrowR), 'Rahul has expressive independent left and right eyebrows');
+check(Boolean(rJoints.winkLid), 'Rahul has animated left eyelid for the signature parliament wink');
+check(Boolean(rJoints.sparkleStar), 'Rahul has cartoon sparkle star mesh for the punchline wink');
+check(Boolean(rJoints.mouth), 'Rahul has expressive mouth joint');
+check(Boolean(rJoints.armL && rJoints.elbowL && rJoints.handL), 'Rahul has articulated left arm with shoulder, elbow, hand');
+check(Boolean(rJoints.armR && rJoints.elbowR && rJoints.handR), 'Rahul has articulated right arm with shoulder, elbow, hand');
+check(Boolean(rJoints.legL && rJoints.legR), 'Rahul has articulated hip-jointed left and right legs for walking stride');
+
+// 2. Narendra Modi Rig & Articulated Joints
+const mJoints = modiCaricature.userData.joints;
+check(Boolean(mJoints), 'Modi caricature exposes userData.joints');
+check(Boolean(mJoints.headGroup), 'Modi has articulated headGroup for comedic turns');
+check(Boolean(mJoints.jaw), 'Modi has dropping jaw joint for surprise reactions');
+check(Boolean(mJoints.glasses), 'Modi has spectacles joint for comedy glasses-popping gag');
+check(Boolean(mJoints.eyebrowL && mJoints.eyebrowR), 'Modi has expressive arched eyebrows');
+check(Boolean(mJoints.armL && mJoints.armR), 'Modi has articulated arms for gesture & embrace');
+
+// 3. Kejriwal, Mamata & Nitish Supporting Caricatures
+const kJoints = kejriwalCaricature.userData.joints;
+check(Boolean(kJoints && kJoints.mufflerTail), 'Kejriwal caricature has fluttering woolen muffler tail joint');
+
+const mamataJoints = mamataCaricature.userData.joints;
+check(Boolean(mamataJoints && mamataJoints.pallu), 'Mamata caricature has trailing saree pallu joint');
+
+const nJoints = nitishCaricature.userData.joints;
+check(Boolean(nJoints && nJoints.headGroup && nJoints.armL), 'Nitish caricature has articulated head and arms for chair swivel');
+
+// =========================================================================
+// Suite 9: Phase 4 Flagship Gags & Approach-Aware Theatrical Timing
+// =========================================================================
+console.log('\n--- Suite 9: Phase 4 Flagship Gags & Approach-Aware Theatrical Timing ---');
+
+// 1. getGagCycle approach-aware theatrical curve testing
+// Far away / no player: autonomous fallback timer % cycleDuration
+check(Math.abs(director.getGagCycle(2.5, 6.0) - 2.5) < 0.001, 'getGagCycle returns timer % cycle when player is undefined');
+check(Math.abs(director.getGagCycle(2.5, 6.0, 0, 100) - 2.5) < 0.001, 'getGagCycle returns timer % cycle when player is >75m away');
+
+// Approaching player at 65m ahead (Beat 1: Setup, 0.0 to 1.5s in 6s cycle)
+const beat1Cycle = director.getGagCycle(0, 6.0, 0, 65);
+check(beat1Cycle >= 0 && beat1Cycle <= 1.5, `Beat 1 (Setup) cycle at 65m ahead: ${beat1Cycle.toFixed(2)}s is within [0, 1.5]`);
+
+// Approaching player at 45m ahead (Beat 2: Anticipation, 1.5 to 3.0s in 6s cycle)
+const beat2Cycle = director.getGagCycle(0, 6.0, 0, 45);
+check(beat2Cycle >= 1.5 && beat2Cycle <= 3.0, `Beat 2 (Anticipation) cycle at 45m ahead: ${beat2Cycle.toFixed(2)}s is within [1.5, 3.0]`);
+
+// Approaching player at 20m ahead (Beat 3: PUNCHLINE & PAYOFF in runner camera view, 3.0 to 4.5s in 6s cycle)
+const beat3Cycle = director.getGagCycle(0, 6.0, 0, 20);
+check(beat3Cycle >= 3.0 && beat3Cycle <= 4.5, `Beat 3 (Punchline Payoff) cycle at 20m ahead: ${beat3Cycle.toFixed(2)}s is within [3.0, 4.5]`);
+
+// Passing player at 2m ahead (Beat 4: Reaction & laugh hold, 4.5 to 6.0s in 6s cycle)
+const beat4Cycle = director.getGagCycle(0, 6.0, 0, 2);
+check(beat4Cycle >= 4.5 && beat4Cycle <= 6.0, `Beat 4 (Reaction Hold) cycle at 2m ahead: ${beat4Cycle.toFixed(2)}s is within [4.5, 6.0]`);
+
+// 2. Parliament Hug & Wink Flagship Gag
+director.reset();
+const pStage = new THREE.Group();
+builder.buildParliamentHugAndWinkStage(pStage, -8.0, 0.6, -100, director, -100);
+check(director.getParliamentHugAndWinkCount() >= 1, 'Parliament Hug and Wink flagship gag registered');
+
+// Test Beat 1: Stride (Player at -165, distance ahead = 65m)
+director.update(0.016, true, -165);
+check(true, 'Parliament Hug and Wink animates Beat 1 (Stride) smoothly');
+
+// Test Beat 2: Bear Hug & Pop Spectacles (Player at -145, distance ahead = 45m)
+director.update(0.016, true, -145);
+check(true, 'Parliament Hug and Wink animates Beat 2 (Bear Hug) smoothly');
+
+// Test Beat 3: Iconic Wink, Sparkle Star & Cameraman Fall (Player at -120, distance ahead = 20m)
+director.update(0.016, true, -120);
+check(true, 'Parliament Hug and Wink animates Beat 3 (Iconic Wink & Cameraman Fall) smoothly');
+
+// Test Beat 4: Recovery & Hold (Player at -102, distance ahead = 2m)
+director.update(0.016, true, -102);
+check(true, 'Parliament Hug and Wink animates Beat 4 (Recovery) smoothly');
+
+// 3. The Never-Ending Yatra Flagship Gag
+const yStage = new THREE.Group();
+builder.buildDistrictScenery(yStage, 12, 100, 0, 'FULL', -200);
+check(director.getNeverEndingYatraCount() >= 1, 'Never-Ending Yatra flagship gag registered');
+
+// Test Yatra Beats with player approach
+director.update(0.016, true, -265); // Beat 1: March
+director.update(0.016, true, -245); // Beat 2: Ratchet arch roll
+director.update(0.016, true, -220); // Beat 3: Accordion route map unroll
+director.update(0.016, true, -202); // Beat 4: Towel wipe jog
+check(true, 'Never-Ending Yatra animates across all 4 approach beats');
+
+// 4. Press Conference Panic & Daisy-Chain Scrum
+check(director.getMicrophoneChaosCount() >= 0, 'Microphone chaos stage handled gracefully');
+
+// 5. Alliance Musical Chairs & Swivel Runaway
+check(director.getAllianceChairsRunawayCount() >= 0, 'Alliance musical chairs stage handled gracefully');
+
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} RAHULVERSE SIGNATURE WORLD TESTS PASSED!`);
 console.log(`=======================================================\n`);

@@ -1,0 +1,34 @@
+{
+  "task": "PHASE 4: RAHULVERSE PREMIUM POLITICAL COMEDY AND MOTION",
+  "allowed_write_scope": [
+    "src/environment/worlds/rahulverse/RahulSatireWorldBuilder.ts",
+    "src/environment/worlds/rahulverse/RahulComedyEventDirector.ts",
+    "test/rahulverse-world.test.ts",
+    "test/capture-rahulverse-phase4-comedy.mjs",
+    "docs/political-worlds/VISUAL_BASELINE.md",
+    ".gravitas/sessions/political-worlds-phase4/"
+  ],
+  "forbidden_write_scope": [
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/VipComedyEventDirector.ts",
+    "src/track/TrackManager.ts",
+    "src/track/TrackChunk.ts",
+    "src/player/Player.ts",
+    "src/core/"
+  ],
+  "acceptance_criteria": [
+    "Upgrade Rahul caricature and supporting characters with articulated joint rigging (neck, arms, elbows, hands, expressive facial/eye/wink joints)",
+    "Implement Flagship A: The Never-Ending Yatra moving procession with articulated leader, synchronized-but-varied marchers, support vehicle, and rolling finish-line arch with comic route map unfolding",
+    "Implement Flagship B: The Parliament Hug & Wink 4-beat signature character-acting showcase with Rahul approach, cartoon embrace, Modi delayed surprise, and animated wink",
+    "Implement Flagship C: Press Conference Panic with runaway micro-chase, converging reporters, and physical comedy chain reaction",
+    "Implement Flagship D: Alliance Musical Chairs carousel with turning platform, competing leaders, and comedic seat misses",
+    "Implement Flagship E: Regional Roadshow living town with roadside spectators, markets, and regional vehicle animation",
+    "Implement Flagship F: Political Multiverse theatrical crossover with visible physical comedy role swaps",
+    "Maintain approach-aware timing synchronization (getGagCycle) across all 6 districts mapping distance ahead [75m, -15m] to 4 theatrical beats",
+    "Zero decorative collision intrusions (|X| >= 8.8m > 4.2m, overhead Y >= 9.3m > 8.5m)",
+    "Passing test suite (npm run test:rahulverse, npm run test:worldgen, npm run test:engine-stabilization, npm run build)",
+    "Browser captures in 1440x900 and mobile 390x844 with 60 FPS performance profiling",
+    "Push verified commits directly to origin/main"
+  ]
+}
+

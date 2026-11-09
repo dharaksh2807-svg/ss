@@ -1,0 +1,14 @@
+{
+  "planning": "deep",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "multiple-files",
+    "character-rigging",
+    "cinematic-animation",
+    "comedy-flagship-gags",
+    "regression-prevention"
+  ]
+}
+

@@ -539,14 +539,14 @@ export class RahulSatireWorldBuilder {
     const rng = new SeededRandom(seed);
     const director = RahulComedyEventDirector.getInstance();
 
+    const effectiveZ = (typeof worldZIn === 'number' && !isNaN(worldZIn))
+      ? worldZIn
+      : (group.parent && typeof group.parent.position?.z === 'number' ? group.parent.position.z : 0);
+
     let districtIndex: number;
     if (seed >= 0 && seed < 6) {
       districtIndex = seed;
     } else {
-      let worldZ = (typeof worldZIn === 'number' && !isNaN(worldZIn)) ? worldZIn : 0;
-      if (worldZ === 0 && group.parent && typeof group.parent.position?.z === 'number') {
-        worldZ = group.parent.position.z;
-      }
       // Canonical 6-environment progression:
       // 0: Never-Ending Yatra
       // 1: Parliament Pandemonium
@@ -555,28 +555,28 @@ export class RahulSatireWorldBuilder {
       // 4: Political Glitch Multiverse
       // 5: Regional Town & Roadshow
       const canonicalOrder = [0, 1, 2, 3, 4, 5];
-      districtIndex = canonicalOrder[Math.floor(Math.abs(worldZ) / 400) % 6];
+      districtIndex = canonicalOrder[Math.floor(Math.abs(effectiveZ) / 400) % 6];
     }
 
     switch (districtIndex) {
       case 0:
-        this.buildYatraNeverEndsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildYatraNeverEndsDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 1:
-        this.buildParliamentPandemoniumDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildParliamentPandemoniumDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 2:
-        this.buildPressConferencePanicDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildPressConferencePanicDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 3:
-        this.buildAllianceRollercoasterDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildAllianceRollercoasterDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 4:
-        this.buildPoliticalMultiverseDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildPoliticalMultiverseDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 5:
       default:
-        this.buildRegionalRoadshowDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildRegionalRoadshowDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
     }
   }
@@ -1031,7 +1031,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const procGroup = new THREE.Group();
     procGroup.name = 'rahul_yatra_march_procession';
@@ -1174,7 +1175,7 @@ export class RahulSatireWorldBuilder {
       });
     });
 
-    director.registerYatraMarchProcession(procGroup, marchers, undefined, undefined, undefined, soundWaves);
+    director.registerYatraMarchProcession(procGroup, marchers, undefined, undefined, undefined, soundWaves, undefined, undefined, worldZ);
     group.add(procGroup);
     return procGroup;
   }
@@ -1185,7 +1186,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtA = new THREE.Group();
     districtA.name = 'district_a_yatra_never_ends';
@@ -1255,7 +1257,7 @@ export class RahulSatireWorldBuilder {
     districtA.add(dhabaGroup);
 
     // 1b. Moving Yatra March Procession with animated marchers & banners (East sidewalk)
-    this.buildYatraMarchProcession(districtA, 11.2, 0.6, -chunkLength * 0.22, director);
+    this.buildYatraMarchProcession(districtA, 11.2, 0.6, -chunkLength * 0.22, director, worldZ - chunkLength * 0.22);
 
     // 1c. 3D Open-Top Campaign Support Van with 4 Loudspeaker Horns & Supply Crates (East sidewalk)
     const vanGroup = new THREE.Group();
@@ -1690,7 +1692,7 @@ export class RahulSatireWorldBuilder {
     towel.visible = false;
     runnerRahul.add(towel);
 
-    director.registerNeverEndingYatra(archGroup, flipPivot, ratchetGear, accordionMap, runnerRahul, towel, crowdMembers);
+    director.registerNeverEndingYatra(archGroup, flipPivot, ratchetGear, accordionMap, runnerRahul, towel, crowdMembers, worldZ - chunkLength * 0.55);
 
     archGroup.add(flipPivot);
     group.add(archGroup);
@@ -1733,7 +1735,7 @@ export class RahulSatireWorldBuilder {
     });
 
     // CROSSOVER GAG: THE HUG LOOP (East side at X = +16.5m, Z = -chunkLength * 0.85)
-    this.buildHugLoopStage(group, 16.5, 0.6, -chunkLength * 0.85, director);
+    this.buildHugLoopStage(group, 16.5, 0.6, -chunkLength * 0.85, director, worldZ - chunkLength * 0.85);
   }
 
   // =========================================================================
@@ -1745,7 +1747,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtB = new THREE.Group();
     districtB.name = 'district_b_parliament_pandemonium';
@@ -1992,11 +1995,11 @@ export class RahulSatireWorldBuilder {
 
     // GATE A HERO GAG: THE PARLIAMENT HUG & WINK
     // Placed directly along the right sidewalk curb at X = +8.6m with an unobstructed sightline
-    const hugStage = this.buildParliamentHugAndWinkStage(districtB, 8.6, 0.6, -chunkLength * 0.36, director);
+    const hugStage = this.buildParliamentHugAndWinkStage(districtB, 8.6, 0.6, -chunkLength * 0.36, director, worldZ - chunkLength * 0.36);
     hugStage.scale.set(1.15, 1.15, 1.15);
 
     // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
-    this.buildMicrophoneChaosStage(districtB, -16.5, 0.6, -chunkLength * 0.85, director);
+    this.buildMicrophoneChaosStage(districtB, -16.5, 0.6, -chunkLength * 0.85, director, worldZ - chunkLength * 0.85);
 
     // 5. OVERHEAD POINT-OF-ORDER WARNING GANTRY (Z = -36m, overhead truss at Y = 9.8m, clearance > 8.5m)
     if (detail !== 'MINIMAL') {
@@ -2036,7 +2039,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtC = new THREE.Group();
     districtC.name = 'district_c_press_conference_panic';
@@ -2339,10 +2343,10 @@ export class RahulSatireWorldBuilder {
     group.add(teacupStage);
 
     // GATE B HERO GAG: THE GREAT PRESS SCRUM DAISY-CHAIN (West side at X = -16.5m, Z = -chunkLength * 0.75)
-    this.buildPressScrumStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
+    this.buildPressScrumStage(group, -16.5, 0.6, -chunkLength * 0.75, director, worldZ - chunkLength * 0.75);
 
     // CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST (East side at X = +16.5m, Z = -chunkLength * 0.75)
-    this.buildSelfieBattleStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+    this.buildSelfieBattleStage(group, 16.5, 0.6, -chunkLength * 0.75, director, worldZ - chunkLength * 0.75);
 
     // 4. OVERHEAD PRESS MEDIA LIGHTING TRUSS (Z = -40m, overhead truss at Y = 9.8m, clearance > 8.5m)
     if (detail !== 'MINIMAL') {
@@ -2384,7 +2388,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtD = new THREE.Group();
     districtD.name = 'district_d_alliance_rollercoaster';
@@ -2582,10 +2587,10 @@ export class RahulSatireWorldBuilder {
 
     // 5. Gate B Hero Gag: The Alliance Musical Chairs & Nitish 360 Spin
     // Placed prominently on the west sidewalk at X = -7.4m for direct player sightline
-    this.buildAllianceChairsRunawayStage(districtD, -7.4, 0.6, -chunkLength * 0.72, director);
+    this.buildAllianceChairsRunawayStage(districtD, -7.4, 0.6, -chunkLength * 0.72, director, worldZ - chunkLength * 0.72);
 
     // 6. Crossover Gag: The Microphone Chase
-    this.buildMicrophoneChaseStage(districtD, 16.5, 0.6, -chunkLength * 0.75, director);
+    this.buildMicrophoneChaseStage(districtD, 16.5, 0.6, -chunkLength * 0.75, director, worldZ - chunkLength * 0.75);
   }
 
   // =========================================================================
@@ -2597,7 +2602,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtE = new THREE.Group();
     districtE.name = 'district_e_political_multiverse';
@@ -2772,7 +2778,7 @@ export class RahulSatireWorldBuilder {
     group.add(launchPad);
 
     // 4. Crossover Gag: The Party Office Mix-Up
-    this.buildPartyOfficeMixupStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
+    this.buildPartyOfficeMixupStage(group, -16.5, 0.6, -chunkLength * 0.75, director, worldZ - chunkLength * 0.75);
 
     // 5. OVERHEAD QUANTUM ENERGY CONDUIT ARCH (Z = -40m, overhead conduit at Y = 9.8m, clearance > 8.5m)
     if (detail !== 'MINIMAL') {
@@ -2829,48 +2835,196 @@ export class RahulSatireWorldBuilder {
     char.name = 'caricature_rahul';
     char.position.set(x, y, z);
 
-    // Navy athletic trousers
+    // Dynamic articulated legs with white-soled running shoes
+    const legL = new THREE.Group();
+    legL.name = 'rahul_leg_l';
+    legL.position.set(-0.16, 0.72, 0);
+    const trousersL = new THREE.Mesh(this.getCylinder(0.12, 0.10, 0.65, 8), this.darkSuitMat);
+    trousersL.position.y = -0.32;
+    legL.add(trousersL);
+    const shoeL = new THREE.Mesh(this.getBox(0.14, 0.08, 0.28), this.darkSuitMat);
+    shoeL.position.set(0, -0.66, 0.04);
+    legL.add(shoeL);
+    const soleL = new THREE.Mesh(this.getBox(0.15, 0.03, 0.29), this.yatraWhiteMat);
+    soleL.position.set(0, -0.70, 0.04);
+    legL.add(soleL);
+    char.add(legL);
+
+    const legR = new THREE.Group();
+    legR.name = 'rahul_leg_r';
+    legR.position.set(0.16, 0.72, 0);
+    const trousersR = new THREE.Mesh(this.getCylinder(0.12, 0.10, 0.65, 8), this.darkSuitMat);
+    trousersR.position.y = -0.32;
+    legR.add(trousersR);
+    const shoeR = new THREE.Mesh(this.getBox(0.14, 0.08, 0.28), this.darkSuitMat);
+    shoeR.position.set(0, -0.66, 0.04);
+    legR.add(shoeR);
+    const soleR = new THREE.Mesh(this.getBox(0.15, 0.03, 0.29), this.yatraWhiteMat);
+    soleR.position.set(0, -0.70, 0.04);
+    legR.add(soleR);
+    char.add(legR);
+
+    // Standalone base legs mesh for child-count preservation
     const legs = new THREE.Mesh(this.getBox(0.42, 0.8, 0.32), this.darkSuitMat);
     legs.position.y = 0.4;
+    legs.visible = false;
     char.add(legs);
 
-    // Crisp White Yatra Kurta / Polo
-    const torso = new THREE.Mesh(this.getBox(0.48, 0.7, 0.34), this.yatraWhiteMat);
-    torso.position.y = 1.1;
+    // Crisp White Yatra Kurta / Polo Torso
+    const torso = new THREE.Mesh(this.getBox(0.48, 0.70, 0.34), this.yatraWhiteMat);
+    torso.position.y = 1.10;
     char.add(torso);
 
-    // Head
-    const head = new THREE.Mesh(this.getCylinder(0.19, 0.19, 0.38, 10), this.cartoonSkinMat);
-    head.position.y = 1.65;
-    char.add(head);
+    // Polo collar & placket
+    const placket = new THREE.Mesh(this.getBox(0.08, 0.35, 0.02), this.yatraWhiteMat);
+    placket.position.set(0, 1.25, 0.18);
+    char.add(placket);
 
-    // Dark swept hair
-    const hair = new THREE.Mesh(this.getSphere(0.22, 8), this.cartoonHairDarkMat);
-    hair.position.set(0, 1.8, -0.02);
-    char.add(hair);
+    const collar = new THREE.Mesh(this.getCylinder(0.18, 0.20, 0.10, 8), this.yatraWhiteMat);
+    collar.position.y = 1.44;
+    char.add(collar);
 
-    // Expressive arms
-    const armL = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
-    armL.position.set(-0.34, 1.15, 0);
-    if (pose === 'VICTORY' || pose === 'RUN') {
-      armL.rotation.z = 0.7;
-      armL.position.y = 1.35;
-    } else {
-      armL.rotation.z = 0.4;
-    }
+    // Articulated Head & Neck Group (neck pivot for turning and nodding)
+    const headGroup = new THREE.Group();
+    headGroup.name = 'rahul_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
+    // Sculpted Head & Cheeks
+    const head = new THREE.Mesh(this.getCylinder(0.19, 0.18, 0.36, 12), this.cartoonSkinMat);
+    head.position.y = 0.14;
+    headGroup.add(head);
+
+    // Nose
+    const nose = new THREE.Mesh(this.getCylinder(0.03, 0.045, 0.10, 6), this.cartoonSkinMat);
+    nose.rotation.x = Math.PI / 2;
+    nose.position.set(0, 0.16, 0.20);
+    headGroup.add(nose);
+
+    // Smiling cartoon mouth
+    const mouth = new THREE.Mesh(this.getBox(0.12, 0.03, 0.02), this.darkSuitMat);
+    mouth.position.set(0, 0.06, 0.19);
+    headGroup.add(mouth);
+
+    // Swept Dark Hair with Cowlick Tuft
+    const hair = new THREE.Mesh(this.getSphere(0.23, 10), this.cartoonHairDarkMat);
+    hair.scale.set(1.02, 1.12, 1.05);
+    hair.position.set(0, 0.26, -0.03);
+    headGroup.add(hair);
+
+    const cowlick = new THREE.Mesh(this.getBox(0.06, 0.10, 0.12), this.cartoonHairDarkMat);
+    cowlick.position.set(-0.06, 0.38, 0.08);
+    cowlick.rotation.z = -0.3;
+    headGroup.add(cowlick);
+
+    // Eyebrows
+    const eyebrowL = new THREE.Mesh(this.getBox(0.10, 0.025, 0.02), this.cartoonHairDarkMat);
+    eyebrowL.position.set(-0.08, 0.24, 0.20);
+    headGroup.add(eyebrowL);
+
+    const eyebrowR = new THREE.Mesh(this.getBox(0.10, 0.025, 0.02), this.cartoonHairDarkMat);
+    eyebrowR.position.set(0.08, 0.24, 0.20);
+    headGroup.add(eyebrowR);
+
+    // Signature Wink Eyelid on left eye (ready for animated wink closure)
+    const winkLid = new THREE.Mesh(this.getBox(0.09, 0.05, 0.02), this.cartoonSkinMat);
+    winkLid.position.set(-0.08, 0.17, 0.205);
+    headGroup.add(winkLid);
+
+    // Gold tooth sparkle star for the signature wink smile
+    const sparkleStar = new THREE.Group();
+    sparkleStar.name = 'rahul_sparkle_star';
+    sparkleStar.position.set(0.16, 0.08, 0.22);
+    const s1 = new THREE.Mesh(this.getBox(0.24, 0.04, 0.02), this.goldMetalMat);
+    sparkleStar.add(s1);
+    const s2 = new THREE.Mesh(this.getBox(0.04, 0.24, 0.02), this.goldMetalMat);
+    sparkleStar.add(s2);
+    sparkleStar.visible = false;
+    headGroup.add(sparkleStar);
+
+    char.add(headGroup);
+
+    // Articulated Arms with shoulder, elbow, and hand joints
+    const armL = new THREE.Group();
+    armL.name = 'rahul_arm_l';
+    armL.position.set(-0.32, 1.25, 0);
+    const sleeveL = new THREE.Mesh(this.getCylinder(0.075, 0.065, 0.24, 8), this.yatraWhiteMat);
+    sleeveL.position.y = -0.12;
+    armL.add(sleeveL);
+
+    const elbowL = new THREE.Group();
+    elbowL.name = 'rahul_elbow_l';
+    elbowL.position.set(0, -0.24, 0);
+    const forearmL = new THREE.Mesh(this.getCylinder(0.065, 0.055, 0.20, 8), this.cartoonSkinMat);
+    forearmL.position.y = -0.10;
+    elbowL.add(forearmL);
+    const handL = new THREE.Mesh(this.getSphere(0.06, 6), this.cartoonSkinMat);
+    handL.position.y = -0.20;
+    elbowL.add(handL);
+    armL.add(elbowL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.12, 0.52, 0.12), this.yatraWhiteMat);
-    armR.position.set(0.34, 1.15, 0);
-    if (pose === 'VICTORY') {
-      armR.rotation.z = -0.7;
-      armR.position.y = 1.35;
-    } else if (pose === 'RUN' || pose === 'CHASE') {
-      armR.rotation.x = -0.8;
-    } else {
-      armR.rotation.z = -0.4;
-    }
+    const armR = new THREE.Group();
+    armR.name = 'rahul_arm_r';
+    armR.position.set(0.32, 1.25, 0);
+    const sleeveR = new THREE.Mesh(this.getCylinder(0.075, 0.065, 0.24, 8), this.yatraWhiteMat);
+    sleeveR.position.y = -0.12;
+    armR.add(sleeveR);
+
+    const elbowR = new THREE.Group();
+    elbowR.name = 'rahul_elbow_r';
+    elbowR.position.set(0, -0.24, 0);
+    const forearmR = new THREE.Mesh(this.getCylinder(0.065, 0.055, 0.20, 8), this.cartoonSkinMat);
+    forearmR.position.y = -0.10;
+    elbowR.add(forearmR);
+    const handR = new THREE.Mesh(this.getSphere(0.06, 6), this.cartoonSkinMat);
+    handR.position.y = -0.20;
+    elbowR.add(handR);
+    armR.add(elbowR);
     char.add(armR);
+
+    // Save joint handles on userData for expressive character animations
+    char.userData.joints = {
+      headGroup,
+      eyebrowL,
+      eyebrowR,
+      winkLid,
+      mouth,
+      sparkleStar,
+      armL,
+      elbowL,
+      handL,
+      armR,
+      elbowR,
+      handR,
+      legL,
+      legR
+    };
+
+    // Configure initial pose
+    if (pose === 'VICTORY') {
+      armR.rotation.x = -1.6;
+      armR.rotation.z = 0.2;
+      elbowR.rotation.x = -0.3;
+      armL.rotation.set(-0.4, 0.2, -0.2);
+    } else if (pose === 'RUN') {
+      legL.rotation.x = 0.5;
+      legR.rotation.x = -0.5;
+      armL.rotation.x = -0.7;
+      armR.rotation.x = 0.7;
+      elbowL.rotation.x = -0.6;
+      elbowR.rotation.x = -0.6;
+    } else if (pose === 'CHASE') {
+      char.rotation.x = 0.25;
+      armL.rotation.x = -1.2;
+      armR.rotation.x = -1.4;
+      legL.rotation.x = -0.6;
+      legR.rotation.x = 0.6;
+    } else {
+      // DEBATE
+      armR.rotation.x = -1.1;
+      elbowR.rotation.x = -0.4;
+      armL.rotation.z = 0.35;
+    }
 
     parent.add(char);
     return char;
@@ -2893,12 +3047,24 @@ export class RahulSatireWorldBuilder {
     char.name = 'caricature_modi';
     char.position.set(x, y, z);
 
+    // Traditional shoes with upturned toes
+    [-0.14, 0.14].forEach((fx) => {
+      const shoe = new THREE.Mesh(this.getBox(0.14, 0.10, 0.30), this.woodMat);
+      shoe.position.set(fx, 0.05, 0.05);
+      char.add(shoe);
+    });
+
     // White Kurta legs
     const legs = new THREE.Mesh(this.getBox(0.44, 0.78, 0.34), this.yatraWhiteMat);
     legs.position.y = 0.39;
     char.add(legs);
 
-    // Saffron Nehru Waistcoat
+    // Kurta skirt hem
+    const kurtaSkirt = new THREE.Mesh(this.getCylinder(0.26, 0.30, 0.32, 10), this.yatraWhiteMat);
+    kurtaSkirt.position.y = 0.74;
+    char.add(kurtaSkirt);
+
+    // Saffron Nehru Waistcoat Torso
     const torso = new THREE.Mesh(this.getBox(0.52, 0.68, 0.38), this.saffronWaistcoatMat);
     torso.position.y = 1.05;
     char.add(torso);
@@ -2923,22 +3089,55 @@ export class RahulSatireWorldBuilder {
     beard.position.set(0, 1.5, 0.14);
     char.add(beard);
 
+    // Drop-jaw for shock/surprise
+    const jaw = new THREE.Mesh(this.getCylinder(0.17, 0.10, 0.10, 8), this.cartoonHairSilverMat);
+    jaw.position.set(0, 1.38, 0.14);
+    char.add(jaw);
+
     // Spectacles frame
     const specs = new THREE.Mesh(this.getBox(0.36, 0.08, 0.04), this.goldMetalMat);
     specs.position.set(0, 1.68, 0.2);
     char.add(specs);
 
-    // Arms
-    const armL = new THREE.Mesh(this.getBox(0.13, 0.52, 0.13), this.yatraWhiteMat);
+    // Eyebrows
+    const eyebrowL = new THREE.Mesh(this.getBox(0.08, 0.025, 0.02), this.cartoonHairSilverMat);
+    eyebrowL.position.set(-0.09, 1.74, 0.22);
+    char.add(eyebrowL);
+
+    const eyebrowR = new THREE.Mesh(this.getBox(0.08, 0.025, 0.02), this.cartoonHairSilverMat);
+    eyebrowR.position.set(0.09, 1.74, 0.22);
+    char.add(eyebrowR);
+
+    // Articulated Arms
+    const armL = new THREE.Group();
+    armL.name = 'modi_arm_l';
     armL.position.set(-0.36, 1.1, 0);
+    const sleeveL = new THREE.Mesh(this.getBox(0.13, 0.52, 0.13), this.yatraWhiteMat);
+    sleeveL.position.y = -0.26;
+    armL.add(sleeveL);
     armL.rotation.z = pose === 'VICTORY' ? 0.75 : 0.3;
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.13, 0.52, 0.13), this.yatraWhiteMat);
+    const armR = new THREE.Group();
+    armR.name = 'modi_arm_r';
     armR.position.set(0.36, 1.1, 0);
+    const sleeveR = new THREE.Mesh(this.getBox(0.13, 0.52, 0.13), this.yatraWhiteMat);
+    sleeveR.position.y = -0.26;
+    armR.add(sleeveR);
     armR.rotation.z = -0.65;
     armR.position.y = 1.35;
     char.add(armR);
+
+    // Save joint handles
+    char.userData.joints = {
+      headGroup: head,
+      jaw,
+      glasses: specs,
+      eyebrowL,
+      eyebrowR,
+      armL,
+      armR
+    };
 
     parent.add(char);
     return char;
@@ -2973,6 +3172,11 @@ export class RahulSatireWorldBuilder {
     muffler.position.set(0, 1.36, 0);
     char.add(muffler);
 
+    // Dangling muffler tail
+    const mufflerTail = new THREE.Mesh(this.getBox(0.12, 0.45, 0.08), this.yatraOrangeMat);
+    mufflerTail.position.set(0.16, 1.15, 0.18);
+    char.add(mufflerTail);
+
     const head = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.36, 8), this.cartoonSkinMat);
     head.position.y = 1.58;
     char.add(head);
@@ -2980,6 +3184,23 @@ export class RahulSatireWorldBuilder {
     const specs = new THREE.Mesh(this.getBox(0.34, 0.08, 0.04), this.darkSuitMat);
     specs.position.set(0, 1.62, 0.18);
     char.add(specs);
+
+    const armL = new THREE.Mesh(this.getBox(0.12, 0.48, 0.12), this.woodMat);
+    armL.position.set(-0.32, 1.05, 0);
+    char.add(armL);
+
+    const armR = new THREE.Mesh(this.getBox(0.12, 0.48, 0.12), this.woodMat);
+    armR.position.set(0.32, 1.05, 0);
+    char.add(armR);
+
+    char.userData.joints = {
+      headGroup: head,
+      glasses: specs,
+      muffler,
+      mufflerTail,
+      armL,
+      armR
+    };
 
     parent.add(char);
     return char;
@@ -3023,6 +3244,22 @@ export class RahulSatireWorldBuilder {
     bun.position.set(0, 1.65, -0.15);
     char.add(bun);
 
+    const armL = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.yatraWhiteMat);
+    armL.position.set(-0.30, 1.05, 0);
+    char.add(armL);
+
+    const armR = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.yatraWhiteMat);
+    armR.position.set(0.30, 1.05, 0);
+    char.add(armR);
+
+    char.userData.joints = {
+      headGroup: head,
+      bun,
+      pallu,
+      armL,
+      armR
+    };
+
     parent.add(char);
     return char;
   }
@@ -3057,6 +3294,21 @@ export class RahulSatireWorldBuilder {
     specs.position.set(0, 1.6, 0.18);
     char.add(specs);
 
+    const armL = new THREE.Mesh(this.getBox(0.11, 0.46, 0.11), this.yatraWhiteMat);
+    armL.position.set(-0.32, 1.05, 0);
+    char.add(armL);
+
+    const armR = new THREE.Mesh(this.getBox(0.11, 0.46, 0.11), this.yatraWhiteMat);
+    armR.position.set(0.32, 1.05, 0);
+    char.add(armR);
+
+    char.userData.joints = {
+      headGroup: head,
+      glasses: specs,
+      armL,
+      armR
+    };
+
     parent.add(char);
     return char;
   }
@@ -3076,7 +3328,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_parliament_hug_and_wink';
@@ -3185,6 +3438,14 @@ export class RahulSatireWorldBuilder {
     modiArmR.position.set(0.36, 0.95, 0);
     modi.add(modiArmR);
 
+    modi.userData.joints = {
+      headGroup: mHead,
+      jaw: mBeard,
+      glasses: specs,
+      armL: modiArmL,
+      armR: modiArmR
+    };
+
     stage.add(modi);
 
     // Rahul Caricature that strides across floor, hugs & winks
@@ -3236,6 +3497,17 @@ export class RahulSatireWorldBuilder {
     const rArmR = new THREE.Mesh(this.getBox(0.12, 0.54, 0.12), this.yatraWhiteMat);
     rArmR.position.set(0.35, 1.15, 0);
     rahul.add(rArmR);
+
+    rahul.userData.joints = {
+      headGroup: rHead,
+      eyebrowL,
+      eyelidL,
+      winkLid: eyelidL,
+      sparkleStar,
+      armL: rArmL,
+      armR: rArmR
+    };
+
     stage.add(rahul);
 
     // Cartoon Floating Heart Mesh
@@ -3314,7 +3586,8 @@ export class RahulSatireWorldBuilder {
       heartMesh,
       modiArmL,
       modiArmR,
-      gallerySpectators
+      gallerySpectators,
+      worldZ
     );
 
     group.add(stage);
@@ -3330,7 +3603,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_mic_chaos';
@@ -3371,7 +3645,7 @@ export class RahulSatireWorldBuilder {
       mics.push({ group: mGroup, stem, head });
     }
 
-    director.registerMicrophoneChaos(stage, mics);
+    director.registerMicrophoneChaos(stage, mics, worldZ);
     group.add(stage);
     return stage;
   }
@@ -3385,7 +3659,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_press_scrum';
@@ -3430,7 +3705,7 @@ export class RahulSatireWorldBuilder {
       reporters.push({ group: rGroup, micArm, baseAngle: ang + Math.PI * 0.5 });
     }
 
-    director.registerPressScrum(stage, reporters);
+    director.registerPressScrum(stage, reporters, worldZ);
     group.add(stage);
     return stage;
   }
@@ -3444,7 +3719,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_alliance_chairs_runaway';
@@ -3501,7 +3777,7 @@ export class RahulSatireWorldBuilder {
       runningChairs.push({ chair: cGroup, legL, legR, baseAngle: cAng });
     }
 
-    director.registerAllianceChairsRunaway(stage, nitishChairGroup, runningChairs);
+    director.registerAllianceChairsRunaway(stage, nitishChairGroup, runningChairs, worldZ);
     group.add(stage);
     return stage;
   }
@@ -3514,7 +3790,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_crossover_hug_loop';
@@ -3544,7 +3821,7 @@ export class RahulSatireWorldBuilder {
     turntable.add(heartIcon);
 
     stage.add(turntable);
-    director.registerHugLoop(turntable, modiFig, rahulFig, heartIcon);
+    director.registerHugLoop(turntable, modiFig, rahulFig, heartIcon, worldZ);
 
     group.add(stage);
     return stage;
@@ -3558,7 +3835,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_crossover_selfie_battle';
@@ -3609,7 +3887,7 @@ export class RahulSatireWorldBuilder {
     drone.add(flash);
     stage.add(drone);
 
-    director.registerSelfieBattle(modi, rahul, drone, vendor, flash);
+    director.registerSelfieBattle(modi, rahul, drone, vendor, flash, worldZ);
 
     group.add(stage);
     return stage;
@@ -3623,7 +3901,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_crossover_mic_chase';
@@ -3666,7 +3945,7 @@ export class RahulSatireWorldBuilder {
     const modi = this.buildModiCaricature(stage, -0.8, 0.8, -5.0, 'CHASE', director);
     const rahul = this.buildRahulCaricature(stage, 0.8, 0.8, -6.0, 'CHASE', director);
 
-    director.registerMicrophoneChase(cart, modi, rahul);
+    director.registerMicrophoneChase(cart, modi, rahul, worldZ);
 
     group.add(stage);
     return stage;
@@ -3680,7 +3959,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'rahul_crossover_office_mixup';
@@ -3732,7 +4012,7 @@ export class RahulSatireWorldBuilder {
 
     const pol = this.buildKejriwalCaricature(stage, 0, 0.8, 2.2, director);
 
-    director.registerPartyOfficeMixup(portal, pol, signA, signB);
+    director.registerPartyOfficeMixup(portal, pol, signA, signB, worldZ);
 
     group.add(stage);
     return stage;
@@ -3788,7 +4068,8 @@ export class RahulSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const districtF = new THREE.Group();
     districtF.name = 'district_f_regional_roadshow';
@@ -3813,7 +4094,7 @@ export class RahulSatireWorldBuilder {
     });
 
     // 2. Open-Roof Campaign Support Van with 4 Loudspeaker Horns & Waving Leader (East promenade at X = 6.8m)
-    this.buildCampaignSupportVan(districtF, 6.8, 0.6, -chunkLength * 0.32, director);
+    this.buildCampaignSupportVan(districtF, 6.8, 0.6, -chunkLength * 0.32, director, worldZ - chunkLength * 0.32);
 
     // 3. Roadside Tea Dhaba & Flower Garland Bazaar Stall (West promenade at X = -7.2m)
     this.buildMarketplaceBazaar(districtF, -7.2, 0.6, -chunkLength * 0.35);
@@ -4024,7 +4305,8 @@ export class RahulSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: RahulComedyEventDirector
+    director: RahulComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const vanGroup = new THREE.Group();
     vanGroup.name = 'rahul_campaign_van';
@@ -4129,7 +4411,7 @@ export class RahulSatireWorldBuilder {
     leaderHead.position.set(0, 3.25, 1.2);
     vanGroup.add(leaderHead);
 
-    director.registerYatraMarchProcession(vanGroup, [], vanGroup, wheels, speakers, soundWaves, wavingArm);
+    director.registerYatraMarchProcession(vanGroup, [], vanGroup, wheels, speakers, soundWaves, wavingArm, undefined, worldZ);
 
     group.add(vanGroup);
     return vanGroup;
