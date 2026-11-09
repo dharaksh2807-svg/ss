@@ -370,11 +370,11 @@ export class DoomsdayWorldBuilder {
     ];
 
     wallSides.forEach(({ wx, h, isLeft }) => {
-      // 1. Mandatory Deep Grounded Plinth (Y = 0 down to Y = -5.85m, center pos.y = -2.9m)
+      // 1. Mandatory Deep Grounded Plinth (Y = 0 down to Y = -6.60m <= -5.85m, center pos.y = -3.3m)
       // Guarantees zero floating scenery and passes test suite 10 (hasDeepPlinths: pos.y < -2.0 && pos.y >= -6.0)
-      const plinthGeo = this.getBox(wallThickness + 0.1, 5.8, chunkLength);
+      const plinthGeo = this.getBox(wallThickness + 0.1, 6.6, chunkLength);
       const plinth = new THREE.Mesh(plinthGeo, concreteMaterial);
-      plinth.position.set(wx, -2.9, -chunkLength * 0.5);
+      plinth.position.set(wx, -3.3, -chunkLength * 0.5);
       plinth.receiveShadow = true;
       group.add(plinth);
 

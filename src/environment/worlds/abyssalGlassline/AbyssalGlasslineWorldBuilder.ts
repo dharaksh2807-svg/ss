@@ -283,7 +283,7 @@ export class AbyssalGlasslineWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.6; // 6.0m from center
     const walkW = 28.0;
-    const walkDepth = 6.2; // Extends down to Y = -5.85m
+    const walkDepth = 6.6; // Extends down to Y = -6.25m <= -5.85m
     const walkGeo = this.getBox(walkW, walkDepth, chunkLength);
     const curbGeo = this.getBox(0.45, walkDepth + 0.1, chunkLength);
 
