@@ -308,6 +308,12 @@ export class SoundManager {
       const now = this.ctx.currentTime;
       this.masterGain.gain.cancelScheduledValues(now);
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.masterVolume, now);
+      if (this.isMuted) {
+        if (this.trainRumbleGain) {
+          this.trainRumbleGain.gain.setValueAtTime(0, now);
+        }
+        this.stopSlide();
+      }
     }
     this.savePreferences();
     EventBus.getInstance().emit(EVENTS.AUDIO_SETTINGS_CHANGED, this.getPreferences());
@@ -409,6 +415,10 @@ export class SoundManager {
         this.stopSlide();
         this.stopHoverboardLoop();
         this.stopJetpackLoop();
+        this.footstepTimer = 0;
+        if (this.trainRumbleGain && this.ctx) {
+          this.trainRumbleGain.gain.setValueAtTime(0, this.ctx.currentTime);
+        }
         this.setMusicState('GAME_OVER');
       })
     );

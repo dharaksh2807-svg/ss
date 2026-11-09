@@ -655,13 +655,18 @@ export class GameOverModal {
     }
 
     this.element.classList.remove('hidden');
-    // Ensure primary action receives focus for direct keyboard/controller play
+    const card = this.element.querySelector('.game-over-card') as HTMLElement | null;
+    if (card) {
+      card.scrollTop = 0;
+    }
+    // Ensure primary action receives focus for direct keyboard/controller play without auto-scrolling
     if (typeof requestAnimationFrame !== 'undefined') {
       requestAnimationFrame(() => {
-        retryBtn?.focus();
+        if (card) card.scrollTop = 0;
+        retryBtn?.focus({ preventScroll: true });
       });
     } else {
-      retryBtn?.focus();
+      retryBtn?.focus({ preventScroll: true });
     }
   }
 

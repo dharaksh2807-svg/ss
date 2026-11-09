@@ -1,0 +1,28 @@
+{
+  "task": "PHASE 9: PREMIUM PLAYER EXPERIENCE, AUDIO AND GAMEPLAY PRESENTATION",
+  "baseline_sha": "2c6fe5f776eb6cdf8d5747c906c694b0ca4bfe94",
+  "allowed_write_scope": [
+    "src/ui/",
+    "src/audio/",
+    "src/scene/",
+    "src/core/",
+    "src/track/",
+    "docs/",
+    "test/",
+    "artifacts/phase9/",
+    ".gravitas/sessions/player-experience-phase9/"
+  ],
+  "forbidden_write_scope": [
+    "src/debug/BugSnapshotManager.ts"
+  ],
+  "acceptance_criteria": [
+    "STEP 1: Audit first-player experience with real browser captures across load, menu, start, controls, train, powerup, crash, retry, and progression.",
+    "STEP 2: Establish clear information hierarchy in HUD, menus, and modals, eliminating hazard occlusion and secondary clutter while polishing typography and contrast.",
+    "STEP 3: Refine audio architecture in SoundManager: footsteps, jump/land/slide/fast-drop, train pass-by rumble, coin streaks, powerups, UI feedback, volume/mute/intensity controls, browser autoplay resilience.",
+    "STEP 4: Polish tactile and visual feedback (near-miss cues, speed perception, landing contact, coin collection bursts, game over transition) while honoring reduced motion and hazard readability.",
+    "STEP 5: Enhance replayability and risk/reward choices across ProgressionManager, DailyChallengeManager, SkillComboManager, and JunctionDirector without predatory monetization or reset of player data.",
+    "STEP 6: Produce structured heuristic UX audit and human playtesting protocol with concrete observation criteria.",
+    "STEP 7: Comprehensive validation: build, UI/sound/gameplay tests, mobile/desktop viewport verification, and before/after evidence comparison."
+  ]
+}
+

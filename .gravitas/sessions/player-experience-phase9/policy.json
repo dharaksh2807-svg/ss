@@ -1,0 +1,8 @@
+{
+  "planning": "compact",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": ["ui-ux-polish", "audio-refinement", "feedback-enhancement", "replayability-tuning"]
+}
+

@@ -22,6 +22,7 @@ export class NavigationCoordinator {
     window.addEventListener('keydown', this.onEscape, true);
     document.addEventListener('touchstart', this.onMenuTouch, { passive: true });
     document.addEventListener('touchmove', this.onMenuTouch, { passive: true });
+    document.addEventListener('click', this.onGlobalClick, { passive: true });
   }
 
   public register(id: ScreenId, view: View, event?: string, payload?: (value: any) => any): void {
@@ -77,7 +78,14 @@ export class NavigationCoordinator {
     window.removeEventListener('keydown', this.onEscape, true);
     document.removeEventListener('touchstart', this.onMenuTouch);
     document.removeEventListener('touchmove', this.onMenuTouch);
+    document.removeEventListener('click', this.onGlobalClick);
   }
+
+  private onGlobalClick = (event: MouseEvent): void => {
+    if (event.target instanceof Element && event.target.closest('button, [role="button"], .segment-btn, .arcade-btn, .dock-btn, .cust-item, .arcade-tab-btn')) {
+      this.bus.emit(EVENTS.UI_CLICK);
+    }
+  };
 
   // Let native menu scrolling finish before the window's gameplay gesture listener.
   // Bubble phase preserves showroom canvas gestures and control handlers at their target.
