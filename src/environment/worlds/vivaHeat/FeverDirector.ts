@@ -117,6 +117,42 @@ export interface FloatingLanternSwarmActor {
 }
 
 /**
+ * Signature A: Tropical Festival Procession
+ * Full 6-Stage Blockbuster Lifecycle:
+ * DORMANT → ANTICIPATION → ACTION → CLIMAX → AFTERMATH → COMPLETE
+ */
+export interface FestivalProcessionActor {
+  group: THREE.Group;
+  floatGroup: THREE.Group;
+  wheels: THREE.Mesh[];
+  dancers: THREE.Group[];
+  ribbonBanners: THREE.Mesh[];
+  petalCannons: THREE.Mesh[];
+  triggerZ: number;
+  state: 'DORMANT' | 'ANTICIPATION' | 'ACTION' | 'CLIMAX' | 'AFTERMATH' | 'COMPLETE';
+  timer: number;
+  initialX: number;
+  targetX: number;
+}
+
+/**
+ * Signature B: Grand Stage Finale & Concert Amphitheatre
+ * Full 6-Stage Blockbuster Lifecycle:
+ * DORMANT → ANTICIPATION → ACTION → CLIMAX → AFTERMATH → COMPLETE
+ */
+export interface GrandStageFinaleActor {
+  group: THREE.Group;
+  stageBase: THREE.Object3D;
+  dancers: THREE.Group[];
+  laserBeams: THREE.Group[];
+  pyroJets: THREE.Mesh[];
+  coronaBackdrop: THREE.Mesh;
+  triggerZ: number;
+  state: 'DORMANT' | 'ANTICIPATION' | 'ACTION' | 'CLIMAX' | 'AFTERMATH' | 'COMPLETE';
+  timer: number;
+}
+
+/**
  * FEVER DIRECTOR
  * Coordinates all cinematic festival encounters, mega-yacht docking sequences,
  * colossal kinetic flora awakenings, theatrical skybeams, and living seaside celebrations.
@@ -132,6 +168,8 @@ export class FeverDirector {
   private kineticAwakenings: KineticFloraAwakeningActor[] = [];
   private flameTowers: PyrotechnicFlameTowerActor[] = [];
   private lanternSwarms: FloatingLanternSwarmActor[] = [];
+  private festivalProcessions: FestivalProcessionActor[] = [];
+  private grandStageFinales: GrandStageFinaleActor[] = [];
 
   // Ambient Festival Ecosystem
   private flowers: KineticFlower[] = [];
@@ -178,7 +216,7 @@ export class FeverDirector {
         cur = cur.parent;
       }
       // In live gameplay, all valid rendered objects must be rooted in the active Scene
-      if (cur.type === 'Scene') return true;
+      if (cur.type === 'Scene' || (cur as any).isScene === true) return true;
 
       // In Node.js / unit tests without an active Scene, check root container attachment
       if (typeof window === 'undefined') {
@@ -192,6 +230,8 @@ export class FeverDirector {
     this.kineticAwakenings = this.kineticAwakenings.filter((a) => isAttached(a.group));
     this.flameTowers = this.flameTowers.filter((f) => isAttached(f.group));
     this.lanternSwarms = this.lanternSwarms.filter((l) => isAttached(l.group));
+    this.festivalProcessions = this.festivalProcessions.filter((p) => isAttached(p.group));
+    this.grandStageFinales = this.grandStageFinales.filter((s) => isAttached(s.group));
 
     this.flowers = this.flowers.filter((f) => isAttached(f.group));
     this.dancers = this.dancers.filter((d) => isAttached(d.group));
@@ -243,6 +283,8 @@ export class FeverDirector {
     this.kineticAwakenings = [];
     this.flameTowers = [];
     this.lanternSwarms = [];
+    this.festivalProcessions = [];
+    this.grandStageFinales = [];
     this.flowers = [];
     this.dancers = [];
     this.skybeams = [];
@@ -283,6 +325,14 @@ export class FeverDirector {
     this.lanternSwarms.push(swarm);
   }
 
+  public registerFestivalProcession(actor: FestivalProcessionActor): void {
+    this.festivalProcessions.push(actor);
+  }
+
+  public registerGrandStageFinale(actor: GrandStageFinaleActor): void {
+    this.grandStageFinales.push(actor);
+  }
+
   public registerKineticFlower(flower: KineticFlower): void {
     this.flowers.push(flower);
   }
@@ -321,6 +371,22 @@ export class FeverDirector {
     return this.lanternSwarms;
   }
 
+  public getFestivalProcessions(): FestivalProcessionActor[] {
+    return this.festivalProcessions;
+  }
+
+  public getGrandStageFinales(): GrandStageFinaleActor[] {
+    return this.grandStageFinales;
+  }
+
+  public getFestivalProcessionCount(): number {
+    return this.festivalProcessions.length;
+  }
+
+  public getGrandStageFinaleCount(): number {
+    return this.grandStageFinales.length;
+  }
+
   public getFlowerCount(): number {
     return this.flowers.length;
   }
@@ -351,7 +417,9 @@ export class FeverDirector {
       this.grandDockings.length +
       this.kineticAwakenings.length +
       this.flameTowers.length +
-      this.lanternSwarms.length
+      this.lanternSwarms.length +
+      this.festivalProcessions.length +
+      this.grandStageFinales.length
     );
   }
 
@@ -392,6 +460,12 @@ export class FeverDirector {
 
     // 2. Gate B: Colossal Kinetic Flora Awakening & Solar Pulse
     this.updateKineticAwakenings(delta, playerZ);
+
+    // Signature A: Tropical Festival Procession
+    this.updateFestivalProcessions(delta, playerZ);
+
+    // Signature B: Grand Stage Finale & Concert Amphitheatre
+    this.updateGrandStageFinales(delta, playerZ);
 
     // 3. Pyrotechnic Flame Towers
     this.updateFlameTowers(delta, playerZ);
@@ -585,6 +659,190 @@ export class FeverDirector {
         for (const pMesh of actor.outerPetals) pMesh.rotation.z = 0.95 + breath;
         for (const pMesh of actor.innerPetals) pMesh.rotation.z = 0.78 + breath;
         actor.stamenCore.position.y = 11.2;
+      }
+    }
+  }
+
+  // =========================================================================
+  // SIGNATURE A: TROPICAL FESTIVAL PROCESSION
+  // =========================================================================
+
+  private updateFestivalProcessions(dt: number, playerZ: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+
+    for (const actor of this.festivalProcessions) {
+      const distanceAhead = playerZ - actor.triggerZ;
+      actor.timer += dt;
+
+      // 6-Stage Lifecycle State Machine
+      if (actor.state === 'DORMANT' && distanceAhead <= 140.0) {
+        actor.state = 'ANTICIPATION';
+        actor.timer = 0;
+      } else if (actor.state === 'ANTICIPATION' && (distanceAhead <= 75.0 || actor.timer > 3.0)) {
+        actor.state = 'ACTION';
+        actor.timer = 0;
+      } else if (actor.state === 'ACTION' && (distanceAhead <= 25.0 || actor.timer > 2.5)) {
+        actor.state = 'CLIMAX';
+        actor.timer = 0;
+      } else if (actor.state === 'CLIMAX' && (distanceAhead <= -15.0 || actor.timer > 2.0)) {
+        actor.state = 'AFTERMATH';
+        actor.timer = 0;
+      } else if (actor.state === 'AFTERMATH' && distanceAhead <= -45.0) {
+        actor.state = 'COMPLETE';
+      }
+
+      // Visual Animation Logic per Stage
+      if (actor.state === 'DORMANT') {
+        actor.floatGroup.position.x = actor.initialX;
+        for (const w of actor.wheels) w.rotation.x = 0;
+        for (const rib of actor.ribbonBanners) rib.rotation.z = 0;
+        for (const can of actor.petalCannons) can.visible = false;
+        for (const d of actor.dancers) d.position.y = 0;
+      } else if (actor.state === 'ANTICIPATION') {
+        // Dancers swaying, ribbons flutter
+        const p = Math.min(1.0, actor.timer / 3.0);
+        actor.floatGroup.position.x = THREE.MathUtils.lerp(actor.initialX, actor.initialX - 1.0, p);
+        for (const rib of actor.ribbonBanners) {
+          rib.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 3.0) * 0.15;
+        }
+        for (let idx = 0; idx < actor.dancers.length; idx++) {
+          const d = actor.dancers[idx];
+          d.position.y = isReducedMotion ? 0 : Math.abs(Math.sin(this.globalTime * 4.0 + idx)) * 0.15;
+        }
+        for (const can of actor.petalCannons) can.visible = false;
+      } else if (actor.state === 'ACTION') {
+        // Float rolling forward alongside promenade, spinning wheels, dancers lively choreography
+        const p = Math.min(1.0, actor.timer / 2.5);
+        actor.floatGroup.position.x = THREE.MathUtils.lerp(actor.initialX - 1.0, actor.targetX, p);
+        for (const w of actor.wheels) w.rotation.x += dt * 8.0;
+        for (let idx = 0; idx < actor.ribbonBanners.length; idx++) {
+          const rib = actor.ribbonBanners[idx];
+          rib.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 6.0 + idx * 0.8) * 0.35;
+        }
+        for (let idx = 0; idx < actor.dancers.length; idx++) {
+          const d = actor.dancers[idx];
+          d.position.y = isReducedMotion ? 0 : Math.abs(Math.sin(this.globalTime * 6.5 + idx * 1.2)) * 0.28;
+          d.rotation.y = Math.sin(this.globalTime * 4.0 + idx) * 0.3;
+        }
+        for (const can of actor.petalCannons) {
+          can.visible = true;
+          can.scale.set(1.0, 1.0 + Math.sin(this.globalTime * 12.0) * 0.3, 1.0);
+        }
+      } else if (actor.state === 'CLIMAX') {
+        // Full festival explosion, unison jumps, petal cannons erupt
+        actor.floatGroup.position.x = actor.targetX;
+        for (const w of actor.wheels) w.rotation.x += dt * 4.0;
+        for (const rib of actor.ribbonBanners) {
+          rib.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 8.0) * 0.5;
+        }
+        for (const d of actor.dancers) {
+          d.position.y = isReducedMotion ? 0 : 0.35;
+          d.rotation.y = 0;
+        }
+        for (const can of actor.petalCannons) {
+          can.visible = true;
+          can.scale.set(1.4, 1.8, 1.4);
+        }
+      } else if (actor.state === 'AFTERMATH') {
+        // Peaceful parade afterglow
+        actor.floatGroup.position.x = actor.targetX;
+        for (const rib of actor.ribbonBanners) {
+          rib.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 1.5) * 0.1;
+        }
+        for (const d of actor.dancers) {
+          d.position.y = 0;
+          d.rotation.y = 0.15;
+        }
+        for (const can of actor.petalCannons) can.visible = false;
+      }
+    }
+  }
+
+  // =========================================================================
+  // SIGNATURE B: GRAND STAGE FINALE & CONCERT AMPHITHEATRE
+  // =========================================================================
+
+  private updateGrandStageFinales(dt: number, playerZ: number): void {
+    const isReducedMotion = SettingsManager.getInstance().isReducedMotion();
+
+    for (const actor of this.grandStageFinales) {
+      const distanceAhead = playerZ - actor.triggerZ;
+      actor.timer += dt;
+
+      // 6-Stage Lifecycle State Machine
+      if (actor.state === 'DORMANT' && distanceAhead <= 140.0) {
+        actor.state = 'ANTICIPATION';
+        actor.timer = 0;
+      } else if (actor.state === 'ANTICIPATION' && (distanceAhead <= 75.0 || actor.timer > 3.0)) {
+        actor.state = 'ACTION';
+        actor.timer = 0;
+      } else if (actor.state === 'ACTION' && (distanceAhead <= 25.0 || actor.timer > 2.5)) {
+        actor.state = 'CLIMAX';
+        actor.timer = 0;
+      } else if (actor.state === 'CLIMAX' && (distanceAhead <= -15.0 || actor.timer > 2.0)) {
+        actor.state = 'AFTERMATH';
+        actor.timer = 0;
+      } else if (actor.state === 'AFTERMATH' && distanceAhead <= -45.0) {
+        actor.state = 'COMPLETE';
+      }
+
+      // Visual Animation Logic per Stage
+      if (actor.state === 'DORMANT') {
+        for (const b of actor.laserBeams) b.visible = false;
+        for (const pj of actor.pyroJets) pj.visible = false;
+        actor.coronaBackdrop.scale.set(1.0, 1.0, 1.0);
+        for (const d of actor.dancers) d.position.y = 0;
+      } else if (actor.state === 'ANTICIPATION') {
+        // Beams warm up and point towards sky
+        const p = Math.min(1.0, actor.timer / 3.0);
+        for (let idx = 0; idx < actor.laserBeams.length; idx++) {
+          const b = actor.laserBeams[idx];
+          b.visible = true;
+          b.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 2.0 + idx * 0.5) * 0.25;
+        }
+        for (const pj of actor.pyroJets) pj.visible = false;
+        actor.coronaBackdrop.scale.set(1.0 + p * 0.15, 1.0 + p * 0.15, 1.0);
+        for (let idx = 0; idx < actor.dancers.length; idx++) {
+          const d = actor.dancers[idx];
+          d.position.y = isReducedMotion ? 0 : Math.abs(Math.sin(this.globalTime * 3.5 + idx)) * 0.12;
+        }
+      } else if (actor.state === 'ACTION') {
+        // Multi-colored laser fan sweeping wide, flame towers burst, dancers high tempo
+        for (let idx = 0; idx < actor.laserBeams.length; idx++) {
+          const b = actor.laserBeams[idx];
+          b.visible = true;
+          b.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 5.0 + idx * 0.7) * 0.55;
+        }
+        const burst = Math.sin(this.globalTime * 10.0) > 0.3;
+        for (const pj of actor.pyroJets) pj.visible = burst;
+        actor.coronaBackdrop.scale.set(1.2 + Math.sin(this.globalTime * 6.0) * 0.1, 1.2 + Math.sin(this.globalTime * 6.0) * 0.1, 1.0);
+        for (let idx = 0; idx < actor.dancers.length; idx++) {
+          const d = actor.dancers[idx];
+          d.position.y = isReducedMotion ? 0 : Math.abs(Math.sin(this.globalTime * 6.0 + idx)) * 0.25;
+        }
+      } else if (actor.state === 'CLIMAX') {
+        // Maximum crescendo, lasers converge, all flame jets sustain, corona at peak
+        for (const b of actor.laserBeams) {
+          b.visible = true;
+          b.rotation.z = 0;
+          b.scale.set(1.5, 2.0, 1.5);
+        }
+        for (const pj of actor.pyroJets) {
+          pj.visible = true;
+          pj.scale.set(1.3, 1.8, 1.3);
+        }
+        actor.coronaBackdrop.scale.set(1.4, 1.4, 1.0);
+        for (const d of actor.dancers) d.position.y = 0.3;
+      } else if (actor.state === 'AFTERMATH') {
+        // Golden sparks rain, beams relax
+        for (const b of actor.laserBeams) {
+          b.visible = true;
+          b.rotation.z = isReducedMotion ? 0 : Math.sin(this.globalTime * 1.5) * 0.15;
+          b.scale.set(1.0, 1.0, 1.0);
+        }
+        for (const pj of actor.pyroJets) pj.visible = false;
+        actor.coronaBackdrop.scale.set(1.05, 1.05, 1.0);
+        for (const d of actor.dancers) d.position.y = 0;
       }
     }
   }

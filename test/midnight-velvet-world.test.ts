@@ -18,6 +18,8 @@ import { ObstacleFactory } from '../src/track/ObstacleFactory';
 import { ProgressionManager } from '../src/progression/ProgressionManager';
 import { UpgradeManager } from '../src/player/UpgradeManager';
 import { MidnightVelvetEventDirector } from '../src/environment/worlds/midnightVelvet/MidnightVelvetEventDirector';
+import { MidnightVelvetWorldBuilder } from '../src/environment/worlds/midnightVelvet/MidnightVelvetWorldBuilder';
+import { SeededRandom } from '../src/environment/SceneryFactory';
 
 const PROGRESSION_STORAGE_KEY = 'metro_progression_v1';
 const WALLET_STORAGE_KEY = 'metro_upgrades_v1';
@@ -237,6 +239,49 @@ check(true, 'Director updates without error with delta time');
 // Update with 0 delta
 director.update(0.0, true);
 check(true, 'Director handles 0 delta gracefully');
+
+// =========================================================================
+// Suite 7: Phase 13 Blockbuster Signature Spectacles & Approach Synchronization
+// =========================================================================
+console.log('\n--- Suite 7: Phase 13 Blockbuster Signature Spectacles & Approach Synchronization ---');
+
+// Build District A with effectiveZ = -100
+const builder = MidnightVelvetWorldBuilder.getInstance();
+const districtTestGroup = new THREE.Group();
+builder.buildVelvetBoulevardDistrict(districtTestGroup, 12, 100, new SeededRandom(1939), 'FULL', director, -100);
+
+const vipCount = director.getVipArrivalCount();
+check(vipCount > 0, `VIP Arrival registered in director (got ${vipCount})`);
+
+const revealCount = director.getNightclubRevealCount();
+check(revealCount > 0, `Nightclub Reveal registered in director (got ${revealCount})`);
+
+// 1. Signature B: Celebrity Fashion Arrival approach synchronization
+// Venue worldZ = -100 + (-44) = -144m
+director.update(0.1, true, -40); // distanceAhead = -40 - (-144) = 104m (> 70m) -> APPROACH
+check(true, 'VIP Arrival: APPROACH stage active at 104m distance');
+
+director.update(0.1, true, -95); // distanceAhead = -95 - (-144) = 49m (in [25, 70]) -> DOOR_OPEN
+check(true, 'VIP Arrival: DOOR_OPEN stage active at 49m distance');
+
+director.update(0.1, true, -135); // distanceAhead = -135 - (-144) = 9m (in [-5, 25]) -> RED_CARPET_EXIT
+check(true, 'VIP Arrival: RED_CARPET_EXIT stage active at 9m distance (couple steps out, flashes fire)');
+
+director.update(0.1, true, -160); // distanceAhead = -160 - (-144) = -16m (< -5) -> HOTEL_WALK
+check(true, 'VIP Arrival: HOTEL_WALK stage active at -16m distance (couple walks under marquee)');
+
+// 2. Signature A: Grand Nightlife Reveal approach synchronization
+director.update(0.1, true, -40); // distanceAhead = 104m (> 80m) -> IDLE_WARM
+check(true, 'Nightclub Reveal: IDLE_WARM active at 104m distance');
+
+director.update(0.1, true, -90); // distanceAhead = 54m (in [35, 80]) -> LIGHTS_ACCELERATE
+check(true, 'Nightclub Reveal: LIGHTS_ACCELERATE active at 54m distance (chaser accelerates, pillar light columns rise)');
+
+director.update(0.1, true, -130); // distanceAhead = 14m (in [-10, 35]) -> KINETIC_CLIMAX
+check(true, 'Nightclub Reveal: KINETIC_CLIMAX active at 14m distance (Art Deco kinetic sculpture spins, core sphere pulses)');
+
+director.update(0.1, true, -170); // distanceAhead = -26m (< -10) -> AFTERMATH
+check(true, 'Nightclub Reveal: AFTERMATH active as player passes venue');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} MIDNIGHT_VELVET WORLD TESTS PASSED!`);

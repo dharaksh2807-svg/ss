@@ -473,6 +473,78 @@ assert.strictEqual(worldDef?.available, true, 'VIVA_HEAT is marked available');
 assert.strictEqual(worldDef?.dynamicEligible, true, 'VIVA_HEAT is dynamicEligible');
 pass('VIVA_HEAT correctly registered in WorldCatalog as available, implemented, and dynamicEligible');
 
+// ============================================================================
+// SUITE 14: SIGNATURE A — TROPICAL FESTIVAL PROCESSION
+// ============================================================================
+console.log('\n--- Suite 14: Signature A — Tropical Festival Procession ---');
+
+director.reset();
+const testGroupProc = new THREE.Group();
+builder.buildDistrictScenery(testGroupProc, 12, 1.2, 100, 8005, 'FULL', -500); // District F (Sunset Carnival)
+const processions = director.getFestivalProcessions();
+assert.ok(processions.length > 0, 'Festival Procession registered in director');
+pass('Signature A: Festival Procession actor registered');
+
+const procActor = processions[0];
+assert.strictEqual(procActor.state, 'DORMANT', 'Initial festival procession state is DORMANT');
+
+// triggerZ = -500 - 50 = -550m
+director.update(0.1, true, -420.0); // distanceAhead = -420 - (-550) = 130m <= 140m -> ANTICIPATION
+assert.strictEqual(procActor.state, 'ANTICIPATION', 'State advances to ANTICIPATION within 140m');
+pass('Procession lifecycle advances to ANTICIPATION (dancers swaying, ribbons flutter)');
+
+director.update(0.1, true, -490.0); // distanceAhead = -490 - (-550) = 60m <= 75m -> ACTION
+assert.strictEqual(procActor.state, 'ACTION', 'State advances to ACTION within 75m');
+pass('Procession lifecycle advances to ACTION (float rolls forward, wheels spin, energetic choreo)');
+
+director.update(0.1, true, -535.0); // distanceAhead = -535 - (-550) = 15m <= 25m -> CLIMAX
+assert.strictEqual(procActor.state, 'CLIMAX', 'State advances to CLIMAX within 25m');
+pass('Procession lifecycle advances to CLIMAX (unison jumps, petal cannons erupt)');
+
+director.update(0.1, true, -575.0); // distanceAhead = -575 - (-550) = -25m <= -15m -> AFTERMATH
+assert.strictEqual(procActor.state, 'AFTERMATH', 'State advances to AFTERMATH behind runner');
+pass('Procession lifecycle advances to AFTERMATH (peaceful parade afterglow)');
+
+director.update(0.1, true, -610.0); // distanceAhead = -610 - (-550) = -60m <= -45m -> COMPLETE
+assert.strictEqual(procActor.state, 'COMPLETE', 'State advances to COMPLETE');
+pass('Procession lifecycle cleanly completes');
+
+// ============================================================================
+// SUITE 15: SIGNATURE B — GRAND STAGE FINALE & CONCERT AMPHITHEATRE
+// ============================================================================
+console.log('\n--- Suite 15: Signature B — Grand Stage Finale & Concert Amphitheatre ---');
+
+director.reset();
+const testGroupStage = new THREE.Group();
+builder.buildDistrictScenery(testGroupStage, 12, 1.2, 100, 8001, 'FULL', -100); // District B (Amphitheatre)
+const stageFinales = director.getGrandStageFinales();
+assert.ok(stageFinales.length > 0, 'Grand Stage Finale registered in director');
+pass('Signature B: Grand Stage Finale actor registered');
+
+const stageActor = stageFinales[0];
+assert.strictEqual(stageActor.state, 'DORMANT', 'Initial stage finale state is DORMANT');
+
+// triggerZ = -100 - 50 = -150m
+director.update(0.1, true, -20.0); // distanceAhead = -20 - (-150) = 130m <= 140m -> ANTICIPATION
+assert.strictEqual(stageActor.state, 'ANTICIPATION', 'State advances to ANTICIPATION within 140m');
+pass('Stage finale lifecycle advances to ANTICIPATION (beams warm up, corona pulses)');
+
+director.update(0.1, true, -90.0); // distanceAhead = -90 - (-150) = 60m <= 75m -> ACTION
+assert.strictEqual(stageActor.state, 'ACTION', 'State advances to ACTION within 75m');
+pass('Stage finale lifecycle advances to ACTION (multi-colored laser fan sweep, flame bursts)');
+
+director.update(0.1, true, -135.0); // distanceAhead = -135 - (-150) = 15m <= 25m -> CLIMAX
+assert.strictEqual(stageActor.state, 'CLIMAX', 'State advances to CLIMAX within 25m');
+pass('Stage finale lifecycle advances to CLIMAX (maximum crescendo, laser convergence, peak corona)');
+
+director.update(0.1, true, -175.0); // distanceAhead = -175 - (-150) = -25m <= -15m -> AFTERMATH
+assert.strictEqual(stageActor.state, 'AFTERMATH', 'State advances to AFTERMATH behind runner');
+pass('Stage finale lifecycle advances to AFTERMATH (golden sparks rain, beams relax)');
+
+director.update(0.1, true, -210.0); // distanceAhead = -210 - (-150) = -60m <= -45m -> COMPLETE
+assert.strictEqual(stageActor.state, 'COMPLETE', 'State advances to COMPLETE');
+pass('Stage finale lifecycle cleanly completes');
+
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} VIVA_HEAT WORLD TESTS PASSED!`);
 console.log('=======================================================\n');

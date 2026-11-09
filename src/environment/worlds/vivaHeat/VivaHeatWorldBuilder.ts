@@ -381,16 +381,16 @@ export class VivaHeatWorldBuilder {
 
     const wallX = roadbedWidth * 0.5 + 2.0;
     const plinthW = 2.4;
-    const plinthH = 7.0; // Y from -5.85m to +1.15m (solid ground depth!)
+    const plinthH = 7.5; // Y from -6.35m to +1.15m (deep bedrock plinth!)
 
     // Left retaining plinth (-X)
     const leftPlinth = new THREE.Mesh(this.getBox(plinthW, plinthH, chunkLength), this.velvetCrimsonMat);
-    leftPlinth.position.set(-wallX - plinthW * 0.5, -2.35, -chunkLength * 0.5);
+    leftPlinth.position.set(-wallX - plinthW * 0.5, -2.6, -chunkLength * 0.5);
     plinthGroup.add(leftPlinth);
 
     // Right coastal seawall plinth (+X)
     const rightPlinth = new THREE.Mesh(this.getBox(plinthW, plinthH, chunkLength), this.velvetCrimsonMat);
-    rightPlinth.position.set(wallX + plinthW * 0.5, -2.35, -chunkLength * 0.5);
+    rightPlinth.position.set(wallX + plinthW * 0.5, -2.6, -chunkLength * 0.5);
     plinthGroup.add(rightPlinth);
 
     // Coral-scarlet curb capstones
@@ -719,20 +719,63 @@ export class VivaHeatWorldBuilder {
     // Overhead Sweeping Theatrical Skybeams
     this.buildTheatricalSkybeams(district, stageX, stageZ, director);
 
+    // Signature B: Grand Stage Finale & Concert Amphitheatre
+    const laserBeams: THREE.Group[] = [];
+    [-0.3, -0.15, 0, 0.15, 0.3].forEach((angle, bIdx) => {
+      const beamGroup = new THREE.Group();
+      beamGroup.position.set(stageX - 6.0, 16.0, stageZ + (bIdx - 2) * 4.0);
+      const beamMesh = new THREE.Mesh(this.getCylinder(0.12, 0.45, 28.0, 6), this.neonCyanGlowMat);
+      beamMesh.position.y = 14.0;
+      beamGroup.add(beamMesh);
+      beamGroup.rotation.z = angle;
+      district.add(beamGroup);
+      laserBeams.push(beamGroup);
+    });
+
+    const pyroJets: THREE.Mesh[] = [];
+    [-8.0, 0, 8.0].forEach((pz) => {
+      const jet = new THREE.Mesh(this.getCylinder(0.15, 0.8, 5.5, 6), this.flamePlumeMat);
+      jet.position.set(stageX + 5.0, 3.2, stageZ + pz);
+      jet.visible = false;
+      district.add(jet);
+      pyroJets.push(jet);
+    });
+
+    const coronaBackdrop = new THREE.Mesh(this.getSphere(9.0, 12), this.ferrisWheelGlowMat);
+    coronaBackdrop.position.set(stageX - 10.0, 14.0, stageZ);
+    coronaBackdrop.scale.set(1.0, 1.0, 0.2);
+    district.add(coronaBackdrop);
+
     // Haute Couture Revelers & Dancers on Stage
+    const finaleDancers: THREE.Group[] = [];
     if (detail !== 'MINIMAL') {
       const dancer1 = VivaHeatCharacters.createFestivalDancer(stageX - 1.0, 3.0, stageZ - 4.0);
       district.add(dancer1.group);
       director.registerAdultDancer(dancer1.dancer);
+      finaleDancers.push(dancer1.group);
 
       const dancer2 = VivaHeatCharacters.createFestivalDancer(stageX - 1.0, 3.0, stageZ + 4.0);
       district.add(dancer2.group);
       director.registerAdultDancer(dancer2.dancer);
+      finaleDancers.push(dancer2.group);
 
       const reveler = VivaHeatCharacters.createHauteCoutureReveler(stageX + 3.0, 3.0, stageZ, 'warm');
       district.add(reveler.group);
       director.registerAdultDancer(reveler.dancer);
+      finaleDancers.push(reveler.group);
     }
+
+    director.registerGrandStageFinale({
+      group: district,
+      stageBase,
+      dancers: finaleDancers,
+      laserBeams,
+      pyroJets,
+      coronaBackdrop,
+      triggerZ: worldZ + stageZ,
+      state: 'DORMANT',
+      timer: 0
+    });
 
     group.add(district);
   }
@@ -949,6 +992,89 @@ export class VivaHeatWorldBuilder {
         activeTimer: 0
       });
     }
+
+    // Signature A: Tropical Festival Procession
+    const procGroup = new THREE.Group();
+    procGroup.name = 'viva_heat_festival_procession';
+    const floatInitialX = -wallX - 14.0;
+    const floatTargetX = -wallX - 9.0;
+    procGroup.position.set(floatInitialX, 0.4, carnivalZ);
+
+    const floatChassis = new THREE.Mesh(this.getBox(6.5, 1.4, 16.0), this.velvetCrimsonMat);
+    floatChassis.position.y = 1.0;
+    procGroup.add(floatChassis);
+
+    const goldPlatter = new THREE.Mesh(this.getBox(5.8, 0.4, 14.5), this.sunsetGoldMat);
+    goldPlatter.position.y = 1.9;
+    procGroup.add(goldPlatter);
+
+    const procWheels: THREE.Mesh[] = [];
+    [[-2.8, -5.0], [2.8, -5.0], [-2.8, 5.0], [2.8, 5.0]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(this.getCylinder(0.8, 0.8, 0.45, 8), this.sunsetGoldMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(wx, 0.8, wz);
+      procGroup.add(wheel);
+      procWheels.push(wheel);
+    });
+
+    const ribbonBanners: THREE.Mesh[] = [];
+    [-4.0, 0, 4.0].forEach((rz) => {
+      const pole = new THREE.Mesh(this.getCylinder(0.08, 0.08, 4.5, 6), this.sunsetGoldMat);
+      pole.position.set(0, 4.0, rz);
+      procGroup.add(pole);
+
+      const ribbon = new THREE.Mesh(this.getBox(0.05, 1.2, 3.2), this.coralMarbleMat);
+      ribbon.position.set(0.6, 5.2, rz);
+      procGroup.add(ribbon);
+      ribbonBanners.push(ribbon);
+    });
+
+    const petalCannons: THREE.Mesh[] = [];
+    [-5.5, 5.5].forEach((cz) => {
+      const cannon = new THREE.Mesh(this.getCylinder(0.3, 0.45, 1.8, 8), this.soundSpeakerMat);
+      cannon.position.set(0, 2.8, cz);
+      procGroup.add(cannon);
+
+      const petalSpray = new THREE.Mesh(this.getSphere(1.2, 8), this.ferrisWheelGlowMat);
+      petalSpray.position.set(0, 4.2, cz);
+      petalSpray.visible = false;
+      procGroup.add(petalSpray);
+      petalCannons.push(petalSpray);
+    });
+
+    const procDancers: THREE.Group[] = [];
+    if (detail !== 'MINIMAL') {
+      const pd1 = VivaHeatCharacters.createFestivalDancer(floatInitialX + 3.5, 0.4, carnivalZ - 6.0);
+      district.add(pd1.group);
+      director.registerAdultDancer(pd1.dancer);
+      procDancers.push(pd1.group);
+
+      const pd2 = VivaHeatCharacters.createFestivalDancer(floatInitialX + 3.5, 0.4, carnivalZ + 6.0);
+      district.add(pd2.group);
+      director.registerAdultDancer(pd2.dancer);
+      procDancers.push(pd2.group);
+
+      const maestro = VivaHeatCharacters.createMasqueradeMaestro(floatInitialX, 2.5, carnivalZ);
+      district.add(maestro.group);
+      director.registerAdultDancer(maestro.dancer);
+      procDancers.push(maestro.group);
+    }
+
+    district.add(procGroup);
+
+    director.registerFestivalProcession({
+      group: district,
+      floatGroup: procGroup,
+      wheels: procWheels,
+      dancers: procDancers,
+      ribbonBanners,
+      petalCannons,
+      triggerZ: worldZ + carnivalZ,
+      state: 'DORMANT',
+      timer: 0,
+      initialX: floatInitialX,
+      targetX: floatTargetX
+    });
 
     group.add(district);
   }

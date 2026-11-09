@@ -1203,8 +1203,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -3.2, -chunkLength * 0.5);
       districtA.add(walk);
 
       // Cheerful cartoon cheering crowd lining sidewalks
@@ -1763,8 +1763,8 @@ export class RahulSatireWorldBuilder {
 
       const gallW = 22.0;
       const gx = side * (curbEdge + gallW * 0.5);
-      const gallery = new THREE.Mesh(this.getBox(gallW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      gallery.position.set(gx, -2.45, -chunkLength * 0.5);
+      const gallery = new THREE.Mesh(this.getBox(gallW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      gallery.position.set(gx, -3.2, -chunkLength * 0.5);
       districtB.add(gallery);
 
       // Grand Sandstone Columns
@@ -2055,8 +2055,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -3.2, -chunkLength * 0.5);
       districtC.add(walk);
     });
 
@@ -2403,8 +2403,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -3.2, -chunkLength * 0.5);
       districtD.add(walk);
     });
 
@@ -2617,8 +2617,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -3.2, -chunkLength * 0.5);
       districtE.add(walk);
     });
 
@@ -4083,8 +4083,8 @@ export class RahulSatireWorldBuilder {
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
-      const walk = new THREE.Mesh(this.getBox(walkW, 5.5, chunkLength), this.parliamentSandstoneMat);
-      walk.position.set(wx, -2.45, -chunkLength * 0.5);
+      const walk = new THREE.Mesh(this.getBox(walkW, 7.0, chunkLength), this.parliamentSandstoneMat);
+      walk.position.set(wx, -3.2, -chunkLength * 0.5);
       districtF.add(walk);
 
       // Yellow/white crowd barricades with cheering spectators along sidewalk curb

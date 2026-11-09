@@ -66,6 +66,8 @@ export interface VipArrivalActor {
   carpetCenterZ: number;
   doorLimoX: number;
   redCarpetX: number;
+  worldZ?: number;
+  stage?: 'APPROACH' | 'DOOR_OPEN' | 'RED_CARPET_EXIT' | 'HOTEL_WALK' | 'RESET';
 }
 
 export interface NightclubRevealActor {
@@ -89,6 +91,8 @@ export interface NightclubRevealActor {
     clipboardArm?: THREE.Object3D;
   };
   revealTimer: number;
+  worldZ?: number;
+  stage?: 'IDLE_WARM' | 'LIGHTS_ACCELERATE' | 'KINETIC_CLIMAX' | 'AFTERMATH';
 }
 
 export class MidnightVelvetEventDirector {
@@ -323,7 +327,36 @@ export class MidnightVelvetEventDirector {
       for (let v = 0; v < this.vipArrivals.length; v++) {
         const actor = this.vipArrivals[v];
         actor.cycleTimer += delta;
-        const t = actor.cycleTimer % 16.0;
+
+        let t = actor.cycleTimer % 16.0;
+        if (_playerZ !== undefined && actor.worldZ !== undefined) {
+          const dist = _playerZ - actor.worldZ;
+          if (dist >= -25 && dist <= 120) {
+            if (dist > 70) {
+              const frac = (120 - dist) / 50;
+              t = frac * 4.0;
+              actor.stage = 'APPROACH';
+            } else if (dist > 25) {
+              const frac = (70 - dist) / 45;
+              t = 4.0 + frac * 2.5;
+              actor.stage = 'DOOR_OPEN';
+            } else if (dist > -5) {
+              const frac = (25 - dist) / 30;
+              t = 6.5 + frac * 4.0;
+              actor.stage = 'RED_CARPET_EXIT';
+            } else {
+              const frac = (-5 - dist) / 20;
+              t = 10.5 + Math.min(1.0, frac) * 4.0;
+              actor.stage = 'HOTEL_WALK';
+            }
+          }
+        } else {
+          if (t < 4.0) actor.stage = 'APPROACH';
+          else if (t < 6.5) actor.stage = 'DOOR_OPEN';
+          else if (t < 10.5) actor.stage = 'RED_CARPET_EXIT';
+          else if (t < 14.5) actor.stage = 'HOTEL_WALK';
+          else actor.stage = 'RESET';
+        }
 
         if (t < 4.0) {
           // Approach: Limousine rolls in smoothly along boulevard
@@ -407,6 +440,26 @@ export class MidnightVelvetEventDirector {
       for (let n = 0; n < this.nightclubReveals.length; n++) {
         const actor = this.nightclubReveals[n];
         actor.revealTimer += delta;
+
+        let revealSpeed = 1.0;
+        if (_playerZ !== undefined && actor.worldZ !== undefined) {
+          const dist = _playerZ - actor.worldZ;
+          if (dist > 80) {
+            actor.stage = 'IDLE_WARM';
+            revealSpeed = 0.7;
+          } else if (dist > 35) {
+            actor.stage = 'LIGHTS_ACCELERATE';
+            revealSpeed = 1.4;
+          } else if (dist > -10) {
+            actor.stage = 'KINETIC_CLIMAX';
+            revealSpeed = 2.2;
+          } else {
+            actor.stage = 'AFTERMATH';
+            revealSpeed = 0.9;
+          }
+        } else {
+          actor.stage = 'KINETIC_CLIMAX';
+        }
 
         // Kinetic Art Deco Sculpture revolving in 3D
         if (actor.kineticSculpture) {

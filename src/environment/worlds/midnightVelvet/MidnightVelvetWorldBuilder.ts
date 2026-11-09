@@ -375,9 +375,9 @@ export class MidnightVelvetWorldBuilder {
 
     // Both sides of the track
     [-1, 1].forEach((side) => {
-      // 1. Streetscape Promenade with Charcoal Pavers & Gold Trim (Solid depth down to Y = -5.65m)
+      // 1. Streetscape Promenade with Charcoal Pavers & Gold Trim (Solid depth down to Y <= -6.45m)
       const walkW = 24.0;
-      const walkDepth = 6.0;
+      const walkDepth = 6.8;
       const wx = side * (curbEdge + walkW * 0.5);
       const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.sidewalkPaverMat);
       walk.position.set(wx, 0.35 - walkDepth * 0.5, -chunkLength * 0.5);
@@ -422,7 +422,7 @@ export class MidnightVelvetWorldBuilder {
 
       // 3. Grand VIP Nightclub & Hotel Arrivals
       // Side 1 gets Hotel Le Velvet VIP Arrival, Side -1 gets Grand Nightclub Reveal
-      this.buildNightclubEntrance(districtA, side, curbEdge, -44.0, side > 0 ? 1 : 0, director);
+      this.buildNightclubEntrance(districtA, side, curbEdge, -44.0, side > 0 ? 1 : 0, director, effectiveZ);
 
       // 4. Twin-Lantern Art Deco Streetlamps along curbs
       for (let lz = 10; lz < chunkLength - 8; lz += 20) {
@@ -463,9 +463,9 @@ export class MidnightVelvetWorldBuilder {
 
     // 1. Shimmering Ocean Water Basin on both sides of elevated railway
     [-1, 1].forEach((side) => {
-      // Solid Granite Boardwalk Pier with continuous depth down to Y = -5.65m
+      // Solid Granite Boardwalk Pier with continuous depth down to Y <= -6.45m
       const pierW = 8.5;
-      const pierDepth = 6.0;
+      const pierDepth = 6.8;
       const pier = new THREE.Mesh(this.getBox(pierW, pierDepth, chunkLength), this.teakWoodMat);
       pier.position.set(side * (curbEdge + pierW * 0.5), 0.35 - pierDepth * 0.5, -chunkLength * 0.5);
       districtB.add(pier);
@@ -477,8 +477,8 @@ export class MidnightVelvetWorldBuilder {
 
       // Solid Seabed Ground Foundation (prevents any empty void underneath water)
       const waterW = 34.0;
-      const seabed = new THREE.Mesh(this.getBox(waterW, 5.0, chunkLength), this.blackMarbleMat);
-      seabed.position.set(side * (curbEdge + pierW + waterW * 0.5), -2.8, -chunkLength * 0.5);
+      const seabed = new THREE.Mesh(this.getBox(waterW, 6.8, chunkLength), this.blackMarbleMat);
+      seabed.position.set(side * (curbEdge + pierW + waterW * 0.5), -3.4, -chunkLength * 0.5);
       districtB.add(seabed);
 
       // Shimmering Ocean Water Surface
@@ -584,9 +584,9 @@ export class MidnightVelvetWorldBuilder {
 
     // Both sides of the track
     [-1, 1].forEach((side) => {
-      // 1. Streetscape Promenade with Charcoal Pavers & Gold Trim (Solid depth down to Y = -5.65m)
+      // 1. Streetscape Promenade with Charcoal Pavers & Gold Trim (Solid depth down to Y <= -6.45m)
       const walkW = 24.0;
-      const walkDepth = 6.0;
+      const walkDepth = 6.8;
       const wx = side * (curbEdge + walkW * 0.5);
       const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.sidewalkPaverMat);
       walk.position.set(wx, 0.35 - walkDepth * 0.5, -chunkLength * 0.5);
@@ -818,10 +818,10 @@ export class MidnightVelvetWorldBuilder {
 
     const curbEdge = roadbedWidth * 0.5 + 0.5;
 
-    // 1. Monumental Fluted Granite & Marble Colonnade (Continuous depth down to Y = -5.65m)
+    // 1. Monumental Fluted Granite & Marble Colonnade (Continuous depth down to Y <= -6.3m)
     [-1, 1].forEach((side) => {
       const concW = 20.0;
-      const concDepth = 6.0;
+      const concDepth = 6.8;
       const cx = side * (curbEdge + concW * 0.5);
 
       const concourse = new THREE.Mesh(this.getBox(concW, concDepth, chunkLength), this.terraceMarbleMat);
@@ -940,9 +940,9 @@ export class MidnightVelvetWorldBuilder {
 
     // Both sides of the track: wide open luxury marble promenades
     [-1, 1].forEach((side) => {
-      // 1. Wide Carrara Marble Plaza Ground (Depth down to Y = -5.65m)
+      // 1. Wide Carrara Marble Plaza Ground (Depth down to Y <= -6.45m)
       const walkW = 32.0;
-      const walkDepth = 6.0;
+      const walkDepth = 6.8;
       const wx = side * (curbEdge + walkW * 0.5);
       const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.terraceMarbleMat);
       walk.position.set(wx, 0.35 - walkDepth * 0.5, -chunkLength * 0.5);
@@ -1160,9 +1160,9 @@ export class MidnightVelvetWorldBuilder {
 
     // Both sides of the track
     [-1, 1].forEach((side) => {
-      // 1. Promenade Pavers (Depth down to Y = -5.65m)
+      // 1. Promenade Pavers (Depth down to Y <= -6.45m)
       const walkW = 28.0;
-      const walkDepth = 6.0;
+      const walkDepth = 6.8;
       const wx = side * (curbEdge + walkW * 0.5);
       const walk = new THREE.Mesh(this.getBox(walkW, walkDepth, chunkLength), this.warmIvoryMat);
       walk.position.set(wx, 0.35 - walkDepth * 0.5, -chunkLength * 0.5);
@@ -1593,7 +1593,8 @@ export class MidnightVelvetWorldBuilder {
     side: number,
     curbEdge: number,
     zCenter: number,
-    director: MidnightVelvetEventDirector
+    director: MidnightVelvetEventDirector,
+    worldZ?: number
   ): void {
     const hotelGroup = new THREE.Group();
     const doorX = side * (curbEdge + 5.2);
@@ -1797,7 +1798,8 @@ export class MidnightVelvetWorldBuilder {
       initialLimoZ: 0,
       carpetCenterZ: 0,
       doorLimoX: limoX + side * 1.0,
-      redCarpetX: -side * 1.5
+      redCarpetX: -side * 1.5,
+      worldZ: worldZ !== undefined ? worldZ + zCenter : undefined
     });
 
     parent.add(hotelGroup);
@@ -1808,7 +1810,8 @@ export class MidnightVelvetWorldBuilder {
     side: number,
     curbEdge: number,
     zCenter: number,
-    director: MidnightVelvetEventDirector
+    director: MidnightVelvetEventDirector,
+    worldZ?: number
   ): void {
     const clubGroup = new THREE.Group();
     const doorX = side * (curbEdge + 5.2);
@@ -1948,7 +1951,8 @@ export class MidnightVelvetWorldBuilder {
         group: bouncerGroup,
         clipboardArm: clipArm
       },
-      revealTimer: 0
+      revealTimer: 0,
+      worldZ: worldZ !== undefined ? worldZ + zCenter : undefined
     });
 
     parent.add(clubGroup);
@@ -1960,12 +1964,13 @@ export class MidnightVelvetWorldBuilder {
     curbEdge: number,
     zCenter: number,
     signVariant: number,
-    director: MidnightVelvetEventDirector
+    director: MidnightVelvetEventDirector,
+    worldZ?: number
   ): void {
     if (side > 0) {
-      this.buildVipArrivalHotelEntrance(parent, side, curbEdge, zCenter, director);
+      this.buildVipArrivalHotelEntrance(parent, side, curbEdge, zCenter, director, worldZ);
     } else {
-      this.buildGrandNightclubEntrance(parent, side, curbEdge, zCenter, director);
+      this.buildGrandNightclubEntrance(parent, side, curbEdge, zCenter, director, worldZ);
     }
   }
 

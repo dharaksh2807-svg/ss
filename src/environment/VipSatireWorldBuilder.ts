@@ -1362,8 +1362,8 @@ export class VipSatireWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 20.0;
-    const sidewalkH = 4.8;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom down to -4.5m for rock-solid grounding
+    const sidewalkH = 7.0;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom down to -6.7m for rock-solid grounding
 
     // 1. Grand Ceremonial Rally Promenades on East & West Flanks
     [-1, 1].forEach((side) => {
@@ -2280,8 +2280,8 @@ export class VipSatireWorldBuilder {
     // Exact flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 5.2;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
+    const sidewalkH = 7.0;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -6.7m for zero floating gaps
 
     // 1. Terracotta Promenade with Sandstone Jali Screens and Authentic Haveli Facades
     [-1, 1].forEach((side) => {
@@ -2567,8 +2567,8 @@ export class VipSatireWorldBuilder {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 5.2;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
+    const sidewalkH = 7.0;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -6.7m for zero floating gaps
 
     // 1. Endless Red-Carpet Marble Promenades
     [-1, 1].forEach((side) => {
@@ -2832,8 +2832,8 @@ export class VipSatireWorldBuilder {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const sidewalkW = 24.0;
-    const sidewalkH = 5.2;
-    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -4.9m for zero floating gaps
+    const sidewalkH = 7.0;
+    const sidewalkY = 0.3 - sidewalkH * 0.5; // Top at +0.3m, bottom at -6.7m for zero floating gaps
 
     // 1. High-Tech Media Studio Towers & Articulated Broadcast Center
     [-1, 1].forEach((side) => {
@@ -3011,7 +3011,7 @@ export class VipSatireWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
-    const swHeight = 5.2;
+    const swHeight = 7.0;
 
     // 1. Futuristic Golden Marble Plaza Promenades
     [-1, 1].forEach((side) => {
@@ -3204,7 +3204,7 @@ export class VipSatireWorldBuilder {
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
-    const swHeight = 5.2;
+    const swHeight = 7.0;
 
     // 1. Circular Colonnade Parliament Galleries on sides
     [-1, 1].forEach((side) => {
