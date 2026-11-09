@@ -1,0 +1,32 @@
+{
+  "mode": "review",
+  "objective": "Execute Phase 11 Blockbuster World Quality Audit across all 17 registered environments, diagnosing visual shortcomings, measuring real engine performance and presets, ranking worlds, authoring the blockbuster art-quality standard and prioritized improvement backlog",
+  "acceptance_criteria": [
+    "Ground on clean commit c45fe3f on origin/main without assumptions",
+    "Audit every registered world (all 17) across architectural identity, lighting, landmarks, depth, animation, procedural variety, train consistency, presets, mobile readability, and performance",
+    "Collect real browser camera screenshots and telemetry across beginning (Z=-50m), middle (Z=-1000m), and late-game (Z=-2200m+)",
+    "Evaluate graphics quality presets LOW and AUTO to verify scenery retention and visual degradation",
+    "Perform root cause analysis of visual deficiencies (box architecture, repetitive geometry, pop-in, flat lighting, weak silhouettes)",
+    "Independently score and rank all 17 worlds across 9 criteria; compare Chrono Kingdom, Inferno Express, Jurassic Rush, Haunted Carnival, Midnight Velvet, Mitron Express, Rahulverse vs others",
+    "Identify 3 highest-potential worlds, 3 weakest implementations, and 3 shared core engineering/art problems",
+    "Produce docs/theme-blockbuster/WORLD_QUALITY_AUDIT.md",
+    "Produce docs/theme-blockbuster/ART_QUALITY_STANDARD.md with practical art bible and budgets",
+    "Produce prioritized improvement backlog with world, defect, root cause, solution, risk, files, effort",
+    "Strictly maintain zero gameplay code changes (no edits to player physics, collision, track mechanics)",
+    "Push verified documentation and audit tooling directly to origin/main"
+  ],
+  "non_goals": [
+    "Do not modify gameplay code, collision bounding boxes, speed, or player physics",
+    "Do not invent measured performance numbers or screenshot evidence",
+    "Do not assign uniform inflated scores across worlds"
+  ],
+  "risk": "low",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/blockbuster-audit-phase11/",
+    "docs/theme-blockbuster/",
+    "artifacts/phase11/",
+    "test/"
+  ],
+  "verification": "impact"
+}
