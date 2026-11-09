@@ -1,0 +1,32 @@
+{
+  "mode": "implement",
+  "objective": "Mitron Express Cinematic Character Comedy (slapstick comedy, expressive 4-beat gags, high-quality character articulation, dynamic reaction chains, deterministic event timing)",
+  "acceptance_criteria": [
+    "STEP 1: Character quality audit & articulation: Upgrade Modi and supporting political caricatures (Amit Shah, Arvind Kejriwal, Mamata Banerjee, Nitish Kumar, Paparazzi, Journalists) with articulated joints (shoulders, elbows, wrists, neck, jaw, eyebrows, mojaris) and expressive reaction morphs/poses (surprise, confusion, debate, victory, selfie)",
+    "STEP 2: Priority A - THE MANGO INTERVIEW: 4-beat animated parody (1. TV interview set focus on VIP; 2. Golden mango rolls in on red carpet; 3. Mango wears cool sunglasses, cameras swivel away from VIP; 4. Journalists dive into photo scrum, VIP reacts dramatically)",
+    "STEP 3: Priority B - INAUGURATION INFINITY: Escalating multi-stage scissor reveal with confetti burst, pneumatic deployer arm, and comically tiny cutting chai payoff",
+    "STEP 4: Priority C - ROADSHOW CAMERA CHAOS: Motorcade float with synchronized SPG commandos, high-powered petal cannons, fluttering petal particles, buzzing camera drone getting tangled in marigold festoons, and photographers accidentally shooting each other",
+    "STEP 5: Upgrade remaining districts: Breaking News (moving studio cameras, runaway mic chase, hysterical TV anchor), Parliament Mayhem (expressive debate gestures, paper vortex, rotating coalition swivel chair), Masterstroke Megacity (legible moving political chessboard with reactive pieces and clockwork machinery), Chai Pe Charcha (colossal kettle mechanical pourer and cutting chai revelation)",
+    "STEP 6: Animation standards: Establishing pose -> Anticipation -> Action -> Unexpected payoff -> Secondary character reaction -> Clean reset. Deterministic approach timing, Third-person camera visibility at gameplay speed (18 m/s)",
+    "STEP 7: Technical constraints: 0 memory leaks, proper cleanup on chunk disposal, zero modification of collision envelope (|X| > 4.2m, Y > 8.5m), countMinimal <= 150 preserved",
+    "STEP 8: Verification: All 89 VIP tests, all worldgen tests, all engine stabilization tests pass, clean build, and real browser gameplay capture with 60 FPS"
+  ],
+  "non_goals": [
+    "Do not edit Rahulverse",
+    "Do not alter TrackManager, TrackChunk, or roadbed physics",
+    "Do not modify player collision systems, jump arcs, slide hitboxes, or speed curves",
+    "Do not alter progression, economy, or HUD controls",
+    "Do not fabricate external 3D asset licenses"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/VipComedyEventDirector.ts",
+    "test/vip-express-world.test.ts",
+    "test/**",
+    "docs/political-worlds/**",
+    ".gravitas/**"
+  ],
+  "verification": "project-suite"
+}

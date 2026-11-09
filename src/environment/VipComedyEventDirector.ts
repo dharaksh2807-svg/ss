@@ -76,6 +76,7 @@ export interface AnimatedTeacupReveal {
   pedestalCup: THREE.Object3D;
   spotlights: THREE.Object3D[];
   vips: THREE.Object3D[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -87,6 +88,7 @@ export interface AnimatedKettlePour {
   politicianL: THREE.Object3D;
   politicianR: THREE.Object3D;
   vendorGlass: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -100,6 +102,9 @@ export interface AnimatedRecursiveScissors {
   rapidRibbonArm: THREE.Object3D;
   ribbonMesh: THREE.Object3D;
   tinyCupGroup?: THREE.Object3D;
+  confettiGroup?: THREE.Object3D;
+  nestedRibbon2?: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -110,6 +115,7 @@ export interface AnimatedRemoteRevelation {
   remoteMesh: THREE.Object3D;
   debateScreens: THREE.Object3D[];
   anchorNPC: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -121,6 +127,7 @@ export interface AnimatedMasterstrokeMachine {
   steamHiss: THREE.Object3D;
   deliveryArm: THREE.Object3D;
   tinyObject: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -129,6 +136,7 @@ export interface AnimatedChessboardMatch {
   craneGantry: THREE.Object3D;
   grandPiece: THREE.Object3D;
   teaVendorCart: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -139,6 +147,7 @@ export interface AnimatedMicrophoneShowdown {
   micRight: THREE.Object3D;
   leaderLeft: THREE.Object3D;
   leaderRight: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -147,6 +156,7 @@ export interface AnimatedCoalitionCarousel {
   carouselPlatform: THREE.Object3D;
   nitishChair: THREE.Object3D;
   politicians: THREE.Object3D[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -169,6 +179,9 @@ export interface AnimatedMangoInterview {
   sparkleMesh?: THREE.Object3D;
   boomMic?: THREE.Object3D;
   cameraFlashes?: THREE.Mesh[];
+  scrumGroup?: THREE.Object3D;
+  carpetRamp?: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -241,6 +254,10 @@ export interface AnimatedPhotographyChaos {
   photographers: THREE.Object3D[];
   chaiVendor: THREE.Object3D;
   cameraFlashes: THREE.Mesh[];
+  cameraDrone?: THREE.Object3D;
+  droneRotors?: THREE.Object3D[];
+  garlandTangle?: THREE.Object3D;
+  worldZ?: number;
   timer: number;
 }
 
@@ -254,6 +271,7 @@ export interface AnimatedRoadshowFloat {
   petalBaseY: number[];
   loudspeakers: THREE.Object3D[];
   commandos: THREE.Object3D[];
+  worldZ?: number;
   timer: number;
 }
 
@@ -442,7 +460,8 @@ export class VipComedyEventDirector {
     curtainRight: THREE.Object3D,
     pedestalCup: THREE.Object3D,
     spotlights: THREE.Object3D[],
-    vips: THREE.Object3D[]
+    vips: THREE.Object3D[],
+    worldZ?: number
   ): void {
     this.teacupRevealList.push({
       curtainLeft,
@@ -450,6 +469,7 @@ export class VipComedyEventDirector {
       pedestalCup,
       spotlights,
       vips,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
     });
   }
@@ -460,7 +480,8 @@ export class VipComedyEventDirector {
     teaStream: THREE.Object3D,
     politicianL: THREE.Object3D,
     politicianR: THREE.Object3D,
-    vendorGlass: THREE.Object3D
+    vendorGlass: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.kettlePourList.push({
       kettleGroup,
@@ -469,6 +490,7 @@ export class VipComedyEventDirector {
       politicianL,
       politicianR,
       vendorGlass,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 7.0
     });
   }
@@ -481,7 +503,10 @@ export class VipComedyEventDirector {
     craneGroup: THREE.Object3D,
     rapidRibbonArm: THREE.Object3D,
     ribbonMesh: THREE.Object3D,
-    tinyCupGroup?: THREE.Object3D
+    tinyCupGroup?: THREE.Object3D,
+    confettiGroup?: THREE.Object3D,
+    nestedRibbon2?: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.recursiveScissorsList.push({
       shears1L,
@@ -492,6 +517,9 @@ export class VipComedyEventDirector {
       rapidRibbonArm,
       ribbonMesh,
       tinyCupGroup,
+      confettiGroup,
+      nestedRibbon2,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
     });
   }
@@ -501,7 +529,8 @@ export class VipComedyEventDirector {
     craneWinch: THREE.Object3D,
     remoteMesh: THREE.Object3D,
     debateScreens: THREE.Object3D[],
-    anchorNPC: THREE.Object3D
+    anchorNPC: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.remoteRevelationList.push({
       vaultLid,
@@ -509,6 +538,7 @@ export class VipComedyEventDirector {
       remoteMesh,
       debateScreens,
       anchorNPC,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.0
     });
   }
@@ -519,7 +549,8 @@ export class VipComedyEventDirector {
     dialNeedle: THREE.Object3D,
     steamHiss: THREE.Object3D,
     deliveryArm: THREE.Object3D,
-    tinyObject: THREE.Object3D
+    tinyObject: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.masterstrokeMachineList.push({
       vaultDoorL,
@@ -528,6 +559,7 @@ export class VipComedyEventDirector {
       steamHiss,
       deliveryArm,
       tinyObject,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 7.5
     });
   }
@@ -535,12 +567,14 @@ export class VipComedyEventDirector {
   public registerChessboardMatch(
     craneGantry: THREE.Object3D,
     grandPiece: THREE.Object3D,
-    teaVendorCart: THREE.Object3D
+    teaVendorCart: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.chessboardMatchList.push({
       craneGantry,
       grandPiece,
       teaVendorCart,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
     });
   }
@@ -550,7 +584,8 @@ export class VipComedyEventDirector {
     micLeft: THREE.Object3D,
     micRight: THREE.Object3D,
     leaderLeft: THREE.Object3D,
-    leaderRight: THREE.Object3D
+    leaderRight: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.microphoneShowdownList.push({
       centerMic,
@@ -558,6 +593,7 @@ export class VipComedyEventDirector {
       micRight,
       leaderLeft,
       leaderRight,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 6.5
     });
   }
@@ -565,12 +601,14 @@ export class VipComedyEventDirector {
   public registerCoalitionCarousel(
     carouselPlatform: THREE.Object3D,
     nitishChair: THREE.Object3D,
-    politicians: THREE.Object3D[]
+    politicians: THREE.Object3D[],
+    worldZ?: number
   ): void {
     this.coalitionCarouselList.push({
       carouselPlatform,
       nitishChair,
       politicians,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
     });
   }
@@ -590,7 +628,10 @@ export class VipComedyEventDirector {
     interviewerFigure: THREE.Object3D,
     sparkleMesh?: THREE.Object3D,
     boomMic?: THREE.Object3D,
-    cameraFlashes?: THREE.Mesh[]
+    cameraFlashes?: THREE.Mesh[],
+    scrumGroup?: THREE.Object3D,
+    carpetRamp?: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.mangoInterviewList.push({
       stageGroup,
@@ -604,6 +645,9 @@ export class VipComedyEventDirector {
       sparkleMesh,
       boomMic,
       cameraFlashes,
+      scrumGroup,
+      carpetRamp,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
     });
   }
@@ -613,7 +657,11 @@ export class VipComedyEventDirector {
     modiFigure: THREE.Object3D,
     photographers: THREE.Object3D[],
     chaiVendor: THREE.Object3D,
-    cameraFlashes: THREE.Mesh[]
+    cameraFlashes: THREE.Mesh[],
+    cameraDrone?: THREE.Object3D,
+    droneRotors?: THREE.Object3D[],
+    garlandTangle?: THREE.Object3D,
+    worldZ?: number
   ): void {
     this.photographyChaosList.push({
       platformGroup,
@@ -621,6 +669,10 @@ export class VipComedyEventDirector {
       photographers,
       chaiVendor,
       cameraFlashes,
+      cameraDrone,
+      droneRotors,
+      garlandTangle,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 8.0
     });
   }
@@ -739,7 +791,8 @@ export class VipComedyEventDirector {
     petals: THREE.Object3D[],
     petalBaseY: number[],
     loudspeakers: THREE.Object3D[],
-    commandos: THREE.Object3D[]
+    commandos: THREE.Object3D[],
+    worldZ?: number
   ): void {
     this.roadshowFloatList.push({
       floatGroup,
@@ -750,6 +803,7 @@ export class VipComedyEventDirector {
       petalBaseY,
       loudspeakers,
       commandos,
+      worldZ,
       timer: (this.getDeterministicPhase() / (Math.PI * 2)) * 4.0
     });
   }
@@ -929,9 +983,40 @@ export class VipComedyEventDirector {
   }
 
   /**
+   * Calculates deterministic theatrical cycle progression.
+   * If playerZ is provided and within encounter approach window (distanceAhead in [-15, 75]),
+   * maps the player's approach speed directly to the 4 comedy beats, ensuring the punchline
+   * fires right as the third-person runner camera passes the stage.
+   * Otherwise falls back cleanly to autonomous timer % cycleDuration.
+   */
+  public getGagCycle(timer: number, cycleDuration: number, gagWorldZ?: number, playerZ?: number): number {
+    if (playerZ !== undefined && gagWorldZ !== undefined) {
+      const distanceAhead = playerZ - gagWorldZ;
+      // Approach window: from 75m ahead down to 15m past
+      if (distanceAhead >= -15 && distanceAhead <= 75) {
+        const approachT = (75 - distanceAhead) / 75; // 0.0 at 75m, 1.0 at 0m (passing)
+        if (approachT < 0.25) {
+          // Beat 1: Setup
+          return (approachT / 0.25) * (cycleDuration * 0.25);
+        } else if (approachT < 0.50) {
+          // Beat 2: Anticipation / Escalation
+          return (cycleDuration * 0.25) + ((approachT - 0.25) / 0.25) * (cycleDuration * 0.25);
+        } else if (approachT < 0.85) {
+          // Beat 3: PAYOFF & PUNCHLINE (35m to 10m ahead, in full runner camera view!)
+          return (cycleDuration * 0.50) + ((approachT - 0.50) / 0.35) * (cycleDuration * 0.25);
+        } else {
+          // Beat 4: Reaction & laugh hold as runner sweeps past
+          return (cycleDuration * 0.75) + Math.min(1.0, (approachT - 0.85) / 0.35) * (cycleDuration * 0.25);
+        }
+      }
+    }
+    return timer % cycleDuration;
+  }
+
+  /**
    * Called every animation frame from WorldScene / Game loop
    */
-  public update(dt: number, isVipActive: boolean = true, _playerZ?: number): void {
+  public update(dt: number, isVipActive: boolean = true, playerZ?: number): void {
     if (!this.isEnabled || !isVipActive) return;
 
     // Prune any elements whose chunks have been recycled
@@ -1069,7 +1154,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.teacupRevealList.length; i++) {
       const g = this.teacupRevealList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.0;
+      const cycle = this.getGagCycle(g.timer, 6.0, (g as any).worldZ, playerZ);
 
       if (cycle < 2.0) {
         // Closed curtains, building anticipation
@@ -1111,7 +1196,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.kettlePourList.length; i++) {
       const g = this.kettlePourList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 7.0;
+      const cycle = this.getGagCycle(g.timer, 7.0, (g as any).worldZ, playerZ);
 
       if (cycle < 2.0) {
         // Upright kettle heating up
@@ -1148,51 +1233,75 @@ export class VipComedyEventDirector {
     }
 
     // GAG 3: Recursive Scissors Inauguration (District B)
-    // 6.5 second cycle: First Shears Snip (0-2s) -> Crane Shears Descend (2-3.8s) -> Second Shears Cut (3.8-5s) -> Rapid Ribbon Arm snaps new ribbon (5-6.5s)
+    // 7.2 second cycle: First Shears Snip (0-1.8s) -> Nested Ribbon & Crane Lower (1.8-3.6s) -> Diamond Crane Cut & Confetti Burst (3.6-5.4s) -> Facial Reaction & Reset (5.4-7.2s)
     for (let i = 0; i < this.recursiveScissorsList.length; i++) {
       const g = this.recursiveScissorsList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.5;
+      const cycle = this.getGagCycle(g.timer, 7.2, g.worldZ, playerZ);
 
-      if (cycle < 2.0) {
-        // Primary shears snip at ribbon
-        const snip = Math.abs(Math.sin(cycle * 4.0)) * 0.38;
+      if (cycle < 1.8) {
+        // Beat 1: Primary shears snip at ribbon
+        const snip = Math.abs(Math.sin(cycle * 4.5)) * 0.42;
         g.shears1L.rotation.z = snip;
         g.shears1R.rotation.z = -snip;
-        g.craneGroup.position.y = 4.5; // Crane shears high above
+        g.craneGroup.position.y = 5.5; // Crane shears high above
         g.rapidRibbonArm.rotation.z = 1.4; // Arm hidden below
         g.ribbonMesh.visible = true;
+        if (g.nestedRibbon2) g.nestedRibbon2.visible = true;
+        if (g.confettiGroup) g.confettiGroup.visible = false;
         if (g.tinyCupGroup) {
           g.tinyCupGroup.position.y = 3.65;
           g.tinyCupGroup.rotation.y = 0;
           g.tinyCupGroup.scale.setScalar(1.0);
         }
-      } else if (cycle < 3.8) {
-        // Massive diamond crane shears lower down over primary shears!
-        const t = (cycle - 2.0) / 1.8;
-        g.craneGroup.position.y = 4.5 - t * 3.2;
-        // Crane shears open wide
+      } else if (cycle < 3.6) {
+        // Beat 2: Primary ribbon parts, revealing nested ribbon 2; rapid arm springs out; crane shears descend!
+        const t = (cycle - 1.8) / 1.8;
+        g.craneGroup.position.y = 5.5 - t * 3.5;
         g.shears2L.rotation.z = 0.55;
         g.shears2R.rotation.z = -0.55;
-      } else if (cycle < 5.0) {
-        // Crane shears inaugural cut on primary shears!
-        const snip = Math.abs(Math.sin((cycle - 3.8) * 5.0)) * 0.55;
+        g.rapidRibbonArm.rotation.z = 1.4 - t * 1.4;
+        if (g.confettiGroup) g.confettiGroup.visible = false;
+      } else if (cycle < 5.4) {
+        // Beat 3: THE INAUGURAL PUNCHLINE CUT & HARVE-OF-CONFETTI EXPLOSION!
+        const t = (cycle - 3.6) / 1.8;
+        const snip = Math.abs(Math.sin(t * 8.0)) * 0.65;
         g.shears2L.rotation.z = snip;
         g.shears2R.rotation.z = -snip;
-        g.ribbonMesh.visible = false; // Ribbon cut!
+        g.ribbonMesh.visible = false;
+        if (g.nestedRibbon2) g.nestedRibbon2.visible = false;
+
+        // Harmless shower of paper confetti particles erupting into the air!
+        if (g.confettiGroup) {
+          g.confettiGroup.visible = true;
+          g.confettiGroup.children.forEach((c, cidx) => {
+            const angle = (cidx / 24) * Math.PI * 2;
+            const radius = t * 3.5;
+            c.position.set(Math.cos(angle) * radius, 1.2 * Math.sin(t * Math.PI) - t * 0.8, Math.sin(angle) * radius);
+            c.rotation.x += delta * 6.0;
+            c.rotation.y += delta * 8.0;
+          });
+        }
+
+        // Tiny cutting chai glass floats up triumphantly on its grand velvet throne!
         if (g.tinyCupGroup) {
-          const tCut = (cycle - 3.8) / 1.2;
-          // The tiny cutting chai glass floats up triumphantly on its velvet cushion!
-          g.tinyCupGroup.position.y = 3.65 + Math.sin(tCut * Math.PI) * 0.6;
-          g.tinyCupGroup.rotation.y = tCut * Math.PI * 4.0;
-          g.tinyCupGroup.scale.setScalar(1.0 + Math.sin(tCut * Math.PI) * 0.4);
+          g.tinyCupGroup.position.y = 3.65 + Math.sin(t * Math.PI) * 0.7;
+          g.tinyCupGroup.rotation.y = t * Math.PI * 4.0;
+          g.tinyCupGroup.scale.setScalar(1.0 + Math.sin(t * Math.PI) * 0.45);
         }
       } else {
-        // Automated pneumatic arm whips out, restores fresh ribbon!
-        const t = (cycle - 5.0) / 1.5;
-        g.rapidRibbonArm.rotation.z = 1.4 - t * 1.4;
-        if (cycle > 5.8) {
-          g.ribbonMesh.visible = true; // Instantly replaced!
+        // Beat 4: Confetti gently falls, rapid-deployer arm resets fresh ribbons!
+        const t = (cycle - 5.4) / 1.8;
+        if (g.confettiGroup) {
+          g.confettiGroup.children.forEach((c) => {
+            c.position.y -= delta * 1.2;
+          });
+          if (t > 0.8) g.confettiGroup.visible = false;
+        }
+        g.rapidRibbonArm.rotation.z = t * 1.4;
+        if (t > 0.6) {
+          g.ribbonMesh.visible = true;
+          if (g.nestedRibbon2) g.nestedRibbon2.visible = true;
         }
         if (g.tinyCupGroup) {
           g.tinyCupGroup.position.y = 3.65;
@@ -1207,7 +1316,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.remoteRevelationList.length; i++) {
       const g = this.remoteRevelationList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.0;
+      const cycle = this.getGagCycle(g.timer, 6.0, (g as any).worldZ, playerZ);
 
       if (cycle < 2.0) {
         g.vaultLid.position.y = 0.6; // Closed vault
@@ -1237,7 +1346,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.masterstrokeMachineList.length; i++) {
       const g = this.masterstrokeMachineList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 7.5;
+      const cycle = this.getGagCycle(g.timer, 7.5, (g as any).worldZ, playerZ);
 
       if (cycle < 2.5) {
         // Dial ticking upward
@@ -1270,7 +1379,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.chessboardMatchList.length; i++) {
       const g = this.chessboardMatchList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 8.0;
+      const cycle = this.getGagCycle(g.timer, 8.0, (g as any).worldZ, playerZ);
 
       if (cycle < 3.0) {
         const t = cycle / 3.0;
@@ -1295,7 +1404,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.microphoneShowdownList.length; i++) {
       const g = this.microphoneShowdownList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 6.5;
+      const cycle = this.getGagCycle(g.timer, 6.5, (g as any).worldZ, playerZ);
 
       if (cycle < 2.0) {
         // Leaders rushing forward to center
@@ -1329,7 +1438,7 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.coalitionCarouselList.length; i++) {
       const g = this.coalitionCarouselList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 8.0;
+      const cycle = this.getGagCycle(g.timer, 8.0, (g as any).worldZ, playerZ);
 
       if (cycle < 4.0) {
         // Carousel rotating, politicians marching
@@ -1363,12 +1472,25 @@ export class VipComedyEventDirector {
     for (let i = 0; i < this.roadshowFloatList.length; i++) {
       const rf = this.roadshowFloatList[i];
       rf.timer += delta * motionMultiplier;
+      const cycle = this.getGagCycle(rf.timer, 4.0, rf.worldZ, playerZ);
 
       // Modi dynamic victory wave & head turn
-      const waveAngle = -1.4 + Math.sin(rf.timer * 3.8) * 0.35;
+      const waveAngle = -1.4 + Math.sin(cycle * 3.8) * 0.35;
       rf.armRight.rotation.x = waveAngle;
-      rf.armRight.rotation.z = Math.sin(rf.timer * 2.5) * 0.20;
-      rf.head.rotation.y = Math.sin(rf.timer * 1.8) * 0.35;
+      rf.armRight.rotation.z = Math.sin(cycle * 2.5) * 0.20;
+      rf.head.rotation.y = Math.sin(cycle * 1.8) * 0.35;
+
+      // Articulate joints for cartoon expressions
+      const joints = (rf.modiFigure.userData.joints || {}) as any;
+      if (joints.elbowR) {
+        joints.elbowR.rotation.x = -0.3 + Math.sin(cycle * 3.8) * 0.2;
+      }
+      if (joints.jaw) {
+        joints.jaw.position.y = -0.06 - Math.abs(Math.sin(cycle * 2.0)) * 0.05;
+      }
+      if (joints.eyebrowR) {
+        joints.eyebrowR.rotation.z = 0.18;
+      }
 
       // Float gentle chassis rumble/sway
       rf.floatGroup.position.y = (rf.floatGroup.userData.baseY || 0) + Math.sin(this.globalClock * 6.0) * 0.04;
@@ -1431,21 +1553,26 @@ export class VipComedyEventDirector {
 
     // GATE A: The Mango Interview — Full 4-Stage Cinematic Slapstick Sequence
     // 8.0s Theatrical Lifecycle:
-    // Beat 1 (0.0s – 2.2s): Serious High-Stakes Political Debate (Setup)
-    // Beat 2 (2.2s – 4.2s): The Ceremonial Cloche Reveal (Escalation 1)
-    // Beat 3 (4.2s – 6.2s): Camera Crew & Set Pandemonium (Escalation 2)
-    // Beat 4 (6.2s – 8.0s): The Golden Mango Celebrity Photo-Op (Payoff)
+    // Beat 1 (0.0s – 2.0s): Serious High-Stakes Political Debate (Setup)
+    // Beat 2 (2.0s – 4.0s): The Golden Mango Rolls In & Cloche Hoists (Escalation 1)
+    // Beat 3 (4.0s – 6.0s): The Superstar Shift, Complete Camera Swivel & VIP Shock (Escalation 2)
+    // Beat 4 (6.0s – 8.0s): The Journalist Photo Scrum Dogpile & Shrug (Payoff)
     for (let i = 0; i < this.mangoInterviewList.length; i++) {
       const g = this.mangoInterviewList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 8.0;
+      const cycle = this.getGagCycle(g.timer, 8.0, g.worldZ, playerZ);
 
       // Extract child arm/head joints for dramatic cartoon expressions
-      const modiArmR = g.modiFigure.getObjectByName('caricature_modi')?.children.find(c => c.position.x > 0.25) || g.modiFigure;
-      const modiArmL = g.modiFigure.getObjectByName('caricature_modi')?.children.find(c => c.position.x < -0.25) || g.modiFigure;
-      const modiHead = g.modiFigure.getObjectByName('caricature_modi')?.children.find(c => c.position.y > 1.4) || g.modiFigure;
+      const joints = (g.modiFigure.userData.joints || {}) as any;
+      const modiArmR = joints.armR || g.modiFigure.getObjectByName('caricature_modi')?.children.find((c: THREE.Object3D) => c.position.x > 0.25) || g.modiFigure;
+      const modiArmL = joints.armL || g.modiFigure.getObjectByName('caricature_modi')?.children.find((c: THREE.Object3D) => c.position.x < -0.25) || g.modiFigure;
+      const modiHead = joints.headGroup || g.modiFigure.getObjectByName('caricature_modi')?.children.find((c: THREE.Object3D) => c.position.y > 1.4) || g.modiFigure;
+      const modiJaw = joints.jaw as THREE.Mesh | undefined;
+      const modiGlasses = joints.glasses as THREE.Group | undefined;
+      const eyebrowL = joints.eyebrowL as THREE.Mesh | undefined;
+      const eyebrowR = joints.eyebrowR as THREE.Mesh | undefined;
 
-      if (cycle < 2.2) {
+      if (cycle < 2.0) {
         // -------------------------------------------------------------------
         // BEAT 1: SERIOUS INTERVIEW (SETUP)
         // -------------------------------------------------------------------
@@ -1465,6 +1592,12 @@ export class VipComedyEventDirector {
         modiArmR.rotation.x = -1.2 + debateCadence * 0.35; // Measured oratorical gesture
         modiArmL.rotation.set(-0.4, 0.2, -0.2);
         modiHead.rotation.set(0, -0.3, 0);
+
+        // Restore default facial joints
+        if (modiJaw) modiJaw.position.set(0, -0.06, 0.11);
+        if (modiGlasses) modiGlasses.position.set(0, 0.20, 0.22);
+        if (eyebrowL) eyebrowL.rotation.z = -0.1;
+        if (eyebrowR) eyebrowR.rotation.z = 0.1;
 
         // Interviewer leaning forward with microphone
         g.interviewerFigure.rotation.set(-0.15 - debateCadence * 0.05, 0.45, 0);
@@ -1489,20 +1622,30 @@ export class VipComedyEventDirector {
           g.boomMic.rotation.z = -0.35;
         }
 
-      } else if (cycle < 4.2) {
+        // Journalists sitting / standing politely facing VIPs
+        if (g.scrumGroup) {
+          g.scrumGroup.position.set(0, 0.8, 3.2);
+          g.scrumGroup.rotation.set(0, 0, 0);
+          g.scrumGroup.children.forEach((c, idx) => {
+            c.position.set((idx - 1) * 1.4, 0, (idx === 1 ? 0.3 : 0));
+            c.rotation.set(0, (idx - 1) * -0.2, 0);
+          });
+        }
+
+      } else if (cycle < 4.0) {
         // -------------------------------------------------------------------
-        // BEAT 2: THE REVEAL (ESCALATION 1)
+        // BEAT 2: THE GOLDEN REVEAL & ENTRANCE (ESCALATION 1)
         // -------------------------------------------------------------------
-        const t = (cycle - 2.2) / 2.0;
+        const t = (cycle - 2.0) / 2.0;
         // Cloche hoists straight up into the air with dramatic flourish
-        g.clocheMesh.position.y = 2.3 + t * 4.2;
+        g.clocheMesh.position.y = 2.3 + t * 4.5;
         g.clocheMesh.rotation.z = t * 0.45;
         g.clocheMesh.rotation.y += delta * 2.5;
 
-        // Giant Mango emerges at full scale!
+        // Giant Mango emerges and swells to full 2.4m scale!
         const scaleVal = Math.min(1.0, t * 1.4);
         g.mangoMesh.scale.set(1.05 * scaleVal, 1.45 * scaleVal, 0.95 * scaleVal);
-        const bob = Math.abs(Math.sin((cycle - 2.2) * 8.0)) * 0.30;
+        const bob = Math.abs(Math.sin((cycle - 2.0) * 8.0)) * 0.30;
         g.mangoMesh.position.set(0, 3.8 + bob, 0);
         g.mangoMesh.rotation.y += delta * 2.2;
 
@@ -1518,20 +1661,21 @@ export class VipComedyEventDirector {
           g.sparkleMesh.rotation.z += delta * 5.0;
         }
 
-        // Politicians notice the fruit, heads begin turning
+        // Politicians notice the fruit, heads begin turning with arched eyebrow
         g.modiFigure.rotation.set(-0.05, -0.2 + t * 0.5, 0);
         modiHead.rotation.y = t * 0.6;
+        if (eyebrowR) eyebrowR.rotation.z = t * 0.35; // Arched eyebrow
         g.interviewerFigure.rotation.set(-0.05, 0.2 - t * 0.5, 0);
 
-      } else if (cycle < 6.2) {
+      } else if (cycle < 6.0) {
         // -------------------------------------------------------------------
-        // BEAT 3: SET REORGANIZATION & COMIC SHOCK (ESCALATION 2)
+        // BEAT 3: COMPLETE CAMERA SWIVEL & COMIC SHOCK (ESCALATION 2)
         // -------------------------------------------------------------------
-        const t = (cycle - 4.2) / 2.0;
+        const t = (cycle - 4.0) / 2.0;
 
         // Mango grooves and tilts side-to-side with superstar attitude
-        const groove = Math.sin((cycle - 4.2) * 7.0) * 0.25;
-        g.mangoMesh.position.y = 3.9 + Math.abs(Math.sin((cycle - 4.2) * 9.0)) * 0.25;
+        const groove = Math.sin((cycle - 4.0) * 7.0) * 0.25;
+        g.mangoMesh.position.y = 3.9 + Math.abs(Math.sin((cycle - 4.0) * 9.0)) * 0.25;
         g.mangoMesh.rotation.z = groove;
         g.mangoMesh.rotation.y += delta * 3.0;
 
@@ -1560,22 +1704,33 @@ export class VipComedyEventDirector {
         }
 
         // Dramatic comic shock & double-take!
-        // Interviewer leans back with jaw dropped, notepad tilted down
-        g.interviewerFigure.rotation.set(0.25, -0.25, -0.30);
-        // Modi leans back with hands raised in utter astonishment
+        // Modi: Jaw drops open, glasses slide down nose, eyebrows shoot up, arms thrown back in disbelief
         g.modiFigure.rotation.set(0.20, 0.25, 0.25);
         modiArmR.rotation.set(-1.8, 0.4, 0.6); // Hand to forehead in double-take!
         modiArmL.rotation.set(-1.0, -0.4, -0.5); // Palm up: "What is happening?!"
+        if (modiJaw) modiJaw.position.set(0, -0.16, 0.11); // Jaw drops!
+        if (modiGlasses) modiGlasses.position.set(0, 0.15, 0.28); // Glasses slide down nose!
+        if (eyebrowL) eyebrowL.rotation.z = 0.45;
+        if (eyebrowR) eyebrowR.rotation.z = -0.45;
+
+        // Interviewer leans back with jaw dropped, notepad tilted down
+        g.interviewerFigure.rotation.set(0.25, -0.25, -0.30);
+
+        // Flashes begin popping on the superstar mango
+        if (g.cameraFlashes) {
+          const isFlash = Math.sin(this.globalClock * 18.0) > 0.2;
+          g.cameraFlashes.forEach(f => { f.visible = isFlash; });
+        }
 
       } else {
         // -------------------------------------------------------------------
-        // BEAT 4: THE CELEBRITY PHOTO-OP (PAYOFF)
+        // BEAT 4: THE JOURNALIST PHOTO SCRUM DOGPILE & SHRUG (PAYOFF)
         // -------------------------------------------------------------------
-        const t = (cycle - 6.2) / 1.8;
+        const t = (cycle - 6.0) / 2.0;
 
-        // The mango receives the full photoshoot!
+        // The mango receives the full celebrity photoshoot!
         g.mangoMesh.rotation.y += delta * 4.0;
-        g.mangoMesh.rotation.z = Math.sin((cycle - 6.2) * 5.0) * 0.15;
+        g.mangoMesh.rotation.z = Math.sin((cycle - 6.0) * 5.0) * 0.15;
         g.sunglassesMesh.rotation.y = g.mangoMesh.rotation.y;
         g.sunglassesMesh.rotation.z = g.mangoMesh.rotation.z;
 
@@ -1586,7 +1741,21 @@ export class VipComedyEventDirector {
           g.sparkleMesh.scale.set(s, s, s);
         }
 
-        // Flashes popping frantically!
+        // Cartoon journalists dive forward into a tumbling photo scrum dogpile!
+        if (g.scrumGroup) {
+          const scrumT = Math.min(1.0, t * 2.0);
+          g.scrumGroup.position.set(0, 0.8, 3.2 - scrumT * 1.4); // Dive forward to pedestal!
+          g.scrumGroup.children.forEach((c, idx) => {
+            c.position.set((idx - 1) * 0.45 * (1.0 - scrumT * 0.5), scrumT * (idx === 1 ? 0.35 : 0.1), (idx - 1) * 0.2);
+            c.rotation.set(scrumT * 0.65, (idx - 1) * 0.5, (idx === 0 ? 0.45 : (idx === 2 ? -0.45 : 0)));
+          });
+        }
+
+        // Flashes popping frantically across all cameras!
+        if (g.cameraFlashes) {
+          const isFlash = Math.sin(this.globalClock * 24.0) > -0.2;
+          g.cameraFlashes.forEach(f => { f.visible = isFlash; });
+        }
         g.cameras.forEach((cam, idx) => {
           cam.rotation.y = Math.sin(this.globalClock * 10.0 + idx) * 0.08;
         });
@@ -1595,76 +1764,124 @@ export class VipComedyEventDirector {
         g.modiFigure.rotation.set(0, 0.45, 0);
         modiArmR.rotation.set(-0.6, 0.5, 0.4);
         modiArmL.rotation.set(-0.6, -0.5, -0.4);
+        if (modiJaw) modiJaw.position.set(0, -0.06, 0.11);
+        if (modiGlasses) modiGlasses.position.set(0, 0.20, 0.22);
         g.interviewerFigure.rotation.set(0, -0.45, 0);
 
         // Cloche gently descends at the very end of beat 4 to reset smoothly
-        if (t > 0.8) {
-          const resetT = (t - 0.8) / 0.2;
-          g.clocheMesh.position.y = 6.5 - resetT * 4.2;
+        if (t > 0.85) {
+          const resetT = (t - 0.85) / 0.15;
+          g.clocheMesh.position.y = 6.8 - resetT * 4.5;
           g.clocheMesh.rotation.z = 0.45 * (1.0 - resetT);
+          if (g.cameraFlashes) g.cameraFlashes.forEach(f => { f.visible = false; });
         }
       }
     }
 
-    // EVENT C: The Photography Chaos — Paparazzi Scramble & Unexpected Chai-Wala Hijack
+    // EVENT C: The Photography Chaos — Drone Tangling, Paparazzi Collision & Self-Photography
+    // 8.0s Theatrical Lifecycle:
+    // Beat 1 (0.0s – 2.0s): Photo Stance & Drone Hover (Setup)
+    // Beat 2 (2.0s – 4.0s): Drone Swoops & Tangled in Marigold Festoons (Escalation 1)
+    // Beat 3 (4.0s – 6.0s): Photographers Collide & Blind Each Other With Flashes (Payoff)
+    // Beat 4 (6.0s – 8.0s): Dizziness Wobble & Recovery (Reaction)
     for (let i = 0; i < this.photographyChaosList.length; i++) {
       const g = this.photographyChaosList[i];
       g.timer += delta * motionMultiplier;
-      const cycle = g.timer % 8.0;
+      const cycle = this.getGagCycle(g.timer, 8.0, g.worldZ, playerZ);
 
       const chaiArm = g.chaiVendor.getObjectByName('chai_arm') || g.chaiVendor;
-      const modiArmR = g.modiFigure.getObjectByName('caricature_modi')?.children.find(c => c.position.x > 0.25) || g.modiFigure;
+      const modiArmR = g.modiFigure.getObjectByName('caricature_modi')?.children.find((c: THREE.Object3D) => c.position.x > 0.25) || g.modiFigure;
 
-      if (cycle < 2.5) {
-        // Phase 1: Photographers jostle and crouch framing Modi
-        g.chaiVendor.position.set(4.5, 0, 0); // Chai-wala off to the side
+      // Spin quadcopter drone prop rotors continuously
+      if (g.droneRotors) {
+        g.droneRotors.forEach(r => { r.rotation.y += delta * 32.0; });
+      }
+
+      if (cycle < 2.0) {
+        // Beat 1: Photographers track Modi, Drone hovers safely
+        g.chaiVendor.position.set(4.5, 0, 0);
         g.chaiVendor.visible = false;
         g.modiFigure.rotation.set(0, 0, 0);
-        modiArmR.rotation.x = -1.6; // Modi victory sign
+        modiArmR.rotation.x = -1.6;
 
         g.photographers.forEach((p, pidx) => {
-          p.rotation.y = -0.4 + (pidx - 1) * 0.25 + Math.sin(this.globalClock * 6.0 + pidx) * 0.08;
-          p.position.y = 0.8 + Math.abs(Math.sin(this.globalClock * 4.0 + pidx)) * 0.12;
+          p.rotation.set(0, -0.4 + (pidx - 1) * 0.25, 0);
+          p.position.set(pidx === 0 ? -2.2 : (pidx === 1 ? 0 : 2.2), 0.8, pidx === 1 ? 2.8 : 2.2);
         });
         g.cameraFlashes.forEach(f => { f.visible = false; });
 
-      } else if (cycle < 4.5) {
-        // Phase 2: Chai-wala bumbles in with his tea tray toward the center!
-        const t = (cycle - 2.5) / 2.0;
-        g.chaiVendor.visible = true;
-        g.chaiVendor.position.set(4.5 - t * 4.5, 0, t * 1.2); // Moves straight to (0, 0, 1.2) right in front!
-        g.chaiVendor.rotation.y = Math.sin(this.globalClock * 8.0) * 0.15;
+        if (g.cameraDrone) {
+          g.cameraDrone.position.set(0, 4.8 + Math.sin(this.globalClock * 2.5) * 0.15, 1.8);
+          g.cameraDrone.rotation.set(0, 0, 0);
+        }
+        if (g.garlandTangle) g.garlandTangle.visible = false;
 
-        // Photographers start noticing, lenses jittering
+      } else if (cycle < 4.0) {
+        // Beat 2: Drone swoops low for close-up, wobbles, and veers into marigold festoons!
+        const t = (cycle - 2.0) / 2.0;
+        if (g.cameraDrone) {
+          const wobbleX = Math.sin(t * 12.0) * 0.9;
+          const wobbleZ = Math.cos(t * 8.0) * 0.4;
+          g.cameraDrone.position.set(wobbleX, 4.8 - t * 1.5, 1.8 + wobbleZ);
+          g.cameraDrone.rotation.set(0.35 + Math.sin(t * 16.0) * 0.2, Math.sin(t * 10.0) * 0.4, 0.45); // Tilted erratically
+        }
+        if (g.garlandTangle) g.garlandTangle.visible = true;
+
+        // Photographers start looking up and backing away from erratic drone
         g.photographers.forEach((p, pidx) => {
-          p.rotation.y = (pidx - 1) * 0.15 * (1.0 - t);
+          p.rotation.x = -0.35 * t;
         });
 
-      } else if (cycle < 6.8) {
-        // Phase 3: The Hijack! All camera lenses point down at the smiling Chai-wala!
-        g.chaiVendor.position.set(0, 0, 1.2);
-        g.chaiVendor.visible = true;
-        chaiArm.rotation.set(-1.4, 0, 0.4); // Proudly raises a hot cup of cutting chai!
+      } else if (cycle < 6.0) {
+        // Beat 3: THE PAYOFF — Drone plunges, photographers collide face-to-face and blind each other!
+        const t = (cycle - 4.0) / 2.0;
 
-        // Photographers lock onto the Chai-wala!
-        g.photographers.forEach((p, pidx) => {
-          p.rotation.x = -0.22; // Point down at chai-wala
-          p.rotation.y = (pidx - 1) * 0.18;
-        });
+        if (g.cameraDrone) {
+          g.cameraDrone.position.set(0, 2.8, 1.8);
+          g.cameraDrone.rotation.z = Math.sin(this.globalClock * 14.0) * 0.4;
+        }
 
-        // Camera flashes strobe on the Chai-wala!
-        const isStrobe = Math.sin(this.globalClock * 16.0) > 0.4;
+        // Photographers 0 and 1 collide and lock telephoto lenses directly into each other's faces!
+        if (g.photographers.length >= 2) {
+          g.photographers[0].position.set(-0.40, 0.8, 2.4);
+          g.photographers[0].rotation.set(-0.05, 1.57, 0); // Turned directly right
+          g.photographers[1].position.set(0.40, 0.8, 2.4);
+          g.photographers[1].rotation.set(-0.05, -1.57, 0); // Turned directly left
+        }
+
+        // Rapid strobe flashes blinding each other!
+        const isStrobe = Math.sin(this.globalClock * 24.0) > 0.0;
         g.cameraFlashes.forEach(f => { f.visible = isStrobe; });
 
-        // Modi leans forward peering around the chai-wala in comical disbelief
+        // Chai vendor appears smiling with tea tray
+        g.chaiVendor.visible = true;
+        g.chaiVendor.position.set(0, 0, 0.8);
+        chaiArm.rotation.set(-1.4, 0, 0.4);
+
+        // Modi leans over the rostrum railing in comic disbelief and chuckles
         g.modiFigure.rotation.set(-0.25, 0.35, 0.15);
         modiArmR.rotation.set(-0.8, 0.6, 0.3);
 
       } else {
-        // Phase 4: Reset transition
-        const t = (cycle - 6.8) / 1.2;
+        // Beat 4: Photographers wobble with cartoon spiral dizziness, drone stabilizes
+        const t = (cycle - 6.0) / 2.0;
         g.cameraFlashes.forEach(f => { f.visible = false; });
-        g.chaiVendor.position.x = t * 4.5; // Strolls away smiling
+
+        if (g.photographers.length >= 2) {
+          // Staggering backward dizzy
+          g.photographers[0].position.x = -0.40 - t * 0.8;
+          g.photographers[0].rotation.z = Math.sin(this.globalClock * 8.0) * 0.25;
+          g.photographers[1].position.x = 0.40 + t * 0.8;
+          g.photographers[1].rotation.z = -Math.sin(this.globalClock * 8.0) * 0.25;
+        }
+
+        if (g.cameraDrone) {
+          g.cameraDrone.position.y = 2.8 + t * 2.0;
+          g.cameraDrone.rotation.set(0, 0, 0);
+        }
+        if (g.garlandTangle && t > 0.5) g.garlandTangle.visible = false;
+
+        g.chaiVendor.position.x = t * 4.5;
         g.modiFigure.rotation.set(0, 0, 0);
       }
     }

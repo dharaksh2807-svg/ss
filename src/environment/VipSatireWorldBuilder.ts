@@ -289,20 +289,20 @@ export class VipSatireWorldBuilder {
         this.buildRoadshowRoyaleDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ, isTestSeed);
         break;
       case 1:
-        this.buildChaiPeCharchaDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildChaiPeCharchaDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 2:
-        this.buildInaugurationInfinityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildInaugurationInfinityDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 3:
-        this.buildBreakingNewsDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildBreakingNewsDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 4:
-        this.buildParliamentMayhemDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildParliamentMayhemDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
       case 5:
       default:
-        this.buildMasterstrokeMegacityDistrict(group, roadbedWidth, chunkLength, rng, detail, director);
+        this.buildMasterstrokeMegacityDistrict(group, roadbedWidth, chunkLength, rng, detail, director, effectiveZ);
         break;
     }
 
@@ -338,6 +338,11 @@ export class VipSatireWorldBuilder {
       const shoe = new THREE.Mesh(this.getBox(0.14, 0.10, 0.32), this.haveliWoodMat);
       shoe.position.set(fx, 0.05, 0.05);
       char.add(shoe);
+      // Upturned curl on mojari toe
+      const curl = new THREE.Mesh(this.getBox(0.10, 0.06, 0.08), this.haveliWoodMat);
+      curl.position.set(fx, 0.08, 0.22);
+      curl.rotation.x = -0.35;
+      char.add(curl);
     });
 
     // Legs: Churidar trousers with soft folds
@@ -387,34 +392,54 @@ export class VipSatireWorldBuilder {
     collar.position.y = 1.42;
     char.add(collar);
 
+    // Articulated Head & Neck Group (neck pivot for turning and nodding)
+    const headGroup = new THREE.Group();
+    headGroup.name = 'modi_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
     // Sculpted Head & Cheeks
     const head = new THREE.Mesh(this.getCylinder(0.20, 0.18, 0.35, 12), this.cartoonNpcSkinMat);
-    head.position.y = 1.62;
-    char.add(head);
+    head.position.y = 0.14;
+    headGroup.add(head);
 
     const nose = new THREE.Mesh(this.getCylinder(0.035, 0.05, 0.12, 6), this.cartoonNpcSkinMat);
     nose.rotation.x = Math.PI / 2;
-    nose.position.set(0, 1.64, 0.22);
-    char.add(nose);
+    nose.position.set(0, 0.16, 0.22);
+    headGroup.add(nose);
 
     // Swept Silver Hair Volume (Sides & Crown)
     const hair = new THREE.Mesh(this.getSphere(0.24, 12), this.cartoonHairSilverMat);
     hair.scale.set(1.0, 1.15, 1.08);
-    hair.position.set(0, 1.76, -0.04);
-    char.add(hair);
+    hair.position.set(0, 0.28, -0.04);
+    headGroup.add(hair);
 
     // Distinguished Silver Beard (curved around jaw)
     const beard = new THREE.Mesh(this.getCylinder(0.21, 0.12, 0.26, 10), this.cartoonHairSilverMat);
-    beard.position.set(0, 1.48, 0.10);
-    char.add(beard);
+    beard.position.set(0, 0.00, 0.10);
+    headGroup.add(beard);
 
     // Silver Mustache
     const mustache = new THREE.Mesh(this.getBox(0.26, 0.07, 0.08), this.cartoonHairSilverMat);
-    mustache.position.set(0, 1.57, 0.21);
-    char.add(mustache);
+    mustache.position.set(0, 0.09, 0.21);
+    headGroup.add(mustache);
+
+    // Movable Drop-Jaw for comic shock / astonishment
+    const jaw = new THREE.Mesh(this.getCylinder(0.18, 0.10, 0.12, 8), this.cartoonHairSilverMat);
+    jaw.position.set(0, -0.06, 0.11);
+    headGroup.add(jaw);
+
+    // Expressive Eyebrows (surprise, debate, skepticism)
+    const eyebrowL = new THREE.Mesh(this.getBox(0.08, 0.025, 0.02), this.cartoonHairSilverMat);
+    eyebrowL.position.set(-0.09, 0.25, 0.23);
+    headGroup.add(eyebrowL);
+
+    const eyebrowR = new THREE.Mesh(this.getBox(0.08, 0.025, 0.02), this.cartoonHairSilverMat);
+    eyebrowR.position.set(0.09, 0.25, 0.23);
+    headGroup.add(eyebrowR);
 
     // Gold Rimless Wire Spectacles with Double Bridge
     const glasses = new THREE.Group();
+    glasses.name = 'modi_spectacles';
     const rimL = new THREE.Mesh(this.getTorus(0.065, 0.012, 8), this.goldMetalMat);
     rimL.position.set(-0.09, 0, 0);
     glasses.add(rimL);
@@ -424,39 +449,87 @@ export class VipSatireWorldBuilder {
     const bridge = new THREE.Mesh(this.getBox(0.06, 0.015, 0.01), this.goldMetalMat);
     bridge.position.set(0, 0.01, 0);
     glasses.add(bridge);
-    glasses.position.set(0, 1.68, 0.22);
-    char.add(glasses);
+    glasses.position.set(0, 0.20, 0.22);
+    headGroup.add(glasses);
 
-    // Articulated Arms with white kurta sleeves
+    char.add(headGroup);
+
+    // Articulated Arms with shoulder, elbow, and hand joints
     const armL = new THREE.Group();
+    armL.name = 'modi_arm_l';
     armL.position.set(-0.35, 1.25, 0);
-    const sleeveL = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.48, 8), this.cartoonKurtaWhiteMat);
-    sleeveL.position.y = -0.20;
+    const sleeveL = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.26, 8), this.cartoonKurtaWhiteMat);
+    sleeveL.position.y = -0.13;
     armL.add(sleeveL);
+
+    const elbowL = new THREE.Group();
+    elbowL.name = 'modi_elbow_l';
+    elbowL.position.set(0, -0.26, 0);
+    const forearmL = new THREE.Mesh(this.getCylinder(0.07, 0.065, 0.22, 8), this.cartoonKurtaWhiteMat);
+    forearmL.position.y = -0.11;
+    elbowL.add(forearmL);
     const handL = new THREE.Mesh(this.getSphere(0.065, 6), this.cartoonNpcSkinMat);
-    handL.position.y = -0.45;
-    armL.add(handL);
+    handL.position.y = -0.22;
+    elbowL.add(handL);
+    armL.add(elbowL);
     char.add(armL);
 
     const armR = new THREE.Group();
+    armR.name = 'modi_arm_r';
     armR.position.set(0.35, 1.25, 0);
-    const sleeveR = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.48, 8), this.cartoonKurtaWhiteMat);
-    sleeveR.position.y = -0.20;
+    const sleeveR = new THREE.Mesh(this.getCylinder(0.08, 0.07, 0.26, 8), this.cartoonKurtaWhiteMat);
+    sleeveR.position.y = -0.13;
     armR.add(sleeveR);
+
+    const elbowR = new THREE.Group();
+    elbowR.name = 'modi_elbow_r';
+    elbowR.position.set(0, -0.26, 0);
+    const forearmR = new THREE.Mesh(this.getCylinder(0.07, 0.065, 0.22, 8), this.cartoonKurtaWhiteMat);
+    forearmR.position.y = -0.11;
+    elbowR.add(forearmR);
     const handR = new THREE.Mesh(this.getSphere(0.065, 6), this.cartoonNpcSkinMat);
-    handR.position.y = -0.45;
-    armR.add(handR);
+    handR.position.y = -0.22;
+    elbowR.add(handR);
+    armR.add(elbowR);
     char.add(armR);
 
+    // Save joint handles on userData for expressive character animations
+    char.userData.joints = {
+      headGroup,
+      jaw,
+      glasses,
+      eyebrowL,
+      eyebrowR,
+      armL,
+      elbowL,
+      handL,
+      armR,
+      elbowR,
+      handR
+    };
+
     // Pose configuration
-    if (pose === 'VICTORY' || pose === 'DEBATE') {
-      armR.rotation.x = -1.6; // Raising arm high
-      director.registerDebater(armL, armR, head, 3.2);
+    if (pose === 'VICTORY') {
+      armR.rotation.x = -1.6;
+      armR.rotation.z = 0.2;
+      elbowR.rotation.x = -0.3;
+      armL.rotation.set(-0.4, 0.2, -0.2);
+      director.registerDebater(armL, armR, headGroup, 3.2);
+    } else if (pose === 'DEBATE') {
+      armR.rotation.x = -1.3;
+      elbowR.rotation.x = -0.5;
+      armL.rotation.set(-0.5, 0.2, -0.3);
+      director.registerDebater(armL, armR, headGroup, 3.2);
+    } else if (pose === 'SPECTACLES') {
+      armR.rotation.set(-1.4, 0.2, 0.4);
+      elbowR.rotation.set(-0.8, 0, 0);
+      armL.rotation.set(-0.3, 0.1, -0.2);
+      director.registerDebater(armL, armR, headGroup, 2.5);
     } else {
       // Namaste
       armL.rotation.set(-0.6, 0.4, -0.4);
       armR.rotation.set(-0.6, -0.4, 0.4);
-      director.registerDebater(armL, armR, head, 2.0);
+      director.registerDebater(armL, armR, headGroup, 2.0);
     }
 
     parent.add(char);
@@ -478,36 +551,87 @@ export class VipSatireWorldBuilder {
     char.name = 'caricature_rahul';
     char.position.set(x, y, z);
 
+    // White sneakers with navy trim
+    [-0.14, 0.14].forEach((fx) => {
+      const shoe = new THREE.Mesh(this.getBox(0.14, 0.10, 0.32), this.cartoonPoloWhiteMat);
+      shoe.position.set(fx, 0.05, 0.05);
+      char.add(shoe);
+    });
+
     // Navy athletic trousers
     const legs = new THREE.Mesh(this.getBox(0.40, 0.78, 0.30), this.cartoonNavyPantsMat);
     legs.position.y = 0.39;
     char.add(legs);
 
-    // White Yatra Polo shirt
+    // White Yatra Polo shirt with collar and placket
     const torso = new THREE.Mesh(this.getBox(0.46, 0.65, 0.32), this.cartoonPoloWhiteMat);
     torso.position.y = 1.02;
     char.add(torso);
 
-    // Head
+    const poloCollar = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.08, 8), this.cartoonPoloWhiteMat);
+    poloCollar.position.y = 1.36;
+    char.add(poloCollar);
+
+    // Head group (neck pivot for dynamic oratorical tilting)
+    const headGroup = new THREE.Group();
+    headGroup.name = 'rahul_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
     const head = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.35, 10), this.cartoonNpcSkinMat);
-    head.position.y = 1.55;
-    char.add(head);
+    head.position.y = 0.10;
+    headGroup.add(head);
 
     // Casual dark swept hair
     const hair = new THREE.Mesh(this.getSphere(0.20, 8), this.cartoonHairBlackMat);
-    hair.position.set(0, 1.70, -0.02);
-    char.add(hair);
+    hair.position.set(0, 0.22, -0.02);
+    headGroup.add(hair);
 
-    // Energetic debating arms
-    const armL = new THREE.Mesh(this.getBox(0.12, 0.50, 0.12), this.cartoonPoloWhiteMat);
-    armL.position.set(-0.32, 1.05, 0);
+    // Distinctive hair cowlick tuft
+    const cowlick = new THREE.Mesh(this.getCylinder(0.02, 0.05, 0.12, 4), this.cartoonHairBlackMat);
+    cowlick.position.set(0.06, 0.38, 0);
+    cowlick.rotation.z = -0.4;
+    headGroup.add(cowlick);
+
+    char.add(headGroup);
+
+    // Articulated arms with shoulders and elbows
+    const armL = new THREE.Group();
+    armL.name = 'rahul_arm_l';
+    armL.position.set(-0.32, 1.15, 0);
+    const sleeveL = new THREE.Mesh(this.getCylinder(0.07, 0.065, 0.24, 6), this.cartoonPoloWhiteMat);
+    sleeveL.position.y = -0.12;
+    armL.add(sleeveL);
+    const elbowL = new THREE.Group();
+    elbowL.position.set(0, -0.24, 0);
+    const forearmL = new THREE.Mesh(this.getCylinder(0.06, 0.055, 0.20, 6), this.cartoonNpcSkinMat);
+    forearmL.position.y = -0.10;
+    elbowL.add(forearmL);
+    const handL = new THREE.Mesh(this.getSphere(0.06, 6), this.cartoonNpcSkinMat);
+    handL.position.y = -0.20;
+    elbowL.add(handL);
+    armL.add(elbowL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.12, 0.50, 0.12), this.cartoonPoloWhiteMat);
-    armR.position.set(0.32, 1.05, 0);
+    const armR = new THREE.Group();
+    armR.name = 'rahul_arm_r';
+    armR.position.set(0.32, 1.15, 0);
+    const sleeveR = new THREE.Mesh(this.getCylinder(0.07, 0.065, 0.24, 6), this.cartoonPoloWhiteMat);
+    sleeveR.position.y = -0.12;
+    armR.add(sleeveR);
+    const elbowR = new THREE.Group();
+    elbowR.position.set(0, -0.24, 0);
+    const forearmR = new THREE.Mesh(this.getCylinder(0.06, 0.055, 0.20, 6), this.cartoonNpcSkinMat);
+    forearmR.position.y = -0.10;
+    elbowR.add(forearmR);
+    const handR = new THREE.Mesh(this.getSphere(0.06, 6), this.cartoonNpcSkinMat);
+    handR.position.y = -0.20;
+    elbowR.add(handR);
+    armR.add(elbowR);
     char.add(armR);
 
-    director.registerDebater(armL, armR, head, 4.2);
+    char.userData.joints = { headGroup, armL, elbowL, handL, armR, elbowR, handR };
+
+    director.registerDebater(armL, armR, headGroup, 4.2);
     parent.add(char);
     return char;
   }
@@ -531,38 +655,58 @@ export class VipSatireWorldBuilder {
     legs.position.y = 0.36;
     char.add(legs);
 
-    // Sweater vest
+    // Sweater vest with V-neck placket
     const torso = new THREE.Mesh(this.getBox(0.44, 0.60, 0.30), this.parliamentWoodMat);
     torso.position.y = 0.96;
     char.add(torso);
 
-    // Iconic Brown Wool Muffler wrapped around neck with hanging ends
+    // Iconic Brown Wool Muffler wrapped around neck with animated hanging tail
     const muffler = new THREE.Mesh(this.getTorus(0.20, 0.06, 8), this.cartoonMufflerBrownMat);
     muffler.position.set(0, 1.28, 0);
     muffler.rotation.x = Math.PI / 2;
     char.add(muffler);
 
-    const mufflerTail = new THREE.Mesh(this.getBox(0.10, 0.38, 0.04), this.cartoonMufflerBrownMat);
-    mufflerTail.position.set(0.08, 1.05, 0.18);
+    const mufflerTail = new THREE.Group();
+    mufflerTail.position.set(0.08, 1.24, 0.18);
+    const tailMesh = new THREE.Mesh(this.getBox(0.10, 0.38, 0.04), this.cartoonMufflerBrownMat);
+    tailMesh.position.y = -0.19;
+    mufflerTail.add(tailMesh);
     char.add(mufflerTail);
 
+    const headGroup = new THREE.Group();
+    headGroup.name = 'kejriwal_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
     const head = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonNpcSkinMat);
-    head.position.y = 1.48;
-    char.add(head);
+    headGroup.add(head);
 
     const glasses = new THREE.Mesh(this.getBox(0.30, 0.07, 0.03), this.tinRoofMat);
-    glasses.position.set(0, 1.52, 0.19);
-    char.add(glasses);
+    glasses.position.set(0, 0.04, 0.19);
+    headGroup.add(glasses);
 
-    const armL = new THREE.Mesh(this.getBox(0.10, 0.45, 0.10), this.parliamentWoodMat);
-    armL.position.set(-0.28, 0.98, 0);
+    char.add(headGroup);
+
+    const armL = new THREE.Group();
+    armL.position.set(-0.28, 1.05, 0);
+    const armMeshL = new THREE.Mesh(this.getBox(0.10, 0.45, 0.10), this.parliamentWoodMat);
+    armMeshL.position.y = -0.22;
+    armL.add(armMeshL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.10, 0.45, 0.10), this.parliamentWoodMat);
-    armR.position.set(0.28, 0.98, 0);
+    const armR = new THREE.Group();
+    armR.position.set(0.28, 1.05, 0);
+    const armMeshR = new THREE.Mesh(this.getBox(0.10, 0.45, 0.10), this.parliamentWoodMat);
+    armMeshR.position.y = -0.22;
+    armR.add(armMeshR);
+    // Pointed debating finger on right hand
+    const finger = new THREE.Mesh(this.getCylinder(0.015, 0.015, 0.12, 4), this.cartoonNpcSkinMat);
+    finger.position.set(0, -0.48, 0.05);
+    armR.add(finger);
     char.add(armR);
 
-    director.registerDebater(armL, armR, head, 3.8);
+    char.userData.joints = { headGroup, mufflerTail, armL, armR, glasses };
+
+    director.registerDebater(armL, armR, headGroup, 3.8);
     parent.add(char);
     return char;
   }
@@ -597,28 +741,44 @@ export class VipSatireWorldBuilder {
     torso.position.y = 1.05;
     char.add(torso);
 
-    const pallu = new THREE.Mesh(this.getBox(0.12, 0.65, 0.34), this.cartoonSariBlueMat);
-    pallu.position.set(-0.12, 1.08, 0);
+    const pallu = new THREE.Group();
+    pallu.position.set(-0.12, 1.35, 0);
     pallu.rotation.z = -0.35;
+    const palluMesh = new THREE.Mesh(this.getBox(0.12, 0.65, 0.34), this.cartoonSariBlueMat);
+    palluMesh.position.y = -0.28;
+    pallu.add(palluMesh);
     char.add(pallu);
 
+    const headGroup = new THREE.Group();
+    headGroup.name = 'mamata_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
     const head = new THREE.Mesh(this.getCylinder(0.17, 0.17, 0.32, 8), this.cartoonNpcSkinMat);
-    head.position.y = 1.48;
-    char.add(head);
+    headGroup.add(head);
 
     const hair = new THREE.Mesh(this.getSphere(0.20, 8), this.cartoonHairSilverMat);
-    hair.position.set(0, 1.58, -0.06);
-    char.add(hair);
+    hair.position.set(0, 0.10, -0.06);
+    headGroup.add(hair);
 
-    const armL = new THREE.Mesh(this.getBox(0.10, 0.48, 0.10), this.cartoonKurtaWhiteMat);
-    armL.position.set(-0.28, 1.02, 0);
+    char.add(headGroup);
+
+    const armL = new THREE.Group();
+    armL.position.set(-0.28, 1.10, 0);
+    const armMeshL = new THREE.Mesh(this.getBox(0.10, 0.48, 0.10), this.cartoonKurtaWhiteMat);
+    armMeshL.position.y = -0.24;
+    armL.add(armMeshL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.10, 0.48, 0.10), this.cartoonKurtaWhiteMat);
-    armR.position.set(0.28, 1.02, 0);
+    const armR = new THREE.Group();
+    armR.position.set(0.28, 1.10, 0);
+    const armMeshR = new THREE.Mesh(this.getBox(0.10, 0.48, 0.10), this.cartoonKurtaWhiteMat);
+    armMeshR.position.y = -0.24;
+    armR.add(armMeshR);
     char.add(armR);
 
-    director.registerDebater(armL, armR, head, 4.6);
+    char.userData.joints = { headGroup, pallu, armL, armR };
+
+    director.registerDebater(armL, armR, headGroup, 4.6);
     parent.add(char);
     return char;
   }
@@ -653,20 +813,25 @@ export class VipSatireWorldBuilder {
     shawl.position.set(-0.20, 1.02, 0);
     char.add(shawl);
 
-    // Head
+    // Head group
+    const headGroup = new THREE.Group();
+    headGroup.name = 'amit_shah_head_group';
+    headGroup.position.set(0, 1.50, 0);
+
     const head = new THREE.Mesh(this.getCylinder(0.22, 0.22, 0.34, 10), this.cartoonNpcSkinMat);
-    head.position.y = 1.50;
-    char.add(head);
+    headGroup.add(head);
 
     // Trimmed salt-and-pepper beard
     const beard = new THREE.Mesh(this.getBox(0.32, 0.18, 0.22), this.cartoonHairSilverMat);
-    beard.position.set(0, 1.40, 0.12);
-    char.add(beard);
+    beard.position.set(0, -0.10, 0.12);
+    headGroup.add(beard);
 
     // Spectacles
     const glasses = new THREE.Mesh(this.getBox(0.32, 0.07, 0.03), this.tinRoofMat);
-    glasses.position.set(0, 1.56, 0.22);
-    char.add(glasses);
+    glasses.position.set(0, 0.06, 0.22);
+    headGroup.add(glasses);
+
+    char.add(headGroup);
 
     // Strategic Strategy Ledger / Register in hands
     const ledger = new THREE.Mesh(this.getBox(0.32, 0.42, 0.08), this.parliamentWoodMat);
@@ -674,22 +839,30 @@ export class VipSatireWorldBuilder {
     ledger.rotation.x = -0.4;
     char.add(ledger);
 
-    const armL = new THREE.Mesh(this.getBox(0.12, 0.46, 0.12), this.cartoonKurtaWhiteMat);
-    armL.position.set(-0.35, 1.02, 0);
+    const armL = new THREE.Group();
+    armL.position.set(-0.35, 1.05, 0);
+    const armMeshL = new THREE.Mesh(this.getBox(0.12, 0.46, 0.12), this.cartoonKurtaWhiteMat);
+    armMeshL.position.y = -0.23;
+    armL.add(armMeshL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.12, 0.46, 0.12), this.cartoonKurtaWhiteMat);
-    armR.position.set(0.35, 1.02, 0);
+    const armR = new THREE.Group();
+    armR.position.set(0.35, 1.05, 0);
+    const armMeshR = new THREE.Mesh(this.getBox(0.12, 0.46, 0.12), this.cartoonKurtaWhiteMat);
+    armMeshR.position.y = -0.23;
+    armR.add(armMeshR);
     char.add(armR);
 
-    director.registerDebater(armL, armR, head, 3.0);
+    char.userData.joints = { headGroup, ledger, armL, armR };
+
+    director.registerDebater(armL, armR, headGroup, 3.0);
     parent.add(char);
     return char;
   }
 
   /**
    * Builds cartoon caricature of Nitish Kumar
-   * Features: White kurta-pyjama, wire-rim spectacles, expressive debating arms.
+   * Features: White kurta-pyjama, wire-rim spectacles, expressive debating arms, mounted on swivel pivot.
    */
   public buildNitishCaricature(
     parent: THREE.Group,
@@ -710,27 +883,40 @@ export class VipSatireWorldBuilder {
     torso.position.y = 0.98;
     char.add(torso);
 
+    const headGroup = new THREE.Group();
+    headGroup.name = 'nitish_head_group';
+    headGroup.position.set(0, 1.48, 0);
+
     const head = new THREE.Mesh(this.getCylinder(0.18, 0.18, 0.32, 8), this.cartoonNpcSkinMat);
-    head.position.y = 1.48;
-    char.add(head);
+    headGroup.add(head);
 
     const hair = new THREE.Mesh(this.getSphere(0.19, 8), this.cartoonHairSilverMat);
-    hair.position.set(0, 1.60, -0.04);
-    char.add(hair);
+    hair.position.set(0, 0.12, -0.04);
+    headGroup.add(hair);
 
     const glasses = new THREE.Mesh(this.getBox(0.28, 0.06, 0.03), this.tinRoofMat);
-    glasses.position.set(0, 1.52, 0.18);
-    char.add(glasses);
+    glasses.position.set(0, 0.04, 0.18);
+    headGroup.add(glasses);
 
-    const armL = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.cartoonKurtaWhiteMat);
-    armL.position.set(-0.28, 0.98, 0);
+    char.add(headGroup);
+
+    const armL = new THREE.Group();
+    armL.position.set(-0.28, 1.05, 0);
+    const armMeshL = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.cartoonKurtaWhiteMat);
+    armMeshL.position.y = -0.23;
+    armL.add(armMeshL);
     char.add(armL);
 
-    const armR = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.cartoonKurtaWhiteMat);
-    armR.position.set(0.28, 0.98, 0);
+    const armR = new THREE.Group();
+    armR.position.set(0.28, 1.05, 0);
+    const armMeshR = new THREE.Mesh(this.getBox(0.10, 0.46, 0.10), this.cartoonKurtaWhiteMat);
+    armMeshR.position.y = -0.23;
+    armR.add(armMeshR);
     char.add(armR);
 
-    director.registerDebater(armL, armR, head, 3.6);
+    char.userData.joints = { headGroup, armL, armR };
+
+    director.registerDebater(armL, armR, headGroup, 3.6);
     parent.add(char);
     return char;
   }
@@ -1282,20 +1468,24 @@ export class VipSatireWorldBuilder {
     lotusFront.position.set(0, 1.1, 7.1);
     const lotusCore = new THREE.Mesh(this.getSphere(0.25, 8), this.lotusGoldMat);
     lotusFront.add(lotusCore);
-    for (let lp = 0; lp < 8; lp++) {
-      const petalAngle = (lp / 8) * Math.PI * 2;
-      const lotusPetal = new THREE.Mesh(this.getBox(0.18, 0.42, 0.05), this.lotusPinkMat);
-      lotusPetal.rotation.z = petalAngle;
-      lotusPetal.position.set(Math.cos(petalAngle) * 0.35, Math.sin(petalAngle) * 0.35, 0);
-      lotusFront.add(lotusPetal);
+    if (detail !== 'MINIMAL') {
+      for (let lp = 0; lp < 8; lp++) {
+        const petalAngle = (lp / 8) * Math.PI * 2;
+        const lotusPetal = new THREE.Mesh(this.getBox(0.18, 0.42, 0.05), this.lotusPinkMat);
+        lotusPetal.rotation.z = petalAngle;
+        lotusPetal.position.set(Math.cos(petalAngle) * 0.35, Math.sin(petalAngle) * 0.35, 0);
+        lotusFront.add(lotusPetal);
+      }
     }
     floatGroup.add(lotusFront);
 
-    // Thick Marigold Flower Garlands draped across bumper
-    for (let mg = -1.6; mg <= 1.6; mg += 0.8) {
-      const garland = new THREE.Mesh(this.getTorus(0.28, 0.09, 6), this.yellowMarigoldMat);
-      garland.position.set(mg, 0.7, 7.05);
-      floatGroup.add(garland);
+    // Thick Marigold Flower Garlands draped across bumper (Full & Balanced tiers)
+    if (detail !== 'MINIMAL') {
+      for (let mg = -1.6; mg <= 1.6; mg += 0.8) {
+        const garland = new THREE.Mesh(this.getTorus(0.28, 0.09, 6), this.yellowMarigoldMat);
+        garland.position.set(mg, 0.7, 7.05);
+        floatGroup.add(garland);
+      }
     }
 
     // Rear Hydraulic Rally Stage (Elevated dais in truck bed)
@@ -1418,7 +1608,17 @@ export class VipSatireWorldBuilder {
       commandos.push(cmdGroup);
     });
 
-    director.registerRoadshowFloat(floatGroup, modiFig, armR, headObj, petals, petalBaseY, loudspeakers, commandos);
+    director.registerRoadshowFloat(
+      floatGroup,
+      modiFig,
+      armR,
+      headObj,
+      petals,
+      petalBaseY,
+      loudspeakers,
+      commandos,
+      worldZ - chunkLength * 0.48
+    );
     group.add(floatGroup);
 
     // 3. VIP PILOT ESCORT SUVS (White Scorpio Convoy)
@@ -1770,12 +1970,12 @@ export class VipSatireWorldBuilder {
     // 7. CRITICAL GATE A: THE GREAT MANGO INTERVIEW (East Terrace at X = +11.2m)
     // Prominently staged for the running camera!
     if (detail !== 'MINIMAL' || isTestSeed) {
-      this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director);
+      this.buildMangoInterviewStage(group, 11.2, 0.6, -chunkLength * 0.5, director, worldZ - chunkLength * 0.5);
     }
 
     // 8. EVENT C: THE PHOTOGRAPHY CHAOS (East Promenade at X = +14.8m, Z = -0.22 * chunkLength)
     if (detail !== 'MINIMAL' || isTestSeed) {
-      this.buildPhotographyChaosStage(group, 14.8, 0.3, -chunkLength * 0.22, director);
+      this.buildPhotographyChaosStage(group, 14.8, 0.3, -chunkLength * 0.22, director, worldZ - chunkLength * 0.22);
     }
 
     // 9. AUTHENTIC INDIAN CROWD CONTROL POLICE BARRICADES WITH MARIGOLD GARLANDS
@@ -1860,7 +2060,8 @@ export class VipSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'vip_photography_chaos';
@@ -2004,7 +2205,61 @@ export class VipSatireWorldBuilder {
     chaiVendor.add(chaiArm);
     stage.add(chaiVendor);
 
-    director.registerPhotographyChaos(stage, modiFigure, photographers, chaiVendor, cameraFlashes);
+    // Quadcopter Camera Drone with 4 spinning rotors & marigold festoon tangle (Flagship C)
+    const cameraDroneGroup = new THREE.Group();
+    cameraDroneGroup.name = 'vip_camera_drone';
+    cameraDroneGroup.position.set(0, 4.8, 1.8);
+
+    const droneBody = new THREE.Mesh(this.getBox(0.42, 0.12, 0.42), this.tinRoofMat);
+    cameraDroneGroup.add(droneBody);
+
+    const droneRotors: THREE.Object3D[] = [];
+    const rotorOffsets = [
+      [-0.32, -0.32],
+      [0.32, -0.32],
+      [-0.32, 0.32],
+      [0.32, 0.32]
+    ];
+    rotorOffsets.forEach(([rx, rz]) => {
+      const arm = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.42, 4), this.goldMetalMat);
+      arm.position.set(rx * 0.5, 0.02, rz * 0.5);
+      arm.rotation.z = rx > 0 ? -0.3 : 0.3;
+      cameraDroneGroup.add(arm);
+
+      const rotor = new THREE.Mesh(this.getBox(0.32, 0.015, 0.05), this.diamondMat);
+      rotor.position.set(rx, 0.08, rz);
+      cameraDroneGroup.add(rotor);
+      droneRotors.push(rotor);
+    });
+
+    const droneGimbal = new THREE.Mesh(this.getSphere(0.12, 6), this.parliamentWoodMat);
+    droneGimbal.position.set(0, -0.15, 0);
+    cameraDroneGroup.add(droneGimbal);
+    const droneLens = new THREE.Mesh(this.getCylinder(0.06, 0.08, 0.16, 6), this.goldMetalMat);
+    droneLens.position.set(0, -0.18, 0.1);
+    droneLens.rotation.x = Math.PI / 2;
+    cameraDroneGroup.add(droneLens);
+
+    // Tangled marigold garland (Beat 2 drone snag)
+    const garlandTangle = new THREE.Mesh(this.getTorus(0.26, 0.06, 6), this.tricolorGreenMat);
+    garlandTangle.position.set(0.15, 0.05, 0.1);
+    garlandTangle.rotation.set(0.4, 0.2, 0.8);
+    garlandTangle.visible = false;
+    cameraDroneGroup.add(garlandTangle);
+
+    stage.add(cameraDroneGroup);
+
+    director.registerPhotographyChaos(
+      stage,
+      modiFigure,
+      photographers,
+      chaiVendor,
+      cameraFlashes,
+      cameraDroneGroup,
+      droneRotors,
+      garlandTangle,
+      typeof worldZ === 'number' ? worldZ : z
+    );
 
     group.add(stage);
     return stage;
@@ -2019,7 +2274,8 @@ export class VipSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ: number = 0
   ): void {
     // Exact flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
@@ -2196,7 +2452,7 @@ export class VipSatireWorldBuilder {
       vips.push(rahulVip);
     }
 
-    director.registerTeacupReveal(curtainL, curtainR, tinyCupGroup, [spotL, spotR], vips);
+    director.registerTeacupReveal(curtainL, curtainR, tinyCupGroup, [spotL, spotR], vips, worldZ - chunkLength * 0.5);
 
     // Plaque sign mounted neatly on lower dais face (NEVER blocking pedestal sightline!)
     const plaqueTex = TextureGenerator.getVipPhotoOpSignTexture();
@@ -2252,7 +2508,7 @@ export class VipSatireWorldBuilder {
       vendorGlass.position.set(-2.6, 1.0, 0);
       kettleMonument.add(vendorGlass);
 
-      director.registerKettlePour(kettlePivot, giantSpout, teaStream, polL, polR, vendorGlass);
+      director.registerKettlePour(kettlePivot, giantSpout, teaStream, polL, polR, vendorGlass, worldZ - chunkLength * 0.25);
       group.add(kettleMonument);
     }
 
@@ -2305,7 +2561,8 @@ export class VipSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ: number = 0
   ): void {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
@@ -2462,8 +2719,58 @@ export class VipSatireWorldBuilder {
       this.buildNitishCaricature(ribbonGroup, 2.8, 1.2, 2.0, director);
     }
 
+    // Nested Secondary Ribbon revealed as primary ribbon cuts (Beat 2 Escalation)
+    const nestedRibbon2 = new THREE.Group();
+    nestedRibbon2.name = 'nested_tricolor_ribbons_2';
+    nestedRibbon2.position.set(0, 3.2, 0.4);
+
+    const nRibSaffron = new THREE.Mesh(this.getBox(5.8, 0.18, 0.04), this.cartoonWaistcoatOrangeMat);
+    nRibSaffron.position.y = 0.20;
+    nestedRibbon2.add(nRibSaffron);
+
+    const nRibWhite = new THREE.Mesh(this.getBox(5.8, 0.18, 0.04), this.cartoonKurtaWhiteMat);
+    nRibWhite.position.y = 0;
+    nestedRibbon2.add(nRibWhite);
+
+    const nRibGreen = new THREE.Mesh(this.getBox(5.8, 0.18, 0.04), this.tricolorGreenMat);
+    nRibGreen.position.y = -0.20;
+    nestedRibbon2.add(nRibGreen);
+
+    ribbonGroup.add(nestedRibbon2);
+
+    // Confetti Explosion Group (Beat 3 harmless paper confetti burst)
+    const confettiGroup = new THREE.Group();
+    confettiGroup.name = 'inauguration_confetti_burst';
+    confettiGroup.position.set(0, 3.2, 0);
+    confettiGroup.visible = false;
+    const flakeCount = detail === 'MINIMAL' ? 6 : 24;
+    const confettiColors = [0xff9933, 0xffffff, 0x138808, 0xffd700, 0xd97706, 0x3b82f6];
+    for (let c = 0; c < flakeCount; c++) {
+      const col = confettiColors[c % confettiColors.length];
+      const flake = new THREE.Mesh(this.getBox(0.12, 0.12, 0.02), this.createBasicMaterial({ color: col }));
+      flake.position.set(
+        Math.cos((c / flakeCount) * Math.PI * 2) * 0.2,
+        0,
+        Math.sin((c / flakeCount) * Math.PI * 2) * 0.2
+      );
+      confettiGroup.add(flake);
+    }
+    ribbonGroup.add(confettiGroup);
+
     director.registerScissors(shears1L, shears1R, 4.0);
-    director.registerRecursiveScissors(shears1L, shears1R, shears2L, shears2R, craneGroup, rapidArm, ribbonMesh, tinyCupGroup);
+    director.registerRecursiveScissors(
+      shears1L,
+      shears1R,
+      shears2L,
+      shears2R,
+      craneGroup,
+      rapidArm,
+      ribbonMesh,
+      tinyCupGroup,
+      confettiGroup,
+      nestedRibbon2,
+      worldZ - chunkLength * 0.4
+    );
 
     // High-contrast Satirical Signboard
     const inaugTex = TextureGenerator.getInaugurationInfinitySignTexture(1);
@@ -2519,7 +2826,8 @@ export class VipSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ: number = 0
   ): void {
     // Flush alignment with track curb (7.375m) - Zero void gaps!
     const curbEdge = roadbedWidth * 0.5 + 0.5;
@@ -2615,7 +2923,7 @@ export class VipSatireWorldBuilder {
     anchorNPC.position.set(-1.8, 5.8, 0);
     mediaStage.add(anchorNPC);
 
-    director.registerRemoteRevelation(vaultLid, craneArm, remoteMesh, [], anchorNPC);
+    director.registerRemoteRevelation(vaultLid, craneArm, remoteMesh, [], anchorNPC, worldZ - chunkLength * 0.4);
     group.add(mediaStage);
 
     // 3. Runaway Decoy Microphone Cart chased by Camera Crew
@@ -2698,7 +3006,8 @@ export class VipSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
@@ -2772,7 +3081,7 @@ export class VipSatireWorldBuilder {
     tinySpoon.position.set(0, 0.15, 0.7);
     deliveryArm.add(tinySpoon);
 
-    director.registerMasterstrokeMachine(doorL, doorR, dialNeedle, steamHiss, deliveryArm, tinySpoon);
+    director.registerMasterstrokeMachine(doorL, doorR, dialNeedle, steamHiss, deliveryArm, tinySpoon, worldZ - chunkLength * 0.4);
     group.add(towerGroup);
 
     // 3. HERO GAG 8: MONUMENTAL GLOWING POLITICAL CHESSBOARD
@@ -2803,7 +3112,7 @@ export class VipSatireWorldBuilder {
       cart.position.set(0, 0.8, 5.0);
       chessGroup.add(cart);
 
-      director.registerChessboardMatch(gantry, grandKing, cart);
+      director.registerChessboardMatch(gantry, grandKing, cart, worldZ - chunkLength * 0.25);
       group.add(chessGroup);
     }
 
@@ -2890,7 +3199,8 @@ export class VipSatireWorldBuilder {
     chunkLength: number,
     rng: SeededRandom,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ: number = 0
   ): void {
     const curbEdge = roadbedWidth * 0.5 + 0.5;
     const swWidth = 14.0;
@@ -2977,7 +3287,7 @@ export class VipSatireWorldBuilder {
     leaderR.position.set(2.0, 1.6, -2.0);
     arenaStage.add(leaderR);
 
-    director.registerMicrophoneShowdown(centerMic, micL, micR, leaderL, leaderR);
+    director.registerMicrophoneShowdown(centerMic, micL, micR, leaderL, leaderR, worldZ - chunkLength * 0.4);
 
     // Satirical Arena Sign
     const parlTex = TextureGenerator.getParliamentMayhemSignTexture(0);
@@ -3022,7 +3332,7 @@ export class VipSatireWorldBuilder {
       const r1 = this.buildRahulCaricature(carouselGroup, 1.8, 0.6, 0, director);
       pols.push(r1);
 
-      director.registerCoalitionCarousel(carouselPlat, nitishChair, pols);
+      director.registerCoalitionCarousel(carouselPlat, nitishChair, pols, worldZ - chunkLength * 0.45);
       group.add(carouselGroup);
     }
 
@@ -3178,7 +3488,8 @@ export class VipSatireWorldBuilder {
     x: number,
     y: number,
     z: number,
-    director: VipComedyEventDirector
+    director: VipComedyEventDirector,
+    worldZ?: number
   ): THREE.Group {
     const stage = new THREE.Group();
     stage.name = 'vip_mango_interview';
@@ -3416,6 +3727,78 @@ export class VipSatireWorldBuilder {
       if (fl) cameraFlashes.push(fl as THREE.Mesh);
     });
 
+    // Miniature Red Carpet Ramp leading down from central dais (Beat 2 Entrance)
+    const redCarpetRamp = new THREE.Group();
+    redCarpetRamp.name = 'mango_carpet_ramp';
+    const rampRunner = new THREE.Mesh(this.getBox(1.4, 0.06, 2.6), this.redCarpetMat);
+    rampRunner.position.set(0, 1.15, 1.4);
+    rampRunner.rotation.x = 0.22;
+    redCarpetRamp.add(rampRunner);
+    const rampTrimL = new THREE.Mesh(this.getBox(0.08, 0.08, 2.6), this.goldMetalMat);
+    rampTrimL.position.set(-0.7, 1.16, 1.4);
+    rampTrimL.rotation.x = 0.22;
+    redCarpetRamp.add(rampTrimL);
+    const rampTrimR = new THREE.Mesh(this.getBox(0.08, 0.08, 2.6), this.goldMetalMat);
+    rampTrimR.position.set(0.7, 1.16, 1.4);
+    rampTrimR.rotation.x = 0.22;
+    redCarpetRamp.add(rampTrimR);
+    stage.add(redCarpetRamp);
+
+    // Cartoon Journalist Photo Scrum Group (Beat 4 Tumbling Dogpile)
+    const journalistScrumGroup = new THREE.Group();
+    journalistScrumGroup.name = 'journalist_photo_scrum';
+    journalistScrumGroup.position.set(0, 0.8, 3.2);
+
+    const scrumConfigs = [
+      { x: -1.3, z: 0.2, ry: 0.35, color: 0x2563eb }, // Blue coat reporter
+      { x: 0, z: 0.5, ry: 0, color: 0xd97706 },       // Mustard yellow coat photographer
+      { x: 1.3, z: 0.2, ry: -0.35, color: 0x059669 }  // Emerald green coat reporter
+    ];
+
+    scrumConfigs.forEach((sc, sidx) => {
+      const rep = new THREE.Group();
+      rep.name = `scrum_reporter_${sidx}`;
+      rep.position.set(sc.x, 0, sc.z);
+      rep.rotation.y = sc.ry;
+
+      const rLegs = new THREE.Mesh(this.getBox(0.3, 0.6, 0.24), this.cartoonNavyPantsMat);
+      rLegs.position.y = 0.3;
+      rep.add(rLegs);
+
+      const rTorso = new THREE.Mesh(this.getBox(0.42, 0.52, 0.28), this.createStandardMaterial({ color: sc.color }));
+      rTorso.position.y = 0.84;
+      rep.add(rTorso);
+
+      const rBadge = new THREE.Mesh(this.getBox(0.12, 0.16, 0.02), this.ivoryMarbleMat);
+      rBadge.position.set(0, 0.88, 0.16);
+      rep.add(rBadge);
+
+      const rHead = new THREE.Mesh(this.getSphere(0.15, 6), this.cartoonNpcSkinMat);
+      rHead.position.y = 1.22;
+      rep.add(rHead);
+
+      const rBrim = new THREE.Mesh(this.getCylinder(0.24, 0.24, 0.03, 8), this.parliamentWoodMat);
+      rBrim.position.y = 1.34;
+      rep.add(rBrim);
+      const rCrown = new THREE.Mesh(this.getCylinder(0.15, 0.15, 0.14, 8), this.parliamentWoodMat);
+      rCrown.position.y = 1.41;
+      rep.add(rCrown);
+
+      if (sidx === 1) {
+        const rCam = new THREE.Mesh(this.getBox(0.26, 0.18, 0.22), this.tinRoofMat);
+        rCam.position.set(0, 1.05, 0.26);
+        rep.add(rCam);
+      } else {
+        const rMic = new THREE.Mesh(this.getCylinder(0.02, 0.02, 0.75, 4), this.goldMetalMat);
+        rMic.position.set(0, 1.05, 0.32);
+        rMic.rotation.x = -Math.PI / 4;
+        rep.add(rMic);
+      }
+
+      journalistScrumGroup.add(rep);
+    });
+    stage.add(journalistScrumGroup);
+
     director.registerMangoInterview(
       stage,
       cloche,
@@ -3427,7 +3810,10 @@ export class VipSatireWorldBuilder {
       interviewerFigure,
       sparkle,
       boomMic,
-      cameraFlashes
+      cameraFlashes,
+      journalistScrumGroup,
+      redCarpetRamp,
+      typeof worldZ === 'number' ? worldZ : z
     );
 
     group.add(stage);

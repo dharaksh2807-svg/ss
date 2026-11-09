@@ -375,22 +375,92 @@ director.update(1.0, true);
 check(true, 'Director completes multi-phase update step without throwing exceptions');
 
 // =========================================================================
-// Suite 12: Political Caricature Models Verification
+// Suite 12: Political Caricature Models Verification & Articulated Rigging
 // =========================================================================
-console.log('\n--- Suite 12: Political Caricature Models Verification ---');
+console.log('\n--- Suite 12: Political Caricature Models Verification & Articulated Rigging ---');
 
 const charTestGroup = new THREE.Group();
 const modiMesh = builder.buildModiCaricature(charTestGroup, 0, 0, 0, 'VICTORY', director);
 check(modiMesh.name === 'caricature_modi', 'Modi caricature builds with correct name and hierarchy');
+const modiJoints = (modiMesh.userData.joints || {}) as any;
+check(Boolean(modiJoints.headGroup), 'Modi caricature has articulated headGroup joint');
+check(Boolean(modiJoints.jaw), 'Modi caricature has cartoon drop-jaw joint for shock reactions');
+check(Boolean(modiJoints.glasses), 'Modi caricature has gold wire spectacles joint');
+check(Boolean(modiJoints.eyebrowL && modiJoints.eyebrowR), 'Modi caricature has articulated eyebrows for quizzical/shock expressions');
+check(Boolean(modiJoints.armR && modiJoints.elbowR && modiJoints.handR), 'Modi caricature has jointed right shoulder, elbow, and hand');
+check(Boolean(modiJoints.armL && modiJoints.elbowL && modiJoints.handL), 'Modi caricature has jointed left shoulder, elbow, and hand');
 
 const rahulMesh = builder.buildRahulCaricature(charTestGroup, 2, 0, 0, director);
 check(rahulMesh.name === 'caricature_rahul', 'Rahul caricature builds with correct name and hierarchy');
+const rahulJoints = (rahulMesh.userData.joints || {}) as any;
+check(Boolean(rahulJoints.headGroup && rahulJoints.elbowR), 'Rahul caricature has articulated head and elbow joints');
 
 const kejriwalMesh = builder.buildKejriwalCaricature(charTestGroup, 4, 0, 0, director);
 check(kejriwalMesh.name === 'caricature_kejriwal', 'Kejriwal caricature builds with correct name and muffler');
+const kejJoints = (kejriwalMesh.userData.joints || {}) as any;
+check(Boolean(kejJoints.mufflerTail), 'Kejriwal caricature has animated muffler tail joint');
 
 const mamataMesh = builder.buildMamataCaricature(charTestGroup, 6, 0, 0, director);
 check(mamataMesh.name === 'caricature_mamata', 'Mamata caricature builds with correct name and blue-bordered sari');
+const mamataJoints = (mamataMesh.userData.joints || {}) as any;
+check(Boolean(mamataJoints.pallu), 'Mamata caricature has animated blue-bordered pallu joint');
+
+const shahMesh = builder.buildAmitShahCaricature(charTestGroup, 8, 0, 0, director);
+check(shahMesh.name === 'caricature_amit_shah', 'Amit Shah caricature builds with register and glasses');
+
+const nitishMesh = builder.buildNitishCaricature(charTestGroup, 10, 0, 0, director);
+check(nitishMesh.name === 'caricature_nitish', 'Nitish caricature builds with swivel chair pivot');
+
+// =========================================================================
+// Suite 13: Phase 3 Cinematic Flagship Gags & Approach Distance Synchronization
+// =========================================================================
+console.log('\n--- Suite 13: Phase 3 Cinematic Flagship Gags & Approach Synchronization ---');
+
+// 1. Priority A Flagship: The Mango Interview
+const mangoStageGroup = new THREE.Group();
+const mangoStage = builder.buildMangoInterviewStage(mangoStageGroup, 11.2, 0.6, -40, director, -40);
+check(mangoStage.name === 'vip_mango_interview', 'Mango Interview stage builds with correct root name');
+check(Boolean(mangoStage.getObjectByName('mango_carpet_ramp')), 'Mango Interview stage has mini red carpet ramp (Beat 2 Entrance)');
+const scrumGroup = mangoStage.getObjectByName('journalist_photo_scrum');
+check(Boolean(scrumGroup && scrumGroup.children.length === 3), 'Mango Interview stage has 3 cartoon journalists in photo scrum group');
+check(Boolean(mangoStage.getObjectByName('mango_sunglasses')), 'Mango Interview stage has celebrity sunglasses object');
+check(Boolean(mangoStage.getObjectByName('interview_cloche')), 'Mango Interview stage has silver cloche dome');
+check(Boolean(mangoStage.getObjectByName('mango_sparkle')), 'Mango Interview stage has star sparkle group');
+
+// 2. Priority B Flagship: Inauguration Infinity
+const ribbonStageGroup = new THREE.Group();
+builder.buildInaugurationInfinityDistrict(ribbonStageGroup, roadbedWidth, chunkLength, new SeededRandom(777), 'FULL', director, -80);
+const ribbonScene = ribbonStageGroup.getObjectByName('vip_ribbon_ceremony');
+check(Boolean(ribbonScene), 'Inauguration Infinity district builds vip_ribbon_ceremony');
+check(Boolean(ribbonScene?.getObjectByName('tricolor_ribbons')), 'Inauguration Infinity has primary tricolor ribbon mesh');
+check(Boolean(ribbonScene?.getObjectByName('nested_tricolor_ribbons_2')), 'Inauguration Infinity has nested secondary ribbon group');
+const confettiGroup = ribbonScene?.getObjectByName('inauguration_confetti_burst');
+check(Boolean(confettiGroup && confettiGroup.children.length >= 6), 'Inauguration Infinity has paper confetti burst group with colored flakes');
+check(Boolean(ribbonScene?.getObjectByName('tiny_inaugurated_item')), 'Inauguration Infinity has comically tiny cutting chai cup punchline');
+
+// 3. Priority C Flagship: Roadshow Camera Chaos
+const photoStageGroup = new THREE.Group();
+const photoStage = builder.buildPhotographyChaosStage(photoStageGroup, 14.8, 0.3, -20, director, -20);
+check(photoStage.name === 'vip_photography_chaos', 'Photography Chaos stage builds with correct name');
+const cameraDrone = photoStage.getObjectByName('vip_camera_drone');
+check(Boolean(cameraDrone), 'Photography Chaos stage has quadcopter camera drone');
+check(Boolean(photoStage.getObjectByName('chai_vendor_intruder')), 'Photography Chaos stage has unexpected chai vendor intruder');
+
+// 4. Approach Distance Synchronization (getGagCycle)
+// Runner approaching from 75m down to -15m
+const gagZ = -100;
+const approachCycleFar = director.getGagCycle(0, 8.0, gagZ, -25); // distanceAhead = -25 - (-100) = 75m -> Beat 1
+check(approachCycleFar < 1.0, `Runner at 75m approach distance maps to Beat 1 Setup (got: ${approachCycleFar.toFixed(2)}s)`);
+
+const approachCycleClimax = director.getGagCycle(0, 8.0, gagZ, -85); // distanceAhead = -85 - (-100) = 15m -> Beat 3 Climax
+check(approachCycleClimax >= 4.0 && approachCycleClimax <= 6.0, `Runner at 15m approach distance maps to Beat 3 Punchline (got: ${approachCycleClimax.toFixed(2)}s)`);
+
+const approachCycleReaction = director.getGagCycle(0, 8.0, gagZ, -110); // distanceAhead = -110 - (-100) = -10m -> Beat 4 Reaction
+check(approachCycleReaction >= 6.0, `Runner passing at -10m maps to Beat 4 Laugh Hold & Reaction (got: ${approachCycleReaction.toFixed(2)}s)`);
+
+// 5. Active Director Updates with Approach Distance
+director.update(0.016, true, -85);
+check(true, 'Director successfully updates all gags with approach-aware runner coordinates');
 
 console.log(`\n=======================================================`);
 console.log(`🏆 ALL ${checks} VIP_EXPRESS SIGNATURE WORLD TESTS PASSED!`);
