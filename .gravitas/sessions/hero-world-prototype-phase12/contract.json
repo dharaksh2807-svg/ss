@@ -1,0 +1,34 @@
+{
+  "mode": "implement",
+  "objective": "Transform Jurassic Rush into a blockbuster hero world prototype with cinematic identity, three signature spectacles (Giant Dinosaur Encounter, Prehistoric Valley Reveal, Raptor Canyon Chase), unforgettable opening gate, signature architectural landmark, distinctive expedition train design, and strict performance/collision integrity",
+  "acceptance_criteria": [
+    "Ground on clean commit 5b20d21 on origin/main without assumptions",
+    "Establish cinematic identity: unforgettable opening ceremonial gate, signature megalithic sun temple landmark, distinct foreground/midground/background layering, rich materials",
+    "Build Event A (Giant Dinosaur Encounter): colossal dinosaur emerging from river, raising head, reacting to passing train, secondary neck/tail/breathing/ripple kinematics",
+    "Build Event B (Prehistoric Valley Reveal): dramatic transition from dense jungle corridor into vast panoramic prehistoric valley with layered mountains, waterfalls, moving herds",
+    "Build Event C (Raptor Canyon Chase): articulated raptor pack perched, leaping, sprinting alongside canyon terrace, dynamic formation shift (alpha surging forward), weaving, disappearing behind rock buttress",
+    "Enforce professional 6-stage animation lifecycle for each spectacle: Anticipation -> Main action -> Secondary motion -> Environmental reaction -> Clear ending -> Proper cleanup",
+    "Style distinctive Jurassic Rush expedition train (armored safari roll-cage grilles, cowcatcher, amber searchlight, hazard stripes) preserving authoritative collision dimensions",
+    "Preserve 100% collision and gameplay integrity: zero modifications to runner physics, track bounds, collision volumes, coins, or progression",
+    "Maintain high performance: solid 60 FPS, draw call efficiency, clean scenery retention under LOW preset, zero memory leaks during chunk recycling or world changes",
+    "Capture real browser gameplay screenshots and validation across beginning, mid-run, and late-game (>2000m)",
+    "Run full unit/integration test suite and verify clean production build",
+    "Push verified implementation directly to origin/main via normal fast-forward push"
+  ],
+  "non_goals": [
+    "Do not modify all 17 worlds — focus exclusively on Jurassic Rush",
+    "Do not alter player controller, jump/slide mechanics, speed controller, or collision resolver",
+    "Do not add unskippable video or camera-lock intro sequences"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/hero-world-prototype-phase12/",
+    "src/environment/worlds/jurassicRush/",
+    "src/track/ObstacleFactory.ts",
+    "test/",
+    "artifacts/phase12/",
+    "docs/theme-blockbuster/"
+  ],
+  "verification": "impact"
+}

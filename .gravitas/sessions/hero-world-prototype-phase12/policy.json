@@ -1,0 +1,12 @@
+{
+  "planning": "compact",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "blockbuster-hero-world-transformation",
+    "kinematic-event-spectacles",
+    "collision-preservation",
+    "real-browser-evidence"
+  ]
+}

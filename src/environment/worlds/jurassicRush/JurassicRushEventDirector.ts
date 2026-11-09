@@ -1,9 +1,23 @@
 import * as THREE from 'three';
 import { SettingsManager } from '../../../settings/SettingsManager';
 
-export type SauropodState = 'DORMANT' | 'APPROACH' | 'CROSSING' | 'PASSING' | 'GRAZING';
+export type SauropodState = 'DORMANT' | 'APPROACH' | 'CROSSING' | 'PASSING' | 'GRAZING' | 'SETTLED';
 export type CarnivoreState = 'CONCEALED' | 'EMERGING' | 'ROARING' | 'STALKING' | 'RETREATING';
-export type RaptorPackState = 'PERCHED' | 'SPRINTING' | 'WEAVING' | 'LEAPING' | 'RETREATING';
+export type RaptorPackState =
+  | 'PERCHED'
+  | 'LEAPING'
+  | 'SPRINTING'
+  | 'WEAVING'
+  | 'FORMATION_SHIFT'
+  | 'DISAPPEARING'
+  | 'RETREATING'
+  | 'SETTLED';
+export type ValleyRevealStage =
+  | 'CONFINED_TUNNEL'
+  | 'EMERGING'
+  | 'EXPANDING_PANORAMA'
+  | 'HERD_MIGRATION'
+  | 'SETTLED_VISTA';
 
 export interface SauropodWalker {
   group: THREE.Group;
@@ -19,6 +33,7 @@ export interface SauropodWalker {
   triggerZ?: number;
   state?: SauropodState;
   breathingChest?: THREE.Object3D;
+  splashRings?: THREE.Mesh[];
   herdMembers?: Array<{ group: THREE.Group; head: THREE.Object3D; tail: THREE.Object3D; speed: number }>;
   isEventA?: boolean;
 }
@@ -61,6 +76,8 @@ export interface RaptorPackRunner {
   maxZ: number;
   triggerZ?: number;
   state?: RaptorPackState;
+  baseY?: number;
+  perchY?: number;
   isEventB?: boolean;
 }
 
@@ -147,6 +164,7 @@ export class JurassicRushEventDirector {
   private swayingFoliage: SwayingFoliageActor[] = [];
 
   private globalTime: number = 0;
+  private valleyRevealStage: ValleyRevealStage = 'CONFINED_TUNNEL';
 
   private constructor() {
     if (typeof window !== 'undefined') {
@@ -159,6 +177,10 @@ export class JurassicRushEventDirector {
       this.instance = new JurassicRushEventDirector();
     }
     return this.instance;
+  }
+
+  public getValleyRevealStage(): ValleyRevealStage {
+    return this.valleyRevealStage;
   }
 
   /**
@@ -222,6 +244,7 @@ export class JurassicRushEventDirector {
       triggerZ?: number;
       neckSegments?: THREE.Object3D[];
       breathingChest?: THREE.Object3D;
+      splashRings?: THREE.Mesh[];
       herdMembers?: Array<{ group: THREE.Group; head: THREE.Object3D; tail: THREE.Object3D; speed: number }>;
       isEventA?: boolean;
     }
@@ -240,6 +263,7 @@ export class JurassicRushEventDirector {
       triggerZ: options?.triggerZ,
       state: 'APPROACH',
       breathingChest: options?.breathingChest,
+      splashRings: options?.splashRings,
       herdMembers: options?.herdMembers,
       isEventA: options?.isEventA
     });
@@ -309,6 +333,8 @@ export class JurassicRushEventDirector {
     maxZ: number = 30,
     options?: {
       triggerZ?: number;
+      baseY?: number;
+      perchY?: number;
       isEventB?: boolean;
     }
   ): void {
@@ -321,6 +347,8 @@ export class JurassicRushEventDirector {
       maxZ,
       triggerZ: options?.triggerZ,
       state: 'PERCHED',
+      baseY: options?.baseY ?? 1.5,
+      perchY: options?.perchY ?? 3.5,
       isEventB: options?.isEventB
     });
   }
@@ -455,6 +483,19 @@ export class JurassicRushEventDirector {
     const reducedMotion = SettingsManager.getInstance().isReducedMotion();
     const motionScale = reducedMotion ? 0.2 : 1.0;
 
+    // Prehistoric Valley Reveal Stage Coordination (District 0 -> District 1 transition)
+    if (playerZ > -370) {
+      this.valleyRevealStage = 'CONFINED_TUNNEL';
+    } else if (playerZ > -400) {
+      this.valleyRevealStage = 'EMERGING';
+    } else if (playerZ > -440) {
+      this.valleyRevealStage = 'EXPANDING_PANORAMA';
+    } else if (playerZ > -500) {
+      this.valleyRevealStage = 'HERD_MIGRATION';
+    } else {
+      this.valleyRevealStage = 'SETTLED_VISTA';
+    }
+
     // --- 1. Colossal Sauropod Walker & Event A (Giant Crossing) ---
     for (let i = 0; i < this.sauropods.length; i++) {
       const s = this.sauropods[i];
@@ -471,8 +512,10 @@ export class JurassicRushEventDirector {
           s.state = 'CROSSING';
         } else if (dist > -40) {
           s.state = 'PASSING';
-        } else {
+        } else if (dist > -110) {
           s.state = 'GRAZING';
+        } else {
+          s.state = 'SETTLED';
         }
       }
 
@@ -492,15 +535,19 @@ export class JurassicRushEventDirector {
 
       // Gentle undulating neck S-curve
       let headTurnTarget = 0.0;
+      let headTiltTarget = 0.0;
       if (s.state === 'PASSING') {
         // Sauropod curiously turns head toward the passing runner!
-        headTurnTarget = -0.55 * motionScale;
+        headTurnTarget = -0.58 * motionScale;
+        headTiltTarget = -0.18 * motionScale;
       } else if (s.state === 'CROSSING') {
-        headTurnTarget = -0.22 * motionScale;
+        headTurnTarget = -0.25 * motionScale;
+      } else if (s.state === 'GRAZING') {
+        headTurnTarget = 0.15 * motionScale;
       }
 
-      s.neck.rotation.z = Math.sin(walkCycle * 0.5) * 0.15;
-      s.neck.rotation.x = 0.35 + Math.cos(walkCycle * 0.5) * 0.12;
+      s.neck.rotation.z = Math.sin(walkCycle * 0.5) * 0.15 + headTiltTarget * 0.5;
+      s.neck.rotation.x = (s.state === 'GRAZING' ? 0.08 : 0.35) + Math.cos(walkCycle * 0.5) * 0.12;
       s.neck.rotation.y = THREE.MathUtils.lerp(s.neck.rotation.y, headTurnTarget * 0.6, clampedDelta * 3.0);
 
       // Multi-segment neck serpentine bend if present
@@ -511,8 +558,9 @@ export class JurassicRushEventDirector {
         }
       }
 
-      s.head.rotation.x = -0.3 + Math.sin(walkCycle * 0.5) * 0.10;
+      s.head.rotation.x = (s.state === 'GRAZING' ? -0.15 : -0.3) + Math.sin(walkCycle * 0.5) * 0.10;
       s.head.rotation.y = THREE.MathUtils.lerp(s.head.rotation.y, headTurnTarget, clampedDelta * 4.0);
+      s.head.rotation.z = headTiltTarget;
 
       // Tail counterbalancing swing
       s.tail.rotation.y = Math.sin(walkCycle * 0.5) * 0.25;
@@ -522,6 +570,25 @@ export class JurassicRushEventDirector {
       if (s.breathingChest) {
         const breath = 1.0 + Math.sin(this.globalTime * 1.8) * 0.04;
         s.breathingChest.scale.set(breath, breath, 1.0);
+      }
+
+      // Environmental water splash rings / wakes
+      if (s.splashRings && s.splashRings.length > 0) {
+        const isWaterActive = s.state === 'CROSSING' || s.state === 'APPROACH' || s.state === 'PASSING';
+        for (let r = 0; r < s.splashRings.length; r++) {
+          const ring = s.splashRings[r];
+          if (!isWaterActive) {
+            ring.visible = false;
+            continue;
+          }
+          ring.visible = true;
+          const cycle = ((this.globalTime * 1.6 + r * 0.35) % 1.0);
+          const rScale = 1.0 + cycle * 3.8;
+          ring.scale.set(rScale, 1.0, rScale);
+          if (ring.material && 'opacity' in ring.material) {
+            (ring.material as THREE.Material & { opacity: number }).opacity = (1.0 - cycle) * 0.75 * motionScale;
+          }
+        }
       }
 
       // Moving distant herd members (Event A)
@@ -615,27 +682,61 @@ export class JurassicRushEventDirector {
       // Distance-staged lifecycle
       if (rp.triggerZ !== undefined && rp.triggerZ !== 0) {
         const dist = playerZ - rp.triggerZ;
-        if (dist > 110) {
+        if (dist > 90) {
           rp.state = 'PERCHED';
-        } else if (dist > -20) {
+        } else if (dist > 50) {
+          rp.state = 'LEAPING';
+        } else if (dist > 15) {
           rp.state = 'SPRINTING';
+        } else if (dist > -35) {
+          rp.state = 'FORMATION_SHIFT';
+        } else if (dist > -90) {
+          rp.state = 'DISAPPEARING';
         } else {
-          rp.state = 'RETREATING';
+          rp.state = 'SETTLED';
         }
       }
 
-      const isSprinting = rp.state ? (rp.state === 'SPRINTING') : true;
+      const isPerched = rp.state === 'PERCHED';
+      const isLeaping = rp.state === 'LEAPING';
+      const isDisappearing = rp.state === 'DISAPPEARING' || rp.state === 'RETREATING';
+      const isFormationShift = rp.state === 'FORMATION_SHIFT' || rp.state === 'WEAVING';
+      const isSprinting = rp.state === 'SPRINTING' || isFormationShift || isDisappearing || isLeaping;
 
-      if (isSprinting) {
-        rp.packGroup.position.z += rp.speed * motionScale * clampedDelta;
-        if (rp.packGroup.position.z > rp.maxZ) {
-          rp.packGroup.position.z = rp.minZ;
+      if (isPerched) {
+        rp.packGroup.position.y = rp.perchY ?? 3.5;
+      } else if (isLeaping && rp.triggerZ !== undefined) {
+        const dist = playerZ - rp.triggerZ;
+        const leapT = Math.max(0, Math.min(1, (90 - dist) / 40));
+        const arc = Math.sin(leapT * Math.PI) * 0.85;
+        rp.packGroup.position.y = THREE.MathUtils.lerp(rp.perchY ?? 3.5, rp.baseY ?? 1.5, leapT) + arc;
+        rp.packGroup.position.z += rp.speed * 0.75 * motionScale * clampedDelta;
+      } else {
+        rp.packGroup.position.y = rp.baseY ?? 1.5;
+        if (isSprinting) {
+          rp.packGroup.position.z += rp.speed * motionScale * clampedDelta;
+          if (rp.packGroup.position.z > rp.maxZ) {
+            rp.packGroup.position.z = rp.minZ;
+          }
         }
       }
 
       for (let r = 0; r < rp.raptors.length; r++) {
         const rap = rp.raptors[r];
         const step = (this.globalTime * rp.runFreq + rap.phaseOffset) * motionScale;
+
+        if (isPerched) {
+          // Alert perched posture: twitchy bird-of-prey anticipation
+          if (rap.legs.length >= 2) {
+            rap.legs[0].rotation.x = 0.25;
+            rap.legs[1].rotation.x = 0.25;
+          }
+          rap.head.position.y = 1.45 + Math.sin(this.globalTime * 8.0 + rap.phaseOffset) * 0.04;
+          rap.head.rotation.y = Math.sin(this.globalTime * 5.0 + rap.phaseOffset) * 0.35;
+          rap.tail.rotation.x = 0.25 + Math.sin(this.globalTime * 3.5) * 0.12;
+          rap.tail.rotation.y = Math.cos(this.globalTime * 3.0) * 0.15;
+          continue;
+        }
 
         // Athletic bipedal leg pumping
         if (rap.legs.length >= 2) {
@@ -648,11 +749,47 @@ export class JurassicRushEventDirector {
         rap.tail.rotation.y = Math.sin(step) * 0.22;
         rap.tail.rotation.x = 0.1 + Math.cos(step * 2.0) * 0.08;
 
-        // Subtle lateral banking / weaving between canyon rocks
+        // Dynamic formation shift / weaving / disappearing behind rock buttress
         if (rp.isEventB) {
-          const weaveX = (rap.lateralOffset ?? 0) + Math.sin(this.globalTime * 2.2 + rap.phaseOffset) * 0.45;
-          rap.group.position.x = weaveX;
-          rap.group.rotation.z = -Math.sin(this.globalTime * 2.2 + rap.phaseOffset) * 0.12;
+          let targetX = rap.lateralOffset ?? 0;
+          let targetZOffset = 0;
+          let targetRotY = 0;
+          let targetRotZ = 0;
+
+          if (isFormationShift) {
+            // Alpha surges ahead; flankers flare out wide to flank target
+            if (r === 0) {
+              targetZOffset = 3.6;
+              targetX = (rap.lateralOffset ?? 0) + Math.sin(this.globalTime * 2.5) * 0.3;
+            } else if (r === 1) {
+              targetX = -3.4 + Math.sin(this.globalTime * 2.0) * 0.4;
+              targetRotZ = 0.15;
+            } else {
+              targetX = 3.2 + Math.sin(this.globalTime * 2.0 + 1.0) * 0.4;
+              targetRotZ = -0.15;
+            }
+          } else if (isDisappearing) {
+            // Alpha veers into canyon wall fissure, flankers file behind sandstone buttress
+            if (r === 0) {
+              targetX = 5.2;
+              targetRotY = -0.45;
+            } else if (r === 1) {
+              targetX = 4.6;
+              targetRotY = -0.38;
+            } else {
+              targetX = 4.9;
+              targetRotY = -0.35;
+            }
+          } else {
+            // Standard sprint weave
+            targetX = (rap.lateralOffset ?? 0) + Math.sin(this.globalTime * 2.2 + rap.phaseOffset) * 0.45;
+            targetRotZ = -Math.sin(this.globalTime * 2.2 + rap.phaseOffset) * 0.12;
+          }
+
+          rap.group.position.x = THREE.MathUtils.lerp(rap.group.position.x, targetX, clampedDelta * 4.0);
+          rap.group.position.z = THREE.MathUtils.lerp(rap.group.position.z, (r === 0 ? 0 : (r === 1 ? 4.5 : 6.2)) - targetZOffset, clampedDelta * 3.5);
+          rap.group.rotation.y = THREE.MathUtils.lerp(rap.group.rotation.y, targetRotY, clampedDelta * 4.0);
+          rap.group.rotation.z = THREE.MathUtils.lerp(rap.group.rotation.z, targetRotZ, clampedDelta * 4.0);
         }
 
         // Jaws snap rhythmically during hunt

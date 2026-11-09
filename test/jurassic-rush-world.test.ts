@@ -375,6 +375,174 @@ assert.strictEqual(director.getCuriousWatcherCount(), 0, 'Curious watchers reset
 assert.strictEqual(director.getTotalActiveElements(), 0, 'Total active elements reset to 0');
 pass('Event director reset() cleanly disposes all references');
 
+// ============================================================================
+// SUITE 8: BLOCKBUSTER HERO WORLD PROTOTYPE & SIGNATURE SPECTACLES (PHASE 12)
+// ============================================================================
+console.log('\n--- Suite 8: Blockbuster Hero World Prototype & Signature Spectacles (Phase 12) ---');
+
+// 1. Sector 04 Outpost Gateway
+const testGate = builder.buildExpeditionOutpostGate(0, 0, -22.0);
+assert.ok(testGate !== null, 'Sector 04 Outpost Gateway generated');
+testGate.updateMatrixWorld(true);
+
+let gateIntrusions = 0;
+testGate.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bbox = child.geometry.boundingBox;
+    if (bbox) {
+      const wb = bbox.clone().applyMatrix4(child.matrixWorld);
+      if (wb.min.x <= 4.2 && wb.max.x >= -4.2 && wb.min.y <= 8.5 && wb.max.y >= 0.1) {
+        gateIntrusions++;
+      }
+    }
+  }
+});
+assert.strictEqual(gateIntrusions, 0, 'Sector 04 Outpost Gateway preserves 100% running envelope clearance');
+pass('Signature Opening: Sector 04 Outpost Gateway generated with 0 corridor intrusions');
+
+// 2. Grand Sun Temple Viaduct & Titanosaur Bone Arches
+const testViaduct = builder.buildGrandSunTempleViaduct(0, 0, 0, 100);
+assert.ok(testViaduct !== null, 'Grand Sun Temple Viaduct generated');
+testViaduct.updateMatrixWorld(true);
+
+let viaductIntrusions = 0;
+testViaduct.traverse((child) => {
+  if (child instanceof THREE.Mesh) {
+    child.geometry.computeBoundingBox();
+    const bbox = child.geometry.boundingBox;
+    if (bbox) {
+      const wb = bbox.clone().applyMatrix4(child.matrixWorld);
+      if (wb.min.x <= 4.2 && wb.max.x >= -4.2 && wb.min.y <= 8.5 && wb.max.y >= 0.1) {
+        viaductIntrusions++;
+      }
+    }
+  }
+});
+assert.strictEqual(viaductIntrusions, 0, 'Grand Sun Temple Viaduct preserves 100% running envelope clearance');
+pass('Signature Landmark: Grand Sun Temple Viaduct & 5 Titanosaur Bone Arches generated with 0 corridor intrusions');
+
+// 3. Spectacle A 6-Stage Lifecycle (Giant Dinosaur Encounter)
+director.reset();
+const mockScene = new THREE.Scene();
+const mockSauropodGroup = new THREE.Group();
+mockScene.add(mockSauropodGroup);
+const mockNeck = new THREE.Group();
+const mockHead = new THREE.Group();
+const mockTail = new THREE.Group();
+const mockLegs = [new THREE.Group(), new THREE.Group(), new THREE.Group(), new THREE.Group()];
+const mockSplashRing = new THREE.Mesh(new THREE.RingGeometry(1, 2, 8), new THREE.MeshBasicMaterial());
+
+director.registerSauropod(
+  mockSauropodGroup,
+  mockNeck,
+  mockHead,
+  mockTail,
+  mockLegs,
+  3.8,
+  1.5,
+  -100,
+  50,
+  {
+    triggerZ: -500,
+    splashRings: [mockSplashRing],
+    isEventA: true
+  }
+);
+
+// Stage 1: DORMANT (dist > 140m -> playerZ > -360)
+director.update(0.1, true, -300);
+assert.strictEqual((director as any).sauropods[0].state, 'DORMANT');
+
+// Stage 2: APPROACH (dist > 70m -> playerZ > -430)
+director.update(0.1, true, -400);
+assert.strictEqual((director as any).sauropods[0].state, 'APPROACH');
+
+// Stage 3: CROSSING (dist > 15m -> playerZ > -485)
+director.update(0.1, true, -460);
+assert.strictEqual((director as any).sauropods[0].state, 'CROSSING');
+assert.ok(mockSplashRing.visible, 'Splash rings visible during river crossing');
+
+// Stage 4: PASSING (dist > -40m -> playerZ > -540)
+director.update(0.1, true, -510);
+assert.strictEqual((director as any).sauropods[0].state, 'PASSING');
+assert.ok(mockHead.rotation.y < -0.1, 'Sauropod head turns curiously toward passing runner');
+
+// Stage 5: GRAZING (dist > -110m -> playerZ > -610)
+director.update(0.1, true, -570);
+assert.strictEqual((director as any).sauropods[0].state, 'GRAZING');
+
+// Stage 6: SETTLED (dist <= -110m)
+director.update(0.1, true, -650);
+assert.strictEqual((director as any).sauropods[0].state, 'SETTLED');
+pass('Spectacle A (Giant Dinosaur Encounter): Full 6-stage animation lifecycle verified');
+
+// 4. Spectacle B (Prehistoric Valley Reveal)
+director.update(0.1, true, -350);
+assert.strictEqual(director.getValleyRevealStage(), 'CONFINED_TUNNEL');
+director.update(0.1, true, -385);
+assert.strictEqual(director.getValleyRevealStage(), 'EMERGING');
+director.update(0.1, true, -420);
+assert.strictEqual(director.getValleyRevealStage(), 'EXPANDING_PANORAMA');
+director.update(0.1, true, -470);
+assert.strictEqual(director.getValleyRevealStage(), 'HERD_MIGRATION');
+director.update(0.1, true, -550);
+assert.strictEqual(director.getValleyRevealStage(), 'SETTLED_VISTA');
+pass('Spectacle B (Prehistoric Valley Reveal): 5-stage panoramic emergence verified');
+
+// 5. Spectacle C 6-Stage Lifecycle (Raptor Canyon Chase)
+director.reset();
+const mockRaptorScene = new THREE.Scene();
+const mockRaptorGroup = new THREE.Group();
+mockRaptorScene.add(mockRaptorGroup);
+const mockRaptorsData = [
+  { group: new THREE.Group(), legs: [new THREE.Group(), new THREE.Group()], tail: new THREE.Group(), head: new THREE.Group(), phaseOffset: 0, lateralOffset: 0 },
+  { group: new THREE.Group(), legs: [new THREE.Group(), new THREE.Group()], tail: new THREE.Group(), head: new THREE.Group(), phaseOffset: 1, lateralOffset: -2.8 },
+  { group: new THREE.Group(), legs: [new THREE.Group(), new THREE.Group()], tail: new THREE.Group(), head: new THREE.Group(), phaseOffset: 2, lateralOffset: 2.8 }
+];
+
+director.registerRaptorPack(
+  mockRaptorGroup,
+  mockRaptorsData,
+  24.0,
+  8.5,
+  -120,
+  30,
+  {
+    triggerZ: -900,
+    baseY: 1.5,
+    perchY: 3.5,
+    isEventB: true
+  }
+);
+
+// Stage 1: PERCHED (dist > 90m -> playerZ > -810)
+director.update(0.1, true, -780);
+assert.strictEqual((director as any).raptorPacks[0].state, 'PERCHED');
+assert.strictEqual(mockRaptorGroup.position.y, 3.5, 'Raptors perched on elevated shelf at Y = 3.5m');
+
+// Stage 2: LEAPING (dist > 50m -> playerZ > -850)
+director.update(0.1, true, -830);
+assert.strictEqual((director as any).raptorPacks[0].state, 'LEAPING');
+
+// Stage 3: SPRINTING (dist > 15m -> playerZ > -885)
+director.update(0.1, true, -865);
+assert.strictEqual((director as any).raptorPacks[0].state, 'SPRINTING');
+assert.strictEqual(mockRaptorGroup.position.y, 1.5, 'Raptors sprint on running terrace at Y = 1.5m');
+
+// Stage 4: FORMATION_SHIFT (dist > -35m -> playerZ > -935)
+director.update(0.1, true, -915);
+assert.strictEqual((director as any).raptorPacks[0].state, 'FORMATION_SHIFT');
+
+// Stage 5: DISAPPEARING (dist > -90m -> playerZ > -990)
+director.update(0.1, true, -960);
+assert.strictEqual((director as any).raptorPacks[0].state, 'DISAPPEARING');
+
+// Stage 6: SETTLED (dist <= -90m)
+director.update(0.1, true, -1020);
+assert.strictEqual((director as any).raptorPacks[0].state, 'SETTLED');
+pass('Spectacle C (Raptor Canyon Chase): Full 6-stage sprint, formation shift and disappearance lifecycle verified');
+
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} JURASSIC_RUSH WORLD TESTS PASSED!`);
 console.log('=======================================================\n');

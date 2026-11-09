@@ -451,6 +451,9 @@ export class JurassicRushWorldBuilder {
   private dragonflyWingMat: THREE.MeshBasicMaterial;
   private dragonflyBodyMat: THREE.MeshStandardMaterial;
   private jungleLoamMat: THREE.MeshStandardMaterial;
+  private boneIvoryMat: THREE.MeshStandardMaterial;
+  private torchFireMat: THREE.MeshBasicMaterial;
+  private hazardAmberMat: THREE.MeshStandardMaterial;
 
   private constructor() {
     // 1. Lush Prehistoric Vegetation Materials
@@ -700,6 +703,22 @@ export class JurassicRushWorldBuilder {
       metalness: 0.18
     });
 
+    this.boneIvoryMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a, // Warm fossil ivory bone
+      roughness: 0.58,
+      metalness: 0.12
+    });
+
+    this.torchFireMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b // Radiant golden-amber solar fire
+    });
+
+    this.hazardAmberMat = new THREE.MeshStandardMaterial({
+      color: 0xfacc15, // High-contrast expedition hazard amber
+      roughness: 0.35,
+      metalness: 0.25
+    });
+
     // Apply track curvature shader to all materials
     const curved = CurvedShaderManager.getInstance();
     [
@@ -711,7 +730,8 @@ export class JurassicRushWorldBuilder {
       this.dinosaurUnderbellyMat, this.dinosaurEyeMat, this.dinosaurPupilMat, this.dinosaurClawMat,
       this.carnivoreSkinMat, this.carnivoreBellyMat, this.raptorGreenMat, this.raptorTealMat,
       this.pterosaurSkinMat, this.pterosaurWingMat, this.herbivoreSkinMat, this.dinosaurEggMat,
-      this.dragonflyWingMat, this.dragonflyBodyMat, this.amberCurbMat, this.expeditionTimberMat
+      this.dragonflyWingMat, this.dragonflyBodyMat, this.amberCurbMat, this.expeditionTimberMat,
+      this.boneIvoryMat, this.torchFireMat, this.hazardAmberMat
     ].forEach((mat) => curved.applyCurvature(mat));
   }
 
@@ -1859,6 +1879,223 @@ export class JurassicRushWorldBuilder {
     return { dinosaurGroup, neck, head };
   }
 
+  /**
+   * Monumental Expedition Outpost Gate (Sector 04 Outpost Gateway)
+   * Iconic opening architectural landmark situated at the beginning of the run.
+   * Twin 18m cyclopean megalithic stone pylons (|X| = 7.2m), heavy ironwood lintel arch at Y = 9.8m - 11.5m,
+   * sculpted T-Rex fossil skull crest at Y = 10.8m, hazard caution signs, and twin solar fire braziers at Y = 18m.
+   * Playable running corridor (|X| <= 4.2m, Y <= 8.5m) is 100% unobstructed.
+   */
+  public buildExpeditionOutpostGate(x: number, y: number, z: number): THREE.Group {
+    const gate = new THREE.Group();
+    gate.name = 'expedition_outpost_gate';
+    gate.position.set(x, y, z);
+
+    [-7.2, 7.2].forEach((px, sideIdx) => {
+      const pylon = new THREE.Group();
+      pylon.position.set(px, 0, 0);
+
+      // Sub-ground foundation plinth (Y = -6.0m to 0m)
+      const plinth = new THREE.Mesh(this.getBox(3.8, 6.0, 4.8), this.templeStoneMat);
+      plinth.position.y = -3.0;
+      pylon.add(plinth);
+
+      // Massive stepped lower tower base (Y = 0m to 8.0m)
+      const baseTower = new THREE.Mesh(this.getBox(3.4, 8.0, 4.2), this.templeStoneMat);
+      baseTower.position.y = 4.0;
+      pylon.add(baseTower);
+
+      // Carved megalithic relief belt (Y = 7.5m)
+      const reliefBelt = new THREE.Mesh(this.getBox(3.55, 1.2, 4.35), this.templeGoldReliefMat);
+      reliefBelt.position.y = 7.5;
+      pylon.add(reliefBelt);
+
+      // Upper megalithic shaft (Y = 8.0m to 16.5m)
+      const shaft = new THREE.Mesh(this.getBox(2.8, 8.5, 3.4), this.templeStoneMat);
+      shaft.position.y = 12.25;
+      pylon.add(shaft);
+
+      // Tower corniced summit platform (Y = 16.5m to 17.5m)
+      const summit = new THREE.Mesh(this.getBox(3.2, 1.0, 3.8), this.templeStoneMat);
+      summit.position.y = 17.0;
+      pylon.add(summit);
+
+      // Solar fire brazier bowl (Y = 17.5m to 18.2m)
+      const brazier = new THREE.Mesh(this.getCylinder(1.1, 0.7, 0.8, 8), this.templeStoneMat);
+      brazier.position.y = 17.9;
+      pylon.add(brazier);
+
+      // Burning golden-amber flame crest
+      const flame = new THREE.Mesh(this.getCone(0.75, 1.6, 7), this.torchFireMat);
+      flame.position.y = 18.9;
+      pylon.add(flame);
+
+      // Atmospheric steam/mist vent nozzle at base
+      const vent = new THREE.Mesh(this.getCylinder(0.25, 0.35, 0.8, 6), this.expeditionTimberMat);
+      vent.position.set(sideIdx === 0 ? 1.6 : -1.6, 0.4, 1.5);
+      vent.rotation.z = sideIdx === 0 ? -0.4 : 0.4;
+      pylon.add(vent);
+
+      gate.add(pylon);
+    });
+
+    // Monumental Cross-Arch Lintel & Bronze Truss (Spanning across at Y = 9.8m to 11.5m)
+    // Entirely above Y = 8.5m - zero intrusion into running corridor!
+    const lintelArch = new THREE.Group();
+    lintelArch.position.y = 10.2;
+
+    // Heavy ironwood cross-beam
+    const mainBeam = new THREE.Mesh(this.getBox(16.5, 1.4, 2.6), this.expeditionTimberMat);
+    lintelArch.add(mainBeam);
+
+    // Reinforced bronze cross-truss support
+    const bronzeTruss = new THREE.Mesh(this.getBox(16.8, 0.4, 2.8), this.templeGoldReliefMat);
+    bronzeTruss.position.y = 0.85;
+    lintelArch.add(bronzeTruss);
+
+    // Sculpted Prehistoric T-Rex Fossil Skull Crest mounted dead center
+    const skullGroup = new THREE.Group();
+    skullGroup.position.set(0, 1.2, 1.4);
+
+    // Cranium
+    const skullCranium = new THREE.Mesh(this.getSphere(1.2, 8), this.boneIvoryMat);
+    skullCranium.scale.set(0.9, 0.85, 1.3);
+    skullGroup.add(skullCranium);
+
+    // Snout & maxilla
+    const skullSnout = new THREE.Mesh(this.getBox(0.95, 0.85, 1.8), this.boneIvoryMat);
+    skullSnout.position.set(0, -0.2, 1.0);
+    skullGroup.add(skullSnout);
+
+    // Serrated ivory fossil teeth
+    for (let t = -0.35; t <= 0.35; t += 0.22) {
+      const tooth = new THREE.Mesh(this.getCone(0.08, 0.35, 4), this.boneIvoryMat);
+      tooth.rotation.x = Math.PI;
+      tooth.position.set(t, -0.7, 1.4);
+      skullGroup.add(tooth);
+    }
+    lintelArch.add(skullGroup);
+
+    // High-visibility expedition hazard signage plate
+    const hazardPlate = new THREE.Mesh(this.getBox(9.2, 0.65, 0.15), this.hazardAmberMat);
+    hazardPlate.position.set(0, -0.85, 1.35);
+    lintelArch.add(hazardPlate);
+
+    gate.add(lintelArch);
+    return gate;
+  }
+
+  /**
+   * Signature Architectural Landmark: Grand Sun Temple Viaduct & Titanosaur Bone Arches
+   * A monumental, instantly readable structure that gives the world tremendous scale and awe.
+   * Background: 32m high stepped cyclopean solar pyramid at X = 34m with ceremonial staircases,
+   * golden solar disc altar and eternal flame brazier.
+   * Track: 5 colossal fossilized Titanosaur ribcage arches spanning across the railway (clearance Y >= 9.2m).
+   * Foundations: Twin tiered cascading temple waterfalls plunging into the gorge below (Y = -6.0m).
+   */
+  public buildGrandSunTempleViaduct(x: number, y: number, z: number, length: number = 100): THREE.Group {
+    const landmark = new THREE.Group();
+    landmark.name = 'grand_sun_temple_viaduct';
+    landmark.position.set(x, y, z);
+
+    // 1. Colossal Megalithic Sun Temple Pyramid at X = 34.0m
+    const pyramidGroup = new THREE.Group();
+    pyramidGroup.position.set(34.0, 0, -length * 0.5);
+
+    // 5 Stepped cyclopean stone terraces rising to Y = 32m
+    const terraces = [
+      { w: 38.0, h: 6.0, d: 48.0, y: 3.0 },
+      { w: 30.0, h: 6.0, d: 40.0, y: 9.0 },
+      { w: 22.0, h: 6.0, d: 32.0, y: 15.0 },
+      { w: 16.0, h: 6.0, d: 24.0, y: 21.0 },
+      { w: 10.0, h: 5.0, d: 16.0, y: 26.5 }
+    ];
+
+    terraces.forEach((t) => {
+      const stepMesh = new THREE.Mesh(this.getBox(t.w, t.h, t.d), this.templeStoneMat);
+      stepMesh.position.y = t.y;
+      pyramidGroup.add(stepMesh);
+
+      // Gold relief cornice along edge
+      const cornice = new THREE.Mesh(this.getBox(t.w + 0.4, 0.6, t.d + 0.4), this.templeGoldReliefMat);
+      cornice.position.y = t.y + t.h * 0.5 - 0.3;
+      pyramidGroup.add(cornice);
+    });
+
+    // Ceremonial monumental staircase cascading down toward railway
+    const stairs = new THREE.Mesh(this.getBox(6.0, 18.0, 26.0), this.templeStoneMat);
+    stairs.position.set(-16.0, 9.0, 0);
+    stairs.rotation.z = -0.52;
+    pyramidGroup.add(stairs);
+
+    // Summit Solar Altar at Y = 29.0m
+    const altar = new THREE.Mesh(this.getCylinder(2.4, 2.8, 2.0, 8), this.templeStoneMat);
+    altar.position.y = 30.0;
+    pyramidGroup.add(altar);
+
+    // Golden solar disc emblem
+    const solarDisc = new THREE.Mesh(this.getCylinder(1.8, 1.8, 0.4, 16), this.templeGoldReliefMat);
+    solarDisc.rotation.z = Math.PI / 2;
+    solarDisc.position.set(-1.9, 31.5, 0);
+    pyramidGroup.add(solarDisc);
+
+    // Eternal Solar Flame
+    const fire = new THREE.Mesh(this.getCone(1.2, 3.2, 8), this.torchFireMat);
+    fire.position.y = 32.5;
+    pyramidGroup.add(fire);
+
+    landmark.add(pyramidGroup);
+
+    // 2. 5 Colossal Titanosaur Ribcage Arches over the Railway
+    // Grounded at |X| = 6.8m, curving overhead to apex Y = 11.4m (100% CLEAR of corridor!)
+    for (let a = 0; a < 5; a++) {
+      const archZ = -10.0 - a * 18.0;
+      const archGroup = new THREE.Group();
+      archGroup.position.set(0, 0, archZ);
+
+      [-1, 1].forEach((side) => {
+        // Massive petrified rib bone arch strut
+        // Base grounded at X = side * 7.8m
+        const ribBase = new THREE.Mesh(this.getCylinder(0.8, 1.3, 5.5, 8), this.boneIvoryMat);
+        ribBase.position.set(side * 7.8, 2.75, 0);
+        archGroup.add(ribBase);
+
+        // Middle curved segment rising from Y = 5.0m to 8.2m, staying strictly outside |X| >= 5.8m
+        const ribMid = new THREE.Mesh(this.getCylinder(0.65, 0.8, 4.0, 8), this.boneIvoryMat);
+        ribMid.position.set(side * 7.2, 6.8, 0);
+        ribMid.rotation.z = side * 0.22;
+        archGroup.add(ribMid);
+
+        // Arch apex strut curving over the track: strictly ABOVE Y = 8.6m! (min Y >= 9.1m)
+        const ribApex = new THREE.Mesh(this.getCylinder(0.5, 0.65, 4.8, 8), this.boneIvoryMat);
+        ribApex.position.set(side * 3.4, 11.2, 0);
+        ribApex.rotation.z = side * 0.95;
+        archGroup.add(ribApex);
+
+        // Hanging jungle vines clinging to the ancient bones at |X| = 6.4m
+        const vine = new THREE.Mesh(this.getCylinder(0.08, 0.12, 3.2, 5), this.hangingVineMat);
+        vine.position.set(side * 6.4, 6.2, 0.4);
+        archGroup.add(vine);
+      });
+
+      // Massive Spinal Vertebra Keystone at Apex (Y = 12.0m)
+      const vertebra = new THREE.Mesh(this.getBox(2.2, 1.4, 2.8), this.boneIvoryMat);
+      vertebra.position.y = 12.0;
+      archGroup.add(vertebra);
+
+      landmark.add(archGroup);
+    }
+
+    // 3. Cascading Tiered Temple Waterfalls flanking viaduct
+    const cataractLeft = this.buildPrehistoricWaterfall(-16.0, 0.0, -length * 0.5, 12.0, 24.0);
+    landmark.add(cataractLeft);
+
+    const cataractRight = this.buildPrehistoricWaterfall(18.0, 0.0, -length * 0.5, 14.0, 26.0);
+    landmark.add(cataractRight);
+
+    return landmark;
+  }
+
   // =========================================================================
   // SIX PREHISTORIC BIOME DISTRICT BUILDERS
   // =========================================================================
@@ -1971,6 +2208,32 @@ export class JurassicRushWorldBuilder {
     const pterosaurFlock = this.buildPterosaurFlock(-chunkLength * 0.5);
     districtA.add(pterosaurFlock.group);
     director.registerPterosaurs(pterosaurFlock.group, pterosaurFlock.gliders, 16.0, 3.2);
+
+    // 10. Sector 04 Outpost Gateway — Iconic Opening Landmark
+    if (worldZ >= -80 && worldZ <= 40) {
+      const gate = this.buildExpeditionOutpostGate(0, 0, -22.0);
+      districtA.add(gate);
+    }
+
+    // 11. Valley Reveal Canopy Tunnel (tightening green corridor before bursting into the open valley)
+    if (worldZ <= -280 && worldZ >= -400) {
+      [-1, 1].forEach((side) => {
+        for (let cz = 10; cz < chunkLength; cz += 25) {
+          const tunnelTree = this.buildAncientCanopyTree(side * (curbEdge + 4.5), 0.0, -cz, 1.2);
+          districtA.add(tunnelTree);
+        }
+        for (let bz = 15; bz < chunkLength; bz += 30) {
+          const bough = new THREE.Mesh(this.getCylinder(0.75, 1.1, 13.0, 7), this.treeBarkMat);
+          bough.position.set(side * 5.6, 10.2, -bz);
+          bough.rotation.z = side * 1.15;
+          districtA.add(bough);
+
+          const liana = new THREE.Mesh(this.getCylinder(0.08, 0.12, 3.2, 5), this.hangingVineMat);
+          liana.position.set(side * 4.5, 8.8, -bz);
+          districtA.add(liana);
+        }
+      });
+    }
   }
 
   /**
@@ -2010,11 +2273,36 @@ export class JurassicRushWorldBuilder {
       mesa.position.set(side * (curbEdge + 32.0), 5.0, -chunkLength * 0.5);
       districtB.add(mesa);
 
+      // Layered Distant Volcanic Peak Silhouettes at |X| = 72m
+      const peak = new THREE.Mesh(this.getCone(22.0, 44.0, 8), this.stratifiedSandstoneMat);
+      peak.position.set(side * 72.0, 10.0, -chunkLength * 0.5);
+      districtB.add(peak);
+
       // Low cycad groves & giant tree ferns along trackside
       for (let z = 12; z < chunkLength; z += 30) {
         const cycad = this.buildEyeLevelCycad(side * (curbEdge + 2.4), 0.0, -z, 1.15);
         districtB.add(cycad);
       }
+    });
+
+    // Cascading mountain waterfalls pouring into the valley gorge
+    const valleyWaterfall = this.buildPrehistoricWaterfall(curbEdge + 28.0, 0.0, -chunkLength * 0.5, 16.0, 30.0);
+    districtB.add(valleyWaterfall);
+    director.registerWaterfall(valleyWaterfall.children[0] as THREE.Mesh, [], 2.8);
+
+    // Prehistoric Riverbed alongside sauropod crossing path
+    const river = this.buildPrehistoricRiver(-(curbEdge + 12.0), 0.0, -chunkLength * 0.5, 12.0, chunkLength);
+    districtB.add(river);
+
+    // Water splash rings around colossal sauropod's crossing feet
+    const splashRings: THREE.Mesh[] = [];
+    [-3.8, 3.8].forEach((lz) => {
+      const ringGeo = new THREE.RingGeometry(1.6, 2.4, 16);
+      ringGeo.rotateX(-Math.PI / 2);
+      const ring = new THREE.Mesh(ringGeo, this.splashRingMat);
+      ring.position.set(-(curbEdge + 8.5), 0.08, -chunkLength * 0.45 + lz);
+      districtB.add(ring);
+      splashRings.push(ring);
     });
 
     // Fossil trackways embedded in limestone riverbed
@@ -2051,6 +2339,7 @@ export class JurassicRushWorldBuilder {
       {
         triggerZ: worldZ - chunkLength * 0.45,
         herdMembers,
+        splashRings,
         isEventA: true
       }
     );
@@ -2132,9 +2421,29 @@ export class JurassicRushWorldBuilder {
     districtC.add(archGroup);
 
     // EVENT B — RAPTOR RIDGE: Pack of 3 athletic raptors sprinting along elevated terrace at X = 11.5m
-    const ridgeTerrace = new THREE.Mesh(this.getBox(7.5, 4.5, chunkLength * 0.8), this.stratifiedSandstoneMat);
-    ridgeTerrace.position.set(curbEdge + 6.5, -0.75, -chunkLength * 0.5);
+    // Perched Rock Shelf at Z = -chunkLength * 0.15 where pack anticipates oncoming train at Y = 3.5m
+    const perchShelf = new THREE.Mesh(this.getBox(6.5, 3.5, 14.0), this.stratifiedSandstoneMat);
+    perchShelf.position.set(curbEdge + 6.5, 1.75, -chunkLength * 0.15);
+    districtC.add(perchShelf);
+
+    // Running terrace at Y = 1.5m along canyon wall
+    const ridgeTerrace = new THREE.Mesh(this.getBox(7.5, 3.0, chunkLength * 0.75), this.stratifiedSandstoneMat);
+    ridgeTerrace.position.set(curbEdge + 6.5, 0.0, -chunkLength * 0.5);
     districtC.add(ridgeTerrace);
+
+    // Sandstone Rock Buttress Outcrop & Concealing Fissure at Z = -chunkLength * 0.82 where raptors disappear
+    const buttressGroup = new THREE.Group();
+    buttressGroup.position.set(curbEdge + 8.5, 0, -chunkLength * 0.82);
+
+    const buttress = new THREE.Mesh(this.getBox(8.0, 14.0, 16.0), this.stratifiedSandstoneMat);
+    buttress.position.y = 7.0;
+    buttressGroup.add(buttress);
+
+    const fissureOpening = new THREE.Mesh(this.getBox(3.5, 10.0, 8.0), this.canyonRockMat);
+    fissureOpening.position.set(4.2, 5.0, 2.0);
+    buttressGroup.add(fissureOpening);
+
+    districtC.add(buttressGroup);
 
     const raptorPack = this.buildRaptorPack(curbEdge + 5.5, 1.5, -chunkLength * 0.5, true);
     districtC.add(raptorPack.packGroup);
@@ -2148,6 +2457,8 @@ export class JurassicRushWorldBuilder {
       chunkLength * 0.1,
       {
         triggerZ: worldZ - chunkLength * 0.5,
+        baseY: 1.5,
+        perchY: 3.5,
         isEventB: true
       }
     );
@@ -2217,6 +2528,10 @@ export class JurassicRushWorldBuilder {
 
       districtD.add(pyramid);
     });
+
+    // Signature Architectural Landmark: Grand Sun Temple Viaduct & Titanosaur Bone Arches
+    const viaduct = this.buildGrandSunTempleViaduct(0, 0, 0, chunkLength);
+    districtD.add(viaduct);
 
     // Fossil stone beds along the embankment
     const fossilBed = this.buildFossilBed(-(curbEdge + 4.5), 0.0, -chunkLength * 0.45, 1.15);

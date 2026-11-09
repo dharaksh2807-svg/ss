@@ -1592,6 +1592,89 @@ export class ObstacleFactory {
       });
     }
 
+    // 15. Theme-Specific Jurassic Rush Expedition Bullbar Cowcatcher, Amber Searchlight Bar & Anti-Raptor Armor Skirts
+    if (isJurassicRush) {
+      const halfW = w * 0.5;
+      const steelMat = new THREE.MeshStandardMaterial({
+        color: 0x27272a, // Heavy reinforced expedition steel
+        roughness: 0.55,
+        metalness: 0.75
+      });
+      this.curvedManager.applyCurvature(steelMat);
+
+      const amberAccentMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15, // High-visibility hazard amber
+        roughness: 0.35,
+        metalness: 0.40,
+        emissive: new THREE.Color(0xd97706),
+        emissiveIntensity: 0.25
+      });
+      this.curvedManager.applyCurvature(amberAccentMat);
+
+      const searchlightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a }); // Brilliant warm amber beam
+      this.curvedManager.applyCurvature(searchlightMat);
+
+      if (!hasRamp) {
+        const expeditionCabGroup = new THREE.Group();
+
+        // Heavy triangular expedition bullbar / cowcatcher plow
+        const bullbarGeo = new THREE.BoxGeometry(w * 0.88, 0.48, 0.42);
+        const bullbar = new THREE.Mesh(bullbarGeo, steelMat);
+        bullbar.position.set(0, 0.34, bodyLength * 0.5 + noseLength * 0.88);
+        expeditionCabGroup.add(bullbar);
+
+        // Heavy vertical push bars
+        [-w * 0.28, w * 0.28].forEach((bx) => {
+          const pushBarGeo = new THREE.BoxGeometry(0.10, 0.90, 0.12);
+          const pushBar = new THREE.Mesh(pushBarGeo, steelMat);
+          pushBar.position.set(bx, 0.65, bodyLength * 0.5 + noseLength * 0.92);
+          expeditionCabGroup.add(pushBar);
+        });
+
+        // High-visibility amber hazard chevron plate on front brow
+        const hazardPlateGeo = new THREE.BoxGeometry(w * 0.82, 0.16, 0.08);
+        const hazardPlate = new THREE.Mesh(hazardPlateGeo, amberAccentMat);
+        hazardPlate.position.set(0, 1.25, bodyLength * 0.5 + noseLength * 0.96);
+        expeditionCabGroup.add(hazardPlate);
+
+        // Safari expedition roof searchlight bar mounted on cab brow
+        const lightBarGeo = new THREE.BoxGeometry(w * 0.76, 0.10, 0.18);
+        const lightBar = new THREE.Mesh(lightBarGeo, steelMat);
+        lightBar.position.set(0, h + 0.12, bodyLength * 0.5 + noseLength * 0.45);
+        expeditionCabGroup.add(lightBar);
+
+        // 3 heavy amber/golden projector searchlight pods
+        [-w * 0.26, 0, w * 0.26].forEach((lx) => {
+          const podGeo = new THREE.CylinderGeometry(0.14, 0.15, 0.20, 12);
+          podGeo.rotateX(Math.PI / 2);
+          const podMesh = new THREE.Mesh(podGeo, steelMat);
+          podMesh.position.set(lx, h + 0.24, bodyLength * 0.5 + noseLength * 0.46);
+          expeditionCabGroup.add(podMesh);
+
+          const lensGeo = new THREE.CircleGeometry(0.12, 12);
+          const lensMesh = new THREE.Mesh(lensGeo, searchlightMat);
+          lensMesh.position.set(lx, h + 0.24, bodyLength * 0.5 + noseLength * 0.46 + 0.11);
+          expeditionCabGroup.add(lensMesh);
+        });
+
+        group.add(expeditionCabGroup);
+      }
+
+      // Reinforced anti-raptor armored lower skirts and amber sill line along both flanks
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.22, bodyLength * 0.94);
+      const amberSillGeo = new THREE.BoxGeometry(0.05, 0.06, bodyLength * 0.92);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, steelMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const sill = new THREE.Mesh(amberSillGeo, amberAccentMat);
+        sill.position.set(sideX, 0.56, 0);
+        group.add(sill);
+      });
+    }
+
     return group;
   }
 
