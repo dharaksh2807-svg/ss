@@ -403,6 +403,7 @@ export class CharacterModel {
 
     if (this.glbInstance) {
       this.glbInstance.mixer.stopAllAction();
+      this.glbInstance.mixer.uncacheRoot(this.glbInstance.scene);
       this.glbInstance = null;
     }
     if (this.glbContainer) {
@@ -917,13 +918,14 @@ export class CharacterModel {
     // 2. Pelvis yaw & roll counter-rotation (proportional to stride intensity)
     this.targetHipsRot.set(0, -sinT * (0.06 + speedFraction * 0.04), sinT * (0.025 + speedFraction * 0.018));
 
-    // 3. Spine athletic forward lean — stronger at sprint speed for energetic body language
+    // 3. Spine athletic forward lean & biomechanical roll counter-twist
     let forwardLean = 0.12 + speedFraction * 0.14; // 0.12 idle-run → 0.26 max sprint
     if (variant === 'TRAIN_ROOF_RUN') forwardLean += 0.05; // hunched for low clearance
     if (variant === 'CLIMB') forwardLean += 0.22;
 
-    // Counter-twist amplitude also scales slightly with speed
-    this.targetSpineRot.set(forwardLean, sinT * (0.10 + speedFraction * 0.04), 0);
+    // Counter-roll opposes pelvis roll, preserving runner core stability and head center of mass
+    const spineRoll = -sinT * (0.022 + speedFraction * 0.016);
+    this.targetSpineRot.set(forwardLean, sinT * (0.10 + speedFraction * 0.04), spineRoll);
 
     // 4. Head gaze stabilization — compensates for spine lean, keeps eyes level on track
     this.targetHeadRot.set(-forwardLean * 0.60, -sinT * 0.09, -sinT * 0.025);
@@ -941,10 +943,9 @@ export class CharacterModel {
     const rightSwing = Math.max(0, Math.sin(t + Math.PI - 0.35));
     this.targetRightCalfRot.set(0.06 + rightSwing * (1.05 + speedFraction * 0.18), 0, 0);
 
-    // Foot ankle flexion (with slope-aligned dorsiflexion during climbing)
-    // Ankle pushes off more aggressively at speed (plantarflexion on stance phase)
-    let leftAnklePitch = -sinT * (0.10 + speedFraction * 0.06);
-    let rightAnklePitch = sinT * (0.10 + speedFraction * 0.06);
+    // Foot ankle flexion: swing foot dorsiflexes for deck clearance, stance foot plantarflexes for push-off
+    let leftAnklePitch = sinT * (0.12 + speedFraction * 0.08);
+    let rightAnklePitch = -sinT * (0.12 + speedFraction * 0.08);
     if (variant === 'CLIMB') {
       leftAnklePitch += 0.24;
       rightAnklePitch += 0.24;
@@ -1084,6 +1085,10 @@ export class CharacterModel {
     this.targetLeftCalfRot.set(0.92 * impact, 0, 0);
     this.targetRightLegRot.set(-0.35 * impact, 0, 0.05 * impact);
     this.targetRightCalfRot.set(0.85 * impact, 0, 0);
+
+    // Grounded sneaker sole compression during impact
+    this.targetLeftSneakerRot.set(0.28 * impact, 0, 0);
+    this.targetRightSneakerRot.set(0.28 * impact, 0, 0);
 
     this.targetLeftArmRot.set(0.15 * impact, 0, -0.58 * impact);
     this.targetRightArmRot.set(0.15 * impact, 0, 0.58 * impact);

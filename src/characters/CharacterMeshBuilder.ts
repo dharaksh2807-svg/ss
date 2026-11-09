@@ -807,9 +807,11 @@ export class CharacterMeshBuilder {
         roughness: 0.1,
         metalness: 0.9,
         emissive: outfit.colors.details,
-        emissiveIntensity: 0.25
+        emissiveIntensity: 0.28
       });
       const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.5 });
+      const catchlightGeo = new THREE.SphereGeometry(0.010, 6, 4);
+      const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
       // Elastic goggle strap around cap
       const goggleStrapGeo = new THREE.TorusGeometry(0.26, 0.018, 6, 20);
@@ -822,6 +824,9 @@ export class CharacterMeshBuilder {
       const leftGoggle = new THREE.Group();
       leftGoggle.add(new THREE.Mesh(goggleFrameGeo, frameMat));
       leftGoggle.add(new THREE.Mesh(lensGeo, lensMat));
+      const leftCatch = new THREE.Mesh(catchlightGeo, catchlightMat);
+      leftCatch.position.set(0.018, 0.018, 0.008);
+      leftGoggle.add(leftCatch);
       leftGoggle.position.set(-0.10, 0.17, -0.22);
       leftGoggle.rotation.x = -0.15;
       leftGoggle.rotation.y = 0.12;
@@ -831,6 +836,9 @@ export class CharacterMeshBuilder {
       const rightGoggle = new THREE.Group();
       rightGoggle.add(new THREE.Mesh(goggleFrameGeo, frameMat));
       rightGoggle.add(new THREE.Mesh(lensGeo, lensMat));
+      const rightCatch = new THREE.Mesh(catchlightGeo, catchlightMat);
+      rightCatch.position.set(0.018, 0.018, 0.008);
+      rightGoggle.add(rightCatch);
       rightGoggle.position.set(0.10, 0.17, -0.22);
       rightGoggle.rotation.x = -0.15;
       rightGoggle.rotation.y = -0.12;
@@ -1476,7 +1484,7 @@ export class CharacterMeshBuilder {
     const hand = new THREE.Group();
     const mat = overrideMat || skinMat;
 
-    // Sculpted Palm
+    // Sculpted Palm with athletic taper
     const palmGeo = new THREE.BoxGeometry(0.095, 0.085, 0.07);
     const palm = new THREE.Mesh(palmGeo, mat);
     palm.castShadow = true;
@@ -1490,7 +1498,16 @@ export class CharacterMeshBuilder {
     fingers.castShadow = true;
     hand.add(fingers);
 
-    // Tucked Thumb knuckle
+    // Subtle knuckle separation grooves
+    const grooveMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, transparent: true, opacity: 0.25 });
+    const grooveGeo = new THREE.BoxGeometry(0.006, 0.038, 0.035);
+    [-0.022, 0, 0.022].forEach((gx) => {
+      const groove = new THREE.Mesh(grooveGeo, grooveMat);
+      groove.position.set(gx, -0.045, -0.02);
+      hand.add(groove);
+    });
+
+    // Tucked Thumb knuckle & proximal phalanx
     const thumbGeo = new THREE.SphereGeometry(0.032, 6, 6);
     thumbGeo.scale(1.2, 0.8, 1.0);
     const thumb = new THREE.Mesh(thumbGeo, mat);
@@ -1587,9 +1604,9 @@ export class CharacterMeshBuilder {
       foot.add(pod);
 
     } else {
-      // Classic Urban High-Top Skate Sneaker (Layered Sole, Toe Cap, Tongue, Laces, Heel Tab)
+      // Classic Urban High-Top Skate Sneaker (Layered Sole, Dual-Density Heel Wedge, Toe Cap, Tongue, Laces, Heel Counter & Tab)
 
-      // 1. Rubber Lug Outsole
+      // 1. Rubber Lug Outsole (Full base)
       const soleGeo = new THREE.BoxGeometry(0.19, 0.075, 0.42);
       const sole = new THREE.Mesh(soleGeo, mats.sneakerSoleMat);
       sole.position.set(0, 0.038, -0.05);
@@ -1597,18 +1614,31 @@ export class CharacterMeshBuilder {
       sole.receiveShadow = true;
       foot.add(sole);
 
+      // 1b. Dual-Density Heel Crash-Pad Wedge
+      const heelWedgeGeo = new THREE.BoxGeometry(0.192, 0.032, 0.18);
+      const heelWedge = new THREE.Mesh(heelWedgeGeo, mats.secondaryMat);
+      heelWedge.position.set(0, 0.054, 0.06);
+      foot.add(heelWedge);
+
       // 2. Midsole Accent Stripe
       const stripeGeo = new THREE.BoxGeometry(0.195, 0.02, 0.425);
       const stripe = new THREE.Mesh(stripeGeo, mats.accentMat);
       stripe.position.set(0, 0.065, -0.05);
       foot.add(stripe);
 
-      // 3. Sneaker Upper
+      // 3. Sneaker Upper (Athletic high-top)
       const upperGeo = new THREE.BoxGeometry(0.17, 0.17, 0.36);
       const upper = new THREE.Mesh(upperGeo, mats.sneakerMainMat);
       upper.position.set(0, 0.14, -0.04);
       upper.castShadow = true;
       foot.add(upper);
+
+      // 3b. Sculpted Rear Heel Counter Support
+      const heelCounterGeo = new THREE.CylinderGeometry(0.088, 0.092, 0.11, 10, 1, false, -Math.PI * 0.5, Math.PI);
+      heelCounterGeo.rotateY(Math.PI);
+      const heelCounter = new THREE.Mesh(heelCounterGeo, mats.secondaryMat);
+      heelCounter.position.set(0, 0.17, 0.11);
+      foot.add(heelCounter);
 
       // 4. Curved Rubber Toe Cap Bumper
       const toeGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.165, 14, 1, false, 0, Math.PI);
@@ -1618,11 +1648,20 @@ export class CharacterMeshBuilder {
       toe.castShadow = true;
       foot.add(toe);
 
-      // 5. Tongue & Lacing Panel
-      const laceGeo = new THREE.BoxGeometry(0.08, 0.03, 0.14);
-      const laceMesh = new THREE.Mesh(laceGeo, mats.sneakerSoleMat);
-      laceMesh.position.set(0, 0.20, -0.10);
-      foot.add(laceMesh);
+      // 5. Padded Tongue & 3-Tier Lacing Panel
+      const tongueGeo = new THREE.BoxGeometry(0.085, 0.04, 0.15);
+      const tongueMesh = new THREE.Mesh(tongueGeo, mats.sneakerMainMat);
+      tongueMesh.position.set(0, 0.19, -0.09);
+      tongueMesh.rotation.x = -0.18;
+      foot.add(tongueMesh);
+
+      // 3 distinct cross-lace segments across the instep
+      const laceBarGeo = new THREE.BoxGeometry(0.088, 0.012, 0.020);
+      [-0.14, -0.09, -0.04].forEach((lz, idx) => {
+        const lace = new THREE.Mesh(laceBarGeo, mats.sneakerSoleMat);
+        lace.position.set(0, 0.205 + idx * 0.012, lz);
+        foot.add(lace);
+      });
 
       // 6. Rear Heel Pull-Tab
       const tabGeo = new THREE.BoxGeometry(0.04, 0.06, 0.02);

@@ -1,0 +1,27 @@
+{
+  "task": "PHASE 7: CHARACTER, LOCOMOTION AND CAMERA QUALITY BAR",
+  "allowed_write_scope": [
+    "src/characters/",
+    "src/player/",
+    "src/scene/",
+    "docs/",
+    "test/",
+    ".gravitas/sessions/character-locomotion-camera-phase7/"
+  ],
+  "forbidden_write_scope": [
+    "src/environment/worlds/",
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/VipComedyEventDirector.ts"
+  ],
+  "acceptance_criteria": [
+    "STEP 1: Character pipeline audit: real rigged GLBs vs procedural, bone-affecting clips, facial expression support, morph targets, grounding/scaling, foot sliding analysis.",
+    "STEP 2: Define visual character bible: recognizable silhouettes, stylized anatomy/proportions, facial forms, material response, foot contact, mobile contrast.",
+    "STEP 3: Select high-value production targets: upgrade main player character/hero presentation, create precise artist-facing asset brief for rig hierarchy, skin weights, poses, budgets.",
+    "STEP 4: Animation polish: natural weight distribution, foot slide elimination, limb arcs, torso rotation, smooth transitions, grounding without altering physical collision.",
+    "STEP 5: Camera quality: Classic, Character Focus, intro, game-over, photo mode framing, rooftop clarity, hazard visibility, landing shake damping.",
+    "STEP 6: Scene presentation: character materials and lighting across dark/bright worlds, portrait readability, mobile safe areas.",
+    "STEP 7: Safety & performance: GLB loading/fallback, cloned skeleton ownership, AnimationMixer cleanup, shared materials, zero collision corruption.",
+    "STEP 8: Verification release gate: full build, character tests, locomotion tests, camera tests, browser tests, before/after evidence."
+  ]
+}
+
