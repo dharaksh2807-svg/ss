@@ -188,6 +188,7 @@ export class HistoricQuarterWorldBuilder {
     let geo = this.boxGeos.get(key);
     if (!geo) {
       geo = new THREE.BoxGeometry(w, h, d);
+      geo.userData.isShared = true;
       this.boxGeos.set(key, geo);
     }
     return geo;
@@ -198,6 +199,7 @@ export class HistoricQuarterWorldBuilder {
     let geo = this.cylGeos.get(key);
     if (!geo) {
       geo = new THREE.CylinderGeometry(rt, rb, h, s);
+      geo.userData.isShared = true;
       this.cylGeos.set(key, geo);
     }
     return geo;
@@ -208,6 +210,7 @@ export class HistoricQuarterWorldBuilder {
     let geo = this.sphereGeos.get(key);
     if (!geo) {
       geo = new THREE.SphereGeometry(r, ws, hs);
+      geo.userData.isShared = true;
       this.sphereGeos.set(key, geo);
     }
     return geo;

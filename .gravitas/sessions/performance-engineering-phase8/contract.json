@@ -1,0 +1,24 @@
+{
+  "task": "PHASE 8: AAA-GRADE THREE.JS PERFORMANCE ENGINEERING",
+  "baseline_sha": "17e98b75609830d6c440627ca64aabade19de3a5",
+  "allowed_write_scope": [
+    "src/scene/",
+    "src/environment/",
+    "src/track/",
+    "docs/",
+    "test/",
+    "artifacts/phase8/",
+    ".gravitas/sessions/performance-engineering-phase8/"
+  ],
+  "forbidden_write_scope": [],
+  "acceptance_criteria": [
+    "STEP 1: Establish new controlled performance baselines on current main (Lobby, Normal, High-speed, Moving trains, Rooftops, Mitron Express, Rahulverse, dark/bright worlds, restarts, theme switches, long-distance continuous play). Report frame time P50/P95/P99, stutter, draw calls, triangles, active geometries, textures, shaders, heap.",
+    "STEP 2: Identify and rank measured bottlenecks by cost (draw call overhead, unshared geometry/materials, shadow maps, overdraw, chunk recycling churn, disposal leaks).",
+    "STEP 3: Apply smallest justified optimizations (instanced rendering where applicable, geometry/material reuse, culling/streaming, shadow/light tuning, texture sharing).",
+    "STEP 4: Memory lifetime verification: repeated run start/stop, death/revive, fast restart, theme switching, character switching, chunk recycling; verify bounded heap and stable GPU resource counts.",
+    "STEP 5: Quality-tier behavior: preserve AUTO, LOW, MEDIUM, HIGH tiers with smooth degradation and zero visual artifacting.",
+    "STEP 6: Visual regression testing: identical-seed screenshot comparisons before & after ensuring no visual hierarchy, lighting, or readability degradation.",
+    "STEP 7: Comprehensive verification release gate: build, unit tests, regression suites, browser Playwright tests, long-distance soak test pass."
+  ]
+}
+

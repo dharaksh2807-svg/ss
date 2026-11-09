@@ -6,11 +6,17 @@ export type RenderResource = THREE.BufferGeometry | THREE.Material;
 export function disposeObjectResources(root: THREE.Object3D, shared: ReadonlySet<RenderResource>): void {
   const owned = new Set<RenderResource>();
   root.traverse(object => {
-    if (!(object as THREE.Mesh).isMesh) return;
-    const mesh = object as THREE.Mesh;
-    if (!shared.has(mesh.geometry)) owned.add(mesh.geometry);
-    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-      if (!shared.has(material)) owned.add(material);
+    const renderable = object as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] };
+    if (renderable.geometry && !shared.has(renderable.geometry)) {
+      owned.add(renderable.geometry);
+    }
+    if (renderable.material) {
+      const mats = Array.isArray(renderable.material) ? renderable.material : [renderable.material];
+      for (const material of mats) {
+        if (material && !shared.has(material)) {
+          owned.add(material);
+        }
+      }
     }
   });
   for (const resource of owned) resource.dispose();
@@ -18,6 +24,13 @@ export function disposeObjectResources(root: THREE.Object3D, shared: ReadonlySet
 
 /** Snapshot resources retained directly by a factory, including its material arrays. */
 export function captureSharedResources(factory: object): Set<RenderResource> {
-  return new Set(Object.values(factory).flat().filter((value): value is RenderResource =>
-    value instanceof THREE.BufferGeometry || value instanceof THREE.Material));
+  const resources = Object.values(factory).flat().filter((value): value is RenderResource =>
+    value instanceof THREE.BufferGeometry || value instanceof THREE.Material);
+  for (const res of resources) {
+    if (res.userData) {
+      res.userData.isShared = true;
+    }
+  }
+  return new Set(resources);
 }
+

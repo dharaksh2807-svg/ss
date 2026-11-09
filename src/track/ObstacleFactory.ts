@@ -2435,7 +2435,7 @@ export class ObstacleFactory {
     // Heavy cast-steel H-frame bolster subframe
     const frameGeo = new THREE.BoxGeometry(CONSTANTS.TRAIN_WIDTH * 0.72, 0.22, 2.5);
     const frame = new THREE.Mesh(frameGeo, this.trainChassisMat);
-    frame.castShadow = true;
+    frame.castShadow = false;
     bogie.add(frame);
 
     // 4 Flanged Steel Rail Wheels on 2 Axles (Gauge ±0.8m)
@@ -2455,7 +2455,7 @@ export class ObstacleFactory {
       const leftWheelTread = new THREE.Mesh(treadGeo, this.trainWheelMat);
       leftWheelTread.rotation.z = Math.PI / 2;
       leftWheelTread.position.set(-0.8, 0, axleZ);
-      leftWheelTread.castShadow = true;
+      leftWheelTread.castShadow = false;
       bogie.add(leftWheelTread);
 
       // Left wheel inner flange (resting inside rail head)
@@ -2468,7 +2468,7 @@ export class ObstacleFactory {
       const rightWheelTread = new THREE.Mesh(treadGeo, this.trainWheelMat);
       rightWheelTread.rotation.z = Math.PI / 2;
       rightWheelTread.position.set(0.8, 0, axleZ);
-      rightWheelTread.castShadow = true;
+      rightWheelTread.castShadow = false;
       bogie.add(rightWheelTread);
 
       // Right wheel inner flange

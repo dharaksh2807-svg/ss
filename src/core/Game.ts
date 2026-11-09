@@ -679,6 +679,7 @@ export class Game {
     this.cameraController.setLobbyMode(false);
     this.cameraController.setGameOverMode(false);
     this.player.mesh.rotation.y = 0;
+    this.trackManager.updateChunkVisibility(this.player.position.z, false);
 
     // Start opening cinematic sequence if eligible
     this.openingSequence.start(isRetry);
@@ -1294,6 +1295,7 @@ export class Game {
       this.player.position.y = CONSTANTS.PLAYER_BASE_Y + Math.sin(now * 0.003) * 0.08;
       this.player.mesh.position.copy(this.player.position);
       this.player.mesh.rotation.y = Math.PI - 0.2 + Math.sin(now * 0.001) * 0.08;
+      this.trackManager.updateChunkVisibility(0, true);
     }
 
     // Camera follow update with dynamic speed-based FOV and coordinated elevation tracking

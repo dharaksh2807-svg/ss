@@ -1,0 +1,13 @@
+{
+  "planning": "compact",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "performance-engineering",
+    "rendering-pipeline",
+    "memory-lifecycle",
+    "multi-scene-profiling"
+  ]
+}
+

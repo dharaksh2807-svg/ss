@@ -130,7 +130,7 @@ export class CollectibleFactory {
     // Main Coin Disk: rotate around X by PI/2 so circular flat faces face +Z and -Z
     const coinMesh = new THREE.Mesh(this.coinGeo, this.coinGoldMat);
     coinMesh.rotation.x = Math.PI / 2;
-    coinMesh.castShadow = true;
+    coinMesh.castShadow = false;
     coinGroup.add(coinMesh);
 
     // Beveled Outer Rim: constructed in X-Y plane, normal along Z

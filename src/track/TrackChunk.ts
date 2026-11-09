@@ -365,6 +365,10 @@ export class TrackChunk {
       tunnelRibMat,
       tunnelLampMat
     };
+
+    for (const mat of Object.values(TrackChunk.sharedMaterials)) {
+      if (mat?.userData) mat.userData.isShared = true;
+    }
   }
 
   public static getTerrainMaterials(themeId: string): { left: THREE.Material; right: THREE.Material } {
@@ -679,8 +683,11 @@ export class TrackChunk {
 
     if (!TrackChunk.railGeo) {
       TrackChunk.sleeperGeo = new THREE.BoxGeometry(CONSTANTS.LANE_WIDTH * 0.82, 0.16, 0.36);
+      TrackChunk.sleeperGeo.userData.isShared = true;
       TrackChunk.tiePlateGeo = new THREE.BoxGeometry(0.24, 0.04, 0.38);
+      TrackChunk.tiePlateGeo.userData.isShared = true;
       TrackChunk.railGeo = new THREE.BoxGeometry(railHeadW, railHeadH, this.length, 1, 1, chunkSegs);
+      TrackChunk.railGeo.userData.isShared = true;
     }
 
     const totalSleepers = sleeperCount * CONSTANTS.LANE_POSITIONS.length;
@@ -702,13 +709,13 @@ export class TrackChunk {
       // Chrome polished steel running rails (left & right rail per lane)
       const leftRail = new THREE.Mesh(TrackChunk.railGeo!, mats.railTopMat);
       leftRail.position.set(laneX - railGauge * 0.5, railHeadH * 0.5 + 0.05, -this.length * 0.5);
-      leftRail.castShadow = true;
+      leftRail.castShadow = false;
       leftRail.receiveShadow = true;
       this.group.add(leftRail);
 
       const rightRail = new THREE.Mesh(TrackChunk.railGeo!, mats.railTopMat);
       rightRail.position.set(laneX + railGauge * 0.5, railHeadH * 0.5 + 0.05, -this.length * 0.5);
-      rightRail.castShadow = true;
+      rightRail.castShadow = false;
       rightRail.receiveShadow = true;
       this.group.add(rightRail);
 
@@ -1746,7 +1753,7 @@ export class TrackChunk {
       chunkZ: this.chunkZ, theme: this.currentTheme, transition: this.isTransitionPortal,
       tunnel: this.isTunnel, portal: this.tunnelPortal, playerInTunnel: this.playerInTunnel,
       obstacles: this.obstacles, collectibles: this.collectibles, collision: this.chunkHadCollision,
-      scenery: [...this.decorativeGroup.children], bounds: this.solidSceneryBounds
+      bounds: this.solidSceneryBounds
     };
     this.chunkZ = worldZ;
     this.group.position.z = worldZ;
@@ -1761,21 +1768,6 @@ export class TrackChunk {
     this.tunnelPortal = pattern?.tunnelPortal || 'NONE';
     this.playerInTunnel = false;
     this.patternName = pattern?.name || '';
-
-    // Dynamically regenerate modular scenery for recycled position and assigned district
-    const director = EnvironmentDirector.getInstance();
-    const chunkIndex = Math.round(Math.abs(worldZ / this.length));
-    director.decorateChunk(this, worldZ, chunkIndex, {
-      forceTheme: resolvedTheme,
-      forcePortal: isTransition,
-      detail: this.currentSceneryDetail
-    });
-
-    // Cache only solid scenery near the rail corridor, excluding the track bed.
-    const corridorEdge = Math.max(...Object.values(CONSTANTS.LANES).map(Math.abs)) + CONSTANTS.TRAIN_WIDTH;
-    this.solidSceneryBounds = ObstacleFactory.getSolidGeometryBounds(this.decorativeGroup).filter((box) =>
-      box.max.y > 0.5 && box.min.x < corridorEdge && box.max.x > -corridorEdge
-    );
 
     // Retain the old geometry until the candidate passes validation, so rejection
     // cannot destroy a recycled chunk's authoritative support surfaces.
@@ -2145,8 +2137,6 @@ export class TrackChunk {
       .map((c: any) => c.lane));
     if (this.hasMovingTrainPathConflict(placementPeers) || !this.connectTrainRoofs(placementPeers, playerSpeed, gapCueLanes)) {
       this.clearDynamicItems();
-      this.decorativeGroup.clear();
-      this.decorativeGroup.add(...previous.scenery);
       this.solidSceneryBounds = previous.bounds;
       this.chunkZ = previous.chunkZ;
       this.group.position.z = previous.chunkZ;
@@ -2167,6 +2157,20 @@ export class TrackChunk {
       this.obstacleFactory.disposeGroup(obs.group);
     }
     for (const col of previous.collectibles) this.collectibleFactory.disposeGroup(col.group);
+
+    // Modular district scenery is generated ONLY when the pattern is verified and accepted
+    const director = EnvironmentDirector.getInstance();
+    const chunkIndex = Math.round(Math.abs(worldZ / this.length));
+    director.decorateChunk(this, worldZ, chunkIndex, {
+      forceTheme: resolvedTheme,
+      forcePortal: isTransition,
+      detail: this.currentSceneryDetail
+    });
+
+    const corridorEdge = Math.max(...Object.values(CONSTANTS.LANES).map(Math.abs)) + CONSTANTS.TRAIN_WIDTH;
+    this.solidSceneryBounds = ObstacleFactory.getSolidGeometryBounds(this.decorativeGroup).filter((box) =>
+      box.max.y > 0.5 && box.min.x < corridorEdge && box.max.x > -corridorEdge
+    );
 
     for (const obs of this.obstacles) {
       const z = this.chunkZ + obs.group.position.z;

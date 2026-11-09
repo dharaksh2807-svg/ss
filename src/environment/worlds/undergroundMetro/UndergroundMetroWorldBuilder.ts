@@ -242,6 +242,7 @@ export class UndergroundMetroWorldBuilder {
     let geo = this.boxGeos.get(key);
     if (!geo) {
       geo = new THREE.BoxGeometry(w, h, d);
+      geo.userData.isShared = true;
       this.boxGeos.set(key, geo);
     }
     return geo;
@@ -252,6 +253,7 @@ export class UndergroundMetroWorldBuilder {
     let geo = this.cylGeos.get(key);
     if (!geo) {
       geo = new THREE.CylinderGeometry(rt, rb, h, seg);
+      geo.userData.isShared = true;
       this.cylGeos.set(key, geo);
     }
     return geo;
@@ -262,6 +264,7 @@ export class UndergroundMetroWorldBuilder {
     let geo = this.sphereGeos.get(key);
     if (!geo) {
       geo = new THREE.SphereGeometry(r, seg, seg);
+      geo.userData.isShared = true;
       this.sphereGeos.set(key, geo);
     }
     return geo;

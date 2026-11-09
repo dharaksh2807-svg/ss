@@ -343,6 +343,7 @@ export class TrackManager {
       this.furthestZ -= CONSTANTS.CHUNK_LENGTH;
       this.chunkIndex++;
     }
+    this.updateChunkVisibility(0, true);
   }
 
   /**
@@ -1046,6 +1047,9 @@ export class TrackManager {
     // Validate every new layout at the same simulation instant, then advance once.
     for (const chunk of this.chunks) chunk.update(dt, time, player.position.z, player.speed);
 
+    // Dynamic distance-aware chunk and scenery culling
+    this.updateChunkVisibility(player.position.z, false);
+
     if (this.encounterDebugEnabled) for (const current of this.chunks) for (const obs of current.obstacles) {
       if (!obs.active || !obs.group.userData.isTrain) continue;
       if (obs.telegraphed && !this.warnedTrains.has(obs)) { this.warnedTrains.add(obs); this.encounterMetrics.warnings++; }
@@ -1094,6 +1098,40 @@ export class TrackManager {
 
     // 3. Collision & Collectibles Detection
     this.checkCollisions(player, dt);
+  }
+
+  /**
+   * Adaptive chunk and scenery visibility culling:
+   * In Lobby mode: chunks beyond the station backdrop (index >= 2) are hidden.
+   * In Gameplay mode: chunks beyond atmospheric distance fog (>320m ahead) have their
+   * decorative micro-geometry culled while preserving physical trackbeds and rails.
+   */
+  public updateChunkVisibility(playerZ: number, isLobby: boolean = false): void {
+    if (isLobby) {
+      for (let i = 0; i < this.chunks.length; i++) {
+        const chunk = this.chunks[i];
+        if (i < 2) {
+          chunk.group.visible = true;
+          chunk.decorativeGroup.visible = true;
+        } else {
+          chunk.group.visible = false;
+        }
+      }
+      return;
+    }
+
+    const quality = GraphicsManager.getInstance().getResolvedQuality();
+    const cullingDistance = quality === 'LOW' ? 240.0 : (quality === 'MEDIUM' ? 280.0 : 320.0);
+
+    for (const chunk of this.chunks) {
+      chunk.group.visible = true;
+      const distAhead = playerZ - chunk.chunkZ;
+      if (distAhead > cullingDistance) {
+        chunk.decorativeGroup.visible = false;
+      } else {
+        chunk.decorativeGroup.visible = true;
+      }
+    }
   }
 
   /**

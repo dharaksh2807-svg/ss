@@ -162,36 +162,18 @@ export class ModernMetroWorldBuilder {
     return ModernMetroWorldBuilder.instance;
   }
 
-  // --- Geometry Cache Helpers ---
+  // --- Geometry Helpers ---
 
   private getBox(w: number, h: number, d: number): THREE.BoxGeometry {
-    const key = `${w.toFixed(2)}_${h.toFixed(2)}_${d.toFixed(2)}`;
-    let geo = this.boxGeos.get(key);
-    if (!geo) {
-      geo = new THREE.BoxGeometry(w, h, d);
-      this.boxGeos.set(key, geo);
-    }
-    return geo;
+    return new THREE.BoxGeometry(w, h, d);
   }
 
   private getCylinder(rt: number, rb: number, h: number, s: number): THREE.CylinderGeometry {
-    const key = `${rt.toFixed(2)}_${rb.toFixed(2)}_${h.toFixed(2)}_${s}`;
-    let geo = this.cylGeos.get(key);
-    if (!geo) {
-      geo = new THREE.CylinderGeometry(rt, rb, h, s);
-      this.cylGeos.set(key, geo);
-    }
-    return geo;
+    return new THREE.CylinderGeometry(rt, rb, h, s);
   }
 
   private getSphere(r: number, ws: number, hs: number): THREE.SphereGeometry {
-    const key = `${r.toFixed(2)}_${ws}_${hs}`;
-    let geo = this.sphereGeos.get(key);
-    if (!geo) {
-      geo = new THREE.SphereGeometry(r, ws, hs);
-      this.sphereGeos.set(key, geo);
-    }
-    return geo;
+    return new THREE.SphereGeometry(r, ws, hs);
   }
 
   // =========================================================================
@@ -287,6 +269,15 @@ export class ModernMetroWorldBuilder {
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
     const foundationDepth = 7.0; // Y from -5.85m to +1.15m
 
+    // Instanced railing vertical posts (10 per side = 20 total)
+    const postCountPerSide = Math.floor((chunkLength - 4) / 8) + 1;
+    const totalPosts = postCountPerSide * 2;
+    const postGeo = this.getCylinder(0.04, 0.04, 0.85, 6);
+    const postInstanced = new THREE.InstancedMesh(postGeo, this.structuralSteelMat, totalPosts);
+    postInstanced.name = 'modern_railing_posts_instanced';
+    let postIdx = 0;
+    const dummy = new THREE.Object3D();
+
     [-wallX, wallX].forEach((wx) => {
       // Deep foundation plinth down to -5.85m
       const plinth = new THREE.Mesh(this.getBox(wallThick + 0.4, foundationDepth, chunkLength), this.structuralSteelMat);
@@ -322,12 +313,13 @@ export class ModernMetroWorldBuilder {
 
       // Railing vertical posts every 8m
       for (let z = 4; z < chunkLength; z += 8) {
-        const post = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.85, 6), this.structuralSteelMat);
-        post.position.set(wx, wallHeight + 0.425, -z);
-        post.name = 'modern_railing_post';
-        group.add(post);
+        dummy.position.set(wx, wallHeight + 0.425, -z);
+        dummy.updateMatrix();
+        postInstanced.setMatrixAt(postIdx++, dummy.matrix);
       }
     });
+    postInstanced.instanceMatrix.needsUpdate = true;
+    group.add(postInstanced);
   }
 
   // =========================================================================

@@ -1536,6 +1536,12 @@ export class SceneryFactory {
         return m;
       })()
     };
+
+    for (const mat of Object.values(this.sharedMaterials)) {
+      if (mat && (mat as any).userData) {
+        (mat as any).userData.isShared = true;
+      }
+    }
   }
 
   /**
