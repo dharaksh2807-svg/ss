@@ -205,5 +205,6 @@ export class PowerupManager {
   public reset(): void {
     this.activePowerups.clear();
     this.invulnerabilityTimer = 0;
+    this.isJetpackPaused = false;
   }
 }

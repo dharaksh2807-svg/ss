@@ -1,0 +1,16 @@
+{
+  "planning": "deep",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "gameplay-baseline",
+    "collision-authority",
+    "route-fairness",
+    "movement-feel",
+    "post-death-protection",
+    "risk-reward-gameplay",
+    "release-gate"
+  ]
+}
+

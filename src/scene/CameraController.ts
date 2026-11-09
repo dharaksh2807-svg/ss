@@ -157,6 +157,22 @@ export class CameraController {
       // This prevents near-ground coins (at Y = 1.0m) from obstructing the camera lens.
       this.gameOverTargetPos.set(camX, playerPos.y + (isPortrait ? 1.50 : 1.65), playerPos.z - (isPortrait ? 2.5 : 2.9));
       this.gameOverLookTarget.set(playerPos.x, playerPos.y + 0.95, playerPos.z);
+    } else if (!enabled) {
+      // Clear trauma and smoothly re-anchor behind runner on revive or restart
+      this.shakeTrauma = 0;
+      this.shakeOffset.set(0, 0, 0);
+      if (playerPos) {
+        const framing = this.getViewportFraming();
+        this.currentPosition.set(
+          playerPos.x * framing.follow,
+          playerPos.y + CONSTANTS.CAMERA_OFFSET_Y,
+          playerPos.z + CONSTANTS.CAMERA_OFFSET_Z + framing.extraZ
+        );
+        this.targetPosition.copy(this.currentPosition);
+        this.lookTarget.set(playerPos.x, playerPos.y + 1.2, playerPos.z + CONSTANTS.CAMERA_LOOK_AHEAD_Z);
+        this.camera.position.copy(this.currentPosition);
+        this.camera.lookAt(this.lookTarget);
+      }
     }
   }
 
@@ -326,6 +342,12 @@ export class CameraController {
       const targetFov = isPortrait ? 66.0 : 54.0;
       this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-5.0 * dt)); // Snappier FOV on crash
       this.camera.updateProjectionMatrix();
+
+      // Ensure trauma decays even while viewing defeat framing
+      if (this.shakeTrauma > 0) {
+        this.shakeTrauma = Math.max(0, this.shakeTrauma - CONSTANTS.CAMERA_SHAKE_DECAY * dt);
+      }
+      this.shakeOffset.set(0, 0, 0);
 
       const lerpFactor = 1.0 - Math.exp(-5.5 * dt); // Snappier dramatic framing on crash
       this.currentPosition.lerp(this.gameOverTargetPos, lerpFactor);

@@ -1540,15 +1540,20 @@ export class TrackManager {
     const isMagnet = player.powerups.isMagnetActive() || boardMagnetBonus > 0;
     const magnetRadius = (player.powerups.isMagnetActive() ? player.powerups.getMagnetRadius() : 0) + boardMagnetBonus;
 
-    // Overhead obstacle check to prevent character snapping upright or jumping under low barriers
+    // Dynamic velocity-aware overhead obstacle check to prevent character prematurely standing up or jumping under overhead barriers
     let isUnderOverhead = false;
+    const forwardSpeed = Math.max(CONSTANTS.INITIAL_SPEED, player.speed);
+    const overheadLeadMargin = Math.max(1.8, forwardSpeed * dt * 2.0 + 0.6);
+    const overheadTrailMargin = 0.45;
     for (const chunk of this.chunks) {
       if (Math.abs(chunk.chunkZ - player.position.z) > CONSTANTS.CHUNK_LENGTH * 1.5) continue;
       for (const obs of chunk.obstacles) {
         if (!obs.active) continue;
         if (obs.type === 'HIGH_BARRIER' || obs.type === 'TUNNEL_ARCH') {
-          const overlapZ = playerBox.min.z <= obs.collider.max.z + 0.3 && playerBox.max.z >= obs.collider.min.z - 0.3;
-          const overlapX = playerBox.min.x <= obs.collider.max.x && playerBox.max.x >= obs.collider.min.x;
+          const overlapZ = playerBox.min.z <= obs.collider.max.z + overheadLeadMargin &&
+                           playerBox.max.z >= obs.collider.min.z - overheadTrailMargin;
+          const overlapX = playerBox.min.x <= obs.collider.max.x + 0.1 &&
+                           playerBox.max.x >= obs.collider.min.x - 0.1;
           if (overlapZ && overlapX) {
             isUnderOverhead = true;
             break;

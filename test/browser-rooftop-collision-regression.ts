@@ -6,7 +6,8 @@ try {
  const page=await browser.newPage({viewport:{width:1280,height:720}});
  await page.addInitScript(()=>{(window as any).__name=(fn:any)=>fn;});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://127.0.0.1:3001');
+ const port = process.env.PORT || '3000';
+ await page.goto(`http://127.0.0.1:${port}`);
  await page.waitForFunction(()=>Boolean((window as any).__METRO_GAME__));
  await page.locator('#start-play-btn').click();await page.waitForTimeout(250);await page.keyboard.press('Space');
  await page.waitForFunction(()=>(window as any).__METRO_GAME__.lifecycleState==='PLAYING');

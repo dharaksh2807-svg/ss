@@ -1,0 +1,37 @@
+{
+  "task": "PHASE 6: PREMIUM GAMEPLAY FEEL, FAIRNESS AND COLLISION INTEGRITY",
+  "allowed_write_scope": [
+    "src/core/Game.ts",
+    "src/core/InputManager.ts",
+    "src/core/SpeedController.ts",
+    "src/player/Player.ts",
+    "src/player/PowerupManager.ts",
+    "src/player/CharacterModel.ts",
+    "src/scene/CameraController.ts",
+    "src/scene/LocomotionVFX.ts",
+    "src/track/CollisionResolver.ts",
+    "src/track/ReachabilityValidator.ts",
+    "src/track/TrackManager.ts",
+    "src/track/TrainGapPolicy.ts",
+    "src/track/RooftopRoutePlanner.ts",
+    "src/track/PacingMetrics.ts",
+    "src/debug/BugSnapshotManager.ts",
+    "test/",
+    "docs/gameplay/",
+    ".gravitas/sessions/gameplay-feel-phase6/"
+  ],
+  "forbidden_write_scope": [
+    "src/environment/worlds/",
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/VipComedyEventDirector.ts"
+  ],
+  "acceptance_criteria": [
+    "STEP 1: Gameplay baseline and defect reproduction for lane changes, jumps, slides, moving trains, rooftop ramps, death/restart, and camera recovery.",
+    "STEP 2: Establish collision authority between visual geometry, collision shapes, and support surfaces across obstacle types, player speeds, and action states.",
+    "STEP 3: Human-scale route fairness validating reaction time, warning distance, visibility, action cooldowns, and solvability.",
+    "STEP 4: Premium movement feel verifying lane acceleration, animation-motion sync, landing anticipation, fast drop, and camera damping without sacrificing input responsiveness.",
+    "STEP 5: Protect gameplay after death: full stop, no vibration, no repeated death triggers, clean power-up reset, no event director leaks, clean restart/revive.",
+    "STEP 6: Controlled risk/reward gameplay: readable rooftop approaches, high-risk coin paths, branching options without making high-risk routes mandatory.",
+    "STEP 7: Verification release gate: full build, worldgen, train gaps, rooftop regression, browser tests with collision ENABLED, before/after evidence."
+  ]
+}

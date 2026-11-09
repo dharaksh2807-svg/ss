@@ -188,6 +188,14 @@ export class Player {
     this.jetpackTakeoffTimer = 0;
     this.jetpackDescentTimer = 0;
     this.flightAnimTime = 0;
+    this.isTunnelEnclosed = false;
+    this.isDeferredJetpackTakeoff = false;
+    this.isUnderOverheadObstacle = false;
+    this.isFastDropping = false;
+    this.pendingSlideOnLanding = false;
+    this.wasFastDropLand = false;
+    this.jumpPhase = 'NONE';
+    this.landingTimer = 0;
     this.powerups.reset();
     this.hoverboardManager.reset();
 

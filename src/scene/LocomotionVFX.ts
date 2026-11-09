@@ -274,6 +274,12 @@ export class LocomotionVFX {
     );
 
     this.unsubs.push(
+      this.eventBus.on(EVENTS.FAST_DROP, (data?: { position?: THREE.Vector3 }) => {
+        this.spawnFastDropStreak(data?.position || this.lastPlayerPos);
+      })
+    );
+
+    this.unsubs.push(
       this.eventBus.on(EVENTS.COIN_COLLECTED, (data?: { position?: THREE.Vector3 }) => {
         this.spawnCoinBurst(data?.position || this.lastPlayerPos);
       })
@@ -634,6 +640,33 @@ export class LocomotionVFX {
 
       p.velocity.set(side * 0.3, 0.1, 1.8);
       break;
+    }
+  }
+
+  public spawnFastDropStreak(pos: THREE.Vector3): void {
+    if (this.settingsManager.isReducedMotion()) return;
+    const offsets = [-0.35, 0.35];
+    for (let i = 0; i < offsets.length; i++) {
+      for (const p of this.streakPool) {
+        if (p.active) continue;
+        p.active = true;
+        p.age = 0;
+        p.maxAge = 0.16;
+        p.startScale = 0.25;
+        p.endScale = 1.0;
+        p.startOpacity = 0.85;
+
+        p.mesh.position.set(pos.x + offsets[i], pos.y + 0.8, pos.z + 0.1);
+        p.mesh.scale.setScalar(p.startScale);
+
+        const mat = p.mesh.material as THREE.MeshBasicMaterial;
+        mat.color.setHex(0xe2e8f0);
+        mat.opacity = p.startOpacity;
+        p.mesh.visible = true;
+
+        p.velocity.set(0, 5.5, 0.5);
+        break;
+      }
     }
   }
 

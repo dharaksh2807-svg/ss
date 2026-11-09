@@ -378,10 +378,10 @@ export class BugSnapshotManager {
           ) {
             const laneX = CONSTANTS.LANES[obs.lane];
             const dx = Math.abs(player.position.x - laneX);
-            const obsZ = obs.group.position.z;
-            const halfLen = (obs.length || CONSTANTS.TRAIN_LENGTH_SHORT) / 2;
+            const box = obs.roofCollider || obs.collider;
+            const inZ = player.position.z >= box.min.z && player.position.z <= box.max.z;
 
-            if (dx < 1.4 && player.position.z >= obsZ - halfLen && player.position.z <= obsZ + halfLen) {
+            if (dx < 1.4 && inZ) {
               return {
                 reason: `Player fell through train roof on obstacle '${obs.id}' (${obs.type}) from Y=${prevY.toFixed(2)} to Y=${currentY.toFixed(2)} without jumping`,
                 details: {
@@ -390,7 +390,7 @@ export class BugSnapshotManager {
                   prevY,
                   currentY,
                   playerZ: player.position.z,
-                  obsZ,
+                  obsZ: (box.min.z + box.max.z) / 2,
                   trainLength: obs.length
                 }
               };
@@ -409,20 +409,25 @@ export class BugSnapshotManager {
   public checkTrainMeshColliderSync(
     nearbyObstacles: ObstacleInstance[]
   ): { reason: string; details: Record<string, any> } | null {
+    const tempVec = new THREE.Vector3();
     for (const obs of nearbyObstacles) {
       if ((obs.type === 'MOVING_TRAIN' || obs.isMoving) && obs.active) {
-        const meshZ = obs.group.position.z;
+        let meshWorldZ = obs.group.position.z;
+        if (obs.group.parent) {
+          obs.group.getWorldPosition(tempVec);
+          meshWorldZ = tempVec.z;
+        }
         const box = obs.bodyCollider || obs.collider;
         const centerZ = (box.min.z + box.max.z) / 2;
-        const delta = Math.abs(meshZ - centerZ);
+        const delta = Math.abs(meshWorldZ - centerZ);
 
         // An offset greater than 3.5m indicates collider/visual displacement
         if (delta > 3.5) {
           return {
-            reason: `Moving train '${obs.id}' mesh position Z=${meshZ.toFixed(2)} disagrees with physics collider center Z=${centerZ.toFixed(2)} by ${delta.toFixed(2)}m`,
+            reason: `Moving train '${obs.id}' mesh position Z=${meshWorldZ.toFixed(2)} disagrees with physics collider center Z=${centerZ.toFixed(2)} by ${delta.toFixed(2)}m`,
             details: {
               obstacleId: obs.id,
-              meshZ,
+              meshZ: meshWorldZ,
               colliderCenterZ: centerZ,
               discrepancyMeters: delta,
               velocityZ: obs.velocityZ
