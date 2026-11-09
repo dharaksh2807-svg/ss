@@ -549,12 +549,12 @@ export class RahulSatireWorldBuilder {
       }
       // Canonical 6-environment progression:
       // 0: Never-Ending Yatra
-      // 5: Regional Town & Roadshow
       // 1: Parliament Pandemonium
       // 2: Press Conference Panic
       // 3: Alliance Circus & Musical Chairs
       // 4: Political Glitch Multiverse
-      const canonicalOrder = [0, 5, 1, 2, 3, 4];
+      // 5: Regional Town & Roadshow
+      const canonicalOrder = [0, 1, 2, 3, 4, 5];
       districtIndex = canonicalOrder[Math.floor(Math.abs(worldZ) / 400) % 6];
     }
 
@@ -700,9 +700,29 @@ export class RahulSatireWorldBuilder {
 
     // Three articulated modules per side with varied story heights and open courtyards
     const buildingDefs = [
-      { z: -14, length: 16, stories: 3, roofType: 'CHHATRI' },
-      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : 'TERRACOTTA_TILES') },
-      { z: -66, length: 16, stories: 3, roofType: 'CHHATRI' }
+      {
+        z: -14,
+        length: 16,
+        stories: 3,
+        roofType: districtIndex === 1 ? 'KANGURA' : (districtIndex === 2 ? 'STUDIO_DISH' : (districtIndex === 4 ? 'GLITCH_OBELISK' : 'TERRACOTTA_TILES'))
+      },
+      {
+        z: -40,
+        length: 18,
+        stories: (detail !== 'MINIMAL' && (districtIndex === 1 || districtIndex === 2 || districtIndex === 4)) ? 4 : 3,
+        roofType: districtIndex === 0 ? 'CHHATRI' :
+                  districtIndex === 1 ? 'ROTUNDA_DOME' :
+                  districtIndex === 2 ? 'BROADCAST_TOWER' :
+                  districtIndex === 3 ? 'CARNIVAL_CROWN' :
+                  districtIndex === 4 ? 'QUANTUM_SPIRE' :
+                  'CHHATRI'
+      },
+      {
+        z: -66,
+        length: 16,
+        stories: 3,
+        roofType: districtIndex === 1 ? 'KANGURA' : (districtIndex === 2 ? 'STUDIO_DISH' : (districtIndex === 4 ? 'GLITCH_OBELISK' : 'TERRACOTTA_TILES'))
+      }
     ];
 
     buildingDefs.forEach((bDef, bIdx) => {
@@ -740,9 +760,14 @@ export class RahulSatireWorldBuilder {
         wallMat = bIdx % 2 === 0 ? this.yatraSandstonePlasterMat : this.yatraMarigoldMat;
         trimMat = this.parliamentSandstoneMat;
         accentMat = this.yatraIndigoMat;
-      } else {
+      } else if (districtIndex === 4) {
         // Political Multiverse: Deep Indigo & Sandstone Obelisks
         wallMat = bIdx % 2 === 0 ? this.yatraIndigoMat : this.yatraSandstonePlasterMat;
+        trimMat = this.mediaBlueMat;
+        accentMat = this.yatraTealMat;
+      } else {
+        // Regional Roadshow: Regional Brick Township, Warm Terracotta & Ivory Plaster
+        wallMat = bIdx % 2 === 0 ? this.yatraTerracottaMat : this.yatraIvoryMat;
         trimMat = this.parliamentSandstoneMat;
         accentMat = this.yatraTealMat;
       }
@@ -842,6 +867,7 @@ export class RahulSatireWorldBuilder {
       }
 
       // 4. Rooftops: Rajasthani Chhatris, Terracotta Tiles or Broadcast Towers
+      // 4. Rooftops: Rajasthani Chhatris, Terracotta Tiles, Parliament Domes, Carnival Crowns, Quantum Spires
       if (bDef.roofType === 'BROADCAST_TOWER') {
         const towerGroup = new THREE.Group();
         towerGroup.position.set(0, totalH, 0);
@@ -860,6 +886,17 @@ export class RahulSatireWorldBuilder {
         towerGroup.add(dish);
 
         bGroup.add(towerGroup);
+      } else if (bDef.roofType === 'STUDIO_DISH') {
+        // Parapet with twin studio satellite dishes
+        const dishL = new THREE.Mesh(this.getCylinder(0.8, 0.1, 0.25, 8), this.yatraIvoryMat);
+        dishL.position.set(-bWidth * 0.25, totalH + 1.0, 0);
+        dishL.rotation.x = -0.5;
+        bGroup.add(dishL);
+
+        const dishR = new THREE.Mesh(this.getCylinder(0.8, 0.1, 0.25, 8), this.yatraIvoryMat);
+        dishR.position.set(bWidth * 0.25, totalH + 1.0, 0);
+        dishR.rotation.x = -0.5;
+        bGroup.add(dishR);
       } else if (bDef.roofType === 'CHHATRI') {
         // Traditional Rajasthani domed Chhatri pavilion with golden kalash
         const chhatri = new THREE.Group();
@@ -883,6 +920,54 @@ export class RahulSatireWorldBuilder {
         chhatri.add(finial);
 
         bGroup.add(chhatri);
+      } else if (bDef.roofType === 'ROTUNDA_DOME') {
+        // Classical Parliament Dome with Drum
+        const rotunda = new THREE.Group();
+        rotunda.position.set(0, totalH, bDepth * 0.5 - 1.5);
+
+        const drum = new THREE.Mesh(this.getCylinder(2.4, 2.6, 1.2, 12), trimMat);
+        drum.position.y = 0.6;
+        rotunda.add(drum);
+
+        const dome = new THREE.Mesh(this.getSphere(2.2, 10), this.parliamentMarbleMat);
+        dome.position.y = 1.6;
+        rotunda.add(dome);
+
+        const finial = new THREE.Mesh(this.getCylinder(0.06, 0.2, 1.2, 6), this.goldMetalMat);
+        finial.position.y = 3.8;
+        rotunda.add(finial);
+
+        bGroup.add(rotunda);
+      } else if (bDef.roofType === 'CARNIVAL_CROWN') {
+        // Festive Tiered Marquee Roof
+        const canopy = new THREE.Mesh(this.getCylinder(0.3, 3.2, 1.4, 8), this.yatraMarigoldMat);
+        canopy.position.set(0, totalH + 0.7, 0);
+        bGroup.add(canopy);
+
+        const finial = new THREE.Mesh(this.getCylinder(0.04, 0.1, 1.2, 6), this.goldMetalMat);
+        finial.position.y = totalH + 1.8;
+        bGroup.add(finial);
+      } else if (bDef.roofType === 'QUANTUM_SPIRE' || bDef.roofType === 'GLITCH_OBELISK') {
+        // Surreal Geometric Obelisk with Neon Accents
+        const obelisk = new THREE.Group();
+        obelisk.position.set(0, totalH, 0);
+
+        const obBody = new THREE.Mesh(this.getCylinder(0.15, 0.55, 4.5, 4), this.mediaBlueMat);
+        obBody.position.y = 2.25;
+        obelisk.add(obBody);
+
+        const neonRing = new THREE.Mesh(this.getTorus(0.7, 0.08, 6), this.neonCyanMat);
+        neonRing.position.y = 2.5;
+        obelisk.add(neonRing);
+
+        bGroup.add(obelisk);
+      } else if (bDef.roofType === 'KANGURA') {
+        // Stepped Battlements along Roof Edge
+        for (let k = -bWidth * 0.44; k <= bWidth * 0.44; k += 1.6) {
+          const battlement = new THREE.Mesh(this.getBox(0.8, 0.7, 0.25), trimMat);
+          battlement.position.set(k, totalH + 0.35, bDepth * 0.5);
+          bGroup.add(battlement);
+        }
       } else {
         // Terracotta tile sloped roof eaves and parapet
         const roofShed = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.8, bDepth + 0.6), this.yatraTerracottaMat);
@@ -1912,6 +1997,34 @@ export class RahulSatireWorldBuilder {
 
     // GATE B HERO GAG: PARLIAMENTARY MICROPHONE CHAOS (West side at X = -16.5m, Z = -chunkLength * 0.85)
     this.buildMicrophoneChaosStage(districtB, -16.5, 0.6, -chunkLength * 0.85, director);
+
+    // 5. OVERHEAD POINT-OF-ORDER WARNING GANTRY (Z = -36m, overhead truss at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const orderGantry = new THREE.Group();
+      orderGantry.name = 'rv_parliament_order_gantry';
+      orderGantry.position.set(0, 0, -36);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.parliamentSandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        orderGantry.add(plinth);
+
+        const col = new THREE.Mesh(this.getCylinder(0.3, 0.38, 9.8, 8), this.parliamentSandstoneMat);
+        col.position.set(px, 4.9, 0);
+        orderGantry.add(col);
+      });
+
+      const beam = new THREE.Mesh(this.getBox(19.2, 0.8, 1.4), this.parliamentSandstoneMat);
+      beam.position.set(0, 9.8, 0);
+      orderGantry.add(beam);
+
+      // Warning Signboard
+      const sign = new THREE.Mesh(this.getBox(8.0, 0.6, 0.1), this.yatraOrangeMat);
+      sign.position.set(0, 9.8, 0.75);
+      orderGantry.add(sign);
+
+      districtB.add(orderGantry);
+    }
   }
 
   // =========================================================================
@@ -2230,6 +2343,36 @@ export class RahulSatireWorldBuilder {
 
     // CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST (East side at X = +16.5m, Z = -chunkLength * 0.75)
     this.buildSelfieBattleStage(group, 16.5, 0.6, -chunkLength * 0.75, director);
+
+    // 4. OVERHEAD PRESS MEDIA LIGHTING TRUSS (Z = -40m, overhead truss at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const mediaTruss = new THREE.Group();
+      mediaTruss.name = 'rv_press_lighting_truss';
+      mediaTruss.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.parliamentSandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        mediaTruss.add(plinth);
+
+        const pylon = new THREE.Mesh(this.getBox(0.8, 9.8, 0.8), this.silverMat);
+        pylon.position.set(px, 4.9, 0);
+        mediaTruss.add(pylon);
+      });
+
+      const trussSpan = new THREE.Mesh(this.getBox(19.2, 0.8, 1.4), this.silverMat);
+      trussSpan.position.set(0, 9.8, 0);
+      mediaTruss.add(trussSpan);
+
+      // Studio floodlight pods suspended at Y = 9.3m (> 8.5m)
+      for (let lx = -6.0; lx <= 6.0; lx += 3.0) {
+        const flood = new THREE.Mesh(this.getCylinder(0.2, 0.35, 0.4, 6), this.goldMetalMat);
+        flood.position.set(lx, 9.3, 0);
+        mediaTruss.add(flood);
+      }
+
+      districtC.add(mediaTruss);
+    }
   }
 
   // =========================================================================
@@ -2630,6 +2773,39 @@ export class RahulSatireWorldBuilder {
 
     // 4. Crossover Gag: The Party Office Mix-Up
     this.buildPartyOfficeMixupStage(group, -16.5, 0.6, -chunkLength * 0.75, director);
+
+    // 5. OVERHEAD QUANTUM ENERGY CONDUIT ARCH (Z = -40m, overhead conduit at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const conduitArch = new THREE.Group();
+      conduitArch.name = 'rv_quantum_conduit_arch';
+      conduitArch.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.mediaBlueMat);
+        plinth.position.set(px, -2.5, 0);
+        conduitArch.add(plinth);
+
+        const obelisk = new THREE.Mesh(this.getCylinder(0.25, 0.45, 9.8, 4), this.mediaBlueMat);
+        obelisk.position.set(px, 4.9, 0);
+        conduitArch.add(obelisk);
+
+        const ring = new THREE.Mesh(this.getTorus(0.8, 0.12, 6), this.neonCyanMat);
+        ring.position.set(px, 10.4, 0);
+        conduitArch.add(ring);
+      });
+
+      const conduitBeam = new THREE.Mesh(this.getBox(19.2, 0.8, 1.4), this.mediaBlueMat);
+      conduitBeam.position.set(0, 9.8, 0);
+      conduitArch.add(conduitBeam);
+
+      // Glowing neon energy core along beam
+      const energyCore = new THREE.Mesh(this.getCylinder(0.12, 0.12, 17.0, 6), this.neonCyanMat);
+      energyCore.rotation.z = Math.PI / 2;
+      energyCore.position.set(0, 9.8, 0.75);
+      conduitArch.add(energyCore);
+
+      districtE.add(conduitArch);
+    }
   }
 
   // =========================================================================
@@ -3622,7 +3798,7 @@ export class RahulSatireWorldBuilder {
 
     // 1. Vibrant Regional Bazaar Facade on both sides with verandas, jharokhas, and terracotta roofs
     [-1, 1].forEach((side) => {
-      this.buildSurrealYatraFacade(districtF, roadbedWidth, chunkLength, side, 0, rng, detail);
+      this.buildSurrealYatraFacade(districtF, roadbedWidth, chunkLength, side, 5, rng, detail);
 
       const walkW = 22.0;
       const wx = side * (curbEdge + walkW * 0.5);
@@ -3647,6 +3823,38 @@ export class RahulSatireWorldBuilder {
 
     // 5. Yatra Water Hydration Station with Earthen Clay Matkas & Volunteers (West promenade at X = -7.0m)
     this.buildWaterStation(districtF, -7.0, 0.6, -chunkLength * 0.72);
+
+    // 6. Overhead Festoon Bunting Cable (Z = -40m, overhead cable at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const festoonGroup = new THREE.Group();
+      festoonGroup.name = 'rv_regional_festoon_cable';
+      festoonGroup.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.2, 5.0, 1.2), this.parliamentSandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        festoonGroup.add(plinth);
+
+        const pole = new THREE.Mesh(this.getCylinder(0.2, 0.28, 9.8, 8), this.woodMat);
+        pole.position.set(px, 4.9, 0);
+        festoonGroup.add(pole);
+      });
+
+      const cable = new THREE.Mesh(this.getCylinder(0.03, 0.03, 19.2, 6), this.parliamentSandstoneMat);
+      cable.rotation.z = Math.PI / 2;
+      cable.position.set(0, 9.8, 0);
+      festoonGroup.add(cable);
+
+      // Hanging tricolor festoon pennants at Y = 9.3m (> 8.5m)
+      for (let fx = -6.0; fx <= 6.0; fx += 2.0) {
+        const pennantMat = Math.abs(fx) % 4 === 0 ? this.yatraOrangeMat : (Math.abs(fx) % 4 === 2 ? this.yatraGreenMat : this.yatraWhiteMat);
+        const pennant = new THREE.Mesh(this.getPlane(0.5, 0.65), pennantMat);
+        pennant.position.set(fx, 9.3, 0);
+        festoonGroup.add(pennant);
+      }
+
+      districtF.add(festoonGroup);
+    }
   }
 
   /**

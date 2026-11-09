@@ -1,0 +1,45 @@
+{
+  "mode": "implement",
+  "objective": "Complete political world environment art refinement for VIP_EXPRESS (Mitron Express) and RAHULVERSE across all 12 districts adhering to Phase 1 art direction and visual baseline",
+  "acceptance_criteria": [
+    "Ground before mutating: inspect existing SceneryFactory, TrackChunk, WorldScene, VipSatireWorldBuilder, and RahulSatireWorldBuilder",
+    "Preserve all existing 12 districts with distinct dominant architectural landmarks and cohesive supporting architecture",
+    "Eliminate repetitive extruded box facades by constructing articulated Indian buildings with setbacks, chhatris, jalis, verandas, cornices, awnings, and distinct skylines",
+    "Ground all architecture with proper deep foundation plinths (Y <= -4.8m) to prevent floating scenery",
+    "Stage comedy focal points within the runner primary visual cone using cantilevered overhead banners, arches, and visible trackside sets (|X| >= 8.5m)",
+    "Maintain strict clearance of the gameplay rail corridor (|X| <= 4.5m) and vertical clearance (Y >= 6.2m for overhead arches)",
+    "Preserve detail tiers FULL, BALANCED, and MINIMAL, geometry caching, and memory pooling without resource leaks",
+    "Pass all existing test suites (vip-express, rahulverse, worldgen, engine-stabilization) and npm run build",
+    "Verify live browser gameplay with collisions enabled, proving 60 FPS performance and comparing before/after telemetry"
+  ],
+  "non_goals": [
+    "Do not modify player physics, jump arcs, slide clearance, speed curves, or lane switching",
+    "Do not alter obstacle spawning, train spawning, procedural difficulty, or coin paths",
+    "Do not change economy, shop prices, character stats, or HUD mechanics",
+    "Do not modify shared engine files without proving a world-local solution is impossible",
+    "Do not add extra districts beyond the 6 canonical districts per world"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/worlds/rahulverse/RahulSatireWorldBuilder.ts",
+    ".gravitas/**",
+    "test/**",
+    "docs/**"
+  ],
+  "verification": "project-suite",
+  "status": "completed",
+  "evidence": {
+    "vip_express_tests": "89/89 passed",
+    "rahulverse_tests": "88/88 passed",
+    "worldgen_tests": "57/57 passed",
+    "engine_stabilization_tests": "7/7 passed",
+    "typescript_build": "0 errors, vite built in 1.94s",
+    "browser_captures": "76 high-resolution PNG captures + telemetry_report.json generated across all 12 districts",
+    "black_slabs": 0,
+    "avg_fps": "60-61 FPS across all 12 districts",
+    "clearance": "Strictly preserved (|X| > 4.2m, overhead Y >= 9.3m > 8.5m)"
+  }
+}
+

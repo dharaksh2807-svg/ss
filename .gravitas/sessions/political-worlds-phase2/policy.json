@@ -1,0 +1,13 @@
+{
+  "planning": "deep",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "political-worlds-environment-art-refinement",
+    "twelve-districts-upgrade",
+    "zero-mutation-gameplay-core",
+    "procedural-architectural-reconstruction"
+  ]
+}
+

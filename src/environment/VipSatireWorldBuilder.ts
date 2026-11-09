@@ -760,10 +760,31 @@ export class VipSatireWorldBuilder {
     const facingAngle = side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5;
 
     // Three articulated architectural modules per side with open courtyard gaps
+    // Stories strictly 3 in MINIMAL tier to keep countMinimal <= 150
     const buildingDefs = [
-      { z: -14, length: 16, stories: 3, roofType: 'CHHATRI' },
-      { z: -40, length: 18, stories: (districtIndex === 2 ? 4 : 3), roofType: (districtIndex === 2 ? 'BROADCAST_TOWER' : (districtIndex === 1 ? 'PEDIMENT' : 'KANGURA')) },
-      { z: -66, length: 16, stories: 3, roofType: 'CHHATRI' }
+      {
+        z: -14,
+        length: 16,
+        stories: 3,
+        roofType: districtIndex === 1 ? 'TERRACOTTA_TILES' : (districtIndex === 2 ? 'PEDIMENT' : (districtIndex === 3 ? 'STUDIO_DISH' : (districtIndex === 4 || districtIndex === 5 ? 'KANGURA' : 'CHHATRI')))
+      },
+      {
+        z: -40,
+        length: 18,
+        stories: (detail !== 'MINIMAL' && (districtIndex === 2 || districtIndex === 3 || districtIndex === 5)) ? 4 : 3,
+        roofType: districtIndex === 0 ? 'CHHATRI_TWIN' :
+                  districtIndex === 1 ? 'SAMOVAR_CHIMNEY' :
+                  districtIndex === 2 ? 'PEDIMENT_GRAND' :
+                  districtIndex === 3 ? 'BROADCAST_TOWER' :
+                  districtIndex === 4 ? 'ROTUNDA_DOME' :
+                  'SOLAR_SPIRE'
+      },
+      {
+        z: -66,
+        length: 16,
+        stories: 3,
+        roofType: districtIndex === 1 ? 'TERRACOTTA_TILES' : (districtIndex === 2 ? 'PEDIMENT' : (districtIndex === 3 ? 'STUDIO_DISH' : (districtIndex === 4 || districtIndex === 5 ? 'KANGURA' : 'CHHATRI')))
+      }
     ];
 
     buildingDefs.forEach((bDef, bIdx) => {
@@ -779,20 +800,23 @@ export class VipSatireWorldBuilder {
       // Select district palette
       let wallMat: THREE.MeshStandardMaterial;
       if (districtIndex === 0) {
-        // Roadshow & Chai Pe Charcha: Warm Jaipur ochre plaster & terracotta
+        // Roadshow Royale: Warm Jaipur ochre plaster & terracotta
         wallMat = bIdx % 2 === 0 ? this.haveliYellowPlasterMat : this.haveliTerracottaMat;
       } else if (districtIndex === 1) {
+        // Chai Pe Charcha: Warm Rajasthani terracotta & Sandstone havelis
+        wallMat = bIdx % 2 === 0 ? this.haveliTerracottaMat : this.haveliSandstoneMat;
+      } else if (districtIndex === 2) {
         // Inauguration Infinity: Grand imperial ivory marble & golden sandstone
         wallMat = bIdx % 2 === 0 ? this.ivoryMarbleMat : this.haveliSandstoneMat;
-      } else if (districtIndex === 2) {
+      } else if (districtIndex === 3) {
         // Breaking News: High-tech cobalt media studio facade with illuminated window grids
         wallMat = bIdx === 1 ? this.studioGlassMat : this.haveliSandstoneMat;
-      } else if (districtIndex === 3) {
-        // Masterstroke Megacity: Futuristic civic towers with sandstone base
-        wallMat = bIdx % 2 === 0 ? this.haveliSandstoneMat : this.ivoryMarbleMat;
-      } else {
+      } else if (districtIndex === 4) {
         // Parliament Mayhem: Classical red sandstone & parliament wood trim
         wallMat = bIdx % 2 === 0 ? this.haveliTerracottaMat : this.sandstoneMat;
+      } else {
+        // Masterstroke Megacity: Futuristic civic towers with sandstone base
+        wallMat = bIdx % 2 === 0 ? this.haveliSandstoneMat : this.ivoryMarbleMat;
       }
 
       // 1. Ground Floor Plinth & Main Mass with Subsurface Foundation down to -5.2m
@@ -924,8 +948,8 @@ export class VipSatireWorldBuilder {
         bGroup.add(win);
       });
 
-      // 4. Rooftop Crowns: Rajasthani Chhatris or Kangura Battlements or Antennas
-      if (bDef.roofType === 'CHHATRI') {
+      // 4. Rooftop Crowns: Rajasthani Chhatris, Neoclassical Pediments, Rotunda Domes, Broadcast Masts, Solar Spires
+      if (bDef.roofType === 'CHHATRI' || bDef.roofType === 'CHHATRI_TWIN') {
         const chhatriPositions = [-bWidth * 0.28, bWidth * 0.28];
         chhatriPositions.forEach((cx) => {
           const cGroup = new THREE.Group();
@@ -953,6 +977,16 @@ export class VipSatireWorldBuilder {
           bGroup.add(cGroup);
         });
 
+        // For twin chhatris, add central ceremonial arch & kalash
+        if (bDef.roofType === 'CHHATRI_TWIN') {
+          const centerCrest = new THREE.Mesh(this.getBox(3.2, 0.6, 0.4), this.sandstoneMat);
+          centerCrest.position.set(0, totalH + 0.3, bDepth * 0.5 - 1.0);
+          bGroup.add(centerCrest);
+          const centerFinial = new THREE.Mesh(this.getCylinder(0.04, 0.12, 1.0, 6), this.goldMetalMat);
+          centerFinial.position.set(0, totalH + 1.1, bDepth * 0.5 - 1.0);
+          bGroup.add(centerFinial);
+        }
+
         // Iconic Indian Sintex Rooftop Water Tank on Roof
         const tank = new THREE.Mesh(this.getCylinder(0.65, 0.65, 1.3, 10), this.commandoSuitMat);
         tank.position.set(0, totalH + 0.75, bDepth * 0.5 - 2.2);
@@ -965,6 +999,28 @@ export class VipSatireWorldBuilder {
         const pennant = new THREE.Mesh(this.getBox(0.8, 0.5, 0.02), this.saffronFloralMat);
         pennant.position.set(0.4, totalH + 2.8, bDepth * 0.5 - 0.5);
         bGroup.add(pennant);
+
+      } else if (bDef.roofType === 'TERRACOTTA_TILES' || bDef.roofType === 'SAMOVAR_CHIMNEY') {
+        // Sloped ceramic terracotta tile roof shed
+        const roofShed = new THREE.Mesh(this.getBox(bWidth + 0.6, 0.65, bDepth + 0.8), this.terracottaMat);
+        roofShed.position.set(0, totalH + 0.32, 0);
+        roofShed.rotation.x = 0.08;
+        bGroup.add(roofShed);
+
+        if (bDef.roofType === 'SAMOVAR_CHIMNEY') {
+          // Central Brass Samovar Chimney Cupola
+          const chimney = new THREE.Mesh(this.getCylinder(0.35, 0.45, 1.6, 8), this.brassKettleMat);
+          chimney.position.set(0, totalH + 1.2, 0);
+          bGroup.add(chimney);
+
+          const ventCap = new THREE.Mesh(this.getCylinder(0.06, 0.55, 0.3, 8), this.copperMat);
+          ventCap.position.set(0, totalH + 2.1, 0);
+          bGroup.add(ventCap);
+        }
+
+        const tank = new THREE.Mesh(this.getCylinder(0.65, 0.65, 1.3, 8), this.commandoSuitMat);
+        tank.position.set(-bWidth * 0.28, totalH + 0.95, -1.0);
+        bGroup.add(tank);
 
       } else if (bDef.roofType === 'BROADCAST_TOWER') {
         // High-Tech Media Transmission Tower & Satellite Dish
@@ -985,17 +1041,80 @@ export class VipSatireWorldBuilder {
         towerGroup.add(dish);
 
         bGroup.add(towerGroup);
-      } else if (bDef.roofType === 'PEDIMENT') {
+
+      } else if (bDef.roofType === 'STUDIO_DISH') {
+        // Parapet with twin studio satellite dishes
+        const dishL = new THREE.Mesh(this.getCylinder(0.8, 0.1, 0.25, 8), this.ivoryMarbleMat);
+        dishL.position.set(-bWidth * 0.25, totalH + 1.0, 0);
+        dishL.rotation.x = -0.5;
+        bGroup.add(dishL);
+
+        const dishR = new THREE.Mesh(this.getCylinder(0.8, 0.1, 0.25, 8), this.ivoryMarbleMat);
+        dishR.position.set(bWidth * 0.25, totalH + 1.0, 0);
+        dishR.rotation.x = -0.5;
+        bGroup.add(dishR);
+
+      } else if (bDef.roofType === 'PEDIMENT' || bDef.roofType === 'PEDIMENT_GRAND') {
         // Grand Classical Pediment with Ashoka Emblem Disc
-        const pediment = new THREE.Mesh(this.getCylinder(0.2, 3.2, 1.4, 3), this.ivoryMarbleMat);
-        pediment.position.set(0, totalH + 0.7, bDepth * 0.5);
+        const pedW = bDef.roofType === 'PEDIMENT_GRAND' ? 4.2 : 3.2;
+        const pedH = bDef.roofType === 'PEDIMENT_GRAND' ? 1.8 : 1.4;
+        const pediment = new THREE.Mesh(this.getCylinder(0.2, pedW, pedH, 3), this.ivoryMarbleMat);
+        pediment.position.set(0, totalH + pedH * 0.5, bDepth * 0.5);
         pediment.rotation.z = Math.PI;
         bGroup.add(pediment);
 
-        const emblem = new THREE.Mesh(this.getCylinder(0.5, 0.5, 0.1, 12), this.goldMetalMat);
-        emblem.position.set(0, totalH + 0.6, bDepth * 0.5 + 0.2);
+        const emblem = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.12, 12), this.goldMetalMat);
+        emblem.position.set(0, totalH + pedH * 0.45, bDepth * 0.5 + 0.2);
         emblem.rotation.x = Math.PI / 2;
         bGroup.add(emblem);
+
+        if (bDef.roofType === 'PEDIMENT_GRAND') {
+          // Flanking Golden Acroterion Urns
+          [-pedW * 0.9, pedW * 0.9].forEach((ux) => {
+            const urn = new THREE.Mesh(this.getCylinder(0.12, 0.22, 0.8, 6), this.goldMetalMat);
+            urn.position.set(ux, totalH + 0.4, bDepth * 0.5);
+            bGroup.add(urn);
+          });
+        }
+
+      } else if (bDef.roofType === 'ROTUNDA_DOME') {
+        // Classical Circular Parliament Rotunda Dome
+        const rotunda = new THREE.Group();
+        rotunda.position.set(0, totalH, bDepth * 0.5 - 1.5);
+
+        const drum = new THREE.Mesh(this.getCylinder(2.4, 2.6, 1.2, 12), this.sandstoneMat);
+        drum.position.y = 0.6;
+        rotunda.add(drum);
+
+        const dome = new THREE.Mesh(this.getSphere(2.3, 10), this.sandstoneMat);
+        dome.position.y = 1.6;
+        rotunda.add(dome);
+
+        const finial = new THREE.Mesh(this.getCylinder(0.06, 0.2, 1.2, 6), this.goldMetalMat);
+        finial.position.y = 3.9;
+        rotunda.add(finial);
+
+        bGroup.add(rotunda);
+
+      } else if (bDef.roofType === 'SOLAR_SPIRE') {
+        // Futuristic Solar Spire with Bronze Clockwork Gear
+        const spireGroup = new THREE.Group();
+        spireGroup.position.set(0, totalH, 0);
+
+        const spireBase = new THREE.Mesh(this.getCylinder(0.4, 0.8, 1.2, 6), this.ivoryMarbleMat);
+        spireBase.position.y = 0.6;
+        spireGroup.add(spireBase);
+
+        const spire = new THREE.Mesh(this.getCylinder(0.04, 0.35, 6.5, 6), this.goldMetalMat);
+        spire.position.y = 4.2;
+        spireGroup.add(spire);
+
+        const gearRing = new THREE.Mesh(this.getTorus(0.8, 0.12, 6), this.copperMat);
+        gearRing.position.set(0, 3.2, 0);
+        spireGroup.add(gearRing);
+
+        bGroup.add(spireGroup);
+
       } else {
         // Stepped Kangura Battlements along Roof Edge
         for (let k = -bWidth * 0.44; k <= bWidth * 0.44; k += 1.6) {
@@ -1602,6 +1721,50 @@ export class VipSatireWorldBuilder {
           group.add(pennant);
         }
       }
+
+      // 6b. CEREMONIAL WELCOME TORAN ARCH (Z = -40m, overhead crossbeam at Y = 9.8m, clearance > 8.5m)
+      const toranArch = new THREE.Group();
+      toranArch.name = 'vip_ceremonial_toran_arch';
+      toranArch.position.set(0, 0, -40);
+
+      // Deep foundation plinths & carved sandstone pillars outside track clearance (|X| = 8.8m > 4.2m)
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.8, 5.0, 1.8), this.sandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        toranArch.add(plinth);
+
+        const pillar = new THREE.Mesh(this.getCylinder(0.35, 0.42, 9.8, 8), this.sandstoneMat);
+        pillar.position.set(px, 4.9, 0);
+        toranArch.add(pillar);
+
+        const capital = new THREE.Mesh(this.getBox(1.2, 0.6, 1.2), this.sandstoneMat);
+        capital.position.set(px, 9.8, 0);
+        toranArch.add(capital);
+
+        const finial = new THREE.Mesh(this.getCylinder(0.08, 0.25, 1.2, 8), this.goldMetalMat);
+        finial.position.set(px, 10.7, 0);
+        toranArch.add(finial);
+      });
+
+      // Overhead lintel beam (Lowest elevation Y = 9.4m > 8.5m hazard envelope)
+      const lintel = new THREE.Mesh(this.getBox(19.2, 0.8, 1.6), this.sandstoneMat);
+      lintel.position.set(0, 9.8, 0);
+      toranArch.add(lintel);
+
+      // Central decorative Toran crest medallion
+      const crest = new THREE.Mesh(this.getCylinder(0.8, 0.8, 0.25, 12), this.goldMetalMat);
+      crest.rotation.x = Math.PI / 2;
+      crest.position.set(0, 10.6, 0);
+      toranArch.add(crest);
+
+      // Hanging marigold garland loops below beam (Y = 9.3m > 8.5m)
+      for (let mx = -6.0; mx <= 6.0; mx += 2.0) {
+        const loop = new THREE.Mesh(this.getTorus(0.40, 0.08, 6), this.yellowMarigoldMat);
+        loop.position.set(mx, 9.3, 0);
+        toranArch.add(loop);
+      }
+
+      group.add(toranArch);
     }
 
     // 7. CRITICAL GATE A: THE GREAT MANGO INTERVIEW (East Terrace at X = +11.2m)
@@ -1867,7 +2030,7 @@ export class VipSatireWorldBuilder {
     // 1. Terracotta Promenade with Sandstone Jali Screens and Authentic Haveli Facades
     [-1, 1].forEach((side) => {
       // Modular Indian Streetscape behind the promenade
-      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 0, rng, detail);
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 1, rng, detail);
       const sx = side * (curbEdge + sidewalkW * 0.5);
       const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.terracottaMat);
       sidewalk.position.set(sx, sidewalkY, -chunkLength * 0.5);
@@ -2096,6 +2259,41 @@ export class VipSatireWorldBuilder {
     // 4. CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST
     // East side at X = +18.5m, Z = -chunkLength * 0.75
     this.buildSelfieBattleStage(group, 18.5, 0.6, -chunkLength * 0.75, director);
+
+    // 5. FESTIVE TEA SUMMIT OVERHEAD LANTERN GANTRY (Z = -40m, overhead crossbeam at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const teaGantry = new THREE.Group();
+      teaGantry.name = 'vip_tea_summit_gantry';
+      teaGantry.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.sandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        teaGantry.add(plinth);
+
+        const col = new THREE.Mesh(this.getCylinder(0.3, 0.38, 9.8, 8), this.sandstoneMat);
+        col.position.set(px, 4.9, 0);
+        teaGantry.add(col);
+      });
+
+      const lintel = new THREE.Mesh(this.getBox(19.2, 0.6, 1.2), this.parliamentWoodMat);
+      lintel.position.set(0, 9.8, 0);
+      teaGantry.add(lintel);
+
+      // Central Decorative Brass Samovar Crest
+      const samovarCrest = new THREE.Mesh(this.getCylinder(0.4, 0.55, 1.2, 10), this.brassKettleMat);
+      samovarCrest.position.set(0, 10.7, 0);
+      teaGantry.add(samovarCrest);
+
+      // Glowing warm amber tea lanterns suspended at Y = 9.3m (> 8.5m)
+      for (let lx = -6.0; lx <= 6.0; lx += 3.0) {
+        const lantern = new THREE.Mesh(this.getCylinder(0.18, 0.26, 0.45, 6), this.windowGlassLitMat);
+        lantern.position.set(lx, 9.3, 0);
+        teaGantry.add(lantern);
+      }
+
+      group.add(teaGantry);
+    }
   }
 
   // =========================================================================
@@ -2118,7 +2316,7 @@ export class VipSatireWorldBuilder {
     // 1. Endless Red-Carpet Marble Promenades
     [-1, 1].forEach((side) => {
       // Modular Indian Imperial Architecture with colonnades and setbacks
-      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 1, rng, detail);
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 2, rng, detail);
 
       const sx = side * (curbEdge + sidewalkW * 0.5);
       const concourse = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.ivoryMarbleMat);
@@ -2332,7 +2530,7 @@ export class VipSatireWorldBuilder {
     // 1. High-Tech Media Studio Towers & Articulated Broadcast Center
     [-1, 1].forEach((side) => {
       // Articulated media complex with transmission towers, open courtyards, and zero monolithic black walls
-      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 2, rng, detail);
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 3, rng, detail);
 
       const sx = side * (curbEdge + sidewalkW * 0.5);
       const sidewalk = new THREE.Mesh(this.getBox(sidewalkW, sidewalkH, chunkLength), this.ivoryMarbleMat);
@@ -2461,6 +2659,34 @@ export class VipSatireWorldBuilder {
 
     // 6. CROSSOVER GAG: THE MICROPHONE CHASE (East side at X = +18.5m, Z = -chunkLength * 0.75)
     this.buildMicrophoneChaseStage(group, 18.5, 0.6, -chunkLength * 0.75, director);
+
+    // 7. OVERHEAD LED BREAKING NEWS TICKER BRIDGE (Z = -40m, overhead truss at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const newsBridge = new THREE.Group();
+      newsBridge.name = 'vip_news_ticker_bridge';
+      newsBridge.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.sandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        newsBridge.add(plinth);
+
+        const trussPylon = new THREE.Mesh(this.getBox(0.8, 9.8, 0.8), this.tinRoofMat);
+        trussPylon.position.set(px, 4.9, 0);
+        newsBridge.add(trussPylon);
+      });
+
+      const trussSpan = new THREE.Mesh(this.getBox(19.2, 0.8, 1.4), this.tinRoofMat);
+      trussSpan.position.set(0, 9.8, 0);
+      newsBridge.add(trussSpan);
+
+      // Glowing LED ticker screen across the front
+      const tickerScreen = new THREE.Mesh(this.getBox(18.0, 0.5, 0.1), this.mediaScreenMat);
+      tickerScreen.position.set(0, 9.8, 0.75);
+      newsBridge.add(tickerScreen);
+
+      group.add(newsBridge);
+    }
   }
 
   // =========================================================================
@@ -2481,7 +2707,7 @@ export class VipSatireWorldBuilder {
     // 1. Futuristic Golden Marble Plaza Promenades
     [-1, 1].forEach((side) => {
       // High-Tech Indian Civic Architecture with solar spires and setbacks
-      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 3, rng, detail);
+      this.buildIndianUrbanFacade(group, roadbedWidth, chunkLength, side, 5, rng, detail);
 
       const px = side * (curbEdge + swWidth * 0.5);
       const plaza = new THREE.Mesh(this.getBox(swWidth, swHeight, chunkLength), this.ivoryMarbleMat);
@@ -2625,6 +2851,34 @@ export class VipSatireWorldBuilder {
 
     // 6. CROSSOVER GAG: THE PARTY OFFICE MIX-UP (West side at X = -18.5m, Z = -chunkLength * 0.75)
     this.buildPartyOfficeMixupStage(group, -18.5, 0, -chunkLength * 0.75, director);
+
+    // 7. OVERHEAD STEAMPUNK CLOCKWORK TRANSMISSION TRUSS (Z = -40m, overhead truss at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const clockTruss = new THREE.Group();
+      clockTruss.name = 'vip_clockwork_transmission_truss';
+      clockTruss.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.6, 5.0, 1.6), this.sandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        clockTruss.add(plinth);
+
+        const pylon = new THREE.Mesh(this.getBox(0.8, 9.8, 0.8), this.goldMetalMat);
+        pylon.position.set(px, 4.9, 0);
+        clockTruss.add(pylon);
+      });
+
+      const trussBeam = new THREE.Mesh(this.getBox(19.2, 0.8, 1.4), this.tinRoofMat);
+      trussBeam.position.set(0, 9.8, 0);
+      clockTruss.add(trussBeam);
+
+      // Central Steampunk Gearwork Ring
+      const gear = new THREE.Mesh(this.getTorus(0.9, 0.18, 8), this.copperMat);
+      gear.position.set(0, 10.7, 0);
+      clockTruss.add(gear);
+
+      group.add(clockTruss);
+    }
   }
 
   // =========================================================================
@@ -2777,6 +3031,34 @@ export class VipSatireWorldBuilder {
 
     // 5. CROSSOVER GAG: THE SELFIE BATTLE & CHAI VENDOR TWIST (East side at X = +18.5m, Z = -chunkLength * 0.75)
     this.buildSelfieBattleStage(group, 18.5, 0.6, -chunkLength * 0.75, director);
+
+    // 6. OVERHEAD CLASSICAL SANDSTONE COLONNADE BEAM ARCH (Z = -40m, overhead architrave at Y = 9.8m, clearance > 8.5m)
+    if (detail !== 'MINIMAL') {
+      const parlArch = new THREE.Group();
+      parlArch.name = 'vip_parliament_colonnade_arch';
+      parlArch.position.set(0, 0, -40);
+
+      [-8.8, 8.8].forEach((px) => {
+        const plinth = new THREE.Mesh(this.getBox(1.8, 5.0, 1.8), this.sandstoneMat);
+        plinth.position.set(px, -2.5, 0);
+        parlArch.add(plinth);
+
+        const col = new THREE.Mesh(this.getCylinder(0.32, 0.4, 9.8, 8), this.sandstoneMat);
+        col.position.set(px, 4.9, 0);
+        parlArch.add(col);
+      });
+
+      const architrave = new THREE.Mesh(this.getBox(19.2, 0.8, 1.6), this.sandstoneMat);
+      architrave.position.set(0, 9.8, 0);
+      parlArch.add(architrave);
+
+      const chakra = new THREE.Mesh(this.getCylinder(0.7, 0.7, 0.2, 12), this.goldMetalMat);
+      chakra.rotation.x = Math.PI / 2;
+      chakra.position.set(0, 10.6, 0);
+      parlArch.add(chakra);
+
+      group.add(parlArch);
+    }
   }
 
   // =========================================================================
