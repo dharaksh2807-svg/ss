@@ -1,0 +1,14 @@
+{
+  "planning": "deep",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "political-worlds-audit",
+    "art-direction-bible",
+    "visual-forensics",
+    "gameplay-capture",
+    "zero-mutation-production-code"
+  ]
+}
+

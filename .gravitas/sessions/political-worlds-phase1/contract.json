@@ -1,0 +1,28 @@
+{
+  "mode": "plan",
+  "objective": "Establish AAA stylized-game creative direction, visual forensics, and acceptance criteria for VIP_EXPRESS and RAHULVERSE political satire worlds",
+  "acceptance_criteria": [
+    "Confirm latest remote main SHA (bb125faeb9f10c7cc2c66cc9b8f8055e3e81a644) as audit baseline",
+    "Inspect scenery builders, event directors, comedy coordinator, and existing test suites",
+    "Execute genuine gameplay baseline captures in Chromium for all 12 districts across active runner, three-quarter, mobile 390x844, and before/mid/after gag animation states",
+    "Perform collision-enabled real gameplay smoke tests without bypasses",
+    "Author docs/political-worlds/ART_DIRECTION.md covering world fantasies, color palettes, materials, lighting, near/mid/far field composition, 12 district briefs, 6 flagship gags with 4-beat storyboards, and performance bounds",
+    "Author docs/political-worlds/VISUAL_BASELINE.md documenting per-district strengths, defects, target compositions, hero assets, visibility from camera, performance baseline, and structured asset inventory",
+    "Preserve all existing production gameplay, physics, collision, and economic systems without introducing regressions",
+    "Verify clean execution through Gravitas verification engine"
+  ],
+  "non_goals": [
+    "Do not implement replacement scenery meshes or 3D character assets in this phase",
+    "Do not alter physics, train occupancy, jump arcs, or collision detection",
+    "Do not touch store pricing, trial counts, or game economics"
+  ],
+  "risk": "low",
+  "budget": "deep",
+  "allowed_write_scope": [
+    "docs/political-worlds/**",
+    ".gravitas/**",
+    "test/**"
+  ],
+  "verification": "project-suite"
+}
+
