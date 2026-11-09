@@ -1,0 +1,14 @@
+{
+  "planning": "deep",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "independent-audit",
+    "visual-coverage",
+    "flagship-comedy-verification",
+    "gameplay-regression-suite",
+    "performance-lifetime-tests",
+    "release-gate"
+  ]
+}

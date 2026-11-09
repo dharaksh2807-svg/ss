@@ -1,0 +1,27 @@
+{
+  "task": "PHASE 5: INDEPENDENT POLITICAL WORLDS QUALITY AND REGRESSION GATE",
+  "allowed_write_scope": [
+    "src/environment/VipSatireWorldBuilder.ts",
+    "src/environment/VipComedyEventDirector.ts",
+    "src/environment/worlds/rahulverse/RahulSatireWorldBuilder.ts",
+    "src/environment/worlds/rahulverse/RahulComedyEventDirector.ts",
+    "test/",
+    "docs/political-worlds/",
+    ".gravitas/sessions/political-worlds-phase5/"
+  ],
+  "forbidden_write_scope": [
+    "src/track/TrackManager.ts",
+    "src/track/TrackChunk.ts",
+    "src/player/Player.ts",
+    "src/core/"
+  ],
+  "acceptance_criteria": [
+    "PART 1: Audit git history and diffs across Phases 2-4 against baseline 05eebe1/bb125fa; flag any out-of-scope changes, duplicates, leaks, or conflicts.",
+    "PART 2: Complete visual coverage across all 12 districts (6 Mitron Express + 6 Rahulverse) at 0m, 400m, 800m, 1200m, 1600m, 2000m, and beyond 2400m (desktop 1440x900 and mobile 390x844).",
+    "PART 3: Flagship comedy verification with 3 keyframes per flagship event across both worlds (Mango Interview, Inauguration Infinity, Roadshow Camera Chaos, Never-Ending Yatra, Parliament Hug & Wink, Press Conference Panic, Alliance Musical Chairs, Multiverse).",
+    "PART 4: Real gameplay regression suite (lane changes, jumps, slides, moving trains, rooftop access, collision fairness, powerups, revive, restarts, world switching, progress preservation).",
+    "PART 5: Performance and lifetime profiling (FPS, frame time, draw calls, triangles, geometries, textures, 20x world switching leak test, FULL/BALANCED/MINIMAL quality modes).",
+    "PART 6: Targeted repairs only for verified defects with minimal blast radius and regression test coverage.",
+    "PART 7: Final release gate with full reporting: baseline SHA, final SHA, 12-district scorecard, comedy verification table, regression table, performance comparison, P0/P1/P2 defect classification, push to origin/main."
+  ]
+}
