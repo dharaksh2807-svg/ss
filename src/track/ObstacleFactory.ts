@@ -1022,9 +1022,9 @@ export class ObstacleFactory {
 
     // Pick or cycle variant if not explicitly provided
     if (!variant) {
-      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH' || themeId === 'VIVA_HEAT') {
+      if (themeId === 'NEON_RAINLINE' || themeId === 'ORBITAL_HALO' || themeId === 'ABYSSAL_GLASSLINE' || themeId === 'DOOMSDAY_LAST_TRANSIT' || themeId === 'VIP_EXPRESS' || themeId === 'RAHULVERSE' || themeId === 'MIDNIGHT_VELVET' || themeId === 'CHRONO_KINGDOM' || themeId === 'INFERNO_EXPRESS' || themeId === 'JURASSIC_RUSH' || themeId === 'VIVA_HEAT' || themeId === 'MODERN_METRO' || themeId === 'NEON_INDUSTRIAL') {
         variant = 'STREAMLINED_EXPRESS';
-      } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL') {
+      } else if (themeId === 'PHANTOM_LINE' || themeId === 'HAUNTED_CARNIVAL' || themeId === 'HISTORIC_QUARTER' || themeId === 'UNDERGROUND_METRO') {
         variant = 'CLASSIC_TRANSIT';
       } else {
         const variants: TrainVariant[] = ['MODERN_METRO', 'CLASSIC_TRANSIT', 'STREAMLINED_EXPRESS'];
@@ -1067,6 +1067,14 @@ export class ObstacleFactory {
       accentColor = 0x00f5ff;
     } else if (themeId === 'NEON_RAINLINE') {
       accentColor = colorHex === 0x8b5cf6 ? 0xf026d3 : 0x00f5ff;
+    } else if (themeId === 'MODERN_METRO') {
+      accentColor = 0x00e5ff;
+    } else if (themeId === 'HISTORIC_QUARTER') {
+      accentColor = 0xd4af37;
+    } else if (themeId === 'UNDERGROUND_METRO') {
+      accentColor = 0xf59e0b;
+    } else if (themeId === 'NEON_INDUSTRIAL') {
+      accentColor = 0xfacc15;
     } else {
       if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_2) accentColor = 0x00e676;
       if (colorHex === CONSTANTS.COLORS.TRAIN_BODY_3) accentColor = 0xffffff;
@@ -1086,35 +1094,68 @@ export class ObstacleFactory {
     const isInfernoExpress = themeId === 'INFERNO_EXPRESS';
     const isJurassicRush = themeId === 'JURASSIC_RUSH';
     const isVivaHeat = themeId === 'VIVA_HEAT';
-    const trainColor = isVivaHeat
-      ? (colorHex === 0xff2d55 ? 0xff2d55 : (colorHex === 0x1f0310 ? 0x1f0310 : 0x881337))
-      : (isChronoKingdom
-        ? (colorHex === 0xb87333 ? 0xb87333 : (colorHex === 0x1a2332 ? 0x1a2332 : 0x2b1810))
-        : (isInfernoExpress
-          ? (colorHex === 0x0a0a0d ? 0x0a0a0d : (colorHex === 0x27272a ? 0x27272a : 0x18181b))
-          : (isJurassicRush
-            ? (colorHex === 0x27272a ? 0x27272a : (colorHex === 0x4d5d36 ? 0x4d5d36 : 0x3f4f2c))
-            : (isMidnightVelvet
-              ? (colorHex === 0x4a0e17 ? 0x4a0e17 : (colorHex === 0x0f172a ? 0x0f172a : 0x0a0a12))
-              : (isRahulverse
-                ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
-                : (isVip
-                  ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
-                  : (isHaunted
-                    ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
-                    : (isPhantom
-                      ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
-                    : (isDoomsday
-                      ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
-                      : (isAbyssal
-                        ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
-                        : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))))))))))));
+    const isModernMetro = themeId === 'MODERN_METRO';
+    const isHistoricQuarter = themeId === 'HISTORIC_QUARTER';
+    const isUndergroundMetro = themeId === 'UNDERGROUND_METRO';
+    const isNeonIndustrial = themeId === 'NEON_INDUSTRIAL';
+
+    const trainColor = isModernMetro
+      ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0xf8fafc ? 0xf8fafc : 0x0f172a))
+      : (isHistoricQuarter
+        ? (colorHex === 0x1b4332 ? 0x1b4332 : (colorHex === 0x4a0e17 ? 0x4a0e17 : 0x1e293b))
+        : (isUndergroundMetro
+          ? (colorHex === 0x334155 ? 0x334155 : (colorHex === 0xca8a04 ? 0xca8a04 : 0x0f172a))
+          : (isNeonIndustrial
+            ? (colorHex === 0xeab308 ? 0xeab308 : (colorHex === 0xc2410c ? 0xc2410c : 0x18181b))
+            : (isVivaHeat
+              ? (colorHex === 0xff2d55 ? 0xff2d55 : (colorHex === 0x1f0310 ? 0x1f0310 : 0x881337))
+              : (isChronoKingdom
+                ? (colorHex === 0xb87333 ? 0xb87333 : (colorHex === 0x1a2332 ? 0x1a2332 : 0x2b1810))
+                : (isInfernoExpress
+                  ? (colorHex === 0x0a0a0d ? 0x0a0a0d : (colorHex === 0x27272a ? 0x27272a : 0x18181b))
+                  : (isJurassicRush
+                    ? (colorHex === 0x27272a ? 0x27272a : (colorHex === 0x4d5d36 ? 0x4d5d36 : 0x3f4f2c))
+                    : (isMidnightVelvet
+                      ? (colorHex === 0x4a0e17 ? 0x4a0e17 : (colorHex === 0x0f172a ? 0x0f172a : 0x0a0a12))
+                      : (isRahulverse
+                        ? (colorHex === 0x0284c7 ? 0x0284c7 : (colorHex === 0x16a34a ? 0x16a34a : 0xffffff))
+                        : (isVip
+                          ? (colorHex === 0x1e3a8a ? 0x1e3a8a : 0xf8fafc)
+                          : (isHaunted
+                            ? (colorHex === 0x1f1135 || colorHex === 0x2e1065 || colorHex === 0x381e09 ? colorHex : 0x1f1135)
+                            : (isPhantom
+                              ? (colorHex === 0x0f172a || colorHex === 0x1e293b || colorHex === 0x134e4a ? colorHex : 0x0f172a)
+                            : (isDoomsday
+                              ? (colorHex === 0x1c1917 || colorHex === 0x292524 || colorHex === 0x78350f ? colorHex : 0x1c1917)
+                              : (isAbyssal
+                                ? (colorHex === 0x071e2e || colorHex === 0xd97706 ? colorHex : 0x0f3443)
+                                : (isOrbital ? (colorHex === 0x0f172a ? 0x0f172a : 0xf8fafc) : (variant === 'CLASSIC_TRANSIT' ? 0xd0d5dd : colorHex))))))))))))))));
     let trainRoughness = 0.28;
     let trainMetalness = 0.52;
     let emissiveHex = colorHex;
     let emissiveScale = 0.04;
 
-    if (isVivaHeat) {
+    if (isModernMetro) {
+      trainRoughness = 0.22;
+      trainMetalness = 0.65;
+      emissiveHex = 0x00e5ff;
+      emissiveScale = 0.04;
+    } else if (isHistoricQuarter) {
+      trainRoughness = 0.30;
+      trainMetalness = 0.70;
+      emissiveHex = 0xd4af37;
+      emissiveScale = 0.04;
+    } else if (isUndergroundMetro) {
+      trainRoughness = 0.38;
+      trainMetalness = 0.78;
+      emissiveHex = 0xf59e0b;
+      emissiveScale = 0.05;
+    } else if (isNeonIndustrial) {
+      trainRoughness = 0.60;
+      trainMetalness = 0.68;
+      emissiveHex = 0xfacc15;
+      emissiveScale = 0.05;
+    } else if (isVivaHeat) {
       trainRoughness = 0.20;
       trainMetalness = 0.85;
       emissiveHex = 0xff2d55;
@@ -1672,6 +1713,278 @@ export class ObstacleFactory {
         const sill = new THREE.Mesh(amberSillGeo, amberAccentMat);
         sill.position.set(sideX, 0.56, 0);
         group.add(sill);
+      });
+    }
+
+    // 16. Theme-Specific Modern Metro Aerodynamic Air Dam, Dual White-Cyan LED Brow & Skirts
+    if (isModernMetro) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const modernCabGroup = new THREE.Group();
+        const titaniumMat = new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          roughness: 0.25,
+          metalness: 0.85
+        });
+        this.curvedManager.applyCurvature(titaniumMat);
+        const cyanLedMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+        this.curvedManager.applyCurvature(cyanLedMat);
+
+        // Lower front aerodynamic air dam / splitter
+        const damGeo = new THREE.BoxGeometry(w * 0.88, 0.32, 0.35);
+        const dam = new THREE.Mesh(damGeo, titaniumMat);
+        dam.position.set(0, 0.30, bodyLength * 0.5 + noseLength * 0.90);
+        modernCabGroup.add(dam);
+
+        // High-intensity white-cyan brow LED light strip
+        const browGeo = new THREE.BoxGeometry(w * 0.72, 0.10, 0.12);
+        const brow = new THREE.Mesh(browGeo, cyanLedMat);
+        brow.position.set(0, h * 0.92, bodyLength * 0.5 + noseLength * 0.88);
+        modernCabGroup.add(brow);
+
+        // Aerodynamic roof HVAC fairings
+        const hvacGeo = new THREE.BoxGeometry(w * 0.55, 0.22, 1.8);
+        const hvac = new THREE.Mesh(hvacGeo, titaniumMat);
+        hvac.position.set(0, h + 0.11, bodyLength * 0.5 - 1.2);
+        modernCabGroup.add(hvac);
+
+        group.add(modernCabGroup);
+      }
+
+      // Flush aerodynamic lower side skirts with cyan velocity accent stripe
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.22, bodyLength * 0.94);
+      const cyanStripeGeo = new THREE.BoxGeometry(0.05, 0.05, bodyLength * 0.92);
+      const titaniumSkirtMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.30,
+        metalness: 0.80
+      });
+      this.curvedManager.applyCurvature(titaniumSkirtMat);
+      const cyanStripeMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+      this.curvedManager.applyCurvature(cyanStripeMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, titaniumSkirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const stripe = new THREE.Mesh(cyanStripeGeo, cyanStripeMat);
+        stripe.position.set(sideX, 0.56, 0);
+        group.add(stripe);
+      });
+    }
+
+    // 17. Theme-Specific Historic Quarter Arched Cast-Iron Cowcatcher, Brass Boiler Ring & Lantern
+    if (isHistoricQuarter) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const historicCabGroup = new THREE.Group();
+        const ironMat = new THREE.MeshStandardMaterial({
+          color: 0x1f1712,
+          roughness: 0.70,
+          metalness: 0.80
+        });
+        this.curvedManager.applyCurvature(ironMat);
+        const brassMat = new THREE.MeshStandardMaterial({
+          color: 0xd4af37,
+          roughness: 0.25,
+          metalness: 0.90
+        });
+        this.curvedManager.applyCurvature(brassMat);
+
+        // Arched Victorian cowcatcher with brass rivet bolts
+        const plowGeo = new THREE.BoxGeometry(w * 0.84, 0.48, 0.36);
+        const plow = new THREE.Mesh(plowGeo, ironMat);
+        plow.position.set(0, 0.36, bodyLength * 0.5 + noseLength * 0.86);
+        historicCabGroup.add(plow);
+
+        // Polished brass boiler smokebox front ring
+        const ringGeo = new THREE.TorusGeometry(0.72, 0.07, 8, 20);
+        const ring = new THREE.Mesh(ringGeo, brassMat);
+        ring.position.set(0, 1.85, bodyLength * 0.5 + noseLength * 0.98);
+        historicCabGroup.add(ring);
+
+        // Vintage brass gas-lantern cyclops headlight with warm golden-amber beam
+        const lanternGeo = new THREE.CylinderGeometry(0.32, 0.28, 0.35, 12);
+        lanternGeo.rotateX(Math.PI / 2);
+        const lanternMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+        this.curvedManager.applyCurvature(lanternMat);
+        const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+        lantern.position.set(0, 1.85, bodyLength * 0.5 + noseLength * 1.02);
+        historicCabGroup.add(lantern);
+
+        // Dual roof polished brass steam chimneys
+        [-w * 0.25, w * 0.25].forEach((cx) => {
+          const chimGeo = new THREE.CylinderGeometry(0.14, 0.16, 0.45, 10);
+          const chim = new THREE.Mesh(chimGeo, brassMat);
+          chim.position.set(cx, h + 0.22, bodyLength * 0.5 - 0.8);
+          historicCabGroup.add(chim);
+        });
+
+        group.add(historicCabGroup);
+      }
+
+      // Victorian beadboard wainscoting lower skirts with gold pinstripe
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.24, bodyLength * 0.94);
+      const goldStripeGeo = new THREE.BoxGeometry(0.05, 0.04, bodyLength * 0.92);
+      const skirtMat = new THREE.MeshStandardMaterial({
+        color: 0x2d2219,
+        roughness: 0.65,
+        metalness: 0.40
+      });
+      this.curvedManager.applyCurvature(skirtMat);
+      const goldStripeMat = new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        roughness: 0.25,
+        metalness: 0.90
+      });
+      this.curvedManager.applyCurvature(goldStripeMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const stripe = new THREE.Mesh(goldStripeGeo, goldStripeMat);
+        stripe.position.set(sideX, 0.58, 0);
+        group.add(stripe);
+      });
+    }
+
+    // 18. Theme-Specific Underground Metro Anti-Climber Bumper, Warning Strobe Markers & Pantograph
+    if (isUndergroundMetro) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const subCabGroup = new THREE.Group();
+        const steelMat = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          roughness: 0.55,
+          metalness: 0.75
+        });
+        this.curvedManager.applyCurvature(steelMat);
+
+        // Heavy anti-climber ribbed bumper beam across cab lower face
+        const bumperGeo = new THREE.BoxGeometry(w * 0.92, 0.38, 0.32);
+        const bumper = new THREE.Mesh(bumperGeo, steelMat);
+        bumper.position.set(0, 0.38, bodyLength * 0.5 + noseLength * 0.88);
+        subCabGroup.add(bumper);
+
+        // Dual high-luminance amber/red emergency strobe marker lenses
+        const amberStrobeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+        this.curvedManager.applyCurvature(amberStrobeMat);
+        const redStrobeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        this.curvedManager.applyCurvature(redStrobeMat);
+
+        [-w * 0.32, w * 0.32].forEach((hx, idx) => {
+          const lensGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.15, 10);
+          lensGeo.rotateX(Math.PI / 2);
+          const lens = new THREE.Mesh(lensGeo, idx === 0 ? amberStrobeMat : redStrobeMat);
+          lens.position.set(hx, 1.85, bodyLength * 0.5 + noseLength * 0.96);
+          subCabGroup.add(lens);
+        });
+
+        // High-voltage rooftop pantograph mount and insulated transformer conduits
+        const pantoBaseGeo = new THREE.BoxGeometry(w * 0.65, 0.16, 1.2);
+        const pantoBase = new THREE.Mesh(pantoBaseGeo, steelMat);
+        pantoBase.position.set(0, h + 0.08, bodyLength * 0.5 - 1.2);
+        subCabGroup.add(pantoBase);
+
+        group.add(subCabGroup);
+      }
+
+      // Low-profile heavy steel anti-underrun side skirts with reflective hazard sill
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.22, bodyLength * 0.94);
+      const hazardSillGeo = new THREE.BoxGeometry(0.05, 0.06, bodyLength * 0.92);
+      const steelSkirtMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.65,
+        metalness: 0.70
+      });
+      this.curvedManager.applyCurvature(steelSkirtMat);
+      const hazardSillMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+      this.curvedManager.applyCurvature(hazardSillMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, steelSkirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const sill = new THREE.Mesh(hazardSillGeo, hazardSillMat);
+        sill.position.set(sideX, 0.56, 0);
+        group.add(sill);
+      });
+    }
+
+    // 19. Theme-Specific Neon Industrial V-Plow Hazard Cowcatcher, Halogen Floodlights & Exhaust Stacks
+    if (isNeonIndustrial) {
+      const halfW = w * 0.5;
+      if (!hasRamp) {
+        const indCabGroup = new THREE.Group();
+        const castMat = new THREE.MeshStandardMaterial({
+          color: 0x18181b,
+          roughness: 0.70,
+          metalness: 0.75
+        });
+        this.curvedManager.applyCurvature(castMat);
+        const hazardMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        this.curvedManager.applyCurvature(hazardMat);
+
+        // Massive heavy-duty angled V-plow industrial cowcatcher
+        const plowGeo = new THREE.BoxGeometry(w * 0.88, 0.55, 0.42);
+        const plow = new THREE.Mesh(plowGeo, castMat);
+        plow.position.set(0, 0.38, bodyLength * 0.5 + noseLength * 0.86);
+        indCabGroup.add(plow);
+
+        // Bold chevron hazard stripe on lower plow face
+        const chevronGeo = new THREE.BoxGeometry(w * 0.82, 0.16, 0.12);
+        const chevron = new THREE.Mesh(chevronGeo, hazardMat);
+        chevron.position.set(0, 0.42, bodyLength * 0.5 + noseLength * 0.94);
+        indCabGroup.add(chevron);
+
+        // Heavy twin halogen floodlight search pods mounted to cab roof frame
+        [-w * 0.28, w * 0.28].forEach((hx) => {
+          const floodGeo = new THREE.BoxGeometry(0.36, 0.28, 0.30);
+          const flood = new THREE.Mesh(floodGeo, castMat);
+          flood.position.set(hx, h + 0.18, bodyLength * 0.5 + noseLength * 0.50);
+          indCabGroup.add(flood);
+
+          const lensGeo = new THREE.CircleGeometry(0.12, 10);
+          const lens = new THREE.Mesh(lensGeo, hazardMat);
+          lens.position.set(hx, h + 0.18, bodyLength * 0.5 + noseLength * 0.50 + 0.16);
+          indCabGroup.add(lens);
+        });
+
+        // Twin vertical diesel exhaust stacks with perforated heat shields
+        [-w * 0.32, w * 0.32].forEach((sx) => {
+          const stackGeo = new THREE.CylinderGeometry(0.10, 0.12, 0.70, 8);
+          const stack = new THREE.Mesh(stackGeo, castMat);
+          stack.position.set(sx, h + 0.35, bodyLength * 0.5 - 1.4);
+          indCabGroup.add(stack);
+        });
+
+        group.add(indCabGroup);
+      }
+
+      // Heavy industrial side walkway safety rub-rails & bogie side skirts
+      const skirtGeo = new THREE.BoxGeometry(0.08, 0.26, bodyLength * 0.94);
+      const yellowRubGeo = new THREE.BoxGeometry(0.05, 0.07, bodyLength * 0.92);
+      const castSkirtMat = new THREE.MeshStandardMaterial({
+        color: 0x27272a,
+        roughness: 0.75,
+        metalness: 0.65
+      });
+      this.curvedManager.applyCurvature(castSkirtMat);
+      const yellowRubMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+      this.curvedManager.applyCurvature(yellowRubMat);
+
+      [-halfW - 0.02, halfW + 0.02].forEach((sideX) => {
+        const skirt = new THREE.Mesh(skirtGeo, castSkirtMat);
+        skirt.position.set(sideX, 0.44, 0);
+        group.add(skirt);
+
+        const rub = new THREE.Mesh(yellowRubGeo, yellowRubMat);
+        rub.position.set(sideX, 0.58, 0);
+        group.add(rub);
       });
     }
 
@@ -2935,7 +3248,24 @@ export class ObstacleFactory {
     themeId?: string
   ): { group: THREE.Group; headlights: THREE.Mesh[]; wheelMeshes: THREE.Mesh[]; headlightBeam?: THREE.Mesh } {
     // Start with base train structure
-    const movingColor = themeId === 'HAUNTED_CARNIVAL' ? 0x1f1135 : (themeId === 'PHANTOM_LINE' ? 0x0f172a : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917 : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443 : (themeId === 'ORBITAL_HALO' ? 0xf8fafc : (themeId === 'NEON_RAINLINE' ? 0x0b1021 : colorHex)))));
+    const movingColor = themeId === 'HAUNTED_CARNIVAL' ? 0x1f1135
+      : (themeId === 'PHANTOM_LINE' ? 0x0f172a
+      : (themeId === 'DOOMSDAY_LAST_TRANSIT' ? 0x1c1917
+      : (themeId === 'ABYSSAL_GLASSLINE' ? 0x0f3443
+      : (themeId === 'ORBITAL_HALO' ? 0xf8fafc
+      : (themeId === 'NEON_RAINLINE' ? 0x0b1021
+      : (themeId === 'VIP_EXPRESS' ? 0x1e3a8a
+      : (themeId === 'RAHULVERSE' ? 0x0284c7
+      : (themeId === 'MIDNIGHT_VELVET' ? 0x4a0e17
+      : (themeId === 'CHRONO_KINGDOM' ? 0xb87333
+      : (themeId === 'INFERNO_EXPRESS' ? 0x0a0a0d
+      : (themeId === 'JURASSIC_RUSH' ? 0x4d5d36
+      : (themeId === 'VIVA_HEAT' ? 0xff2d55
+      : (themeId === 'MODERN_METRO' ? 0x0284c7
+      : (themeId === 'HISTORIC_QUARTER' ? 0x1b4332
+      : (themeId === 'UNDERGROUND_METRO' ? 0x334155
+      : (themeId === 'NEON_INDUSTRIAL' ? 0xeab308
+      : colorHex))))))))))))))));
     const group = this.createTrain(length, false, movingColor, undefined, themeId);
     group.userData = { isTrain: true, isMoving: true, type: 'MOVING_TRAIN' };
 

@@ -1,0 +1,33 @@
+{
+  "mode": "implement",
+  "objective": "Execute Phase 14: Global Premium World Quality, Graphics Optimization & Art Consistency across all 17 Metro Runner 3D worlds, systematically upgrading legacy free worlds, mid-tier premium worlds, and high-tier performance/polish, standardizing quality presets, and optimizing draw calls while maintaining collision, solvability, and visual identity invariants.",
+  "acceptance_criteria": [
+    "Re-baseline performance and rendering telemetry across worlds post Phase 13 under controlled conditions",
+    "Group A (Legacy Worlds: MODERN_METRO, HISTORIC_QUARTER, UNDERGROUND_METRO, NEON_INDUSTRIAL): eliminate boxy prototype look, introduce distinctive architectural depth, cornices, recessed facades, industrial machinery, arched vaults, and bespoke train aesthetics",
+    "Group B (Mid-Tier Premium Worlds: NEON_RAINLINE, ORBITAL_HALO, ABYSSAL_GLASSLINE, DOOMSDAY_LAST_TRANSIT, PHANTOM_LINE): eliminate repetitive scenery, deepen foreground/midground, enrich background vistas, and resolve visual defects",
+    "Group C (High-Tier Worlds Polish: VIP_EXPRESS, RAHULVERSE, CHRONO_KINGDOM, INFERNO_EXPRESS, MIDNIGHT_VELVET, HAUNTED_CARNIVAL, JURASSIC_RUSH, VIVA_HEAT): optimize heavy draw call overhead (VIP/Rahul crowd/props, Velvet marquees), fix basalt banding, dark obstacle contrast, and clock dial mipmaps",
+    "Group D (Shared Quality Preset & Engine System): standardize HIGH / MEDIUM / LOW preset behavior ensuring LOW reduces draw calls and triangles measurably without stripping core world architecture or creating voids",
+    "Ensure 100% collision and gameplay invariants: running corridor clearance |X| <= 4.2m, Y <= 8.5m completely unobstructed, authoritative train colliders untouched, no ungrounded void gaps",
+    "Pass all test suites (build, worldgen, engine-stabilization, and world-specific tests)",
+    "Document complete telemetry, screenshots, and world quality matrix in docs/theme-blockbuster/PHASE14_GLOBAL_POLISH.md",
+    "Commit and push verified sequential groups cleanly to origin/main"
+  ],
+  "non_goals": [
+    "Do not homogenize worlds into a single generic art style",
+    "Do not alter physics simulation, player movement, jump/slide mechanics, or obstacle colliders",
+    "Do not force-push, create branches, or open PRs",
+    "Do not re-implement Phase 13 signature spectacles that already work cleanly"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/global-quality-phase14/",
+    "src/environment/",
+    "src/track/",
+    "src/scene/",
+    "test/",
+    "artifacts/phase14/",
+    "docs/theme-blockbuster/"
+  ],
+  "verification": "impact"
+}

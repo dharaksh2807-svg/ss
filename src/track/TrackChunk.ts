@@ -1813,27 +1813,11 @@ export class TrackChunk {
       if (isComposition && compDef) {
         group = this.obstacleFactory.createTrainComposition(compDef, undefined, themeId);
       } else if (obsData.type === 'TRAIN' || obsData.type === 'TRAIN_RAMP') {
-        const colors = isHaunted
-          ? [0x1f1135, 0x2e1065, 0x381e09]
-          : (isPhantom
-            ? [0x0f172a, 0x1e293b, 0x134e4a]
-            : (isDoomsday
-              ? [0x1c1917, 0x292524, 0x78350f]
-              : (isAbyssal
-                ? [0x0f3443, 0x071e2e, 0xd97706]
-                : (isOrbital
-                  ? [0xf8fafc, 0x0f172a, 0x38bdf8]
-                  : (isNeon
-                    ? [0x0b1021, 0x00e5ff, 0x8b5cf6]
-                    : [
-                      CONSTANTS.COLORS.TRAIN_BODY_1,
-                      CONSTANTS.COLORS.TRAIN_BODY_2,
-                      CONSTANTS.COLORS.TRAIN_BODY_3
-                    ])))));
+        const colors = this.getTrainPalette(themeId);
         const color = colors[Math.floor(Math.random() * colors.length)];
         group = this.obstacleFactory.createTrain(length, hasRamp, color, undefined, themeId);
       } else if (obsData.type === 'MOVING_TRAIN') {
-        const movingColor = isHaunted ? 0x1f1135 : (isPhantom ? 0x0f172a : (isDoomsday ? 0x1c1917 : (isAbyssal ? 0x0f3443 : (isOrbital ? 0xf8fafc : (isNeon ? 0x0b1021 : CONSTANTS.COLORS.TRAIN_BODY_2)))));
+        const movingColor = this.getMovingTrainColor(themeId);
         const movingData = this.obstacleFactory.createMovingTrain(length, movingColor, themeId);
         group = movingData.group;
         headlights = movingData.headlights;
@@ -2656,6 +2640,56 @@ export class TrackChunk {
       }
     }
     return false;
+  }
+
+  private getTrainPalette(themeId?: string): number[] {
+    switch (themeId) {
+      case 'HAUNTED_CARNIVAL': return [0x1f1135, 0x2e1065, 0x381e09];
+      case 'PHANTOM_LINE': return [0x0f172a, 0x1e293b, 0x134e4a];
+      case 'DOOMSDAY_LAST_TRANSIT': return [0x1c1917, 0x292524, 0x78350f];
+      case 'ABYSSAL_GLASSLINE': return [0x0f3443, 0x071e2e, 0xd97706];
+      case 'ORBITAL_HALO': return [0xf8fafc, 0x0f172a, 0x38bdf8];
+      case 'NEON_RAINLINE': return [0x0b1021, 0x00e5ff, 0x8b5cf6];
+      case 'VIP_EXPRESS': return [0x1e3a8a, 0xf8fafc, 0xf59e0b];
+      case 'RAHULVERSE': return [0x0284c7, 0x16a34a, 0xffffff];
+      case 'MIDNIGHT_VELVET': return [0x4a0e17, 0x0f172a, 0x0a0a12];
+      case 'CHRONO_KINGDOM': return [0xb87333, 0x1a2332, 0x2b1810];
+      case 'INFERNO_EXPRESS': return [0x0a0a0d, 0x27272a, 0x18181b];
+      case 'JURASSIC_RUSH': return [0x27272a, 0x4d5d36, 0x3f4f2c];
+      case 'VIVA_HEAT': return [0xff2d55, 0x1f0310, 0x881337];
+      case 'MODERN_METRO': return [0x0284c7, 0xf8fafc, 0x0f172a];
+      case 'HISTORIC_QUARTER': return [0x1b4332, 0x4a0e17, 0x1e293b];
+      case 'UNDERGROUND_METRO': return [0x334155, 0xca8a04, 0x0f172a];
+      case 'NEON_INDUSTRIAL': return [0xeab308, 0xc2410c, 0x18181b];
+      default: return [
+        CONSTANTS.COLORS.TRAIN_BODY_1,
+        CONSTANTS.COLORS.TRAIN_BODY_2,
+        CONSTANTS.COLORS.TRAIN_BODY_3
+      ];
+    }
+  }
+
+  private getMovingTrainColor(themeId?: string): number {
+    switch (themeId) {
+      case 'HAUNTED_CARNIVAL': return 0x1f1135;
+      case 'PHANTOM_LINE': return 0x0f172a;
+      case 'DOOMSDAY_LAST_TRANSIT': return 0x1c1917;
+      case 'ABYSSAL_GLASSLINE': return 0x0f3443;
+      case 'ORBITAL_HALO': return 0xf8fafc;
+      case 'NEON_RAINLINE': return 0x0b1021;
+      case 'VIP_EXPRESS': return 0x1e3a8a;
+      case 'RAHULVERSE': return 0x0284c7;
+      case 'MIDNIGHT_VELVET': return 0x4a0e17;
+      case 'CHRONO_KINGDOM': return 0xb87333;
+      case 'INFERNO_EXPRESS': return 0x0a0a0d;
+      case 'JURASSIC_RUSH': return 0x4d5d36;
+      case 'VIVA_HEAT': return 0xff2d55;
+      case 'MODERN_METRO': return 0x0284c7;
+      case 'HISTORIC_QUARTER': return 0x1b4332;
+      case 'UNDERGROUND_METRO': return 0x334155;
+      case 'NEON_INDUSTRIAL': return 0xeab308;
+      default: return CONSTANTS.COLORS.TRAIN_BODY_2;
+    }
   }
 
   public clearDynamicItems(): void {

@@ -511,19 +511,21 @@ export class NeonIndustrialWorldBuilder {
     body.receiveShadow = true;
     group.add(body);
 
-    // Corner casting structural pillars
-    const cornerW = 0.22;
-    const cornerGeo = this.getBox(cornerW, h + 0.04, cornerW);
-    [
-      [-w * 0.5 + cornerW * 0.5, -d * 0.5 + cornerW * 0.5],
-      [w * 0.5 - cornerW * 0.5, -d * 0.5 + cornerW * 0.5],
-      [-w * 0.5 + cornerW * 0.5, d * 0.5 - cornerW * 0.5],
-      [w * 0.5 - cornerW * 0.5, d * 0.5 - cornerW * 0.5]
-    ].forEach(([cx, cz]) => {
-      const corner = new THREE.Mesh(cornerGeo, this.castIronMat);
-      corner.position.set(cx, 0, cz);
-      group.add(corner);
-    });
+    // Corner casting structural pillars (pruned in MINIMAL for draw-call scalability)
+    if (detail !== 'MINIMAL') {
+      const cornerW = 0.22;
+      const cornerGeo = this.getBox(cornerW, h + 0.04, cornerW);
+      [
+        [-w * 0.5 + cornerW * 0.5, -d * 0.5 + cornerW * 0.5],
+        [w * 0.5 - cornerW * 0.5, -d * 0.5 + cornerW * 0.5],
+        [-w * 0.5 + cornerW * 0.5, d * 0.5 - cornerW * 0.5],
+        [w * 0.5 - cornerW * 0.5, d * 0.5 - cornerW * 0.5]
+      ].forEach(([cx, cz]) => {
+        const corner = new THREE.Mesh(cornerGeo, this.castIronMat);
+        corner.position.set(cx, 0, cz);
+        group.add(corner);
+      });
+    }
 
     if (detail === 'FULL') {
       // Rear door frame & locking rods

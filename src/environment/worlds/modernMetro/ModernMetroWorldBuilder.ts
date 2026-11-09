@@ -269,16 +269,17 @@ export class ModernMetroWorldBuilder {
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
     const foundationDepth = 7.0; // Y from -5.85m to +1.15m
 
-    // Instanced railing vertical posts (10 per side = 20 total)
+    // Instanced railing vertical posts per side (prevents cross-track union bounding box)
     const postCountPerSide = Math.floor((chunkLength - 4) / 8) + 1;
-    const totalPosts = postCountPerSide * 2;
     const postGeo = this.getCylinder(0.04, 0.04, 0.85, 6);
-    const postInstanced = new THREE.InstancedMesh(postGeo, this.structuralSteelMat, totalPosts);
-    postInstanced.name = 'modern_railing_posts_instanced';
-    let postIdx = 0;
     const dummy = new THREE.Object3D();
 
-    [-wallX, wallX].forEach((wx) => {
+    [-wallX, wallX].forEach((wx, sideIdx) => {
+      const sideName = sideIdx === 0 ? 'left' : 'right';
+      const sidePosts = new THREE.InstancedMesh(postGeo, this.structuralSteelMat, postCountPerSide);
+      sidePosts.name = `modern_railing_posts_${sideName}`;
+      let postIdx = 0;
+
       // Deep foundation plinth down to -5.85m
       const plinth = new THREE.Mesh(this.getBox(wallThick + 0.4, foundationDepth, chunkLength), this.structuralSteelMat);
       plinth.position.set(wx, -foundationDepth * 0.5 + 1.15, -chunkLength * 0.5);
@@ -315,11 +316,11 @@ export class ModernMetroWorldBuilder {
       for (let z = 4; z < chunkLength; z += 8) {
         dummy.position.set(wx, wallHeight + 0.425, -z);
         dummy.updateMatrix();
-        postInstanced.setMatrixAt(postIdx++, dummy.matrix);
+        sidePosts.setMatrixAt(postIdx++, dummy.matrix);
       }
+      sidePosts.instanceMatrix.needsUpdate = true;
+      group.add(sidePosts);
     });
-    postInstanced.instanceMatrix.needsUpdate = true;
-    group.add(postInstanced);
   }
 
   // =========================================================================

@@ -420,11 +420,18 @@ export class UndergroundMetroWorldBuilder {
 
     if (detail !== 'MINIMAL') {
       const postGeo = this.getCyl(0.025, 0.025, 0.95, 6);
+      const postCount = Math.floor(chunkLength / 5);
+      const postInstanced = new THREE.InstancedMesh(postGeo, this.castIronMat, postCount);
+      postInstanced.name = 'catwalk_posts_instanced';
+      const dummy = new THREE.Object3D();
+      let pIdx = 0;
       for (let z = 0; z < chunkLength; z += 5) {
-        const post = new THREE.Mesh(postGeo, this.castIronMat);
-        post.position.set(railX, catwalkHeight + 0.48, -z - 2.5);
-        undergroundGroup.add(post);
+        dummy.position.set(railX, catwalkHeight + 0.48, -z - 2.5);
+        dummy.updateMatrix();
+        postInstanced.setMatrixAt(pIdx++, dummy.matrix);
       }
+      postInstanced.instanceMatrix.needsUpdate = true;
+      undergroundGroup.add(postInstanced);
 
       // Recessed Maintenance Doors along left tunnel wall
       const doorGeo = this.getBox(0.08, 2.4, 1.2);

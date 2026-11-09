@@ -308,7 +308,13 @@ export class HistoricQuarterWorldBuilder {
     const wallX = roadbedWidth * 0.5 + curbWidth + wallThick * 0.5 + 0.2;
     const foundationDepth = 7.0; // Y from -5.85m to +1.15m
 
-    [-wallX, wallX].forEach((wx) => {
+    const postGeo = this.getCylinder(0.04, 0.04, 0.9, 6);
+    const postSpacing = detail === 'MINIMAL' ? 12 : 6;
+    const postCountPerSide = Math.floor((chunkLength - 3) / postSpacing) + 1;
+    const dummy = new THREE.Object3D();
+
+    [-wallX, wallX].forEach((wx, sideIdx) => {
+      const sideName = sideIdx === 0 ? 'left' : 'right';
       // Deep foundation plinth down to -5.85m
       const plinth = new THREE.Mesh(this.getBox(wallThick + 0.35, foundationDepth, chunkLength), this.sandstoneWarmMat);
       plinth.position.set(wx, -foundationDepth * 0.5 + 1.15, -chunkLength * 0.5);
@@ -335,13 +341,17 @@ export class HistoricQuarterWorldBuilder {
       railBar.name = 'historic_railing_bar';
       group.add(railBar);
 
-      // Vertical iron balusters every 6m
-      for (let z = 3; z < chunkLength; z += 6) {
-        const post = new THREE.Mesh(this.getCylinder(0.04, 0.04, 0.9, 6), this.castIronDarkMat);
-        post.position.set(wx, wallHeight + 0.45, -z);
-        post.name = 'historic_railing_post';
-        group.add(post);
+      // Instanced vertical iron balusters per side
+      const sidePosts = new THREE.InstancedMesh(postGeo, this.castIronDarkMat, postCountPerSide);
+      sidePosts.name = `historic_railing_posts_${sideName}`;
+      let postIdx = 0;
+      for (let z = 3; z < chunkLength; z += postSpacing) {
+        dummy.position.set(wx, wallHeight + 0.45, -z);
+        dummy.updateMatrix();
+        sidePosts.setMatrixAt(postIdx++, dummy.matrix);
       }
+      sidePosts.instanceMatrix.needsUpdate = true;
+      group.add(sidePosts);
 
       // Cast-iron gas streetlamps along wall coping
       if (detail !== 'MINIMAL') {
