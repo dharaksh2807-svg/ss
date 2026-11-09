@@ -442,11 +442,11 @@ qualityChunk.populate([], -100, 'MODERN_METRO', false);
 assert(qualityChunk.decorativeGroup.visible === true, 'Decorative group is visible in FULL detail');
 
 qualityChunk.setSceneryDetail('MINIMAL');
-assert(qualityChunk.decorativeGroup.visible === false, 'Decorative group is hidden in MINIMAL detail');
+assert(qualityChunk.decorativeGroup.visible === true, 'Decorative group remains visible in MINIMAL detail');
 assert(qualityChunk.group.visible === true, 'Physical roadbed remains visible in MINIMAL detail');
 
 qualityChunk.setSceneryDetail('FULL');
-assert(qualityChunk.decorativeGroup.visible === true, 'Decorative group is restored in FULL detail');
+assert(qualityChunk.decorativeGroup.visible === true, 'Decorative group remains visible when returning to FULL detail');
 
 // =========================================================================
 // Suite 11: Developer Diagnostics & Environment Preview

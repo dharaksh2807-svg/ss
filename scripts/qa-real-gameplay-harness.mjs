@@ -157,8 +157,13 @@ async function runQA() {
         if (c.decorativeGroup) {
           c.decorativeGroup.traverse((obj) => {
             if (obj.isMesh) {
-              chunkMeshes++;
-              totalChunkMeshes++;
+              for (let ancestor = obj; ancestor?.visible; ancestor = ancestor.parent) {
+                if (ancestor === game.worldScene.scene) {
+                  chunkMeshes++;
+                  totalChunkMeshes++;
+                  break;
+                }
+              }
               if (obj.geometry) {
                 if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
                 const b = obj.geometry.boundingBox;
@@ -202,7 +207,7 @@ async function runQA() {
 
     // Verify assertions
     if (runDiagnostics.totalChunkMeshes === 0) {
-      throw new Error(`World ${world.id} generated 0 scenery meshes!`);
+      throw new Error(`World ${world.id} has 0 visible scenery meshes attached to the scene!`);
     }
     if (runDiagnostics.minFoundationY > 0.5) {
       throw new Error(`World ${world.id} has floating geometry (min Y = ${runDiagnostics.minFoundationY}m > 0.5m)!`);

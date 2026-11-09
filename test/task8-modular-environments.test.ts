@@ -309,19 +309,19 @@ for (const obs of modernChunk.obstacles) {
   assert(!modernChunk.decorativeGroup.children.includes(obs.mesh), 'Obstacle mesh is NOT inside decorativeGroup');
 }
 
-// Invariant 2: Scenery Detail Culling in LOW preset preserves physical roadbed
+// Invariant 2: LOW preserves the scenery and physical roadbed.
 modernChunk.setSceneryDetail('MINIMAL');
-assert(modernChunk.decorativeGroup.visible === false, 'MINIMAL detail cleanly hides modern decorativeGroup');
+assert(modernChunk.group.visible && modernChunk.decorativeGroup.visible, 'MINIMAL detail preserves modern scenery visibility');
 assert(modernChunk.group.visible === true, 'Physical roadbed, rails and obstacles remain visible in MINIMAL detail');
 
 historicChunk.setSceneryDetail('MINIMAL');
-assert(historicChunk.decorativeGroup.visible === false, 'MINIMAL detail cleanly hides historic decorativeGroup');
+assert(historicChunk.group.visible && historicChunk.decorativeGroup.visible, 'MINIMAL detail preserves historic scenery visibility');
 
 modernChunk.setSceneryDetail('FULL');
-assert(modernChunk.decorativeGroup.visible === true, 'FULL detail restores modern decorativeGroup');
+assert(modernChunk.decorativeGroup.visible === true, 'FULL detail keeps modern scenery visible');
 
 historicChunk.setSceneryDetail('FULL');
-assert(historicChunk.decorativeGroup.visible === true, 'FULL detail restores historic decorativeGroup');
+assert(historicChunk.decorativeGroup.visible === true, 'FULL detail keeps historic scenery visible');
 
 // =========================================================================
 // Suite 7: EnvironmentManager Preference Persistence & Interpolation

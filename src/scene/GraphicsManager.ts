@@ -45,7 +45,6 @@ export class GraphicsManager {
   private lowFpsConsecutiveWindows = 0;
   private highFpsConsecutiveWindows = 0;
   private cooldownTimer = 0; // Seconds until next auto adjustment
-  private isAutoDowngraded = false;
   private detectedTier: ResolvedQuality = 'HIGH';
 
   // Benchmark stats
@@ -142,7 +141,8 @@ export class GraphicsManager {
     }
 
     if (preset === 'AUTO') {
-      // Reset adaptive window counters and start from hardware tier
+      // Start from the hardware tier with a fresh sampling window.
+      this.frameTimes = [];
       this.lowFpsConsecutiveWindows = 0;
       this.highFpsConsecutiveWindows = 0;
       this.cooldownTimer = 8.0; // Grace period before adaptive shifts
@@ -275,7 +275,6 @@ export class GraphicsManager {
         } else if (this.resolvedQuality === 'MEDIUM') {
           this.applyAdaptiveShift('LOW', 'Sustained frame drops (<45 FPS on Medium)');
         }
-        this.isAutoDowngraded = true;
         this.cooldownTimer = 14.0; // 14-second hysteresis cooldown
         this.lowFpsConsecutiveWindows = 0;
       }
@@ -290,7 +289,7 @@ export class GraphicsManager {
         if (this.resolvedQuality === 'LOW') {
           this.applyAdaptiveShift('MEDIUM', 'Stable high FPS observed on Low');
           this.cooldownTimer = 16.0;
-        } else if (this.resolvedQuality === 'MEDIUM' && !this.isAutoDowngraded) {
+        } else if (this.resolvedQuality === 'MEDIUM') {
           this.applyAdaptiveShift('HIGH', 'Headroom confirmed on Medium');
           this.cooldownTimer = 18.0;
         }

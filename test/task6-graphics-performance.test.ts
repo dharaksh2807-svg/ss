@@ -147,38 +147,68 @@ gm.update(0.060, true);
 gm.update(0.080, true);
 assert(gm.getResolvedQuality() === detectedTier, 'Isolated frame-time spikes do NOT cause immediate quality oscillation');
 
-// 3. Under sustained frame drops over 2 consecutive evaluation windows (cooldown + 360 frames)
-for (let i = 0; i < 700; i++) {
-  gm.update(0.035, true);
+function sampleFrames(count: number, dt: number): void {
+  for (let i = 0; i < count; i++) gm.update(dt, true);
 }
-assert(gm.getResolvedQuality() !== 'HIGH', 'Sustained frame drops adaptively downgrade quality');
 
-// 4. Verify hysteresis cooldown prevents rapid bouncing
-const afterDowngrade = gm.getResolvedQuality();
-gm.update(0.016, true); // Single fast frame
-assert(gm.getResolvedQuality() === afterDowngrade, 'Quality remains stable during hysteresis cooldown window');
-passedTests += 4;
+const slowFrame = 1 / 32;
+const fastFrame = 1 / 64;
+gm.setPreset('AUTO', false);
+sampleFrames(8 * 32 + 2 * 180, slowFrame);
+assert(gm.getResolvedQuality() === 'MEDIUM', 'AUTO downgrades HIGH to MEDIUM after two slow windows');
+sampleFrames(14 * 32 + 2 * 180 - 1, slowFrame);
+assert(gm.getResolvedQuality() === 'MEDIUM', 'Downgrade cooldown and sample windows prevent an early shift to LOW');
+sampleFrames(1, slowFrame);
+assert(gm.getResolvedQuality() === 'LOW', 'AUTO downgrades MEDIUM to LOW after sustained frame drops');
+sampleFrames(14 * 64 + 5 * 180, fastFrame);
+assert(gm.getResolvedQuality() === 'MEDIUM', 'AUTO recovers from LOW to MEDIUM after sustained headroom');
+sampleFrames(16 * 64 + 5 * 180 - 1, fastFrame);
+assert(gm.getResolvedQuality() === 'MEDIUM', 'Recovery cooldown and sample windows prevent an early shift to HIGH');
+sampleFrames(1, fastFrame);
+assert(gm.getResolvedQuality() === 'HIGH', 'AUTO can recover all the way to HIGH after a downgrade');
+
+gm.setPreset('AUTO', false);
+sampleFrames(8 * 32 + 179, slowFrame);
+gm.setPreset('LOW', false);
+gm.setPreset('AUTO', false);
+sampleFrames(8 * 32 + 181, slowFrame);
+assert(gm.getResolvedQuality() === 'HIGH', 'LOW to AUTO starts at the hardware tier with a fresh sampling window');
+sampleFrames(179, slowFrame);
+assert(gm.getResolvedQuality() === 'MEDIUM', 'Fresh AUTO samples can still trigger an adaptive shift');
+passedTests += 10;
 
 // =========================================================================
-// Suite 4: Scenery Detail Culling in TrackChunk
+// Suite 4: Scenery Visibility in TrackChunk
 // =========================================================================
-console.log('\n--- Suite 4: Scenery Detail Culling in TrackChunk ---');
-const trackManager = new TrackManager(new THREE.Scene());
+console.log('\n--- Suite 4: Scenery Visibility in TrackChunk ---');
+const scene = new THREE.Scene();
+const trackManager = new TrackManager(scene);
 const chunk = trackManager.chunks[0];
 
-assert(chunk.decorativeGroup !== undefined, 'TrackChunk declares dedicated decorativeGroup');
-assert(chunk.decorativeGroup.children.length > 0, 'Decorative scenery objects populated into decorativeGroup');
+function hasVisibleScenery(): boolean {
+  let visibleMesh = false;
+  scene.traverseVisible(object => {
+    if (object === chunk.decorativeGroup) {
+      object.traverseVisible(child => {
+        if (child instanceof THREE.Mesh) visibleMesh = true;
+      });
+    }
+  });
+  return visibleMesh;
+}
 
-// Test Minimal Scenery Detail
-chunk.setSceneryDetail('MINIMAL');
-assert(chunk.decorativeGroup.visible === false, 'MINIMAL detail cleanly hides decorativeGroup without removing geometry');
+gm.setPreset('HIGH');
+assert(hasVisibleScenery(), 'HIGH has visible scenery attached to the scene');
+const originalScenery = chunk.decorativeGroup.children[0];
+gm.setPreset('LOW');
+assert(chunk.currentSceneryDetail === 'MINIMAL' && hasVisibleScenery(), 'HIGH to LOW preserves scenery visibility with MINIMAL detail');
+assert(chunk.decorativeGroup.children[0] === originalScenery, 'Switching quality retains existing scenery geometry');
 
-// Verify that roadbed and rails remain active
-assert(chunk.group.children.length > 0, 'Chunk core group retains roadbed, curbs, and rails');
+const recycled = chunk.populate({ name: 'Scenery visibility test', obstacles: [], collectibles: [] }, -10 * CONSTANTS.CHUNK_LENGTH);
+assert(recycled && chunk.decorativeGroup.children[0] !== originalScenery && hasVisibleScenery(), 'Repopulating the pooled chunk in LOW builds visible scenery');
 
-// Test Full Scenery Detail
-chunk.setSceneryDetail('FULL');
-assert(chunk.decorativeGroup.visible === true, 'FULL detail restores complete architectural scenery');
+gm.setPreset('HIGH');
+assert(chunk.currentSceneryDetail === 'FULL' && hasVisibleScenery(), 'LOW to HIGH restores FULL detail with visible scenery');
 passedTests += 5;
 
 // =========================================================================
@@ -234,6 +264,8 @@ passedTests += 15;
 console.log('\n--- Suite 7: Settings Persistence & LocalStorage ---');
 gm.setPreset('LOW', true);
 assert(mockStorage['metro_graphics_preset'] === 'LOW', 'LOW preset saved to localStorage');
+const restoredGraphics = new GraphicsManager();
+assert(restoredGraphics.getPreset() === 'LOW' && restoredGraphics.getResolvedQuality() === 'LOW', 'Initialization restores saved LOW quality');
 
 gm.setPreset('HIGH', true);
 assert(mockStorage['metro_graphics_preset'] === 'HIGH', 'HIGH preset saved to localStorage');
@@ -243,7 +275,7 @@ assert(mockStorage['metro_show_fps'] === 'true', 'FPS display preference saved t
 
 gm.setFpsDisplayEnabled(false);
 assert(mockStorage['metro_show_fps'] === 'false', 'FPS display disable saved to localStorage');
-passedTests += 4;
+passedTests += 5;
 
 console.log('\n=======================================================');
 console.log(`📊 TASK 6 TEST RESULTS: ${passedTests} PASSED, 0 FAILED`);

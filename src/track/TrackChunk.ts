@@ -105,11 +105,6 @@ export class TrackChunk {
 
   public setSceneryDetail(detail: 'FULL' | 'BALANCED' | 'MINIMAL'): void {
     this.currentSceneryDetail = detail;
-    if (detail === 'MINIMAL') {
-      this.decorativeGroup.visible = false;
-    } else {
-      this.decorativeGroup.visible = true;
-    }
   }
 
   private initSharedMaterials(): void {
