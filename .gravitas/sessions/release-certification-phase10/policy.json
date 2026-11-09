@@ -1,0 +1,12 @@
+{
+  "planning": "compact",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "independent-certification",
+    "regression-testing",
+    "cross-world-visual-audit",
+    "browser-evidence"
+  ]
+}

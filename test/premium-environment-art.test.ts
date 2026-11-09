@@ -269,6 +269,33 @@ console.log('\n--- Suite 5: Gameplay Collision Integrity & Lane Clearance Invari
     let violatingY = 0;
 
     group.traverse((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        const matrix = new THREE.Matrix4();
+        const pos = new THREE.Vector3();
+        const geoBox = new THREE.Box3();
+        if (child.geometry) {
+          if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+          geoBox.copy(child.geometry.boundingBox!);
+        }
+        for (let i = 0; i < child.count; i++) {
+          child.getMatrixAt(i, matrix);
+          pos.setFromMatrixPosition(matrix);
+          const instBox = geoBox.clone().applyMatrix4(matrix);
+          CONSTANTS.LANE_POSITIONS.forEach((laneX) => {
+            const laneHalfW = CONSTANTS.LANE_WIDTH * 0.40;
+            const intersectsLaneX = instBox.min.x < (laneX + laneHalfW) && instBox.max.x > (laneX - laneHalfW);
+            const intersectsHazardY = instBox.min.y < 5.5 && instBox.max.y > 0.2;
+            if (intersectsLaneX && intersectsHazardY) {
+              console.log(`VIOLATION in ${themeId}: instanced mesh name="${child.name}", instance=${i}, pos=[${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}]`);
+              violatedLane = true;
+              violatingX = pos.x;
+              violatingY = pos.y;
+            }
+          });
+        }
+        return;
+      }
+
       if (child instanceof THREE.Mesh) {
         const b = new THREE.Box3().setFromObject(child);
 

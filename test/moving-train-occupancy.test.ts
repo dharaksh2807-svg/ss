@@ -80,6 +80,8 @@ neighbor.clearDynamicItems();
 
 // Actual solid scene meshes: test per-part clearances, not an enclosing arch AABB.
 function sceneryConflict(x: number, y: number, width: number, height: number) {
+  chunk.decorativeGroup.clear();
+  (chunk as any).solidSceneryBounds = [];
   check(place([train()]), 'Prepare a clean train route for solid scenery');
   const fixture = new THREE.Group();
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 1), new THREE.MeshBasicMaterial());
@@ -87,7 +89,10 @@ function sceneryConflict(x: number, y: number, width: number, height: number) {
   fixture.add(mesh);
   chunk.decorativeGroup.add(fixture);
   (chunk as any).solidSceneryBounds = ObstacleFactory.getSolidGeometryBounds(fixture);
-  return chunk.hasMovingTrainPathConflict();
+  const conflict = chunk.hasMovingTrainPathConflict();
+  chunk.decorativeGroup.clear();
+  (chunk as any).solidSceneryBounds = [];
+  return conflict;
 }
 check(sceneryConflict(0, 2, 1, 4), 'A solid wall across the track blocks the path');
 check(!sceneryConflict(9, 2, 1, 4), 'A wall outside the train envelope is valid');

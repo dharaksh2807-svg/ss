@@ -1,0 +1,29 @@
+{
+  "mode": "implement",
+  "objective": "Execute Phase 10 independent premium release certification across all quality gates (Gameplay, Visual, Political Comedy, Performance, UX, Maintainability, and Final Verdict)",
+  "acceptance_criteria": [
+    "Ground on clean commit b430e74 without assumptions",
+    "Gate A: Verify gameplay correctness across 3-lane movement, jumps, slides, trains, rooftop traversal, collisions, powerups, deterministic solvability in browser",
+    "Gate B: Audit visual quality across all registered worlds (especially Mitron Express and Rahulverse) with captured evidence across initial, mid, landmark, high-speed, mobile, and character views",
+    "Gate C: Verify physical comedy sequences for both political worlds (setup, performance, payoff, visibility, restart, collision)",
+    "Gate D: Measure real frame times, draw calls, stutter, heap memory, and stability over repeated restarts and world switching",
+    "Gate E: Audit player experience across first-run, touch/keyboard, modals, audio, accessibility, and save integrity",
+    "Gate F: Audit maintainability, event lifecycles, and architecture boundaries",
+    "Gate G: Classify all findings (P0/P1/P2) and issue definitive release verdict (RC Accepted, External Playtest Only, or Release Blocked) with comprehensive release report"
+  ],
+  "non_goals": [
+    "Do not add broad new features or speculative architecture rewrites",
+    "Do not fabricate tester quotes or claimed hardware performance",
+    "Do not bypass or modify authoritative collision dimensions"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/release-certification-phase10/",
+    "docs/",
+    "test/",
+    "artifacts/phase10/",
+    "src/"
+  ],
+  "verification": "impact"
+}
