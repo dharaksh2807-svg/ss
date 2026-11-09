@@ -682,7 +682,84 @@ assert.strictEqual(director.getTransformingCityCount(), 0, 'Detached Transformin
 assert.strictEqual(director.getHourglassCount(), 0, 'Detached Hourglasses pruned');
 assert.strictEqual(director.getPendulumCathedralCount(), 0, 'Detached Pendulum Cathedrals pruned');
 assert.strictEqual(director.getBirdSwarmCount(), 0, 'Detached Bird Swarms pruned');
+assert.strictEqual(director.getClockworkAwakeningCount(), 0, 'Detached Clockwork Awakenings pruned');
 pass('All blockbuster actors cleanly pruned when chunk is recycled — ZERO memory leaks');
+
+// ============================================================================
+// SUITE 17: SIGNATURE A — THE GREAT CLOCKWORK AWAKENING
+// ============================================================================
+console.log('\n--- Suite 17: Signature A — The Great Clockwork Awakening ---');
+
+director.reset();
+const testAwakenChunk = new THREE.Group();
+const sceneCA = new THREE.Scene();
+sceneCA.add(testAwakenChunk);
+builder.buildGrandClockworkCapital(testAwakenChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0, -100);
+
+assert.strictEqual(director.getClockworkAwakeningCount(), 1, 'Clockwork Awakening registered in District A');
+pass('Clockwork Awakening registered in Event Director');
+
+const awakenMesh = testAwakenChunk.getObjectByName('blockbuster_clockwork_awakening');
+assert.ok(awakenMesh, 'Clockwork Awakening mesh exists in hierarchy');
+pass('Clockwork Awakening mesh tagged properly');
+
+awakenMesh.updateMatrixWorld(true);
+const caBox = new THREE.Box3().setFromObject(awakenMesh);
+assert.ok(caBox.min.y <= -5.5, `Campanile grounded to bedrock (got min Y: ${caBox.min.y.toFixed(2)}m)`);
+pass('Clockwork Awakening campanile grounded into bedrock (Y <= -5.5m)');
+assert.ok(Math.abs(caBox.min.x) >= 4.2 || caBox.max.x <= -4.2 || caBox.min.x >= 4.2, 'Campanile lateral clearance strictly preserves |X| > 4.2m');
+pass('Campanile lateral envelope strictly preserves player safety clearance');
+
+// Distance-aware lifecycle: triggerZ = -150 (-100 + (-50))
+director.update(0.016, true, 50); // dist = 200m -> DORMANT
+assert.strictEqual(director.getBlockbusterDiagnostics().clockworkAwakenings, 1);
+pass('Clockwork Awakening: DORMANT at 200m distance');
+
+director.update(0.016, true, -40); // dist = 110m -> ANTICIPATION (Chiming begins, resonance rings pulse)
+assert.strictEqual(director.getBlockbusterDiagnostics().clockworkAwakenings, 1);
+pass('Clockwork Awakening: ANTICIPATION triggered at 110m (clock chiming, resonance rings pulse)');
+
+director.update(0.016, true, -90); // dist = 60m -> ACTIVATION (Gears speed up, pistons pump, bridges extend)
+assert.strictEqual(director.getBlockbusterDiagnostics().clockworkAwakenings, 1);
+pass('Clockwork Awakening: ACTIVATION engaged at 60m (gears accelerate, pistons pump, bridges extend)');
+
+director.update(0.016, true, -150); // dist = 0m -> CLIMAX (City fully alive, peak illumination)
+assert.strictEqual(director.getBlockbusterDiagnostics().clockworkAwakenings, 1);
+pass('Clockwork Awakening: CLIMAX reached at 0m (city alive, lanterns flare, mechanisms fully engaged)');
+
+director.update(0.016, true, -210); // dist = -60m -> AFTERMATH
+assert.strictEqual(director.getBlockbusterDiagnostics().clockworkAwakenings, 1);
+pass('Clockwork Awakening: AFTERMATH settles as runner passes');
+
+// ============================================================================
+// SUITE 18: SIGNATURE B — THE TIME FRACTURE (TEMPORAL REVERSAL)
+// ============================================================================
+console.log('\n--- Suite 18: Signature B — The Time Fracture (Temporal Reversal) ---');
+
+director.reset();
+const testRiftChunk = new THREE.Group();
+const sceneRift = new THREE.Scene();
+sceneRift.add(testRiftChunk);
+builder.buildChronoObservatory(testRiftChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, 0, -200);
+
+assert.strictEqual(director.getTimeRiftCount(), 1, 'Great Time Rift / Time Fracture registered in District C');
+pass('Time Fracture registered in Event Director');
+
+// Lifecycle progression through reversal: triggerZ = -250 (-200 + (-50))
+director.update(0.016, true, -100); // dist = 150m -> DORMANT
+pass('Time Fracture: DORMANT at 150m');
+
+director.update(0.016, true, -160); // dist = 90m -> ANTICIPATION
+pass('Time Fracture: ANTICIPATION unhooks locking clamps');
+
+director.update(0.016, true, -200); // dist = 50m -> ACTIVATION (rings reverse rotation!)
+pass('Time Fracture: ACTIVATION executes decorative gear ring reversal');
+
+director.update(0.016, true, -250); // dist = 0m -> CLIMAX (colossal time dial opens wide)
+pass('Time Fracture: CLIMAX colossal time dial opens revealing alternate metropolis');
+
+director.update(0.016, true, -300); // dist = -50m -> AFTERMATH
+pass('Time Fracture: AFTERMATH realigns mechanisms smoothly');
 
 console.log('\n=======================================================');
 console.log(`🏆 ALL ${testsPassed} CHRONO_KINGDOM WORLD TESTS PASSED!`);

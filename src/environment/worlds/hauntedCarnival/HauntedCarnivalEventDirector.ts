@@ -247,6 +247,66 @@ export interface GhostParadeFloatActor {
   lanterns: THREE.Mesh[];
 }
 
+export type CursedFerrisWheelStage =
+  | 'ABANDONED'
+  | 'LIGHTS_AWAKENING'
+  | 'ROTATING'
+  | 'SILHOUETTES_REVEAL'
+  | 'FAIRGROUND_ALIVE'
+  | 'SETTLED';
+
+export interface CursedFerrisWheelActor {
+  group: THREE.Group;
+  wheelRim: THREE.Object3D;
+  spokes: THREE.Object3D[];
+  gondolas: Array<{
+    pivot: THREE.Object3D;
+    carriage: THREE.Object3D;
+    specter?: THREE.Object3D;
+    lantern?: THREE.Mesh;
+  }>;
+  rimBulbs: THREE.Mesh[];
+  supportAFrame: THREE.Object3D;
+  groundPlinth: THREE.Object3D;
+  wheelRotation: number;
+  rotationSpeed: number;
+  currentSpeed: number;
+  worldZ: number;
+  stage: CursedFerrisWheelStage;
+  stageTimer: number;
+  illuminatedBulbsCount: number;
+}
+
+export type GhostParadeStage =
+  | 'CONCEALED'
+  | 'EMERGENCE'
+  | 'PROCESSION'
+  | 'REACTION'
+  | 'DISAPPEARANCE'
+  | 'SETTLED';
+
+export interface GhostParadeSpecter {
+  mesh: THREE.Object3D;
+  head: THREE.Object3D;
+  arms: THREE.Object3D[];
+  tail: THREE.Object3D;
+  lantern?: THREE.Mesh;
+  halo?: THREE.Mesh;
+  lateralOffset: number;
+  phaseOffset: number;
+}
+
+export interface GhostParadeActor {
+  group: THREE.Group;
+  specters: GhostParadeSpecter[];
+  destinationStructure: THREE.Object3D;
+  mistPortal?: THREE.Mesh;
+  worldZ: number;
+  stage: GhostParadeStage;
+  stageTimer: number;
+  progress: number;
+}
+
 export interface BatSwarmActor {
   group: THREE.Group;
   bats: Array<{
@@ -423,6 +483,8 @@ export class HauntedCarnivalEventDirector {
   private ghostTrains: GhostTrainActor[] = [];
   private livingPumpkins: LivingPumpkinActor[] = [];
   private paradeFloats: GhostParadeFloatActor[] = [];
+  private ferrisWheels: CursedFerrisWheelActor[] = [];
+  private ghostParades: GhostParadeActor[] = [];
   private batSwarms: BatSwarmActor[] = [];
   private funhouseTricks: FunhouseTrickActor[] = [];
   private ambient: AmbientHauntingActor = {
@@ -498,6 +560,14 @@ export class HauntedCarnivalEventDirector {
     this.paradeFloats.push(actor);
   }
 
+  public registerCursedFerrisWheel(actor: CursedFerrisWheelActor): void {
+    this.ferrisWheels.push(actor);
+  }
+
+  public registerGhostParade(actor: GhostParadeActor): void {
+    this.ghostParades.push(actor);
+  }
+
   public registerBatSwarm(actor: BatSwarmActor): void {
     this.batSwarms.push(actor);
   }
@@ -527,14 +597,16 @@ export class HauntedCarnivalEventDirector {
   public getGhostCount(): number { return this.ghosts.length; }
   public getRingmasterCount(): number { return this.ringmasters.length; }
   public getGhostClownCount(): number { return this.ghostClowns.length; }
+  public getFerrisWheelCount(): number { return this.ferrisWheels.length; }
+  public getGhostParadeCount(): number { return this.ghostParades.length; }
 
   public getTotalActiveElements(): number {
     return this.watchers.length + this.carousels.length + this.mansionAwakens.length +
       this.nightmareClowns.length + this.shadowColossi.length + this.ghosts.length +
       this.ringmasters.length + this.ghostClowns.length + this.hauntedDolls.length +
       this.shadowCreatures.length + this.mirrorGlitches.length + this.ghostTrains.length +
-      this.livingPumpkins.length + this.paradeFloats.length + this.batSwarms.length +
-      this.funhouseTricks.length;
+      this.livingPumpkins.length + this.paradeFloats.length + this.ferrisWheels.length +
+      this.ghostParades.length + this.batSwarms.length + this.funhouseTricks.length;
   }
 
   // --- Lifecycle & Pruning ---
@@ -554,6 +626,8 @@ export class HauntedCarnivalEventDirector {
     this.ghostTrains.length = 0;
     this.livingPumpkins.length = 0;
     this.paradeFloats.length = 0;
+    this.ferrisWheels.length = 0;
+    this.ghostParades.length = 0;
     this.batSwarms.length = 0;
     this.funhouseTricks.length = 0;
     this.ambient.swingingLanterns.length = 0;
@@ -566,7 +640,7 @@ export class HauntedCarnivalEventDirector {
     let current: THREE.Object3D | null = obj;
     while (current) {
       if (!current.parent) {
-        return current.type !== 'Scene';
+        return current.type !== 'Scene' && !(current as any).isScene;
       }
       current = current.parent;
     }
@@ -588,6 +662,8 @@ export class HauntedCarnivalEventDirector {
     this.ghostTrains = this.ghostTrains.filter((a) => !this.isDetached(a.group));
     this.livingPumpkins = this.livingPumpkins.filter((a) => !this.isDetached(a.group));
     this.paradeFloats = this.paradeFloats.filter((a) => !this.isDetached(a.group));
+    this.ferrisWheels = this.ferrisWheels.filter((a) => !this.isDetached(a.group));
+    this.ghostParades = this.ghostParades.filter((a) => !this.isDetached(a.group));
     this.batSwarms = this.batSwarms.filter((a) => !this.isDetached(a.group));
     this.funhouseTricks = this.funhouseTricks.filter((a) => !this.isDetached(a.group));
     this.ambient.swingingLanterns = this.ambient.swingingLanterns.filter((a) => !this.isDetached(a.mesh));
@@ -1227,6 +1303,184 @@ export class HauntedCarnivalEventDirector {
       }
     }
 
+    // =========================================================================
+    // SIGNATURE B: THE CURSED FERRIS WHEEL (6-Stage Awakening)
+    // =========================================================================
+    for (let i = 0; i < this.ferrisWheels.length; i++) {
+      const fw = this.ferrisWheels[i];
+      const distanceAhead = pZ - fw.worldZ;
+      fw.stageTimer += dt;
+
+      if (distanceAhead > 140) {
+        fw.stage = 'ABANDONED';
+        fw.currentSpeed = 0;
+        for (let b = 0; b < fw.rimBulbs.length; b++) fw.rimBulbs[b].visible = false;
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          fw.gondolas[g].carriage.rotation.z = -fw.wheelRotation;
+          if (fw.gondolas[g].specter) fw.gondolas[g].specter!.visible = false;
+          if (fw.gondolas[g].lantern) fw.gondolas[g].lantern!.visible = false;
+        }
+      } else if (distanceAhead > 80) {
+        fw.stage = 'LIGHTS_AWAKENING';
+        fw.currentSpeed = THREE.MathUtils.lerp(fw.currentSpeed, fw.rotationSpeed * 0.35, dt * 2.0);
+        fw.wheelRotation += fw.currentSpeed * dt * motionScale;
+        fw.wheelRim.rotation.z = fw.wheelRotation;
+
+        const antProg = (140 - distanceAhead) / 60;
+        fw.illuminatedBulbsCount = Math.floor(antProg * fw.rimBulbs.length);
+        for (let b = 0; b < fw.rimBulbs.length; b++) {
+          const bulb = fw.rimBulbs[b];
+          if (b <= fw.illuminatedBulbsCount) {
+            bulb.visible = true;
+            const bMat = bulb.material as THREE.MeshBasicMaterial;
+            if (bMat) bMat.opacity = Math.min(1.0, 0.4 + antProg * 0.6);
+          } else {
+            bulb.visible = false;
+          }
+        }
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          const gon = fw.gondolas[g];
+          const sway = Math.sin(t * 1.5 + g * 0.5) * 0.05 * motionScale;
+          gon.carriage.rotation.z = -fw.wheelRotation + sway;
+          if (gon.specter) gon.specter.visible = false;
+          if (gon.lantern) gon.lantern.visible = true;
+        }
+      } else if (distanceAhead > 25) {
+        fw.stage = 'ROTATING';
+        fw.currentSpeed = THREE.MathUtils.lerp(fw.currentSpeed, fw.rotationSpeed, dt * 2.5);
+        fw.wheelRotation += fw.currentSpeed * dt * motionScale;
+        fw.wheelRim.rotation.z = fw.wheelRotation;
+
+        for (let b = 0; b < fw.rimBulbs.length; b++) fw.rimBulbs[b].visible = true;
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          const gon = fw.gondolas[g];
+          const sway = Math.sin(t * 2.0 + g * 0.6) * 0.08 * motionScale;
+          gon.carriage.rotation.z = -fw.wheelRotation + sway;
+          if (gon.lantern) gon.lantern.visible = true;
+        }
+      } else if (distanceAhead >= -30) {
+        fw.stage = 'SILHOUETTES_REVEAL';
+        fw.currentSpeed = THREE.MathUtils.lerp(fw.currentSpeed, fw.rotationSpeed, dt * 2.5);
+        fw.wheelRotation += fw.currentSpeed * dt * motionScale;
+        fw.wheelRim.rotation.z = fw.wheelRotation;
+
+        for (let b = 0; b < fw.rimBulbs.length; b++) fw.rimBulbs[b].visible = true;
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          const gon = fw.gondolas[g];
+          const sway = Math.sin(t * 2.0 + g * 0.6) * 0.1 * motionScale;
+          gon.carriage.rotation.z = -fw.wheelRotation + sway;
+          if (gon.specter) {
+            gon.specter.visible = true;
+            gon.specter.rotation.y = THREE.MathUtils.lerp(gon.specter.rotation.y, -0.45, dt * 3.0);
+            gon.specter.rotation.z = Math.sin(t * 3.0 + g) * 0.08;
+          }
+          if (gon.lantern) gon.lantern.visible = true;
+        }
+      } else if (distanceAhead >= -80) {
+        fw.stage = 'FAIRGROUND_ALIVE';
+        fw.wheelRotation += fw.currentSpeed * dt * motionScale;
+        fw.wheelRim.rotation.z = fw.wheelRotation;
+
+        for (let b = 0; b < fw.rimBulbs.length; b++) fw.rimBulbs[b].visible = true;
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          const gon = fw.gondolas[g];
+          gon.carriage.rotation.z = -fw.wheelRotation + Math.sin(t * 1.6 + g * 0.5) * 0.06 * motionScale;
+          if (gon.specter) gon.specter.visible = true;
+          if (gon.lantern) gon.lantern.visible = true;
+        }
+      } else {
+        fw.stage = 'SETTLED';
+        fw.currentSpeed = THREE.MathUtils.lerp(fw.currentSpeed, 0, dt * 1.2);
+        fw.wheelRotation += fw.currentSpeed * dt * motionScale;
+        fw.wheelRim.rotation.z = fw.wheelRotation;
+        for (let g = 0; g < fw.gondolas.length; g++) {
+          fw.gondolas[g].carriage.rotation.z = -fw.wheelRotation;
+          if (fw.gondolas[g].specter) fw.gondolas[g].specter!.visible = false;
+        }
+      }
+    }
+
+    // =========================================================================
+    // SIGNATURE A: THE GHOST PARADE (6-Stage Procession)
+    // =========================================================================
+    for (let i = 0; i < this.ghostParades.length; i++) {
+      const gp = this.ghostParades[i];
+      const distanceAhead = pZ - gp.worldZ;
+      gp.stageTimer += dt;
+
+      if (distanceAhead > 120) {
+        gp.stage = 'CONCEALED';
+        gp.group.visible = false;
+        for (let s = 0; s < gp.specters.length; s++) gp.specters[s].mesh.visible = false;
+      } else if (distanceAhead > 65) {
+        gp.stage = 'EMERGENCE';
+        gp.group.visible = true;
+        const emNorm = (120 - distanceAhead) / 55;
+        for (let s = 0; s < gp.specters.length; s++) {
+          const sp = gp.specters[s];
+          sp.mesh.visible = true;
+          const sScale = emNorm;
+          sp.mesh.scale.set(sScale, sScale, sScale);
+          sp.mesh.position.y = 1.2 + emNorm * 1.6 + Math.sin(t * 2.5 + sp.phaseOffset) * 0.3 * motionScale;
+          sp.mesh.position.x = sp.lateralOffset + Math.sin(t * 1.2 + sp.phaseOffset) * 0.4;
+        }
+      } else if (distanceAhead > 15) {
+        gp.stage = 'PROCESSION';
+        gp.group.visible = true;
+        const procProg = (65 - distanceAhead) / 50;
+        for (let s = 0; s < gp.specters.length; s++) {
+          const sp = gp.specters[s];
+          sp.mesh.visible = true;
+          sp.mesh.scale.set(1.0, 1.0, 1.0);
+          sp.mesh.position.y = 2.8 + Math.sin(t * 2.8 + sp.phaseOffset) * 0.35 * motionScale;
+          const snakeZ = -s * 5.0 - procProg * 12.0;
+          sp.mesh.position.z = snakeZ;
+          sp.mesh.position.x = sp.lateralOffset + Math.sin(t * 2.0 - s * 0.8) * 0.7 * motionScale;
+          for (let a = 0; a < sp.arms.length; a++) {
+            sp.arms[a].rotation.z = Math.sin(t * 3.5 + s + a * Math.PI) * 0.35 * motionScale;
+          }
+          sp.tail.rotation.x = Math.sin(t * 2.2 + s) * 0.25 * motionScale;
+          sp.head.rotation.y = Math.sin(t * 1.8 + s) * 0.2;
+          if (sp.lantern) {
+            sp.lantern.position.y = Math.sin(t * 4.0) * 0.15;
+          }
+        }
+      } else if (distanceAhead >= -35) {
+        gp.stage = 'REACTION';
+        gp.group.visible = true;
+        for (let s = 0; s < gp.specters.length; s++) {
+          const sp = gp.specters[s];
+          sp.mesh.visible = true;
+          sp.head.rotation.y = THREE.MathUtils.lerp(sp.head.rotation.y, 0.65, dt * 4.0);
+          for (let a = 0; a < sp.arms.length; a++) {
+            sp.arms[a].rotation.z = 0.5 + Math.sin(t * 5.0 + s) * 0.45 * motionScale;
+          }
+          sp.mesh.position.y = 2.8 + Math.sin(t * 3.2 + sp.phaseOffset) * 0.3 * motionScale;
+          if (sp.lantern) {
+            const lMat = sp.lantern.material as THREE.MeshBasicMaterial;
+            if (lMat) lMat.opacity = 0.95;
+          }
+        }
+      } else if (distanceAhead >= -90) {
+        gp.stage = 'DISAPPEARANCE';
+        gp.group.visible = true;
+        const disProg = (-35 - distanceAhead) / 55;
+        for (let s = 0; s < gp.specters.length; s++) {
+          const sp = gp.specters[s];
+          const fadeScale = Math.max(0.01, 1.0 - disProg * 0.9);
+          sp.mesh.scale.set(fadeScale, fadeScale, fadeScale);
+          sp.mesh.position.y += dt * 1.2;
+        }
+        if (gp.mistPortal) {
+          gp.mistPortal.visible = true;
+          gp.mistPortal.rotation.z += dt * 1.8;
+        }
+      } else {
+        gp.stage = 'SETTLED';
+        gp.group.visible = false;
+      }
+    }
+
     // AMBIENT HAUNTINGS: LANTERNS, WILL-O'-THE-WISPS, CREAKING SIGNS
     for (let i = 0; i < this.ambient.swingingLanterns.length; i++) {
       const l = this.ambient.swingingLanterns[i];
@@ -1272,6 +1526,8 @@ export class HauntedCarnivalEventDirector {
       ghostTrains: this.ghostTrains.length,
       livingPumpkins: this.livingPumpkins.length,
       paradeFloats: this.paradeFloats.length,
+      ferrisWheels: this.ferrisWheels.length,
+      ghostParades: this.ghostParades.length,
       batSwarms: this.batSwarms.length,
       funhouseTricks: this.funhouseTricks.length,
       swingingLanterns: this.ambient.swingingLanterns.length,

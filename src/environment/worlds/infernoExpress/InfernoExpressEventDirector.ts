@@ -127,7 +127,7 @@ export class InfernoExpressEventDirector {
       while (cur.parent) {
         cur = cur.parent;
       }
-      return cur.type === 'Scene';
+      return cur.type === 'Scene' || (cur as any).isScene === true;
     };
 
     this.volcanoes = this.volcanoes.filter(v => isAttached(v.craterMesh));

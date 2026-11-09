@@ -1,0 +1,13 @@
+{
+  "planning": "compact",
+  "context_depth": "dependency",
+  "verification_depth": "impact",
+  "delegation": "none",
+  "reason_codes": [
+    "phase13-signature-spectacles",
+    "living-world-direction",
+    "wave-based-execution",
+    "collision-and-gameplay-invariants",
+    "real-browser-evidence"
+  ]
+}

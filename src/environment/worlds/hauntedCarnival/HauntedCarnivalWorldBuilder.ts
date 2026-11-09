@@ -901,6 +901,9 @@ export class HauntedCarnivalWorldBuilder {
     // FLAGSHIP HORROR SCARE D: THE NIGHTMARE CLOWN (Sinister Articulated Clown Jumpscare)
     this.spawnNightmareClown(funfairGroup, -8.2, stallZ + 8.0, director, worldZ);
 
+    // SIGNATURE B: THE CURSED FERRIS WHEEL (6-Stage Awakening Monument)
+    this.spawnCursedFerrisWheel(funfairGroup, -sideX - 16.0, stallZ - 10.0, mats, director, worldZ);
+
     // SIGNATURE SCARE 11: TRICK FUNHOUSE FACADE ILLUSION
     if (variant === 1 || detail === 'FULL') {
       this.spawnFunhouseFacade(funfairGroup, sideX + 4.0, -chunkLength * 0.75, director);
@@ -970,6 +973,9 @@ export class HauntedCarnivalWorldBuilder {
 
     // SIGNATURE SCARE 9: Ghost Carnival Parade Float on opposite side
     this.spawnParadeFloat(circusGroup, tentX - 4.0, tentZ + 8.0, director);
+
+    // SIGNATURE A: THE GHOST PARADE (Choreographed 6-Stage Supernatural Procession)
+    this.spawnGhostParade(circusGroup, tentX - 6.0, tentZ + 16.0, mats, director, worldZ);
 
     // FLAGSHIP HORROR SCARE E: THE SHADOW COLOSSUS (Rare Skyline Titan in Deep Runs)
     if (worldZ <= -1600 || variant === 2) {
@@ -1362,6 +1368,12 @@ export class HauntedCarnivalWorldBuilder {
 
     // SIGNATURE SCARE 7: Overhead Background Ghost Train on Sky Trestle
     this.spawnGhostTrainTrestle(midwayGroup, midwayZ, director);
+
+    // SIGNATURE B: THE CURSED FERRIS WHEEL (Midway Skyline Monument)
+    this.spawnCursedFerrisWheel(midwayGroup, sideX + 16.0, midwayZ - 12.0, mats, director, worldZ);
+
+    // SIGNATURE A: THE GHOST PARADE (Midway Procession)
+    this.spawnGhostParade(midwayGroup, -sideX - 1.0, midwayZ + 20.0, mats, director, worldZ);
 
     group.add(midwayGroup);
   }
@@ -2423,5 +2435,321 @@ export class HauntedCarnivalWorldBuilder {
       baseY,
       phase: 0
     });
+  }
+
+  /**
+   * SIGNATURE B: THE CURSED FERRIS WHEEL (6-Stage Awakening Skyline Monument)
+   */
+  public spawnCursedFerrisWheel(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    mats: any,
+    director: HauntedCarnivalEventDirector,
+    worldZ: number
+  ): THREE.Group {
+    const wheelGroup = new THREE.Group();
+    wheelGroup.name = 'cursed_ferris_wheel';
+    wheelGroup.position.set(posX, 0, posZ);
+
+    const hubY = 22.0;
+    const wheelRadius = 18.0;
+
+    // 1. Foundation & Subterranean Plinth down to Y = -6.15m
+    const plinthDepth = 6.5;
+    const plinth = new THREE.Mesh(this.getBox(12.0, plinthDepth, 10.0), mats.hauntedGothicStoneMat);
+    plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    wheelGroup.add(plinth);
+
+    // Decorative gargoyle corner bollards on plinth
+    [-5.0, 5.0].forEach((bx) => {
+      [-4.0, 4.0].forEach((bz) => {
+        const bollard = new THREE.Mesh(this.getCylinder(0.35, 0.5, 1.2, 8), mats.hauntedGothicStoneMat);
+        bollard.position.set(bx, 0.95, bz);
+        wheelGroup.add(bollard);
+      });
+    });
+
+    // 2. Heavy Industrial Wrought-Iron A-Frame Supports
+    const aFrameGroup = new THREE.Group();
+    [-1, 1].forEach((sideZ) => {
+      [-1, 1].forEach((sideX) => {
+        const leg = new THREE.Mesh(this.getCylinder(0.45, 0.85, hubY + 1.0, 8), mats.hauntedWroughtIronMat);
+        leg.position.set(sideX * 4.5, hubY * 0.5, sideZ * 2.5);
+        leg.rotation.z = -sideX * 0.22;
+        leg.rotation.x = sideZ * 0.12;
+        aFrameGroup.add(leg);
+      });
+
+      // Horizontal cross-strut
+      const strut = new THREE.Mesh(this.getBox(7.5, 0.5, 0.5), mats.hauntedWroughtIronMat);
+      strut.position.set(0, hubY * 0.45, sideZ * 2.0);
+      aFrameGroup.add(strut);
+    });
+
+    // Center Axle Hub
+    const axle = new THREE.Mesh(this.getCylinder(1.2, 1.2, 5.8, 12), this.tarnishedGoldMat);
+    axle.position.set(0, hubY, 0);
+    axle.rotation.x = Math.PI / 2;
+    aFrameGroup.add(axle);
+    wheelGroup.add(aFrameGroup);
+
+    // 3. Rotating Wheel Rim Assembly
+    const wheelRim = new THREE.Group();
+    wheelRim.position.set(0, hubY, 0);
+
+    // Outer & Inner Torus Rings
+    const outerRing = new THREE.Mesh(this.getTorus(wheelRadius, 0.42, 8, 36), mats.hauntedWroughtIronMat);
+    wheelRim.add(outerRing);
+
+    const innerRing = new THREE.Mesh(this.getTorus(wheelRadius * 0.65, 0.32, 8, 32), this.tarnishedGoldMat);
+    wheelRim.add(innerRing);
+
+    // 12 Radial Spokes with Cross-Ties
+    const numSpokes = 12;
+    const spokes: THREE.Object3D[] = [];
+    for (let s = 0; s < numSpokes; s++) {
+      const spokeAngle = (s * Math.PI * 2) / numSpokes;
+      const spoke = new THREE.Mesh(this.getCylinder(0.18, 0.18, wheelRadius * 2, 6), mats.hauntedWroughtIronMat);
+      spoke.rotation.z = spokeAngle;
+      wheelRim.add(spoke);
+      spokes.push(spoke);
+    }
+
+    // 24 Incandescent Rim Bulbs (Alternating Jack-O-Lantern Amber and Royal Violet)
+    const numBulbs = 24;
+    const rimBulbs: THREE.Mesh[] = [];
+    for (let b = 0; b < numBulbs; b++) {
+      const bAngle = (b * Math.PI * 2) / numBulbs;
+      const bMat = b % 2 === 0 ? mats.hauntedJackOLanternGlowMat : mats.hauntedVioletGlowMat;
+      const bulb = new THREE.Mesh(this.getSphere(0.42, 8, 8), bMat);
+      bulb.position.set(Math.cos(bAngle) * (wheelRadius + 0.45), Math.sin(bAngle) * (wheelRadius + 0.45), 0);
+      bulb.visible = false;
+      wheelRim.add(bulb);
+      rimBulbs.push(bulb);
+    }
+
+    // 12 Articulated Gondola Carriages
+    const gondolas: Array<{
+      pivot: THREE.Object3D;
+      carriage: THREE.Object3D;
+      specter?: THREE.Object3D;
+      lantern?: THREE.Mesh;
+    }> = [];
+
+    for (let g = 0; g < numSpokes; g++) {
+      const gAngle = (g * Math.PI * 2) / numSpokes;
+      const gx = Math.cos(gAngle) * wheelRadius;
+      const gy = Math.sin(gAngle) * wheelRadius;
+
+      // Pivot group attached to rotating wheel
+      const pivotGroup = new THREE.Group();
+      pivotGroup.position.set(gx, gy, 0);
+      wheelRim.add(pivotGroup);
+
+      // Carriage group that will be counter-rotated to stay upright
+      const carriage = new THREE.Group();
+      pivotGroup.add(carriage);
+
+      // Suspension Hanger
+      const hanger = new THREE.Mesh(this.getCylinder(0.15, 0.15, 2.2, 6), mats.hauntedWroughtIronMat);
+      hanger.position.y = -1.1;
+      carriage.add(hanger);
+
+      // Carriage Tub
+      const tub = new THREE.Mesh(this.getBox(2.2, 1.4, 2.0), this.weatheredWoodMat);
+      tub.position.y = -2.6;
+      carriage.add(tub);
+
+      // Carriage Striped Canopy
+      const canopy = new THREE.Mesh(this.getCone(1.6, 1.2, 6), mats.hauntedCarnivalStripeMat);
+      canopy.position.y = -1.3;
+      carriage.add(canopy);
+
+      // Seated Ghost Specter
+      const specterGroup = new THREE.Group();
+      specterGroup.position.set(0, -2.1, 0);
+      const ghostBody = new THREE.Mesh(this.getCylinder(0.25, 0.45, 0.9, 8), this.spectralTealMat);
+      specterGroup.add(ghostBody);
+      const ghostHead = new THREE.Mesh(this.getSphere(0.3, 8, 8), this.spectralTealMat);
+      ghostHead.position.y = 0.65;
+      specterGroup.add(ghostHead);
+      specterGroup.visible = false;
+      carriage.add(specterGroup);
+
+      // Underside Amber Lantern
+      const lantern = new THREE.Mesh(this.getSphere(0.25, 6, 6), mats.hauntedJackOLanternGlowMat);
+      lantern.position.y = -3.4;
+      lantern.visible = false;
+      carriage.add(lantern);
+
+      gondolas.push({
+        pivot: pivotGroup,
+        carriage,
+        specter: specterGroup,
+        lantern
+      });
+    }
+
+    wheelGroup.add(wheelRim);
+    parent.add(wheelGroup);
+
+    const triggerZ = worldZ !== 0 ? worldZ : (parent.position?.z || 0) + posZ;
+    director.registerCursedFerrisWheel({
+      group: wheelGroup,
+      wheelRim,
+      spokes,
+      gondolas,
+      rimBulbs,
+      supportAFrame: aFrameGroup,
+      groundPlinth: plinth,
+      wheelRotation: 0,
+      rotationSpeed: 0.45,
+      currentSpeed: 0,
+      worldZ: triggerZ,
+      stage: 'ABANDONED',
+      stageTimer: 0,
+      illuminatedBulbsCount: 0
+    });
+
+    return wheelGroup;
+  }
+
+  /**
+   * SIGNATURE A: THE GHOST PARADE (Choreographed 6-Stage Procession)
+   */
+  public spawnGhostParade(
+    parent: THREE.Group,
+    posX: number,
+    posZ: number,
+    mats: any,
+    director: HauntedCarnivalEventDirector,
+    worldZ: number
+  ): THREE.Group {
+    const paradeGroup = new THREE.Group();
+    paradeGroup.name = 'ghost_parade';
+    paradeGroup.position.set(posX, 0, posZ);
+
+    // 1. Destination Mausoleum Crypt at posZ - 36m
+    const destGroup = new THREE.Group();
+    destGroup.position.set(0, 0, -36.0);
+
+    const cryptDepth = 6.2;
+    const cryptPlinth = new THREE.Mesh(this.getBox(7.5, cryptDepth, 4.5), mats.hauntedGothicStoneMat);
+    cryptPlinth.position.set(0, 0.35 - cryptDepth * 0.5, 0);
+    destGroup.add(cryptPlinth);
+
+    const cryptArch = new THREE.Mesh(this.getBox(7.0, 7.5, 4.0), mats.hauntedGothicStoneMat);
+    cryptArch.position.y = 3.75;
+    destGroup.add(cryptArch);
+
+    const portalOpening = new THREE.Mesh(this.getBox(3.4, 5.5, 4.2), this.weatheredWoodMat);
+    portalOpening.position.set(0, 2.75, 0);
+    destGroup.add(portalOpening);
+
+    // Swirling ethereal mist portal disc
+    const portalDisc = new THREE.Mesh(this.getTorus(1.8, 0.28, 8, 20), this.spectralVioletMat);
+    portalDisc.position.set(0, 3.2, 2.1);
+    portalDisc.visible = false;
+    destGroup.add(portalDisc);
+
+    // Skull crest atop lintel
+    const skull = new THREE.Mesh(this.getSphere(0.7, 8, 8), mats.hauntedGothicStoneMat);
+    skull.position.set(0, 7.8, 2.0);
+    destGroup.add(skull);
+
+    paradeGroup.add(destGroup);
+
+    // 2. 5 Expressive Choreographed Specters
+    const specters: any[] = [];
+    for (let i = 0; i < 5; i++) {
+      const sGroup = new THREE.Group();
+      sGroup.position.set(0, 2.5, -i * 5.0);
+      sGroup.visible = false;
+
+      // Sinuous Torso and Tail
+      const torso = new THREE.Mesh(this.getCylinder(0.22, 0.5, 1.8, 8), this.spectralTealMat);
+      torso.position.y = 0.9;
+      sGroup.add(torso);
+
+      const tail = new THREE.Mesh(this.getCone(0.48, 1.4, 8), this.spectralTealMat);
+      tail.position.y = -0.4;
+      tail.rotation.x = Math.PI;
+      sGroup.add(tail);
+
+      // Expressive Head
+      const head = new THREE.Mesh(this.getSphere(0.38, 8, 8), this.spectralTealMat);
+      head.position.y = 2.0;
+      sGroup.add(head);
+
+      // Glowing Teal Eyes
+      [-0.14, 0.14].forEach((ex) => {
+        const eye = new THREE.Mesh(this.getSphere(0.08, 6, 6), mats.hauntedJackOLanternGlowMat);
+        eye.position.set(ex, 2.05, 0.32);
+        sGroup.add(eye);
+      });
+
+      // Articulated Arms
+      const armL = new THREE.Mesh(this.getCylinder(0.07, 0.1, 1.1, 6), this.spectralTealMat);
+      armL.position.set(-0.55, 1.2, 0);
+      armL.rotation.z = 0.4;
+      sGroup.add(armL);
+
+      const armR = new THREE.Mesh(this.getCylinder(0.07, 0.1, 1.1, 6), this.spectralTealMat);
+      armR.position.set(0.55, 1.2, 0);
+      armR.rotation.z = -0.4;
+      sGroup.add(armR);
+
+      let lanternMesh: THREE.Mesh | undefined;
+
+      if (i === 0) {
+        // Leader: Top hat and glowing Jack-O'-Lantern Staff
+        const hat = new THREE.Mesh(this.getCylinder(0.28, 0.28, 0.65, 8), mats.hauntedWroughtIronMat);
+        hat.position.y = 2.5;
+        sGroup.add(hat);
+
+        const staff = new THREE.Mesh(this.getCylinder(0.06, 0.06, 2.2, 6), this.tarnishedGoldMat);
+        staff.position.set(0.7, 1.2, 0.3);
+        staff.rotation.x = 0.2;
+        sGroup.add(staff);
+
+        lanternMesh = new THREE.Mesh(this.getSphere(0.32, 8, 8), mats.hauntedJackOLanternGlowMat);
+        lanternMesh.position.set(0.7, 2.3, 0.5);
+        sGroup.add(lanternMesh);
+      } else if (i === 1) {
+        // Musician: Golden curved trumpet
+        const horn = new THREE.Mesh(this.getCone(0.35, 1.2, 8), this.tarnishedGoldMat);
+        horn.position.set(0.4, 1.6, 0.5);
+        horn.rotation.x = Math.PI * 0.4;
+        sGroup.add(horn);
+      }
+
+      paradeGroup.add(sGroup);
+      specters.push({
+        mesh: sGroup,
+        head,
+        arms: [armL, armR],
+        tail,
+        lantern: lanternMesh,
+        lateralOffset: (i % 2 === 0 ? 0.3 : -0.3),
+        phaseOffset: i * 0.9
+      });
+    }
+
+    parent.add(paradeGroup);
+
+    const triggerZ = worldZ !== 0 ? worldZ : (parent.position?.z || 0) + posZ;
+    director.registerGhostParade({
+      group: paradeGroup,
+      specters,
+      destinationStructure: destGroup,
+      mistPortal: portalDisc,
+      worldZ: triggerZ,
+      stage: 'CONCEALED',
+      stageTimer: 0,
+      progress: 0
+    });
+
+    return paradeGroup;
   }
 }

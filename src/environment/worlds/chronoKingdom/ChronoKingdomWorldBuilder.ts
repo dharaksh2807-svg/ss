@@ -1179,6 +1179,9 @@ export class ChronoKingdomWorldBuilder {
     // 5. Blockbuster Spectacle: The Clockwork Titan Awakens (Scene A Quality Gate)
     this.spawnClockworkTitan(districtA, director, worldZ, 1);
 
+    // Signature A: The Great Clockwork Awakening (Campanile, Chime, Gears, Pistons & Bridges)
+    this.spawnClockworkAwakening(districtA, director, worldZ, -1);
+
     // 6. High-Value Surprise: Clockwork Bird Swarm Soaring Formation
     if (variant === 1 || variant === 2) {
       this.spawnClockworkBirdSwarm(districtA, director, worldZ);
@@ -3397,5 +3400,156 @@ export class ChronoKingdomWorldBuilder {
     });
 
     return train;
+  }
+
+  /**
+   * Signature A: The Great Clockwork Awakening
+   */
+  public spawnClockworkAwakening(
+    parent: THREE.Group,
+    director: ChronoKingdomEventDirector,
+    worldZ: number = 0,
+    side: number = -1
+  ): THREE.Group {
+    const awakenGroup = new THREE.Group();
+    awakenGroup.name = 'blockbuster_clockwork_awakening';
+    const tx = side * 16.5;
+    const tz = -50.0;
+    awakenGroup.position.set(tx, 0, tz);
+
+    const plinthDepth = 6.2;
+    // 1. Bedrock Plinth
+    const plinth = new THREE.Mesh(this.getBox(9.5, plinthDepth, 9.5), this.darkIronstoneMat);
+    plinth.position.set(0, 0.35 - plinthDepth * 0.5, 0);
+    awakenGroup.add(plinth);
+
+    // 2. Colossal Campanile Clock Tower
+    const towerBody = new THREE.Mesh(this.getBox(8.0, 32.0, 8.0), this.darkBronzeMat);
+    towerBody.position.set(0, 16.0, 0);
+    awakenGroup.add(towerBody);
+
+    // Mansard Spire
+    const spire = new THREE.Mesh(this.getCylinder(0.3, 5.0, 16.0, 8), this.burnishedCopperMat);
+    spire.position.set(0, 40.0, 0);
+    awakenGroup.add(spire);
+
+    // Roman Numeral Clock Face
+    const clockFace = new THREE.Mesh(this.getCylinder(3.8, 3.8, 0.45, 24), this.warmGlassAmberMat);
+    clockFace.position.set(-side * 4.1, 26.0, 0);
+    clockFace.rotation.z = Math.PI / 2;
+    awakenGroup.add(clockFace);
+
+    // Bronze Chime Hammer
+    const hammerPivot = new THREE.Group();
+    hammerPivot.position.set(-side * 4.4, 29.5, 0);
+    const hammerArm = new THREE.Mesh(this.getCylinder(0.12, 0.12, 2.2, 6), this.antiqueGoldMat);
+    hammerArm.position.y = -1.1;
+    hammerPivot.add(hammerArm);
+    const hammerHead = new THREE.Mesh(this.getBox(0.6, 0.6, 0.8), this.burnishedCopperMat);
+    hammerHead.position.y = -2.2;
+    hammerPivot.add(hammerHead);
+    awakenGroup.add(hammerPivot);
+
+    // Resonance Rings
+    const resonanceRings: THREE.Mesh[] = [];
+    for (let r = 0; r < 2; r++) {
+      const ring = new THREE.Mesh(this.getTorus(4.5, 0.28, 8, 24), this.antiqueGoldMat);
+      ring.position.set(-side * 4.6, 26.0, 0);
+      ring.rotation.y = Math.PI / 2;
+      ring.visible = false;
+      awakenGroup.add(ring);
+      resonanceRings.push(ring);
+    }
+
+    // 3. Giant Pendulum
+    const pendulumRod = new THREE.Group();
+    pendulumRod.position.set(0, 22.0, 0);
+    const rodMesh = new THREE.Mesh(this.getCylinder(0.16, 0.16, 14.0, 6), this.antiqueGoldMat);
+    rodMesh.position.y = -7.0;
+    pendulumRod.add(rodMesh);
+    const bobMesh = new THREE.Mesh(this.getSphere(1.4, 10), this.burnishedCopperMat);
+    bobMesh.position.y = -14.0;
+    pendulumRod.add(bobMesh);
+    awakenGroup.add(pendulumRod);
+
+    // 4. Interlocking Drive Gears
+    const interlockingGears: Array<{ mesh: THREE.Object3D; speed: number; axis: 'x' | 'y' | 'z' }> = [];
+    const gear1 = this.buildGearMesh(2.4, 16, 0.35, this.antiqueGoldMat);
+    gear1.position.set(-side * 4.15, 12.0, -2.0);
+    gear1.rotation.y = Math.PI / 2;
+    awakenGroup.add(gear1);
+    interlockingGears.push({ mesh: gear1, speed: 1.8, axis: 'x' });
+
+    const gear2 = this.buildGearMesh(1.6, 12, 0.35, this.burnishedCopperMat);
+    gear2.position.set(-side * 4.15, 12.0, 1.8);
+    gear2.rotation.y = Math.PI / 2;
+    awakenGroup.add(gear2);
+    interlockingGears.push({ mesh: gear2, speed: -2.7, axis: 'x' });
+
+    // 5. Steam Pistons
+    const steamPistons: Array<{ head: THREE.Object3D; plume?: THREE.Mesh; stroke: number; freq: number }> = [];
+    [-1.8, 1.8].forEach((pz, idx) => {
+      const pGroup = new THREE.Group();
+      pGroup.position.set(-side * 3.8, 4.0, pz);
+
+      const pBody = new THREE.Mesh(this.getCylinder(0.45, 0.45, 3.5, 8), this.darkIronstoneMat);
+      pBody.position.y = 1.75;
+      pGroup.add(pBody);
+
+      const pHead = new THREE.Mesh(this.getCylinder(0.55, 0.55, 0.6, 8), this.antiqueGoldMat);
+      pHead.position.y = 3.5;
+      pGroup.add(pHead);
+
+      const plume = new THREE.Mesh(this.getSphere(1.1, 8), this.furnaceFireMat);
+      plume.position.y = 4.6;
+      plume.visible = false;
+      pGroup.add(plume);
+
+      awakenGroup.add(pGroup);
+      steamPistons.push({ head: pHead, plume, stroke: 1.2, freq: 2.4 + idx * 0.4 });
+    });
+
+    // 6. Telescoping Bridges
+    const telescopingBridges: Array<{ leftSpan: THREE.Object3D; rightSpan: THREE.Object3D; maxSpan: number }> = [];
+    const bridgeGroup = new THREE.Group();
+    bridgeGroup.position.set(0, 16.0, 0);
+    const leftSpan = new THREE.Mesh(this.getBox(3.5, 1.2, 2.5), this.antiqueGoldMat);
+    leftSpan.position.set(-1.8, 0, 0);
+    bridgeGroup.add(leftSpan);
+    const rightSpan = new THREE.Mesh(this.getBox(3.5, 1.2, 2.5), this.antiqueGoldMat);
+    rightSpan.position.set(1.8, 0, 0);
+    bridgeGroup.add(rightSpan);
+    awakenGroup.add(bridgeGroup);
+    telescopingBridges.push({ leftSpan, rightSpan, maxSpan: 3.2 });
+
+    // 7. City Lanterns & Steam Vents
+    const cityLanterns: THREE.Mesh[] = [];
+    [-3.0, 3.0].forEach((lz) => {
+      const lant = new THREE.Mesh(this.getSphere(0.45, 6), this.warmGlassAmberMat);
+      lant.position.set(-side * 4.5, 3.5, lz);
+      awakenGroup.add(lant);
+      cityLanterns.push(lant);
+    });
+
+    const triggerZ = worldZ !== 0 ? worldZ : (parent.position?.z || 0) + tz;
+    director.registerClockworkAwakening({
+      group: awakenGroup,
+      clockTower: towerBody,
+      clockFaceMesh: clockFace,
+      chimeHammer: hammerPivot,
+      resonanceRings,
+      pendulumRod,
+      pendulumBob: bobMesh,
+      interlockingGears,
+      steamPistons,
+      telescopingBridges,
+      cityLanterns,
+      triggerZ,
+      state: 'DORMANT',
+      timer: 0
+    });
+
+    parent.add(awakenGroup);
+    return awakenGroup;
   }
 }

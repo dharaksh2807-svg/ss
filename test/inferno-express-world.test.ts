@@ -326,7 +326,9 @@ pass('Event director reset() cleanly disposes all references');
 console.log('\n--- Suite 8: Grand Stratovolcano Eruption Lifecycle & Staging ---');
 
 director.reset();
+const sceneA = new THREE.Scene();
 const gateChunk = new THREE.Group();
+sceneA.add(gateChunk);
 builder.buildLavaSeaDistrict(gateChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
 
 const volcano = gateChunk.getObjectByName('grand_stratovolcano');
@@ -373,7 +375,9 @@ pass('Volcano lifecycle: COMPLETE past aftermath zone');
 console.log('\n--- Suite 9: Event B — Obsidian Citadel Gate Opens Lifecycle ---');
 
 director.reset();
+const sceneB = new THREE.Scene();
 const citadelChunk = new THREE.Group();
+sceneB.add(citadelChunk);
 builder.buildObsidianCitadelDistrict(citadelChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
 
 const citadelGate = citadelChunk.getObjectByName('citadel_obsidian_fortress_gate');
@@ -407,7 +411,9 @@ pass('Gate lifecycle: PASSED preserves wide open corridor as runner enters citad
 console.log('\n--- Suite 10: Event C — Magma Foundry Awakening Production Line ---');
 
 director.reset();
+const sceneC = new THREE.Scene();
 const foundryChunk = new THREE.Group();
+sceneC.add(foundryChunk);
 builder.buildMagmaFoundryDistrict(foundryChunk, 12, 100, new (class { next() { return 0.5; } } as any), 'FULL', director, -50.0);
 
 assert.ok(director.getFoundryLineCount() >= 1, `Foundry line registered (got ${director.getFoundryLineCount()})`);

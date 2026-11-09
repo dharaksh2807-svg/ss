@@ -553,6 +553,77 @@ factory.buildScenery(deepCircusGroup, HAUNTED_CARNIVAL_THEME, -1680, false, fals
 const diagDeep = director.getDiagnostics();
 check(diagDeep.shadowColossi >= 1, `Rare Shadow Colossus generated in deep marathon cycle (count: ${diagDeep.shadowColossi})`);
 
+// Suite 20: Signature B — The Cursed Ferris Wheel 6-Stage Awakening
+console.log('\n--- Suite 20: Signature B — The Cursed Ferris Wheel 6-Stage Awakening ---');
+director.reset();
+const testFerrisChunk = new THREE.Group();
+const sceneFW = new THREE.Scene();
+sceneFW.add(testFerrisChunk);
+factory.buildScenery(testFerrisChunk, HAUNTED_CARNIVAL_THEME, -80, false, false, 'NONE', 'FULL', 1);
+
+const diagFW = director.getDiagnostics();
+check(diagFW.ferrisWheels >= 1, `Cursed Ferris Wheel registered in Zone 1 (count: ${diagFW.ferrisWheels})`);
+
+const ferrisMesh = testFerrisChunk.getObjectByName('cursed_ferris_wheel');
+check(ferrisMesh !== undefined, 'Cursed Ferris Wheel group exists in scene hierarchy');
+if (ferrisMesh) {
+  ferrisMesh.updateMatrixWorld(true);
+  const fwBox = new THREE.Box3().setFromObject(ferrisMesh);
+  check(fwBox.min.y <= -5.85, `Ferris Wheel grounded to bedrock (got min Y: ${fwBox.min.y.toFixed(2)}m)`);
+  check(Math.abs(fwBox.min.x) >= 4.2 || fwBox.max.x <= -4.2 || fwBox.min.x >= 4.2, 'Ferris Wheel strictly preserves running corridor clearance');
+}
+
+// Staged distance approach: worldZ = -80
+director.update(0.016, true, 100); // dist = 180m -> ABANDONED
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage ABANDONED at 180m');
+
+director.update(0.016, true, 30); // dist = 110m -> LIGHTS_AWAKENING
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage LIGHTS_AWAKENING at 110m');
+
+director.update(0.016, true, -30); // dist = 50m -> ROTATING
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage ROTATING at 50m');
+
+director.update(0.016, true, -80); // dist = 0m -> SILHOUETTES_REVEAL
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage SILHOUETTES_REVEAL at 0m');
+
+director.update(0.016, true, -140); // dist = -60m -> FAIRGROUND_ALIVE
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage FAIRGROUND_ALIVE at -60m');
+
+director.update(0.016, true, -200); // dist = -120m -> SETTLED
+check(director.getDiagnostics().ferrisWheels >= 1, 'Ferris Wheel stage SETTLED past event');
+
+// Suite 21: Signature A — The Ghost Parade 6-Stage Procession
+console.log('\n--- Suite 21: Signature A — The Ghost Parade 6-Stage Procession ---');
+director.reset();
+const testParadeChunk = new THREE.Group();
+const sceneGP = new THREE.Scene();
+sceneGP.add(testParadeChunk);
+factory.buildScenery(testParadeChunk, HAUNTED_CARNIVAL_THEME, -160, false, false, 'NONE', 'FULL', 2);
+
+const diagGP = director.getDiagnostics();
+check(diagGP.ghostParades >= 1, `Ghost Parade registered in Zone 2 (count: ${diagGP.ghostParades})`);
+
+const paradeMesh = testParadeChunk.getObjectByName('ghost_parade');
+check(paradeMesh !== undefined, 'Ghost Parade group exists in scene hierarchy');
+
+// Staged distance approach: worldZ = -160
+director.update(0.016, true, 0); // dist = 160m -> CONCEALED
+check(director.getDiagnostics().ghostParades >= 1, 'Ghost Parade stage CONCEALED at 160m');
+
+director.update(0.016, true, -70); // dist = 90m -> EMERGENCE
+check(director.getDiagnostics().ghostParades >= 1, 'Ghost Parade stage EMERGENCE at 90m');
+
+director.update(0.016, true, -120); // dist = 40m -> PROCESSION
+check(director.getDiagnostics().ghostParades >= 1, 'Ghost Parade stage PROCESSION at 40m');
+
+director.update(0.016, true, -160); // dist = 0m -> REACTION
+check(director.getDiagnostics().ghostParades >= 1, 'Ghost Parade stage REACTION at 0m');
+
+director.update(0.016, true, -220); // dist = -60m -> DISAPPEARANCE
+check(director.getDiagnostics().ghostParades >= 1, 'Ghost Parade stage DISAPPEARANCE at -60m');
+
+pool.clearDecorativeGroup(testFerrisChunk, new Set(Object.values(factory.getSharedMaterials())));
+pool.clearDecorativeGroup(testParadeChunk, new Set(Object.values(factory.getSharedMaterials())));
 pool.clearDecorativeGroup(testWatcherGroup, new Set(Object.values(factory.getSharedMaterials())));
 pool.clearDecorativeGroup(testCarouselGroup, new Set(Object.values(factory.getSharedMaterials())));
 pool.clearDecorativeGroup(testManorGroup, new Set(Object.values(factory.getSharedMaterials())));

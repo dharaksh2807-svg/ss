@@ -1,0 +1,39 @@
+{
+  "mode": "implement",
+  "objective": "Implement blockbuster signature spectacles and living world direction for Metro Runner 3D across production waves starting with Wave A (CHRONO_KINGDOM, INFERNO_EXPRESS, HAUNTED_CARNIVAL, PHANTOM_LINE), following the 6-stage spectacle lifecycle, preserving all gameplay and collision invariants, and providing rigorous browser verification and documentation.",
+  "acceptance_criteria": [
+    "Ground on clean commit 741f2ff on origin/main without assumptions",
+    "Implement Wave A World 1: CHRONO_KINGDOM with Signature A (The Great Clockwork Awakening: giant distant clock tower chiming, interlocking gears, mechanical bridges, giant pendulums, activating city) and Signature B (The Time Fracture: reversing decorative gear rings, light ripples, colossal time dial opening, without modifying player speed or train physics)",
+    "Implement Wave A World 2: INFERNO_EXPRESS with Signature A (Volcanic Eruption: layered lava fountains, rolling smoke, illuminated terrain, zero hazard masking) and Signature B (The Obsidian Citadel: rising heat haze, glowing fissures, flowing lavafalls, cinematic lighting)",
+    "Implement Wave A World 3: HAUNTED_CARNIVAL with Signature A (Ghost Parade: expressive translucent ghost procession with deliberate choreography and easing) and Signature B (The Cursed Ferris Wheel: abandoned fairground gradually illuminating, moving rides, silhouettes, non-strobe lighting)",
+    "Implement Wave A World 4: PHANTOM_LINE with Signature A (Spectral Train Arrival: eerie distinctive phantom train emerging from mist on isolated decorative track, passing and fading) and Signature B (The Haunted Platform: empty underground station with ghostly silhouettes, flickering lights, timed supernatural motion)",
+    "Every spectacle strictly satisfies the 6-stage lifecycle: Setup/Anticipation -> Main Action -> Secondary Motion -> Reaction -> Resolution/Ending -> Proper Cleanup",
+    "Preserve 100% collision and gameplay integrity: clearance envelope |X| <= 4.2m, Y <= 8.5m completely unobstructed, zero physics changes, zero obstacle masking",
+    "Preserve scenery retention under LOW preset: primary silhouettes preserved, secondary props pruned cleanly",
+    "Maintain high performance and memory stability: no GPU leaks, clean chunk unmount disposal via pruneDetached() or chunk hooks",
+    "Automated real-browser visual verification: capturing approach, setup, main event, payoff, cleanup across viewports",
+    "Pass all required test suites: npm run build, test:worldgen, test:engine-stabilization, and world tests",
+    "Produce docs/theme-blockbuster/PHASE13_SIGNATURE_SPECTACLES.md with genuine telemetry, before/after analysis, and screenshots",
+    "Commit and push Wave A cleanly to origin/main"
+  ],
+  "non_goals": [
+    "Do not modify all world builders in a single enormous patch — execute Wave A first and push when verified",
+    "Do not alter core player controller, jump/slide mechanics, speed controller, or collision resolver",
+    "Do not create secondary global animation loops",
+    "Do not add unskippable video or camera-lock intro sequences"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/blockbuster-spectacles-phase13/",
+    "src/environment/worlds/chronoKingdom/",
+    "src/environment/worlds/infernoExpress/",
+    "src/environment/worlds/hauntedCarnival/",
+    "src/environment/worlds/phantomLine/",
+    "src/track/ObstacleFactory.ts",
+    "test/",
+    "artifacts/phase13/",
+    "docs/theme-blockbuster/"
+  ],
+  "verification": "impact"
+}

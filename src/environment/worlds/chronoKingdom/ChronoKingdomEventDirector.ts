@@ -195,6 +195,24 @@ export interface ClockworkBirdSwarmActor {
   timer: number;
 }
 
+export interface ClockworkAwakeningActor {
+  group: THREE.Group;
+  clockTower: THREE.Object3D;
+  clockFaceMesh: THREE.Mesh;
+  chimeHammer?: THREE.Object3D;
+  resonanceRings?: THREE.Mesh[];
+  pendulumRod?: THREE.Object3D;
+  pendulumBob?: THREE.Mesh;
+  interlockingGears: Array<{ mesh: THREE.Object3D; speed: number; axis: 'x' | 'y' | 'z' }>;
+  steamPistons: Array<{ head: THREE.Object3D; plume?: THREE.Mesh; stroke: number; freq: number }>;
+  telescopingBridges: Array<{ leftSpan: THREE.Object3D; rightSpan: THREE.Object3D; maxSpan: number }>;
+  cityLanterns?: THREE.Mesh[];
+  steamVents?: THREE.Mesh[];
+  triggerZ: number;
+  state: CinematicStage;
+  timer: number;
+}
+
 /**
  * ChronoKingdomEventDirector
  * Singleton managing all animated clockwork, celestial, and temporal world events with high performance,
@@ -223,6 +241,7 @@ export class ChronoKingdomEventDirector {
   private hourglasses: GiantHourglassActor[] = [];
   private pendulumCathedrals: PendulumCathedralActor[] = [];
   private birdSwarms: ClockworkBirdSwarmActor[] = [];
+  private clockworkAwakenings: ClockworkAwakeningActor[] = [];
 
   private activeScene: THREE.Scene | null = null;
   private globalTime: number = 0;
@@ -284,6 +303,7 @@ export class ChronoKingdomEventDirector {
     this.hourglasses = this.hourglasses.filter(h => isAttached(h.group));
     this.pendulumCathedrals = this.pendulumCathedrals.filter(p => isAttached(p.group));
     this.birdSwarms = this.birdSwarms.filter(s => isAttached(s.group));
+    this.clockworkAwakenings = this.clockworkAwakenings.filter(a => isAttached(a.group));
   }
 
   /**
@@ -308,6 +328,7 @@ export class ChronoKingdomEventDirector {
     this.hourglasses = [];
     this.pendulumCathedrals = [];
     this.birdSwarms = [];
+    this.clockworkAwakenings = [];
     this.globalTime = 0;
   }
 
@@ -572,6 +593,13 @@ export class ChronoKingdomEventDirector {
    */
   public registerClockworkBirdSwarm(actor: ClockworkBirdSwarmActor): void {
     this.birdSwarms.push(actor);
+  }
+
+  /**
+   * Blockbuster Signature A: The Great Clockwork Awakening
+   */
+  public registerClockworkAwakening(actor: ClockworkAwakeningActor): void {
+    this.clockworkAwakenings.push(actor);
   }
 
   // =========================================================================
@@ -957,9 +985,11 @@ export class ChronoKingdomEventDirector {
       else if (rift.state === 'AFTERMATH') spinMult = 0.8;
 
       const rate = spinMult * motionScale * clampedDelta;
+      // Signature B: Time Fracture Temporal Reversal (Middle ring reverses spin direction during ACTIVATION)
+      const reversalSign = rift.state === 'ACTIVATION' ? -1.0 : 1.0;
       rift.outerRing.rotation.z += rate * 0.8;
-      rift.middleRing.rotation.y += rate * 1.25;
-      rift.innerRing.rotation.x += rate * 1.65;
+      rift.middleRing.rotation.y += rate * 1.25 * reversalSign;
+      rift.innerRing.rotation.x += rate * 1.65 * -reversalSign;
 
       // Locking dog clamps: unlock and pivot outward
       let clampAngle = 0.0;
@@ -1167,6 +1197,120 @@ export class ChronoKingdomEventDirector {
         bird.mesh.rotation.y = -t + Math.PI * 0.5;
       }
     }
+
+    // =======================================================================
+    // 16. BLOCKBUSTER SIGNATURE A: THE GREAT CLOCKWORK AWAKENING
+    // =======================================================================
+    for (let i = 0; i < this.clockworkAwakenings.length; i++) {
+      const ca = this.clockworkAwakenings[i];
+      ca.timer += clampedDelta;
+      const dist = playerZ - ca.triggerZ; // Positive when runner is approaching from ahead
+
+      if (dist > 140) ca.state = 'DORMANT';
+      else if (dist > 85) ca.state = 'ANTICIPATION';
+      else if (dist > 35) ca.state = 'ACTIVATION';
+      else if (dist >= -30) ca.state = 'CLIMAX';
+      else if (dist >= -80) ca.state = 'AFTERMATH';
+      else ca.state = 'COMPLETE';
+
+      // 1. Clock Tower Chime & Resonance Rings
+      let strikeNorm = 0.0;
+      let chimeActive = false;
+      if (ca.state === 'ANTICIPATION' || ca.state === 'ACTIVATION') {
+        const chimeProg = (ca.timer * 1.8) % 1.0;
+        if (chimeProg > 0.6) {
+          chimeActive = true;
+          strikeNorm = (chimeProg - 0.6) / 0.4;
+        }
+      } else if (ca.state === 'CLIMAX') {
+        chimeActive = true;
+        strikeNorm = Math.sin(ca.timer * 8.0) * 0.5 + 0.5;
+      }
+
+      if (ca.chimeHammer) {
+        ca.chimeHammer.rotation.z = chimeActive ? Math.sin(strikeNorm * Math.PI) * 0.45 * motionScale : 0;
+      }
+
+      const faceMat = ca.clockFaceMesh.material as THREE.MeshStandardMaterial;
+      if (faceMat && faceMat.emissive) {
+        faceMat.emissiveIntensity = chimeActive ? 1.8 + strikeNorm * 1.2 : 0.6;
+      }
+
+      if (ca.resonanceRings) {
+        for (let r = 0; r < ca.resonanceRings.length; r++) {
+          const ring = ca.resonanceRings[r];
+          if (chimeActive) {
+            const rProg = (strikeNorm + r * 0.35) % 1.0;
+            const rScale = 1.0 + rProg * 4.2 * motionScale;
+            ring.scale.set(rScale, rScale, rScale);
+            ring.visible = true;
+            const rMat = ring.material as THREE.MeshBasicMaterial;
+            if (rMat) rMat.opacity = (1.0 - rProg) * 0.75;
+          } else {
+            ring.visible = false;
+          }
+        }
+      }
+
+      // 2. Colossal Synchronized Pendulum
+      if (ca.pendulumRod) {
+        const pendAmp = (ca.state === 'DORMANT') ? 0.08 : 0.42;
+        ca.pendulumRod.rotation.z = Math.sin(ca.timer * 2.2 * motionScale) * pendAmp * motionScale;
+      }
+
+      // 3. Interlocking Gears Mathematically Speed Up
+      let gearSpeedMult = 0.5;
+      if (ca.state === 'ANTICIPATION') gearSpeedMult = 1.2;
+      else if (ca.state === 'ACTIVATION' || ca.state === 'CLIMAX') gearSpeedMult = 2.8;
+      else if (ca.state === 'AFTERMATH') gearSpeedMult = 1.0;
+
+      for (let g = 0; g < ca.interlockingGears.length; g++) {
+        const gear = ca.interlockingGears[g];
+        const rot = gear.speed * gearSpeedMult * clampedDelta * motionScale;
+        if (gear.axis === 'x') gear.mesh.rotation.x += rot;
+        else if (gear.axis === 'y') gear.mesh.rotation.y += rot;
+        else gear.mesh.rotation.z += rot;
+      }
+
+      // 4. Steam Pistons & Exhaust Plumes
+      for (let p = 0; p < ca.steamPistons.length; p++) {
+        const piston = ca.steamPistons[p];
+        const pNorm = Math.sin(ca.timer * piston.freq * gearSpeedMult + p * 1.2);
+        piston.head.position.y = pNorm * piston.stroke * motionScale;
+        if (piston.plume) {
+          const plumeActive = pNorm > 0.4 && (ca.state === 'ACTIVATION' || ca.state === 'CLIMAX');
+          piston.plume.visible = plumeActive;
+          if (plumeActive) {
+            piston.plume.scale.setScalar(0.8 + (pNorm - 0.4) * 2.0);
+          }
+        }
+      }
+
+      // 5. Telescoping Bridges Extend Across Canal
+      let bridgeExt = 0.0;
+      if (ca.state === 'ACTIVATION') bridgeExt = Math.min(1.0, (85 - dist) / 50);
+      else if (ca.state === 'CLIMAX' || ca.state === 'AFTERMATH') bridgeExt = 1.0;
+
+      for (let b = 0; b < ca.telescopingBridges.length; b++) {
+        const br = ca.telescopingBridges[b];
+        br.leftSpan.position.x = -br.maxSpan * bridgeExt;
+        br.rightSpan.position.x = br.maxSpan * bridgeExt;
+      }
+
+      // 6. Activating City Lanterns & Steam Vents
+      const cityActive = ca.state === 'ACTIVATION' || ca.state === 'CLIMAX';
+      if (ca.cityLanterns) {
+        for (let l = 0; l < ca.cityLanterns.length; l++) {
+          const lantMat = ca.cityLanterns[l].material as THREE.MeshBasicMaterial;
+          if (lantMat) lantMat.opacity = cityActive ? 0.95 : 0.4;
+        }
+      }
+      if (ca.steamVents) {
+        for (let v = 0; v < ca.steamVents.length; v++) {
+          ca.steamVents[v].visible = cityActive;
+        }
+      }
+    }
   }
 
   // Getters for test verification, telemetry, and diagnostics
@@ -1189,6 +1333,7 @@ export class ChronoKingdomEventDirector {
   public getHourglassCount(): number { return this.hourglasses.length; }
   public getPendulumCathedralCount(): number { return this.pendulumCathedrals.length; }
   public getBirdSwarmCount(): number { return this.birdSwarms.length; }
+  public getClockworkAwakeningCount(): number { return this.clockworkAwakenings.length; }
 
   public getTotalActiveElements(): number {
     return this.gears.length + this.chimes.length + this.bridges.length +
@@ -1199,7 +1344,7 @@ export class ChronoKingdomEventDirector {
            this.titans.length + this.timeRifts.length +
            this.dragons.length + this.transformingCities.length +
            this.hourglasses.length + this.pendulumCathedrals.length +
-           this.birdSwarms.length;
+           this.birdSwarms.length + this.clockworkAwakenings.length;
   }
 
   public getBlockbusterDiagnostics(): Record<string, number> {
@@ -1221,6 +1366,7 @@ export class ChronoKingdomEventDirector {
       hourglasses: this.hourglasses.length,
       pendulumCathedrals: this.pendulumCathedrals.length,
       birdSwarms: this.birdSwarms.length,
+      clockworkAwakenings: this.clockworkAwakenings.length,
       totalActive: this.getTotalActiveElements()
     };
   }
