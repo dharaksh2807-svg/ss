@@ -264,7 +264,7 @@ export class DoomsdayWorldBuilder {
     }
 
     // 1. Foundation: Grounded Retaining Plinths down to Y = -5.85m (ZERO FLOATING GEOMETRY)
-    this.buildGroundedRetainingPlinths(group, roadbedWidth, curbWidth, chunkLength, mats, districtIndex, rng);
+    this.buildGroundedRetainingPlinths(group, roadbedWidth, curbWidth, chunkLength, mats, districtIndex, rng, detail);
 
     // 2. Varied Damaged Catwalks & Rebar Power Gantries (Rhythmic, not uniform every 16m)
     this.buildVariedDamagedPowerGantries(group, chunkLength, mats, detail, seed);
@@ -272,8 +272,9 @@ export class DoomsdayWorldBuilder {
     // 3. Overhead Disaster Architecture (Bunker Gateways, Fractured Skybridges)
     const hasOverheadArch = (seed >= 4000 && seed < 4015) || districtIndex === 3 || districtIndex === 5 || rng.chance(0.35);
     const archZ = -chunkLength * 0.5;
+    const archChoice = rng.chance(0.5);
     if (hasOverheadArch) {
-      if (districtIndex === 5 || rng.chance(0.5)) {
+      if (districtIndex === 5 || archChoice) {
         this.buildDoomsdayBunkerGateway(group, chunkLength, archZ, mats);
       } else {
         this.buildDoomsdayFracturedSkybridge(group, chunkLength, archZ, mats);
@@ -329,7 +330,8 @@ export class DoomsdayWorldBuilder {
     chunkLength: number,
     mats: any,
     districtIndex: number = 0,
-    rng?: SeededRandom
+    rng?: SeededRandom,
+    detail: 'FULL' | 'BALANCED' | 'MINIMAL' = 'FULL'
   ): void {
     const wallThickness = 0.8;
     const wallX = CONSTANTS.TUNNEL_WALL_X; // ~6.6m
@@ -421,31 +423,35 @@ export class DoomsdayWorldBuilder {
         breachRubble.position.set(wx - 1.2, 0.7, -28.0);
         group.add(breachRubble);
 
-        // Exposed rebar rods protruding from breach
-        for (let r = 0; r < 3; r++) {
-          const rebar = new THREE.Mesh(this.getCylinder(0.08, 0.08, 3.2, 4), mats.doomsdayRebarSteelMat || this.rebarMat);
-          rebar.position.set(wx - 0.6, 1.2 + r * 0.5, -28.0 + (r - 1) * 1.5);
-          rebar.rotation.z = -0.45;
-          group.add(rebar);
+        // Exposed rebar rods protruding from breach (pruned in MINIMAL)
+        if (detail !== 'MINIMAL') {
+          for (let r = 0; r < 3; r++) {
+            const rebar = new THREE.Mesh(this.getCylinder(0.08, 0.08, 3.2, 4), mats.doomsdayRebarSteelMat || this.rebarMat);
+            rebar.position.set(wx - 0.6, 1.2 + r * 0.5, -28.0 + (r - 1) * 1.5);
+            rebar.rotation.z = -0.45;
+            group.add(rebar);
+          }
         }
       }
     });
 
-    // Outer service catwalks with rusted steel grating and handrails (only along taller wall sides)
-    const catwalkGeo = this.getBox(1.4, 0.15, chunkLength);
-    const railGeo = this.getBox(0.08, 0.9, chunkLength);
-    wallSides.forEach(({ wx, h }) => {
-      if (h > 2.0) {
-        const cx = wx + (wx < 0 ? -0.9 : 0.9);
-        const catwalk = new THREE.Mesh(catwalkGeo, rustedSteelMaterial);
-        catwalk.position.set(cx, 1.8, -chunkLength * 0.5);
-        group.add(catwalk);
+    // Outer service catwalks with rusted steel grating and handrails (pruned in MINIMAL)
+    if (detail !== 'MINIMAL') {
+      const catwalkGeo = this.getBox(1.4, 0.15, chunkLength);
+      const railGeo = this.getBox(0.08, 0.9, chunkLength);
+      wallSides.forEach(({ wx, h }) => {
+        if (h > 2.0) {
+          const cx = wx + (wx < 0 ? -0.9 : 0.9);
+          const catwalk = new THREE.Mesh(catwalkGeo, rustedSteelMaterial);
+          catwalk.position.set(cx, 1.8, -chunkLength * 0.5);
+          group.add(catwalk);
 
-        const rail = new THREE.Mesh(railGeo, mats.doomsdayRebarSteelMat || this.rebarMat);
-        rail.position.set(cx + (wx < 0 ? -0.63 : 0.63), 2.3, -chunkLength * 0.5);
-        group.add(rail);
-      }
-    });
+          const rail = new THREE.Mesh(railGeo, mats.doomsdayRebarSteelMat || this.rebarMat);
+          rail.position.set(cx + (wx < 0 ? -0.63 : 0.63), 2.3, -chunkLength * 0.5);
+          group.add(rail);
+        }
+      });
+    }
   }
 
   // =========================================================================
@@ -459,7 +465,7 @@ export class DoomsdayWorldBuilder {
     detail: 'FULL' | 'BALANCED' | 'MINIMAL',
     seed: number
   ): void {
-    const gantrySpacing = 24.0;
+    const gantrySpacing = detail === 'MINIMAL' ? 80.0 : 24.0; // Scaled: 1 in MINIMAL, 3 in FULL/BALANCED
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
     const poleHeight = 10.8;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.8; // ~10.4m
@@ -545,24 +551,26 @@ export class DoomsdayWorldBuilder {
       tower.position.y = bH * 0.5;
       bGroup.add(tower);
 
-      // Exposed interior floor plates (cutaway damage)
-      for (let floorY = 8.0; floorY < bH; floorY += 7.0) {
-        const slab = new THREE.Mesh(this.getBox(bW * 0.9, 0.4, bD * 0.85), mats.doomsdayRustedSteelMat || this.rustedSteelMat);
-        slab.position.set(-side * 1.5, floorY, 0);
-        bGroup.add(slab);
-      }
+      if (detail !== 'MINIMAL') {
+        // Exposed interior floor plates (cutaway damage)
+        for (let floorY = 8.0; floorY < bH; floorY += 7.0) {
+          const slab = new THREE.Mesh(this.getBox(bW * 0.9, 0.4, bD * 0.85), mats.doomsdayRustedSteelMat || this.rustedSteelMat);
+          slab.position.set(-side * 1.5, floorY, 0);
+          bGroup.add(slab);
+        }
 
-      // Shattered facade glass ribbons
-      const glass = new THREE.Mesh(this.getBox(bW + 0.2, bH * 0.7, 0.2), mats.doomsdayShatteredGlassMat || this.darkGlassMat);
-      glass.position.set(0, bH * 0.45, -side * (bD * 0.5 + 0.1));
-      bGroup.add(glass);
+        // Shattered facade glass ribbons
+        const glass = new THREE.Mesh(this.getBox(bW + 0.2, bH * 0.7, 0.2), mats.doomsdayShatteredGlassMat || this.darkGlassMat);
+        glass.position.set(0, bH * 0.45, -side * (bD * 0.5 + 0.1));
+        bGroup.add(glass);
 
-      // Exposed rebar spines jutting from sheared summit
-      for (let r = 0; r < 4; r++) {
-        const rebar = new THREE.Mesh(this.getCylinder(0.12, 0.15, 10.0, 4), mats.doomsdayRebarSteelMat || this.rebarMat);
-        rebar.position.set(-side * 2.0 + r * 1.2, bH + 5.0, (r - 2) * 2.5);
-        rebar.rotation.z = side * 0.18;
-        bGroup.add(rebar);
+        // Exposed rebar spines jutting from sheared summit
+        for (let r = 0; r < 4; r++) {
+          const rebar = new THREE.Mesh(this.getCylinder(0.12, 0.15, 10.0, 4), mats.doomsdayRebarSteelMat || this.rebarMat);
+          rebar.position.set(-side * 2.0 + r * 1.2, bH + 5.0, (r - 2) * 2.5);
+          rebar.rotation.z = side * 0.18;
+          bGroup.add(rebar);
+        }
       }
 
       cityGroup.add(bGroup);
@@ -612,8 +620,9 @@ export class DoomsdayWorldBuilder {
     fissure.position.set(-wallX - 22.0, 0.25, lotZ);
     impactGroup.add(fissure);
 
-    // Shattered basalt impact monoliths
-    for (let m = 0; m < 5; m++) {
+    // Shattered basalt impact monoliths (scaled in MINIMAL)
+    const monolithCount = detail === 'MINIMAL' ? 2 : 5;
+    for (let m = 0; m < monolithCount; m++) {
       const rock = new THREE.Mesh(this.getBox(3.5, 6.5, 3.5), mats.doomsdayScorchedConcreteMat || this.concreteMat);
       rock.position.set(-wallX - 16.0 - m * 3.5, 3.2, lotZ + (m - 2) * 5.0);
       rock.rotation.set(0.2, m * 0.6, -0.25);
@@ -683,8 +692,9 @@ export class DoomsdayWorldBuilder {
     stagingGround.position.y = 0.2;
     triageGroup.add(stagingGround);
 
-    // 2 Canvas Humanitarian Medical Tents with Red Cross markings
-    [-12.0, 12.0].forEach((tz, tIdx) => {
+    // Canvas Humanitarian Medical Tents with Red Cross markings (1 in MINIMAL, 2 in FULL/BALANCED)
+    const tentOffsets = detail === 'MINIMAL' ? [0.0] : [-12.0, 12.0];
+    tentOffsets.forEach((tz, tIdx) => {
       const tentGroup = new THREE.Group();
       tentGroup.position.set(0, 0, tz);
 
@@ -716,48 +726,50 @@ export class DoomsdayWorldBuilder {
       triageGroup.add(tentGroup);
     });
 
-    // Abandoned Emergency Ambulance / Medical Transport
-    const ambulance = new THREE.Group();
-    ambulance.position.set(4.5, 0, 0);
-    const ambBody = new THREE.Mesh(this.getBox(2.8, 2.4, 6.2), mats.doomsdayScorchedConcreteMat || this.concreteMat);
-    ambBody.position.y = 1.6;
-    ambulance.add(ambBody);
+    if (detail !== 'MINIMAL') {
+      // Abandoned Emergency Ambulance / Medical Transport
+      const ambulance = new THREE.Group();
+      ambulance.position.set(4.5, 0, 0);
+      const ambBody = new THREE.Mesh(this.getBox(2.8, 2.4, 6.2), mats.doomsdayScorchedConcreteMat || this.concreteMat);
+      ambBody.position.y = 1.6;
+      ambulance.add(ambBody);
 
-    const ambStripe = new THREE.Mesh(this.getBox(2.9, 0.55, 6.0), this.redCrossMat);
-    ambStripe.position.set(0, 1.6, 0);
-    ambulance.add(ambStripe);
+      const ambStripe = new THREE.Mesh(this.getBox(2.9, 0.55, 6.0), this.redCrossMat);
+      ambStripe.position.set(0, 1.6, 0);
+      ambulance.add(ambStripe);
 
-    const ambCross = new THREE.Mesh(this.getBox(0.1, 1.4, 1.4), this.redCrossMat);
-    ambCross.position.set(1.48, 1.6, 0);
-    ambulance.add(ambCross);
+      const ambCross = new THREE.Mesh(this.getBox(0.1, 1.4, 1.4), this.redCrossMat);
+      ambCross.position.set(1.48, 1.6, 0);
+      ambulance.add(ambCross);
 
-    const ambBeacon = new THREE.Mesh(this.getBox(1.4, 0.25, 0.4), mats.doomsdayColdEvacBlueMat || this.evacBlueGlowMat);
-    ambBeacon.position.set(0, 2.9, 0.5);
-    ambulance.add(ambBeacon);
-    triageGroup.add(ambulance);
+      const ambBeacon = new THREE.Mesh(this.getBox(1.4, 0.25, 0.4), mats.doomsdayColdEvacBlueMat || this.evacBlueGlowMat);
+      ambBeacon.position.set(0, 2.9, 0.5);
+      ambulance.add(ambBeacon);
+      triageGroup.add(ambulance);
 
-    // Evacuation Signpost: "SHELTER ACCESS 300M ->"
-    const signpost = new THREE.Mesh(this.getCylinder(0.1, 0.1, 4.2, 6), mats.doomsdayRustedSteelMat || this.rustedSteelMat);
-    signpost.position.set(6.5, 2.1, 14.0);
-    triageGroup.add(signpost);
+      // Evacuation Signpost: "SHELTER ACCESS 300M ->"
+      const signpost = new THREE.Mesh(this.getCylinder(0.1, 0.1, 4.2, 6), mats.doomsdayRustedSteelMat || this.rustedSteelMat);
+      signpost.position.set(6.5, 2.1, 14.0);
+      triageGroup.add(signpost);
 
-    const signBoard = new THREE.Mesh(this.getBox(0.08, 1.2, 2.8), this.evacSignMat);
-    signBoard.position.set(6.5, 3.6, 14.0);
-    triageGroup.add(signBoard);
+      const signBoard = new THREE.Mesh(this.getBox(0.08, 1.2, 2.8), this.evacSignMat);
+      signBoard.position.set(6.5, 3.6, 14.0);
+      triageGroup.add(signBoard);
 
-    // Charred skeletal leafless trees
-    [-24.0, 24.0].forEach((treeZ) => {
-      const trunk = new THREE.Mesh(this.getCylinder(0.25, 0.45, 6.5, 6), this.charredTreeMat);
-      trunk.position.set(-6.5, 3.25, treeZ);
-      trunk.rotation.z = 0.15;
-      triageGroup.add(trunk);
+      // Charred skeletal leafless trees
+      [-24.0, 24.0].forEach((treeZ) => {
+        const trunk = new THREE.Mesh(this.getCylinder(0.25, 0.45, 6.5, 6), this.charredTreeMat);
+        trunk.position.set(-6.5, 3.25, treeZ);
+        trunk.rotation.z = 0.15;
+        triageGroup.add(trunk);
 
-      const branch = new THREE.Mesh(this.getCylinder(0.12, 0.18, 3.5, 5), this.charredTreeMat);
-      branch.position.set(-6.0, 5.5, treeZ + 0.8);
-      branch.rotation.x = 0.6;
-      branch.rotation.z = -0.3;
-      triageGroup.add(branch);
-    });
+        const branch = new THREE.Mesh(this.getCylinder(0.12, 0.18, 3.5, 5), this.charredTreeMat);
+        branch.position.set(-6.0, 5.5, treeZ + 0.8);
+        branch.rotation.x = 0.6;
+        branch.rotation.z = -0.3;
+        triageGroup.add(branch);
+      });
+    }
 
     evacGroup.add(triageGroup);
 

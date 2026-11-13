@@ -351,11 +351,13 @@ export class AbyssalGlasslineWorldBuilder {
       conduitMesh.position.set(conduitX, 0.85, -chunkLength * 0.5);
       group.add(conduitMesh);
 
-      // Hydro-brass mounting collar brackets every 20m
-      for (let cz = 10; cz < chunkLength; cz += 20) {
-        const collar = new THREE.Mesh(this.getBox(0.26, 0.28, 0.35), mats.abyssalHydroBrassMat || this.hydroBrassMat);
-        collar.position.set(conduitX, 0.85, -cz);
-        group.add(collar);
+      // Hydro-brass mounting collar brackets every 20m (pruned in MINIMAL)
+      if (detail !== 'MINIMAL') {
+        for (let cz = 10; cz < chunkLength; cz += 20) {
+          const collar = new THREE.Mesh(this.getBox(0.26, 0.28, 0.35), mats.abyssalHydroBrassMat || this.hydroBrassMat);
+          collar.position.set(conduitX, 0.85, -cz);
+          group.add(collar);
+        }
       }
     });
 
@@ -503,45 +505,50 @@ export class AbyssalGlasslineWorldBuilder {
       rock.position.set(sx, 1.2, reefZ);
       reefGroup.add(rock);
 
-      // Deep Coral Formations (branching spires)
-      for (let c = 0; c < 5; c++) {
+      // Deep Coral Formations (branching spires, scaled in MINIMAL)
+      const coralCount = detail === 'MINIMAL' ? 2 : 5;
+      for (let c = 0; c < coralCount; c++) {
         const coral = new THREE.Mesh(this.getCone(0.8, 4.2 + c * 0.8, 6), mats.abyssalCoralMat || this.deepCoralMat);
         coral.position.set(sx + (c % 2 === 0 ? -3.0 : 3.0), 3.0 + c * 0.4, reefZ - 8.0 + c * 4.0);
         reefGroup.add(coral);
       }
 
-      // Bioluminescent Sea Fans
-      for (let f = 0; f < 3; f++) {
-        const fan = new THREE.Mesh(this.getBox(1.8, 2.4, 0.1), mats.abyssalBioTealGlowMat || this.bioTealGlowMat);
-        fan.position.set(sx + (f % 2 === 0 ? 2.5 : -2.5), 3.5, reefZ + f * 5.0);
-        reefGroup.add(fan);
-        director.registerSwayingCoralFan(fan, f * 1.2);
+      // Bioluminescent Sea Fans (pruned in MINIMAL)
+      if (detail !== 'MINIMAL') {
+        for (let f = 0; f < 3; f++) {
+          const fan = new THREE.Mesh(this.getBox(1.8, 2.4, 0.1), mats.abyssalBioTealGlowMat || this.bioTealGlowMat);
+          fan.position.set(sx + (f % 2 === 0 ? 2.5 : -2.5), 3.5, reefZ + f * 5.0);
+          reefGroup.add(fan);
+          director.registerSwayingCoralFan(fan, f * 1.2);
+        }
       }
     });
 
-    // Swirling School of Small Fish outside glass tunnel
-    const schoolGroup = new THREE.Group();
-    schoolGroup.position.set(sideX, 7.5, reefZ);
-    const fishList: any[] = [];
-    for (let i = 0; i < 14; i++) {
-      const fMesh = new THREE.Mesh(this.getCone(0.18, 0.7, 4), mats.abyssalBioCyanGlowMat || this.bioCyanGlowMat);
-      fMesh.rotation.z = Math.PI * 0.5;
-      schoolGroup.add(fMesh);
-      fishList.push({
-        mesh: fMesh,
-        baseOffset: new THREE.Vector3(Math.cos(i) * 3.5, Math.sin(i * 2) * 1.5, Math.sin(i) * 3.5),
-        phase: i * 0.45,
-        speed: 2.2
+    // Swirling School of Small Fish outside glass tunnel (pruned in MINIMAL)
+    if (detail !== 'MINIMAL') {
+      const schoolGroup = new THREE.Group();
+      schoolGroup.position.set(sideX, 7.5, reefZ);
+      const fishList: any[] = [];
+      for (let i = 0; i < 14; i++) {
+        const fMesh = new THREE.Mesh(this.getCone(0.18, 0.7, 4), mats.abyssalBioCyanGlowMat || this.bioCyanGlowMat);
+        fMesh.rotation.z = Math.PI * 0.5;
+        schoolGroup.add(fMesh);
+        fishList.push({
+          mesh: fMesh,
+          baseOffset: new THREE.Vector3(Math.cos(i) * 3.5, Math.sin(i * 2) * 1.5, Math.sin(i) * 3.5),
+          phase: i * 0.45,
+          speed: 2.2
+        });
+      }
+      reefGroup.add(schoolGroup);
+      director.registerFishSchool({
+        group: schoolGroup,
+        fish: fishList,
+        center: new THREE.Vector3(sideX, 7.5, reefZ),
+        direction: 1,
+        swirlAngle: 0
       });
     }
-    reefGroup.add(schoolGroup);
-    director.registerFishSchool({
-      group: schoolGroup,
-      fish: fishList,
-      center: new THREE.Vector3(sideX, 7.5, reefZ),
-      direction: 1,
-      swirlAngle: 0
-    });
 
     // Must include named landmark 'abyssal_sanctum_dome' for test verification
     this.buildAbyssalMonumentalSanctumDome(reefGroup, chunkLength, reefZ);
@@ -600,8 +607,9 @@ export class AbyssalGlasslineWorldBuilder {
     const sideX = CONSTANTS.TUNNEL_WALL_X + 13.0;
     const ruinZ = -chunkLength * 0.5;
 
-    // Submerged Monolithic Stone Colonnades
-    for (let c = 0; c < 4; c++) {
+    // Submerged Monolithic Stone Colonnades (scaled in MINIMAL)
+    const colCount = detail === 'MINIMAL' ? 2 : 4;
+    for (let c = 0; c < colCount; c++) {
       const col = new THREE.Mesh(this.getCylinder(0.9, 1.2, 12.0, 8), mats.abyssalBasaltRockMat || this.basaltRockMat);
       col.position.set(-sideX, 6.0, ruinZ - 12.0 + c * 8.0);
       ruinGroup.add(col);
@@ -612,13 +620,15 @@ export class AbyssalGlasslineWorldBuilder {
       ruinGroup.add(shelf);
     }
 
-    // Ancient Encrusted Shipwreck Hull Ribs & Timbers
-    for (let s = 0; s < 2; s++) {
-      const ribGeo = this.getTorus(4.5, 0.35, 6, 16);
-      const shipRib = new THREE.Mesh(ribGeo, mats.abyssalBasaltRockMat || this.basaltRockMat);
-      shipRib.position.set(-sideX - 4.5, 2.2, ruinZ - 4.0 + s * 12.0);
-      shipRib.rotation.set(0.4, 0.25, 0.7);
-      ruinGroup.add(shipRib);
+    // Ancient Encrusted Shipwreck Hull Ribs & Timbers (pruned in MINIMAL)
+    if (detail !== 'MINIMAL') {
+      for (let s = 0; s < 2; s++) {
+        const ribGeo = this.getTorus(4.5, 0.35, 6, 16);
+        const shipRib = new THREE.Mesh(ribGeo, mats.abyssalBasaltRockMat || this.basaltRockMat);
+        shipRib.position.set(-sideX - 4.5, 2.2, ruinZ - 4.0 + s * 12.0);
+        shipRib.rotation.set(0.4, 0.25, 0.7);
+        ruinGroup.add(shipRib);
+      }
     }
 
     // CINEMATIC EVENT D: The Sunken Titan Reveal

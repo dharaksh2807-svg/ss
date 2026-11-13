@@ -216,9 +216,10 @@ export class NeonRainlineWorldBuilder {
     // Spawn transit arches when required by test seeds or at district 0 / 7 landmarks, rarely elsewhere
     const hasArch = (seed >= 1000 && seed < 1010) || ((districtIndex === 0 || districtIndex === 7) && chunkIdx % 8 === 0) || rng.chance(0.12);
     const archZ = -chunkLength * 0.5;
+    const wantsSkybridge = rng.chance(0.25);
     if (hasArch) {
       this.buildNeonMonumentalTransitArch(group, chunkLength, archZ, mats);
-    } else if (detail !== 'MINIMAL' && (districtIndex === 0 || districtIndex === 7) && rng.chance(0.25)) {
+    } else if (detail !== 'MINIMAL' && (districtIndex === 0 || districtIndex === 7) && wantsSkybridge) {
       this.buildNeonGlassSkybridge(group, chunkLength, archZ, mats);
     }
 
@@ -405,7 +406,7 @@ export class NeonRainlineWorldBuilder {
       return;
     }
 
-    const gantrySpacing = 40.0; // Widened spacing (2 gantries per chunk instead of 3)
+    const gantrySpacing = detail === 'MINIMAL' ? 80.0 : 40.0; // Scaled: 1 gantry in MINIMAL, 2 in FULL/BALANCED
     const gantryCount = Math.floor(chunkLength / gantrySpacing);
     const poleHeight = 10.4;
     const spanWidth = CONSTANTS.LANE_WIDTH * 3 + 3.6;
@@ -620,7 +621,7 @@ export class NeonRainlineWorldBuilder {
     marketGroup.name = 'zone_cyber_market';
 
     const wallX = CONSTANTS.TUNNEL_WALL_X;
-    const stallZStep = 18.0;
+    const stallZStep = detail === 'MINIMAL' ? 36.0 : 18.0;
 
     for (let z = 12; z < chunkLength; z += stallZStep) {
       [-1, 1].forEach((side) => {
@@ -640,23 +641,27 @@ export class NeonRainlineWorldBuilder {
         awning.rotation.z = side * -0.15;
         stall.add(awning);
 
-        // Hanging Digital Lanterns
-        const lantern = new THREE.Mesh(this.getSphere(0.35, 6, 6), mats.neonWhiteLedMat || this.amberGlowMat);
-        lantern.position.set(-side * 1.8, 3.0, 1.8);
-        stall.add(lantern);
+        // Hanging Digital Lanterns (pruned in MINIMAL to save draw calls)
+        if (detail !== 'MINIMAL') {
+          const lantern = new THREE.Mesh(this.getSphere(0.35, 6, 6), mats.neonWhiteLedMat || this.amberGlowMat);
+          lantern.position.set(-side * 1.8, 3.0, 1.8);
+          stall.add(lantern);
+        }
 
         marketGroup.add(stall);
       });
     }
 
-    // Hovering Delivery Drone with spinning quad rotors
-    const drone = this.createDeliveryDroneMesh(mats);
-    drone.position.set(wallX + 8.5, 6.5, -chunkLength * 0.5);
-    marketGroup.add(drone);
-    director.registerDeliveryDrone(drone, new THREE.Vector3(wallX + 8.5, 6.5, -chunkLength * 0.5), 5.5, 1.6, 0);
+    if (detail !== 'MINIMAL') {
+      // Hovering Delivery Drone with spinning quad rotors
+      const drone = this.createDeliveryDroneMesh(mats);
+      drone.position.set(wallX + 8.5, 6.5, -chunkLength * 0.5);
+      marketGroup.add(drone);
+      director.registerDeliveryDrone(drone, new THREE.Vector3(wallX + 8.5, 6.5, -chunkLength * 0.5), 5.5, 1.6, 0);
 
-    // CINEMATIC SURPRISE 5: Megacity Drone Light Show
-    this.spawnDroneLightShow(marketGroup, CONSTANTS.TUNNEL_WALL_X + 18.0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
+      // CINEMATIC SURPRISE 5: Megacity Drone Light Show
+      this.spawnDroneLightShow(marketGroup, CONSTANTS.TUNNEL_WALL_X + 18.0, -chunkLength * 0.5, mats, director, worldZ - chunkLength * 0.5);
+    }
 
     group.add(marketGroup);
   }
@@ -692,16 +697,18 @@ export class NeonRainlineWorldBuilder {
       deck1.position.set(hx, 14.0, -chunkLength * 0.5);
       skywayGroup.add(deck1);
 
-      // Upper elevated highway deck (Y = 22m)
-      const deck2 = new THREE.Mesh(this.getBox(9.5, 1.2, chunkLength), mats.neonRainAlloyMat || this.alloyMat);
-      deck2.position.set(hx + side * 4.0, 22.0, -chunkLength * 0.5);
-      skywayGroup.add(deck2);
+      // Upper elevated highway deck (Y = 22m) - pruned in MINIMAL
+      if (detail !== 'MINIMAL') {
+        const deck2 = new THREE.Mesh(this.getBox(9.5, 1.2, chunkLength), mats.neonRainAlloyMat || this.alloyMat);
+        deck2.position.set(hx + side * 4.0, 22.0, -chunkLength * 0.5);
+        skywayGroup.add(deck2);
 
-      // Ambient cruising flying cars along highway lanes
-      const car1 = this.createHoverCarMesh(mats, 0x00f5ff, 0);
-      car1.position.set(hx, 15.5, -chunkLength * 0.5);
-      skywayGroup.add(car1);
-      director.registerFlyingCar(car1, hx - 30, hx + 30, 15.5, -chunkLength * 0.5, 36.0, side);
+        // Ambient cruising flying cars along highway lanes
+        const car1 = this.createHoverCarMesh(mats, 0x00f5ff, 0);
+        car1.position.set(hx, 15.5, -chunkLength * 0.5);
+        skywayGroup.add(car1);
+        director.registerFlyingCar(car1, hx - 30, hx + 30, 15.5, -chunkLength * 0.5, 36.0, side);
+      }
     });
 
     // Central Aerial Spire suspended high above highway viaducts (bottom Y = 16.0m >= 8.5m clearance)
@@ -823,27 +830,31 @@ export class NeonRainlineWorldBuilder {
     sculpRing2.rotation.y = Math.PI * 0.35;
     plazaGroup.add(sculpRing2);
 
-    // Plaza Perimeter Colonnade & Lighted Pylons
+    // Plaza Perimeter Colonnade & Lighted Pylons (pruned in MINIMAL)
     const perimeterLamps: Array<{ mesh: THREE.Mesh; active: boolean }> = [];
-    for (let c = 0; c < 4; c++) {
-      const pz = lotZ - 18.0 + c * 12.0;
-      const pylon = new THREE.Mesh(this.getCylinder(0.4, 0.6, 9.0, 6), mats.neonRainAlloyMat || this.alloyMat);
-      pylon.position.set(plazaX - plazaW * 0.45, 4.5, pz);
-      plazaGroup.add(pylon);
+    if (detail !== 'MINIMAL') {
+      for (let c = 0; c < 4; c++) {
+        const pz = lotZ - 18.0 + c * 12.0;
+        const pylon = new THREE.Mesh(this.getCylinder(0.4, 0.6, 9.0, 6), mats.neonRainAlloyMat || this.alloyMat);
+        pylon.position.set(plazaX - plazaW * 0.45, 4.5, pz);
+        plazaGroup.add(pylon);
 
-      const light = new THREE.Mesh(this.getSphere(0.45, 6, 6), mats.neonCyanGlowMat || this.cyanGlowMat);
-      light.position.set(plazaX - plazaW * 0.45, 9.2, pz);
-      plazaGroup.add(light);
-      perimeterLamps.push({ mesh: light, active: true });
+        const light = new THREE.Mesh(this.getSphere(0.45, 6, 6), mats.neonCyanGlowMat || this.cyanGlowMat);
+        light.position.set(plazaX - plazaW * 0.45, 9.2, pz);
+        plazaGroup.add(light);
+        perimeterLamps.push({ mesh: light, active: true });
+      }
     }
 
-    // Pedestrian / Maintenance Automatons gathered in formation
+    // Pedestrian / Maintenance Automatons gathered in formation (pruned in MINIMAL)
     const pedestrianBots: THREE.Group[] = [];
-    for (let b = 0; b < 3; b++) {
-      const bot = this.createPedestrianBotMesh(mats);
-      bot.position.set(plazaX - 6.0 + b * 5.0, 0.5, lotZ + 8.0);
-      plazaGroup.add(bot);
-      pedestrianBots.push(bot);
+    if (detail !== 'MINIMAL') {
+      for (let b = 0; b < 3; b++) {
+        const bot = this.createPedestrianBotMesh(mats);
+        bot.position.set(plazaX - 6.0 + b * 5.0, 0.5, lotZ + 8.0);
+        plazaGroup.add(bot);
+        pedestrianBots.push(bot);
+      }
     }
 
     // FLAGSHIP HERO EVENT B: THE FUTURISTIC PLAZA AWAKENS
@@ -895,8 +906,9 @@ export class NeonRainlineWorldBuilder {
       terrace.position.set(gx, 4.0, lotZ);
       gardenGroup.add(terrace);
 
-      // Bioluminescent Artificial Cyber Trees
-      for (let t = 0; t < 3; t++) {
+      // Bioluminescent Artificial Cyber Trees (1 tree per side in MINIMAL, 3 in FULL/BALANCED)
+      const treeCount = detail === 'MINIMAL' ? 1 : 3;
+      for (let t = 0; t < treeCount; t++) {
         const tz = lotZ - 12.0 + t * 12.0;
         const trunk = new THREE.Mesh(this.getCylinder(0.35, 0.55, 6.5, 6), mats.neonRainAlloyMat || this.alloyMat);
         trunk.position.set(gx + (t % 2 === 0 ? -3.0 : 3.0), 11.25, tz);
@@ -908,10 +920,12 @@ export class NeonRainlineWorldBuilder {
         director.registerBioluminescentTree(canopy, t * 1.2 + (side < 0 ? 0 : Math.PI));
       }
 
-      // Geodesic Glass Botanical Dome
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(6.5, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), this.darkGlassMat);
-      dome.position.set(gx, 8.0, lotZ);
-      gardenGroup.add(dome);
+      // Geodesic Glass Botanical Dome (pruned in MINIMAL)
+      if (detail !== 'MINIMAL') {
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(6.5, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), this.darkGlassMat);
+        dome.position.set(gx, 8.0, lotZ);
+        gardenGroup.add(dome);
+      }
     });
 
     group.add(gardenGroup);
@@ -950,28 +964,30 @@ export class NeonRainlineWorldBuilder {
       stack.position.set(ix + side * 10.0, 13.0, lotZ + 12.0);
       indGroup.add(stack);
 
-      // Animated Industrial Cargo Crane
-      const craneGroup = new THREE.Group();
-      craneGroup.position.set(ix - side * 2.0, 48.0, lotZ);
+      // Animated Industrial Cargo Crane (pruned in MINIMAL)
+      if (detail !== 'MINIMAL') {
+        const craneGroup = new THREE.Group();
+        craneGroup.position.set(ix - side * 2.0, 48.0, lotZ);
 
-      const mast = new THREE.Mesh(this.getBox(1.2, 12.0, 1.2), mats.neonRainAlloyMat || this.alloyMat);
-      mast.position.y = 6.0;
-      craneGroup.add(mast);
+        const mast = new THREE.Mesh(this.getBox(1.2, 12.0, 1.2), mats.neonRainAlloyMat || this.alloyMat);
+        mast.position.y = 6.0;
+        craneGroup.add(mast);
 
-      const jib = new THREE.Group();
-      jib.position.y = 12.0;
-      const jibArm = new THREE.Mesh(this.getBox(18.0, 0.8, 0.8), mats.neonRainAlloyMat || this.alloyMat);
-      jibArm.position.x = -side * 7.0;
-      jib.add(jibArm);
+        const jib = new THREE.Group();
+        jib.position.y = 12.0;
+        const jibArm = new THREE.Mesh(this.getBox(18.0, 0.8, 0.8), mats.neonRainAlloyMat || this.alloyMat);
+        jibArm.position.x = -side * 7.0;
+        jib.add(jibArm);
 
-      const cable = new THREE.Mesh(this.getBox(0.08, 6.0, 0.08), mats.neonWhiteLedMat || this.whiteLedMat);
-      cable.position.set(-side * 12.0, -3.0, 0);
-      jib.add(cable);
+        const cable = new THREE.Mesh(this.getBox(0.08, 6.0, 0.08), mats.neonWhiteLedMat || this.whiteLedMat);
+        cable.position.set(-side * 12.0, -3.0, 0);
+        jib.add(cable);
 
-      craneGroup.add(jib);
-      indGroup.add(craneGroup);
+        craneGroup.add(jib);
+        indGroup.add(craneGroup);
 
-      director.registerIndustrialCrane(jib, cable, side * 1.5, 0.55);
+        director.registerIndustrialCrane(jib, cable, side * 1.5, 0.55);
+      }
 
       if (detail !== 'MINIMAL') {
         const pipe = new THREE.Mesh(this.getCylinder(0.35, 0.35, 20.0, 6), mats.neonRainAlloyMat || this.alloyMat);

@@ -232,12 +232,14 @@ export class OrbitalHaloWorldBuilder {
       this.buildMonumentalGatewayArch(group, chunkLength, gatewayZ, mats);
     }
 
-    if (detail !== 'MINIMAL' && (!hasGateway || rng.chance(0.38))) {
+    const wantsSkybridge = rng.chance(0.38);
+    if (detail !== 'MINIMAL' && (!hasGateway || wantsSkybridge)) {
       const bridgeZ = hasGateway ? -chunkLength * 0.18 : -chunkLength * 0.5;
       this.buildObservationSkybridge(group, chunkLength, bridgeZ, mats);
     }
 
-    if (detail !== 'MINIMAL' && rng.chance(0.35)) {
+    const wantsCraft = rng.chance(0.35);
+    if (detail !== 'MINIMAL' && wantsCraft) {
       const craftZ = hasGateway ? -chunkLength * 0.78 : -chunkLength * 0.25;
       this.buildDockedSpacecraftBay(group, chunkLength, craftZ, mats, rng);
     }
@@ -355,7 +357,7 @@ export class OrbitalHaloWorldBuilder {
     director: OrbitalHaloEventDirector,
     detail: 'FULL' | 'BALANCED' | 'MINIMAL'
   ): void {
-    const spacing = 40.0;
+    const spacing = detail === 'MINIMAL' ? 80.0 : 40.0;
     const count = Math.floor(chunkLength / spacing);
     const archH = 12.2; // Elevated overhead clearance >= 11.8m
     const spanW = CONSTANTS.LANE_WIDTH * 3 + 5.2;
@@ -388,11 +390,13 @@ export class OrbitalHaloWorldBuilder {
         arm.position.set(armX, archH, 0);
         gantryGroup.add(arm);
 
-        // Glowing Cyan Magnetic Induction Collar at arm tip
-        const ringTipX = px > 0 ? px - armLen : px + armLen;
-        const ring = new THREE.Mesh(this.getTorus(0.85, 0.12, 6, 18), mats.orbitalCyanGlowMat || this.cyanGlowMat);
-        ring.position.set(ringTipX, archH, 0);
-        gantryGroup.add(ring);
+        // Glowing Cyan Magnetic Induction Collar at arm tip (pruned in MINIMAL)
+        if (detail !== 'MINIMAL') {
+          const ringTipX = px > 0 ? px - armLen : px + armLen;
+          const ring = new THREE.Mesh(this.getTorus(0.85, 0.12, 6, 18), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+          ring.position.set(ringTipX, archH, 0);
+          gantryGroup.add(ring);
+        }
       });
 
       group.add(gantryGroup);
@@ -494,9 +498,10 @@ export class OrbitalHaloWorldBuilder {
     const scafX = -wallX - 22.0;
     const hullLen = 42.0;
 
-    // Unfinished Structural Skeleton Frames
-    for (let f = 0; f < 6; f++) {
-      const frameZ = lotZ + (f - 2.5) * 8.0;
+    // Unfinished Structural Skeleton Frames (scaled in MINIMAL)
+    const frameCount = detail === 'MINIMAL' ? 2 : 6;
+    for (let f = 0; f < frameCount; f++) {
+      const frameZ = lotZ + (f - frameCount * 0.5) * 8.0;
       const frameRing = new THREE.Mesh(this.getTorus(8.5, 0.45, 6, 18), mats.orbitalTitaniumMat || this.titaniumMat);
       frameRing.position.set(scafX, 12.0, frameZ);
       dockGroup.add(frameRing);
@@ -510,17 +515,19 @@ export class OrbitalHaloWorldBuilder {
     // EVENT H: Orbital Construction Site & Welding Robot
     this.spawnConstructionSiteEvent(dockGroup, scafX, lotZ, mats, director, worldZ - chunkLength * 0.5);
 
-    // Ambient Maintenance Drone inspecting the scaffolding
-    const droneMesh = new THREE.Group();
-    droneMesh.position.set(scafX + 6.0, 14.0, lotZ);
-    const body = new THREE.Mesh(this.getBox(1.6, 0.5, 1.6), mats.orbitalTitaniumMat || this.titaniumMat);
-    droneMesh.add(body);
-    const cone = new THREE.Mesh(this.getCone(3.0, 9.0, 8), mats.orbitalCyanGlowMat || this.cyanGlowMat);
-    cone.position.set(0, -4.5, 0);
-    cone.rotation.x = Math.PI;
-    droneMesh.add(cone);
-    dockGroup.add(droneMesh);
-    director.registerMaintenanceDrone(droneMesh, cone, new THREE.Vector3(scafX + 6.0, 14.0, lotZ), 9.0);
+    // Ambient Maintenance Drone inspecting the scaffolding (pruned in MINIMAL)
+    if (detail !== 'MINIMAL') {
+      const droneMesh = new THREE.Group();
+      droneMesh.position.set(scafX + 6.0, 14.0, lotZ);
+      const body = new THREE.Mesh(this.getBox(1.6, 0.5, 1.6), mats.orbitalTitaniumMat || this.titaniumMat);
+      droneMesh.add(body);
+      const cone = new THREE.Mesh(this.getCone(3.0, 9.0, 8), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+      cone.position.set(0, -4.5, 0);
+      cone.rotation.x = Math.PI;
+      droneMesh.add(cone);
+      dockGroup.add(droneMesh);
+      director.registerMaintenanceDrone(droneMesh, cone, new THREE.Vector3(scafX + 6.0, 14.0, lotZ), 9.0);
+    }
 
     group.add(dockGroup);
   }
@@ -625,9 +632,10 @@ export class OrbitalHaloWorldBuilder {
     // EVENT G: Articulated Unfolding Solar Array Wings
     this.spawnSolarTransformationEvent(solarGroup, -wallX - 22.0, lotZ, mats, director, worldZ - chunkLength * 0.5);
 
-    // Tracking Solar Collector Batteries Flanking the Station
-    for (let b = 0; b < 3; b++) {
-      const batZ = lotZ + (b - 1) * 18.0;
+    // Tracking Solar Collector Batteries Flanking the Station (scaled in MINIMAL)
+    const batCount = detail === 'MINIMAL' ? 1 : 3;
+    for (let b = 0; b < batCount; b++) {
+      const batZ = lotZ + (b - batCount * 0.5) * 18.0;
       const batArm = new THREE.Group();
       batArm.position.set(wallX + 16.0, 8.0, batZ);
 
@@ -638,17 +646,19 @@ export class OrbitalHaloWorldBuilder {
       director.registerTrackingSolarPanel(batArm, 0.25);
     }
 
-    // Autonomous Solar Maintenance Drone inspecting array panels
-    const droneGroup = new THREE.Group();
-    droneGroup.position.set(wallX + 18.0, 12.0, lotZ);
-    const droneBody = new THREE.Mesh(this.getSphere(0.65, 8, 8), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
-    droneGroup.add(droneBody);
-    const cone = new THREE.Mesh(this.getCone(1.2, 4.5, 6), mats.orbitalCyanGlowMat || this.cyanGlowMat);
-    cone.position.set(0, -2.25, 0);
-    cone.rotation.x = Math.PI;
-    droneGroup.add(cone);
-    solarGroup.add(droneGroup);
-    director.registerMaintenanceDrone(droneGroup, cone, new THREE.Vector3(wallX + 18.0, 12.0, lotZ), 6.5);
+    // Autonomous Solar Maintenance Drone inspecting array panels (pruned in MINIMAL)
+    if (detail !== 'MINIMAL') {
+      const droneGroup = new THREE.Group();
+      droneGroup.position.set(wallX + 18.0, 12.0, lotZ);
+      const droneBody = new THREE.Mesh(this.getSphere(0.65, 8, 8), mats.orbitalWhiteCompositeMat || this.whiteHullMat);
+      droneGroup.add(droneBody);
+      const cone = new THREE.Mesh(this.getCone(1.2, 4.5, 6), mats.orbitalCyanGlowMat || this.cyanGlowMat);
+      cone.position.set(0, -2.25, 0);
+      cone.rotation.x = Math.PI;
+      droneGroup.add(cone);
+      solarGroup.add(droneGroup);
+      director.registerMaintenanceDrone(droneGroup, cone, new THREE.Vector3(wallX + 18.0, 12.0, lotZ), 6.5);
+    }
 
     group.add(solarGroup);
   }
