@@ -1,0 +1,35 @@
+{
+  "mode": "implement",
+  "objective": "Execute Phase 15 independent blockbuster world release certification across all quality gates: Gate A (World Catalog), Gate B (Visual & Atmospheric Verification), Gate C (Signature Spectacles), Gate D (Gameplay Regression), Gate E (Graphics Performance Telemetry), Gate F (Quality Presets), Gate G (Resource Lifecycle & Memory), Gate H (Shop & Progression Safety), Gate I (UX & Accessibility), Gate J (Human Playtest Plan), and Final Release Verdict",
+  "acceptance_criteria": [
+    "Ground on clean commit 044f2d4 without assumptions",
+    "Gate A: Confirm all 17 registered worlds at runtime with correct ownership, builder execution, scenery, atmosphere, director, train presentation, and cleanup",
+    "Gate B: Visually inspect all 17 worlds across checkpoints (0m, 400m, 800m, 1200m, 1600m, 2000m, 3000m), runner camera, landmarks, mobile 390x844, and LOW vs HIGH",
+    "Gate C: Audit all Phase 12 & 13 signature spectacles (6-stage contract: approach, anticipation, hero event, reaction, resolution, cleanup) under normal camera and high speed",
+    "Gate D: Execute deterministic browser tests for collisions, lane movement, jumps, slides, moving trains, rooftop running, powerups, chaser, revive, retry, and hard mode",
+    "Gate E: Capture real empirical frame times (Avg, P50, P95, P99), draw calls, triangles, geometries, textures, and memory on macOS Apple Silicon and Google Chrome",
+    "Gate F: Verify HIGH, MEDIUM, LOW, and AUTO presets, ensuring LOW retains core world architecture and plinths with zero disappearing worlds",
+    "Gate G: Execute 20+ restart and world-switching stress cycles, measuring geometries, textures, event listeners, and detached object pruning",
+    "Gate H: Verify coin store purchasing, persistence, unlocked vs locked rules, and character signature worlds",
+    "Gate I: Audit mobile portrait UX, keyboard/touch controls, HUD contrast, and reduced motion accessibility",
+    "Gate J: Establish rigorous human-playtest task checklist and deliver final independent release category verdict (A, B, or C)",
+    "Deliver docs/theme-blockbuster/PHASE15_FINAL_CERTIFICATION.md with all 15 required sections and push to origin/main"
+  ],
+  "non_goals": [
+    "No new worlds or speculative feature additions",
+    "No new gameplay modes or currencies",
+    "No major architectural rewrites during release certification",
+    "No fabricated hardware benchmarks, self-reported ratings, or invented tester quotes"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": [
+    ".gravitas/sessions/release-certification-phase15/",
+    "docs/theme-blockbuster/",
+    "test/",
+    "artifacts/phase15/",
+    "src/"
+  ],
+  "verification": "impact"
+}
+
